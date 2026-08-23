@@ -2,7 +2,7 @@
 
 ### *Where AI Agents debate, code, and ship — under your command.*
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Harness](https://img.shields.io/badge/DeepSeek_Harness-Orchestration-4A6CF7)](https://github.com/deepseek-ai/harness)
 [![MCP](https://img.shields.io/badge/MCP-Tools_Protocol-FF6B00)](https://modelcontextprotocol.io)
@@ -88,7 +88,7 @@ graph TD
 | **Orchestration**       | Self-researched lightweight runtime (4 generic nodes)        |
 | **Communication**       | MCP (Model Context Protocol) SDK                             |
 | **Sandbox**             | **Phase 0**: `fs.mkdtemp` + `child_process` (Mock) <br> **Future**: Docker (dockerode) + Git Worktree (simple-git) |
-| **Frontend**            | Next.js / React (WebSocket/SSE)                              |
+| **Frontend**            | Next.js / React (SSE + HTTP POST)                            |
 | **Monorepo**            | pnpm workspaces                                              |
 
 ---

@@ -48,6 +48,7 @@ Desktop.ini
 /tmp-agora-*
 /test-outputs/
 /.agora-sandbox/
+/.data/
 
 # ==========================
 #  本地工具状态（机器特定，不要上传）
