@@ -53,4 +53,4 @@ agent: build
 9. 对照该阶段 `exit_criteria` 与任务 notes 中的约束逐条自检。
 10. 涉及沙箱/Harness/工具链的能力必须真实跑通（G5），不以 mock 规避。
 11. 如涉及重大架构决策变更，按 R12 更新蓝图 §21 并打 `[YYYY-MM-DD 架构决策更新]` 标记。
-12. 完成后提示用户执行 `/commit-agora` 提交推送；推送成功后由 `/commit-agora` 将任务标为 `done` 并更新 notes（提交 hash + 自检摘要）。
+12. 完成后提示用户执行 `/commit-agora`：从 `dev-1.0.0` 切功能分支提交并创建 PR（任务保持 `in_progress`）；PR 合并到 dev 后由 `/pr-merge-agora` 标记 `done`。

@@ -26,11 +26,11 @@ agent: build
 3. 继续执行 EPCC-V 流程：
    - 从上次中断点恢复（不重做已完成的部分）
    - 写测试 → `pnpm test` → 写实现 → `pnpm test`
-4. 如果执行成功：运行 `pnpm typecheck && pnpm lint`，然后提示用户执行 `/commit-agora` 提交推送。
+4. 如果执行成功：运行 `pnpm typecheck && pnpm lint`，然后提示用户执行 `/commit-agora` 创建 PR。
 5. 如果仍然失败：
    - 分析错误日志
    - 输出诊断建议（引用相关文档原文）
    - 连续 3 次修复失败：停止编辑，恢复到最近可用状态，输出失败上下文并询问用户是否升级处理
 
 ### 第四步：交付
-1. 任务完成后提示用户执行 `/commit-agora` 提交推送（推送成功后标 `done`）。
+1. 任务完成后提示用户执行 `/commit-agora` 创建 PR；合并后由 `/pr-merge-agora` 标 `done`。

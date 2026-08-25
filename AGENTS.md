@@ -154,11 +154,18 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 
 ## 3.1 Git 协作规范
 
-### 3.1.1 分支策略
+### 3.1.1 分支策略（dev 集成流）
 
-- 默认**直接在 `main` 提交推送**（单人项目，当前约定）。
-- 用户明确要求走 PR 时：创建 `{type}/{description}` 功能分支（feat/fix/docs/refactor/test/chore），PR base 为 `main`，标题正文全英文。
-- Agent 不主动切分支；仅在用户要求或用户指定 PR 流时创建分支。
+| 分支 | 角色 | 合并方向 |
+|---|---|---|
+| `main` | 稳定发布分支（对外展示 / 打 tag） | 仅接受来自 `dev-1.0.0` 的合并（阶段里程碑 / MVP 验收时） |
+| `dev-1.0.0` | 开发集成分支 | 所有功能/修复/文档 PR 的唯一合并目标 |
+| `{type}/{description}` | 功能分支（feat/fix/docs/refactor/test/chore） | 从 `dev-1.0.0` 切出，PR base 为 `dev-1.0.0` |
+
+- 所有开发变更一律：`git checkout dev-1.0.0 && git checkout -b {type}/{description}` → 提交 → `gh pr create --base dev-1.0.0`（标题正文全英文）。
+- **禁止**直接向 `main` 或 `dev-1.0.0` push 功能代码；PR 由人类审阅合并，Agent 不得自动合并。
+- 合并后执行 `/pr-merge-agora` 同步本地并收尾任务状态。
+- `main` 的更新只发生在阶段里程碑（如 MVP 验收、Demo 冻结），由人类确认后从 `dev-1.0.0` 发起 dev→main 的 PR。
 
 ### 3.1.2 Commit Message 格式
 
@@ -294,7 +301,7 @@ Plan     产出实现计划（改哪些文件/接口/schema/测试），等人�
 Code     小步实现，一次一个可验证单元；TDD：写测试→红→写实现→绿
 Check    pnpm typecheck + pnpm lint + pnpm test
 Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5）；证据留档进 notes
-交付     /commit-agora：门禁→提交推送→标 done→级联翻转→阶段收尾检查
+交付     /commit-agora：门禁→功能分支提交→PR(base=dev-1.0.0)；PR 合并后 /pr-merge-agora 标 done→级联翻转→阶段收尾
 ```
 
 铁律：
@@ -339,13 +346,13 @@ pending -> ready -> in_progress -> done
 | `ready` | 依赖全部 done，等待执行 | Agent 幂等级联 |
 | `in_progress` | 开工确认后 / 执行中 | Agent（经 `/do-task-agora` 等） |
 | `blocked` | 外部阻塞，notes 注明解除条件 | Agent，解除后回 ready |
-| `done` | 门禁 G1-G7 全过 + 推送成功 | `/commit-agora` 收尾时 |
+| `done` | 门禁 G1-G7 全过 + PR 已合并到 dev-1.0.0 | `/pr-merge-agora` 收尾时 |
 
-### 8.1.2 done 转换规则（直推 main 流）
+### 8.1.2 done 转换规则（PR 合并流）
 
-- 代码推送到 `origin/main` 成功后由 `/commit-agora` 标 `done`，同时在 notes 记录提交 hash、实现摘要、G5 实测结果。
-- 用户明确要求 PR 流时：PR 合并后才标 `done`。
-- 非代码类任务（文档/调研/验证产出）：人类确认产出后标 `done`。
+- 代码类任务：`/commit-agora` 创建 PR 后任务**保持 `in_progress`**（notes 记 PR 链接与实现摘要）；PR 合并到 `dev-1.0.0` 后由 `/pr-merge-agora` 标 `done`，notes 补记合并 hash、G5 实测结果。
+- 非代码类任务（文档/调研/验证产出）：产出经人类确认后标 `done`。
+- `main` 仅在阶段里程碑（MVP 验收 / Demo 冻结）由人类确认后从 `dev-1.0.0` 发起 dev→main PR，不影响任务级 done 判定。
 
 ### 8.1.3 task-status.json 字段约束
 
@@ -409,6 +416,8 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 | 未经确认的计划就编码 | 方向错误 | §7 铁律 |
 | 一次生成整模块不分步验证 | 无法定位问题 | §12 |
 | force push / 擅自删历史 | 不可逆破坏 | 禁止 |
+| 绕过 PR 直接向 main / dev-1.0.0 push 功能代码 | 破坏集成分支模型 | §3.1.1 |
+| Agent 自动合并 PR | 跳过人工审阅 | §3.1.1（合并必须由人类执行） |
 
 ---
 
@@ -432,8 +441,9 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 /next-task-agora        下一个 ready 任务      /do-task-agora <id>     执行指定任务
 /retry-task-agora       重试中断任务           /read-spec-agora        规格速读
 /explain-agora          概念溯源解释           /sync-docs-agora        决策同步文档
-/commit-agora           门禁+提交推送+收尾     /test-unit-agora        单元测试
-/test-phase-agora       当前 Phase 集成测试    /test-integration-agora 累进全量回归
+/commit-agora           门禁+提交+建 PR        /pr-merge-agora         PR 合并后收尾
+/test-unit-agora        单元测试               /test-phase-agora       当前 Phase 集成测试
+/test-integration-agora 累进全量回归
 ```
 
 ---
