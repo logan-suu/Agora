@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-25T14:25:00.000Z",
+  "last_updated": "2026-08-25T20:05:32.000Z",
   "current_phase": 0,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -55,7 +55,7 @@
           "title": "工程初始化：pnpm monorepo + TypeScript/Biome/Vitest/catalog",
           "story": null,
           "status": "in_progress",
-  "last_updated": "2026-08-25T14:25:00.000Z",
+          "last_updated": "2026-08-25T20:05:32.000Z",
           "documents_required": ["docs/技术选型文档.md", "docs/开发计划安排.md", "docs/系统架构设计文档.md"],
           "dependencies": [],
           "test_file": null,
