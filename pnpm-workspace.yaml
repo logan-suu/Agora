@@ -1,0 +1,16 @@
+packages:
+  - "packages/*"
+  - "packages/*/*"
+  - "apps/*"
+
+catalog:
+  "typescript": "^5.9.0"
+  "@types/node": "^20.0.0"
+  "vitest": "^3.0.0"
+  "@biomejs/biome": "^2.0.0"
+  "@modelcontextprotocol/sdk": "1.30.0"
+  "@deepseek-ai/dsh": "latest"
+  "next": "^15.0.0"
+  "react": "^19.0.0"
+  "dockerode": "^4.0.0"
+  "simple-git": "^8.0.0"
