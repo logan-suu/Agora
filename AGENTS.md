@@ -441,9 +441,9 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 /next-task-agora        下一个 ready 任务      /do-task-agora <id>     执行指定任务
 /retry-task-agora       重试中断任务           /read-spec-agora        规格速读
 /explain-agora          概念溯源解释           /sync-docs-agora        决策同步文档
-/commit-agora           门禁+提交+建 PR        /pr-merge-agora         PR 合并后收尾
-/test-unit-agora        单元测试               /test-phase-agora       当前 Phase 集成测试
-/test-integration-agora 累进全量回归
+/commit-agora           门禁+提交+建 PR        /pr-review-agora        PR 架构预审+评论处理
+/pr-merge-agora         PR 合并后收尾          /test-unit-agora        单元测试
+/test-phase-agora       当前 Phase 集成测试    /test-integration-agora 累进全量回归
 ```
 
 ---
