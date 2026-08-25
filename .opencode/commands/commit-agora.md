@@ -56,4 +56,4 @@ agent: build
 1. 任务 `status` **保持 `in_progress`**——PR 由人类审阅合并，合并后经 `/pr-merge-agora` 收尾标 `done`。
 2. notes 追加：PR 编号链接 + 简要实现摘要。
 3. 更新任务与文件顶层 `last_updated`。
-4. 提示用户："PR 已创建，等待审阅合并。合并后执行 `/pr-merge-agora {PR号}` 收尾。"
+4. 提示用户："PR 已创建。建议先执行 `/pr-review-agora {PR号}` 完成架构预审与评论处理；通过后由人类合并，合并后执行 `/pr-merge-agora` 收尾。"
