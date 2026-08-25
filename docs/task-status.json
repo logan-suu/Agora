@@ -1,0 +1,746 @@
+{
+  "version": "1.0",
+  "project": "Agora",
+  "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
+  "last_updated": "2026-08-25T00:00:00.000Z",
+  "current_phase": 0,
+  "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
+  "standing_decisions": [
+    { "id": "D1", "rule": "agent/pre-step 直接覆写（Overwrite）messages 数组为 project(state,role) 返回值；deriveMessages() 仅作事件流记录；compaction 压缩伪历史属预期行为", "source": "docs/详细设计方案.md §7" },
+    { "id": "D2", "rule": "阶段 0–9 所有 Worker 强制绑定为薄执行器（Harness）；RoleSpec.external 仅作预留扩展点；厚 Agent 接入延后至阶段 10", "source": "docs/详细设计方案.md §6" },
+    { "id": "D3", "rule": "KnowledgeBase 写入全局禁用（Write-Block），Librarian 为空桩；启用需双重门控（测试全绿 + /approve-kb）；阶段 0 的 sliceKB 返回空对象", "source": "docs/详细设计方案.md §8" },
+    { "id": "D4", "rule": "进 humanGate 时销毁（Terminate）Harness 子进程释放资源；裁决后按 safePoint 游标重新 Fork（终止并分叉，取代 yieldSlot）；阶段 0 简化为任务即进程结束即销毁", "source": "docs/详细设计方案.md §8" },
+    { "id": "D5", "rule": "阶段 0 沙箱 = LocalTempSandbox（fs.mkdtempSync + child_process.spawn），不依赖容器与真实 Git 分支；dockerode/simple-git 为 optionalDependencies；Docker 自阶段 1 接入", "source": "docs/详细设计方案.md §6/§9" },
+    { "id": "C4", "rule": "Phase 0 采用 Coordinator → Coder → Tester 三角色闭环（采纳《开发计划安排》，已同步蓝图/详细设计）", "source": "docs/开发计划安排.md §3" },
+    { "id": "FE", "rule": "实时通信 = SSE + HTTP POST（取代 WebSocket，Vercel 兼容）", "source": "docs/技术选型文档.md §9" },
+    { "id": "WO", "rule": "写所有权不变量：结构化切片只读投影，agent 只写自己私有区（消除写-写冲突）；KB 只读即其具体化", "source": "docs/框架调研与借鉴决策.md 模式⑥" }
+  ],
+  "baseline": {
+    "description": "设计文档基线（全部完成并已推送 GitHub @ 6df7eee），是所有任务的唯一规格来源",
+    "status": "done",
+    "last_updated": "2026-08-24T00:00:00.000Z",
+    "documents": [
+      { "path": "README.md", "role": "项目门面与技术栈总览" },
+      { "path": "docs/项目蓝图.md", "role": "唯一主文档：定位/架构/21 节决策定稿" },
+      { "path": "docs/详细设计方案.md", "role": "落码规格：State schema/角色/编排/抢占/通信/执行器/投影/多租户" },
+      { "path": "docs/系统架构设计文档.md", "role": "L1-L4 分层/Monorepo 映射/关键路径/韧性/部署视图" },
+      { "path": "docs/技术选型文档.md", "role": "选型定稿与版本锁定（TS5.9+/Node20/pnpm9/Harness/MCP v1/Vitest/Biome2.x）" },
+      { "path": "docs/开发计划安排.md", "role": "Phase 0-10 任务分解与时间估算（本文件的任务来源）" },
+      { "path": "docs/框架调研与借鉴决策.md", "role": "AutoGen/AgentScope 源码级调研快照与 8 个借鉴模式" }
+    ]
+  },
+  "milestones": [
+    { "id": "M0", "deliverable": "Phase 0 完成：单 Agent LRU 缓存闭环", "target": "Week 1", "status": "pending" },
+    { "id": "M1", "deliverable": "Phase 1 完成：MCP 工具 + Docker 沙箱", "target": "Week 2", "status": "pending" },
+    { "id": "M2", "deliverable": "Phase 2 完成：6 角色完整回环", "target": "Week 3.5", "status": "pending" },
+    { "id": "M3", "deliverable": "Phase 3 完成：上下文工程（决策台账+交接包）", "target": "Week 4.5", "status": "pending" },
+    { "id": "M4", "deliverable": "Phase 4 完成：自适应编排（Tier 0/1/2）", "target": "Week 5.5", "status": "pending" },
+    { "id": "M5", "deliverable": "Phase 5 完成：群聊界面 MVP + 秋招 Demo 录屏", "target": "Week 7", "status": "pending" },
+    { "id": "M6", "deliverable": "Phase 6 完成：多形态通信（main + sub 群）", "target": "Week 8", "status": "pending" },
+    { "id": "M7", "deliverable": "Phase 7 完成：角色热插拔", "target": "Week 9", "status": "pending" },
+    { "id": "M8", "deliverable": "Phase 8 完成：人工卡点 + 冲突裁决（humanGate 终止并分叉）", "target": "Week 10", "status": "pending" },
+    { "id": "M9", "deliverable": "Phase 9 完成：真并行升级", "target": "Week 11.5", "status": "pending" },
+    { "id": "M10", "deliverable": "Phase 10 完成：厚 Agent 接入 + 产品化打磨 + 部署", "target": "Week 13", "status": "pending" }
+  ],
+  "phases": [
+    {
+      "id": 0,
+      "name": "骨架 + 单 Agent 闭环（Coordinator-Coder-Tester 三角色，1 周）",
+      "status": "not_started",
+      "integration_test": "0.7",
+      "exit_criteria": "LRU 缓存任务端到端跑通，证明 State 传递 + Harness 接入 + 投影覆写三件事成立",
+      "tasks": [
+        {
+          "id": "0.1",
+          "title": "工程初始化：pnpm monorepo + TypeScript/Biome/Vitest/catalog",
+          "story": null,
+          "status": "ready",
+          "documents_required": ["docs/技术选型文档.md", "docs/开发计划安排.md", "docs/系统架构设计文档.md"],
+          "dependencies": [],
+          "test_file": null,
+          "notes": "创建 pnpm-workspace.yaml（packages/* + apps/*）、tsconfig.base.json（strict:true、moduleResolution:\"bundler\"、esModuleInterop）、biome.json（Biome 2.x，Lint+Format+Import 排序）、vitest.config.ts、pnpm catalog（统一 TS/Harness 版本）。目录严格对齐《系统架构设计文档》§3 分层：packages/core/{domain,orchestration,preemption} + packages/runtime/{executor,sandbox} + packages/comm/{bus,channels} + packages/tools + packages/roles/definitions + packages/shared + apps/web。"
+        },
+        {
+          "id": "0.2",
+          "title": "State 领域模型 + Reducer 合并函数 + Roster 三角色",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §1", "docs/系统架构设计文档.md §5"],
+          "dependencies": ["0.1"],
+          "test_file": null,
+          "notes": "core/domain/state.ts：仅启 Phase 0 必需字段（taskId/goal/phase/subtasks/pendingPatch/testResults/messages/nextRole/iterationCount）。core/domain/reducer.ts：applyMutations() 支持 append/mergeById/set 三种 op，必须可交换、幂等（容忍并行乱序写入）。core/domain/roster.ts：COORDINATOR/CODER/TESTER 三条静态 RoleSpec（决策 C4 三角色闭环）。"
+        },
+        {
+          "id": "0.3",
+          "title": "编排主循环 orchestrator + Coordinator 固定路由",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §3/§9"],
+          "dependencies": ["0.2"],
+          "test_file": null,
+          "notes": "core/orchestration/orchestrator.ts：entry→coordinator→worker(CODER)→coordinator→worker(TESTER)→coordinator→finalize；无 integrate/humanGate（后补）。coordinator.ts：固定返回 CODER→TESTER 序列（Phase 4 再升级为条件路由）。WorkerRuntime 单 worker 顺序执行（runOne 直接 await），paused 恒 false（不抢占）。"
+        },
+        {
+          "id": "0.4",
+          "title": "LocalTempSandbox：SandboxManager 接口 + 本地临时目录 Mock",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §6", "docs/技术选型文档.md §7.1"],
+          "dependencies": ["0.1"],
+          "test_file": null,
+          "notes": "runtime/sandbox/sandbox-manager.ts：接口 = createWorktree/read/write/run/integrate/teardown（[2026-08-24 选型同步] 以技术选型 §7.1 为准；createTaskSandbox(container) 是 Phase 1+ Docker 专属扩展，阶段 0 不保留）。runtime/sandbox/local-temp-sandbox.ts：fs.mkdtempSync 建独立沙箱目录 + child_process.spawn 执行命令，文件操作限定目录内；run 默认超时 30s。dockerode/simple-git 在 Phase 0 package.json 中为 optionalDependencies（不强制安装，决策 D5）。"
+        },
+        {
+          "id": "0.5",
+          "title": "HarnessExecutor 薄执行器 + agent/pre-step 投影覆写",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §0/§6/§7", "docs/技术选型文档.md §4", "docs/框架调研与借鉴决策.md 模式①⑦"],
+          "dependencies": ["0.1", "0.2"],
+          "test_file": null,
+          "notes": "runtime/executor/base.ts：Executor 接口 = step/saveSafePoint/loadSafePoint/injectInbox 四方法（loadSafePoint 不可省，决策 D4 的 Fork 恢复依赖它）。runtime/executor/harness-executor.ts：复用 ctx.subagents.start（inheritsParentContext=false、toolFilter/persona 映射 CODER/TESTER RoleSpec、outputSchema→mutations、depthLimit）；自行驱动 runStep（非 one-shot）。agent/pre-step 钩子中【直接覆写】messages 数组为 project(state,role) 返回值（决策 D1；deriveMessages 仅事件流记录；compaction 压缩伪历史属预期行为）。agent/request 固定模型路由。先不接 turn-stopping 抢占。风险预案：pre-step 覆写与 compaction 定序冲突时约定『先 compaction 后 injectProjection』。"
+        },
+        {
+          "id": "0.6",
+          "title": "验证任务：带 TTL 的 LRU 缓存最小闭环",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §3", "docs/详细设计方案.md §9"],
+          "dependencies": ["0.3", "0.4", "0.5"],
+          "test_file": "packages/core/__tests__/e2e/lru-cache.test.ts",
+          "notes": "任务描述：「实现一个带 TTL 的 LRU 缓存类，包含 get/set/delete 方法，并编写单元测试」。预期流程：Coordinator 创建任务 → CODER 写代码 → TESTER 跑测试 → 失败回 CODER → 通过则 finalize。本地临时目录权限问题用 os.tmpdir() 保证跨平台。"
+        },
+        {
+          "id": "0.7",
+          "title": "Phase 0 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §9", "docs/开发计划安排.md §3"],
+          "dependencies": ["0.6"],
+          "test_file": null,
+          "notes": "端到端回归：State 合并流转 / Harness loop 接入 / LocalTempSandbox 执行 / pre-step 投影覆写四条链路各有断言。出口通过 → 进入 Phase 1（MCP 工具 + Docker）。"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "沙箱与工具（MCP 工具链 + Docker，1 周）",
+      "status": "not_started",
+      "integration_test": "1.6",
+      "exit_criteria": "Coder 能真正写代码进沙箱并执行；MCP 五类 server 可用；LocalTemp/Docker 可配置切换",
+      "tasks": [
+        {
+          "id": "1.1",
+          "title": "MCP SDK v1 接入 + fs-server（read/write/list）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/技术选型文档.md §6", "docs/详细设计方案.md §6"],
+          "dependencies": ["0.7"],
+          "test_file": null,
+          "notes": "@modelcontextprotocol/sdk 锁定 v1（1.30.0）；v2 稳定后再评估迁移。fs-server 路径 packages/tools/fs/，所有写操作限定 worktree 内。"
+        },
+        {
+          "id": "1.2",
+          "title": "test-server（运行测试、返回结构化结果）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/技术选型文档.md §6", "docs/详细设计方案.md §6"],
+          "dependencies": ["1.1"],
+          "test_file": null,
+          "notes": "run(cmd) → {passed,total,failed,failures[{test,message,file,line}],coverage}，对齐 State.testResults 结构。"
+        },
+        {
+          "id": "1.3",
+          "title": "git-server（createWorktree/diff/merge 基础操作）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/技术选型文档.md §8"],
+          "dependencies": ["1.1"],
+          "test_file": null,
+          "notes": "simple-git 8.x；Phase 1 仅实现基础操作；merge 冲突检测留给 Phase 9 集成检查点完善。"
+        },
+        {
+          "id": "1.4",
+          "title": "DockerSandbox（dockerode）接入，替换 LocalTempSandbox",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/技术选型文档.md §7.2", "docs/详细设计方案.md §6"],
+          "dependencies": ["0.4"],
+          "test_file": null,
+          "notes": "保留 SandboxManager 接口不变，新增 DockerSandbox 实现（一任务一容器、限网络与资源）；Phase 1 支持通过配置切换 LocalTemp/Docker（决策 D5 的阶段推进）。"
+        },
+        {
+          "id": "1.5",
+          "title": "工具-角色权限矩阵落地（RoleSpec.tools 白名单）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §2"],
+          "dependencies": ["1.1"],
+          "test_file": null,
+          "notes": "装载角色时把 RoleSpec.tools 注册到该 Harness loop 实例的 ctx.tools scheduler（含超时/审批/限流）；经 subagent toolFilter 作用域化。"
+        },
+        {
+          "id": "1.6",
+          "title": "Phase 1 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §4"],
+          "dependencies": ["1.2", "1.3", "1.4", "1.5"],
+          "test_file": null,
+          "notes": "Coder 经 MCP 工具真实写码进沙箱并执行通过；LocalTemp/Docker 双模式切换验证。"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "完整角色与回环（6 角色 + coding-testing-review 回环，1.5 周）",
+      "status": "not_started",
+      "integration_test": "2.5",
+      "exit_criteria": "PM/ARCHITECT/REVIEWER 补齐，完整回环 + 迭代上限可控",
+      "tasks": [
+        {
+          "id": "2.1",
+          "title": "PM/ARCHITECT/REVIEWER RoleSpec 定义 + roster 加载",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §2", "docs/项目蓝图.md §5"],
+          "dependencies": ["0.7"],
+          "test_file": null,
+          "notes": "roles/definitions/ 下 YAML/TS 定义（systemPrompt/tools/projection 切片/routeWhen）；roster 注册表加载逻辑。PM 条件触发（需求含糊才走）。TESTER 已在 Phase 0 存在。"
+        },
+        {
+          "id": "2.2",
+          "title": "Coordinator 条件路由升级",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §5", "docs/详细设计方案.md §3"],
+          "dependencies": ["2.1"],
+          "test_file": null,
+          "notes": "从固定序列升级为条件路由：goal 含糊→PM；需求已定→Architect；设计完成→Coder；测试失败→Coder（回环）；测试通过→Reviewer；评审通过→finalize。"
+        },
+        {
+          "id": "2.3",
+          "title": "回环控制：iterationCount 硬上限",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/项目蓝图.md §7"],
+          "dependencies": ["2.2"],
+          "test_file": null,
+          "notes": "默认 8 轮；超限自动置 humanGate 升级路径（humanGate 本体在 Phase 8 实现，此处先留显式升级钩子，不静默死循环）。参考 AutoGen max_turns 教训：默认必须开启而非 None。"
+        },
+        {
+          "id": "2.4",
+          "title": "角色投影细化（按详细设计 §7 切片表）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §7"],
+          "dependencies": ["2.1"],
+          "test_file": null,
+          "notes": "CODER=分配 subtask+architecture+conventions+当前失败测试+相关 fileRefs；TESTER=acceptance+当前分支/patch+接口约定；REVIEWER=pendingDiff+conventions+architecture；PM=goal+requirements+leader 决策；ARCHITECT=requirements+repo 结构+conventions。明确不含列同样重要。"
+        },
+        {
+          "id": "2.5",
+          "title": "Phase 2 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §5"],
+          "dependencies": ["2.2", "2.3", "2.4"],
+          "test_file": null,
+          "notes": "六角色完整回环端到端：需求→设计→编码→测试→评审→finalize；回环与超限升级路径验证。"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "上下文工程（决策台账 + 交接包 + 投影铁律，1 周）",
+      "status": "not_started",
+      "integration_test": "3.5",
+      "exit_criteria": "上下文不随对话变长而崩：台账/交接/投影/压缩四机制就位",
+      "tasks": [
+        {
+          "id": "3.1",
+          "title": "decisionLedger 决策台账（含权威级别）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §1/§8", "docs/项目蓝图.md §14"],
+          "dependencies": ["2.5"],
+          "test_file": null,
+          "notes": "core/domain/ledger.ts。Decision{id,topic,decision,rationale,authority('leader'>'agent'),by,supersedes,ts}；addDecision() 追加并检查与既有决策冲突（冲突分类逻辑 Phase 8 完善，此处先落数据结构与追加语义）。"
+        },
+        {
+          "id": "3.2",
+          "title": "handoffPackets 结构化交接包",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §1", "docs/框架调研与借鉴决策.md 模式④"],
+          "dependencies": ["3.1"],
+          "test_file": null,
+          "notes": "core/domain/handoff.ts。HandoffPacket{fromRole,toRole,done,keyDecisions,openIssues,fileRefs}；角色切换时由 Coordinator 触发生成。借鉴 AutoGen Handoff-as-tool 协议（模式④）：载荷写入共享状态切片供投影消费，不 splice 进对话流。"
+        },
+        {
+          "id": "3.3",
+          "title": "投影完善：三条铁律 + project() 精确切片",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §7"],
+          "dependencies": ["3.1"],
+          "test_file": null,
+          "notes": "三铁律：永不投原始群聊 log（只投结构化切片+所属 channel localContext）；代码传引用不传全文（fileRefs 路径+行号）；理由随决策走（rationale 防下游推翻上游）。"
+        },
+        {
+          "id": "3.4",
+          "title": "跨 Agent 投影切片摘要压缩（自研）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §7"],
+          "dependencies": ["3.3"],
+          "test_file": null,
+          "notes": "切片超阈值时用摘要替换旧条目并保留 msgId/fileRef 检索入口。分工边界：单 agent 历史压缩归 Harness ctx.compaction，跨 agent 切片压缩归自研——勿混。"
+        },
+        {
+          "id": "3.5",
+          "title": "Phase 3 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §6"],
+          "dependencies": ["3.2", "3.4"],
+          "test_file": null,
+          "notes": "长对话场景回归：上下文规模受控、决策理由可达、交接无损。"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "自适应编排（复杂度路由 + 反馈升级 + 进度台账，1 周）",
+      "status": "not_started",
+      "integration_test": "4.6",
+      "exit_criteria": "简单任务几步搞定、复杂任务拉齐全队；参与规模随任务伸缩",
+      "tasks": [
+        {
+          "id": "4.1",
+          "title": "复杂度评估 complexity.tier（Tier 0/1/2）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §3", "docs/项目蓝图.md §9"],
+          "dependencies": ["3.5"],
+          "test_file": null,
+          "notes": "core/orchestration/complexity.ts。输入 goal/文件数估算/依赖数；输出 {tier:0|1|2, signals}。Tier 0=单文件/单函数；Tier 1=小型多文件需简单设计；Tier 2=复杂多模块可并行。"
+        },
+        {
+          "id": "4.2",
+          "title": "分层拓扑路由",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §3"],
+          "dependencies": ["4.1"],
+          "test_file": null,
+          "notes": "Tier 0：直接 CODER↔TESTER 小环跳过 PM/ARCH；Tier 1：PM(条件)→ARCH→CODER↔TESTER；Tier 2：全队+可并行（并行本体在 Phase 9，此处先路由到位）。"
+        },
+        {
+          "id": "4.3",
+          "title": "反馈式升级（escalation）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §3"],
+          "dependencies": ["4.2", "3.1"],
+          "test_file": null,
+          "notes": "每轮回 Coordinator 检查：测试连续失败 N 轮且未加 REVIEWER→加 REVIEWER；REVIEWER 指出设计问题→拉 ARCHITECT（tier 升级）；iterationCount≥8→humanGate。"
+        },
+        {
+          "id": "4.4",
+          "title": "Coordinator 进度台账（MagenticOne Ledger 双循环改造版）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/框架调研与借鉴决策.md §1.3 模式③"],
+          "dependencies": ["4.2"],
+          "test_file": null,
+          "notes": "借鉴 AutoGen MagenticOne：外层 facts/plan 台账 + 内层 progress ledger（严格 JSON：is_request_satisfied/is_in_loop/is_progress_being_made/next_speaker/instruction_or_question；max_stalls=3 触发重规划）。【关键改造】裁决由人类 leader 经 humanGate 持有（humanGate=is_request_satisfied），不由 LLM 拍板；台账按角色投影切片分发，不当纯文本全员广播。"
+        },
+        {
+          "id": "4.5",
+          "title": "端到端验证（简单 vs 复杂任务）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §7"],
+          "dependencies": ["4.3", "4.4"],
+          "test_file": null,
+          "notes": "用例 1「实现一个函数」预期 Tier 0 跳过 PM/ARCH；用例 2「实现一个 REST API 服务」预期 Tier 2 全队出动。"
+        },
+        {
+          "id": "4.6",
+          "title": "Phase 4 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §7"],
+          "dependencies": ["4.5"],
+          "test_file": null,
+          "notes": "路由正确性 + 升级触发 + 台账评估节奏回归。"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "群聊界面 MVP（Next.js + SSE + Leader 指令，1.5 周）",
+      "status": "not_started",
+      "integration_test": "5.6",
+      "exit_criteria": "可演示的群聊协作雏形：消息实时流 + Leader @指令生效；秋招 Demo 录屏产出",
+      "tasks": [
+        {
+          "id": "5.1",
+          "title": "Next.js 15 + React 19 初始化 + SSE 服务端",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/技术选型文档.md §9", "docs/系统架构设计文档.md §9"],
+          "dependencies": ["4.6"],
+          "test_file": null,
+          "notes": "apps/web/。实时通信 = SSE + HTTP POST 混合模式（决策 FE，取代 WebSocket）：GET /api/stream?channelId={id} 推送；POST /api/messages 发言；POST /api/commands Leader 指令。App Router + Server Components。"
+        },
+        {
+          "id": "5.2",
+          "title": "群聊 UI 组件（消息列表/输入框/@提及/侧栏）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/项目蓝图.md §10", "docs/开发计划安排.md §8"],
+          "dependencies": ["5.1"],
+          "test_file": null,
+          "notes": "消息以 display 字段呈现（与 payload 分离——展示层/context 层解耦的产品面）；角色头像 + 名称 + 内容按时间排序；侧栏展示当前任务状态与活跃 Worker 列表。"
+        },
+        {
+          "id": "5.3",
+          "title": "消息总线接入前端",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §5"],
+          "dependencies": ["5.2"],
+          "test_file": null,
+          "notes": "comm/bus 发布的消息推送到对应 channel 的 UI 流；leader 恒在 participants 故必收到。"
+        },
+        {
+          "id": "5.4",
+          "title": "Leader 指令意图映射（intent.ts）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §5", "docs/项目蓝图.md §10"],
+          "dependencies": ["5.3"],
+          "test_file": "apps/web/lib/intent.ts 对应测试（规划）",
+          "notes": "@X 指派→nextRole=X；插入新需求/决策→更新 requirements/decisionLedger(authority=leader)+触发抢占；否决/批准→驱动 humanGate；调整优先级→影响 coordinator 路由权重。"
+        },
+        {
+          "id": "5.5",
+          "title": "秋招 Demo 录屏（里程碑检查点）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §17"],
+          "dependencies": ["5.4"],
+          "test_file": null,
+          "notes": "《开发计划安排》§17 硬性检查点：Phase 5 完成后必须产出可用于秋招的 Demo 录屏。场景：启动→输入 LRU 缓存任务→观察 Coordinator Tier 0 直派→Coder/Tester 群内协作→完成→展示群聊界面。若时间紧张优先保 Phase 0-5，Phase 6-10 可作为规划介绍。"
+        },
+        {
+          "id": "5.6",
+          "title": "Phase 5 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §8"],
+          "dependencies": ["5.4"],
+          "test_file": null,
+          "notes": "SSE 连接稳定性 + 指令→编排动作映射正确性回归。"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "多形态通信（Channel 原语 + sub 群 + 冒泡，1 周）",
+      "status": "not_started",
+      "integration_test": "6.4",
+      "exit_criteria": "像真实团队一样通信：main 群 + 动态 sub 群，结论必回流",
+      "tasks": [
+        {
+          "id": "6.1",
+          "title": "Channel 数据结构 + 消息总线 channelId 路由升级",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §5", "docs/项目蓝图.md §11"],
+          "dependencies": ["5.6"],
+          "test_file": null,
+          "notes": "Channel{channelId, kind:'main'|'sub', participants, localContext, closed, bubbledSummary}。不变量：'leader' ∈ participants 恒成立（任何对话 leader 透明可见可介入）。publish(msg)：append 进 State.messages → 按 participants 投递。"
+        },
+        {
+          "id": "6.2",
+          "title": "sub 群生命周期（发起/通信/关闭）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §5"],
+          "dependencies": ["6.1"],
+          "test_file": null,
+          "notes": "agent 自发为主（新群 participants 自动并入 leader）+ Leader 可发起；threadId 会话链支撑问答/升级/异议挂起-作答-resume。Coordinator 轻量治理：去重、防小群无序膨胀。"
+        },
+        {
+          "id": "6.3",
+          "title": "localContext 隔离 + 结论冒泡回 main 群",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §5"],
+          "dependencies": ["6.2"],
+          "test_file": null,
+          "notes": "closed=true 时生成 bubbledSummary（结论摘要+关键决策及理由）冒泡回 main 群并写台账，防止信息孤岛。可见范围只由 Channel.participants 决定；是否纳入上下文仍由投影裁定。"
+        },
+        {
+          "id": "6.4",
+          "title": "Phase 6 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §9"],
+          "dependencies": ["6.3"],
+          "test_file": null,
+          "notes": "多群并发消息流 + 隔离性（非成员不可见）+ 冒泡完整性回归。"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "角色热插拔（招募/离职/交接，1 周）",
+      "status": "not_started",
+      "integration_test": "7.5",
+      "exit_criteria": "可增删成员的活组织：离职强制交接、新人入职读交接接手",
+      "tasks": [
+        {
+          "id": "7.1",
+          "title": "roster 动态管理（addRole/removeRole/enable/disable）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §2", "docs/项目蓝图.md §12"],
+          "dependencies": ["6.4"],
+          "test_file": null,
+          "notes": "角色是数据不是代码：增删改注册表即可，无需改编排。模板库（roles/definitions/）供招募选择。"
+        },
+        {
+          "id": "7.2",
+          "title": "离职流程（强制交接文档）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/项目蓝图.md §12", "docs/详细设计方案.md §4"],
+          "dependencies": ["7.1"],
+          "test_file": null,
+          "notes": "Leader 指令→Preemptor.requestPause→目标 Worker 到安全点暂停→生成 HandoffPacket（现状/关键决策及理由/未完成事项/文件产物入口/建议）→写回 State→roster 停用。责任转移给指定接手人或标记空缺升级 humanGate，绝不静默丢责任。"
+        },
+        {
+          "id": "7.3",
+          "title": "入职流程（读交接接手）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/项目蓝图.md §12"],
+          "dependencies": ["7.1"],
+          "test_file": null,
+          "notes": "从模板库选角色或自定义 spec→注册进 roster+群里发入职公告→初始上下文 = 相关交接文档 + 当前 State 角色投影（只读该读的）。"
+        },
+        {
+          "id": "7.4",
+          "title": "护栏验证（Coordinator 不可删 / 先暂停再交接）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/项目蓝图.md §12"],
+          "dependencies": ["7.2", "7.3"],
+          "test_file": null,
+          "notes": "Coordinator 作为调度内核不可移除；任务进行中删角色必须优雅：配合式抢占到安全点→交接→转移→resume，不允许正干活时硬拔导致状态半截。"
+        },
+        {
+          "id": "7.5",
+          "title": "Phase 7 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §10"],
+          "dependencies": ["7.4"],
+          "test_file": null,
+          "notes": "招/辞/接手全流程回归 + 护栏负向用例（尝试删 Coordinator 应被拒）。"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "人工卡点与冲突裁决（humanGate 终止并分叉 + 异议双轨 + trace，1 周）",
+      "status": "not_started",
+      "integration_test": "8.5",
+      "exit_criteria": "可控、可裁决、可观测：humanGate 落地决策 D4，异议双轨运转",
+      "tasks": [
+        {
+          "id": "8.1",
+          "title": "humanGate：终止并分叉（Terminate & Fork）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §8", "docs/框架调研与借鉴决策.md 模式①"],
+          "dependencies": ["7.5"],
+          "test_file": null,
+          "notes": "决策 D4 核心落地：置 humanGate 字段→销毁（Terminate）该项目 Harness 子进程释放资源（并发名额自动交还全局池）→Leader 裁决后基于存储的 safePoint 事件游标重新 Fork 新进程恢复（loadSafePoint + applyAndResume）。同时落地 TerminationCondition 语义（增量式+可组合+StopMessage，借鉴调研模式①）。"
+        },
+        {
+          "id": "8.2",
+          "title": "异议双轨（classifyObjection：blocking/advisory）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §5", "docs/项目蓝图.md §14"],
+          "dependencies": ["8.1"],
+          "test_file": null,
+          "notes": "core/domain/objection.ts。判定：与 decisionLedger 已定决策/需求矛盾→blocking（暂停相关工作+置 humanGate 等 leader）；否则 advisory（记录进 objections+群里可见，工作照常）。拿不准从宽按 advisory。"
+        },
+        {
+          "id": "8.3",
+          "title": "决策权威级别校验",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/项目蓝图.md §14"],
+          "dependencies": ["8.2"],
+          "test_file": null,
+          "notes": "leader 决策最高权威可覆盖此前任何约定；agent 只能推翻同级或更低；碰 leader 级决策只能走异议由 leader 自己改。裁决结果以最高权威写回台账→全员按新台账 resume。"
+        },
+        {
+          "id": "8.4",
+          "title": "结构化 trace 面板（事件流可视化）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/系统架构设计文档.md", "docs/项目蓝图.md §16"],
+          "dependencies": ["8.1"],
+          "test_file": null,
+          "notes": "复用 Harness 事件溯源日志派生 trace：时间线、各 Agent Step 记录、工具调用。前端展示于群聊侧栏扩展区。"
+        },
+        {
+          "id": "8.5",
+          "title": "Phase 8 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §11"],
+          "dependencies": ["8.2", "8.3", "8.4"],
+          "test_file": null,
+          "notes": "humanGate 终止→资源释放→裁决→Fork 恢复全链路；blocking/advisory 分类准确性；权威级别覆盖规则回归。"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "真并行升级（异步 worker 池 + 抢占 + worktree 集成，1.5 周）",
+      "status": "not_started",
+      "integration_test": "9.5",
+      "exit_criteria": "真正并行的团队协作：多人同时干活且状态一致",
+      "tasks": [
+        {
+          "id": "9.1",
+          "title": "WorkerRuntime.runParallel 有界并行池",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §4"],
+          "dependencies": ["8.5"],
+          "test_file": null,
+          "notes": "core/orchestration/worker-runtime.ts。Promise.all 并发上限默认 3（maxParallel）；batch.slice(0, maxParallel)；结果经合并函数归并各 worker mutations。各 worker 独立 Harness 子进程 + 独立隔离目录/worktree。"
+        },
+        {
+          "id": "9.2",
+          "title": "配合式抢占完整实现",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §4", "docs/框架调研与借鉴决策.md 模式⑦"],
+          "dependencies": ["9.1"],
+          "test_file": null,
+          "notes": "requestPause 广播暂停标志→各薄 worker 在 agent/turn-stopping 通过 steering 反对关轮、跑到 step 边界（安全点=step/end）停下并存事件游标→协调层改写 State→inbox.inject 新投影→resume。绝不硬杀 LLM 造成半截状态；代价秒级延迟换一致性。"
+        },
+        {
+          "id": "9.3",
+          "title": "worktree 隔离 + 集成检查点",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §4/§6"],
+          "dependencies": ["9.1"],
+          "test_file": null,
+          "notes": "createWorktree(taskId, role) 分支隔离；coordinator 派并行批前按 subtask.dependsOn 拓扑排序只并行无未满足依赖者；integrate 节点按 pendingBranches 顺序合并（simple-git merge），冲突→integration.conflicts→默认升级 leader。"
+        },
+        {
+          "id": "9.4",
+          "title": "端到端并行任务验证",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §12"],
+          "dependencies": ["9.2", "9.3"],
+          "test_file": null,
+          "notes": "多 Coder 并行子任务 + Tester 并行准备 + 集成合并全流程；前端呈现「多人同时干活」。"
+        },
+        {
+          "id": "9.5",
+          "title": "Phase 9 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/开发计划安排.md §12"],
+          "dependencies": ["9.4"],
+          "test_file": null,
+          "notes": "并行一致性（reducer 交换幂等实测）+ 抢占安全点无撕裂 + 合并冲突升级路径回归。"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "产品化打磨（厚 Agent 接入 + 部署 + 验收，1.5 周）",
+      "status": "not_started",
+      "integration_test": "10.6",
+      "exit_criteria": "可直接演示的完整产品：厚执行器可选接入、错误恢复健壮、一键部署",
+      "tasks": [
+        {
+          "id": "10.1",
+          "title": "ExternalAgentExecutor 厚执行器接入",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/详细设计方案.md §6", "docs/项目蓝图.md §16/§17"],
+          "dependencies": ["9.5"],
+          "test_file": null,
+          "notes": "决策 D2 解锁点：厚 Agent 接入延后至此阶段，此前不进行薄/厚动态切换。runtime/executor/external-executor.ts：step() = 喂自包含简报（目标+约束+文件入口+验收）→外部 agent（opencode/OpenHands 等）自己跑到边界→拿回 diff+摘要；整段一个大 Step，reachedSafeBoundary 仅结束时为真（只能任务边界抢占）。仅用于边界清晰的重编码子任务。"
+        },
+        {
+          "id": "10.2",
+          "title": "错误恢复增强 + 日志完善",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/系统架构设计文档.md §6"],
+          "dependencies": ["9.5"],
+          "test_file": null,
+          "notes": "对照韧性表逐项落地：LLM 超时/限流→agent/request-error 重试+指数退避；沙箱死循环→强制 timeout 30s 杀进程返回失败结果；worker 崩溃→捕获 unhandledRejection 置 failed→下一轮自动重试或升级人。"
+        },
+        {
+          "id": "10.3",
+          "title": "模型路由调优（成本 vs 效果）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/技术选型文档.md", "docs/详细设计方案.md §3"],
+          "dependencies": ["9.5"],
+          "test_file": null,
+          "notes": "经 agent/request 扩展点按 RoleSpec.model 路由：PM/ARCH/REVIEWER→强推理模型；CODER/TESTER→代码专精模型。严格限制并行度 3 做成本优化。"
+        },
+        {
+          "id": "10.4",
+          "title": "部署配置（Docker Compose / Vercel）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/系统架构设计文档.md §9", "docs/技术选型文档.md §9"],
+          "dependencies": ["10.2"],
+          "test_file": null,
+          "notes": "方案 A：Docker Compose（后端+前端+沙箱容器）。方案 B：Vercel（前端，SSE 兼容）+ 自托管（后端）。生产建议沙箱适配器切独立容器经 REST/MCP 与主进程通信。"
+        },
+        {
+          "id": "10.5",
+          "title": "README 完善 + 产品演示录屏（终版）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/项目蓝图.md §18"],
+          "dependencies": ["10.4"],
+          "test_file": null,
+          "notes": "README 更新实际 Quick Start（替换占位仓库地址）；录制终版演示录屏用于秋招作品集；面试讲点备答清单核对（《项目蓝图》§18 高频追问）。"
+        },
+        {
+          "id": "10.6",
+          "title": "Phase 10 出口验收（对照蓝图成功标准）",
+          "story": null,
+          "status": "pending",
+          "documents_required": ["docs/项目蓝图.md §1"],
+          "dependencies": ["10.1", "10.3", "10.5"],
+          "test_file": null,
+          "notes": "对照五条成功标准逐项验收：①能跑通闭环（中小规模编码任务自主完成全流程）②产品形态完整生动（群聊实时呈现+可观测+一键部署）③协作可控（职责清晰/可断点/可中途插决策）④工程质量稳（上下文不崩/并行不乱/行为可预期）⑤可扩展（增删角色/换模型工具改动局部化）。"
+        }
+      ]
+    }
+  ]
+}
