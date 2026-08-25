@@ -52,6 +52,6 @@ agent: build
 ### 第七步：更新任务状态与收尾
 17. 更新 integration_test 任务状态 → `in_progress`，notes 记录测试文件清单与数量。
 18. 后续操作：
-    - **全部通过且 exit_criteria 全满足** → `/commit-agora` 提交；提交后整 phase 置 done、`current_phase` 递增
+    - **全部通过且 exit_criteria 全满足** → `/commit-agora` 创建 PR；合并后经 `/pr-merge-agora` 收尾（整 phase 置 done、`current_phase` 递增）
     - **部分失败** → 分析根因修复后重跑
     - **覆盖不足** → 列出缺失链路继续补全

@@ -55,3 +55,6 @@ Desktop.ini
 # ==========================
 .omo/
 .codegraph/
+.opencode/oh-my-openagent.json
+# 个人模型路由（绑定个人 provider 订阅，不上传）
+# 注：gitignore 不支持行尾注释，规则行必须单独一行

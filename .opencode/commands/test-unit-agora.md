@@ -37,4 +37,4 @@ agent: build
 
 ### 第四步：后续操作
 1. 测试通过后输出 ✅ 标记与统计。
-2. 提示：可执行 `/commit-agora` 提交推送（推送成功后标 done）；如为出口集成测试做准备，提示 `/test-phase-agora`。
+2. 提示：可执行 `/commit-agora` 创建 PR（合并后由 `/pr-merge-agora` 标 done）；如为出口集成测试做准备，提示 `/test-phase-agora`。

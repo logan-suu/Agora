@@ -47,4 +47,4 @@ agent: build
 10. 逐条对照该阶段 `exit_criteria` 与任务约束自检。
 11. 执行链路能力真实跑通（G5）：沙箱/Harness/工具能力不以 mock 规避。
 12. 如涉及重大技术决策变更，更新蓝图 §21 并打 `[YYYY-MM-DD 架构决策更新]` 标记（R12）。
-13. 完成后提示用户执行 `/commit-agora` 提交推送（推送成功后由 `/commit-agora` 标 `done` 并更新 notes）。
+13. 完成后提示用户执行 `/commit-agora` 创建 PR 到 dev-1.0.0（任务保持 `in_progress`）；PR 合并后由 `/pr-merge-agora` 标记 `done` 并更新 notes。
