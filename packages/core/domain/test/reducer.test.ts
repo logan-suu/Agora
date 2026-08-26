@@ -249,4 +249,14 @@ describe('mutation builders', () => {
     expect(twice.iterationCount).toBe(2);
     expect(state.iterationCount).toBe(0);
   });
+
+  it('rejects non-non-negative-integer iterationCount values instead of corrupting the loop counter', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    for (const bad of [undefined, NaN, 1.5, -1] as unknown[]) {
+      expect(() => applyMutations(state, [setMutation('iterationCount', bad)])).toThrow(
+        'iterationCount must be a non-negative integer',
+      );
+      expect(state.iterationCount).toBe(0);
+    }
+  });
 });

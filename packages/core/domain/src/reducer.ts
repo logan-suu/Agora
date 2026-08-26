@@ -134,7 +134,10 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
     case 'nextRole':
       return { ...state, nextRole: value as string };
     case 'iterationCount':
-      return { ...state, iterationCount: value as number };
+      if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+        throw new Error('iterationCount must be a non-negative integer');
+      }
+      return { ...state, iterationCount: value };
     default:
       throw new Error(`no writer registered for set field "${field}"`);
   }
