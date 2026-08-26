@@ -5,5 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@agora/core-domain": "workspace:*",
+    "@agora/runtime-executor": "workspace:*"
   }
 }

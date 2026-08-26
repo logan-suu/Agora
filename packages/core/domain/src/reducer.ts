@@ -17,6 +17,7 @@ export const SET_FIELDS = [
   'testResults',
   'phase',
   'nextRole',
+  'iterationCount',
   'humanGate',
   'integration',
   'architecture',
@@ -30,7 +31,12 @@ export type Mutation =
 
 export const ENABLED_APPEND_FIELDS: readonly AppendField[] = ['messages'];
 export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = ['subtasks'];
-export const ENABLED_SET_FIELDS: readonly SetField[] = ['testResults', 'phase', 'nextRole'];
+export const ENABLED_SET_FIELDS: readonly SetField[] = [
+  'testResults',
+  'phase',
+  'nextRole',
+  'iterationCount',
+];
 
 export function appendMutation(field: AppendField, value: unknown): Mutation {
   return { field, op: 'append', value };
@@ -127,6 +133,11 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
       return { ...state, phase: value as Phase };
     case 'nextRole':
       return { ...state, nextRole: value as string };
+    case 'iterationCount':
+      if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+        throw new Error('iterationCount must be a non-negative integer');
+      }
+      return { ...state, iterationCount: value };
     default:
       throw new Error(`no writer registered for set field "${field}"`);
   }

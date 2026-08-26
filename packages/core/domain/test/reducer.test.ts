@@ -238,6 +238,25 @@ describe('mutation builders', () => {
   it('expose exactly the enabled field sets declared by the Phase 0 slice', () => {
     expect([...ENABLED_APPEND_FIELDS]).toEqual(['messages']);
     expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['subtasks']);
-    expect([...ENABLED_SET_FIELDS]).toEqual(['testResults', 'phase', 'nextRole']);
+    expect([...ENABLED_SET_FIELDS]).toEqual(['testResults', 'phase', 'nextRole', 'iterationCount']);
+  });
+
+  it('applies set("iterationCount") with last-write-wins semantics for the orchestration loop counter', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    const once = applyMutations(state, [setMutation('iterationCount', 1)]);
+    const twice = applyMutations(once, [setMutation('iterationCount', 2)]);
+    expect(once.iterationCount).toBe(1);
+    expect(twice.iterationCount).toBe(2);
+    expect(state.iterationCount).toBe(0);
+  });
+
+  it('rejects non-non-negative-integer iterationCount values instead of corrupting the loop counter', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    for (const bad of [undefined, NaN, 1.5, -1] as unknown[]) {
+      expect(() => applyMutations(state, [setMutation('iterationCount', bad)])).toThrow(
+        'iterationCount must be a non-negative integer',
+      );
+      expect(state.iterationCount).toBe(0);
+    }
   });
 });
