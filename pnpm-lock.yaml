@@ -47,13 +47,24 @@ importers:
 
   packages/core/domain: {}
 
-  packages/core/orchestration: {}
+  packages/core/orchestration:
+    dependencies:
+      '@agora/core-domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@agora/runtime-executor':
+        specifier: workspace:*
+        version: link:../../runtime/executor
 
   packages/core/preemption: {}
 
   packages/roles/definitions: {}
 
-  packages/runtime/executor: {}
+  packages/runtime/executor:
+    dependencies:
+      '@agora/core-domain':
+        specifier: workspace:*
+        version: link:../../core/domain
 
   packages/runtime/sandbox:
     optionalDependencies:
