@@ -24,6 +24,7 @@
 | **开发计划安排** | `docs/开发计划安排.md` | Phase 0-10 任务分解 / 里程碑 M0-M10 / 风险 / 秋招 Demo 检查点（§17） |
 | **框架调研与借鉴决策** | `docs/框架调研与借鉴决策.md` | AutoGen/AgentScope 源码级结论 / 8 个借鉴模式 / 借鉴-拒绝矩阵 |
 | **任务状态** | `docs/task-status.json` | 11 phase / 60 任务 / 依赖图 / standing_decisions——每个任务开工前必读 |
+| **延期项台账** | `docs/deferred-items.json` | 全阶段延期项统一台账（DEF-NNN，格式对齐 iTestAgent）；常驻决策 DEF 的唯一数据源，阶段出口检查时逐条核对 |
 
 ### 0.2 任务类型 → 文档快速索引（Agent 必读）
 
@@ -86,7 +87,7 @@ LLM 永不在 token 流中被硬杀；底层循环复用 Harness，编排只有 
 
 ## 1. 规格来源（Single Source of Truth）
 
-本仓库的"真理"来自 `docs/` 下 7 份文档 + 本文件；实现与文档冲突时，先改文档或纠正实现，禁止放任漂移（R12）。
+本仓库的"真理"来自 `docs/` 下 8 份文档 + 本文件；实现与文档冲突时，先改文档或纠正实现，禁止放任漂移（R12）。
 
 ```
 项目蓝图            定位/架构/路线/§21 决策定稿（最高权威）
@@ -96,6 +97,7 @@ LLM 永不在 token 流中被硬杀；底层循环复用 Harness，编排只有 
 开发计划安排        Phase 0-10 分解与里程碑
 框架调研与借鉴决策  外部框架结论快照（带日期）
 task-status.json    进度与常驻决策（standing_decisions）
+deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数据源）
 ```
 
 ---
@@ -319,11 +321,11 @@ Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5
 ## 8. 质量门禁 G1-G7（并入主线前必过）
 
 ```
-G1 规格一致      实现与 7 份文档及 standing_decisions 不冲突
+G1 规格一致      实现与 8 份文档及 standing_decisions 不冲突
 G3 静态检查      pnpm typecheck + pnpm lint 通过（scripts 未建立前用 pnpm exec 等价命令）
 G4 测试通过      pnpm test 全绿，含既有回归
 G5 执行链路实测  沙箱/Harness/工具能力必须真实跑通验证，不以 mock 规避
-G6 证据留档      task-status.json notes 记录自检结论、关键发现、偏差与延期项
+G6 证据留档      task-status.json notes 记录自检结论、关键发现、偏差与延期项引用（延期项本体入 docs/deferred-items.json）
 G7 安全合规      无敏感数据落盘明文；agent 产出的代码只在沙箱内执行
 ```
 
@@ -360,7 +362,7 @@ pending -> ready -> in_progress -> done
 task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 允许顶层字段：version/project/description/last_updated/current_phase/usage/standing_decisions/baseline/milestones/phases
 允许任务字段：id/title/story/status/last_updated/documents_required/dependencies/test_file/notes
-文档冲突 → GitHub Issue（R12）；延期项 → 任务 notes 注明解除条件；决策 → 蓝图 §21 标记段
+文档冲突 → GitHub Issue（R12）；延期项 → `docs/deferred-items.json`（DEF-NNN，见常驻决策 DEF）；决策 → 蓝图 §21 标记段
 ```
 
 **级联更新（幂等）**：启动或任务完成时，遍历所有 `pending` 任务，`dependencies` 全部 `done` 则翻转为 `ready`。
@@ -503,7 +505,7 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 [ ] 对照该阶段 exit_criteria 与任务 notes 约束逐条满足
 [ ] G1-G7 全过；执行链路能力已真实跑通（G5）
 [ ] 接口签名未变；若确需变更，已按 R12 同步全部受影响文档并打标记
-[ ] 不确定/降级/延期项已在 notes 显式标注并注明解除条件
+[ ] 不确定/降级/延期项已显式标注并注明解除条件（延期项入 docs/deferred-items.json）
 [ ] 无敏感数据落盘明文
 [ ] 相关文档已同步更新，无规格漂移
 [ ] task-status.json 已更新（status/notes 含提交 hash/last_updated），级联翻转已执行

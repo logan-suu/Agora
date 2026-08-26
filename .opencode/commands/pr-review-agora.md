@@ -56,12 +56,12 @@ agent: build
 
 1. **判定是否必须延期**（满足任一才可延期）：依赖未到位的接口 / 跨 Phase 协调的变更 / 改动过大超出本 PR 合理范围。
 2. **无需延期** → 当前 PR 内立即修复（commit + push），重新跑门禁，无需留档。
-3. **必须延期** → 写入 `docs/task-status.json` 中**该任务的 notes 字段**（Agora 无独立 deferred-items.json）：
+3. **必须延期** → 统一写入 `docs/deferred-items.json`（常驻决策 DEF，唯一延期项台账，格式对齐 iTestAgent）。按序取下一个 `DEF-NNN` 编号，条目字段：
    ```
-   [DEF] 一句话摘要 —— detail: 完整问题描述与影响范围；解除条件: xxx；target_phase: N
+   id/source/pr/pr_url/comment_id/comment_url/task/severity/item/detail/target_phase/status/resolved_by/created_at/notes/resolved_at
    ```
-   同步更新 `last_updated`。输出确认："✅ N 条延期项已留档至任务 notes；M 条已在当前 PR 修复。"
-4. 后续若修复了某条 `[DEF]`，在原条目后追加 `(resolved @ commit-hash)`，**不要删除**（保留审计轨迹）。
+   `status` 取值：`open`（待处理）/ `resolved`（已解决）。同步更新该文件顶层 `last_updated`。任务 notes 不再内嵌 `[DEF]`，仅可加一行指向 `docs/deferred-items.json` 的引用。输出确认："✅ N 条延期项已留档至 docs/deferred-items.json；M 条已在当前 PR 修复。"
+4. 后续若修复了某条目：在 `deferred-items.json` 中把该条 `status` 置 `resolved`、补 `resolved_by` 与 `resolved_at`（保留审计轨迹），**不删除原条目**。
 
 ### 第六步：处理 PR 中的评论（人工 reviewer / AI 审查机器人）
 
@@ -73,7 +73,7 @@ agent: build
   ├─ 不合理（误报/噪声/代码已变更）→ 输出评估依据 → hide 或回复说明后 resolve
   └─ 合理 → 是否必须延期？
        ├─ 否 → 立刻修复 → 门禁验证 → push → 英文回复 → resolve conversation
-       └─ 是 → 回复 "Deferred — tracked in task notes (target_phase: N)" + 任务 notes 留档 + resolve
+       └─ 是 → 回复 "Deferred — tracked in docs/deferred-items.json (target_phase: N)" + 按第五步之半写入 deferred-items.json + resolve
 ```
 
 1. 获取评论：`gh pr view {编号} --json comments,reviews`
@@ -92,8 +92,8 @@ agent: build
 5. 输出评论处理报告表（来源/摘要/判断/处理方式）。
 
 ### 第七步：阶段出口延期检查（防遗忘）
-1. 若当前任务是某 phase 的 `integration_test` 任务：扫描该 phase 所有任务 notes 中的 `[DEF]` 条目，逐条检查是否已被顺手解决；已解决的追加 `(resolved)`。
-2. 启动新阶段时（`/next-task-agora`）：提醒尚存的 open `[DEF]` 条目。
+1. 若当前任务是某 phase 的 `integration_test` 任务：扫描 `docs/deferred-items.json` 中 `target_phase` 属于该阶段且 `status: open` 的条目，逐条检查是否已被顺手解决；已解决的按第五步之半标记 `resolved`。
+2. 启动新阶段时（`/next-task-agora`）：提醒 `deferred-items.json` 中尚存的 open 条目。
 
 ### 第八步：结论后续
 - **通过** → 提示人类合并 PR → 合并后执行 `/pr-merge-agora {编号}` 收尾。

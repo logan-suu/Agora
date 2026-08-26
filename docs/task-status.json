@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-26T14:05:00.000Z",
+  "last_updated": "2026-08-26T10:30:00.000Z",
   "current_phase": 0,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -45,6 +45,11 @@
       "id": "WO",
       "rule": "写所有权不变量：结构化切片只读投影，agent 只写自己私有区（消除写-写冲突）；KB 只读即其具体化",
       "source": "docs/框架调研与借鉴决策.md 模式⑥"
+    },
+    {
+      "id": "DEF",
+      "rule": "延期项统一记录于 docs/deferred-items.json（DEF-xxx 编号，含 source/pr/task/severity/detail/target_phase/status/notes/resolved_at）；任务 notes 只保留指向该文件的引用，不再内嵌 [DEF] 条目。阶段出口检查时逐条核对（/pr-review-agora 第七步）。",
+      "source": "docs/deferred-items.json"
     }
   ],
   "baseline": {
@@ -190,11 +195,11 @@
           "notes": "[2026-08-25 Code] 四文件落地 @ packages/core/domain（共 629 行，含测试）：state.ts 92 行（§1 字面量联合 Phase/RoleId/ExecutorType/MsgType + 实体接口 Subtask/Message/TestResults/RoleSpec 全字段预留 + AppState 仅启 Phase 0 八字段 taskId/goal/phase/iterationCount/subtasks/messages/pendingPatch/testResults/nextRole + createInitialAppState 工厂，可选键按 exactOptionalPropertyTypes 直接缺省）；reducer.ts 157 行（Mutation 按 §1 原文全量定稿 14 字段三 op；APPEND/MERGE_BY_ID/SET_FIELDS 字面量元组导出；ENABLED_*_FIELDS 常量表门控 Phase 0 切片={messages}/{subtasks}/{testResults,phase,nextRole}，后续解锁=表内加一项+补一个 case；applyMutations 纯函数 copy-on-write：append=身份键(msgId??id)去重+无键深相等兜底（集合并语义），mergeById=id/role 键一层 Object.assign 未命中追加副本，set=LWW 整体覆盖；未启用字段显式 throw『mutation field \"<f>\" is defined by spec §1 but not enabled in Phase 0』；穷尽 switch+assertNever 编译期强制）；roster.ts 33 行（C4 三条静态 RoleSpec：executor 全 'harness' 即决策 D2，COORDINATOR tools=[]（矩阵中 fs.read='摘要' 系投影供给非工具授权）/CODER 五工具 fs.read,fs.write,git,sandbox.applyPatch,lint/TESTER 四工具 fs.read,fs.write,sandbox.run,git 对齐详细设计 §2 白名单矩阵，projection/routeWhen 骨架键待 2.2/2.4 细化，model 不设留待 0.5 agent/request 路由）。[裁决记录·用户确认] ① Mutation 签名按 §1 原文全量定稿 + AppState 仅 8 字段 + 未启用字段显式 throw（R9 接口先行，阶段退化只改实现体）；② append 去重=身份键优先+深相等兜底，同键不同内容视为生产者违约先到先留（契约固化于测试描述文本，未写代码注释）。计划外纯增量：新增构造器 appendMutation/mergeByIdMutation/setMutation 导出（绕开 {id:string} 目标类型下对象字面量 excess-property-check 的人体工学入口，mergeByIdMutation 内归一化 id 防 patch 覆写身份；未改任何既定签名）。[Check 实测] corepack pnpm@9.15.9 环境：pnpm typecheck exit=0；pnpm lint exit=0（biome check . Checked 57 files，format --write 自动修复 6 处导入排序/换行后复检通过）；pnpm test exit=0（4 files / 27 tests passed，其中本任务 reducer 18 + roster 6 + state 2 = 26 用例，覆盖计划全部 18 项：append 交换律乱序等终态、幂等重放、生产者违约先到先留、深相等兜底、mergeById 原位更新不重复/未命中追加/非 Owner 字段不受影响、set LWW 及重放稳定、跨 op 乱序等价、深冻结入参纯函数性、空 mutations 等价新状态、三族禁用字段逐一 throw 错误信息断言、未知 op 防御、D2 executor='harness'、§2 工具白名单逐角色精确断言）。修复记录：typecheck 首轮 2 错（测试文件未用 Subtask import、builder 返回窄型上取 status）均修根因未弱化断言。[R12 文档同步·精度澄清两处] ①《系统架构设计文档》§5.1 Append-only 条目「直接 push」→「按身份键（msgId/id）去重追加，无身份键值深相等兜底（集合并语义）；时间戳排序留给读侧投影」，消除与详细设计 §1「所有 op 必须可交换、幂等」的盲推矛盾；②《详细设计方案》§1 Mutation 注释区补一行「append 幂等经由身份键/深相等去重达成；同键不同内容视为生产者违约，先到先留」。蓝图 §21 未动（实现细化非重大决策变更）；未开 GitHub Issue（精度澄清随本 PR 落地）。[G5] 本任务无沙箱/Harness 执行链路对象（暂缺，能力落地后恢复强制）。[G7] 无敏感数据；L1 零 I/O 复核（reducer/state/roster 仅 import type 自身模块，无 fs/http/child_process）。状态保持 in_progress，待 /commit-agora 建 PR（拟分支 feat/state-reducer-roster，base=dev-1.0.0），人工合并后由 /pr-merge-agora 标 done 并级联翻转 0.3。[2026-08-25 Commit] PR #4 已创建：https://github.com/logan-suu/Agora/pull/4（feat/state-reducer-roster → dev-1.0.0，提交 4c38a30，10 files / +636）。门禁复跑实测：typecheck 0 错、biome 57 文件 0 违规、vitest 4 files / 27 tests 全绿。待人工合并。 [2026-08-25 /pr-merge-agora] PR #4 已合并（merge commit 52c2404），任务标 done；G5 维持 Code 阶段实测结论：本任务无沙箱/Harness 执行链路对象（暂缺，能力落地后恢复强制）；无遗留/延期项。级联翻转：0.3、0.5 → ready。"
         },
         {
-      "id": "0.3",
-      "title": "编排主循环 orchestrator + Coordinator 固定路由",
-      "story": null,
-      "status": "done",
-      "last_updated": "2026-08-26T14:05:00.000Z",
+          "id": "0.3",
+          "title": "编排主循环 orchestrator + Coordinator 固定路由",
+          "story": null,
+          "status": "done",
+          "last_updated": "2026-08-26T14:05:00.000Z",
           "documents_required": [
             "docs/详细设计方案.md §3/§9"
           ],
@@ -208,7 +213,7 @@
           "id": "0.4",
           "title": "LocalTempSandbox：SandboxManager 接口 + 本地临时目录 Mock",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/详细设计方案.md §6",
             "docs/技术选型文档.md §7.1"
@@ -216,8 +221,9 @@
           "dependencies": [
             "0.1"
           ],
-          "test_file": null,
-          "notes": "runtime/sandbox/sandbox-manager.ts：接口 = createWorktree/read/write/run/integrate/teardown（[2026-08-24 选型同步] 以技术选型 §7.1 为准；createTaskSandbox(container) 是 Phase 1+ Docker 专属扩展，阶段 0 不保留）。runtime/sandbox/local-temp-sandbox.ts：fs.mkdtempSync 建独立沙箱目录 + child_process.spawn 执行命令，文件操作限定目录内；run 默认超时 30s。dockerode/simple-git 在 Phase 0 package.json 中为 optionalDependencies（不强制安装，决策 D5）。"
+          "test_file": "packages/runtime/sandbox/test/local-temp-sandbox.test.ts",
+          "notes": "实现完成（EPCC-V Code+Check+Verify 阶段）。packages/runtime/sandbox/src/types.ts：定稿 Worktree{path,branch}/RunResult{exitCode,stdout,stderr,timedOut}/IntegrationResult{merged,conflicts}（§6/§7.1，D5）。sandbox-manager.ts：SandboxManager 接口 = createWorktree/read/write/run/integrate/teardown，签名逐字对齐 §6/§7.1（R9 接口先行，createTaskSandbox 为 Phase 1+ Docker 扩展，阶段 0 不保留）。local-temp-sandbox.ts：LocalTempSandbox implements SandboxManager —— fs.mkdtempSync 建独立沙箱目录（按 taskId+role 前缀）+ child_process.spawn 执行命令（shell:true），read/write 经 assertInside 做路径越界防护（R7 文件限目录内），run 默认超时 30s（R7）超时 SIGKILL 并置 timedOut=true，integrate 显式抛 not-implemented（D5 无 Git 分支，不静默，对齐 reducer 处理禁用字段风格），teardown 移动(非删除)至 tmp/agora-sandbox-trash 遵守文件保护且幂等。index.ts 导出全部类型+接口+实现。G5 实测：13 个测试全部真实临时目录+真实子进程（echo/node -e/sleep），验证 createWorktree 隔离、read/write 往返、run 退出码/stdout/stderr/超时击杀、integrate 显式抛错、teardown 移动+幂等——无 mock。门禁：pnpm typecheck 0 错误 / pnpm lint 0 违规 / pnpm test 57 通过（含 0.4 新增 13 例，既有回归全绿）。交付状态：待 /commit-agora 建 PR 至 dev-1.0.0，PR 合并后由 /pr-merge-agora 标 done。[2026-08-26 Commit] PR #7 已创建：https://github.com/logan-suu/Agora/pull/7（feat/local-temp-sandbox → dev-1.0.0，提交 1925b2a，6 files / +336）。门禁复跑实测：tsc --noEmit exit=0、biome 68 文件 0 违规、vitest 8 files / 57 tests 全绿（含 0.4 新增 13 例，既有回归全绿）。状态保持 in_progress，待人工合并后由 /pr-merge-agora 标 done。延期项已迁移至 docs/deferred-items.json（DEF-001/DEF-002，完整格式见该文件），不再内嵌于任务 notes。",
+          "last_updated": "2026-08-26T10:07:00.000Z"
         },
         {
           "id": "0.5",
