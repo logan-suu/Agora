@@ -20,14 +20,21 @@ agent: build
    - notes 追加：合并 hash（merge commit）、G5 实测结论、遗留/延期项及解除条件
 7. 更新任务与文件顶层 `last_updated`。
 
+### 第三步之半：提交并推送（豁免直推）
+8. 纯 `docs/task-status.json` 任务状态收尾记录（status/last_updated/notes）允许**直接在 `dev-1.0.0` 上提交并推送**，不走功能分支/PR（§3.1.1 豁免，[2026-08-26]）。步骤：
+   - `git add docs/task-status.json`
+   - `git commit -m "Mark task {id} done after PR #{n} merge"`（英文祈使句，可带 body）
+   - `git push origin dev-1.0.0`
+   - **禁止**在同一提交里夹带任何代码变更（`packages/`/`apps/`/`tests/` 等源码）；代码变更必须另走功能分支 + PR + 人类合并。
+
 ### 第四步：级联翻转与阶段收尾
-8. **级联翻转（幂等）**：遍历所有 `pending` 任务，依赖全部 `done` 者翻转为 `ready`。
-9. **阶段收尾检查**：若该 phase 所有非 integration_test 任务已 done：
-   - 提示运行 `/test-phase-agora` 执行出口集成测试；
-   - 出口测试 done 且 `exit_criteria` 全满足 → 整 phase `status` → `done`、`current_phase` 递增、提示下一阶段首个 ready 任务。
+9. **级联翻转（幂等）**：遍历所有 `pending` 任务，依赖全部 `done` 者翻转为 `ready`。
+10. **阶段收尾检查**：若该 phase 所有非 integration_test 任务已 done：
+    - 提示运行 `/test-phase-agora` 执行出口集成测试；
+    - 出口测试 done 且 `exit_criteria` 全满足 → 整 phase `status` → `done`、`current_phase` 递增、提示下一阶段首个 ready 任务。
 
 ### 第五步：报告
-10. 输出收尾报告：
+11. 输出收尾报告：
     ```
     PR #{n} 已合并 ✅
     任务 {task-id} → done（merge commit: {hash}）

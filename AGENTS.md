@@ -166,6 +166,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 
 - 所有开发变更一律：`git checkout dev-1.0.0 && git checkout -b {type}/{description}` → 提交 → `gh pr create --base dev-1.0.0`（标题正文全英文）。
 - **禁止**直接向 `main` 或 `dev-1.0.0` push 功能代码；PR 由人类审阅合并，Agent 不得自动合并。
+- **豁免（[2026-08-26 架构决策更新]）**：`/pr-merge-agora` 收尾时，**纯 `docs/task-status.json` 任务状态记录**（status/last_updated/notes 的收尾更新）允许直接在 `dev-1.0.0` 上提交并推送，不走功能分支/PR，避免为纯状态记录形成合并链。**豁免仅限该文件且仅限收尾记录**；任何代码变更（`packages/`、`apps/`、`tests/` 等源码）仍强制走功能分支 + PR + 人类合并；Agent 仍不得自动合并其他 PR。
 - 合并后执行 `/pr-merge-agora` 同步本地并收尾任务状态。
 - `main` 的更新只发生在阶段里程碑（如 MVP 验收、Demo 冻结），由人类确认后从 `dev-1.0.0` 发起 dev→main 的 PR。
 
