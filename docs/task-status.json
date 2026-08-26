@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-25T20:13:49.000Z",
+  "last_updated": "2026-08-25T23:05:23.000Z",
   "current_phase": 0,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -65,11 +65,12 @@
           "id": "0.2",
           "title": "State 领域模型 + Reducer 合并函数 + Roster 三角色",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
+          "last_updated": "2026-08-25T23:05:23.000Z",
           "documents_required": ["docs/详细设计方案.md §1", "docs/系统架构设计文档.md §5"],
           "dependencies": ["0.1"],
-          "test_file": null,
-          "notes": "core/domain/state.ts：仅启 Phase 0 必需字段（taskId/goal/phase/subtasks/pendingPatch/testResults/messages/nextRole/iterationCount）。core/domain/reducer.ts：applyMutations() 支持 append/mergeById/set 三种 op，必须可交换、幂等（容忍并行乱序写入）。core/domain/roster.ts：COORDINATOR/CODER/TESTER 三条静态 RoleSpec（决策 C4 三角色闭环）。"
+          "test_file": "packages/core/domain/test/reducer.test.ts",
+          "notes": "[2026-08-25 Code] 四文件落地 @ packages/core/domain（共 629 行，含测试）：state.ts 92 行（§1 字面量联合 Phase/RoleId/ExecutorType/MsgType + 实体接口 Subtask/Message/TestResults/RoleSpec 全字段预留 + AppState 仅启 Phase 0 八字段 taskId/goal/phase/iterationCount/subtasks/messages/pendingPatch/testResults/nextRole + createInitialAppState 工厂，可选键按 exactOptionalPropertyTypes 直接缺省）；reducer.ts 157 行（Mutation 按 §1 原文全量定稿 14 字段三 op；APPEND/MERGE_BY_ID/SET_FIELDS 字面量元组导出；ENABLED_*_FIELDS 常量表门控 Phase 0 切片={messages}/{subtasks}/{testResults,phase,nextRole}，后续解锁=表内加一项+补一个 case；applyMutations 纯函数 copy-on-write：append=身份键(msgId??id)去重+无键深相等兜底（集合并语义），mergeById=id/role 键一层 Object.assign 未命中追加副本，set=LWW 整体覆盖；未启用字段显式 throw『mutation field \"<f>\" is defined by spec §1 but not enabled in Phase 0』；穷尽 switch+assertNever 编译期强制）；roster.ts 33 行（C4 三条静态 RoleSpec：executor 全 'harness' 即决策 D2，COORDINATOR tools=[]（矩阵中 fs.read='摘要' 系投影供给非工具授权）/CODER 五工具 fs.read,fs.write,git,sandbox.applyPatch,lint/TESTER 四工具 fs.read,fs.write,sandbox.run,git 对齐详细设计 §2 白名单矩阵，projection/routeWhen 骨架键待 2.2/2.4 细化，model 不设留待 0.5 agent/request 路由）。[裁决记录·用户确认] ① Mutation 签名按 §1 原文全量定稿 + AppState 仅 8 字段 + 未启用字段显式 throw（R9 接口先行，阶段退化只改实现体）；② append 去重=身份键优先+深相等兜底，同键不同内容视为生产者违约先到先留（契约固化于测试描述文本，未写代码注释）。计划外纯增量：新增构造器 appendMutation/mergeByIdMutation/setMutation 导出（绕开 {id:string} 目标类型下对象字面量 excess-property-check 的人体工学入口，mergeByIdMutation 内归一化 id 防 patch 覆写身份；未改任何既定签名）。[Check 实测] corepack pnpm@9.15.9 环境：pnpm typecheck exit=0；pnpm lint exit=0（biome check . Checked 57 files，format --write 自动修复 6 处导入排序/换行后复检通过）；pnpm test exit=0（4 files / 27 tests passed，其中本任务 reducer 18 + roster 6 + state 2 = 26 用例，覆盖计划全部 18 项：append 交换律乱序等终态、幂等重放、生产者违约先到先留、深相等兜底、mergeById 原位更新不重复/未命中追加/非 Owner 字段不受影响、set LWW 及重放稳定、跨 op 乱序等价、深冻结入参纯函数性、空 mutations 等价新状态、三族禁用字段逐一 throw 错误信息断言、未知 op 防御、D2 executor='harness'、§2 工具白名单逐角色精确断言）。修复记录：typecheck 首轮 2 错（测试文件未用 Subtask import、builder 返回窄型上取 status）均修根因未弱化断言。[R12 文档同步·精度澄清两处] ①《系统架构设计文档》§5.1 Append-only 条目「直接 push」→「按身份键（msgId/id）去重追加，无身份键值深相等兜底（集合并语义）；时间戳排序留给读侧投影」，消除与详细设计 §1「所有 op 必须可交换、幂等」的盲推矛盾；②《详细设计方案》§1 Mutation 注释区补一行「append 幂等经由身份键/深相等去重达成；同键不同内容视为生产者违约，先到先留」。蓝图 §21 未动（实现细化非重大决策变更）；未开 GitHub Issue（精度澄清随本 PR 落地）。[G5] 本任务无沙箱/Harness 执行链路对象（暂缺，能力落地后恢复强制）。[G7] 无敏感数据；L1 零 I/O 复核（reducer/state/roster 仅 import type 自身模块，无 fs/http/child_process）。状态保持 in_progress，待 /commit-agora 建 PR（拟分支 feat/state-reducer-roster，base=dev-1.0.0），人工合并后由 /pr-merge-agora 标 done 并级联翻转 0.3。"
         },
         {
           "id": "0.3",
