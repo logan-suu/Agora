@@ -1,0 +1,160 @@
+import { type AppState, createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
+import { LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
+import { describe, expect, it } from 'vitest';
+import { HarnessExecutor } from '../src/harness-executor';
+import { project } from '../src/project';
+
+// Mock 原因（R11）：本文件注入 FakeLlmAdapter 隔离真实 LLM 调用，
+// 仅验证 HarnessExecutor 的编排逻辑（pre-step 覆写 / 模型路由 / mutations 聚合 /
+// done 收敛）。真实执行链路（真实 provider）的 G5 实测留待任务 0.6/0.7。
+class FakeLlmAdapter extends LlmAdapter {
+  public readonly calls: { provider: string; model: string; messagesText: string }[] = [];
+
+  async *stream(options: Parameters<LlmAdapter['stream']>[0]): AsyncIterable<StreamChunk> {
+    const messagesText = options.messages
+      .map((m) => m.content.map((c) => (c.type === 'text' ? c.text : '')).join(''))
+      .join('\n---\n');
+    this.calls.push({
+      provider: options.provider,
+      model: options.model,
+      messagesText,
+    });
+    yield { type: 'block-start', index: 0, blockType: 'text' };
+    yield { type: 'text-delta', index: 0, text: 'fake reply' };
+    yield { type: 'block-end', index: 0, block: { type: 'text', text: 'fake reply' } };
+    yield { type: 'usage', usage: { inputTokens: 2, outputTokens: 1 } };
+    yield { type: 'finish', reason: { kind: 'stop' } };
+  }
+}
+
+const CODER_SPEC = PHASE0_ROSTER.find((r) => r.role === 'CODER');
+if (CODER_SPEC === undefined) throw new Error('CODER spec missing from PHASE0_ROSTER');
+
+function codingState(): AppState {
+  return {
+    ...createInitialAppState('t-1', 'g'),
+    phase: 'coding',
+    iterationCount: 1,
+  };
+}
+
+describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => {
+  it('runs one turn per step, emits a done StepResult, and folds the reply into a messages append mutation', async () => {
+    const fake = new FakeLlmAdapter();
+    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+    try {
+      const state = codingState();
+      const view = project(state, 'CODER', PHASE0_ROSTER);
+
+      const result = await executor.step({ sessionId: 'ses-1', view });
+
+      expect(result.kind).toBe('done');
+      expect(result.reachedSafeBoundary).toBe(true);
+      expect(result.output).toEqual({ text: 'fake reply' });
+      expect(result.mutations).toHaveLength(1);
+      expect(result.mutations[0]).toMatchObject({ field: 'messages', op: 'append' });
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('feeds the projection slice to the LLM via the pre-step overwrite (decision D1)', async () => {
+    const fake = new FakeLlmAdapter();
+    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+    try {
+      const state = {
+        ...codingState(),
+        subtasks: [
+          {
+            id: 's-1',
+            title: 'write LRU',
+            ownerRole: 'CODER',
+            dependsOn: [],
+            status: 'in_progress' as const,
+          },
+        ],
+      };
+      const view = project(state, 'CODER', PHASE0_ROSTER);
+
+      await executor.step({ sessionId: 'ses-2', view });
+
+      const call = fake.calls[0];
+      expect(call?.messagesText).toContain('"role":"CODER"');
+      expect(call?.messagesText).toContain('write LRU');
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('routes the model per RoleSpec.model, falling back to env AGORA_MODEL', async () => {
+    const fake = new FakeLlmAdapter();
+    const spec = { ...CODER_SPEC, model: 'deepseek-coder-model' };
+    const executor = new HarnessExecutor(spec, { adapter: fake, provider: 'agora' });
+    try {
+      const view = project(codingState(), 'CODER', PHASE0_ROSTER);
+
+      await executor.step({ sessionId: 'ses-3', view });
+
+      expect(fake.calls[0]).toMatchObject({ provider: 'agora', model: 'deepseek-coder-model' });
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('injectInbox updates the projection used by the next pre-step overwrite', async () => {
+    const fake = new FakeLlmAdapter();
+    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+    try {
+      const initial = {
+        ...codingState(),
+        subtasks: [
+          {
+            id: 's-1',
+            title: 'first plan',
+            ownerRole: 'CODER',
+            dependsOn: [],
+            status: 'in_progress' as const,
+          },
+        ],
+      };
+      await executor.step({ sessionId: 'ses-4', view: project(initial, 'CODER', PHASE0_ROSTER) });
+
+      const updated = {
+        ...initial,
+        subtasks: [
+          {
+            id: 's-1',
+            title: 'revised plan',
+            ownerRole: 'CODER',
+            dependsOn: [],
+            status: 'in_progress' as const,
+          },
+        ],
+      };
+      executor.injectInbox(project(updated, 'CODER', PHASE0_ROSTER));
+      await executor.step({ sessionId: 'ses-4', view: project(updated, 'CODER', PHASE0_ROSTER) });
+
+      expect(fake.calls).toHaveLength(2);
+      expect(fake.calls[0]?.messagesText).toContain('first plan');
+      expect(fake.calls[1]?.messagesText).toContain('revised plan');
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('saveSafePoint returns the live session id and loadSafePoint is a Phase 0 no-op', async () => {
+    const fake = new FakeLlmAdapter();
+    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+    try {
+      const view = project(codingState(), 'CODER', PHASE0_ROSTER);
+      await executor.step({ sessionId: 'ses-safe', view });
+
+      const cursor = await executor.saveSafePoint();
+      expect(cursor).toBe('ses-safe');
+
+      await expect(executor.loadSafePoint(cursor)).resolves.toBeUndefined();
+    } finally {
+      await executor.dispose();
+    }
+  });
+});
