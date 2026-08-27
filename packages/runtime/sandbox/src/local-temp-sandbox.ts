@@ -1,15 +1,8 @@
 import { spawn } from 'node:child_process';
-import {
-  accessSync,
-  constants as fsConstants,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, sep } from 'node:path';
+import { basename, dirname, join } from 'node:path';
+import { assertInside } from './path-guard';
 import type { SandboxManager } from './sandbox-manager';
 import type { IntegrationResult, RunResult, Worktree } from './types';
 
@@ -25,6 +18,8 @@ const TEARDOWN_STAGING = join(tmpdir(), 'agora-sandbox-trash');
  * Uses Node.js native `fs.mkdtempSync` for an isolated temp directory and
  * `child_process.spawn` for command execution. No Docker, no Git worktrees
  * until Phase 1+; the interface signature stays identical (decision R9).
+ * Path confinement delegates to the shared {@link assertInside} guard
+ * (DEF-001: realpath-hardened against symlink escape).
  */
 export class LocalTempSandbox implements SandboxManager {
   /** Tracks the temp dir created per taskId so teardown can locate it. */
@@ -39,13 +34,13 @@ export class LocalTempSandbox implements SandboxManager {
   }
 
   async read(worktree: Worktree, path: string): Promise<string> {
-    const target = this.assertInside(worktree, path);
+    const target = assertInside(worktree.path, path);
     return readFileSync(target, 'utf8');
   }
 
   async write(worktree: Worktree, path: string, content: string): Promise<void> {
-    const target = this.assertInside(worktree, path);
-    mkdirSync(dirnameOf(target), { recursive: true });
+    const target = assertInside(worktree.path, path);
+    mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, content, 'utf8');
   }
 
@@ -71,24 +66,9 @@ export class LocalTempSandbox implements SandboxManager {
     this.roots.delete(taskId);
     // Move (not delete) to honor file protection (spec §6 teardown comment).
     mkdirSync(TEARDOWN_STAGING, { recursive: true });
-    const name = basenameOf(root);
-    const destination = join(TEARDOWN_STAGING, name);
+    const destination = join(TEARDOWN_STAGING, basename(root));
     renameSync(root, destination);
     return Promise.resolve();
-  }
-
-  /**
-   * Resolve `path` inside the worktree and reject any path that escapes it.
-   * Enforces decision R7: file operations are confined to the sandbox dir.
-   */
-  private assertInside(worktree: Worktree, path: string): string {
-    const root = resolve(worktree.path);
-    const target = resolve(root, path);
-    if (target !== root && !target.startsWith(root + sep)) {
-      throw new Error(`path escapes sandbox root: ${path}`);
-    }
-    accessSync(root, fsConstants.R_OK);
-    return target;
   }
 }
 
@@ -122,14 +102,4 @@ function runInDir(cwd: string, cmd: string, timeoutMs: number): Promise<RunResul
       resolvePromise({ exitCode: code, stdout, stderr, timedOut });
     });
   });
-}
-
-function dirnameOf(path: string): string {
-  const last = path.lastIndexOf(sep);
-  return last > 0 ? path.slice(0, last) : path;
-}
-
-function basenameOf(path: string): string {
-  const last = path.lastIndexOf(sep);
-  return last >= 0 ? path.slice(last + 1) : path;
 }

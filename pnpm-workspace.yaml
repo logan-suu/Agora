@@ -14,3 +14,4 @@ catalog:
   "react": "^19.0.0"
   "dockerode": "^4.0.0"
   "simple-git": "^3.36.0"
+  "@types/dockerode": "^4.0.0"

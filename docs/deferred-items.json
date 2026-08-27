@@ -16,10 +16,11 @@
       "item": "assertInside does not guard against symlink escape",
       "detail": "resolve() only handles literal '..' text traversal; a symlink inside the sandbox that points outside can be followed to escape the root, breaking R7 (file operations confined to the sandbox dir). Acceptable in Phase 0 as a local Mock, not a security boundary. Fix: validate the real path with realpathSync/fstat before allowing the operation.",
       "target_phase": 1,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "Sisyphus (task 1.4)",
       "created_at": "2026-08-26T10:00:00.000Z",
-      "notes": "LocalTempSandbox assertInside (packages/runtime/sandbox/src/local-temp-sandbox.ts). Phase 0 is a local Mock, not a security boundary."
+      "notes": "Resolved in task 1.4: shared path-guard.ts assertInside now canonicalizes root and target (nearest existing ancestor fallback for writes) with realpathSync, rejecting any symlink that redirects outside the root. Used by both LocalTempSandbox and DockerSandbox. Covered by packages/runtime/sandbox/test/path-guard.test.ts (symlink read-escape, symlinked-parent write-escape, in-root symlink allowed).",
+      "resolved_at": "2026-08-27T00:00:00.000Z"
     },
     {
       "id": "DEF-002",
@@ -33,10 +34,11 @@
       "item": "teardown/write use hand-written dirnameOf/basenameOf string splitting",
       "detail": "Replace the hand-written dirnameOf/basenameOf string-splitting helpers with node:path dirname/basename for robustness and to avoid fragile edge cases.",
       "target_phase": 1,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "Sisyphus (task 1.4)",
       "created_at": "2026-08-26T10:00:00.000Z",
-      "notes": "packages/runtime/sandbox/src/local-temp-sandbox.ts teardown and write helper functions."
+      "notes": "Resolved in task 1.4: local-temp-sandbox.ts teardown/write now use node:path dirname/basename; the hand-written helpers were removed.",
+      "resolved_at": "2026-08-27T00:00:00.000Z"
     },
     {
       "id": "DEF-003",
@@ -71,7 +73,7 @@
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-08-27T07:10:00.000Z",
-      "notes": "packages/tools/fs/src/fs-service.ts + worktree-registry.ts. Release condition: DockerSandbox (1.4) provides worktree isolation as mitigation; re-evaluate whether an openat refactor is needed when true parallelism lands (Phase 4 / 9.2)."
+      "notes": "packages/tools/fs/src/fs-service.ts + worktree-registry.ts. Release condition: DockerSandbox (1.4) provides worktree isolation as mitigation; re-evaluate whether an openat refactor is needed when true parallelism lands (Phase 4 / 9.2). [2026-08-27] Mitigation landed in task 1.4: DockerSandbox confines run() to a per-task container (NetworkMode none, bind-mounted worktree root), so the concurrently-writable host dir is no longer the command execution boundary; fs-server TOCTOU remains open for LocalTempSandbox-hosted fs operations, tracked here until Phase 4 re-evaluation."
     }
   ]
 }
