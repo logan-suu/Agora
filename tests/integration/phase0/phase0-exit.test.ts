@@ -101,6 +101,17 @@ test('delete removes a key', () => {
   assert.strictEqual(cache.delete('a'), true);
   assert.strictEqual(cache.get('a'), undefined);
 });
+
+test('expires entries after the TTL elapses', () => {
+  const cache = new LRUCache(10, 50);
+  cache.set('a', 1);
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      assert.strictEqual(cache.get('a'), undefined);
+      resolve();
+    }, 70);
+  });
+});
 `;
 
 interface ScriptedAction {
@@ -124,7 +135,7 @@ const ROLE_SCRIPTS: Readonly<Record<string, readonly ScriptedAction[]>> = {
       tool: 'fs_write',
       args: {
         path: TEST_RESULTS_FILE,
-        content: JSON.stringify({ passed: true, total: 3, failed: 0, failures: [] }),
+        content: JSON.stringify({ passed: true, total: 4, failed: 0, failures: [] }),
       },
     },
   ],
@@ -242,6 +253,37 @@ function sandboxRunResultOf(calls: readonly GenerateOptions[]): SandboxRunResult
   return undefined;
 }
 
+describe('createPhase0Runtime option validation (adapter vs deepseek)', () => {
+  it('accepts a scripted adapter alone', async () => {
+    const runtime = await createPhase0Runtime({
+      taskId: 'opt-adapter',
+      goal: 'adapter-only option probe',
+      adapter: new ScriptedLlmAdapter(),
+    });
+    await runtime.dispose();
+  });
+
+  it('accepts the real DeepSeek provider alone (no API call at construction)', async () => {
+    const runtime = await createPhase0Runtime({
+      taskId: 'opt-deepseek',
+      goal: 'deepseek-only option probe',
+      deepseek: true,
+    });
+    await runtime.dispose();
+  });
+
+  it('rejects adapter + deepseek together before any sandbox worktree is created', async () => {
+    await expect(
+      createPhase0Runtime({
+        taskId: 'opt-both',
+        goal: 'both-options probe',
+        adapter: new ScriptedLlmAdapter(),
+        deepseek: true,
+      }),
+    ).rejects.toThrow(/mutually exclusive/);
+  });
+});
+
 describe('Phase 0 exit integration (scripted LLM, real harness/tools/sandbox)', () => {
   let runtime: Phase0Runtime;
   let final: AppState;
@@ -266,7 +308,7 @@ describe('Phase 0 exit integration (scripted LLM, real harness/tools/sandbox)', 
   it('chain 1: shared State flows through mutations to a done phase', () => {
     expect(final.phase).toBe('done');
     expect(final.testResults?.passed).toBe(true);
-    expect(final.testResults?.total).toBe(3);
+    expect(final.testResults?.total).toBe(4);
     expect(final.subtasks[0]?.status).toBe('done');
     const roles = final.messages.map((message) => message.fromRole);
     expect(roles).toContain('COORDINATOR');

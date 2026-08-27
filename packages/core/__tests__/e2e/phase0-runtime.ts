@@ -86,6 +86,19 @@ export interface Phase0Runtime {
  * must run tests in the same directory (single-worker degenerate slice, spec §9).
  */
 export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promise<Phase0Runtime> {
+  // `adapter` and `deepseek` are mutually exclusive (see the options JSDoc):
+  // passing both would register the fake adapter under the `deepseek-official`
+  // provider name and silently shadow the real DeepSeek route. Fail fast before
+  // any worktree/sandbox resource is created.
+  if (
+    options.adapter !== undefined &&
+    options.deepseek !== undefined &&
+    options.deepseek !== false
+  ) {
+    throw new Error(
+      'createPhase0Runtime: adapter and deepseek are mutually exclusive — pass one or the other',
+    );
+  }
   const sandbox = new LocalTempSandbox();
   const worktree = await sandbox.createWorktree(options.taskId, 'shared');
   const subtaskId = `${options.taskId}-sub-0`;
