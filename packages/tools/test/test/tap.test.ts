@@ -134,6 +134,37 @@ not ok 1 - mismatch
     expect(summary.failures).toEqual([]);
   });
 
+  it('uses the 1..N plan as the aggregate total when # tests comments are absent', () => {
+    const output = `TAP version 13
+1..2
+ok 1 - one
+ok 2 - two
+`;
+    const summary = parseTap(output);
+    expect(summary.total).toBe(2);
+    expect(summary.failed).toBe(0);
+    expect(summary.failures).toEqual([]);
+  });
+
+  it('does not swallow a following not ok record when the previous lacks diagnostics', () => {
+    const output = `TAP version 13
+not ok 1 - no diagnostics
+not ok 2 - with diagnostics
+  ---
+  location: '/x.test.js:5:1'
+  error: boom
+  ...
+1..2
+`;
+    const summary = parseTap(output);
+    expect(summary.failures).toHaveLength(2);
+    expect(summary.failures[0]?.test).toBe('no diagnostics');
+    expect(summary.failures[0]?.message).toBe('test failed');
+    expect(summary.failures[1]?.test).toBe('with diagnostics');
+    expect(summary.failures[1]?.message).toBe('boom');
+    expect(summary.failures[1]?.line).toBe(5);
+  });
+
   it('picks the last (top-level) aggregate summary over nested ones', () => {
     const output = `TAP version 13
 # Subtest: describe

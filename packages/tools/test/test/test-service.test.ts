@@ -1,4 +1,4 @@
-import { mkdtempSync, realpathSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WorktreeRegistry } from '@agora/tools-fs';
@@ -59,6 +59,35 @@ describe('WorktreeTestService', () => {
     expect(result.passed).toBe(false);
     expect(result.failures[0]?.test).toBe('(timeout)');
     expect(result.failures[0]?.message).toContain('timed out');
+  });
+
+  it('kills the whole process group on timeout so grandchildren do not leak', async () => {
+    const script = [
+      "import { spawn } from 'node:child_process';",
+      "import { writeFileSync } from 'node:fs';",
+      'const g = spawn(process.execPath, ["-e", "setTimeout(()=>{}, 100000)"]);',
+      "writeFileSync('grand.pid', String(g.pid));",
+      'setTimeout(() => {}, 100000);',
+    ].join('\n');
+    writeFileSync(join(root, 'spawn-grand.mjs'), script);
+    const result = await service.run(root, 'node spawn-grand.mjs', 300);
+    expect(result.passed).toBe(false);
+    expect(result.failures[0]?.test).toBe('(timeout)');
+
+    const grandPid = Number(readFileSync(join(root, 'grand.pid'), 'utf8'));
+    expect(Number.isInteger(grandPid)).toBe(true);
+    const deadline = Date.now() + 3000;
+    let gone = false;
+    while (Date.now() < deadline) {
+      try {
+        process.kill(grandPid, 0);
+      } catch {
+        gone = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    expect(gone).toBe(true);
   });
 
   it('falls back to exit code for non-TAP output and never reports green on failure', async () => {

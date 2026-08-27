@@ -71,10 +71,12 @@ export async function serveTestServer(
   return server;
 }
 
+/** Wrap a value as a plain-text MCP tool result. */
 function textResult(text: string): CallToolResult {
   return { content: [{ type: 'text', text }] };
 }
 
+/** Wrap an error as an MCP tool error result (`isError: true`). */
 function errorResult(err: unknown): CallToolResult {
   const message = err instanceof Error ? err.message : String(err);
   return { content: [{ type: 'text', text: `error: ${message}` }], isError: true };

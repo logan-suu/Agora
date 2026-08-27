@@ -32,6 +32,8 @@ const TESTS_RE = /^#\s*tests\s+(\d+)/;
 const PASS_RE = /^#\s*pass\s+(\d+)/;
 const FAIL_RE = /^#\s*fail\s+(\d+)/;
 const COVERAGE_RE = /^#\s*coverage\s+([\d.]+)%/;
+/** TAP plan line (`1..N`), a fallback aggregate count when `# tests` is absent. */
+const PLAN_RE = /^(\s*)1\.\.(\d+)\s*$/;
 const NOT_OK_RE = /^(\s*)not ok\s+\d+(?:\s*-\s*(.*))?$/;
 const SUBTEST_RE = /^(\s*)#\s*Subtest:\s*(.+)$/;
 const DIAG_KEY_RE = /^(\s*)([A-Za-z_][\w-]*):\s*(.*)$/;
@@ -41,9 +43,10 @@ const DIAG_KEY_RE = /^(\s*)([A-Za-z_][\w-]*):\s*(.*)$/;
  *
  * Summary count lines (`# tests` / `# pass` / `# fail` / `# coverage`) may
  * appear both inside nested subtests and at the top level; the top-level
- * aggregate is always the *last* occurrence, so the last match wins. `not ok`
- * assertions are collected at any indentation (so nested failures are not
- * missed) along with their YAML diagnostics block.
+ * aggregate is always the *last* occurrence, so the last match wins. The `1..N`
+ * plan line is used as a fallback for `total` when no `# tests` comment is
+ * present. `not ok` assertions are collected at any indentation (so nested
+ * failures are not missed) along with their YAML diagnostics block.
  */
 export function parseTap(output: string): TapSummary {
   const lines = output.split(/\r?\n/);
@@ -65,6 +68,8 @@ export function parseTap(output: string): TapSummary {
     if (m) failed = Number(m[1]);
     m = line.match(COVERAGE_RE);
     if (m) coverage = Number(m[1]);
+    m = line.match(PLAN_RE);
+    if (m) total = Number(m[2]);
 
     m = line.match(NOT_OK_RE);
     if (m) {
@@ -100,18 +105,22 @@ function findSubtestName(lines: string[], from: number, maxIndent: number): stri
  * `---` opener up to (but not including) the closing `...` / `---` terminator.
  * Returns the collected block plus the index just past the terminator, so the
  * caller can resume scanning after this failure's diagnostics.
+ *
+ * Only blank lines are skipped looking for the `---` opener: if the next
+ * non-blank line is not an opener (e.g. a following `not ok` record with no
+ * diagnostics of its own), an empty block is returned with `nextIndex` left at
+ * that line so the caller still processes it.
  */
 function collectDiagnosticsBlock(
   lines: string[],
   start: number,
 ): { block: string[]; nextIndex: number } {
   let j = start;
-  // skip blank/`ok` noise until the `---` block opener
-  while (j < lines.length && !/^\s*---\s*$/.test(lines[j] ?? '')) {
+  while (j < lines.length && (lines[j] ?? '').trim() === '') {
     j++;
   }
-  if (j >= lines.length) {
-    return { block: [], nextIndex: lines.length };
+  if (j >= lines.length || !/^\s*---\s*$/.test(lines[j] ?? '')) {
+    return { block: [], nextIndex: j };
   }
   const openIndent = (lines[j]?.match(/^(\s*)/)?.[1]?.length ?? 0) as number;
   j++;
@@ -220,6 +229,7 @@ function parseLocation(value: string): { file: string; line: number } | undefine
   return undefined;
 }
 
+/** Strip surrounding quotes from a YAML scalar value. */
 function unquote(value: string): string {
   return value.trim().replace(/^['"]|['"]$/g, '');
 }

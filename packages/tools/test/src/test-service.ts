@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { type ChildProcess, spawn } from 'node:child_process';
 import { accessSync, constants as fsConstants, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { WorktreeRegistry } from '@agora/tools-fs';
@@ -93,6 +93,7 @@ export class WorktreeTestService implements TestService {
   }
 }
 
+/** Structured non-passing result for a command that exceeded its timeout. */
 function timeoutResult(timeoutMs: number): TestRunResult {
   return {
     passed: false,
@@ -118,14 +119,14 @@ interface SpawnOutcome {
 
 function runInDir(cwd: string, cmd: string, timeoutMs: number): Promise<SpawnOutcome> {
   return new Promise<SpawnOutcome>((resolvePromise, reject) => {
-    const child = spawn(cmd, { cwd, shell: true });
+    const child = spawn(cmd, { cwd, shell: true, detached: process.platform !== 'win32' });
     let stdout = '';
     let stderr = '';
     let timedOut = false;
 
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGKILL');
+      killTree(child);
     }, timeoutMs);
 
     child.stdout?.on('data', (chunk: Buffer) => {
@@ -145,4 +146,24 @@ function runInDir(cwd: string, cmd: string, timeoutMs: number): Promise<SpawnOut
       resolvePromise({ exitCode: code, stdout, stderr, timedOut });
     });
   });
+}
+
+/**
+ * Terminate the child and its whole process tree. With `shell: true` the direct
+ * child is a shell; `kill` alone would orphan the real test process and leak it
+ * past the timeout. On POSIX the child is detached as a process-group leader, so
+ * signaling the negative PID reaps the entire group. Windows has no
+ * group-signal via `process.kill`, so it falls back to killing the shell only.
+ */
+function killTree(child: ChildProcess): void {
+  if (child.pid === undefined) return;
+  if (process.platform === 'win32') {
+    child.kill('SIGKILL');
+    return;
+  }
+  try {
+    process.kill(-child.pid, 'SIGKILL');
+  } catch {
+    child.kill('SIGKILL');
+  }
 }
