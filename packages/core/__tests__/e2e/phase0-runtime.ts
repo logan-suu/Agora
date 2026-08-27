@@ -1,0 +1,151 @@
+import {
+  type AppState,
+  applyMutations,
+  createInitialAppState,
+  mergeByIdMutation,
+  PHASE0_ROSTER,
+  type RoleSpec,
+  type TestResults,
+} from '@agora/core-domain';
+import { WorkerRuntime } from '@agora/core-orchestration';
+import {
+  type Executor,
+  HarnessExecutor,
+  type HarnessExecutorOptions,
+} from '@agora/runtime-executor';
+import {
+  createPhase0Tools,
+  LocalTempSandbox,
+  type SandboxManager,
+  type Worktree,
+  wireToolName,
+} from '@agora/runtime-sandbox';
+
+/** Phase 0 TESTER handoff file (written by the TESTER into the worktree root). */
+const TEST_RESULTS_FILE = 'test-results.json';
+
+/** Phase 0 CODER completion signal (written by the CODER into the worktree root). */
+const SUBTASK_STATUS_FILE = 'subtask-status.json';
+
+/**
+ * Phase 0 working conventions appended to each role's system prompt by the
+ * composition root. They teach the model the worktree-relative path rule and
+ * the structured handoff files the executor reads back after the turn
+ * (`test-results.json` for TESTER, `subtask-status.json` for CODER).
+ */
+/**
+ * Phase 0 tool whitelist per role (spec §9: "工具只接 fs + sandbox.run"). The
+ * baseline RoleSpec.tools lists Phase 1 MCP names (`git`, `sandbox.applyPatch`,
+ * `lint`) that have no Phase 0 implementation; this map narrows each role to the
+ * tools actually registered by createPhase0Tools so the Coder can verify via
+ * sandbox_run (as its working rules prompt instructs) and the prompt/whitelist
+ * stay in sync.
+ */
+const PHASE0_TOOL_WHITELIST: Readonly<Record<string, readonly string[]>> = {
+  CODER: ['fs.read', 'fs.write', 'sandbox.run'],
+  TESTER: ['fs.read', 'fs.write', 'sandbox.run'],
+};
+
+const PHASE0_HANDOFF: Readonly<Partial<Record<string, string>>> = {
+  CODER:
+    '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files (e.g. lru-cache.ts), fs_read to inspect, and sandbox_run to verify quickly.\n- After implementing and verifying, use fs_write to store {"status":"done"} at the worktree root in `subtask-status.json`.',
+  TESTER:
+    '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>` or `node <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
+};
+
+export interface Phase0RuntimeOptions {
+  taskId: string;
+  goal: string;
+  deepseek?: HarnessExecutorOptions['deepseek'];
+  model?: string;
+}
+
+export interface Phase0Runtime {
+  initialState: AppState;
+  workerRuntime: WorkerRuntime;
+  sandbox: SandboxManager;
+  worktree: Worktree;
+  dispose(): Promise<void>;
+}
+
+/**
+ * Phase 0 composition root (test-side assembly, keeps R8 layering intact:
+ * orchestration only ever touches L3 ports, this module wires the L4
+ * implementations — HarnessExecutor + LocalTempSandbox — for the verification
+ * loop). One shared worktree per task: the Coder writes code and the Tester
+ * must run tests in the same directory (single-worker degenerate slice, spec §9).
+ */
+export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promise<Phase0Runtime> {
+  const sandbox = new LocalTempSandbox();
+  const worktree = await sandbox.createWorktree(options.taskId, 'shared');
+  const subtaskId = `${options.taskId}-sub-0`;
+  const tools = createPhase0Tools({ sandbox, getWorktree: async () => worktree });
+  const readTestResults = async (): Promise<TestResults | undefined> => {
+    try {
+      const content = await sandbox.read(worktree, TEST_RESULTS_FILE);
+      const parsed = JSON.parse(content) as Partial<TestResults>;
+      if (typeof parsed.passed !== 'boolean') return undefined;
+      return {
+        passed: parsed.passed,
+        total: typeof parsed.total === 'number' ? parsed.total : 0,
+        failed: typeof parsed.failed === 'number' ? parsed.failed : 0,
+        failures: Array.isArray(parsed.failures)
+          ? (parsed.failures as TestResults['failures'])
+          : [],
+      };
+    } catch {
+      return undefined;
+    }
+  };
+  const readSubtaskStatus = async (): Promise<{ id: string; status: string } | undefined> => {
+    try {
+      const content = await sandbox.read(worktree, SUBTASK_STATUS_FILE);
+      const parsed = JSON.parse(content) as { status?: unknown };
+      if (parsed.status !== 'done') return undefined;
+      return { id: subtaskId, status: 'done' };
+    } catch {
+      return undefined;
+    }
+  };
+  const executors: HarnessExecutor[] = [];
+  const workerRuntime = new WorkerRuntime({
+    roster: PHASE0_ROSTER,
+    buildExecutor: (spec, _assign): Executor => {
+      const whitelist = (PHASE0_TOOL_WHITELIST[spec.role] ?? spec.tools).map(wireToolName);
+      const roleTools = tools.filter((tool) => whitelist.includes(tool.name));
+      const handoff = PHASE0_HANDOFF[spec.role] ?? '';
+      const executorSpec: RoleSpec = {
+        ...spec,
+        ...(options.model === undefined ? {} : { model: options.model }),
+        systemPrompt: spec.systemPrompt + handoff,
+      };
+      const executor = new HarnessExecutor(executorSpec, {
+        ...(options.deepseek === undefined ? {} : { deepseek: options.deepseek }),
+        tools: roleTools,
+        ...(spec.role === 'TESTER' ? { readTestResults } : {}),
+        ...(spec.role === 'CODER' ? { readSubtaskStatus } : {}),
+      });
+      executors.push(executor);
+      return executor;
+    },
+  });
+  const initialState = applyMutations(createInitialAppState(options.taskId, options.goal), [
+    mergeByIdMutation('subtasks', subtaskId, {
+      title: options.goal,
+      ownerRole: 'CODER',
+      dependsOn: [],
+      status: 'todo',
+      worktree: worktree.path,
+    }),
+  ]);
+  return {
+    initialState,
+    workerRuntime,
+    sandbox,
+    worktree,
+    dispose: async () => {
+      await Promise.all(executors.map((executor) => executor.dispose()));
+      await sandbox.teardown(options.taskId);
+    },
+  };
+}

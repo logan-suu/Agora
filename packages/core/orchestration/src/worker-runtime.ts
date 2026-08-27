@@ -1,6 +1,6 @@
 import type { AppState, RoleSpec } from '@agora/core-domain';
 import { applyMutations } from '@agora/core-domain';
-import type { Executor } from '@agora/runtime-executor';
+import { type Executor, project } from '@agora/runtime-executor';
 import type { Assignment } from './coordinator';
 
 export interface WorkerRuntimeDeps {
@@ -69,7 +69,7 @@ export class WorkerRuntime {
       }
       const result = await handle.executor.step({
         sessionId: crypto.randomUUID(),
-        view: { role: handle.role, slices: {} },
+        view: project(current, handle.role, this.deps.roster),
       });
       current = applyMutations(current, result.mutations);
       if (result.kind === 'done') handle.done = true;

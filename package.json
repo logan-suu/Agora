@@ -13,6 +13,11 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@agora/core-domain": "workspace:*",
+    "@agora/core-orchestration": "workspace:*",
+    "@agora/roles-definitions": "workspace:*",
+    "@agora/runtime-executor": "workspace:*",
+    "@agora/runtime-sandbox": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",

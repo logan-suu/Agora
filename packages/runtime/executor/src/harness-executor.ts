@@ -1,4 +1,11 @@
-import { appendMutation, type RoleSpec } from '@agora/core-domain';
+import {
+  appendMutation,
+  type Mutation,
+  mergeByIdMutation,
+  type RoleSpec,
+  setMutation,
+  type TestResults,
+} from '@agora/core-domain';
 import { Context, type Fiber } from '@deepseek-ai/cordis';
 import AgentRegistry, { type Agent, type AgentHandle } from '@deepseek-ai/dsh-agent';
 import AgentLoop from '@deepseek-ai/dsh-agent-loop';
@@ -9,7 +16,7 @@ import * as LlmDeepseek from '@deepseek-ai/dsh-llm-deepseek';
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session';
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt';
 import TokenMeter from '@deepseek-ai/dsh-token-meter';
-import ToolRuntime from '@deepseek-ai/dsh-tools';
+import ToolRuntime, { type ToolDefinition } from '@deepseek-ai/dsh-tools';
 import type { Executor, ProjectionView, StepContext, StepResult } from './base';
 
 /** Default model name used when neither RoleSpec.model nor AGORA_MODEL is set. */
@@ -32,6 +39,24 @@ export interface HarnessExecutorOptions {
    * The API key is read per-request from `apiKeyEnv` (default `DEEPSEEK_API_KEY`).
    */
   deepseek?: boolean | { apiKeyEnv?: string };
+  /**
+   * Phase 0 function tools (decision D5 / spec §9: fs + sandbox.run) registered
+   * on this executor's ToolRuntime after plugins settle. Tool names match the
+   * RoleSpec.tools whitelist verbatim; the composition root filters per role.
+   */
+  tools?: readonly ToolDefinition[];
+  /**
+   * Phase 0 TESTER handoff: after a turn quiesces, poll the worktree for the
+   * structured test-results file and emit it as a `set('testResults')` mutation.
+   * Undefined for roles that never produce test results (e.g. CODER).
+   */
+  readTestResults?: () => Promise<TestResults | undefined>;
+  /**
+   * Phase 0 CODER handoff: after a turn quiesces, poll the worktree for the
+   * completion signal and emit it as a `mergeById('subtasks')` mutation.
+   * Undefined for roles that never own a subtask.
+   */
+  readSubtaskStatus?: () => Promise<{ id: string; status: string } | undefined>;
 }
 
 /**
@@ -53,9 +78,15 @@ export class HarnessExecutor implements Executor {
   private readonly ctx: Context;
   private readonly provider: string;
   private readonly adapter: LlmAdapter | undefined;
+  private readonly tools: readonly ToolDefinition[] | undefined;
+  private readonly readTestResults: (() => Promise<TestResults | undefined>) | undefined;
+  private readonly readSubtaskStatus:
+    | (() => Promise<{ id: string; status: string } | undefined>)
+    | undefined;
   private readonly pluginFibers: Fiber[] = [];
   private ready: Promise<void>;
   private readonly handles = new Map<string, AgentHandle>();
+  private readonly agentErrors = new Map<string, unknown>();
   private view: ProjectionView = { role: '', slices: {} };
   private pendingInbox: ProjectionView | null = null;
   private stepChain: Promise<unknown> = Promise.resolve();
@@ -70,7 +101,7 @@ export class HarnessExecutor implements Executor {
     this.pluginFibers.push(this.ctx.plugin(AgentRegistry)); // ctx.agents
     this.pluginFibers.push(this.ctx.plugin(SessionStore)); // ctx.sessions
     this.pluginFibers.push(this.ctx.plugin(LlmRuntime)); // ctx.llm
-    this.pluginFibers.push(this.ctx.plugin(SystemPrompt)); // ctx.systemPrompt
+    this.pluginFibers.push(this.ctx.plugin(SystemPrompt, { persona: this.spec.systemPrompt })); // ctx.systemPrompt
     this.pluginFibers.push(this.ctx.plugin(ToolRuntime)); // ctx.tools (injects systemPrompt)
     this.pluginFibers.push(this.ctx.plugin(TokenMeter)); // ctx.tokenMeter (needed by compaction)
     this.pluginFibers.push(this.ctx.plugin(AgentLoop)); // registers the agents factory
@@ -86,6 +117,9 @@ export class HarnessExecutor implements Executor {
       this.provider = options.provider ?? DEFAULT_PROVIDER;
     }
     this.adapter = options.adapter;
+    this.tools = options.tools;
+    this.readTestResults = options.readTestResults;
+    this.readSubtaskStatus = options.readSubtaskStatus;
     this.ready = this.awaitPlugins();
   }
 
@@ -93,6 +127,11 @@ export class HarnessExecutor implements Executor {
     await Promise.all(this.pluginFibers);
     if (this.adapter !== undefined) {
       this.ctx.llm.registerAdapter([this.provider], this.adapter);
+    }
+    if (this.tools !== undefined) {
+      for (const definition of this.tools) {
+        this.ctx.tools.register(definition);
+      }
     }
   }
 
@@ -122,8 +161,27 @@ export class HarnessExecutor implements Executor {
     agent.followup(this.projectionMessage());
     await agent.whenIdle();
 
+    const failure = this.agentErrors.get(context.sessionId);
+    if (failure !== undefined) {
+      this.agentErrors.delete(context.sessionId);
+      throw new Error(`agent turn failed: ${failureMessage(failure)}`);
+    }
+
     const text = lastAssistantText(agent);
-    const mutations = text === null ? [] : [appendMutation('messages', this.toAgoraMessage(text))];
+    const mutations: Mutation[] =
+      text === null ? [] : [appendMutation('messages', this.toAgoraMessage(text))];
+    if (this.readTestResults !== undefined) {
+      const testResults = await this.readTestResults();
+      if (testResults !== undefined) {
+        mutations.push(setMutation('testResults', testResults));
+      }
+    }
+    if (this.readSubtaskStatus !== undefined) {
+      const subtask = await this.readSubtaskStatus();
+      if (subtask !== undefined) {
+        mutations.push(mergeByIdMutation('subtasks', subtask.id, { status: subtask.status }));
+      }
+    }
     return {
       kind: 'done',
       output: text === null ? {} : { text },
@@ -169,15 +227,23 @@ export class HarnessExecutor implements Executor {
       sessionId: SessionId(sessionId),
       agentOptions: { provider: this.provider, model: this.resolveModel() },
       setup: (agentCtx) => {
-        // Decision D1: overwrite the messages fed to the LLM with the projection.
-        agentCtx.on('agent/pre-step', async () => ({
+        // Decision D1: overwrite the messages fed to the LLM with the projection,
+        // but PRESERVE the mid-turn tool exchange (tool-call/tool-result) from the
+        // claimed inbox messages. Without this the model would never see its own
+        // tool outcomes and could not iterate (write code → run tests → fix).
+        agentCtx.on('agent/pre-step', async (payload) => ({
           kind: 'enter',
-          messages: [this.projectionMessage()],
+          messages: [this.projectionMessage(), ...toolExchangeOf(payload.messages)],
         }));
         // Model routing: fix the provider/model from RoleSpec or env.
         agentCtx.on('agent/request', async (_payload, next) => {
           const config = await next();
           return { ...config, provider: this.provider, model: this.resolveModel() };
+        });
+        // The self-driving loop swallows turn failures internally (kick() catch);
+        // surface them so a broken turn is never mistaken for an empty success.
+        agentCtx.on('agent/error', (payload) => {
+          this.agentErrors.set(sessionId, payload.error);
         });
       },
     });
@@ -207,6 +273,22 @@ export class HarnessExecutor implements Executor {
       display: text,
       ts: Date.now(),
     };
+  }
+}
+
+/** Keep only mid-turn tool messages (call/result) from the claimed inbox messages. */
+function toolExchangeOf(messages: readonly UserMessage[]): UserMessage[] {
+  return messages.filter((message) =>
+    message.content.some((block) => block.type === 'tool-call' || block.type === 'tool-result'),
+  );
+}
+
+function failureMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
   }
 }
 
