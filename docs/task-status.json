@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-27T06:30:00.000Z",
+  "last_updated": "2026-08-27T07:15:00.000Z",
   "current_phase": 1,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -287,7 +287,7 @@
     {
       "id": 1,
       "name": "沙箱与工具（MCP 工具链 + Docker，1 周）",
-      "status": "not_started",
+      "status": "in_progress",
       "integration_test": "1.6",
       "exit_criteria": "Coder 能真正写代码进沙箱并执行；MCP 五类 server 可用；LocalTemp/Docker 可配置切换",
       "tasks": [
@@ -295,7 +295,7 @@
           "id": "1.1",
           "title": "MCP SDK v1 接入 + fs-server（read/write/list）",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/技术选型文档.md §6",
             "docs/详细设计方案.md §6"
@@ -304,14 +304,14 @@
             "0.7"
           ],
           "test_file": "packages/tools/fs/test/fs-service.test.ts, packages/tools/fs/test/fs-server.test.ts",
-          "notes": "MCP SDK v1（@modelcontextprotocol/sdk 1.30.0）接入完成，fs-server 落 packages/tools/fs/。实现：worktree-registry.ts（WorktreeRegistry 白名单，工具 worktree 参数必须已注册根，防传 /etc 越界）+ fs-service.ts（WorktreeFsService：read/write/list，assertInside 越界防护 R7，自研轻 glob：*/?/** 支持，跳过 .git/node_modules/.data）+ fs-server.ts（createFsServer 注册 read/write/list 三工具；serveFsServer(transport) 为 transport 注入点，默认 stdio、可切 Streamable HTTP，R9 换体不换接口）。transport 选型按用户确认走方案 C：stdio 默认 + 注入点。zod 对齐 v4（SDK peer 解析 zod@4.4.3，fs 包 zod ^4.0.0 消除双版本）。G5 真实执行：fs-server.test.ts 用 SDK InMemoryTransport 做 client-server 端到端 round-trip（write/read/list 真文件系统 + 越界返回 isError），非 mock。门禁：tsc 0 错误 / biome 0 违规 / vitest 85 通过 2 跳过（2 跳为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。\n[2026-08-27 提交] PR #12 https://github.com/logan-suu/Agora/pull/12（feat/mcp-fs-server，提交 9063749，9 files / +491）。status 保持 in_progress，待人类审阅合并后 /pr-merge-agora 收尾标 done。\n[2026-08-27 PR#12 评审] /pr-review-agora 预审 + CodeRabbit 三条评论逐条验证均合理，已当场修复并 push（vitest 85→88）：① task-status.json 1.1/1.2 间缺 `},` 分隔致 JSON 非法——补回分隔符恢复合法；② serveFsServer 补 transport 可选、默认 new StdioServerTransport()，落实「stdio 默认 + 注入点」（R9）；③ fs-service assertInside 补 realpath 规范化（根与目标 realpath，新写目标上溯最近存在祖先）封堵 symlink 逃逸（R7，CodeRabbit 🟠 Major）——新增 3 用例：read 文件 symlink 逃逸 / write symlink 父目录逃逸 / 根内 symlink 正常放行。\n[2026-08-27 PR#12 二轮评审] CodeRabbit 复审通过后又提 2 条安全评论（均验证有效）：① CWE-59 路径穿越：WorktreeRegistry 改注册时绑定 realpathSync 规范化根，操作时 realpathSync 当前根并与绑定值比对，不一致即抛 retargeted 拒绝（fs-service assertRegistered 改用 canonicalOf，删除 isRegistered）——新增 retargeted symlink 用例（read/write 均拒），vitest 88→89；② CWE-367 TOCTOU：校验后到 readFileSync/writeFileSync 间并发 symlink 替换竞态——[DEF] 见下。\n[DEF] TOCTOU symlink 竞态（CWE-367）—— detail: WorktreeFsService 为同步词法路径校验+随后 fs 调用，若并发进程在 assertInside 后替换目标/祖先为逃逸 symlink，read/write 可越权；彻底修复需 openat-under-trusted-fd 或隔离并发可写 worktree，Node 20 无干净 dir-relative open API，改动过大超本 PR 范围。解除条件: DockerSandbox（1.4）提供 worktree 隔离缓解；真并行（Phase 4/9.2）时重评是否需 openat 重构。target_phase: 1",
-          "last_updated": "2026-08-27T07:10:00.000Z"
+          "notes": "MCP SDK v1（@modelcontextprotocol/sdk 1.30.0）接入完成，fs-server 落 packages/tools/fs/。实现：worktree-registry.ts（WorktreeRegistry 白名单，工具 worktree 参数必须已注册根，防传 /etc 越界）+ fs-service.ts（WorktreeFsService：read/write/list，assertInside 越界防护 R7，自研轻 glob：*/?/** 支持，跳过 .git/node_modules/.data）+ fs-server.ts（createFsServer 注册 read/write/list 三工具；serveFsServer(transport) 为 transport 注入点，默认 stdio、可切 Streamable HTTP，R9 换体不换接口）。transport 选型按用户确认走方案 C：stdio 默认 + 注入点。zod 对齐 v4（SDK peer 解析 zod@4.4.3，fs 包 zod ^4.0.0 消除双版本）。G5 真实执行：fs-server.test.ts 用 SDK InMemoryTransport 做 client-server 端到端 round-trip（write/read/list 真文件系统 + 越界返回 isError），非 mock。门禁：tsc 0 错误 / biome 0 违规 / vitest 85 通过 2 跳过（2 跳为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。\n[2026-08-27 提交] PR #12 https://github.com/logan-suu/Agora/pull/12（feat/mcp-fs-server，提交 9063749，9 files / +491）。status 保持 in_progress，待人类审阅合并后 /pr-merge-agora 收尾标 done。\n[2026-08-27 PR#12 评审] /pr-review-agora 预审 + CodeRabbit 三条评论逐条验证均合理，已当场修复并 push（vitest 85→88）：① task-status.json 1.1/1.2 间缺 `},` 分隔致 JSON 非法——补回分隔符恢复合法；② serveFsServer 补 transport 可选、默认 new StdioServerTransport()，落实「stdio 默认 + 注入点」（R9）；③ fs-service assertInside 补 realpath 规范化（根与目标 realpath，新写目标上溯最近存在祖先）封堵 symlink 逃逸（R7，CodeRabbit 🟠 Major）——新增 3 用例：read 文件 symlink 逃逸 / write symlink 父目录逃逸 / 根内 symlink 正常放行。\n[2026-08-27 PR#12 二轮评审] CodeRabbit 复审通过后又提 2 条安全评论（均验证有效）：① CWE-59 路径穿越：WorktreeRegistry 改注册时绑定 realpathSync 规范化根，操作时 realpathSync 当前根并与绑定值比对，不一致即抛 retargeted 拒绝（fs-service assertRegistered 改用 canonicalOf，删除 isRegistered）——新增 retargeted symlink 用例（read/write 均拒），vitest 88→89；② CWE-367 TOCTOU：校验后到 readFileSync/writeFileSync 间并发 symlink 替换竞态——[DEF-004]。\n[DEF-004] TOCTOU symlink 竞态（CWE-367），台账指针：docs/deferred-items.json#DEF-004；解除条件: DockerSandbox（1.4）worktree 隔离缓解；真并行（Phase 4/9.2）重评 openat 重构。target_phase: 1\n[2026-08-27 PR#12 合并收尾] /pr-merge-agora：merge commit 369889d5（PR #12 merged），dev-1.0.0 已同步，本地 feat/mcp-fs-server 已删除。G5 实测结论：InMemoryTransport client-server round-trip（write→read→list 真文件系统）+ 越界/symlink 逃逸/retargeted 三类防护用例全部真实通过（vitest 89 pass 2 skip），非 test double。遗留/延期项：DEF-004（TOCTOU symlink 竞态）已入台账，解除条件=1.4 DockerSandbox worktree 隔离。门禁 G1-G7 全过，PR #12 合并 hash 369889d5b7d2c62ff1e03e9ba429bc01a3ee5c78。",
+          "last_updated": "2026-08-27T07:15:00.000Z"
         },
         {
           "id": "1.2",
           "title": "test-server（运行测试、返回结构化结果）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/技术选型文档.md §6",
             "docs/详细设计方案.md §6"
@@ -320,13 +320,14 @@
             "1.1"
           ],
           "test_file": null,
-          "notes": "run(cmd) → {passed,total,failed,failures[{test,message,file,line}],coverage}，对齐 State.testResults 结构。"
+          "notes": "run(cmd) → {passed,total,failed,failures[{test,message,file,line}],coverage}，对齐 State.testResults 结构。\n[2026-08-27 /pr-merge-agora] 级联翻转 pending→ready（依赖 1.1 已 done，PR #12 合并 hash 369889d5）。",
+          "last_updated": "2026-08-27T07:15:00.000Z"
         },
         {
           "id": "1.3",
           "title": "git-server（createWorktree/diff/merge 基础操作）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/技术选型文档.md §8"
           ],
@@ -334,7 +335,8 @@
             "1.1"
           ],
           "test_file": null,
-          "notes": "simple-git 8.x；Phase 1 仅实现基础操作；merge 冲突检测留给 Phase 9 集成检查点完善。"
+          "notes": "simple-git 8.x；Phase 1 仅实现基础操作；merge 冲突检测留给 Phase 9 集成检查点完善。\n[2026-08-27 /pr-merge-agora] 级联翻转 pending→ready（依赖 1.1 已 done，PR #12 合并 hash 369889d5）。",
+          "last_updated": "2026-08-27T07:15:00.000Z"
         },
         {
           "id": "1.4",
@@ -356,7 +358,7 @@
           "id": "1.5",
           "title": "工具-角色权限矩阵落地（RoleSpec.tools 白名单）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/详细设计方案.md §2"
           ],
@@ -364,7 +366,8 @@
             "1.1"
           ],
           "test_file": null,
-          "notes": "装载角色时把 RoleSpec.tools 注册到该 Harness loop 实例的 ctx.tools scheduler（含超时/审批/限流）；经 subagent toolFilter 作用域化。"
+          "notes": "装载角色时把 RoleSpec.tools 注册到该 Harness loop 实例的 ctx.tools scheduler（含超时/审批/限流）；经 subagent toolFilter 作用域化。\n[2026-08-27 /pr-merge-agora] 级联翻转 pending→ready（依赖 1.1 已 done，PR #12 合并 hash 369889d5）。",
+          "last_updated": "2026-08-27T07:15:00.000Z"
         },
         {
           "id": "1.6",

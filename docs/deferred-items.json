@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-27T05:00:00.000Z",
+  "last_updated": "2026-08-27T07:15:00.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -55,6 +55,23 @@
       "created_at": "2026-08-25T00:00:00.000Z",
       "notes": "Legacy entry migrated per standing decision DEF (task notes keep only a ledger pointer).",
       "resolved_at": "2026-08-27T05:00:00.000Z"
+    },
+    {
+      "id": "DEF-004",
+      "source": "CodeRabbit (PR review)",
+      "pr": 12,
+      "pr_url": "https://github.com/logan-suu/Agora/pull/12",
+      "comment_id": null,
+      "comment_url": null,
+      "task": "1.1",
+      "severity": "major",
+      "item": "TOCTOU symlink race (CWE-367) between path validation and fs operation",
+      "detail": "WorktreeFsService performs a synchronous lexical path validation then a separate fs call; a concurrent process replacing the target/an ancestor with an escaping symlink between assertInside and readFileSync/writeFileSync can break R7 confinement. Definitive fix needs openat-under-trusted-fd or an isolated concurrently-writable worktree; Node 20 lacks a clean dir-relative open API and the change is too large for the PR scope.",
+      "target_phase": 1,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-27T07:10:00.000Z",
+      "notes": "packages/tools/fs/src/fs-service.ts + worktree-registry.ts. Release condition: DockerSandbox (1.4) provides worktree isolation as mitigation; re-evaluate whether an openat refactor is needed when true parallelism lands (Phase 4 / 9.2)."
     }
   ]
 }
