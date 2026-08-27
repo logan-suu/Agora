@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -47,6 +47,26 @@ describe('WorktreeFsService', () => {
     } finally {
       registry.unregister(other);
     }
+  });
+
+  it('rejects reading through a symlink that escapes the worktree', () => {
+    const outsideRoot = mkdtempSync(join(tmpdir(), 'agora-outside-'));
+    const secret = join(outsideRoot, 'secret.txt');
+    writeFileSync(secret, 'classified');
+    symlinkSync(secret, join(root, 'link.txt'));
+    expect(() => service.read(root, 'link.txt')).toThrow(/escapes worktree root/);
+  });
+
+  it('rejects writing through a symlinked parent that escapes the worktree', () => {
+    const outsideRoot = mkdtempSync(join(tmpdir(), 'agora-outside-'));
+    symlinkSync(outsideRoot, join(root, 'link'));
+    expect(() => service.write(root, 'link/evil.txt', 'x')).toThrow(/escapes worktree root/);
+  });
+
+  it('follows a symlink that stays inside the worktree', () => {
+    service.write(root, 'real.txt', 'inside');
+    symlinkSync(join(root, 'real.txt'), join(root, 'alias.txt'));
+    expect(service.read(root, 'alias.txt')).toBe('inside');
   });
 
   it('read honors a character range', () => {

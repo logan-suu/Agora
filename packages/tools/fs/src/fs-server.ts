@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -95,18 +96,18 @@ export function createFsServer(options: FsServerOptions = {}): McpServer {
 }
 
 /**
- * Connect a built fs-server to an arbitrary transport (the injection point).
+ * Connect a built fs-server to a transport (the injection point).
  *
- * Default Phase 1 wiring uses stdio; a Streamable HTTP transport can be swapped
- * in later without touching the tool definitions (decision R9: swap the body,
- * keep the interface).
+ * When `transport` is omitted it defaults to {@link StdioServerTransport} — the
+ * Phase 1 default (decision R9: swap the body, keep the interface). Pass a
+ * Streamable HTTP transport to switch without touching the tool definitions.
  */
 export async function serveFsServer(
-  transport: Transport,
+  transport?: Transport,
   options: FsServerOptions = {},
 ): Promise<McpServer> {
   const server = createFsServer(options);
-  await server.connect(transport);
+  await server.connect(transport ?? new StdioServerTransport());
   return server;
 }
 

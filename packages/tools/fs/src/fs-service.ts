@@ -5,6 +5,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   writeFileSync,
 } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
@@ -63,20 +64,25 @@ export class WorktreeFsService implements FsService {
     if (!this.registry.isRegistered(root)) {
       throw new Error(`worktree not registered: ${root}`);
     }
-    return rootResolved;
+    const canonicalRoot = realpathSync(rootResolved);
+    accessSync(canonicalRoot, fsConstants.R_OK);
+    return canonicalRoot;
   }
 
   /**
    * Resolve `path` inside the worktree and reject any path that escapes it.
    * Enforces decision R7: file operations are confined to the sandbox dir.
+   *
+   * Both the root and the resolved target are canonicalized with `realpath`
+   * (falling back to the nearest existing ancestor for not-yet-written paths)
+   * so a symlink inside the worktree cannot redirect access outside the root.
    */
   private assertInside(root: string, path: string): string {
-    const rootResolved = this.assertRegistered(root);
-    const target = resolve(rootResolved, path);
-    if (target !== rootResolved && !target.startsWith(rootResolved + sep)) {
+    const canonicalRoot = this.assertRegistered(root);
+    const target = realpathNearestExisting(resolve(canonicalRoot, path));
+    if (target !== canonicalRoot && !target.startsWith(canonicalRoot + sep)) {
       throw new Error(`path escapes worktree root: ${path}`);
     }
-    accessSync(rootResolved, fsConstants.R_OK);
     return target;
   }
 }
@@ -149,4 +155,32 @@ function escapeRegExpChar(ch: string): string {
 function dirnameOf(path: string): string {
   const last = path.lastIndexOf(sep);
   return last > 0 ? path.slice(0, last) : path;
+}
+
+function basenameOf(path: string): string {
+  const last = path.lastIndexOf(sep);
+  return last >= 0 ? path.slice(last + 1) : path;
+}
+
+/**
+ * Canonicalize `path`, walking up to the nearest existing ancestor when the
+ * path does not exist yet (writes). Resolves every symlink above the nearest
+ * existing component so an escaping symlink is surfaced to the caller.
+ */
+function realpathNearestExisting(path: string): string {
+  const tail: string[] = [];
+  let current = path;
+  for (;;) {
+    try {
+      const canonical = realpathSync(current);
+      return tail.length === 0 ? canonical : join(canonical, ...tail.reverse());
+    } catch {
+      const parent = dirnameOf(current);
+      if (parent === current) {
+        throw new Error(`cannot resolve path: ${path}`);
+      }
+      tail.push(basenameOf(current));
+      current = parent;
+    }
+  }
 }
