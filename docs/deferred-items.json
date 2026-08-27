@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-26T10:30:00.000Z",
+  "last_updated": "2026-08-27T05:00:00.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -37,6 +37,24 @@
       "resolved_by": null,
       "created_at": "2026-08-26T10:00:00.000Z",
       "notes": "packages/runtime/sandbox/src/local-temp-sandbox.ts teardown and write helper functions."
+    },
+    {
+      "id": "DEF-003",
+      "source": "task 0.1 notes migration (legacy embedded DEF)",
+      "pr": 11,
+      "pr_url": "https://github.com/logan-suu/Agora/pull/11",
+      "comment_id": null,
+      "comment_url": null,
+      "task": "0.1",
+      "severity": "minor",
+      "item": "Architecture doc §3 tools subdirectory naming (fs-server wording) inconsistent with implementation",
+      "detail": "Implementation follows the AGENTS.md naming {fs,test,git,lint,sandbox} (user-decided); the architecture doc §3 originally used an fs-server wording. Migrated from the legacy embedded [DEF] in task 0.1 notes. Verified resolved during /pr-review-agora step 7: 系统架构设计文档.md no longer contains any fs-server wording (§3 is now a generic tools/ note).",
+      "target_phase": 0,
+      "status": "resolved",
+      "resolved_by": "Sisyphus (/pr-review-agora step 7)",
+      "created_at": "2026-08-25T00:00:00.000Z",
+      "notes": "Legacy entry migrated per standing decision DEF (task notes keep only a ledger pointer).",
+      "resolved_at": "2026-08-27T05:00:00.000Z"
     }
   ]
 }
