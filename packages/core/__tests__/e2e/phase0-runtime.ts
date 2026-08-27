@@ -20,6 +20,7 @@ import {
   type Worktree,
   wireToolName,
 } from '@agora/runtime-sandbox';
+import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
 
 /** Phase 0 TESTER handoff file (written by the TESTER into the worktree root). */
 const TEST_RESULTS_FILE = 'test-results.json';
@@ -58,6 +59,15 @@ export interface Phase0RuntimeOptions {
   goal: string;
   deepseek?: HarnessExecutorOptions['deepseek'];
   model?: string;
+  /**
+   * Scripted LLM adapter for deterministic tests (R11: mock only the external
+   * LLM dependency; the agent loop, tools, and sandbox stay real). Registered
+   * under `provider` (defaults to `agora`). Mutually exclusive intent with
+   * `deepseek` — pass one or the other, never both.
+   */
+  adapter?: LlmAdapter;
+  /** Provider key the adapter is registered under (default `agora`). */
+  provider?: string;
 }
 
 export interface Phase0Runtime {
@@ -121,6 +131,9 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
       };
       const executor = new HarnessExecutor(executorSpec, {
         ...(options.deepseek === undefined ? {} : { deepseek: options.deepseek }),
+        ...(options.adapter === undefined
+          ? {}
+          : { adapter: options.adapter, provider: options.provider ?? 'agora' }),
         tools: roleTools,
         ...(spec.role === 'TESTER' ? { readTestResults } : {}),
         ...(spec.role === 'CODER' ? { readSubtaskStatus } : {}),
