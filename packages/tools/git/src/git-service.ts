@@ -71,6 +71,41 @@ export function validateBranchName(name: string): string {
 }
 
 /**
+ * Validate a task id used to name a worktree directory (decision R7: file
+ * operations stay confined to the sandbox area). The task id is interpolated
+ * into the worktree path, so reject path separators, `..`, whitespace and
+ * leading dots — closing the path-traversal vector that would otherwise let a
+ * malicious id place a worktree outside `worktreesDir`.
+ */
+export function validateTaskId(taskId: string): string {
+  if (
+    taskId.length === 0 ||
+    taskId.includes('/') ||
+    taskId.includes('\\') ||
+    taskId.includes('..') ||
+    taskId.startsWith('.') ||
+    /\s/.test(taskId)
+  ) {
+    throw new Error(`invalid task id: ${taskId}`);
+  }
+  return taskId;
+}
+
+/**
+ * Validate a user-supplied git ref argument (`diff` `ref`, `merge` `base` /
+ * `branch`). Rejects empty values, option-looking values (leading `-`) and
+ * whitespace so a ref cannot be misparsed by git as an option — e.g.
+ * `--output=...` would otherwise write a diff outside the worktree (R7).
+ * Range syntax like `main..feature` and `HEAD~1` is still allowed.
+ */
+export function validateRefArg(ref: string, label: string): string {
+  if (ref.length === 0 || ref.startsWith('-') || /\s/.test(ref)) {
+    throw new Error(`invalid ${label}: ${ref}`);
+  }
+  return ref;
+}
+
+/**
  * Worktree-scoped git service (spec §6 `git-server`).
  *
  * Holds ONE main repository (decision: mainRepo + linked worktree model).
@@ -121,13 +156,14 @@ export class WorktreeGitService implements GitService {
   async diff(worktree: string, ref?: string): Promise<UnifiedDiff> {
     const canonicalRoot = this.assertRegistered(worktree);
     const git = simpleGit(canonicalRoot);
-    return ref === undefined ? git.diff(['HEAD']) : git.diff([ref]);
+    return ref === undefined ? git.diff(['HEAD']) : git.diff([validateRefArg(ref, 'ref')]);
   }
 
   async createWorktree(taskId: string, name: string): Promise<{ path: string; branch: string }> {
+    const safeTaskId = validateTaskId(taskId);
     const branch = validateBranchName(name);
     const main = await this.getMainRepo();
-    const path = join(this.worktreesDir, `${taskId}-${name}`);
+    const path = join(this.worktreesDir, `${safeTaskId}-${branch}`);
     // simple-git 3.x has no typed worktree task; drive `git worktree add` via raw.
     await main.raw(['worktree', 'add', path, '-b', branch]);
     this.registry.register(path);
@@ -136,13 +172,18 @@ export class WorktreeGitService implements GitService {
 
   async merge(base: string, branch: string): Promise<MergeResult> {
     const main = await this.getMainRepo();
+    const baseRef = validateRefArg(base, 'base branch');
+    const branchRef = validateRefArg(branch, 'branch');
     try {
-      await main.checkout(base);
+      await main.checkout(baseRef);
     } catch (err) {
-      return { ok: false, conflicts: [humanMessage(err, `cannot checkout base branch: ${base}`)] };
+      return {
+        ok: false,
+        conflicts: [humanMessage(err, `cannot checkout base branch: ${baseRef}`)],
+      };
     }
     try {
-      const res = await main.merge([branch]);
+      const res = await main.merge([branchRef]);
       if (res.result.includes('CONFLICT')) {
         return { ok: false, conflicts: conflictPaths(res) };
       }
@@ -156,7 +197,7 @@ export class WorktreeGitService implements GitService {
         }
       }
       // e.g. the target branch is checked out by a linked worktree (git worktree lock)
-      return { ok: false, conflicts: [humanMessage(err, `cannot merge branch: ${branch}`)] };
+      return { ok: false, conflicts: [humanMessage(err, `cannot merge branch: ${branchRef}`)] };
     }
   }
 

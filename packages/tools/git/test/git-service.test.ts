@@ -4,7 +4,12 @@ import { join } from 'node:path';
 import { WorktreeRegistry } from '@agora/tools-fs';
 import { simpleGit } from 'simple-git';
 import { afterEach, describe, expect, it } from 'vitest';
-import { validateBranchName, WorktreeGitService } from '../src/git-service';
+import {
+  validateBranchName,
+  validateRefArg,
+  validateTaskId,
+  WorktreeGitService,
+} from '../src/git-service';
 
 /**
  * Real-execution tests (decisions R11/G5): no mocks, no test doubles. Every case
@@ -87,6 +92,37 @@ describe('WorktreeGitService', () => {
       await expect(service.createWorktree('t1', bad)).rejects.toThrow('invalid branch name');
     }
     expect(validateBranchName('feature-ok')).toBe('feature-ok');
+  });
+
+  it('rejects task ids that could escape the worktrees directory (R7)', async () => {
+    const registry = new WorktreeRegistry();
+    const service = new WorktreeGitService(registry);
+
+    for (const bad of ['../escape', 'a/b', 'a\\b', 'a b', '..', '.', '.hidden', '']) {
+      expect(() => validateTaskId(bad), `taskId: ${bad}`).toThrow('invalid task id');
+      await expect(service.createWorktree(bad, 'feature-x')).rejects.toThrow('invalid task id');
+    }
+    expect(validateTaskId('t-1_ok')).toBe('t-1_ok');
+  });
+
+  it('rejects ref arguments that could be misparsed as git options', async () => {
+    const registry = new WorktreeRegistry();
+    const service = new WorktreeGitService(registry);
+    const { path } = track(await service.createWorktree('t1', 'feature-refs'));
+
+    for (const bad of ['--output=/tmp/pwned', '-n', 'HEAD --stat']) {
+      expect(() => validateRefArg(bad, 'ref'), `ref: ${bad}`).toThrow('invalid ref');
+      await expect(service.diff(path, bad)).rejects.toThrow('invalid ref');
+    }
+    for (const bad of ['--strategy=ours', '-q']) {
+      expect(() => validateRefArg(bad, 'base branch'), `base: ${bad}`).toThrow(
+        'invalid base branch',
+      );
+      await expect(service.merge(bad, 'feature-x')).rejects.toThrow('invalid base branch');
+    }
+    // Legitimate ref syntax stays allowed (ranges, ancestors, shorthands).
+    expect(validateRefArg('main..feature', 'ref')).toBe('main..feature');
+    expect(validateRefArg('HEAD~1', 'ref')).toBe('HEAD~1');
   });
 
   it('applies a patch, commits, and returns a real commit id', async () => {
