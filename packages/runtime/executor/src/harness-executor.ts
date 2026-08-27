@@ -163,6 +163,7 @@ export class HarnessExecutor implements Executor {
 
     const failure = this.agentErrors.get(context.sessionId);
     if (failure !== undefined) {
+      this.agentErrors.delete(context.sessionId);
       throw new Error(`agent turn failed: ${failureMessage(failure)}`);
     }
 

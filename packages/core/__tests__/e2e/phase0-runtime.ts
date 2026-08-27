@@ -33,6 +33,19 @@ const SUBTASK_STATUS_FILE = 'subtask-status.json';
  * the structured handoff files the executor reads back after the turn
  * (`test-results.json` for TESTER, `subtask-status.json` for CODER).
  */
+/**
+ * Phase 0 tool whitelist per role (spec §9: "工具只接 fs + sandbox.run"). The
+ * baseline RoleSpec.tools lists Phase 1 MCP names (`git`, `sandbox.applyPatch`,
+ * `lint`) that have no Phase 0 implementation; this map narrows each role to the
+ * tools actually registered by createPhase0Tools so the Coder can verify via
+ * sandbox_run (as its working rules prompt instructs) and the prompt/whitelist
+ * stay in sync.
+ */
+const PHASE0_TOOL_WHITELIST: Readonly<Record<string, readonly string[]>> = {
+  CODER: ['fs.read', 'fs.write', 'sandbox.run'],
+  TESTER: ['fs.read', 'fs.write', 'sandbox.run'],
+};
+
 const PHASE0_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   CODER:
     '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files (e.g. lru-cache.ts), fs_read to inspect, and sandbox_run to verify quickly.\n- After implementing and verifying, use fs_write to store {"status":"done"} at the worktree root in `subtask-status.json`.',
@@ -97,7 +110,8 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
   const workerRuntime = new WorkerRuntime({
     roster: PHASE0_ROSTER,
     buildExecutor: (spec, _assign): Executor => {
-      const roleTools = tools.filter((tool) => spec.tools.map(wireToolName).includes(tool.name));
+      const whitelist = (PHASE0_TOOL_WHITELIST[spec.role] ?? spec.tools).map(wireToolName);
+      const roleTools = tools.filter((tool) => whitelist.includes(tool.name));
       const handoff = PHASE0_HANDOFF[spec.role] ?? '';
       const executorSpec: RoleSpec = {
         ...spec,
