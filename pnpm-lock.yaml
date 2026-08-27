@@ -157,7 +157,21 @@ importers:
         specifier: ^4.0.0
         version: 4.4.3
 
-  packages/tools/git: {}
+  packages/tools/git:
+    dependencies:
+      '@agora/tools-fs':
+        specifier: workspace:*
+        version: link:../fs
+      '@modelcontextprotocol/sdk':
+        specifier: 'catalog:'
+        version: 1.30.0(zod@4.4.3)
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
+    optionalDependencies:
+      simple-git:
+        specifier: ^3.36.0
+        version: 3.36.0
 
   packages/tools/lint: {}
 
@@ -2751,6 +2765,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@kwsites/file-exists@1.1.1':
+    resolution: {integrity: sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw==}
+
+  '@kwsites/promise-deferred@1.1.1':
+    resolution: {integrity: sha512-GaHYm+c0O9MjZRu0ongGBRbinu8gVAMd2UZjji6jVmqKtZluZnptXGWhz1E8j8D2HJ3f/yMxKAUC0b+57wncIw==}
+
   '@mistralai/mistralai@2.2.6':
     resolution: {integrity: sha512-W8pX7zHxjJvMIpw8JMxeJEleapXX0Q9NPszdNzqkM3MIEoIGPObdodujj+WHteXEvGfaP/AMwlNyRfEzSY6dQQ==}
     peerDependencies:
@@ -3005,6 +3025,12 @@ packages:
     resolution: {integrity: sha512-hncn90N4sOky0L2LKE5oESKLbxCPeVo4eLA2LSMoDzM+879ml4WSr+Rr4DWknNIVVvS1Hirkc9hx02W6YxS8rQ==}
     cpu: [x64]
     os: [win32]
+
+  '@simple-git/args-pathspec@1.0.3':
+    resolution: {integrity: sha512-ngJMaHlsWDTfjyq9F3VIQ8b7NXbBLq5j9i5bJ6XLYtD6qlDXT7fdKY2KscWWUF8t18xx052Y/PUO1K1TRc9yKA==}
+
+  '@simple-git/argv-parser@1.1.1':
+    resolution: {integrity: sha512-Q9lBcfQ+VQCpQqGJFHe5yooOS5hGdLFFbJ5R+R5aDsnkPCahtn1hSkMcORX65J2Z5lxSkD0lQorMsncuBQxYUw==}
 
   '@smithy/core@3.33.3':
     resolution: {integrity: sha512-CsOeKq/9kA3y6VJHt+/+VTCtBaxJ4OTFpgrjIUhPpDIKxBci1k2bJaQASF2h/ELWrulGp+t97DZ0mevfAD8idg==}
@@ -3968,6 +3994,9 @@ packages:
 
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
+
+  simple-git@3.36.0:
+    resolution: {integrity: sha512-cGQjLjK8bxJw4QuYT7gxHw3/IouVESbhahSsHrX97MzCL1gu2u7oy38W6L2ZIGECEfIBG4BabsWDPjBxJENv9Q==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -7169,6 +7198,16 @@ snapshots:
   '@koromix/koffi-win32-x64@3.1.6':
     optional: true
 
+  '@kwsites/file-exists@1.1.1':
+    dependencies:
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
+  '@kwsites/promise-deferred@1.1.1':
+    optional: true
+
   '@mistralai/mistralai@2.2.6(@opentelemetry/api@1.9.0)':
     dependencies:
       '@opentelemetry/semantic-conventions': 1.43.0
@@ -7379,6 +7418,14 @@ snapshots:
     optional: true
 
   '@rollup/rollup-win32-x64-msvc@4.63.0':
+    optional: true
+
+  '@simple-git/args-pathspec@1.0.3':
+    optional: true
+
+  '@simple-git/argv-parser@1.1.1':
+    dependencies:
+      '@simple-git/args-pathspec': 1.0.3
     optional: true
 
   '@smithy/core@3.33.3':
@@ -8474,6 +8521,17 @@ snapshots:
       side-channel-weakmap: 1.0.2
 
   siginfo@2.0.0: {}
+
+  simple-git@3.36.0:
+    dependencies:
+      '@kwsites/file-exists': 1.1.1
+      '@kwsites/promise-deferred': 1.1.1
+      '@simple-git/args-pathspec': 1.0.3
+      '@simple-git/argv-parser': 1.1.1
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
 
   source-map-js@1.2.1: {}
 
