@@ -133,6 +133,12 @@ describeDocker('DockerSandbox (G5 real Docker execution)', () => {
     expect(after.timedOut).toBe(false);
   }, 15_000);
 
+  it('rejects roles that sanitize to an existing role directory (isolation)', async () => {
+    const taskId = 'docker-task-role-collide';
+    await makeWorktree(taskId, 'A_B');
+    await expect(sandbox.createWorktree(taskId, 'A/B')).rejects.toThrow(/collides with/);
+  }, 15_000);
+
   it('concurrent createWorktree for the same new task shares ONE container', async () => {
     const taskId = 'docker-task-concurrent';
     const [a, b] = await Promise.all([

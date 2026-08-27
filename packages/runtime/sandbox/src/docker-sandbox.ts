@@ -92,6 +92,15 @@ export class DockerSandbox implements SandboxManager {
     if (existing !== undefined) {
       return { path: existing, branch: `${taskId}-${role}` };
     }
+    // Two distinct roles must never collapse to one workspace: sanitizeSegment
+    // could map e.g. 'A/B' and 'A_B' to the same dir, silently merging isolation.
+    for (const [otherRole, otherPath] of record.roles) {
+      if (otherPath === hostPath && otherRole !== role) {
+        throw new Error(
+          `role '${role}' collides with '${otherRole}' under the same sanitized path`,
+        );
+      }
+    }
     mkdirSync(hostPath, { recursive: true });
     record.roles.set(role, hostPath);
     // One container per task: the worktree path is the role's host dir inside
