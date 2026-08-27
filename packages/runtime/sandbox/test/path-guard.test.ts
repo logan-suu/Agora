@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -18,8 +18,7 @@ function makeRoot(): string {
 
 afterEach(() => {
   for (const root of roots.splice(0)) {
-    // Best-effort cleanup; symlinks inside are removed with the dir.
-    void root;
+    rmSync(root, { recursive: true, force: true });
   }
 });
 
@@ -63,6 +62,25 @@ describe('assertInside (shared path guard, R7 confinement)', () => {
     symlinkSync(join(root, 'a'), join(root, 'alias'));
 
     expect(assertInside(root, 'alias/real.txt')).toBe(join(root, 'a', 'real.txt'));
+  });
+
+  it('rejects a dangling final symlink pointing outside the root (DEF-001)', () => {
+    const root = makeRoot();
+    const outside = mkdtempSync(join(tmpdir(), 'agora-outside-'));
+    roots.push(outside);
+    // Target does not exist yet: realpath fails, but the symlink itself lstats.
+    symlinkSync(join(outside, 'new.txt'), join(root, 'leak.txt'));
+
+    expect(() => assertInside(root, 'leak.txt')).toThrow(/escapes sandbox root/);
+  });
+
+  it('rejects a dangling symlinked parent escaping the root (DEF-001)', () => {
+    const root = makeRoot();
+    const outside = mkdtempSync(join(tmpdir(), 'agora-outside-'));
+    roots.push(outside);
+    symlinkSync(join(outside, 'missing-dir'), join(root, 'dangling'));
+
+    expect(() => assertInside(root, 'dangling/new.txt')).toThrow(/escapes sandbox root/);
   });
 
   it('throws a clear error when the path cannot be resolved at all', () => {

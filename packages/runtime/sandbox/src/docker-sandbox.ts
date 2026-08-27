@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve } from 'node:path';
-import type { Container, Exec } from 'dockerode';
+import type { Container } from 'dockerode';
 import Dockerode from 'dockerode';
 import { assertInside } from './path-guard';
 import type { SandboxManager } from './sandbox-manager';
@@ -9,6 +9,9 @@ import type { IntegrationResult, RunResult, Worktree } from './types';
 
 /** Default per-command timeout (decision R7: 30s). */
 const DEFAULT_TIMEOUT_MS = 30_000;
+
+/** Grace after the wrapper deadline before the container-kill backstop fires. */
+const BACKSTOP_GRACE_MS = 10_000;
 
 /** Directory where torn-down sandbox roots are moved to (move, not delete). */
 const TEARDOWN_STAGING = join(tmpdir(), 'agora-sandbox-trash');
@@ -70,6 +73,7 @@ export class DockerSandbox implements SandboxManager {
   private readonly cpuShares: number;
   private readonly baseDir: string;
   private readonly containers = new Map<string, ContainerRecord>();
+  private readonly creating = new Map<string, Promise<ContainerRecord>>();
 
   constructor(options: DockerSandboxOptions = {}) {
     this.docker = options.docker ?? new Dockerode();
@@ -109,8 +113,12 @@ export class DockerSandbox implements SandboxManager {
   async run(worktree: Worktree, cmd: string, timeout = DEFAULT_TIMEOUT_MS): Promise<RunResult> {
     const record = this.recordFor(worktree);
     const containerPath = this.toContainerPath(record, worktree.path);
+    // Docker has no POST /exec/{id}/kill (404); wrap the command in coreutils
+    // `timeout -s KILL` so a timeout kills only the exec process group and the
+    // container stays usable. argv-array form avoids a shell re-parse of `cmd`.
+    const seconds = Math.max(1, Math.ceil(timeout / 1000));
     const exec = await record.container.exec({
-      Cmd: ['/bin/sh', '-c', cmd],
+      Cmd: ['timeout', '-s', 'KILL', String(seconds), '/bin/sh', '-c', cmd],
       WorkingDir: containerPath,
       AttachStdout: true,
       AttachStderr: true,
@@ -119,15 +127,15 @@ export class DockerSandbox implements SandboxManager {
       let stdout = '';
       let stderr = '';
       let timedOut = false;
+      const startedAt = Date.now();
 
       const timer = setTimeout(() => {
         timedOut = true;
-        // dockerode 4.x has no exec.kill(); use the Docker API directly
-        // (POST /exec/{id}/kill), falling back to killing the whole container.
-        void killExec(record.container, exec).catch(() => {
-          void record.container.kill().catch(() => {});
-        });
-      }, timeout);
+        // Backstop: if the image lacks coreutils `timeout`, kill the whole
+        // container so the exec stream ends and the caller never hangs. Fires
+        // long after the wrapper deadline so a healthy container is unaffected.
+        void record.container.kill().catch(() => {});
+      }, timeout + BACKSTOP_GRACE_MS);
 
       exec.start({ Detach: false }).then(
         (stream) => {
@@ -151,7 +159,17 @@ export class DockerSandbox implements SandboxManager {
             }
             try {
               const info = await exec.inspect();
-              resolvePromise({ exitCode: info.ExitCode ?? null, stdout, stderr, timedOut: false });
+              // The coreutils wrapper enforces the real deadline (ceil to whole
+              // seconds); if the process died at/after the requested timeout, it
+              // was the wrapper that killed it (ExitCode 137 = 128+SIGKILL).
+              const wrapperTimedOut =
+                (info.ExitCode ?? 0) === 137 && Date.now() - startedAt >= timeout;
+              resolvePromise({
+                exitCode: wrapperTimedOut ? null : (info.ExitCode ?? null),
+                stdout,
+                stderr,
+                timedOut: wrapperTimedOut,
+              });
             } catch (err) {
               reject(err instanceof Error ? err : new Error(String(err)));
             }
@@ -198,6 +216,22 @@ export class DockerSandbox implements SandboxManager {
     if (existing !== undefined) {
       return existing;
     }
+    // Serialize per-task creation: concurrent createWorktree calls for the same
+    // new task must share ONE container instead of both creating a record.
+    const inflight = this.creating.get(taskId);
+    if (inflight !== undefined) {
+      return inflight;
+    }
+    const promise = this.createContainer(taskId);
+    this.creating.set(taskId, promise);
+    try {
+      return await promise;
+    } finally {
+      this.creating.delete(taskId);
+    }
+  }
+
+  private async createContainer(taskId: string): Promise<ContainerRecord> {
     await this.ensureImage();
     const hostRoot = mkdtempSync(join(this.baseDir, `agora-docker-${sanitizeSegment(taskId)}-`));
     const container = await this.docker.createContainer({
@@ -263,23 +297,6 @@ export class DockerSandbox implements SandboxManager {
     const rel = relative(record.hostRoot, resolve(hostPath));
     return join(CONTAINER_WORKDIR, rel);
   }
-}
-
-/** Kill a running exec via the Docker API (POST /exec/{id}/kill). */
-function killExec(container: Container, exec: Exec): Promise<void> {
-  return new Promise<void>((resolvePromise, reject) => {
-    container.modem.dial(
-      {
-        path: `/exec/${exec.id}/kill`,
-        method: 'POST',
-        statusCodes: { 200: true, 404: 'no such exec' },
-      },
-      (err: Error | null) => {
-        if (err) reject(err);
-        else resolvePromise();
-      },
-    );
-  });
 }
 
 /** Reduce an arbitrary segment to a filesystem-safe name. */

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import Dockerode from 'dockerode';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DockerSandbox } from '../src/docker-sandbox';
@@ -117,7 +117,7 @@ describeDocker('DockerSandbox (G5 real Docker execution)', () => {
     expect(result.stdout).toContain('hi from bind mount');
   });
 
-  it('run enforces a timeout and kills the exec (R7 30s default, overridable)', async () => {
+  it('run enforces a timeout and kills only the exec, container stays usable (R7)', async () => {
     const wt = await makeWorktree('docker-task-k', 'CODER');
     const startedAt = Date.now();
     const result = await sandbox.run(wt, 'sleep 5', 1000);
@@ -125,6 +125,27 @@ describeDocker('DockerSandbox (G5 real Docker execution)', () => {
     expect(result.timedOut).toBe(true);
     expect(result.exitCode).toBeNull();
     expect(elapsed).toBeLessThan(5000);
+    // Regression (CodeRabbit PR#17): the timeout must kill only the exec process
+    // group, NOT the whole container — later runs on the same task must work.
+    const after = await sandbox.run(wt, 'echo container-alive');
+    expect(after.exitCode).toBe(0);
+    expect(after.stdout).toContain('container-alive');
+    expect(after.timedOut).toBe(false);
+  }, 15_000);
+
+  it('concurrent createWorktree for the same new task shares ONE container', async () => {
+    const taskId = 'docker-task-concurrent';
+    const [a, b] = await Promise.all([
+      sandbox.createWorktree(taskId, 'CODER'),
+      sandbox.createWorktree(taskId, 'TESTER'),
+    ]);
+    createdTaskIds.push(taskId);
+    expect(a.path).not.toBe(b.path);
+    // Both roles live under the SAME host root → a single per-task container.
+    expect(dirname(a.path)).toBe(dirname(b.path));
+    // Both worktrees resolve to the one record (recordFor must not throw).
+    await sandbox.write(a, 'shared.txt', 'one-container');
+    expect(await sandbox.read(a, 'shared.txt')).toBe('one-container');
   }, 15_000);
 
   it('integrate is explicitly not implemented in Phase 1 (git semantics in tools/git)', async () => {

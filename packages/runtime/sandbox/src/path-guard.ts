@@ -1,4 +1,4 @@
-import { realpathSync } from 'node:fs';
+import { lstatSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, resolve, sep } from 'node:path';
 
 /**
@@ -26,6 +26,10 @@ export function assertInside(root: string, path: string): string {
  * Canonicalize `path`, walking up to the nearest existing ancestor when the
  * path does not exist yet (writes). Resolves every symlink above the nearest
  * existing component so an escaping symlink is surfaced to the caller.
+ *
+ * Components that exist but fail to realpath (dangling symlinks) are rejected:
+ * their target cannot be proven to stay inside the root, so a write following
+ * such a symlink must never be allowed (DEF-001 hardening).
  */
 function realpathNearestExisting(path: string): string {
   const tail: string[] = [];
@@ -35,6 +39,19 @@ function realpathNearestExisting(path: string): string {
       const canonical = realpathSync(current);
       return tail.length === 0 ? canonical : join(canonical, ...tail.reverse());
     } catch {
+      // The current component exists but is not resolvable (dangling symlink)
+      // — its target may point outside the root, so reject it outright.
+      try {
+        const stat = lstatSync(current);
+        if (stat.isSymbolicLink()) {
+          throw new Error(`path escapes sandbox root: ${path}`);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.startsWith('path escapes sandbox root')) {
+          throw err;
+        }
+        // Component does not exist yet — safe to walk up one level.
+      }
       const parent = dirname(current);
       if (parent === current) {
         throw new Error(`cannot resolve path: ${path}`);

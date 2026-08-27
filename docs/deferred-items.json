@@ -19,7 +19,7 @@
       "status": "resolved",
       "resolved_by": "Sisyphus (task 1.4)",
       "created_at": "2026-08-26T10:00:00.000Z",
-      "notes": "Resolved in task 1.4: shared path-guard.ts assertInside now canonicalizes root and target (nearest existing ancestor fallback for writes) with realpathSync, rejecting any symlink that redirects outside the root. Used by both LocalTempSandbox and DockerSandbox. Covered by packages/runtime/sandbox/test/path-guard.test.ts (symlink read-escape, symlinked-parent write-escape, in-root symlink allowed).",
+      "notes": "Resolved in task 1.4: shared path-guard.ts assertInside now canonicalizes root and target (nearest existing ancestor fallback for writes) with realpathSync, rejecting any symlink that redirects outside the root, plus dangling symlinks (target nonexistent) rejected via lstat during the walk-up — writes through a dangling escaping symlink are blocked. Used by both LocalTempSandbox and DockerSandbox. Covered by packages/runtime/sandbox/test/path-guard.test.ts (symlink read-escape, symlinked-parent write-escape, in-root symlink allowed, dangling final symlink, dangling symlinked parent). [2026-08-27 PR#17 review] TOCTOU between assertInside and the fs call remains (DEF-004), out of scope here.",
       "resolved_at": "2026-08-27T00:00:00.000Z"
     },
     {
