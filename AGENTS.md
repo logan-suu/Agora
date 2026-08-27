@@ -131,7 +131,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 编排          自研轻量层（4 通用节点 + coordinator 条件路由，~500-800 行）
 工具协议      MCP TS SDK v1（@modelcontextprotocol/sdk 1.30.0，锁定）
 沙箱          Phase 0: LocalTempSandbox(fs.mkdtempSync + child_process.spawn)；Phase 1+: Docker(dockerode ^4)
-版本控制      simple-git 8.x（worktree/merge，Phase 1+ 实际启用）
+版本控制      simple-git 3.36.x（worktree/merge，Phase 1+ 实际启用）
 前端          Next.js 15 + React 19（Phase 5 起）
 实时通信      SSE（收）+ HTTP POST（发），禁用 WebSocket
 持久化        Phase 0: 文件系统 JSON/JSONL（.data/）；Phase 5+: SQLite 可选
