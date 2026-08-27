@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -67,6 +67,21 @@ describe('WorktreeFsService', () => {
     service.write(root, 'real.txt', 'inside');
     symlinkSync(join(root, 'real.txt'), join(root, 'alias.txt'));
     expect(service.read(root, 'alias.txt')).toBe('inside');
+  });
+
+  it('rejects a registered root retargeted via symlink', () => {
+    const first = mkdtempSync(join(tmpdir(), 'agora-first-'));
+    const second = mkdtempSync(join(tmpdir(), 'agora-second-'));
+    const link = join(tmpdir(), `agora-link-${process.pid}-${Math.random().toString(36).slice(2)}`);
+    symlinkSync(first, link);
+    registry.register(link);
+    service.write(link, 'a.txt', 'x');
+    expect(service.read(link, 'a.txt')).toBe('x');
+
+    unlinkSync(link);
+    symlinkSync(second, link);
+    expect(() => service.read(link, 'a.txt')).toThrow(/retargeted/);
+    expect(() => service.write(link, 'b.txt', 'x')).toThrow(/retargeted/);
   });
 
   it('read honors a character range', () => {

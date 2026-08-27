@@ -60,11 +60,15 @@ export class WorktreeFsService implements FsService {
   }
 
   private assertRegistered(root: string): string {
-    const rootResolved = resolve(root);
-    if (!this.registry.isRegistered(root)) {
+    const lexical = resolve(root);
+    const bound = this.registry.canonicalOf(root);
+    if (bound === undefined) {
       throw new Error(`worktree not registered: ${root}`);
     }
-    const canonicalRoot = realpathSync(rootResolved);
+    const canonicalRoot = realpathSync(lexical);
+    if (canonicalRoot !== bound) {
+      throw new Error(`worktree root retargeted: ${root}`);
+    }
     accessSync(canonicalRoot, fsConstants.R_OK);
     return canonicalRoot;
   }
