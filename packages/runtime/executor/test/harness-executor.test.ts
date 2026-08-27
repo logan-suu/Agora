@@ -144,6 +144,46 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
     }
   });
 
+  it('keeps distinct session ids on distinct agents so turns do not cross-read each other', async () => {
+    const fake = new FakeLlmAdapter();
+    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+    try {
+      const first = {
+        ...codingState(),
+        subtasks: [
+          {
+            id: 's-a',
+            title: 'task-for-session-a',
+            ownerRole: 'CODER',
+            dependsOn: [],
+            status: 'in_progress' as const,
+          },
+        ],
+      };
+      const second = {
+        ...codingState(),
+        subtasks: [
+          {
+            id: 's-b',
+            title: 'task-for-session-b',
+            ownerRole: 'CODER',
+            dependsOn: [],
+            status: 'in_progress' as const,
+          },
+        ],
+      };
+      await executor.step({ sessionId: 'ses-a', view: project(first, 'CODER', PHASE0_ROSTER) });
+      await executor.step({ sessionId: 'ses-b', view: project(second, 'CODER', PHASE0_ROSTER) });
+
+      expect(fake.calls).toHaveLength(2);
+      // Fresh session: the second agent's history must not contain the first session's view.
+      expect(fake.calls[1]?.messagesText).toContain('task-for-session-b');
+      expect(fake.calls[1]?.messagesText).not.toContain('task-for-session-a');
+    } finally {
+      await executor.dispose();
+    }
+  });
+
   it('saveSafePoint returns the live session id and loadSafePoint is a Phase 0 no-op', async () => {
     const fake = new FakeLlmAdapter();
     const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });

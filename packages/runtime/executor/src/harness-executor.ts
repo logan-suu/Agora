@@ -13,7 +13,7 @@ import ToolRuntime from '@deepseek-ai/dsh-tools';
 import type { Executor, ProjectionView, StepContext, StepResult } from './base';
 
 /** Default model name used when neither RoleSpec.model nor AGORA_MODEL is set. */
-const DEFAULT_MODEL = 'deepseek-chat';
+const DEFAULT_MODEL = 'deepseek-v4-flash';
 
 /** Provider name for a caller-registered adapter (tests inject a fake LLM here). */
 const DEFAULT_PROVIDER = 'agora';
@@ -55,9 +55,11 @@ export class HarnessExecutor implements Executor {
   private readonly adapter: LlmAdapter | undefined;
   private readonly pluginFibers: Fiber[] = [];
   private ready: Promise<void>;
-  private handle: AgentHandle | null = null;
+  private readonly handles = new Map<string, AgentHandle>();
   private view: ProjectionView = { role: '', slices: {} };
   private pendingInbox: ProjectionView | null = null;
+  private stepChain: Promise<unknown> = Promise.resolve();
+  private activeSessionId: string | null = null;
 
   constructor(
     private readonly spec: RoleSpec,
@@ -94,8 +96,17 @@ export class HarnessExecutor implements Executor {
     }
   }
 
-  /** One worker turn = one `step()`; resolves on turn quiescence (Phase 0 degenerate). */
+  /** One worker turn = one `step()`; serialized so concurrent calls cannot cross-read turns. */
   async step(context: StepContext): Promise<StepResult> {
+    const run = this.stepChain.then(() => this.doStep(context));
+    this.stepChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  private async doStep(context: StepContext): Promise<StepResult> {
     await this.ready;
     // Injected view (injectInbox) wins over context.view on the next step.
     if (this.pendingInbox !== null) {
@@ -104,6 +115,7 @@ export class HarnessExecutor implements Executor {
     } else {
       this.view = context.view;
     }
+    this.activeSessionId = context.sessionId;
     const agent = await this.ensureAgent(context.sessionId);
 
     // Wake the self-driving loop with the projection slice as this turn's input.
@@ -120,10 +132,10 @@ export class HarnessExecutor implements Executor {
     };
   }
 
-  /** Phase 0 safe-point cursor: the live session id (decision D4 recovery seam). */
+  /** Phase 0 safe-point cursor: the most recently active session id (decision D4 recovery seam). */
   async saveSafePoint(): Promise<string> {
     await this.ready;
-    return String(this.handle?.agent.id ?? 'no-session');
+    return this.activeSessionId ?? 'no-session';
   }
 
   /** Phase 0 no-op; real fork-recovery landing is task 8.1 (humanGate Terminate & Fork). */
@@ -135,21 +147,24 @@ export class HarnessExecutor implements Executor {
   /** Store the projection for the next `step`; the next `agent/pre-step` re-projects from it. */
   injectInbox(view: ProjectionView): void {
     this.pendingInbox = view;
-    this.view = view;
   }
 
-  /** Release the agent loop and tear down all loaded plugins (reverse order). */
+  /** Release every agent loop and tear down all loaded plugins (reverse order). */
   async dispose(): Promise<void> {
     await this.ready;
-    await this.handle?.dispose();
-    this.handle = null;
+    for (const handle of this.handles.values()) {
+      await handle.dispose();
+    }
+    this.handles.clear();
+    this.activeSessionId = null;
     for (let i = this.pluginFibers.length - 1; i >= 0; i -= 1) {
       await this.pluginFibers[i]?.dispose();
     }
   }
 
   private async ensureAgent(sessionId: string): Promise<Agent> {
-    if (this.handle !== null) return this.handle.agent;
+    const existing = this.handles.get(sessionId);
+    if (existing !== undefined) return existing.agent;
     const handle = await this.ctx.agents.create({
       sessionId: SessionId(sessionId),
       agentOptions: { provider: this.provider, model: this.resolveModel() },
@@ -166,7 +181,7 @@ export class HarnessExecutor implements Executor {
         });
       },
     });
-    this.handle = handle;
+    this.handles.set(sessionId, handle);
     return handle.agent;
   }
 

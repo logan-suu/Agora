@@ -19,14 +19,14 @@ export function project(
   const slices: Record<string, unknown> = {};
   if (spec !== undefined) {
     for (const slice of spec.projection) {
-      slices[slice] = phase0Stub(state, slice);
+      slices[slice] = phase0Stub(state, role, slice);
     }
   }
   return { role: String(role), slices };
 }
 
 /** Stable Phase 0 stub per slice name; precise values land in task 3.3. */
-function phase0Stub(state: AppState, slice: string): unknown {
+function phase0Stub(state: AppState, role: RoleId, slice: string): unknown {
   switch (slice) {
     case 'global.summary':
       return {
@@ -37,7 +37,7 @@ function phase0Stub(state: AppState, slice: string): unknown {
       };
     case 'assignedSubtask':
       return state.subtasks
-        .filter((s) => s.status !== 'done')
+        .filter((s) => s.status !== 'done' && s.ownerRole === role)
         .map((s) => ({
           id: s.id,
           title: s.title,
