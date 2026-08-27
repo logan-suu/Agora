@@ -231,6 +231,7 @@ export class DockerSandbox implements SandboxManager {
     }
   }
 
+  /** Create + start the per-task container and its host root (not serialized). */
   private async createContainer(taskId: string): Promise<ContainerRecord> {
     await this.ensureImage();
     const hostRoot = mkdtempSync(join(this.baseDir, `agora-docker-${sanitizeSegment(taskId)}-`));
