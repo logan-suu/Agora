@@ -9,6 +9,9 @@ catalogs:
     '@biomejs/biome':
       specifier: ^2.0.0
       version: 2.5.10
+    '@modelcontextprotocol/sdk':
+      specifier: 1.30.0
+      version: 1.30.0
     '@types/node':
       specifier: ^20.0.0
       version: 20.19.43
@@ -145,7 +148,14 @@ importers:
 
   packages/shared: {}
 
-  packages/tools/fs: {}
+  packages/tools/fs:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: 'catalog:'
+        version: 1.30.0(zod@4.4.3)
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
 
   packages/tools/git: {}
 
