@@ -163,7 +163,17 @@ importers:
 
   packages/tools/sandbox: {}
 
-  packages/tools/test: {}
+  packages/tools/test:
+    dependencies:
+      '@agora/tools-fs':
+        specifier: workspace:*
+        version: link:../fs
+      '@modelcontextprotocol/sdk':
+        specifier: 'catalog:'
+        version: 1.30.0(zod@4.4.3)
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
 
 packages:
 
