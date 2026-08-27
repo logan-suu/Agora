@@ -57,6 +57,7 @@ export class HarnessExecutor implements Executor {
   private ready: Promise<void>;
   private handle: AgentHandle | null = null;
   private view: ProjectionView = { role: '', slices: {} };
+  private pendingInbox: ProjectionView | null = null;
 
   constructor(
     private readonly spec: RoleSpec,
@@ -96,7 +97,13 @@ export class HarnessExecutor implements Executor {
   /** One worker turn = one `step()`; resolves on turn quiescence (Phase 0 degenerate). */
   async step(context: StepContext): Promise<StepResult> {
     await this.ready;
-    this.view = context.view;
+    // Injected view (injectInbox) wins over context.view on the next step.
+    if (this.pendingInbox !== null) {
+      this.view = this.pendingInbox;
+      this.pendingInbox = null;
+    } else {
+      this.view = context.view;
+    }
     const agent = await this.ensureAgent(context.sessionId);
 
     // Wake the self-driving loop with the projection slice as this turn's input.
@@ -125,8 +132,9 @@ export class HarnessExecutor implements Executor {
     // from the cursor lands in task 8.1.
   }
 
-  /** Store the latest projection view; the next `agent/pre-step` re-projects from it. */
+  /** Store the projection for the next `step`; the next `agent/pre-step` re-projects from it. */
   injectInbox(view: ProjectionView): void {
+    this.pendingInbox = view;
     this.view = view;
   }
 

@@ -131,8 +131,10 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
           },
         ],
       };
+      // injectInbox must take effect on the next step even when step() is
+      // called with a stale view: the injected projection wins (preemption seam).
       executor.injectInbox(project(updated, 'CODER', PHASE0_ROSTER));
-      await executor.step({ sessionId: 'ses-4', view: project(updated, 'CODER', PHASE0_ROSTER) });
+      await executor.step({ sessionId: 'ses-4', view: project(initial, 'CODER', PHASE0_ROSTER) });
 
       expect(fake.calls).toHaveLength(2);
       expect(fake.calls[0]?.messagesText).toContain('first plan');
