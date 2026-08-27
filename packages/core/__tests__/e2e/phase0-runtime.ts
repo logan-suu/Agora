@@ -107,6 +107,7 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
       return undefined;
     }
   };
+  const executors: HarnessExecutor[] = [];
   const workerRuntime = new WorkerRuntime({
     roster: PHASE0_ROSTER,
     buildExecutor: (spec, _assign): Executor => {
@@ -118,12 +119,14 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
         ...(options.model === undefined ? {} : { model: options.model }),
         systemPrompt: spec.systemPrompt + handoff,
       };
-      return new HarnessExecutor(executorSpec, {
+      const executor = new HarnessExecutor(executorSpec, {
         ...(options.deepseek === undefined ? {} : { deepseek: options.deepseek }),
         tools: roleTools,
         ...(spec.role === 'TESTER' ? { readTestResults } : {}),
         ...(spec.role === 'CODER' ? { readSubtaskStatus } : {}),
       });
+      executors.push(executor);
+      return executor;
     },
   });
   const initialState = applyMutations(createInitialAppState(options.taskId, options.goal), [
@@ -141,6 +144,7 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
     sandbox,
     worktree,
     dispose: async () => {
+      await Promise.all(executors.map((executor) => executor.dispose()));
       await sandbox.teardown(options.taskId);
     },
   };
