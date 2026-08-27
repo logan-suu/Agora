@@ -9,6 +9,10 @@ import type { ProjectionView } from './base';
  * `ProjectionView` shape the `agent/pre-step` overwrite needs, WITHOUT leaking
  * the raw chat log (R2): every slice the role subscribes to is present with a
  * stable Phase 0 stub. Unknown slices are present-but-empty.
+ *
+ * 0.6 enrichment for the LRU verification loop: `assignedSubtask` carries the
+ * worktree path, `failingTests` feeds the Coder retry feedback, and
+ * `acceptance` gives the Tester the goal plus any prior test results.
  */
 export function project(
   state: AppState,
@@ -43,7 +47,24 @@ function phase0Stub(state: AppState, role: RoleId, slice: string): unknown {
           title: s.title,
           ownerRole: s.ownerRole,
           status: s.status,
+          worktree: s.worktree,
         }));
+    case 'failingTests':
+      return state.testResults === undefined
+        ? { passed: null, total: 0, failed: 0, failures: [] }
+        : {
+            passed: state.testResults.passed,
+            total: state.testResults.total,
+            failed: state.testResults.failed,
+            failures: state.testResults.failures,
+          };
+    case 'acceptance':
+      return {
+        taskId: state.taskId,
+        goal: state.goal,
+        phase: state.phase,
+        testResults: state.testResults ?? null,
+      };
     default:
       // Present-but-empty: never a raw log dump (R2). Precise values in 3.3.
       return {};
