@@ -1,10 +1,16 @@
-import type { AppState } from '@agora/core-domain';
+import type { AppState, RoleSpec } from '@agora/core-domain';
 import { applyMutations, setMutation } from '@agora/core-domain';
 import { decide } from './coordinator';
 import type { WorkerRuntime } from './worker-runtime';
 
 export interface OrchestrationDeps {
   workerRuntime: WorkerRuntime;
+  /**
+   * Team composition forwarded to the coordinator's conditional routing
+   * (task 2.2). Phase 0/1 composition roots pass their 3-role roster to keep
+   * the fixed CODER↔TESTER slice; omit for the full 6-role machine.
+   */
+  roster?: readonly RoleSpec[];
 }
 
 export function entry(state: AppState): AppState {
@@ -18,7 +24,7 @@ export async function runOrchestration(
 ): Promise<AppState> {
   let state = entry(initialState);
   while (state.phase !== 'done') {
-    const decision = decide(state);
+    const decision = decide(state, deps.roster === undefined ? undefined : { roster: deps.roster });
     if (decision.mutations.length > 0) {
       state = applyMutations(state, decision.mutations);
     }

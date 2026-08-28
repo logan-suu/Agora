@@ -306,6 +306,7 @@ describe('Phase 1 exit integration (scripted LLM, real MCP fs + LocalTemp sandbo
     });
     final = await runOrchestration(runtime.initialState, {
       workerRuntime: runtime.workerRuntime,
+      roster: PHASE0_ROSTER,
     });
   }, 60_000);
 
@@ -570,6 +571,7 @@ describeDocker('Phase 1 exit: Docker sandbox dual-mode (full loop, real containe
     });
     final = await runOrchestration(runtime.initialState, {
       workerRuntime: runtime.workerRuntime,
+      roster: PHASE0_ROSTER,
     });
   }, 120_000);
 

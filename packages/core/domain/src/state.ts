@@ -27,6 +27,13 @@ export type MsgType =
   | 'chat'
   | 'announce';
 
+export interface Requirement {
+  id: string;
+  story: string;
+  acceptance: string[];
+  nonGoals: string[];
+}
+
 export interface Subtask {
   id: string;
   title: string;
@@ -75,6 +82,9 @@ export interface AppState {
   iterationCount: number;
   subtasks: Subtask[];
   messages: Message[];
+  requirements: Requirement[];
+  reviewComments: Record<string, unknown>[];
+  architecture?: Record<string, unknown>;
   pendingPatch?: Record<string, unknown>;
   testResults?: TestResults;
   nextRole?: string;
@@ -88,5 +98,7 @@ export function createInitialAppState(taskId: string, goal: string): AppState {
     iterationCount: 0,
     subtasks: [],
     messages: [],
+    requirements: [],
+    reviewComments: [],
   };
 }

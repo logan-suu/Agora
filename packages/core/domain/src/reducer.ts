@@ -1,4 +1,4 @@
-import type { AppState, Message, Phase, Subtask, TestResults } from './state';
+import type { AppState, Message, Phase, Requirement, Subtask, TestResults } from './state';
 
 export const APPEND_FIELDS = [
   'messages',
@@ -10,7 +10,13 @@ export const APPEND_FIELDS = [
 ] as const;
 export type AppendField = (typeof APPEND_FIELDS)[number];
 
-export const MERGE_BY_ID_FIELDS = ['workers', 'subtasks', 'channels', 'roster'] as const;
+export const MERGE_BY_ID_FIELDS = [
+  'workers',
+  'subtasks',
+  'channels',
+  'roster',
+  'requirements',
+] as const;
 export type MergeByIdField = (typeof MERGE_BY_ID_FIELDS)[number];
 
 export const SET_FIELDS = [
@@ -24,19 +30,20 @@ export const SET_FIELDS = [
 ] as const;
 export type SetField = (typeof SET_FIELDS)[number];
 
-export type Mutation =
-  | { field: AppendField; op: 'append'; value: unknown }
-  | { field: MergeByIdField; op: 'mergeById'; value: { id: string } }
-  | { field: SetField; op: 'set'; value: unknown };
-
-export const ENABLED_APPEND_FIELDS: readonly AppendField[] = ['messages'];
-export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = ['subtasks'];
+export const ENABLED_APPEND_FIELDS: readonly AppendField[] = ['messages', 'reviewComments'];
+export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = ['subtasks', 'requirements'];
 export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'testResults',
   'phase',
   'nextRole',
   'iterationCount',
+  'architecture',
 ];
+
+export type Mutation =
+  | { field: AppendField; op: 'append'; value: unknown }
+  | { field: MergeByIdField; op: 'mergeById'; value: { id: string } }
+  | { field: SetField; op: 'set'; value: unknown };
 
 export function appendMutation(field: AppendField, value: unknown): Mutation {
   return { field, op: 'append', value };
@@ -99,6 +106,14 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
   switch (field) {
     case 'messages':
       return { ...state, messages: deduplicatedAppend(state.messages, value) as Message[] };
+    case 'reviewComments':
+      return {
+        ...state,
+        reviewComments: deduplicatedAppend(state.reviewComments, value) as Record<
+          string,
+          unknown
+        >[],
+      };
     default:
       throw new Error(`no writer registered for append field "${field}"`);
   }
@@ -119,6 +134,20 @@ function applyMergeById(state: AppState, field: MergeByIdField, value: { id: str
       subtasks[index] = merged;
       return { ...state, subtasks };
     }
+    case 'requirements': {
+      const index = state.requirements.findIndex((item) => item.id === value.id);
+      if (index < 0) {
+        return { ...state, requirements: [...state.requirements, value as Requirement] };
+      }
+      const existing = state.requirements[index];
+      if (existing === undefined) {
+        throw new Error(`requirement "${value.id}" disappeared during merge`);
+      }
+      const merged: Requirement = { ...existing, ...value };
+      const requirements = state.requirements.slice();
+      requirements[index] = merged;
+      return { ...state, requirements };
+    }
     default:
       throw new Error(`no writer registered for mergeById field "${field}"`);
   }
@@ -138,6 +167,11 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
         throw new Error('iterationCount must be a non-negative integer');
       }
       return { ...state, iterationCount: value };
+    case 'architecture':
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        throw new Error('architecture must be a non-array object');
+      }
+      return { ...state, architecture: value as Record<string, unknown> };
     default:
       throw new Error(`no writer registered for set field "${field}"`);
   }

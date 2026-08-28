@@ -1,4 +1,5 @@
 import { readdirSync } from 'node:fs';
+import { PHASE0_ROSTER } from '@agora/core-domain';
 import { runOrchestration } from '@agora/core-orchestration';
 import { describe, expect, it } from 'vitest';
 import { createPhase0Runtime } from './phase0-runtime';
@@ -29,6 +30,7 @@ describe.skipIf(!hasKey)(
       try {
         const final = await runOrchestration(runtime.initialState, {
           workerRuntime: runtime.workerRuntime,
+          roster: PHASE0_ROSTER,
         });
 
         expect(final.phase).toBe('done');

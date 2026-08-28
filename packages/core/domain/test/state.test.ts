@@ -26,6 +26,8 @@ describe('createInitialAppState', () => {
         { id: 'st-1', title: 'lru', ownerRole: 'CODER', dependsOn: [], status: 'in_progress' },
       ],
       messages: [],
+      requirements: [],
+      reviewComments: [],
       pendingPatch: { files: ['src/lru.ts'] },
       nextRole: 'TESTER',
     };
