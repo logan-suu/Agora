@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-28T02:48:09.000Z",
+  "last_updated": "2026-08-28T03:48:29.000Z",
   "current_phase": 1,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -358,16 +358,16 @@
           "id": "1.5",
           "title": "工具-角色权限矩阵落地（RoleSpec.tools 白名单）",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/详细设计方案.md §2"
           ],
           "dependencies": [
             "1.1"
           ],
-          "test_file": null,
-          "notes": "装载角色时把 RoleSpec.tools 注册到该 Harness loop 实例的 ctx.tools scheduler（含超时/审批/限流）；经 subagent toolFilter 作用域化。\n[2026-08-27 /pr-merge-agora] 级联翻转 pending→ready（依赖 1.1 已 done，PR #12 合并 hash 369889d5）。",
-          "last_updated": "2026-08-27T07:15:00.000Z"
+          "test_file": "packages/tools/bridge/test/bridge.test.ts, packages/tools/bridge/test/loader.test.ts, packages/runtime/executor/test/tool-governance.test.ts",
+          "notes": "装载角色时把 RoleSpec.tools 注册到该 Harness loop 实例的 ctx.tools scheduler（含超时/审批/限流）；经 subagent toolFilter 作用域化。\n[2026-08-27 /pr-merge-agora] 级联翻转 pending→ready（依赖 1.1 已 done，PR #12 合并 hash 369889d5）。\n[2026-08-27 开工] 用户已确认「开始执行」+ 两项裁决：① 模型可见工具名沿用 Phase 0 wire 名（点分逻辑名映射在桥内做）；② lint server 立项 DEF-005 延期。\n[2026-08-27 实现完成] 四改动面落地：① 新增 @agora/tools-bridge（packages/tools/bridge，L4）：mcp-bridge.ts 建 ToolCatalog——fs/test/git McpServer 经 InMemoryTransport.createLinkedPair()+Client 进程内桥接为 Harness ToolDefinition（7 MCP 工具 + sandbox_run 函数工具，共 9 wire 工具；worktree 参数由 getWorktree() 注入不外露给模型；fs/git 声明 timeoutMs=30000 R7，test_run/sandbox_run 故意不设——底层服务自带 R7 超时并返回结构化 timedOut 供模型重试，避免双重 deadline 遮蔽）；loader.ts resolveRoleTools 展开 RoleSpec.tools（git 能力组→4 工具、sandbox.applyPatch 别名 git.applyPatch 去重、lint 无实现进 unavailable）。② harness-executor.ts 治理四件套：timeout-policy 插件（{name,inject,apply} 显式装载，tools/execute 包装→TOOL_TIMEOUT）+ tools/pre-execute 审批门（approval 选项默认放行留 Phase 8 缝）+ ctx.tools.guard 每 turn 预算（maxToolCallsPerTurn 默认关，step 入口重置）+ setup 内 agentCtx.tools.restrict({allow}) 作用域化（allowTools 选项；空数组隐藏全部全局工具适配 COORDINATOR；restrictDisposers 随 agent handle 清理）。③ roster.ts CODER.tools 增加 'sandbox.run'（对齐 §2 矩阵 sandbox.run CODER ✓ 与 Phase 0 组合根既有行为），roster.test.ts 同步。④ phase0-runtime.ts 组合根重构：删 PHASE0_TOOL_WHITELIST 硬编码，改 catalog.resolve(spec.tools)+catalog.all()+allowTools（共享 WorktreeRegistry 注册 worktree 路径）；phase0-tools.ts 提取 createSandboxRunTool 供桥复用。\n[wire 名校准] wireToolName('git.applyPatch')='git_applyPatch'（仅替换点号保留 camelCase，DeepSeek pattern ^[a-zA-Z0-9_-]+$ 接受）——桥工具名为 git_createWorktree/git_applyPatch/git_diff/git_merge，非全小写下划线；测试期望按此对齐。\n[门禁实测] pnpm install exit=0（新增 @agora/tools-bridge 工作区 + runtime-executor 依赖 @deepseek-ai/dsh-tool-call-timeout-policy@0.1.1-rc.2）；pnpm typecheck 0 错误；pnpm lint 0 违规（106 files）；pnpm test 169 通过 2 跳过（2 跳为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。新增 16 用例：bridge.test.ts 8 例 G5 真实链路无 mock（真实 fs 写读/真实 node --test 经 MCP test-server/真实 git 二进制 createWorktree+applyPatch+diff/worktree 参数不外露/timeoutMs 声明/CODER 白名单展开 lint unavailable）；loader.test.ts 4 例矩阵展开单测；tool-governance.test.ts 4 例脚本化 adapter 驱动真实 agent loop（超时→TOOL_TIMEOUT 文本/审批拒绝 reason 可见/限流超预算 deny/restrict 外工具 UNKNOWN_TOOL，R11 注明 mock 仅外部 LLM）。既有回归全绿：phase0-exit 7/7 确认（组合根重构后 fs_write/sandbox_run 走 MCP 桥 + restrict，脚本化链路稳定）。[R12 同步] 详细设计 §0/§2 + 开发计划 §4.3 打 [2026-08-27 实测校准]。延期项 DEF-005（lint server 无 Phase 1 任务）见 docs/deferred-items.json。",
+          "last_updated": "2026-08-28T03:50:00.000Z"
         },
         {
           "id": "1.6",

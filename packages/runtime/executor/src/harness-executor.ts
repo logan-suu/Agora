@@ -16,6 +16,11 @@ import * as LlmDeepseek from '@deepseek-ai/dsh-llm-deepseek';
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session';
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt';
 import TokenMeter from '@deepseek-ai/dsh-token-meter';
+import {
+  apply as applyToolCallTimeoutPolicy,
+  inject as toolCallTimeoutPolicyInject,
+  name as toolCallTimeoutPolicyName,
+} from '@deepseek-ai/dsh-tool-call-timeout-policy';
 import ToolRuntime, { type ToolDefinition } from '@deepseek-ai/dsh-tools';
 import type { Executor, ProjectionView, StepContext, StepResult } from './base';
 
@@ -45,6 +50,28 @@ export interface HarnessExecutorOptions {
    * RoleSpec.tools whitelist verbatim; the composition root filters per role.
    */
   tools?: readonly ToolDefinition[];
+  /**
+   * Role tool whitelist (task 1.5): the wire-safe tool names resolved from
+   * `RoleSpec.tools` via the tool catalog. When set, the agent's scoped ctx is
+   * restricted to these names (`agentCtx.tools.restrict({ allow })` — the
+   * Phase 1 equivalent of the subagent `toolFilter`; subagents land Phase 9).
+   * An empty array hides every global tool (tool-less roles like COORDINATOR).
+   */
+  allowTools?: readonly string[];
+  /**
+   * Pre-dispatch approval gate (task 1.5, Phase 8 humanGate seam). Evaluated on
+   * `tools/pre-execute` before each tool call. Return `allow` (or omit) to
+   * proceed, `deny` to turn the call into a denial error visible to the model.
+   */
+  approval?: (exec: {
+    name: string;
+    arguments: unknown;
+  }) => Promise<{ kind: 'allow' } | { kind: 'deny'; reason: string } | undefined>;
+  /**
+   * Per-turn tool-call budget (task 1.5 rate limiting, enforced by a monotonic
+   * `ctx.tools.guard` reset at each `step`). Default: unlimited (Phase 1).
+   */
+  maxToolCallsPerTurn?: number;
   /**
    * Phase 0 TESTER handoff: after a turn quiesces, poll the worktree for the
    * structured test-results file and emit it as a `set('testResults')` mutation.
@@ -79,6 +106,9 @@ export class HarnessExecutor implements Executor {
   private readonly provider: string;
   private readonly adapter: LlmAdapter | undefined;
   private readonly tools: readonly ToolDefinition[] | undefined;
+  private readonly allowTools: readonly string[] | undefined;
+  private readonly approval: HarnessExecutorOptions['approval'];
+  private readonly maxToolCallsPerTurn: number | undefined;
   private readonly readTestResults: (() => Promise<TestResults | undefined>) | undefined;
   private readonly readSubtaskStatus:
     | (() => Promise<{ id: string; status: string } | undefined>)
@@ -86,11 +116,13 @@ export class HarnessExecutor implements Executor {
   private readonly pluginFibers: Fiber[] = [];
   private ready: Promise<void>;
   private readonly handles = new Map<string, AgentHandle>();
+  private readonly restrictDisposers = new Map<string, () => void>();
   private readonly agentErrors = new Map<string, unknown>();
   private view: ProjectionView = { role: '', slices: {} };
   private pendingInbox: ProjectionView | null = null;
   private stepChain: Promise<unknown> = Promise.resolve();
   private activeSessionId: string | null = null;
+  private toolCallsThisTurn = 0;
 
   constructor(
     private readonly spec: RoleSpec,
@@ -103,6 +135,13 @@ export class HarnessExecutor implements Executor {
     this.pluginFibers.push(this.ctx.plugin(LlmRuntime)); // ctx.llm
     this.pluginFibers.push(this.ctx.plugin(SystemPrompt, { persona: this.spec.systemPrompt })); // ctx.systemPrompt
     this.pluginFibers.push(this.ctx.plugin(ToolRuntime)); // ctx.tools (injects systemPrompt)
+    this.pluginFibers.push(
+      this.ctx.plugin({
+        name: toolCallTimeoutPolicyName,
+        inject: toolCallTimeoutPolicyInject,
+        apply: applyToolCallTimeoutPolicy,
+      }),
+    ); // ctx.tools timeout policy (task 1.5, R7): arms ToolDefinition.timeoutMs → TOOL_TIMEOUT
     this.pluginFibers.push(this.ctx.plugin(TokenMeter)); // ctx.tokenMeter (needed by compaction)
     this.pluginFibers.push(this.ctx.plugin(AgentLoop)); // registers the agents factory
     this.pluginFibers.push(this.ctx.plugin(BasicCompactionEngine)); // ctx.compaction (zero-config auto)
@@ -118,6 +157,9 @@ export class HarnessExecutor implements Executor {
     }
     this.adapter = options.adapter;
     this.tools = options.tools;
+    this.allowTools = options.allowTools;
+    this.approval = options.approval;
+    this.maxToolCallsPerTurn = options.maxToolCallsPerTurn;
     this.readTestResults = options.readTestResults;
     this.readSubtaskStatus = options.readSubtaskStatus;
     this.ready = this.awaitPlugins();
@@ -133,6 +175,26 @@ export class HarnessExecutor implements Executor {
         this.ctx.tools.register(definition);
       }
     }
+    // Task 1.5 governance: per-turn rate limit via a monotonic guard. The
+    // counter is reset at each step() entry; a denial is final (guards cannot
+    // be overruled by later listeners).
+    if (this.maxToolCallsPerTurn !== undefined) {
+      this.ctx.tools.guard(() => {
+        this.toolCallsThisTurn += 1;
+        if (this.toolCallsThisTurn > (this.maxToolCallsPerTurn as number)) {
+          return `tool call budget exceeded (max ${this.maxToolCallsPerTurn} per turn)`;
+        }
+        return undefined;
+      });
+    }
+    // Task 1.5 governance: pre-dispatch approval gate. Phase 1 defaults to
+    // allow-all; Phase 8 plugs the humanGate decision into `approval`.
+    this.ctx.on('tools/pre-execute', async (exec, next) => {
+      if (this.approval === undefined) return next();
+      const decision = await this.approval({ name: exec.name, arguments: exec.arguments });
+      if (decision === undefined || decision.kind === 'allow') return next();
+      return { kind: 'deny', reason: decision.reason };
+    });
   }
 
   /** One worker turn = one `step()`; serialized so concurrent calls cannot cross-read turns. */
@@ -147,6 +209,7 @@ export class HarnessExecutor implements Executor {
 
   private async doStep(context: StepContext): Promise<StepResult> {
     await this.ready;
+    this.toolCallsThisTurn = 0;
     // Injected view (injectInbox) wins over context.view on the next step.
     if (this.pendingInbox !== null) {
       this.view = this.pendingInbox;
@@ -214,6 +277,10 @@ export class HarnessExecutor implements Executor {
       await handle.dispose();
     }
     this.handles.clear();
+    for (const disposer of this.restrictDisposers.values()) {
+      disposer();
+    }
+    this.restrictDisposers.clear();
     this.activeSessionId = null;
     for (let i = this.pluginFibers.length - 1; i >= 0; i -= 1) {
       await this.pluginFibers[i]?.dispose();
@@ -245,6 +312,12 @@ export class HarnessExecutor implements Executor {
         agentCtx.on('agent/error', (payload) => {
           this.agentErrors.set(sessionId, payload.error);
         });
+        // Task 1.5 scoping (Phase 1 toolFilter equivalent): an empty allow array
+        // hides every global tool, which is the correct state for tool-less roles.
+        if (this.allowTools !== undefined) {
+          const disposer = agentCtx.tools.restrict({ allow: [...this.allowTools] });
+          this.restrictDisposers.set(sessionId, disposer);
+        }
       },
     });
     this.handles.set(sessionId, handle);

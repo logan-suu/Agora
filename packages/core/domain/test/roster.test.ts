@@ -21,6 +21,7 @@ describe('PHASE0_ROSTER', () => {
     expect(spec('CODER').tools).toEqual([
       'fs.read',
       'fs.write',
+      'sandbox.run',
       'git',
       'sandbox.applyPatch',
       'lint',

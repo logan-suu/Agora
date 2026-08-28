@@ -13,13 +13,9 @@ import {
   HarnessExecutor,
   type HarnessExecutorOptions,
 } from '@agora/runtime-executor';
-import {
-  createPhase0Tools,
-  LocalTempSandbox,
-  type SandboxManager,
-  type Worktree,
-  wireToolName,
-} from '@agora/runtime-sandbox';
+import { LocalTempSandbox, type SandboxManager, type Worktree } from '@agora/runtime-sandbox';
+import { createToolCatalog } from '@agora/tools-bridge';
+import { WorktreeRegistry } from '@agora/tools-fs';
 import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
 
 /** Phase 0 TESTER handoff file (written by the TESTER into the worktree root). */
@@ -34,19 +30,6 @@ const SUBTASK_STATUS_FILE = 'subtask-status.json';
  * the structured handoff files the executor reads back after the turn
  * (`test-results.json` for TESTER, `subtask-status.json` for CODER).
  */
-/**
- * Phase 0 tool whitelist per role (spec §9: "工具只接 fs + sandbox.run"). The
- * baseline RoleSpec.tools lists Phase 1 MCP names (`git`, `sandbox.applyPatch`,
- * `lint`) that have no Phase 0 implementation; this map narrows each role to the
- * tools actually registered by createPhase0Tools so the Coder can verify via
- * sandbox_run (as its working rules prompt instructs) and the prompt/whitelist
- * stay in sync.
- */
-const PHASE0_TOOL_WHITELIST: Readonly<Record<string, readonly string[]>> = {
-  CODER: ['fs.read', 'fs.write', 'sandbox.run'],
-  TESTER: ['fs.read', 'fs.write', 'sandbox.run'],
-};
-
 const PHASE0_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   CODER:
     '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files (e.g. lru-cache.ts), fs_read to inspect, and sandbox_run to verify quickly.\n- After implementing and verifying, use fs_write to store {"status":"done"} at the worktree root in `subtask-status.json`.',
@@ -101,8 +84,10 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
   }
   const sandbox = new LocalTempSandbox();
   const worktree = await sandbox.createWorktree(options.taskId, 'shared');
+  const registry = new WorktreeRegistry();
+  registry.register(worktree.path);
+  const catalog = await createToolCatalog({ registry, sandbox, getWorktree: async () => worktree });
   const subtaskId = `${options.taskId}-sub-0`;
-  const tools = createPhase0Tools({ sandbox, getWorktree: async () => worktree });
   const readTestResults = async (): Promise<TestResults | undefined> => {
     try {
       const content = await sandbox.read(worktree, TEST_RESULTS_FILE);
@@ -134,8 +119,9 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
   const workerRuntime = new WorkerRuntime({
     roster: PHASE0_ROSTER,
     buildExecutor: (spec, _assign): Executor => {
-      const whitelist = (PHASE0_TOOL_WHITELIST[spec.role] ?? spec.tools).map(wireToolName);
-      const roleTools = tools.filter((tool) => whitelist.includes(tool.name));
+      // Task 1.5: RoleSpec.tools → catalog (spec §2 matrix); register all tools
+      // and let the agent-level restrict scope each role (toolFilter equivalent).
+      const resolved = catalog.resolve(spec.tools);
       const handoff = PHASE0_HANDOFF[spec.role] ?? '';
       const executorSpec: RoleSpec = {
         ...spec,
@@ -147,7 +133,8 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
         ...(options.adapter === undefined
           ? {}
           : { adapter: options.adapter, provider: options.provider ?? 'agora' }),
-        tools: roleTools,
+        tools: catalog.all(),
+        allowTools: resolved.allowNames,
         ...(spec.role === 'TESTER' ? { readTestResults } : {}),
         ...(spec.role === 'CODER' ? { readSubtaskStatus } : {}),
       });
@@ -171,6 +158,7 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
     worktree,
     dispose: async () => {
       await Promise.all(executors.map((executor) => executor.dispose()));
+      await catalog.dispose();
       await sandbox.teardown(options.taskId);
     },
   };
