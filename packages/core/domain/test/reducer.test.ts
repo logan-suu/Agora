@@ -400,6 +400,7 @@ describe('applyMutations · humanGate escalation field (task 2.3, spec §1/§3)'
       escalation({ options: 'extend' }),
       escalation({ options: ['extend', 7] }),
       escalation({ phase: 99 }),
+      escalation({ phase: 'bogus' }),
       {},
     ];
     for (const bad of malformed) {

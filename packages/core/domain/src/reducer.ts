@@ -74,6 +74,16 @@ function isNotEnabled(field: string, enabled: readonly string[]): boolean {
   return !enabled.includes(field);
 }
 
+const PHASES: readonly Phase[] = [
+  'clarifying',
+  'planning',
+  'coding',
+  'testing',
+  'review',
+  'integrating',
+  'done',
+];
+
 function isHumanGate(value: unknown): value is HumanGate {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
@@ -81,7 +91,8 @@ function isHumanGate(value: unknown): value is HumanGate {
     typeof record.reason === 'string' &&
     Array.isArray(record.options) &&
     record.options.every((option) => typeof option === 'string') &&
-    typeof record.phase === 'string'
+    typeof record.phase === 'string' &&
+    PHASES.includes(record.phase as Phase)
   );
 }
 

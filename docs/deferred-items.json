@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-28T14:55:00.000Z",
+  "last_updated": "2026-08-28T16:20:00.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -142,6 +142,23 @@
       "resolved_by": null,
       "created_at": "2026-08-28T14:55:00.000Z",
       "notes": "Resolution condition: when the full 6-role composition root lands (DEFAULT_ROSTER first used outside unit tests), either expose the roster on WorkerRuntime and derive routing from it (drop OrchestrationDeps.roster), or validate roster coverage at the composition root. Requires human sign-off since it revises the task-2.2 approved DecideOptions/OrchestrationDeps design. Check this entry when Phase 3 composition work starts."
+    },
+    {
+      "id": "DEF-009",
+      "source": "CodeRabbit (PR #24 review, merge-risk note) + /pr-review-agora",
+      "pr": 24,
+      "pr_url": "https://github.com/logan-suu/Agora/pull/24",
+      "comment_id": null,
+      "comment_url": "https://github.com/logan-suu/Agora/pull/24#pullrequestreview-3205302687",
+      "task": "2.3",
+      "severity": "minor",
+      "item": "Idempotent re-escalation guard for resumed capped states (no duplicate escalation messages)",
+      "detail": "CodeRabbit's merge-risk note: re-running a capped state (e.g. after a leader ruling that clears humanGate but not iterationCount) appends a second escalation message, because escalationMessage() mints a fresh msgId and deduplicatedAppend only dedups identical msgIds. Verified in /pr-review-agora: within a single runOrchestration the human_gate route halts immediately (exactly one escalation per run), and no current call site re-runs a capped state, so nothing duplicates today. The real exposure arrives in Phase 8, where humanGate switches to D4 terminate-and-fork and resumed states become routine.",
+      "target_phase": 8,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-28T16:20:00.000Z",
+      "notes": "Resolution condition: when the Phase 8 humanGate body (terminate-and-fork per D4) lands, ensure state re-entry is idempotent end-to-end — either guard ifIterationLimit on 'humanGate already set with the same reason' or rebuild the escalation from the safePoint event cursor instead of re-appending. Check this entry when task 8.x humanGate implementation starts."
     }
   ]
 }
