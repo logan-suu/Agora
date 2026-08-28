@@ -2,8 +2,8 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-28T05:35:00.000Z",
-  "current_phase": 1,
+  "last_updated": "2026-08-28T05:37:42.000Z",
+  "current_phase": 2,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
     {
@@ -287,7 +287,7 @@
     {
       "id": 1,
       "name": "沙箱与工具（MCP 工具链 + Docker，1 周）",
-      "status": "in_progress",
+      "status": "done",
       "integration_test": "1.6",
       "exit_criteria": "Coder 能真正写代码进沙箱并执行；MCP 五类 server 可用；LocalTemp/Docker 可配置切换",
       "tasks": [
@@ -373,7 +373,7 @@
           "id": "1.6",
           "title": "Phase 1 出口集成测试",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/开发计划安排.md §4"
           ],
@@ -384,8 +384,8 @@
             "1.5"
           ],
           "test_file": "tests/integration/phase1/phase1-exit.test.ts",
-          "notes": "Coder 经 MCP 工具真实写码进沙箱并执行通过；LocalTemp/Docker 双模式切换验证。\n[2026-08-28 /pr-merge-agora] 级联翻转 pending→ready（依赖 1.2/1.3/1.4/1.5 全部 done）。\n[2026-08-28 开工] 用户确认开始执行，状态标 in_progress，进入 EPCC-V Explore 阶段。\n[2026-08-28 实现完成（EPCC-V Code+Check+Verify）] 三改动面落地：① phase0-runtime.ts 参数化：新增 sandboxConfig/toolSurface/mainRepoPath/handoff 四可选参数（默认值严格保持 Phase 0 行为，R9 兼容；new LocalTempSandbox() → createSandbox(config) 工厂），既有 phase0-exit/lru-cache 测试零改动全绿护航；② 新增 phase1-runtime.ts：createPhase1Runtime 薄封装（默认 {kind:'local'} + PHASE1_TOOL_SURFACE=['fs.read','fs.write','fs.list','test.run','sandbox.run'] + PHASE1_HANDOFF 工作约定）；③ 根 package.json devDependencies 增 @deepseek-ai/cordis@4.0.1/dsh-system-prompt@0.1.1-rc.2/dsh-tools@0.1.1-rc.2（与 runtime-executor 锁版本一致，对齐 0.7 加 dsh-llm 先例，供 tests/ 根层直链 fixture 用）。出口测试 tests/integration/phase1/phase1-exit.test.ts 三组 describe 13 例：A 编排循环 LocalTemp 四链（State→done+testResults.passed+三角色+iterationCount=0 / Harness 循环每角色 ≥2 调用含工具执行 / MCP fs 真实落盘 4 文件+math.js 逐字+sandbox_run exitCode=0 stdout 含 'pass 2' / pre-step 投影覆写 D1 无 channelId/fromRole+CODER 切片含 worktree 路径+后续保留 tool-call/tool-result）；B MCP 直链五类 server 可用（§2 矩阵全解析：git 展开 4 工具+sandbox.applyPatch 别名去重+lint→unavailable DEF-005 / fs write→read→list round-trip / test_run 真 node --test {passed:true} / git 全链 createWorktree→fs_write→fs_read→applyPatch→diff(ref HEAD~1)→merge {ok:true} 真 git 二进制 / 未注册 worktree 拒绝 isError R7）；C 双模式切换（工厂 createSandbox 恒跑 local/docker 实例 + 默认 LocalTemp + describeDocker 完整脚本化循环实跑：State done+宿主 bind-mount 落盘+容器内 node --test exitCode=0）。[关键决策·循环内工具面] 仅 fs_write/sandbox_run（CODER/TESTER §2 白名单不含 fs.list/test.run → 直链验证）；git 组不进循环（Phase 2 组合根 worktree 指针机制 + DEF-006 open），直链全链覆盖；lint DEF-005 出口不覆盖。[G5 实测·无 mock] 13 例全部真实依赖（真实 MCP fs/test/git server InMemoryTransport round-trip、真实 git 二进制、真实 node --test 子进程、真实 LocalTemp/Docker 沙箱）；R11 唯一 mock=脚本化外部 LLM（ScriptedLlmAdapter 按 tool-result 计数推进脚本）。Docker 组本机 daemon 就绪实跑（完整循环 2 例）。[修复记录] git 链首轮失败根因：git diff 不显示未跟踪文件（fs_write 后 diff 为空，bridge.test.ts 从未断言此步）→ 改 fs_read 回读断言物理落盘 + diff(ref HEAD~1) 断言移至 applyPatch 提交后（含 hello.txt+patched.txt），未弱化断言。[门禁实测] pnpm typecheck exit=0；pnpm lint exit=0（Checked 108 files）；pnpm test 183 通过 2 跳过（2 跳=既有 G5 live-LLM 需 DEEPSEEK_API_KEY；全量回归含 Phase 0 全部存量无回归）。交付状态：已建 PR #19（https://github.com/logan-suu/Agora/pull/19），status 保持 in_progress 待人类审阅合并；合并后由 /pr-merge-agora 标 done。",
-          "last_updated": "2026-08-28T05:35:00.000Z"
+          "notes": "Coder 经 MCP 工具真实写码进沙箱并执行通过；LocalTemp/Docker 双模式切换验证。\n[2026-08-28 /pr-merge-agora] 级联翻转 pending→ready（依赖 1.2/1.3/1.4/1.5 全部 done）。\n[2026-08-28 开工] 用户确认开始执行，状态标 in_progress，进入 EPCC-V Explore 阶段。\n[2026-08-28 实现完成（EPCC-V Code+Check+Verify）] 三改动面落地：① phase0-runtime.ts 参数化：新增 sandboxConfig/toolSurface/mainRepoPath/handoff 四可选参数（默认值严格保持 Phase 0 行为，R9 兼容；new LocalTempSandbox() → createSandbox(config) 工厂），既有 phase0-exit/lru-cache 测试零改动全绿护航；② 新增 phase1-runtime.ts：createPhase1Runtime 薄封装（默认 {kind:'local'} + PHASE1_TOOL_SURFACE=['fs.read','fs.write','fs.list','test.run','sandbox.run'] + PHASE1_HANDOFF 工作约定）；③ 根 package.json devDependencies 增 @deepseek-ai/cordis@4.0.1/dsh-system-prompt@0.1.1-rc.2/dsh-tools@0.1.1-rc.2（与 runtime-executor 锁版本一致，对齐 0.7 加 dsh-llm 先例，供 tests/ 根层直链 fixture 用）。出口测试 tests/integration/phase1/phase1-exit.test.ts 三组 describe 13 例：A 编排循环 LocalTemp 四链（State→done+testResults.passed+三角色+iterationCount=0 / Harness 循环每角色 ≥2 调用含工具执行 / MCP fs 真实落盘 4 文件+math.js 逐字+sandbox_run exitCode=0 stdout 含 'pass 2' / pre-step 投影覆写 D1 无 channelId/fromRole+CODER 切片含 worktree 路径+后续保留 tool-call/tool-result）；B MCP 直链五类 server 可用（§2 矩阵全解析：git 展开 4 工具+sandbox.applyPatch 别名去重+lint→unavailable DEF-005 / fs write→read→list round-trip / test_run 真 node --test {passed:true} / git 全链 createWorktree→fs_write→fs_read→applyPatch→diff(ref HEAD~1)→merge {ok:true} 真 git 二进制 / 未注册 worktree 拒绝 isError R7）；C 双模式切换（工厂 createSandbox 恒跑 local/docker 实例 + 默认 LocalTemp + describeDocker 完整脚本化循环实跑：State done+宿主 bind-mount 落盘+容器内 node --test exitCode=0）。[关键决策·循环内工具面] 仅 fs_write/sandbox_run（CODER/TESTER §2 白名单不含 fs.list/test.run → 直链验证）；git 组不进循环（Phase 2 组合根 worktree 指针机制 + DEF-006 open），直链全链覆盖；lint DEF-005 出口不覆盖。[G5 实测·无 mock] 13 例全部真实依赖（真实 MCP fs/test/git server InMemoryTransport round-trip、真实 git 二进制、真实 node --test 子进程、真实 LocalTemp/Docker 沙箱）；R11 唯一 mock=脚本化外部 LLM（ScriptedLlmAdapter 按 tool-result 计数推进脚本）。Docker 组本机 daemon 就绪实跑（完整循环 2 例）。[修复记录] git 链首轮失败根因：git diff 不显示未跟踪文件（fs_write 后 diff 为空，bridge.test.ts 从未断言此步）→ 改 fs_read 回读断言物理落盘 + diff(ref HEAD~1) 断言移至 applyPatch 提交后（含 hello.txt+patched.txt），未弱化断言。[门禁实测] pnpm typecheck exit=0；pnpm lint exit=0（Checked 108 files）；pnpm test 183 通过 2 跳过（2 跳=既有 G5 live-LLM 需 DEEPSEEK_API_KEY；全量回归含 Phase 0 全部存量无回归）。交付状态：已建 PR #19（https://github.com/logan-suu/Agora/pull/19），status 保持 in_progress 待人类审阅合并；合并后由 /pr-merge-agora 标 done。\n[2026-08-28 /pr-merge-agora] PR #19 已合并（merge commit d82857d45e3758849643ec457606a287cd28ac2a），任务标 done。G5 实测结论：13 例出口测试全部真实依赖无 mock（真实 MCP fs/test/git server InMemoryTransport round-trip、真实 git 二进制、真实 node --test 子进程、真实 LocalTemp/Docker 沙箱），LocalTemp/Docker 双模式切换实跑成立；exit_criteria「Coder 能真正写代码进沙箱并执行；MCP 五类 server 可用；LocalTemp/Docker 可配置切换」逐条满足。本地分支 test/phase1-exit-integration 已删除。级联翻转：无新增 pending→ready（2.1 已 ready，2.2/2.4 依赖 2.1 未 done）。Phase 1 全部任务 done，phase status → done，current_phase → 2。遗留延期项：DEF-005（lint server）、DEF-006（组合根 worktree 指针机制）均在 docs/deferred-items.json 台账。",
+          "last_updated": "2026-08-28T05:37:42.000Z"
         }
       ]
     },
