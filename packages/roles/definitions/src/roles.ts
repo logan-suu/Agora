@@ -1,0 +1,55 @@
+import type { RoleSpec } from '@agora/core-domain';
+
+/**
+ * PM — Product Manager (task 2.1, spec §2). Conditionally triggered: converts a
+ * vague `goal` into structured `requirements`; raises `blocking` objections
+ * when a leader decision contradicts confirmed requirements. Tool-free: pure
+ * reasoning over projected slices (goal/requirements/leaderDecisions), the same
+ * principle as the COORDINATOR. The §2 bullet states "工具：无（纯推理）"; the
+ * matrix row granting PM `fs.read` is a documented conflict pending an issue +
+ * /sync-docs-agora fix.
+ */
+export const PM_ROLE: RoleSpec = {
+  role: 'PM',
+  enabled: true,
+  executor: 'harness',
+  systemPrompt:
+    '你是产品经理，产出带验收标准的结构化需求。若 leader 新指令与已确认需求冲突，提 blocking 异议说明冲突点、等 leader 裁决，不擅自改需求。',
+  tools: [],
+  projection: ['goal', 'requirements', 'leaderDecisions'],
+  routeWhen: 'goalAmbiguous',
+};
+
+/**
+ * ARCHITECT — Architect (task 2.1, spec §2). Read-only repo access: turns
+ * `requirements` into module breakdown, interfaces, data structures and
+ * technology choices (`architecture` + `conventions`). `git` is declared at the
+ * matrix's read-only intent; the catalog grants the whole git capability group
+ * (coarse granularity from task 1.5) — a finer read-only surface is a Phase 2
+ * composition-root concern.
+ */
+export const ARCHITECT_ROLE: RoleSpec = {
+  role: 'ARCHITECT',
+  enabled: true,
+  executor: 'harness',
+  systemPrompt: '你是架构师，给出可实现的设计与约定，关键决策附理由写入台账。',
+  tools: ['fs.read', 'git'],
+  projection: ['requirements', 'repoStructure', 'conventions'],
+  routeWhen: 'requirementsReady',
+};
+
+/**
+ * REVIEWER — Reviewer (task 2.1, spec §2). Quality/convention/security review
+ * producing actionable `reviewComments`; approval requires the leader's final
+ * confirmation (human-gate carrier). `lint` has no catalog implementation
+ * (DEF-005): `resolveRoleTools` reports it unavailable, mirroring the CODER.
+ */
+export const REVIEWER_ROLE: RoleSpec = {
+  role: 'REVIEWER',
+  enabled: true,
+  executor: 'harness',
+  systemPrompt: '你是评审者，审查质量/规范/安全，产出可执行修改意见，通过结论需 leader 最终确认。',
+  tools: ['fs.read', 'git', 'lint'],
+  projection: ['pendingPatch', 'conventions', 'architecture'],
+  routeWhen: 'testsPassed',
+};
