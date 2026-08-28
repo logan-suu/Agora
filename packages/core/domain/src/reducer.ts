@@ -1,4 +1,12 @@
-import type { AppState, Message, Phase, Requirement, Subtask, TestResults } from './state';
+import type {
+  AppState,
+  HumanGate,
+  Message,
+  Phase,
+  Requirement,
+  Subtask,
+  TestResults,
+} from './state';
 
 export const APPEND_FIELDS = [
   'messages',
@@ -37,6 +45,7 @@ export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'phase',
   'nextRole',
   'iterationCount',
+  'humanGate',
   'architecture',
 ];
 
@@ -63,6 +72,17 @@ export function setMutation(field: SetField, value: unknown): Mutation {
 
 function isNotEnabled(field: string, enabled: readonly string[]): boolean {
   return !enabled.includes(field);
+}
+
+function isHumanGate(value: unknown): value is HumanGate {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.reason === 'string' &&
+    Array.isArray(record.options) &&
+    record.options.every((option) => typeof option === 'string') &&
+    typeof record.phase === 'string'
+  );
 }
 
 function disabledFieldError(field: string): Error {
@@ -167,6 +187,11 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
         throw new Error('iterationCount must be a non-negative integer');
       }
       return { ...state, iterationCount: value };
+    case 'humanGate':
+      if (!isHumanGate(value)) {
+        throw new Error('humanGate must be { reason: string; options: string[]; phase: Phase }');
+      }
+      return { ...state, humanGate: value };
     case 'architecture':
       if (typeof value !== 'object' || value === null || Array.isArray(value)) {
         throw new Error('architecture must be a non-array object');

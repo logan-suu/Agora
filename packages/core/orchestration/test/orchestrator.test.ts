@@ -2,9 +2,17 @@
 // 以单元级验证编排主循环的固定路由/失败回环/finalize 与纯函数性；
 // 不以 test double 替代真实链路验收——G5 实测留待 0.5（HarnessExecutor）/0.6（LRU e2e）/0.7（集成）。
 
-import { createInitialAppState, mergeByIdMutation, PHASE0_ROSTER } from '@agora/core-domain';
+import type { AppState } from '@agora/core-domain';
+import {
+  applyMutations,
+  createInitialAppState,
+  mergeByIdMutation,
+  PHASE0_ROSTER,
+  setMutation,
+} from '@agora/core-domain';
 import type { Executor, StepResult } from '@agora/runtime-executor';
 import { describe, expect, it } from 'vitest';
+import { MAX_ITERATIONS } from '../src/coordinator';
 import type { OrchestrationDeps } from '../src/index';
 import { runOrchestration, WorkerRuntime } from '../src/index';
 
@@ -177,5 +185,64 @@ describe('runOrchestration (Phase 0 fixed loop)', () => {
     expect(Object.isFrozen(initial)).toBe(true);
     expect(final.iterationCount).toBe(1);
     expect(final.phase).toBe('done');
+  });
+});
+
+describe('runOrchestration · human_gate escalation hook (task 2.3)', () => {
+  function cappedTestingState(): AppState {
+    return applyMutations(createInitialAppState('lru-1', 'LRU 缓存'), [
+      mergeByIdMutation('subtasks', SUBTASK_ID, {
+        title: 'LRU 缓存',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'in_progress',
+      }),
+      setMutation('phase', 'testing'),
+      setMutation('nextRole', 'TESTER'),
+      setMutation('iterationCount', MAX_ITERATIONS),
+      setMutation('testResults', { passed: false, total: 2, failed: 1, failures: [] }),
+    ]);
+  }
+
+  it('halts on a seeded capped state without running any worker and records the escalation', async () => {
+    const deps = orchestrationWith([], []);
+    const initial = deepFreeze(cappedTestingState());
+
+    const final = await runOrchestration(initial, deps);
+
+    expect(final.phase).toBe('testing');
+    expect(final.humanGate).toEqual({
+      reason: 'iteration_limit',
+      options: ['extend', 'take-over', 'abort'],
+      phase: 'testing',
+    });
+    expect(final.iterationCount).toBe(MAX_ITERATIONS);
+    const escalations = final.messages.filter((m) => m.type === 'escalation');
+    expect(escalations).toHaveLength(1);
+    expect(escalations[0]?.fromRole).toBe('COORDINATOR');
+    expect(escalations[0]?.payload).toMatchObject({
+      reason: 'iteration_limit',
+      iterationCount: MAX_ITERATIONS,
+      limit: MAX_ITERATIONS,
+    });
+  });
+
+  it('survives the full capped CODER↔TESTER loop: exactly MAX loop-backs, then human_gate (no silent loop)', async () => {
+    const deps = orchestrationWith(
+      Array.from({ length: MAX_ITERATIONS + 1 }, () => coderRound(1)),
+      Array.from({ length: MAX_ITERATIONS + 1 }, () => testerRound(false)),
+    );
+    const final = await runOrchestration(
+      createInitialAppState('lru-1', '实现带 TTL 的 LRU 缓存'),
+      deps,
+    );
+
+    expect(final.phase).toBe('testing');
+    expect(final.iterationCount).toBe(MAX_ITERATIONS);
+    expect(final.testResults?.passed).toBe(false);
+    expect(final.humanGate?.reason).toBe('iteration_limit');
+    expect(final.humanGate?.phase).toBe('testing');
+    expect(final.messages.filter((m) => m.type === 'feedback')).toHaveLength(MAX_ITERATIONS);
+    expect(final.messages.filter((m) => m.type === 'escalation')).toHaveLength(1);
   });
 });

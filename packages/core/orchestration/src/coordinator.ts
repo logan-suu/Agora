@@ -4,6 +4,8 @@ import { evaluateRouteWhen } from './route-conditions';
 
 export const MAX_ITERATIONS = 8;
 
+export const HUMAN_GATE_OPTIONS: readonly string[] = ['extend', 'take-over', 'abort'];
+
 export interface Assignment {
   role: RoleId;
   subtaskId?: string;
@@ -18,18 +20,6 @@ export type Route =
 export interface CoordinatorDecision {
   route: Route;
   mutations: Mutation[];
-}
-
-export class IterationLimitError extends Error {
-  constructor(
-    public readonly iterationCount: number,
-    public readonly limit: number = MAX_ITERATIONS,
-  ) {
-    super(
-      `iteration limit exceeded (${iterationCount} >= ${limit}); escalate to the leader instead of looping silently`,
-    );
-    this.name = 'IterationLimitError';
-  }
 }
 
 export interface DecideOptions {
@@ -106,7 +96,8 @@ function announce(clock: Clock, payload: Record<string, unknown>, display: strin
 }
 
 function dispatchPM(state: AppState, clock: Clock): CoordinatorDecision {
-  guardIterationLimit(state);
+  const escalation = ifIterationLimit(state, clock);
+  if (escalation !== undefined) return escalation;
   return {
     route: { kind: 'worker', batch: [{ role: 'PM' }], parallel: false },
     mutations: [
@@ -181,10 +172,35 @@ function advanceToTesting(state: AppState): CoordinatorDecision {
   };
 }
 
-function guardIterationLimit(state: AppState): void {
-  if (state.iterationCount >= MAX_ITERATIONS) {
-    throw new IterationLimitError(state.iterationCount);
-  }
+function escalationMessage(state: AppState, clock: Clock): Message {
+  return {
+    msgId: clock.newId(),
+    channelId: 'main',
+    fromRole: 'COORDINATOR',
+    type: 'escalation',
+    payload: {
+      reason: 'iteration_limit',
+      iterationCount: state.iterationCount,
+      limit: MAX_ITERATIONS,
+    },
+    display: `已达迭代上限（${state.iterationCount}/${MAX_ITERATIONS} 轮），升级 humanGate 由 Leader 裁决`,
+    ts: clock.now(),
+  };
+}
+
+function ifIterationLimit(state: AppState, clock: Clock): CoordinatorDecision | undefined {
+  if (state.iterationCount < MAX_ITERATIONS) return undefined;
+  return {
+    route: { kind: 'human_gate' },
+    mutations: [
+      setMutation('humanGate', {
+        reason: 'iteration_limit',
+        options: [...HUMAN_GATE_OPTIONS],
+        phase: state.phase,
+      }),
+      appendMutation('messages', escalationMessage(state, clock)),
+    ],
+  };
 }
 
 function evaluateTestResults(
@@ -215,7 +231,8 @@ function evaluateTestResults(
     }
     return { route: { kind: 'finalize' }, mutations: [] };
   }
-  guardIterationLimit(state);
+  const escalation = ifIterationLimit(state, clock);
+  if (escalation !== undefined) return escalation;
   const feedback: Message = {
     msgId: clock.newId(),
     channelId: 'main',
@@ -265,7 +282,8 @@ function evaluateReview(state: AppState, clock: Clock): CoordinatorDecision {
     return { route: { kind: 'finalize' }, mutations: [] };
   }
   if (verdict === 'changes_requested') {
-    guardIterationLimit(state);
+    const escalation = ifIterationLimit(state, clock);
+    if (escalation !== undefined) return escalation;
     const feedback: Message = {
       msgId: clock.newId(),
       channelId: 'main',

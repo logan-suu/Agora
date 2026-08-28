@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-28T15:03:09.000Z",
+  "last_updated": "2026-08-28T16:00:00.000Z",
   "current_phase": 2,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -432,16 +432,16 @@
           "id": "2.3",
           "title": "回环控制：iterationCount 硬上限",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §7"
           ],
           "dependencies": [
             "2.2"
           ],
-          "test_file": null,
-          "notes": "默认 8 轮；超限自动置 humanGate 升级路径（humanGate 本体在 Phase 8 实现，此处先留显式升级钩子，不静默死循环）。参考 AutoGen max_turns 教训：默认必须开启而非 None。",
-          "last_updated": "2026-08-28T15:03:09.000Z"
+          "test_file": "packages/core/orchestration/test/coordinator.test.ts + packages/core/orchestration/test/orchestrator.test.ts + packages/core/domain/test/reducer.test.ts",
+          "notes": "默认 8 轮；超限自动置 humanGate 升级路径（humanGate 本体在 Phase 8 实现，此处先留显式升级钩子，不静默死循环）。参考 AutoGen max_turns 教训：默认必须开启而非 None。[2026-08-28 开工·用户确认] 状态置 in_progress。[2026-08-28 计划批准·用户确认] 两项语义裁决：① orchestrator 对 human_gate 路由以停机返回代替 §3 伪代码 await humanGate(state);continue（裁决循环 Phase 8 才存在，continue 会无限重触发，届时换 terminate-and-fork 本体 D4）；② IterationLimitError 删除（2.2 契约『2.3 升级为 humanGate 路由』授权，全库消费面仅本包测试）。[2026-08-28 Code+Check+Verify·TDD 红→绿] 三改动面落地：① 域层解锁（0.2 预铺路径，签名不变）：state.ts 增 HumanGate 接口（§1 逐字 {reason:string,options:string[],phase:Phase}）+ AppState.humanGate?；reducer.ts ENABLED_SET_FIELDS+='humanGate' + applySet 补 case（isHumanGate 类型守卫校验 reason/options/phase，错误信息 'humanGate must be { reason: string; options: string[]; phase: Phase }'）；② coordinator.ts：guardIterationLimit(throw) → ifIterationLimit(返回 human_gate 决策)——三处回环（dispatchPM/evaluateTestResults/evaluateReview）超限时 mutations=[set('humanGate',{reason:'iteration_limit',options:[...HUMAN_GATE_OPTIONS],phase:state.phase}), append(escalation 消息)]，iterationCount/phase/nextRole 不动；escalation 消息用 MsgType 既有 'escalation' 类型（fromRole=COORDINATOR，payload={reason,iterationCount,limit}）；MAX_ITERATIONS=8 常量不动（默认开启无 None 旋钮）；③ orchestrator.ts：case 'human_gate' throw → 停机返回当前 state（R12 已同步详细设计 §9 [2026-08-28 实装记录] 标记）。[TDD 实测] 红：3 测试文件 9 失败（全部指向 humanGate 缺失）；绿：三文件 56/56（reducer 31 / coordinator 20 / orchestrator 5）。新增覆盖：humanGate set 正向/LWW 重放/8 类畸形值拒绝/初始未置；三回环超限→human_gate 路由断言（humanGate 字段+escalation 消息+iterationCount/phase 不变）；MAX-1 边界仍回 CODER；orchestrator 种子封顶态停机（executor 零调用佐证）+ 全 9 轮脚本跑满（9 CODER+9 TESTER，恰好 8 次 feedback 后停机，无静默循环）；『never returns human_gate』防漂移测试收窄为 below-cap 语义（integrate 仍全禁）。[门禁实测] pnpm typecheck exit=0（修复 1 处 AppState 导入源笔误）；pnpm lint exit=0（biome --write 修 3 文件格式后 113 files 0 违规）；pnpm test 229 passed / 2 skipped（2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。[R1/R9 复核] State 写入全走 setMutation/appendMutation；Route 联合未变（human_gate Phase 0 已定稿，本次激活）；Executor/SandboxManager 签名未动。G5：本任务为纯编排控制流（无沙箱/Harness 能力对象，L1/L2 纯函数单测即充分，暂缺注明）。状态保持 in_progress，待 /commit-agora 建 PR 至 dev-1.0.0，PR 合并后由 /pr-merge-agora 收尾标 done。",
+          "last_updated": "2026-08-28T16:00:00.000Z"
         },
         {
           "id": "2.4",

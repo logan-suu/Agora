@@ -8,11 +8,15 @@ import {
   setMutation,
 } from '@agora/core-domain';
 import { describe, expect, it } from 'vitest';
-import { decide, IterationLimitError, MAX_ITERATIONS } from '../src/index';
+import { decide, MAX_ITERATIONS } from '../src/index';
 
 interface DeterministicClock {
   newId: () => string;
   now: () => number;
+}
+
+function expectedGate(phase: AppState['phase']): Record<string, unknown> {
+  return { reason: 'iteration_limit', options: ['extend', 'take-over', 'abort'], phase };
 }
 
 function clock(): DeterministicClock {
@@ -169,9 +173,23 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     expect(feedback[0]?.payload.reason).toBe('review_changes_requested');
   });
 
-  it('throws IterationLimitError when the review loop reaches the iteration cap', () => {
+  it('escalates to human_gate when the review loop reaches the iteration cap (评审回环超限升级)', () => {
     const capped = reviewState('changes_requested', MAX_ITERATIONS);
-    expect(() => decide(capped)).toThrow(IterationLimitError);
+    const decision = decide(capped);
+
+    expect(decision.route.kind).toBe('human_gate');
+    const next = applyMutations(capped, decision.mutations);
+    expect(next.humanGate).toEqual(expectedGate('review'));
+    expect(next.iterationCount).toBe(MAX_ITERATIONS);
+    expect(next.phase).toBe('review');
+    const escalations = next.messages.filter((m) => m.type === 'escalation');
+    expect(escalations).toHaveLength(1);
+    expect(escalations[0]?.fromRole).toBe('COORDINATOR');
+    expect(escalations[0]?.payload).toMatchObject({
+      reason: 'iteration_limit',
+      iterationCount: MAX_ITERATIONS,
+      limit: MAX_ITERATIONS,
+    });
   });
 
   it('throws when review finishes without a verdict entry (producer contract)', () => {
@@ -216,9 +234,27 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     expect(next.messages.filter((m) => m.type === 'feedback')).toHaveLength(1);
   });
 
-  it('throws IterationLimitError instead of looping silently once iterationCount reaches the cap', () => {
+  it('routes failing tests back to CODER at MAX-1 and escalates at the cap (测试回环边界)', () => {
+    const belowCap = testingState(false, MAX_ITERATIONS - 1);
+    const loopDecision = decide(belowCap, clock());
+    expect(loopDecision.route.kind).toBe('worker');
+    if (loopDecision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
+    expect(loopDecision.route.batch[0].role).toBe('CODER');
+
     const capped = testingState(false, MAX_ITERATIONS);
-    expect(() => decide(capped)).toThrow(IterationLimitError);
+    const decision = decide(capped);
+    expect(decision.route.kind).toBe('human_gate');
+    const next = applyMutations(capped, decision.mutations);
+    expect(next.humanGate).toEqual(expectedGate('testing'));
+    expect(next.iterationCount).toBe(MAX_ITERATIONS);
+    expect(next.phase).toBe('testing');
+    const escalations = next.messages.filter((m) => m.type === 'escalation');
+    expect(escalations).toHaveLength(1);
+    expect(escalations[0]?.payload).toMatchObject({
+      reason: 'iteration_limit',
+      iterationCount: MAX_ITERATIONS,
+      limit: MAX_ITERATIONS,
+    });
     expect(MAX_ITERATIONS).toBe(8);
   });
 
@@ -227,7 +263,7 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     expect(() => decide(stateAtPhase('integrating'))).toThrow(/not routable/);
   });
 
-  it('never returns integrate/human_gate routes or parallel batches anywhere in the loop', () => {
+  it('never returns integrate/human_gate routes below the iteration cap, and never parallel batches', () => {
     const decisions = [
       decide(createInitialAppState('t-1', 'g'), clock()),
       decide(requirementsReadyState(), clock()),
@@ -305,11 +341,18 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
     expect(next.phase).toBe('clarifying');
   });
 
-  it('throws IterationLimitError when the PM clarifying loop reaches the cap', () => {
+  it('escalates to human_gate when the PM clarifying loop reaches the cap (PM 回环超限升级)', () => {
     const capped = applyMutations(createInitialAppState('t-1', 'g'), [
       setMutation('iterationCount', MAX_ITERATIONS),
     ]);
-    expect(() => decide(capped, clock())).toThrow(IterationLimitError);
+    const decision = decide(capped, clock());
+
+    expect(decision.route.kind).toBe('human_gate');
+    const next = applyMutations(capped, decision.mutations);
+    expect(next.humanGate).toEqual(expectedGate('clarifying'));
+    expect(next.iterationCount).toBe(MAX_ITERATIONS);
+    expect(next.phase).toBe('clarifying');
+    expect(next.messages.filter((m) => m.type === 'escalation')).toHaveLength(1);
   });
 
   it('finalizes on passing tests when the roster has no REVIEWER (Phase 0 slice)', () => {
