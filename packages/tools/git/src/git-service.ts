@@ -1,14 +1,16 @@
 import {
   accessSync,
+  existsSync,
   constants as fsConstants,
   mkdirSync,
   mkdtempSync,
   realpathSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import type { WorktreeRegistry } from '@agora/tools-fs';
 import {
   GitResponseError,
@@ -110,6 +112,12 @@ export function validateRefArg(ref: string, label: string): string {
 }
 
 /**
+ * Directory where disposed service-owned git trees are moved to (move, not
+ * delete — the same file-protection stance as the sandbox teardown, spec §6).
+ */
+export const GIT_TEARDOWN_STAGING = join(tmpdir(), 'agora-git-trash');
+
+/**
  * Worktree-scoped git service (spec §6 `git-server`).
  *
  * Holds ONE main repository (decision: mainRepo + linked worktree model).
@@ -124,6 +132,10 @@ export class WorktreeGitService implements GitService {
   private readonly registry: WorktreeRegistry;
   private readonly mainRepoPath: string;
   private readonly worktreesDir: string;
+  /** Set when the main repo is service-owned (mainRepoPath omitted at construction). */
+  private readonly ownedBase: string | undefined;
+  private readonly createdWorktrees: string[] = [];
+  private disposed = false;
   private mainRepo: SimpleGit | undefined;
 
   constructor(registry: WorktreeRegistry, mainRepoPath?: string) {
@@ -134,6 +146,7 @@ export class WorktreeGitService implements GitService {
     } else {
       // Lazily-created temp main repo: a base temp dir holds `main/` and `worktrees/`.
       const base = mkdtempSync(join(tmpdir(), 'agora-git-'));
+      this.ownedBase = base;
       this.mainRepoPath = join(base, 'main');
       this.worktreesDir = join(base, 'worktrees');
     }
@@ -183,7 +196,41 @@ export class WorktreeGitService implements GitService {
     await main.raw(['worktree', 'add', path, '-b', branch]);
     signal?.throwIfAborted();
     this.registry.register(path);
+    this.createdWorktrees.push(path);
     return { path, branch };
+  }
+
+  /**
+   * Release service-owned git trees at end of life: the temp base (main repo +
+   * linked worktrees) when the main repo is service-owned, or each created
+   * linked worktree when the caller owns the main repo — the caller's own
+   * repository is never touched. Trees are MOVED to {@link GIT_TEARDOWN_STAGING}
+   * (never silently deleted, spec §6 file protection). Idempotent.
+   */
+  async dispose(): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+    mkdirSync(GIT_TEARDOWN_STAGING, { recursive: true });
+    if (this.ownedBase !== undefined) {
+      if (existsSync(this.ownedBase)) {
+        this.moveToStaging(this.ownedBase);
+      }
+      return;
+    }
+    for (const path of this.createdWorktrees) {
+      if (existsSync(path)) {
+        this.moveToStaging(path);
+      }
+    }
+    this.createdWorktrees.length = 0;
+  }
+
+  /** Move one tree into a unique staging slot (deterministic names must not collide across runs). */
+  private moveToStaging(path: string): void {
+    const slot = mkdtempSync(join(GIT_TEARDOWN_STAGING, 'dispose-'));
+    renameSync(path, join(slot, basename(path)));
   }
 
   async merge(base: string, branch: string, signal?: AbortSignal): Promise<MergeResult> {

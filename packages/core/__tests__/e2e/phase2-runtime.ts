@@ -262,6 +262,11 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
     });
   } catch (err) {
     // Exception-safe init: the worktree/sandbox must not leak if catalog setup fails.
+    try {
+      await gitService.dispose();
+    } catch {
+      // Best-effort: the catalog error below is the one that matters.
+    }
     await sandbox.teardown(options.taskId);
     throw err;
   }
@@ -359,6 +364,11 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
       }
       try {
         await sandbox.teardown(options.taskId);
+      } catch (err) {
+        errors.push(err);
+      }
+      try {
+        await gitService.dispose();
       } catch (err) {
         errors.push(err);
       }

@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   assertRosterBinding,
   createPhase2Runtime,
+  PHASE2_TOOL_SURFACE,
   type Phase2Runtime,
 } from '../../../packages/core/__tests__/e2e/phase2-runtime';
 
@@ -682,7 +683,7 @@ describe('Phase 2 exit: DEF-006 git grant granularity (§2 matrix, direct catalo
       const resolveOf = (role: string) => {
         const spec = DEFAULT_ROSTER.find((entry) => entry.role === role);
         if (spec === undefined) throw new Error(`roster missing role ${role}`);
-        return catalog.resolve(spec.tools.filter((tool) => PHASE2_SURFACE.includes(tool)));
+        return catalog.resolve(spec.tools.filter((tool) => PHASE2_TOOL_SURFACE.includes(tool)));
       };
       // Read-only roles: fs.read + git.readonly (ARCH has no lint per the matrix).
       const architect = resolveOf('ARCHITECT');
@@ -752,18 +753,6 @@ describe('Phase 2 exit: DEF-008 roster binding (composition-root invariant)', ()
     }
   });
 });
-
-/** Phase 2 surface constant mirrored from the composition root for resolve assertions. */
-const PHASE2_SURFACE: readonly string[] = [
-  'fs.read',
-  'fs.write',
-  'fs.list',
-  'test.run',
-  'sandbox.run',
-  'git',
-  'git.readonly',
-  'lint',
-];
 
 /** Direct-catalog fixture (real MCP servers + real sandbox, no orchestration). */
 async function catalogFixture(): Promise<{

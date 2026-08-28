@@ -41,8 +41,8 @@ export const ARCHITECT_ROLE: RoleSpec = {
  * REVIEWER — Reviewer (task 2.1, spec §2). Quality/convention/security review
  * producing actionable `reviewComments`; approval requires the leader's final
  * confirmation (human-gate carrier). `git.readonly` is the matrix's 只读 diff
- * surface (DEF-006 split, task 2.5). `lint` has no catalog implementation
- * (DEF-005): `resolveRoleTools` reports it unavailable, mirroring the CODER.
+ * surface (DEF-006 split, task 2.5). `lint` resolves the biome-backed
+ * lint-server since task 2.5 (DEF-005 resolved in PR #27).
  */
 export const REVIEWER_ROLE: RoleSpec = {
   role: 'REVIEWER',

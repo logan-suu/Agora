@@ -1,10 +1,19 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { WorktreeRegistry } from '@agora/tools-fs';
 import { simpleGit } from 'simple-git';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  GIT_TEARDOWN_STAGING,
   validateBranchName,
   validateRefArg,
   validateTaskId,
@@ -304,5 +313,38 @@ describe('WorktreeGitService', () => {
     const result = await service.merge(defaultBranch, 'feature-conflict');
     expect(result.ok).toBe(false);
     expect(result.conflicts).toContain('conflict.txt');
+  });
+
+  it('moves its service-owned temp base to staging on dispose (no leak)', async () => {
+    const registry = new WorktreeRegistry();
+    const service = new WorktreeGitService(registry);
+    const { path } = await service.createWorktree('t1', 'feature-dispose');
+    expect(existsSync(path)).toBe(true);
+
+    await service.dispose();
+    expect(existsSync(path)).toBe(false);
+    const stagedBases = readdirSync(GIT_TEARDOWN_STAGING).filter((name) =>
+      name.startsWith('agora-git-'),
+    );
+    expect(stagedBases.length).toBeGreaterThanOrEqual(1);
+    const stagedWorktree = stagedBases
+      .map((name) => join(GIT_TEARDOWN_STAGING, name, 'worktrees', basename(path)))
+      .find((candidate) => existsSync(candidate));
+    expect(stagedWorktree).toBeDefined();
+
+    await expect(service.dispose()).resolves.toBeUndefined();
+  });
+
+  it('moves created worktrees to staging but preserves a caller-owned main repo on dispose', async () => {
+    const registry = new WorktreeRegistry();
+    const main = mkdtempSync(join(tmpdir(), 'agora-git-main-'));
+    roots.push(main);
+    const service = new WorktreeGitService(registry, main);
+    const { path } = track(await service.createWorktree('t1', 'feature-dispose2'));
+
+    await service.dispose();
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(join(GIT_TEARDOWN_STAGING, basename(path)))).toBe(true);
+    expect(existsSync(main)).toBe(true);
   });
 });
