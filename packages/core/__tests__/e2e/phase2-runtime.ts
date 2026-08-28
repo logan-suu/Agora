@@ -39,9 +39,8 @@ import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
  * - Tool surface (DEF-006 resolution): the `git` logical group is
  *   worktree-scoped (git_applyPatch + git_diff) and `git.readonly` is the
  *   diff-only surface for ARCHITECT/REVIEWER; the main-repo mutations
- *   git_createWorktree/git_merge are granted to no model role. `lint` stays
- *   in the surface so the loader reports it `unavailable` (DEF-005) instead
- *   of dropping the grant silently.
+ *   git_createWorktree/git_merge are granted to no model role. `lint` resolves
+ *   the biome-backed lint-server since task 2.5 (DEF-005 resolved).
  * - Structured handoffs: CODER/TESTER keep the Phase 0 file protocol
  *   (subtask-status.json / test-results.json read back through the executor
  *   callbacks). PM/ARCHITECT/REVIEWER have no fs.write grant (PM is tool-free
@@ -52,7 +51,7 @@ import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
  *   seam (R1: the mutations still flow through applyMutations).
  */
 
-/** Phase 2 tool surface: the full §2 matrix incl. git groups; lint resolves unavailable. */
+/** Phase 2 tool surface: the full §2 matrix incl. git groups + lint (biome-backed). */
 export const PHASE2_TOOL_SURFACE: readonly string[] = [
   'fs.read',
   'fs.write',
@@ -78,7 +77,7 @@ const PHASE2_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   TESTER:
     '\n\n[Phase 2 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
   REVIEWER:
-    '\n\n[Phase 2 working rules]\n- Your §2 grant is read-only: fs_read to inspect files, git_diff to see the committed change (the worktree argument is injected). lint is unimplemented and reported unavailable (DEF-005).\n- End your turn with a single JSON array as your final message; the verdict entry must be shaped {"kind":"verdict","verdict":"approved"|"changes_requested","summary":"..."} and may be followed by comment entries.',
+    '\n\n[Phase 2 working rules]\n- Your §2 grant is read-only: fs_read to inspect files, git_diff to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array as your final message; the verdict entry must be shaped {"kind":"verdict","verdict":"approved"|"changes_requested","summary":"..."} and may be followed by comment entries.',
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -298,8 +297,8 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
   const workerRuntime = new WorkerRuntime({
     roster: DEFAULT_ROSTER,
     buildExecutor: (spec, _assign): Executor => {
-      // §2 matrix grant intersected with the Phase 2 surface; the loader
-      // reports whitelisted-but-unimplemented entries (lint) as unavailable.
+      // §2 matrix grant intersected with the Phase 2 surface; every whitelisted
+      // entry resolves to a catalog implementation.
       const resolved = catalog.resolve(
         spec.tools.filter((tool) => PHASE2_TOOL_SURFACE.includes(tool)),
       );

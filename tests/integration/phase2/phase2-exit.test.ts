@@ -41,8 +41,9 @@ import {
  * - DEF-010: pendingPatch stays unset for the whole run — the CODER→REVIEWER
  *   patch flow travels via worktree refs (branchOrPatch slice) + git_diff,
  *   proving no State patch-metadata consumer exists (chain 1).
- * - DEF-005: REVIEWER's lint grant resolves as `unavailable` and the loop
- *   never requires lint (chain E).
+ * - DEF-005: resolved in this PR — the biome-backed lint-server
+ *   (packages/tools/lint) lands and the catalog grants `lint_check`; the
+ *   REVIEWER exercises it for real in-loop (chain 3) alongside git_diff.
  * - DEF-007: REVIEWER pass → finalize with no leader confirmation step,
  *   per the task 2.2 ruling (chains 1-3).
  */
@@ -178,7 +179,7 @@ const FAILED_RESULTS = {
 };
 
 interface ScriptedAction {
-  tool: 'fs_write' | 'fs_read' | 'git_applyPatch' | 'git_diff' | 'sandbox_run';
+  tool: 'fs_write' | 'fs_read' | 'git_applyPatch' | 'git_diff' | 'lint_check' | 'sandbox_run';
   args: Record<string, unknown>;
 }
 
@@ -218,6 +219,7 @@ const REVIEWER_TURN = (verdictJson: string): ScriptedTurn => ({
   actions: [
     { tool: 'git_diff', args: { ref: 'HEAD~1' } },
     { tool: 'fs_read', args: { path: 'math.js' } },
+    { tool: 'lint_check', args: { paths: ['math.js'] } },
   ],
   final: verdictJson,
 });
@@ -504,6 +506,11 @@ describe('Phase 2 exit: six-role happy path (scripted LLM, real MCP fs/git + Loc
     const diff = toolResultOf(adapter.calls, 'git_diff');
     expect(typeof diff).toBe('string');
     expect(diff as string).toContain('math.js');
+    // DEF-005 resolved: REVIEWER's in-loop lint grant runs real Biome; the
+    // scripted math.js is lint-clean.
+    const lintIssues = toolResultsOf(adapter.calls, 'lint_check');
+    expect(lintIssues.length).toBeGreaterThanOrEqual(1);
+    expect(lintIssues[0]).toEqual([]);
   });
 
   it('chain 4: pre-step overwrites the LLM input with the per-role projection (R2/D1)', () => {
@@ -677,13 +684,15 @@ describe('Phase 2 exit: DEF-006 git grant granularity (§2 matrix, direct catalo
         if (spec === undefined) throw new Error(`roster missing role ${role}`);
         return catalog.resolve(spec.tools.filter((tool) => PHASE2_SURFACE.includes(tool)));
       };
-      // Read-only roles: fs.read + git.readonly only (lint unavailable, DEF-005).
+      // Read-only roles: fs.read + git.readonly (ARCH has no lint per the matrix).
       const architect = resolveOf('ARCHITECT');
       expect(architect.allowNames).toEqual(['fs_read', 'git_diff']);
       expect(architect.unavailable).toEqual([]);
+      // DEF-005 resolved in this PR: REVIEWER's lint grant resolves the
+      // biome-backed lint-server.
       const reviewer = resolveOf('REVIEWER');
-      expect(reviewer.allowNames).toEqual(['fs_read', 'git_diff']);
-      expect(reviewer.unavailable).toEqual(['lint']);
+      expect(reviewer.allowNames).toEqual(['fs_read', 'git_diff', 'lint_check']);
+      expect(reviewer.unavailable).toEqual([]);
       // Worker roles: worktree-scoped git (applyPatch + diff), NO main-repo mutations.
       const coder = resolveOf('CODER');
       expect(coder.allowNames).toEqual([
@@ -692,8 +701,9 @@ describe('Phase 2 exit: DEF-006 git grant granularity (§2 matrix, direct catalo
         'sandbox_run',
         'git_applyPatch',
         'git_diff',
+        'lint_check',
       ]);
-      expect(coder.unavailable).toEqual(['lint']);
+      expect(coder.unavailable).toEqual([]);
       const tester = resolveOf('TESTER');
       expect(tester.allowNames).toEqual([
         'fs_read',

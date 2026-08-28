@@ -194,6 +194,9 @@ importers:
       '@agora/tools-git':
         specifier: workspace:*
         version: link:../git
+      '@agora/tools-lint':
+        specifier: workspace:*
+        version: link:../lint
       '@agora/tools-test':
         specifier: workspace:*
         version: link:../test
@@ -242,7 +245,20 @@ importers:
         specifier: ^3.36.0
         version: 3.36.0
 
-  packages/tools/lint: {}
+  packages/tools/lint:
+    dependencies:
+      '@agora/tools-fs':
+        specifier: workspace:*
+        version: link:../fs
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.5.10
+      '@modelcontextprotocol/sdk':
+        specifier: 'catalog:'
+        version: 1.30.0(zod@4.4.3)
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
 
   packages/tools/sandbox: {}
 

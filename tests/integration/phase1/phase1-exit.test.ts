@@ -38,8 +38,9 @@ import {
  * G5 chain stays covered by `packages/core/__tests__/e2e/lru-cache.test.ts`
  * (skipIf no key).
  *
- * DEF-005: the lint server has no Phase 1 task, so the exit test does not
- * require lint (it asserts lint resolves as `unavailable` in the §2 matrix).
+ * DEF-005: the lint server landed in task 2.5 (biome-backed), so the catalog
+ * resolves `lint` for CODER/REVIEWER; the Phase 1 in-loop surface still
+ * excludes it (PHASE1_TOOL_SURFACE), so the loop itself never requires lint.
  * The `git` group is verified in the direct catalog chain (an in-loop git flow
  * needs Phase 2 composition-root worktree-pointer machinery; DEF-006 defers
  * the git grant-granularity ruling).
@@ -383,26 +384,27 @@ describe('Phase 1 exit integration (scripted LLM, real MCP fs + LocalTemp sandbo
   });
 });
 
-describe('Phase 1 exit: MCP 五类 server 可用 (direct catalog chain, DEF-005 lint excluded)', () => {
-  it('resolves the full §2 whitelist matrix (git expands, sandbox.applyPatch aliases, lint unavailable)', async () => {
+describe('Phase 1 exit: MCP 五类 server 可用 (direct catalog chain, lint resolved via task 2.5)', () => {
+  it('resolves the full §2 whitelist matrix (git worktree-scoped, sandbox.applyPatch aliases, lint available)', async () => {
     const fixture = await catalogFixture();
     try {
       const coder = PHASE0_ROSTER.find((entry) => entry.role === 'CODER');
       const tester = PHASE0_ROSTER.find((entry) => entry.role === 'TESTER');
       if (coder === undefined || tester === undefined) throw new Error('roster missing roles');
       const coderResolved = fixture.catalog.resolve(coder.tools);
-      // DEF-006 (task 2.5): the `git` group is worktree-scoped — applyPatch +
-      // diff only; createWorktree/merge are granted to no model role.
+      // DEF-006 (task 2.5): worktree-scoped git; DEF-005 (task 2.5): lint
+      // resolves the biome-backed lint-server.
       expect(coderResolved.allowNames).toEqual([
         'fs_read',
         'fs_write',
         'sandbox_run',
         'git_applyPatch',
         'git_diff',
+        'lint_check',
       ]);
       expect(coderResolved.allowNames).not.toContain('git_createWorktree');
       expect(coderResolved.allowNames).not.toContain('git_merge');
-      expect(coderResolved.unavailable).toEqual(['lint']);
+      expect(coderResolved.unavailable).toEqual([]);
       const testerResolved = fixture.catalog.resolve(tester.tools);
       expect(testerResolved.unavailable).toEqual([]);
       expect(testerResolved.allowNames).toContain('sandbox_run');

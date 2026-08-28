@@ -2,6 +2,7 @@ import type { SandboxManager, Worktree } from '@agora/runtime-sandbox';
 import { createSandboxRunTool, wireToolName } from '@agora/runtime-sandbox';
 import { createFsServer, WorktreeRegistry } from '@agora/tools-fs';
 import { createGitServer } from '@agora/tools-git';
+import { createLintServer } from '@agora/tools-lint';
 import { createTestServer } from '@agora/tools-test';
 import type { ContentBlock } from '@deepseek-ai/dsh-llm';
 import type { JsonValue, ParameterSchemaSpec, ToolDefinition } from '@deepseek-ai/dsh-tools';
@@ -71,9 +72,8 @@ export const DEFAULT_MCP_TIMEOUT_MS = 30_000;
  * matrix's `git(worktree)` cells — applyPatch + diff only. The main-repo
  * mutations git_createWorktree/git_merge are composition-root/integrate-node
  * operations and are granted to NO model role. `git.readonly` is the diff-only
- * surface for the matrix's 只读 cells (ARCHITECT/REVIEWER). `lint` is
- * intentionally absent (DEF-005): the loader reports it `unavailable` instead
- * of granting nothing silently.
+ * surface for the matrix's 只读 cells (ARCHITECT/REVIEWER). `lint` resolves the
+ * biome-backed lint-server since task 2.5 (DEF-005 resolved).
  */
 const LOGICAL_GROUPS: Readonly<Record<string, readonly string[]>> = {
   'fs.read': [wireToolName('fs.read')],
@@ -82,6 +82,7 @@ const LOGICAL_GROUPS: Readonly<Record<string, readonly string[]>> = {
   'test.run': [wireToolName('test.run')],
   git: [wireToolName('git.applyPatch'), wireToolName('git.diff')],
   'git.readonly': [wireToolName('git.diff')],
+  lint: [wireToolName('lint.check')],
   'sandbox.applyPatch': [wireToolName('git.applyPatch')],
   'sandbox.run': [wireToolName('sandbox.run')],
 };
@@ -91,7 +92,7 @@ interface McpToolSpec {
   /** Wire-safe model-visible name (e.g. `fs_read`). */
   readonly wireName: string;
   /** MCP server owning the tool. */
-  readonly server: 'fs' | 'test' | 'git';
+  readonly server: 'fs' | 'test' | 'git' | 'lint';
   /** Tool name inside the MCP server (e.g. `read`). */
   readonly mcpTool: string;
   /** Inject the sandbox worktree root as the MCP `worktree` argument. */
@@ -182,6 +183,22 @@ const MCP_TOOLS: readonly McpToolSpec[] = [
     },
   },
   {
+    wireName: wireToolName('lint.check'),
+    server: 'lint',
+    mcpTool: 'check',
+    needsWorktree: true,
+    timeoutMs: DEFAULT_MCP_TIMEOUT_MS,
+    description:
+      'Lint files inside the sandbox worktree with Biome and return the structured issue list [] (empty = clean).',
+    parameters: {
+      paths: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Worktree-relative paths to lint; defaults to the whole worktree.',
+      },
+    },
+  },
+  {
     wireName: wireToolName('git.createWorktree'),
     server: 'git',
     mcpTool: 'createWorktree',
@@ -254,12 +271,12 @@ const MCP_TOOLS: readonly McpToolSpec[] = [
 
 /** One bridged server: the McpServer and its in-process Client. */
 interface BridgedServer {
-  readonly name: 'fs' | 'test' | 'git';
+  readonly name: 'fs' | 'test' | 'git' | 'lint';
   readonly server: McpServer;
   readonly client: Client;
 }
 
-/** Build a catalog over the three Phase 1 MCP servers + the sandbox function tool. */
+/** Build a catalog over the Phase 1/2 MCP servers + the sandbox function tool. */
 export async function createToolCatalog(options: ToolCatalogOptions): Promise<ToolCatalog> {
   const registry = options.registry ?? new WorktreeRegistry();
   const fsServer = createFsServer({ registry });
@@ -268,10 +285,12 @@ export async function createToolCatalog(options: ToolCatalogOptions): Promise<To
     registry,
     ...(options.mainRepoPath === undefined ? {} : { mainRepoPath: options.mainRepoPath }),
   });
+  const lintServer = createLintServer({ registry });
   const servers: readonly BridgedServer[] = await Promise.all([
     connectServer('fs', fsServer),
     connectServer('test', testServer),
     connectServer('git', gitServer),
+    connectServer('lint', lintServer),
   ]);
   const byServer = new Map(servers.map((server) => [server.name, server]));
 
@@ -315,7 +334,7 @@ export async function createToolCatalog(options: ToolCatalogOptions): Promise<To
 
 /** Connect one McpServer to an in-process Client over a linked InMemoryTransport pair. */
 async function connectServer(
-  name: 'fs' | 'test' | 'git',
+  name: 'fs' | 'test' | 'git' | 'lint',
   server: McpServer,
 ): Promise<BridgedServer> {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();

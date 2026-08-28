@@ -70,7 +70,7 @@ async function toolValue(ctx: Context, name: string, args: unknown): Promise<unk
 }
 
 describe('createToolCatalog (MCP → Harness bridge, task 1.5)', () => {
-  it('registers the 9 wire-safe tools covering fs/test/git servers + sandbox.run', async () => {
+  it('registers the 10 wire-safe tools covering fs/test/git/lint servers + sandbox.run', async () => {
     const fixture = await bridgeFixture();
     try {
       const names = fixture.catalog
@@ -85,6 +85,7 @@ describe('createToolCatalog (MCP → Harness bridge, task 1.5)', () => {
         'git_createWorktree',
         'git_diff',
         'git_merge',
+        'lint_check',
         'sandbox_run',
         'test_run',
       ]);
@@ -207,7 +208,7 @@ describe('createToolCatalog (MCP → Harness bridge, task 1.5)', () => {
     }
   });
 
-  it('resolves the CODER whitelist against the real catalog (git expands, lint unavailable)', async () => {
+  it('resolves the CODER whitelist against the real catalog (git worktree-scoped, lint available)', async () => {
     const fixture = await bridgeFixture();
     try {
       const coder = PHASE0_ROSTER.find((entry) => entry.role === 'CODER');
@@ -216,17 +217,19 @@ describe('createToolCatalog (MCP → Harness bridge, task 1.5)', () => {
       const coderResolved = fixture.catalog.resolve(coder.tools);
       // DEF-006 (task 2.5): the `git` group is worktree-scoped — applyPatch +
       // diff only; the main-repo mutations (createWorktree/merge) are granted
-      // to no model role.
+      // to no model role. DEF-005 (task 2.5): lint resolves the biome-backed
+      // lint-server.
       expect(coderResolved.allowNames).toEqual([
         'fs_read',
         'fs_write',
         'sandbox_run',
         'git_applyPatch',
         'git_diff',
+        'lint_check',
       ]);
       expect(coderResolved.allowNames).not.toContain('git_createWorktree');
       expect(coderResolved.allowNames).not.toContain('git_merge');
-      expect(coderResolved.unavailable).toEqual(['lint']);
+      expect(coderResolved.unavailable).toEqual([]);
       const testerResolved = fixture.catalog.resolve(tester.tools);
       expect(testerResolved.unavailable).toEqual([]);
       expect(testerResolved.allowNames).toContain('sandbox_run');

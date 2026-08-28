@@ -5,5 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@agora/tools-fs": "workspace:*",
+    "@biomejs/biome": "catalog:",
+    "@modelcontextprotocol/sdk": "catalog:",
+    "zod": "^4.0.0"
   }
 }
