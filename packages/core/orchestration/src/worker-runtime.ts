@@ -29,6 +29,15 @@ export class WorkerRuntime {
 
   constructor(private readonly deps: WorkerRuntimeDeps) {}
 
+  /**
+   * Roster visibility for composition-root binding assertions (DEF-008,
+   * task 2.5): lets the assembly point verify that the routing roster and
+   * the execution roster agree before any dispatch can hit specOf().
+   */
+  get roster(): readonly RoleSpec[] {
+    return this.deps.roster;
+  }
+
   async runOne(state: AppState, assign: Assignment): Promise<AppState> {
     const spec = this.specOf(assign.role);
     const executor = this.deps.buildExecutor(spec, assign);

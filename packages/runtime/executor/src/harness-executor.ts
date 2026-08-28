@@ -84,6 +84,16 @@ export interface HarnessExecutorOptions {
    * Undefined for roles that never own a subtask.
    */
   readSubtaskStatus?: () => Promise<{ id: string; status: string } | undefined>;
+  /**
+   * Phase 2 handoff seam (task 2.5): after a turn quiesces, derive extra
+   * mutations from the turn's final assistant text. This is the only output
+   * channel of tool-less roles (PM is 纯推理 per §2) and of read-only roles
+   * whose matrix grant has no fs.write (ARCHITECT/REVIEWER): the composition
+   * root interprets the structured final message into State mutations, which
+   * still flow through applyMutations (R1). Undefined for roles covered by
+   * the file protocol (CODER/TESTER) or with no writes (COORDINATOR).
+   */
+  readTurnMutations?: (turn: { text: string | null }) => Mutation[] | Promise<Mutation[]>;
 }
 
 /**
@@ -113,6 +123,7 @@ export class HarnessExecutor implements Executor {
   private readonly readSubtaskStatus:
     | (() => Promise<{ id: string; status: string } | undefined>)
     | undefined;
+  private readonly readTurnMutations: HarnessExecutorOptions['readTurnMutations'];
   private readonly pluginFibers: Fiber[] = [];
   private ready: Promise<void>;
   private readonly handles = new Map<string, AgentHandle>();
@@ -162,6 +173,7 @@ export class HarnessExecutor implements Executor {
     this.maxToolCallsPerTurn = options.maxToolCallsPerTurn;
     this.readTestResults = options.readTestResults;
     this.readSubtaskStatus = options.readSubtaskStatus;
+    this.readTurnMutations = options.readTurnMutations;
     this.ready = this.awaitPlugins();
   }
 
@@ -244,6 +256,9 @@ export class HarnessExecutor implements Executor {
       if (subtask !== undefined) {
         mutations.push(mergeByIdMutation('subtasks', subtask.id, { status: subtask.status }));
       }
+    }
+    if (this.readTurnMutations !== undefined) {
+      mutations.push(...(await this.readTurnMutations({ text })));
     }
     return {
       kind: 'done',

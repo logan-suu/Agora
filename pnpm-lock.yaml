@@ -53,6 +53,9 @@ importers:
       '@agora/tools-fs':
         specifier: workspace:*
         version: link:packages/tools/fs
+      '@agora/tools-git':
+        specifier: workspace:*
+        version: link:packages/tools/git
       '@biomejs/biome':
         specifier: 'catalog:'
         version: 2.5.10

@@ -391,15 +391,17 @@ describe('Phase 1 exit: MCP 五类 server 可用 (direct catalog chain, DEF-005 
       const tester = PHASE0_ROSTER.find((entry) => entry.role === 'TESTER');
       if (coder === undefined || tester === undefined) throw new Error('roster missing roles');
       const coderResolved = fixture.catalog.resolve(coder.tools);
+      // DEF-006 (task 2.5): the `git` group is worktree-scoped — applyPatch +
+      // diff only; createWorktree/merge are granted to no model role.
       expect(coderResolved.allowNames).toEqual([
         'fs_read',
         'fs_write',
         'sandbox_run',
-        'git_createWorktree',
         'git_applyPatch',
         'git_diff',
-        'git_merge',
       ]);
+      expect(coderResolved.allowNames).not.toContain('git_createWorktree');
+      expect(coderResolved.allowNames).not.toContain('git_merge');
       expect(coderResolved.unavailable).toEqual(['lint']);
       const testerResolved = fixture.catalog.resolve(tester.tools);
       expect(testerResolved.unavailable).toEqual([]);

@@ -63,23 +63,25 @@ export const DEFAULT_MCP_TIMEOUT_MS = 30_000;
 /**
  * Logical → wire-name expansion table (RoleSpec.tools → model-visible tools).
  *
- * One logical entry may grant several wire tools (`git` is a capability
- * group), and two entries may grant the same wire tool (`sandbox.applyPatch`
- * aliases `git.applyPatch` — the Phase 0 sandbox patch concept is realized by
- * the git worktree in Phase 1). `lint` is intentionally absent (DEF-005): the
- * loader reports it `unavailable` instead of granting nothing silently.
+ * One logical entry may grant several wire tools, and two entries may grant
+ * the same wire tool (`sandbox.applyPatch` aliases `git.applyPatch` — the
+ * Phase 0 sandbox patch concept is realized by the git worktree in Phase 1).
+ *
+ * DEF-006 split (task 2.5): `git` is the worktree-scoped surface of the §2
+ * matrix's `git(worktree)` cells — applyPatch + diff only. The main-repo
+ * mutations git_createWorktree/git_merge are composition-root/integrate-node
+ * operations and are granted to NO model role. `git.readonly` is the diff-only
+ * surface for the matrix's 只读 cells (ARCHITECT/REVIEWER). `lint` is
+ * intentionally absent (DEF-005): the loader reports it `unavailable` instead
+ * of granting nothing silently.
  */
 const LOGICAL_GROUPS: Readonly<Record<string, readonly string[]>> = {
   'fs.read': [wireToolName('fs.read')],
   'fs.write': [wireToolName('fs.write')],
   'fs.list': [wireToolName('fs.list')],
   'test.run': [wireToolName('test.run')],
-  git: [
-    wireToolName('git.createWorktree'),
-    wireToolName('git.applyPatch'),
-    wireToolName('git.diff'),
-    wireToolName('git.merge'),
-  ],
+  git: [wireToolName('git.applyPatch'), wireToolName('git.diff')],
+  'git.readonly': [wireToolName('git.diff')],
   'sandbox.applyPatch': [wireToolName('git.applyPatch')],
   'sandbox.run': [wireToolName('sandbox.run')],
 };

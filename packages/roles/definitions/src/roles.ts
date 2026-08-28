@@ -23,17 +23,16 @@ export const PM_ROLE: RoleSpec = {
 /**
  * ARCHITECT — Architect (task 2.1, spec §2). Read-only repo access: turns
  * `requirements` into module breakdown, interfaces, data structures and
- * technology choices (`architecture` + `conventions`). `git` is declared at the
- * matrix's read-only intent; the catalog grants the whole git capability group
- * (coarse granularity from task 1.5) — a finer read-only surface is a Phase 2
- * composition-root concern.
+ * technology choices (`architecture` + `conventions`). `git.readonly` is the
+ * matrix's 只读 surface (diff only) — DEF-006 (task 2.5) split the coarse
+ * `git` group so the main-repo mutations reach no model role.
  */
 export const ARCHITECT_ROLE: RoleSpec = {
   role: 'ARCHITECT',
   enabled: true,
   executor: 'harness',
   systemPrompt: '你是架构师，给出可实现的设计与约定，关键决策附理由写入台账。',
-  tools: ['fs.read', 'git'],
+  tools: ['fs.read', 'git.readonly'],
   projection: ['requirements', 'repoStructure', 'conventions'],
   routeWhen: 'requirementsReady',
 };
@@ -41,7 +40,8 @@ export const ARCHITECT_ROLE: RoleSpec = {
 /**
  * REVIEWER — Reviewer (task 2.1, spec §2). Quality/convention/security review
  * producing actionable `reviewComments`; approval requires the leader's final
- * confirmation (human-gate carrier). `lint` has no catalog implementation
+ * confirmation (human-gate carrier). `git.readonly` is the matrix's 只读 diff
+ * surface (DEF-006 split, task 2.5). `lint` has no catalog implementation
  * (DEF-005): `resolveRoleTools` reports it unavailable, mirroring the CODER.
  */
 export const REVIEWER_ROLE: RoleSpec = {
@@ -49,7 +49,7 @@ export const REVIEWER_ROLE: RoleSpec = {
   enabled: true,
   executor: 'harness',
   systemPrompt: '你是评审者，审查质量/规范/安全，产出可执行修改意见，通过结论需 leader 最终确认。',
-  tools: ['fs.read', 'git', 'lint'],
+  tools: ['fs.read', 'git.readonly', 'lint'],
   projection: ['pendingPatch', 'conventions', 'architecture'],
   routeWhen: 'testsPassed',
 };

@@ -37,7 +37,7 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
   it('whitelists tools per role exactly as the detailed design §2 permission matrix', () => {
     expect(spec(DEFAULT_ROSTER, 'COORDINATOR').tools).toEqual([]);
     expect(spec(DEFAULT_ROSTER, 'PM').tools).toEqual([]);
-    expect(spec(DEFAULT_ROSTER, 'ARCHITECT').tools).toEqual(['fs.read', 'git']);
+    expect(spec(DEFAULT_ROSTER, 'ARCHITECT').tools).toEqual(['fs.read', 'git.readonly']);
     expect(spec(DEFAULT_ROSTER, 'CODER').tools).toEqual([
       'fs.read',
       'fs.write',
@@ -52,7 +52,7 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
       'sandbox.run',
       'git',
     ]);
-    expect(spec(DEFAULT_ROSTER, 'REVIEWER').tools).toEqual(['fs.read', 'git', 'lint']);
+    expect(spec(DEFAULT_ROSTER, 'REVIEWER').tools).toEqual(['fs.read', 'git.readonly', 'lint']);
   });
 
   it('keeps PM tool-free because it only consumes projected goal/requirements/leader decisions', () => {

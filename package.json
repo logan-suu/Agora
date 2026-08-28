@@ -20,6 +20,7 @@
     "@agora/runtime-sandbox": "workspace:*",
     "@agora/tools-bridge": "workspace:*",
     "@agora/tools-fs": "workspace:*",
+    "@agora/tools-git": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@deepseek-ai/cordis": "4.0.1",
     "@deepseek-ai/dsh-llm": "0.1.1-rc.2",
