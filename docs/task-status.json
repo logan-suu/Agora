@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-28T13:24:13.000Z",
+  "last_updated": "2026-08-28T13:24:26.000Z",
   "current_phase": 2,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -416,7 +416,7 @@
           "id": "2.2",
           "title": "Coordinator 条件路由升级",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/开发计划安排.md §5",
             "docs/详细设计方案.md §3"
@@ -425,7 +425,8 @@
             "2.1"
           ],
           "test_file": null,
-          "notes": "从固定序列升级为条件路由：goal 含糊→PM；需求已定→Architect；设计完成→Coder；测试失败→Coder（回环）；测试通过→Reviewer；评审通过→finalize。"
+          "notes": "从固定序列升级为条件路由：goal 含糊→PM；需求已定→Architect；设计完成→Coder；测试失败→Coder（回环）；测试通过→Reviewer；评审通过→finalize。",
+          "last_updated": "2026-08-28T13:24:26.000Z"
         },
         {
           "id": "2.3",
@@ -445,7 +446,7 @@
           "id": "2.4",
           "title": "角色投影细化（按详细设计 §7 切片表）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/详细设计方案.md §7"
           ],
@@ -453,7 +454,8 @@
             "2.1"
           ],
           "test_file": null,
-          "notes": "CODER=分配 subtask+architecture+conventions+当前失败测试+相关 fileRefs；TESTER=acceptance+当前分支/patch+接口约定；REVIEWER=pendingDiff+conventions+architecture；PM=goal+requirements+leader 决策；ARCHITECT=requirements+repo 结构+conventions。明确不含列同样重要。"
+          "notes": "CODER=分配 subtask+architecture+conventions+当前失败测试+相关 fileRefs；TESTER=acceptance+当前分支/patch+接口约定；REVIEWER=pendingDiff+conventions+architecture；PM=goal+requirements+leader 决策；ARCHITECT=requirements+repo 结构+conventions。明确不含列同样重要。",
+          "last_updated": "2026-08-28T13:24:26.000Z"
         },
         {
           "id": "2.5",
