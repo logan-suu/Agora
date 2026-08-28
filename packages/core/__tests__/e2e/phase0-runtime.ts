@@ -14,7 +14,7 @@ import {
   type HarnessExecutorOptions,
 } from '@agora/runtime-executor';
 import { LocalTempSandbox, type SandboxManager, type Worktree } from '@agora/runtime-sandbox';
-import { createToolCatalog } from '@agora/tools-bridge';
+import { createToolCatalog, type ToolCatalog } from '@agora/tools-bridge';
 import { WorktreeRegistry } from '@agora/tools-fs';
 import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
 
@@ -36,6 +36,14 @@ const PHASE0_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   TESTER:
     '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>` or `node <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
 };
+
+/**
+ * Phase 0 tool surface (spec §9 "工具只接 fs + sandbox.run"): LocalTempSandbox
+ * (R7) has no git worktrees/main repo, so the `git` group, `sandbox.applyPatch`
+ * (a Phase 1 git-worktree patch) and `lint` (DEF-005) are phase-gated out here;
+ * the catalog still resolves the full §2 matrix for Phase 1+.
+ */
+const PHASE0_TOOL_SURFACE: readonly string[] = ['fs.read', 'fs.write', 'sandbox.run'];
 
 export interface Phase0RuntimeOptions {
   taskId: string;
@@ -86,7 +94,18 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
   const worktree = await sandbox.createWorktree(options.taskId, 'shared');
   const registry = new WorktreeRegistry();
   registry.register(worktree.path);
-  const catalog = await createToolCatalog({ registry, sandbox, getWorktree: async () => worktree });
+  let catalog: ToolCatalog;
+  try {
+    catalog = await createToolCatalog({
+      registry,
+      sandbox,
+      getWorktree: async () => worktree,
+    });
+  } catch (err) {
+    // Exception-safe init: the worktree/sandbox must not leak if catalog setup fails.
+    await sandbox.teardown(options.taskId);
+    throw err;
+  }
   const subtaskId = `${options.taskId}-sub-0`;
   const readTestResults = async (): Promise<TestResults | undefined> => {
     try {
@@ -119,9 +138,12 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
   const workerRuntime = new WorkerRuntime({
     roster: PHASE0_ROSTER,
     buildExecutor: (spec, _assign): Executor => {
-      // Task 1.5: RoleSpec.tools → catalog (spec §2 matrix); register all tools
-      // and let the agent-level restrict scope each role (toolFilter equivalent).
-      const resolved = catalog.resolve(spec.tools);
+      // Task 1.5: RoleSpec.tools → catalog (spec §2 matrix) intersected with the
+      // Phase 0 surface; register all catalog tools and let the agent-level
+      // restrict scope each role (toolFilter equivalent).
+      const resolved = catalog.resolve(
+        spec.tools.filter((tool) => PHASE0_TOOL_SURFACE.includes(tool)),
+      );
       const handoff = PHASE0_HANDOFF[spec.role] ?? '';
       const executorSpec: RoleSpec = {
         ...spec,
@@ -157,9 +179,29 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
     sandbox,
     worktree,
     dispose: async () => {
-      await Promise.all(executors.map((executor) => executor.dispose()));
-      await catalog.dispose();
-      await sandbox.teardown(options.taskId);
+      // Exception-safe teardown: every resource still closes even when an
+      // earlier close operation rejects (aggregate the errors, then rethrow).
+      const errors: unknown[] = [];
+      for (const executor of executors) {
+        try {
+          await executor.dispose();
+        } catch (err) {
+          errors.push(err);
+        }
+      }
+      try {
+        await catalog.dispose();
+      } catch (err) {
+        errors.push(err);
+      }
+      try {
+        await sandbox.teardown(options.taskId);
+      } catch (err) {
+        errors.push(err);
+      }
+      if (errors.length > 0) {
+        throw new Error(`createPhase0Runtime dispose failed: ${errors.map(String).join('; ')}`);
+      }
     },
   };
 }

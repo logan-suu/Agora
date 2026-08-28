@@ -33,13 +33,17 @@ export interface MergeResult {
  */
 export interface GitService {
   /** Apply a patch inside a registered worktree and commit it; returns the new commit id. */
-  applyPatch(worktree: string, patch: string): Promise<string>;
+  applyPatch(worktree: string, patch: string, signal?: AbortSignal): Promise<string>;
   /** Unified diff of a registered worktree: vs HEAD when `ref` is omitted, else vs `ref`. */
   diff(worktree: string, ref?: string): Promise<UnifiedDiff>;
   /** Create a linked worktree with a new branch from the main repo and register it. */
-  createWorktree(taskId: string, name: string): Promise<{ path: string; branch: string }>;
+  createWorktree(
+    taskId: string,
+    name: string,
+    signal?: AbortSignal,
+  ): Promise<{ path: string; branch: string }>;
   /** Merge `branch` into `base` in the main repo; never throws on conflicts. */
-  merge(base: string, branch: string): Promise<MergeResult>;
+  merge(base: string, branch: string, signal?: AbortSignal): Promise<MergeResult>;
 }
 
 /**
@@ -135,8 +139,9 @@ export class WorktreeGitService implements GitService {
     }
   }
 
-  async applyPatch(worktree: string, patch: string): Promise<string> {
+  async applyPatch(worktree: string, patch: string, signal?: AbortSignal): Promise<string> {
     const canonicalRoot = this.assertRegistered(worktree);
+    signal?.throwIfAborted();
     const git = simpleGit(canonicalRoot);
     // simple-git passes the patch as a command-line arg (a file path), so the
     // patch text is staged to a temp file outside the worktree before applying.
@@ -148,7 +153,12 @@ export class WorktreeGitService implements GitService {
     } finally {
       rmSync(patchDir, { recursive: true, force: true });
     }
+    // Cooperative cancellation (task 1.5 timeout policy): never stage+commit
+    // after the caller aborted — a late commit would land silently after the
+    // model was told the tool timed out.
+    signal?.throwIfAborted();
     await git.add(['-A']);
+    signal?.throwIfAborted();
     await git.commit('apply patch');
     return (await git.revparse(['HEAD'])).trim();
   }
@@ -159,22 +169,29 @@ export class WorktreeGitService implements GitService {
     return ref === undefined ? git.diff(['HEAD']) : git.diff([validateRefArg(ref, 'ref')]);
   }
 
-  async createWorktree(taskId: string, name: string): Promise<{ path: string; branch: string }> {
+  async createWorktree(
+    taskId: string,
+    name: string,
+    signal?: AbortSignal,
+  ): Promise<{ path: string; branch: string }> {
     const safeTaskId = validateTaskId(taskId);
     const branch = validateBranchName(name);
     const main = await this.getMainRepo();
     const path = join(this.worktreesDir, `${safeTaskId}-${branch}`);
+    signal?.throwIfAborted();
     // simple-git 3.x has no typed worktree task; drive `git worktree add` via raw.
     await main.raw(['worktree', 'add', path, '-b', branch]);
+    signal?.throwIfAborted();
     this.registry.register(path);
     return { path, branch };
   }
 
-  async merge(base: string, branch: string): Promise<MergeResult> {
+  async merge(base: string, branch: string, signal?: AbortSignal): Promise<MergeResult> {
     const main = await this.getMainRepo();
     const baseRef = validateRefArg(base, 'base branch');
     const branchRef = validateRefArg(branch, 'branch');
     try {
+      signal?.throwIfAborted();
       await main.checkout(baseRef);
     } catch (err) {
       return {
@@ -183,6 +200,7 @@ export class WorktreeGitService implements GitService {
       };
     }
     try {
+      signal?.throwIfAborted();
       const res = await main.merge([branchRef]);
       if (res.result.includes('CONFLICT')) {
         return { ok: false, conflicts: conflictPaths(res) };

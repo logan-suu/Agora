@@ -39,9 +39,9 @@ export function createGitServer(options: GitServerOptions = {}): McpServer {
         patch: z.string().describe('Unified diff patch text to apply.'),
       },
     },
-    async ({ worktree, patch }) => {
+    async ({ worktree, patch }, extra) => {
       try {
-        const commitId = await service.applyPatch(worktree, patch);
+        const commitId = await service.applyPatch(worktree, patch, extra.signal);
         return textResult(JSON.stringify({ commitId }));
       } catch (err) {
         return errorResult(err);
@@ -79,9 +79,9 @@ export function createGitServer(options: GitServerOptions = {}): McpServer {
         name: z.string().describe('Branch name (must be git-ref-safe).'),
       },
     },
-    async ({ taskId, name }) => {
+    async ({ taskId, name }, extra) => {
       try {
-        const result = await service.createWorktree(taskId, name);
+        const result = await service.createWorktree(taskId, name, extra.signal);
         return textResult(JSON.stringify(result));
       } catch (err) {
         return errorResult(err);
@@ -99,9 +99,9 @@ export function createGitServer(options: GitServerOptions = {}): McpServer {
         branch: z.string().describe('Branch to merge into the base.'),
       },
     },
-    async ({ base, branch }) => {
+    async ({ base, branch }, extra) => {
       try {
-        const result = await service.merge(base, branch);
+        const result = await service.merge(base, branch, extra.signal);
         return textResult(JSON.stringify(result));
       } catch (err) {
         return errorResult(err);

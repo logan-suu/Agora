@@ -343,8 +343,15 @@ function bridgeMcpTool(
       if (spec.needsWorktree) {
         mcpArgs.worktree = (await deps.getWorktree()).path;
       }
+      // Forward the Harness abort signal into the MCP RequestOptions so the SDK
+      // cancels the in-flight request (and, over the in-process transport,
+      // propagates `extra.signal` to the server handler). The server handlers
+      // check that signal between mutating steps (e.g. git apply → add → commit),
+      // so a TOOL_TIMEOUT never lets a late commit land unseen.
       const outcome = await raceAbort(exec.signal, () =>
-        server.client.callTool({ name: spec.mcpTool, arguments: mcpArgs }),
+        server.client.callTool({ name: spec.mcpTool, arguments: mcpArgs }, undefined, {
+          signal: exec.signal,
+        }),
       );
       // Settle gracefully on abort (never reject): the Harness timeout policy
       // (tools/execute wrapper) detects its own deadline and substitutes the
