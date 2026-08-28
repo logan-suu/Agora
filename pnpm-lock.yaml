@@ -97,7 +97,11 @@ importers:
 
   packages/core/preemption: {}
 
-  packages/roles/definitions: {}
+  packages/roles/definitions:
+    dependencies:
+      '@agora/core-domain':
+        specifier: workspace:*
+        version: link:../../core/domain
 
   packages/runtime/executor:
     dependencies:
@@ -146,6 +150,10 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: 0.1.1-rc.2
         version: 0.1.1-rc.2(dtthkc7s3brp3rjqemx4ruguvu)
+    devDependencies:
+      '@agora/roles-definitions':
+        specifier: workspace:*
+        version: link:../../roles/definitions
 
   packages/runtime/sandbox:
     dependencies:

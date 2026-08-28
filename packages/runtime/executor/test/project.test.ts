@@ -1,0 +1,283 @@
+import {
+  type AppState,
+  createInitialAppState,
+  type Requirement,
+  type TestResults,
+} from '@agora/core-domain';
+import { DEFAULT_ROSTER } from '@agora/roles-definitions';
+import { describe, expect, it } from 'vitest';
+import { project } from '../src/project';
+
+// Task 2.4 (spec §7 slice table). Pure data assertions, no mocks (R11):
+// positive slice shapes for all six roles, the three-rule negative guarantees,
+// and the no-silent-degradation guard for unimplemented slice names.
+
+const REQ: Requirement = {
+  id: 'req-1',
+  story: 'as a user I want O(1) cache ops',
+  acceptance: ['cache get/set are O(1)'],
+  nonGoals: ['no TTL eviction'],
+};
+
+const TEST_RESULTS: TestResults = {
+  passed: false,
+  total: 5,
+  failed: 2,
+  failures: [
+    { test: 'get evicts', message: 'SENTINEL-FAILURE-MESSAGE', file: 'src/a.test.ts', line: 3 },
+    { test: 'set updates', message: 'SENTINEL-FAILURE-MESSAGE', file: 'src/a.test.ts', line: 7 },
+    {
+      test: 'get evicts again',
+      message: 'SENTINEL-FAILURE-MESSAGE',
+      file: 'src/a.test.ts',
+      line: 3,
+    },
+    { test: 'ttl expires', message: 'other', file: 'src/b.test.ts', line: 1 },
+  ],
+};
+
+function makeState(overrides: Partial<AppState> = {}): AppState {
+  return { ...createInitialAppState('t-1', 'build an LRU cache'), ...overrides };
+}
+
+function slicesOf(state: AppState, role: string): Record<string, unknown> {
+  return project(state, role, DEFAULT_ROSTER).slices;
+}
+
+function chatLog(): AppState['messages'] {
+  return [
+    {
+      msgId: 'm-1',
+      channelId: 'ch-main',
+      fromRole: 'PM',
+      type: 'chat',
+      payload: { note: 'SENTINEL-PM-PAYLOAD' },
+      display: 'SENTINEL-PM-DISPLAY',
+      ts: 1,
+    },
+  ];
+}
+
+describe('project (task 2.4, spec §7 slice table)', () => {
+  it('COORDINATOR global.summary carries phase/test summary with explicit Phase 4/9 empties', () => {
+    const view = slicesOf(makeState({ testResults: TEST_RESULTS }), 'COORDINATOR');
+    expect(view['global.summary']).toEqual({
+      taskId: 't-1',
+      goal: 'build an LRU cache',
+      phase: 'clarifying',
+      iterationCount: 0,
+      complexity: null,
+      workers: [],
+      testSummary: { passed: false, total: 5, failed: 2 },
+    });
+  });
+
+  it('COORDINATOR testSummary is null before any test run', () => {
+    expect(slicesOf(makeState(), 'COORDINATOR')['global.summary']).toMatchObject({
+      testSummary: null,
+    });
+  });
+
+  it('PM gets goal, full requirements, and an explicitly empty leaderDecisions (3.1 upgrade point)', () => {
+    const view = slicesOf(makeState({ requirements: [REQ] }), 'PM');
+    expect(view.goal).toEqual({ goal: 'build an LRU cache' });
+    expect(view.requirements).toEqual([REQ]);
+    expect(view.leaderDecisions).toEqual([]);
+  });
+
+  it('ARCHITECT gets requirements, explicit-empty repoStructure (Phase 1), and conventions', () => {
+    const view = slicesOf(
+      makeState({ requirements: [REQ], conventions: { style: 'biome' } }),
+      'ARCHITECT',
+    );
+    expect(view.requirements).toEqual([REQ]);
+    expect(view.repoStructure).toEqual({});
+    expect(view.conventions).toEqual({ style: 'biome' });
+  });
+
+  it('CODER assignedSubtask lists only own non-done subtasks with worktree refs', () => {
+    const view = slicesOf(
+      makeState({
+        subtasks: [
+          {
+            id: 'st-1',
+            title: 'write LRU',
+            ownerRole: 'CODER',
+            dependsOn: [],
+            status: 'in_progress',
+            worktree: '/wt/a',
+          },
+          { id: 'st-2', title: 'old', ownerRole: 'CODER', dependsOn: [], status: 'done' },
+          {
+            id: 'st-3',
+            title: 'SENTINEL-OTHER-SUBTASK',
+            ownerRole: 'TESTER',
+            dependsOn: [],
+            status: 'in_progress',
+          },
+        ],
+      }),
+      'CODER',
+    );
+    expect(view.assignedSubtask).toEqual([
+      {
+        id: 'st-1',
+        title: 'write LRU',
+        ownerRole: 'CODER',
+        status: 'in_progress',
+        worktree: '/wt/a',
+      },
+    ]);
+  });
+
+  it('CODER failingTests: zero shape when absent, full shape when present', () => {
+    expect(slicesOf(makeState(), 'CODER').failingTests).toEqual({
+      passed: null,
+      total: 0,
+      failed: 0,
+      failures: [],
+    });
+    expect(slicesOf(makeState({ testResults: TEST_RESULTS }), 'CODER').failingTests).toEqual({
+      passed: false,
+      total: 5,
+      failed: 2,
+      failures: TEST_RESULTS.failures,
+    });
+  });
+
+  it('CODER fileRefs: deduped path+line refs from failing tests, never code content (iron rule 2)', () => {
+    const refs = slicesOf(makeState({ testResults: TEST_RESULTS }), 'CODER').fileRefs;
+    expect(refs).toEqual([
+      { file: 'src/a.test.ts', lines: [3, 7] },
+      { file: 'src/b.test.ts', lines: [1] },
+    ]);
+    expect(JSON.stringify(refs)).not.toContain('SENTINEL-FAILURE-MESSAGE');
+    expect(slicesOf(makeState(), 'CODER').fileRefs).toEqual([]);
+  });
+
+  it('CODER architecture/conventions pass through as copies and default to {} when absent', () => {
+    const architecture = { modules: ['cache'] };
+    const view = slicesOf(makeState({ architecture, conventions: { style: 'biome' } }), 'CODER');
+    expect(view.architecture).toEqual(architecture);
+    expect(view.architecture).not.toBe(architecture);
+    expect(view.conventions).toEqual({ style: 'biome' });
+    const bare = slicesOf(makeState(), 'CODER');
+    expect(bare.architecture).toEqual({});
+    expect(bare.conventions).toEqual({});
+  });
+
+  it('TESTER acceptance: requirements acceptance only — no goal echo, no test internals', () => {
+    const view = slicesOf(
+      makeState({ goal: 'SENTINEL-GOAL', requirements: [REQ], testResults: TEST_RESULTS }),
+      'TESTER',
+    );
+    expect(view.acceptance).toEqual({
+      requirements: [{ id: 'req-1', acceptance: ['cache get/set are O(1)'] }],
+    });
+    const json = JSON.stringify(view.acceptance);
+    expect(json).not.toContain('SENTINEL-GOAL');
+    expect(json).not.toContain('"passed"');
+    expect(slicesOf(makeState(), 'TESTER').acceptance).toEqual({ requirements: [] });
+  });
+
+  it('TESTER branchOrPatch: active worktree paths plus pendingPatch (null until its writer lands)', () => {
+    const patched = makeState({
+      subtasks: [
+        {
+          id: 'st-1',
+          title: 'write LRU',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+          worktree: '/wt/a',
+        },
+        { id: 'st-2', title: 'old', ownerRole: 'CODER', dependsOn: [], status: 'done' },
+      ],
+      pendingPatch: { diff: 'x' },
+    });
+    expect(slicesOf(patched, 'TESTER').branchOrPatch).toEqual({
+      worktrees: ['/wt/a'],
+      patch: { diff: 'x' },
+    });
+    expect(slicesOf(makeState(), 'TESTER').branchOrPatch).toEqual({
+      worktrees: [],
+      patch: null,
+    });
+  });
+
+  it('TESTER interfaceContracts: architecture.interfaces passthrough with {} defaults', () => {
+    const interfaces = [{ name: 'Cache', method: 'get' }];
+    expect(
+      slicesOf(makeState({ architecture: { interfaces } }), 'TESTER').interfaceContracts,
+    ).toEqual(interfaces);
+    expect(slicesOf(makeState({ architecture: {} }), 'TESTER').interfaceContracts).toEqual({});
+    expect(
+      slicesOf(makeState({ architecture: { interfaces: 'oops' } }), 'TESTER').interfaceContracts,
+    ).toEqual({});
+    expect(slicesOf(makeState(), 'TESTER').interfaceContracts).toEqual({});
+  });
+
+  it('REVIEWER gets pendingPatch, conventions, architecture with explicit empties', () => {
+    const rich = makeState({
+      pendingPatch: { diff: 'x' },
+      conventions: { style: 'biome' },
+      architecture: { modules: ['cache'] },
+    });
+    expect(slicesOf(rich, 'REVIEWER').pendingPatch).toEqual({ diff: 'x' });
+    expect(slicesOf(rich, 'REVIEWER').conventions).toEqual({ style: 'biome' });
+    expect(slicesOf(rich, 'REVIEWER').architecture).toEqual({ modules: ['cache'] });
+    const bare = slicesOf(makeState(), 'REVIEWER');
+    expect(bare.pendingPatch).toBeNull();
+    expect(bare.conventions).toEqual({});
+    expect(bare.architecture).toEqual({});
+  });
+
+  it('iron rule 1 (R2): no role view ever carries the raw chat log', () => {
+    for (const spec of DEFAULT_ROSTER) {
+      const json = JSON.stringify(slicesOf(makeState({ messages: chatLog() }), spec.role));
+      expect(json).not.toContain('SENTINEL-PM-PAYLOAD');
+      expect(json).not.toContain('SENTINEL-PM-DISPLAY');
+      expect(json).not.toContain('channelId');
+      expect(json).not.toContain('fromRole');
+      expect(json).not.toContain('msgId');
+    }
+  });
+
+  it('unknown declared slice throws instead of silently degrading', () => {
+    const custom = [
+      {
+        role: 'CUSTOM',
+        enabled: true,
+        executor: 'harness' as const,
+        systemPrompt: 'test',
+        tools: [],
+        projection: ['mystery.slice'],
+        routeWhen: 'always',
+      },
+    ];
+    expect(() => project(makeState(), 'CUSTOM', custom)).toThrow('unknown projection slice');
+  });
+
+  it('drift guard: every slice declared by DEFAULT_ROSTER is implemented', () => {
+    const rich = makeState({
+      requirements: [REQ],
+      subtasks: [
+        {
+          id: 'st-1',
+          title: 'write LRU',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+          worktree: '/wt/a',
+        },
+      ],
+      testResults: TEST_RESULTS,
+      conventions: { style: 'biome' },
+      architecture: { modules: ['cache'], interfaces: [{ name: 'Cache' }] },
+      pendingPatch: { diff: 'x' },
+    });
+    for (const spec of DEFAULT_ROSTER) {
+      expect(() => project(rich, spec.role, DEFAULT_ROSTER)).not.toThrow();
+    }
+  });
+});
