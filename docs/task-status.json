@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-28T17:10:00.000Z",
+  "last_updated": "2026-08-28T17:28:49.000Z",
   "current_phase": 2,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -447,7 +447,7 @@
           "id": "2.4",
           "title": "角色投影细化（按详细设计 §7 切片表）",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/详细设计方案.md §7"
           ],
@@ -455,14 +455,14 @@
             "2.1"
           ],
           "test_file": null,
-          "notes": "CODER=分配 subtask+architecture+conventions+当前失败测试+相关 fileRefs；TESTER=acceptance+当前分支/patch+接口约定；REVIEWER=pendingDiff+conventions+architecture；PM=goal+requirements+leader 决策；ARCHITECT=requirements+repo 结构+conventions。明确不含列同样重要。\n[2026-08-28 开工·用户确认] 状态置 in_progress；同步修正 phases[2].status not_started→in_progress（2.1-2.3 已 done 的漂移）。\n[2026-08-28 计划批准·用户确认] 三项裁决：① conventions 走独立 State 字段+set 解锁（§1 定稿位置，0.2 预铺路径签名不变）；② pendingPatch 只读不解锁 writer（显式 null 缺省，2.5 e2e 评估 CODER 提交补丁流时再解锁）；③ 未知切片名 throw（§12 禁止静默降级，drift-guard 测试锁定）。\n[2026-08-28 Code+Check+Verify·TDD 红→绿] 先写测试全红（14 failed：conventions set 未启用+切片仍占位+未知切片未抛错），实现后全绿。① 域层解锁：state.ts AppState+=conventions?；reducer.ts SET_FIELDS/ENABLED_SET_FIELDS+=conventions + applySet case（守卫对齐 architecture：'conventions must be a non-array object'）。② project.ts phase0Stub→sliceOf 按 §7 切片表落地六角色 14 切片：global.summary（+complexity:null/workers:[]/testSummary，Phase 4/9 显式空）、goal、requirements（逐项浅拷贝）、leaderDecisions=[]（3.1 升级点）、repoStructure={}（Phase 1）、conventions、assignedSubtask（保持现状——ownerRole 过滤即「不含其他 worker 的 subtask」负向保证）、architecture、failingTests（failures 拷贝）、fileRefs（testResults.failures 按 file 去重 {file,lines[]}——铁律 2 只路径+行号不传全文）、acceptance（{requirements:[{id,acceptance}]}，移除旧 stub 混入的 goal/phase/testResults——TESTER 明确不含实现内幕）、branchOrPatch（{worktrees:非 done subtask 的 worktree 路径, patch:pendingPatch??null}）、interfaceContracts（architecture.interfaces 类型收窄透传，原始值拒绝）、pendingPatch；default 分支 present-but-empty {} 改为 throw。③ 负向测试（「明确不含列同样重要」）：铁律 1 六角色 sentinel——PM payload/display 与 channelId/fromRole/msgId 键全不出现在任何角色视图 JSON；铁律 2 fileRefs 不含 failure message；PM 无 testResults、CODER 无他人 subtask、TESTER 无 goal 回显。\n[兼容性实测] phase0/phase1-exit chain4（channelId/fromRole 负向断言+CODER worktree 断言）、harness-executor（'write LRU'/role 键）、tool-governance/g5-real-chain、coordinator.test projection:[] 全部通过。\n[门禁实测] pnpm typecheck exit=0；pnpm lint exit=0（biome --write --unsafe 修 project.test useLiteralKeys 后 0 诊断）；pnpm test 246 passed/2 skipped（基线 229+17 新增全绿；2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。\n[R12] 详细设计 §1 补 [2026-08-28 实装记录]（conventions set 缺口已修+pendingPatch 缺口待 writer）；GitHub Issue #25 记录。\n[依赖] runtime-executor devDependencies+=@agora/roles-definitions workspace:*（project.test 用 DEFAULT_ROSTER 做六角色切片漂移守卫）。\n[待办] pendingPatch writer 转 DEF-010 台账跟踪（target_phase=2.5 评估，解除条件见 docs/deferred-items.json）；Issue #25 已处置关闭——conventions 半边由本任务修复，pendingPatch 半边显式延期。\n[2026-08-28 PR] PR #26 https://github.com/logan-suu/Agora/pull/26 已创建（base=dev-1.0.0），保持 in_progress 待人工合并；实现摘要：域层解锁 conventions set + sliceOf 落地六角色 14 切片 + 未知切片 throw + 三铁律负向测试。",
-          "last_updated": "2026-08-28T17:10:00.000Z"
+          "notes": "CODER=分配 subtask+architecture+conventions+当前失败测试+相关 fileRefs；TESTER=acceptance+当前分支/patch+接口约定；REVIEWER=pendingDiff+conventions+architecture；PM=goal+requirements+leader 决策；ARCHITECT=requirements+repo 结构+conventions。明确不含列同样重要。\n[2026-08-28 开工·用户确认] 状态置 in_progress；同步修正 phases[2].status not_started→in_progress（2.1-2.3 已 done 的漂移）。\n[2026-08-28 计划批准·用户确认] 三项裁决：① conventions 走独立 State 字段+set 解锁（§1 定稿位置，0.2 预铺路径签名不变）；② pendingPatch 只读不解锁 writer（显式 null 缺省，2.5 e2e 评估 CODER 提交补丁流时再解锁）；③ 未知切片名 throw（§12 禁止静默降级，drift-guard 测试锁定）。\n[2026-08-28 Code+Check+Verify·TDD 红→绿] 先写测试全红（14 failed：conventions set 未启用+切片仍占位+未知切片未抛错），实现后全绿。① 域层解锁：state.ts AppState+=conventions?；reducer.ts SET_FIELDS/ENABLED_SET_FIELDS+=conventions + applySet case（守卫对齐 architecture：'conventions must be a non-array object'）。② project.ts phase0Stub→sliceOf 按 §7 切片表落地六角色 14 切片：global.summary（+complexity:null/workers:[]/testSummary，Phase 4/9 显式空）、goal、requirements（逐项浅拷贝）、leaderDecisions=[]（3.1 升级点）、repoStructure={}（Phase 1）、conventions、assignedSubtask（保持现状——ownerRole 过滤即「不含其他 worker 的 subtask」负向保证）、architecture、failingTests（failures 拷贝）、fileRefs（testResults.failures 按 file 去重 {file,lines[]}——铁律 2 只路径+行号不传全文）、acceptance（{requirements:[{id,acceptance}]}，移除旧 stub 混入的 goal/phase/testResults——TESTER 明确不含实现内幕）、branchOrPatch（{worktrees:非 done subtask 的 worktree 路径, patch:pendingPatch??null}）、interfaceContracts（architecture.interfaces 类型收窄透传，原始值拒绝）、pendingPatch；default 分支 present-but-empty {} 改为 throw。③ 负向测试（「明确不含列同样重要」）：铁律 1 六角色 sentinel——PM payload/display 与 channelId/fromRole/msgId 键全不出现在任何角色视图 JSON；铁律 2 fileRefs 不含 failure message；PM 无 testResults、CODER 无他人 subtask、TESTER 无 goal 回显。\n[兼容性实测] phase0/phase1-exit chain4（channelId/fromRole 负向断言+CODER worktree 断言）、harness-executor（'write LRU'/role 键）、tool-governance/g5-real-chain、coordinator.test projection:[] 全部通过。\n[门禁实测] pnpm typecheck exit=0；pnpm lint exit=0（biome --write --unsafe 修 project.test useLiteralKeys 后 0 诊断）；pnpm test 246 passed/2 skipped（基线 229+17 新增全绿；2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。\n[R12] 详细设计 §1 补 [2026-08-28 实装记录]（conventions set 缺口已修+pendingPatch 缺口待 writer）；GitHub Issue #25 记录。\n[依赖] runtime-executor devDependencies+=@agora/roles-definitions workspace:*（project.test 用 DEFAULT_ROSTER 做六角色切片漂移守卫）。\n[待办] pendingPatch writer 转 DEF-010 台账跟踪（target_phase=2.5 评估，解除条件见 docs/deferred-items.json）；Issue #25 已处置关闭——conventions 半边由本任务修复，pendingPatch 半边显式延期。\n[2026-08-28 PR] PR #26 https://github.com/logan-suu/Agora/pull/26 已创建（base=dev-1.0.0），保持 in_progress 待人工合并；实现摘要：域层解锁 conventions set + sliceOf 落地六角色 14 切片 + 未知切片 throw + 三铁律负向测试。\n[2026-08-28 PR 合并收尾] PR #26 已人工合并至 dev-1.0.0（merge commit: 0b579181bc30fefcae929a7b7155fb70fb9c2c2a），状态置 done。G5 实测结论：phase0/phase1-exit chain4 负向断言、harness-executor 覆写链、tool-governance/g5-real-chain 全部通过；门禁 typecheck/lint exit=0，246 passed/2 skipped（既有 G5 live-LLM 需 API key）。遗留：pendingPatch writer 转 DEF-010（target_phase=2.5 评估，解除条件见 docs/deferred-items.json），不阻断本任务出口。",
+          "last_updated": "2026-08-28T17:28:49.000Z"
         },
         {
           "id": "2.5",
           "title": "Phase 2 出口集成测试",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/开发计划安排.md §5"
           ],
@@ -472,7 +472,8 @@
             "2.4"
           ],
           "test_file": null,
-          "notes": "六角色完整回环端到端：需求→设计→编码→测试→评审→finalize；回环与超限升级路径验证。"
+          "notes": "六角色完整回环端到端：需求→设计→编码→测试→评审→finalize；回环与超限升级路径验证。\n[2026-08-28 级联翻转] 依赖 2.2/2.3/2.4 全部 done，幂等翻转 pending→ready。",
+          "last_updated": "2026-08-28T17:28:49.000Z"
         }
       ]
     },
