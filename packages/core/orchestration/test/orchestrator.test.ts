@@ -5,6 +5,7 @@
 import { createInitialAppState, mergeByIdMutation, PHASE0_ROSTER } from '@agora/core-domain';
 import type { Executor, StepResult } from '@agora/runtime-executor';
 import { describe, expect, it } from 'vitest';
+import type { OrchestrationDeps } from '../src/index';
 import { runOrchestration, WorkerRuntime } from '../src/index';
 
 class FakeExecutor implements Executor {
@@ -104,12 +105,7 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-function orchestrationWith(
-  coders: FakeExecutor[],
-  testers: FakeExecutor[],
-): {
-  workerRuntime: WorkerRuntime;
-} {
+function orchestrationWith(coders: FakeExecutor[], testers: FakeExecutor[]): OrchestrationDeps {
   let coderCursor = 0;
   let testerCursor = 0;
   const workerRuntime = new WorkerRuntime({
@@ -130,7 +126,7 @@ function orchestrationWith(
       throw new Error(`unexpected role assignment: ${assign.role}`);
     },
   });
-  return { workerRuntime };
+  return { workerRuntime, roster: PHASE0_ROSTER };
 }
 
 describe('runOrchestration (Phase 0 fixed loop)', () => {

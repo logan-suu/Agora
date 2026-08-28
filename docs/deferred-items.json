@@ -108,6 +108,23 @@
       "resolved_by": null,
       "created_at": "2026-08-28T05:00:00.000Z",
       "notes": "Deferred in /pr-review-agora for PR #18: requires a human spec decision on the §2 matrix granularity (does TESTER's git(worktree)=✓ include main-repo merge/createWorktree?). Phase 0 is already covered by the PHASE0_TOOL_SURFACE gate. When the Phase 1 composition root activates git tools, re-evaluate splitting the git group (read-only vs mutating) per this entry."
+    },
+    {
+      "id": "DEF-007",
+      "source": "Sisyphus (task 2.2 planning)",
+      "pr": null,
+      "pr_url": null,
+      "comment_id": null,
+      "comment_url": null,
+      "task": "2.2",
+      "severity": "minor",
+      "item": "Review-pass convergence lacks leader confirmation in Phase 2 (humanGate lands in Phase 8)",
+      "detail": "详细设计 §3 convergence rule reads 'test 全过 + review 通过(经 leader 确认)', but humanGate (leader arbitration surface) is a Phase 8 deliverable. User ruled during task 2.2 planning ([2026-08-28]): Phase 2 simplifies convergence to 'REVIEWER pass → finalize' with no leader confirmation step; R3 (leader sole authority) is not violated because no agent auto-consensus replaces a leader ruling — the confirmation semantics simply do not exist yet.",
+      "target_phase": 8,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-28T13:31:37.000Z",
+      "notes": "Resolution condition: when humanGate lands in Phase 8, wire REVIEWER-pass convergence through a leader confirmation gate (blocking humanGate per D4 terminate-and-fork) instead of finalizing directly. Check this entry at the Phase 8 exit gate."
     }
   ]
 }

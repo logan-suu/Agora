@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AppState, Message, Mutation } from '../src/index';
+import type { AppState, Message, Mutation, Requirement } from '../src/index';
 import {
   APPEND_FIELDS,
   appendMutation,
@@ -226,6 +226,93 @@ describe('applyMutations · stage gating (spec §1 vs Phase 0 slice)', () => {
   });
 });
 
+describe('applyMutations · Phase 2 unlocked fields (task 2.2)', () => {
+  function makeRequirement(id: string, overrides: Partial<Requirement> = {}): Requirement {
+    return {
+      id,
+      story: `story-${id}`,
+      acceptance: [`acc-${id}`],
+      nonGoals: [],
+      ...overrides,
+    };
+  }
+
+  it('mergeById(requirements): upserts a new requirement and updates an existing one in place', () => {
+    const base = applyMutations(createInitialAppState('t-1', 'goal'), [
+      mergeByIdMutation('requirements', 'req-1', { ...makeRequirement('req-1') }),
+    ]);
+    expect(base.requirements).toHaveLength(1);
+    const next = applyMutations(base, [
+      mergeByIdMutation('requirements', 'req-1', { story: 'revised' }),
+      mergeByIdMutation('requirements', 'req-2', { ...makeRequirement('req-2') }),
+    ]);
+    expect(next.requirements).toHaveLength(2);
+    expect(next.requirements.find((r) => r.id === 'req-1')?.story).toBe('revised');
+    expect(next.requirements.find((r) => r.id === 'req-1')?.acceptance).toEqual(['acc-req-1']);
+  });
+
+  it('mergeById(requirements): replay is idempotent and unordered writes commute', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const first = mergeByIdMutation('requirements', 'req-1', { ...makeRequirement('req-1') });
+    const second = mergeByIdMutation('requirements', 'req-2', { ...makeRequirement('req-2') });
+    const once = applyMutations(base, [first]);
+    expect(applyMutations(once, [first]).requirements).toHaveLength(1);
+    const forward = applyMutations(base, [first, second]);
+    const backward = applyMutations(base, [second, first]);
+    expect([...forward.requirements].sort((a, b) => a.id.localeCompare(b.id))).toEqual(
+      [...backward.requirements].sort((a, b) => a.id.localeCompare(b.id)),
+    );
+  });
+
+  it('set(architecture): last-write-wins object overwrite with stable replays', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const v1 = { modules: ['cache'] };
+    const v2 = { modules: ['cache', 'store'] };
+    expect(
+      applyMutations(base, [setMutation('architecture', v1), setMutation('architecture', v2)])
+        .architecture,
+    ).toEqual(v2);
+    const once = applyMutations(base, [setMutation('architecture', v1)]);
+    expect(applyMutations(once, [setMutation('architecture', v1)]).architecture).toEqual(v1);
+  });
+
+  it('set(architecture): rejects non-object values instead of corrupting the design slice', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    for (const bad of [null, 'design', 42, []] as unknown[]) {
+      expect(() => applyMutations(state, [setMutation('architecture', bad)])).toThrow(
+        'architecture must be a non-array object',
+      );
+    }
+  });
+
+  it('append(reviewComments): identity-keyed dedup keeps replays idempotent', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const verdict = { id: 'rc-1', kind: 'verdict', verdict: 'approved' };
+    const once = applyMutations(base, [appendMutation('reviewComments', verdict)]);
+    const twice = applyMutations(once, [appendMutation('reviewComments', verdict)]);
+    expect(twice.reviewComments).toHaveLength(1);
+  });
+
+  it('append(reviewComments): same identity with different content is a producer bug, first write stays', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const first = appendMutation('reviewComments', { id: 'rc-1', summary: 'v1' });
+    const second = appendMutation('reviewComments', { id: 'rc-1', summary: 'v2' });
+    const forward = applyMutations(base, [first, second]);
+    const backward = applyMutations(base, [second, first]);
+    expect(forward.reviewComments).toHaveLength(1);
+    expect(backward.reviewComments).toHaveLength(1);
+    expect(forward.reviewComments[0]?.summary).toBe('v1');
+    expect(backward.reviewComments[0]?.summary).toBe('v2');
+  });
+
+  it('createInitialAppState: Phase 2 fields default to empty artifacts so routing signals start clean', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    expect(state.requirements).toEqual([]);
+    expect(state.reviewComments).toEqual([]);
+    expect(state.architecture).toBeUndefined();
+  });
+});
+
 describe('mutation builders', () => {
   it('mergeByIdMutation normalizes the id so the patch cannot override identity', () => {
     const mutation = mergeByIdMutation('subtasks', 'st-real', { id: 'st-forged', status: 'done' });
@@ -235,10 +322,17 @@ describe('mutation builders', () => {
     expect(value.status).toBe('done');
   });
 
-  it('expose exactly the enabled field sets declared by the Phase 0 slice', () => {
-    expect([...ENABLED_APPEND_FIELDS]).toEqual(['messages']);
-    expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['subtasks']);
-    expect([...ENABLED_SET_FIELDS]).toEqual(['testResults', 'phase', 'nextRole', 'iterationCount']);
+  it('expose exactly the enabled field sets declared by the active phase slice', () => {
+    // Task 2.2 Phase 2 unlock: the three fields feeding conditional routing.
+    expect([...ENABLED_APPEND_FIELDS]).toEqual(['messages', 'reviewComments']);
+    expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['subtasks', 'requirements']);
+    expect([...ENABLED_SET_FIELDS]).toEqual([
+      'testResults',
+      'phase',
+      'nextRole',
+      'iterationCount',
+      'architecture',
+    ]);
   });
 
   it('applies set("iterationCount") with last-write-wins semantics for the orchestration loop counter', () => {

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AppState } from '@agora/core-domain';
+import { PHASE0_ROSTER } from '@agora/core-domain';
 import { runOrchestration } from '@agora/core-orchestration';
 import { CallId, type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -298,6 +299,7 @@ describe('Phase 0 exit integration (scripted LLM, real harness/tools/sandbox)', 
     });
     final = await runOrchestration(runtime.initialState, {
       workerRuntime: runtime.workerRuntime,
+      roster: PHASE0_ROSTER,
     });
   }, 60_000);
 
