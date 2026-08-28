@@ -13,7 +13,12 @@ import {
   HarnessExecutor,
   type HarnessExecutorOptions,
 } from '@agora/runtime-executor';
-import { LocalTempSandbox, type SandboxManager, type Worktree } from '@agora/runtime-sandbox';
+import {
+  createSandbox,
+  type SandboxConfig,
+  type SandboxManager,
+  type Worktree,
+} from '@agora/runtime-sandbox';
 import { createToolCatalog, type ToolCatalog } from '@agora/tools-bridge';
 import { WorktreeRegistry } from '@agora/tools-fs';
 import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
@@ -59,6 +64,30 @@ export interface Phase0RuntimeOptions {
   adapter?: LlmAdapter;
   /** Provider key the adapter is registered under (default `agora`). */
   provider?: string;
+  /**
+   * Sandbox selector (task 1.6, decision D5 advance). Defaults to
+   * `{ kind: 'local' }` — the factory's local branch IS the LocalTempSandbox,
+   * so Phase 0 behavior is unchanged (R9: phase degradation swaps the body).
+   * Phase 1 callers pass `{ kind: 'docker', ... }` for the Docker sandbox.
+   */
+  sandboxConfig?: SandboxConfig;
+  /**
+   * RoleSpec.tools whitelist filter applied on top of the §2 matrix
+   * (task 1.6). Defaults to the Phase 0 surface (fs.read/fs.write/sandbox.run);
+   * Phase 1 callers pass the full surface including fs.list/test.run.
+   */
+  toolSurface?: readonly string[];
+  /**
+   * Git main repo path for the bridged git server (Phase 1+). When omitted the
+   * git service lazily creates a temp main repo; the git group is phase-gated
+   * out of the loop surface either way (spec §9 pattern).
+   */
+  mainRepoPath?: string;
+  /**
+   * Role → system-prompt working rules appended by the composition root
+   * (task 1.6). Defaults to the Phase 0 rules; Phase 1 passes its own wording.
+   */
+  handoff?: Readonly<Partial<Record<string, string>>>;
 }
 
 export interface Phase0Runtime {
@@ -90,7 +119,7 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
       'createPhase0Runtime: adapter and deepseek are mutually exclusive — pass one or the other',
     );
   }
-  const sandbox = new LocalTempSandbox();
+  const sandbox = createSandbox(options.sandboxConfig);
   const worktree = await sandbox.createWorktree(options.taskId, 'shared');
   const registry = new WorktreeRegistry();
   registry.register(worktree.path);
@@ -100,6 +129,7 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
       registry,
       sandbox,
       getWorktree: async () => worktree,
+      ...(options.mainRepoPath === undefined ? {} : { mainRepoPath: options.mainRepoPath }),
     });
   } catch (err) {
     // Exception-safe init: the worktree/sandbox must not leak if catalog setup fails.
@@ -141,10 +171,9 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
       // Task 1.5: RoleSpec.tools → catalog (spec §2 matrix) intersected with the
       // Phase 0 surface; register all catalog tools and let the agent-level
       // restrict scope each role (toolFilter equivalent).
-      const resolved = catalog.resolve(
-        spec.tools.filter((tool) => PHASE0_TOOL_SURFACE.includes(tool)),
-      );
-      const handoff = PHASE0_HANDOFF[spec.role] ?? '';
+      const surface = options.toolSurface ?? PHASE0_TOOL_SURFACE;
+      const resolved = catalog.resolve(spec.tools.filter((tool) => surface.includes(tool)));
+      const handoff = (options.handoff ?? PHASE0_HANDOFF)[spec.role] ?? '';
       const executorSpec: RoleSpec = {
         ...spec,
         ...(options.model === undefined ? {} : { model: options.model }),
