@@ -106,9 +106,11 @@ function announce(clock: Clock, payload: Record<string, unknown>, display: strin
 }
 
 function dispatchPM(state: AppState, clock: Clock): CoordinatorDecision {
+  guardIterationLimit(state);
   return {
     route: { kind: 'worker', batch: [{ role: 'PM' }], parallel: false },
     mutations: [
+      setMutation('iterationCount', state.iterationCount + 1),
       setMutation('nextRole', 'PM'),
       appendMutation(
         'messages',

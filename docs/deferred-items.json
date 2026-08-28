@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-28T05:00:00.000Z",
+  "last_updated": "2026-08-28T14:55:00.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -125,6 +125,23 @@
       "resolved_by": null,
       "created_at": "2026-08-28T13:31:37.000Z",
       "notes": "Resolution condition: when humanGate lands in Phase 8, wire REVIEWER-pass convergence through a leader confirmation gate (blocking humanGate per D4 terminate-and-fork) instead of finalizing directly. Check this entry at the Phase 8 exit gate."
+    },
+    {
+      "id": "DEF-008",
+      "source": "CodeRabbit PR #23 review comment",
+      "pr": 23,
+      "pr_url": "https://github.com/logan-suu/Agora/pull/23",
+      "comment_id": 3881370816,
+      "comment_url": null,
+      "task": "2.2",
+      "severity": "minor",
+      "item": "Bind routing roster and WorkerRuntime roster into one source (composition-root ergonomics)",
+      "detail": "CodeRabbit flagged that OrchestrationDeps.roster (routing) is independent from WorkerRuntimeDeps.roster (execution): a caller mismatching them makes decide() route PM/ARCHITECT/REVIEWER to a runtime whose specOf() throws UnknownRoleError. Verified in /pr-review-agora: the failure mode is a loud explicit UnknownRoleError (fail-fast, not silent corruption), and all current call sites (orchestrator.test orchestrationWith, lru-cache e2e, phase0-exit, phase1-exit ×2) pass PHASE0_ROSTER to both consistently. The task-2.2 user-approved plan explicitly chose 'OrchestrationDeps += roster? forwarded to decide()', so re-binding via a WorkerRuntime roster getter changes an approved interface design and needs a human ruling.",
+      "target_phase": 3,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-28T14:55:00.000Z",
+      "notes": "Resolution condition: when the full 6-role composition root lands (DEFAULT_ROSTER first used outside unit tests), either expose the roster on WorkerRuntime and derive routing from it (drop OrchestrationDeps.roster), or validate roster coverage at the composition root. Requires human sign-off since it revises the task-2.2 approved DecideOptions/OrchestrationDeps design. Check this entry when Phase 3 composition work starts."
     }
   ]
 }

@@ -290,6 +290,28 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
     expect(decision.route.batch[0].role).toBe('CODER');
   });
 
+  it('increments iterationCount on each PM dispatch so a silent PM loop stays bounded', () => {
+    const state = applyMutations(createInitialAppState('t-1', '实现带 TTL 的 LRU 缓存'), [
+      setMutation('iterationCount', 3),
+    ]);
+    const decision = decide(state, clock());
+
+    expect(decision.route.kind).toBe('worker');
+    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
+    expect(decision.route.batch[0].role).toBe('PM');
+
+    const next = applyMutations(state, decision.mutations);
+    expect(next.iterationCount).toBe(4);
+    expect(next.phase).toBe('clarifying');
+  });
+
+  it('throws IterationLimitError when the PM clarifying loop reaches the cap', () => {
+    const capped = applyMutations(createInitialAppState('t-1', 'g'), [
+      setMutation('iterationCount', MAX_ITERATIONS),
+    ]);
+    expect(() => decide(capped, clock())).toThrow(IterationLimitError);
+  });
+
   it('finalizes on passing tests when the roster has no REVIEWER (Phase 0 slice)', () => {
     const decision = decide(testingState(true), { ...clock(), roster: PHASE0_ROSTER });
     expect(decision.route.kind).toBe('finalize');
