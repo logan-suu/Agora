@@ -35,6 +35,7 @@ export const SET_FIELDS = [
   'humanGate',
   'integration',
   'architecture',
+  'conventions',
 ] as const;
 export type SetField = (typeof SET_FIELDS)[number];
 
@@ -47,6 +48,7 @@ export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'iterationCount',
   'humanGate',
   'architecture',
+  'conventions',
 ];
 
 export type Mutation =
@@ -208,6 +210,11 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
         throw new Error('architecture must be a non-array object');
       }
       return { ...state, architecture: value as Record<string, unknown> };
+    case 'conventions':
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        throw new Error('conventions must be a non-array object');
+      }
+      return { ...state, conventions: value as Record<string, unknown> };
     default:
       throw new Error(`no writer registered for set field "${field}"`);
   }

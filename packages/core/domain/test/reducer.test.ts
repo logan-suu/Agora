@@ -285,6 +285,27 @@ describe('applyMutations · Phase 2 unlocked fields (task 2.2)', () => {
     }
   });
 
+  it('set(conventions): last-write-wins object overwrite with stable replays', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const v1 = { style: 'biome', naming: 'camelCase' };
+    const v2 = { style: 'biome-strict' };
+    expect(
+      applyMutations(base, [setMutation('conventions', v1), setMutation('conventions', v2)])
+        .conventions,
+    ).toEqual(v2);
+    const once = applyMutations(base, [setMutation('conventions', v1)]);
+    expect(applyMutations(once, [setMutation('conventions', v1)]).conventions).toEqual(v1);
+  });
+
+  it('set(conventions): rejects non-object values instead of corrupting the conventions slice', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    for (const bad of [null, 'convention', 42, []] as unknown[]) {
+      expect(() => applyMutations(state, [setMutation('conventions', bad)])).toThrow(
+        'conventions must be a non-array object',
+      );
+    }
+  });
+
   it('append(reviewComments): identity-keyed dedup keeps replays idempotent', () => {
     const base = createInitialAppState('t-1', 'goal');
     const verdict = { id: 'rc-1', kind: 'verdict', verdict: 'approved' };
@@ -310,6 +331,7 @@ describe('applyMutations · Phase 2 unlocked fields (task 2.2)', () => {
     expect(state.requirements).toEqual([]);
     expect(state.reviewComments).toEqual([]);
     expect(state.architecture).toBeUndefined();
+    expect(state.conventions).toBeUndefined();
   });
 });
 
@@ -325,6 +347,7 @@ describe('mutation builders', () => {
   it('expose exactly the enabled field sets declared by the active phase slice', () => {
     // Task 2.2 Phase 2 unlock: the three fields feeding conditional routing.
     // Task 2.3 Phase 2 unlock: humanGate carries the iteration-limit escalation (spec §1/§3).
+    // Task 2.4 Phase 2 unlock: conventions feeds the §7 projection slice (ARCHITECT/CODER/REVIEWER).
     expect([...ENABLED_APPEND_FIELDS]).toEqual(['messages', 'reviewComments']);
     expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['subtasks', 'requirements']);
     expect([...ENABLED_SET_FIELDS]).toEqual([
@@ -334,6 +357,7 @@ describe('mutation builders', () => {
       'iterationCount',
       'humanGate',
       'architecture',
+      'conventions',
     ]);
   });
 

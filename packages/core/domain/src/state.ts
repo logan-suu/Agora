@@ -91,6 +91,7 @@ export interface AppState {
   requirements: Requirement[];
   reviewComments: Record<string, unknown>[];
   architecture?: Record<string, unknown>;
+  conventions?: Record<string, unknown>;
   pendingPatch?: Record<string, unknown>;
   testResults?: TestResults;
   nextRole?: string;

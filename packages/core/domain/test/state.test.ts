@@ -12,6 +12,7 @@ describe('createInitialAppState', () => {
     expect(state.subtasks).toEqual([]);
     expect(state.messages).toEqual([]);
     expect('pendingPatch' in state).toBe(false);
+    expect('conventions' in state).toBe(false);
     expect('testResults' in state).toBe(false);
     expect('nextRole' in state).toBe(false);
   });
