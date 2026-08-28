@@ -39,7 +39,12 @@ export async function runOrchestration(
       case 'integrate':
         throw new Error('integrate node is excluded from the Phase 0 slice (spec §9)');
       case 'human_gate':
-        throw new Error('humanGate node is excluded from the Phase 0 slice (spec §9)');
+        // Spec §3 pseudocode awaits humanGate(state) then continues; the leader
+        // ruling loop does not exist until Phase 8, so continuing would re-trigger
+        // the gate forever. The Phase 2 escalation hook halts instead: state
+        // carries state.humanGate + the escalation message awaiting the leader.
+        // Phase 8 replaces this halt with the terminate-and-fork body (D4).
+        return state;
     }
   }
   return state;

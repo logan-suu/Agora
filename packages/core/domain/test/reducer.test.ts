@@ -324,6 +324,7 @@ describe('mutation builders', () => {
 
   it('expose exactly the enabled field sets declared by the active phase slice', () => {
     // Task 2.2 Phase 2 unlock: the three fields feeding conditional routing.
+    // Task 2.3 Phase 2 unlock: humanGate carries the iteration-limit escalation (spec §1/§3).
     expect([...ENABLED_APPEND_FIELDS]).toEqual(['messages', 'reviewComments']);
     expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['subtasks', 'requirements']);
     expect([...ENABLED_SET_FIELDS]).toEqual([
@@ -331,6 +332,7 @@ describe('mutation builders', () => {
       'phase',
       'nextRole',
       'iterationCount',
+      'humanGate',
       'architecture',
     ]);
   });
@@ -351,6 +353,61 @@ describe('mutation builders', () => {
         'iterationCount must be a non-negative integer',
       );
       expect(state.iterationCount).toBe(0);
+    }
+  });
+});
+
+describe('applyMutations · humanGate escalation field (task 2.3, spec §1/§3)', () => {
+  function escalation(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+    return {
+      reason: 'iteration_limit',
+      options: ['extend', 'take-over', 'abort'],
+      phase: 'testing',
+      ...overrides,
+    };
+  }
+
+  it('createInitialAppState leaves humanGate unset so tasks start unescalated', () => {
+    expect(createInitialAppState('t-1', 'goal').humanGate).toBeUndefined();
+  });
+
+  it('applies set("humanGate") with the §1 shape {reason, options, phase}', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    const next = applyMutations(state, [setMutation('humanGate', escalation())]);
+    expect(next.humanGate).toEqual(escalation());
+    expect(state.humanGate).toBeUndefined();
+  });
+
+  it('keeps last-write-wins semantics so a re-escalation replaces the stale gate', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    const first = applyMutations(state, [
+      setMutation('humanGate', escalation({ phase: 'testing' })),
+    ]);
+    const second = applyMutations(first, [
+      setMutation('humanGate', escalation({ phase: 'review' })),
+    ]);
+    expect(first.humanGate?.phase).toBe('testing');
+    expect(second.humanGate?.phase).toBe('review');
+  });
+
+  it('rejects malformed humanGate values instead of storing an unroutable gate', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    const malformed: unknown[] = [
+      null,
+      'iteration_limit',
+      ['iteration_limit'],
+      escalation({ reason: 42 }),
+      escalation({ options: 'extend' }),
+      escalation({ options: ['extend', 7] }),
+      escalation({ phase: 99 }),
+      escalation({ phase: 'bogus' }),
+      {},
+    ];
+    for (const bad of malformed) {
+      expect(() => applyMutations(state, [setMutation('humanGate', bad)])).toThrow(
+        'humanGate must be { reason: string; options: string[]; phase: Phase }',
+      );
+      expect(state.humanGate).toBeUndefined();
     }
   });
 });

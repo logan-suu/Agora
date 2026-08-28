@@ -75,6 +75,12 @@ export interface RoleSpec {
   model?: string;
 }
 
+export interface HumanGate {
+  reason: string;
+  options: string[];
+  phase: Phase;
+}
+
 export interface AppState {
   taskId: string;
   goal: string;
@@ -88,6 +94,7 @@ export interface AppState {
   pendingPatch?: Record<string, unknown>;
   testResults?: TestResults;
   nextRole?: string;
+  humanGate?: HumanGate;
 }
 
 export function createInitialAppState(taskId: string, goal: string): AppState {
