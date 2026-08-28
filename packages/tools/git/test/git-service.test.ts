@@ -153,6 +153,34 @@ describe('WorktreeGitService', () => {
     expect(log.latest?.hash).toBe(commitId);
   });
 
+  it('stops before committing when cancelled by an aborted signal (task 1.5 timeout policy)', async () => {
+    const registry = new WorktreeRegistry();
+    const service = new WorktreeGitService(registry);
+    const { path } = track(await service.createWorktree('t1', 'feature-cancel'));
+
+    writeFileSync(join(path, 'a.txt'), 'hello\n');
+    const git = simpleGit(path);
+    await git.add(['-A']);
+    await git.commit('base');
+
+    const patch = `${[
+      'diff --git a/a.txt b/a.txt',
+      '--- a/a.txt',
+      '+++ b/a.txt',
+      '@@ -1 +1 @@',
+      '-hello',
+      '+world',
+    ].join('\n')}\n`;
+
+    const controller = new AbortController();
+    controller.abort();
+    await expect(service.applyPatch(path, patch, controller.signal)).rejects.toThrow('aborted');
+
+    // No late commit: the mutation stopped before staging+commit.
+    const log = await git.log();
+    expect(log.latest?.message).toBe('base');
+  });
+
   it('rejects an unregistered worktree root', async () => {
     const registry = new WorktreeRegistry();
     const service = new WorktreeGitService(registry);

@@ -39,9 +39,13 @@ export function wireToolName(specName: string): string {
  * RoleSpec.tools whitelist entries (`fs.read` → `fs_read`); the composition
  * root filters per role via {@link wireToolName}. Every path is confined to
  * the sandbox worktree root by the SandboxManager (decision R7).
+ *
+ * `createSandboxRunTool` is reused by the Phase 1 tool catalog
+ * (`@agora/tools-bridge`) — sandbox.run has no MCP server (packages/tools/
+ * sandbox is a stub), so the function tool is the single implementation.
  */
 export function createPhase0Tools(deps: Phase0ToolDeps): ToolDefinition[] {
-  return [defineFsRead(deps), defineFsWrite(deps), defineSandboxRun(deps)];
+  return [defineFsRead(deps), defineFsWrite(deps), createSandboxRunTool(deps)];
 }
 
 function defineFsRead(deps: Phase0ToolDeps): ToolDefinition {
@@ -92,7 +96,14 @@ function defineFsWrite(deps: Phase0ToolDeps): ToolDefinition {
   });
 }
 
-function defineSandboxRun(deps: Phase0ToolDeps): ToolDefinition {
+/**
+ * The `sandbox.run` function tool. No `timeoutMs` is declared on the
+ * definition: the SandboxManager enforces R7 itself (30s default, SIGKILL on
+ * timeout) and returns a structured `{exitCode, stdout, stderr, timedOut}`
+ * result the model can act on (e.g. retry with a longer `timeoutMs`) — a
+ * second cooperative deadline would mask that structured outcome.
+ */
+export function createSandboxRunTool(deps: Phase0ToolDeps): ToolDefinition {
   return defineTool({
     name: wireToolName('sandbox.run'),
     description:

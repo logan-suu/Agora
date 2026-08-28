@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-27T19:40:00.000Z",
+  "last_updated": "2026-08-28T05:00:00.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -74,6 +74,40 @@
       "resolved_by": null,
       "created_at": "2026-08-27T07:10:00.000Z",
       "notes": "packages/tools/fs/src/fs-service.ts + worktree-registry.ts, plus the sandbox read/write path (LocalTempSandbox/DockerSandbox host-side read/write validate via assertInside then perform the fs call). Release condition: DockerSandbox (1.4) provides worktree isolation as mitigation; re-evaluate whether an openat refactor is needed when true parallelism lands (Phase 4 / 9.2). [2026-08-27] Mitigation landed in task 1.4: DockerSandbox confines run() to a per-task container (NetworkMode none, bind-mounted worktree root), so the concurrently-writable host dir is no longer the command execution boundary; sandbox read/write TOCTOU remains open for LocalTempSandbox-hosted fs operations, tracked here until Phase 4 re-evaluation. [2026-08-27 PR#17 review] CodeRabbit raised the same TOCTOU on the sandbox read/write path (local-temp-sandbox.ts:44); acknowledged, covered by this entry (definitive fix needs descriptor-relative no-follow ops or an isolated worktree — out of PR scope, deferred to Phase 4)."
+    },
+    {
+      "id": "DEF-005",
+      "source": "Sisyphus (task 1.5 planning)",
+      "pr": null,
+      "pr_url": null,
+      "comment_id": null,
+      "comment_url": null,
+      "task": "1.5",
+      "severity": "minor",
+      "item": "lint MCP server not implemented in Phase 1",
+      "detail": "Phase 1 tool servers cover fs (1.1), test (1.2), git (1.3); packages/tools/lint is an empty stub and no lint server task exists in Phase 1. The §2 permission matrix declares lint for CODER/REVIEWER; the tool loader (task 1.5) must keep the RoleSpec.tools 'lint' entry resolvable-but-unavailable (skipped at registration), and Phase 1 exit tests must not require lint.",
+      "target_phase": 2,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-28T03:16:16.000Z",
+      "notes": "User-approved deferral during task 1.5 planning ([2026-08-27]). RoleSpec.tools 'lint' stays declared in the whitelist matrix; the tool catalog has no lint entry so the loader registers nothing for it and logs the gap. When a lint MCP server lands (biome wrapper, Phase 2+), add a 'lint' catalog entry and the loader picks it up automatically."
+    },
+    {
+      "id": "DEF-006",
+      "source": "CodeRabbit (PR #18 review)",
+      "pr": 18,
+      "pr_url": "https://github.com/logan-suu/Agora/pull/18",
+      "comment_id": 3877929433,
+      "comment_url": null,
+      "task": "1.5",
+      "severity": "major",
+      "item": "TESTER git capability granularity: main-repo mutations vs worktree-scoped reads",
+      "detail": "CodeRabbit flagged that TESTER (RoleSpec.tools includes 'git') is granted the full git group via LOGICAL_GROUPS — git_createWorktree + git_applyPatch + git_diff + git_merge — including main-repo mutations (createWorktree, merge) that go beyond the §2 matrix's 'git(worktree)' qualifier (worktree-scoped ops). The implementation is faithful to the matrix (TESTER git(worktree)=✓, full grant), so this is a spec-granularity decision, not a code bug: the bridge's single 'git' logical group cannot express read-only variants (ARCH=只读, REVIEWER=只读 diff are unrepresentable). Also resolved in PR #18 for Phase 0 by the PHASE0_TOOL_SURFACE gate (spec §9 '工具只接 fs + sandbox.run' — git phase-gated out of the Phase 0 runtime), so the over-grant only matters once git is exercised in Phase 1+. Resolution: split LOGICAL_GROUPS into worktree-scoped (git.applyPatch/git.diff) vs main-repo (git.createWorktree/git.merge) groups, or add 'git.readonly'→git.diff, per a human spec ruling on TESTER/ARCH/REVIEWER grants when the Phase 1 composition root lands.",
+      "target_phase": 2,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-28T05:00:00.000Z",
+      "notes": "Deferred in /pr-review-agora for PR #18: requires a human spec decision on the §2 matrix granularity (does TESTER's git(worktree)=✓ include main-repo merge/createWorktree?). Phase 0 is already covered by the PHASE0_TOOL_SURFACE gate. When the Phase 1 composition root activates git tools, re-evaluate splitting the git group (read-only vs mutating) per this entry."
     }
   ]
 }

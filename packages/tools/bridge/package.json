@@ -1,0 +1,23 @@
+{
+  "name": "@agora/tools-bridge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@agora/runtime-sandbox": "workspace:*",
+    "@agora/tools-fs": "workspace:*",
+    "@agora/tools-git": "workspace:*",
+    "@agora/tools-test": "workspace:*",
+    "@deepseek-ai/dsh-llm": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.1.1-rc.2",
+    "@modelcontextprotocol/sdk": "catalog:"
+  },
+  "devDependencies": {
+    "@agora/core-domain": "workspace:*",
+    "@deepseek-ai/cordis": "4.0.1",
+    "@deepseek-ai/dsh-system-prompt": "0.1.1-rc.2"
+  }
+}

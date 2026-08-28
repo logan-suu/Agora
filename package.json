@@ -18,6 +18,8 @@
     "@agora/roles-definitions": "workspace:*",
     "@agora/runtime-executor": "workspace:*",
     "@agora/runtime-sandbox": "workspace:*",
+    "@agora/tools-bridge": "workspace:*",
+    "@agora/tools-fs": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@deepseek-ai/dsh-llm": "0.1.1-rc.2",
     "@types/node": "catalog:",
