@@ -45,8 +45,8 @@ const PHASE0_HANDOFF: Readonly<Partial<Record<string, string>>> = {
 /**
  * Phase 0 tool surface (spec §9 "工具只接 fs + sandbox.run"): LocalTempSandbox
  * (R7) has no git worktrees/main repo, so the `git` group, `sandbox.applyPatch`
- * (a Phase 1 git-worktree patch) and `lint` (DEF-005) are phase-gated out here;
- * the catalog still resolves the full §2 matrix for Phase 1+.
+ * (a Phase 1 git-worktree patch) and `lint` are phase-gated out here; the
+ * catalog still resolves the full §2 matrix for Phase 1+.
  */
 const PHASE0_TOOL_SURFACE: readonly string[] = ['fs.read', 'fs.write', 'sandbox.run'];
 

@@ -10,9 +10,9 @@ import { createPhase0Runtime, type Phase0Runtime } from './phase0-runtime';
  * (spec §9 pattern): an in-loop git flow needs the composition root to follow
  * the worktree created by `git_createWorktree` (getWorktree pointer switch),
  * which is Phase 2 composition-root machinery (DEF-006 also defers the git
- * grant-granularity ruling). The git group is exercised by the Phase 1 exit
- * test's direct catalog chain instead. `lint` is DEF-005-deferred, so Phase 1
- * exit tests do not require it.
+ * grant-granularity ruling). `lint` is phase-gated too: the loop surface of
+ * Phase 0/1 roles never needs it (the catalog resolves it since task 2.5, so
+ * exit tests may assert it via direct catalog chains).
  */
 export const PHASE1_TOOL_SURFACE: readonly string[] = [
   'fs.read',

@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-28T17:12:53.000Z",
+  "last_updated": "2026-08-28T21:59:44.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -87,10 +87,11 @@
       "item": "lint MCP server not implemented in Phase 1",
       "detail": "Phase 1 tool servers cover fs (1.1), test (1.2), git (1.3); packages/tools/lint is an empty stub and no lint server task exists in Phase 1. The §2 permission matrix declares lint for CODER/REVIEWER; the tool loader (task 1.5) must keep the RoleSpec.tools 'lint' entry resolvable-but-unavailable (skipped at registration), and Phase 1 exit tests must not require lint.",
       "target_phase": 2,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "Sisyphus (task 2.5, user-directed in-PR)",
       "created_at": "2026-08-28T03:16:16.000Z",
-      "notes": "User-approved deferral during task 1.5 planning ([2026-08-27]). RoleSpec.tools 'lint' stays declared in the whitelist matrix; the tool catalog has no lint entry so the loader registers nothing for it and logs the gap. When a lint MCP server lands (biome wrapper, Phase 2+), add a 'lint' catalog entry and the loader picks it up automatically."
+      "resolved_at": "2026-08-28T16:50:00.000Z",
+      "notes": "User-approved deferral during task 1.5 planning ([2026-08-27]). RESOLVED in task 2.5 (user directed in-PR resolution): packages/tools/lint implements the §6 lint-server (`check(worktree, paths) -> issues[]`) as a Biome wrapper — WorktreeLintService spawns `node <biome-bin> lint <paths> --reporter=json` with cwd=the registered worktree root (no shell, worktree-relative path validation, registry allowlist hardening mirrored from fs/test services), parses the JSON diagnostics into {file,line,message,rule,severity}; bridge grants logical `lint` → lint_check (wire-safe) and CODER/REVIEWER's matrix `lint` entries now resolve for real. Verified: 12 unit/round-trip tests over the real biome binary (packages/tools/lint/test) + REVIEWER exercises lint_check in-loop in the phase2-exit six-role chains (lint-clean math.js → [])."
     },
     {
       "id": "DEF-006",
@@ -104,10 +105,11 @@
       "item": "TESTER git capability granularity: main-repo mutations vs worktree-scoped reads",
       "detail": "CodeRabbit flagged that TESTER (RoleSpec.tools includes 'git') is granted the full git group via LOGICAL_GROUPS — git_createWorktree + git_applyPatch + git_diff + git_merge — including main-repo mutations (createWorktree, merge) that go beyond the §2 matrix's 'git(worktree)' qualifier (worktree-scoped ops). The implementation is faithful to the matrix (TESTER git(worktree)=✓, full grant), so this is a spec-granularity decision, not a code bug: the bridge's single 'git' logical group cannot express read-only variants (ARCH=只读, REVIEWER=只读 diff are unrepresentable). Also resolved in PR #18 for Phase 0 by the PHASE0_TOOL_SURFACE gate (spec §9 '工具只接 fs + sandbox.run' — git phase-gated out of the Phase 0 runtime), so the over-grant only matters once git is exercised in Phase 1+. Resolution: split LOGICAL_GROUPS into worktree-scoped (git.applyPatch/git.diff) vs main-repo (git.createWorktree/git.merge) groups, or add 'git.readonly'→git.diff, per a human spec ruling on TESTER/ARCH/REVIEWER grants when the Phase 1 composition root lands.",
       "target_phase": 2,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "Sisyphus (task 2.5)",
       "created_at": "2026-08-28T05:00:00.000Z",
-      "notes": "Deferred in /pr-review-agora for PR #18: requires a human spec decision on the §2 matrix granularity (does TESTER's git(worktree)=✓ include main-repo merge/createWorktree?). Phase 0 is already covered by the PHASE0_TOOL_SURFACE gate. When the Phase 1 composition root activates git tools, re-evaluate splitting the git group (read-only vs mutating) per this entry."
+      "resolved_at": "2026-08-28T13:20:00.000Z",
+      "notes": "Deferred in /pr-review-agora for PR #18: requires a human spec decision on the §2 matrix granularity (does TESTER's git(worktree)=✓ include main-repo merge/createWorktree?). RESOLVED in task 2.5 (user-approved): LOGICAL_GROUPS `git` redefined as worktree-scoped (git.applyPatch + git.diff, matching the matrix's `git(worktree)` qualifier) + new `git.readonly` (git.diff only) for ARCHITECT/REVIEWER; git_createWorktree/git_merge granted to NO model role (composition-root/integrate-node ops). RoleSpec change limited to roles-definitions (ARCH/REVIEWER `git`→`git.readonly`); PHASE0_ROSTER untouched (R9). Documented in 详细设计 §2 [2026-08-28 实装记录]; verified by phase2-exit DEF-006 chain + phase1-exit direct git chain (real binary, full createWorktree→applyPatch→diff→merge)."
     },
     {
       "id": "DEF-007",
@@ -124,7 +126,7 @@
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-08-28T13:31:37.000Z",
-      "notes": "Resolution condition: when humanGate lands in Phase 8, wire REVIEWER-pass convergence through a leader confirmation gate (blocking humanGate per D4 terminate-and-fork) instead of finalizing directly. Check this entry at the Phase 8 exit gate."
+      "notes": "Resolution condition: when humanGate lands in Phase 8, wire REVIEWER-pass convergence through a leader confirmation gate (blocking humanGate per D4 terminate-and-fork) instead of finalizing directly. [2026-08-28 task 2.5] Phase 2 exit tests assert the ruled simplification end-to-end: REVIEWER-approved verdicts finalize directly with humanGate unset (phase2-exit chains 1-3, DEF-007 noted in the review-loop block). Check this entry at the Phase 8 exit gate."
     },
     {
       "id": "DEF-008",
@@ -137,11 +139,12 @@
       "severity": "minor",
       "item": "Bind routing roster and WorkerRuntime roster into one source (composition-root ergonomics)",
       "detail": "CodeRabbit flagged that OrchestrationDeps.roster (routing) is independent from WorkerRuntimeDeps.roster (execution): a caller mismatching them makes decide() route PM/ARCHITECT/REVIEWER to a runtime whose specOf() throws UnknownRoleError. Verified in /pr-review-agora: the failure mode is a loud explicit UnknownRoleError (fail-fast, not silent corruption), and all current call sites (orchestrator.test orchestrationWith, lru-cache e2e, phase0-exit, phase1-exit ×2) pass PHASE0_ROSTER to both consistently. The task-2.2 user-approved plan explicitly chose 'OrchestrationDeps += roster? forwarded to decide()', so re-binding via a WorkerRuntime roster getter changes an approved interface design and needs a human ruling.",
-      "target_phase": 3,
-      "status": "open",
-      "resolved_by": null,
+      "target_phase": 2,
+      "status": "resolved",
+      "resolved_by": "Sisyphus (task 2.5)",
       "created_at": "2026-08-28T14:55:00.000Z",
-      "notes": "Resolution condition: when the full 6-role composition root lands (DEFAULT_ROSTER first used outside unit tests), either expose the roster on WorkerRuntime and derive routing from it (drop OrchestrationDeps.roster), or validate roster coverage at the composition root. Requires human sign-off since it revises the task-2.2 approved DecideOptions/OrchestrationDeps design. Check this entry when Phase 3 composition work starts."
+      "resolved_at": "2026-08-28T21:16:52.000Z",
+      "notes": "Resolution condition: when the full 6-role composition root lands (DEFAULT_ROSTER first used outside unit tests), either expose the roster on WorkerRuntime and derive routing from it (drop OrchestrationDeps.roster), or validate roster coverage at the composition root. RESOLVED in task 2.5 (user-approved, option b): phase2-runtime shares ONE DEFAULT_ROSTER constant for routing + execution and enforces assertRosterBinding (coverage equality) at assembly; WorkerRuntime gained a read-only `roster` getter for the check. OrchestrationDeps/DecideOptions interfaces untouched (task 2.2 approved design stands); option (a) interface consolidation stays available if Phase 3 composition work reopens it. Verified by phase2-exit DEF-008 chain (pass on shared binding, throws on mismatch mentioning the missing role)."
     },
     {
       "id": "DEF-009",
@@ -171,11 +174,11 @@
       "severity": "minor",
       "item": "AppState.pendingPatch has no write op in the §1 Mutation union",
       "detail": "§1 defines pendingPatch (code-layer reference field) but the Mutation union lists no op for it — same gap class as #22/#25. Task 2.4 projection reads it read-only with an explicit null default (R9, no silent absence). Unlocked writers are consumer-driven per repo precedent (2.2 requirements, 2.4 conventions), and there is no real consumer yet: TESTER/REVIEWER consume worktree path refs via branchOrPatch.worktrees and can pull diffs themselves with git/fs tools (iron rule 2 — truth lives in the worktree).",
-      "target_phase": 2,
+      "target_phase": 3,
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-08-28T17:12:53.000Z",
-      "notes": "Resolution condition: unlock the pendingPatch set op when a real consumer lands — evaluate at task 2.5 e2e (does the CODER patch-submission flow need to carry patch metadata through State for the REVIEWER pendingDiff slice?), else slide to Phase 3 patch-reference work. Unlock follows the pre-paved path (SET_FIELDS + ENABLED_SET_FIELDS + applySet case with the non-array-object guard, signature unchanged) plus an R12 实装记录 in 详细设计方案 §1. The conventions half of Issue #25 was fixed in task 2.4 (PR #26). Check this entry at the Phase 2 exit gate (task 2.5)."
+      "notes": "Resolution condition: unlock the pendingPatch set op when a real consumer lands — evaluate at task 2.5 e2e (does the CODER patch-submission flow need to carry patch metadata through State for the REVIEWER pendingDiff slice?), else slide to Phase 3 patch-reference work. EVALUATED at 2.5 (user-approved disposition): the six-role e2e proves the CODER→REVIEWER patch flow works entirely via worktree refs (branchOrPatch.worktrees slice) + REVIEWER's in-loop git_diff — final state has pendingPatch unset for the whole run (asserted in phase2-exit chain 1), so no consumer exists. Sliding to Phase 3 patch-reference work; unlock still follows the pre-paved path (SET_FIELDS + ENABLED_SET_FIELDS + applySet case, signature unchanged) plus an R12 实装记录 in 详细设计方案 §1."
     }
   ]
 }
