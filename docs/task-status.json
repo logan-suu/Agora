@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-28T22:22:11.000Z",
+  "last_updated": "2026-08-29T06:50:00.000Z",
   "current_phase": 3,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -480,7 +480,7 @@
     {
       "id": 3,
       "name": "上下文工程（决策台账 + 交接包 + 投影铁律，1 周）",
-      "status": "not_started",
+      "status": "in_progress",
       "integration_test": "3.5",
       "exit_criteria": "上下文不随对话变长而崩：台账/交接/投影/压缩四机制就位",
       "tasks": [
@@ -488,7 +488,7 @@
           "id": "3.1",
           "title": "decisionLedger 决策台账（含权威级别）",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/详细设计方案.md §1/§8",
             "docs/项目蓝图.md §14"
@@ -496,9 +496,9 @@
           "dependencies": [
             "2.5"
           ],
-          "test_file": null,
-          "notes": "core/domain/ledger.ts。Decision{id,topic,decision,rationale,authority('leader'>'agent'),by,supersedes,ts}；addDecision() 追加并检查与既有决策冲突（冲突分类逻辑 Phase 8 完善，此处先落数据结构与追加语义）。",
-          "last_updated": "2026-08-28T22:22:11.000Z"
+          "test_file": "packages/core/domain/test/ledger.test.ts",
+          "notes": "core/domain/ledger.ts。Decision{id,topic,decision,rationale,authority('leader'>'agent'),by,supersedes,ts}；addDecision() 追加并检查与既有决策冲突（冲突分类逻辑 Phase 8 完善，此处先落数据结构与追加语义）。\n[2026-08-28 开工·用户确认] 状态置 in_progress，phases[3] 同步翻 in_progress（对齐 2.4 先例）。\n[2026-08-28 计划批准·用户确认] 五改动面：① core/domain/ledger.ts 新建（Decision/Authority/DecisionConflict + addDecision：幂等重放、同 id 异内容 throw（规格 §1 先到先留）、supersedes 指向校验、agent 级不得推翻 leader 级（蓝图 §14 数据化）、同 topic 原始冲突信号返回，分类逻辑留 Phase 8）；② state.ts AppState+=decisionLedger: Decision[] + 初始 []（规格 L216 落位，纯增量）；③ reducer.ts ENABLED_APPEND_FIELDS+=decisionLedger + applyAppend 补 case（复用 deduplicatedAppend 身份键去重，沿用 2.2 先例「表内加一项+补一个 case」，签名不变）；④ index.ts 导出 ledger；⑤ TDD 测试 ledger.test.ts 11 例 + reducer.test.ts 增 Phase 3 describe 4 例（交换律/幂等/先到先留/初始空）+ 期望值同步（ENABLED 枚举断言、state.test.ts fixture）。\n[2026-08-28 Code+Check+Verify] TDD 红→绿：先写测试 16 failed（门控命中+字段缺失+ledger.ts 未建），实现后域层 48/48 绿。Authority 随 Decision 落 ledger.ts（避免 state.ts↔ledger.ts 循环依赖，任务 notes 指定 Decision 在 ledger.ts），与规格 §1 共享类型区分置已注明。\n[门禁实测] typecheck 0 错（npx tsc --noEmit）；lint 0 违规（npx biome check .，--write 修 1 处格式后过）；test 284 passed / 2 skipped（33 files，2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。G5：纯域层任务无沙箱/Harness 执行链路对象，注明暂缺。R1 写入全走 applyMutations/deduplicatedAppend；R9 无接口签名变更（纯增量字段+新增文件）；R12 详细设计 §1 实装记录已补（解锁启用面+=decisionLedger）。\n[2026-08-28 PR] PR #28 已创建（https://github.com/logan-suu/Agora/pull/28，base=dev-1.0.0，feat/task-3.1-decision-ledger，commit e793896）。提交前门禁复测：typecheck 0 错 / lint 0 违规 / test 284 passed + 2 skipped。状态保持 in_progress，待人类合并后由 /pr-merge-agora 收尾标 done。\n[2026-08-28 PR 预审加固] PR #28 预审（/pr-review-agora）：CodeRabbit 3 条 actionable comments 逐条评估——核心发现「写入路径绕过 addDecision 校验」属实但整体路由方案部分不可取（conflict 信号在 applyMutations 返回结构无落点，丢弃即静默降级；reducer 层 throw unknown-supersedes 会给良构输入引入顺序依赖），用户拍板「边界最小加固」：ledger.ts 抽出 assertAppendableDecision(ledger, decision)（shape 完整性 + supersedes 存在性 + agent 不可推翻 leader，全 throw 型，addDecision 内部复用同一 supersedes 校验），applyAppend decisionLedger 分支接入；保留 dedup 幂等与「先到先留」重放容错；两级契约定稿（生产者严格 / reducer 容错）写入详细设计 §1。新增拒绝用例 3（malformed / agent 推翻 leader / supersedes 悬空）+ ledger 非对象 2 例。门禁复测：typecheck 0 错 / lint 0 违规 / test 287 passed + 2 skipped。docstring 覆盖率警告不采纳（AGENTS.md 禁注释）。\n[2026-08-29 PR 预审闭环] CodeRabbit 两轮复审全部处置：第一轮 3 Major（1ec1c28 边界加固，assertAppendableDecision 接入 reducer，两级契约入规格 §1）；第二轮 2 Minor 文档缺口（51ec28e：交换律显式豁免生产者违约场景 + DecisionConflict 契约限定生产者 API 作用域），已英文回复并 resolve，全 PR 0 条未解决线程。门禁复跑：typecheck 0 / lint 0 / 287 passed 2 skipped。",
+          "last_updated": "2026-08-29T06:50:00.000Z"
         },
         {
           "id": "3.2",

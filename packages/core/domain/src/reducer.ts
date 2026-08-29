@@ -1,3 +1,5 @@
+import type { Decision } from './ledger';
+import { assertAppendableDecision } from './ledger';
 import type {
   AppState,
   HumanGate,
@@ -39,7 +41,11 @@ export const SET_FIELDS = [
 ] as const;
 export type SetField = (typeof SET_FIELDS)[number];
 
-export const ENABLED_APPEND_FIELDS: readonly AppendField[] = ['messages', 'reviewComments'];
+export const ENABLED_APPEND_FIELDS: readonly AppendField[] = [
+  'messages',
+  'decisionLedger',
+  'reviewComments',
+];
 export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = ['subtasks', 'requirements'];
 export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'testResults',
@@ -147,6 +153,13 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
           unknown
         >[],
       };
+    case 'decisionLedger': {
+      assertAppendableDecision(state.decisionLedger, value as Decision);
+      return {
+        ...state,
+        decisionLedger: deduplicatedAppend(state.decisionLedger, value) as Decision[],
+      };
+    }
     default:
       throw new Error(`no writer registered for append field "${field}"`);
   }
