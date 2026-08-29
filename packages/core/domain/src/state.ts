@@ -1,3 +1,5 @@
+import type { Decision } from './ledger';
+
 export type Phase =
   | 'clarifying'
   | 'planning'
@@ -90,6 +92,7 @@ export interface AppState {
   messages: Message[];
   requirements: Requirement[];
   reviewComments: Record<string, unknown>[];
+  decisionLedger: Decision[];
   architecture?: Record<string, unknown>;
   conventions?: Record<string, unknown>;
   pendingPatch?: Record<string, unknown>;
@@ -108,5 +111,6 @@ export function createInitialAppState(taskId: string, goal: string): AppState {
     messages: [],
     requirements: [],
     reviewComments: [],
+    decisionLedger: [],
   };
 }

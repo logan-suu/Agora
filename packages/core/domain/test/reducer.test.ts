@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AppState, Message, Mutation, Requirement } from '../src/index';
+import type { AppState, Decision, Message, Mutation, Requirement } from '../src/index';
 import {
   APPEND_FIELDS,
   appendMutation,
@@ -348,7 +348,8 @@ describe('mutation builders', () => {
     // Task 2.2 Phase 2 unlock: the three fields feeding conditional routing.
     // Task 2.3 Phase 2 unlock: humanGate carries the iteration-limit escalation (spec §1/§3).
     // Task 2.4 Phase 2 unlock: conventions feeds the §7 projection slice (ARCHITECT/CODER/REVIEWER).
-    expect([...ENABLED_APPEND_FIELDS]).toEqual(['messages', 'reviewComments']);
+    // Task 3.1 Phase 3 unlock: decisionLedger records decisions with authority levels (spec §1 / blueprint §14).
+    expect([...ENABLED_APPEND_FIELDS]).toEqual(['messages', 'decisionLedger', 'reviewComments']);
     expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['subtasks', 'requirements']);
     expect([...ENABLED_SET_FIELDS]).toEqual([
       'testResults',
@@ -433,5 +434,55 @@ describe('applyMutations · humanGate escalation field (task 2.3, spec §1/§3)'
       );
       expect(state.humanGate).toBeUndefined();
     }
+  });
+});
+
+describe('applyMutations · Phase 3 unlocked field (task 3.1)', () => {
+  function makeDecisionEntry(id: string, overrides: Partial<Decision> = {}): Decision {
+    return {
+      id,
+      topic: `topic-${id}`,
+      decision: `decision-${id}`,
+      rationale: `rationale-${id}`,
+      authority: 'agent',
+      by: 'PM',
+      ts: 1,
+      ...overrides,
+    };
+  }
+
+  it('append(decisionLedger): two appends commute to the same ledger set', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const first = appendMutation('decisionLedger', makeDecisionEntry('dec-1'));
+    const second = appendMutation('decisionLedger', makeDecisionEntry('dec-2'));
+    const forward = applyMutations(base, [first, second]);
+    const backward = applyMutations(base, [second, first]);
+    const sortById = (ledger: Decision[]) => [...ledger].sort((a, b) => a.id.localeCompare(b.id));
+    expect(sortById(forward.decisionLedger)).toEqual(sortById(backward.decisionLedger));
+  });
+
+  it('append(decisionLedger): replaying the same mutation is idempotent via the identity key', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const mutation = appendMutation('decisionLedger', makeDecisionEntry('dec-1'));
+    const once = applyMutations(base, [mutation]);
+    const twice = applyMutations(once, [mutation]);
+    expect(twice.decisionLedger).toHaveLength(1);
+    expect(twice.decisionLedger[0]).toEqual(once.decisionLedger[0]);
+  });
+
+  it('append(decisionLedger): same id with different content is a producer bug, first write stays', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const first = appendMutation('decisionLedger', makeDecisionEntry('dec-1', { decision: 'v1' }));
+    const second = appendMutation('decisionLedger', makeDecisionEntry('dec-1', { decision: 'v2' }));
+    const forward = applyMutations(base, [first, second]);
+    const backward = applyMutations(base, [second, first]);
+    expect(forward.decisionLedger).toHaveLength(1);
+    expect(backward.decisionLedger).toHaveLength(1);
+    expect(forward.decisionLedger[0]?.decision).toBe('v1');
+    expect(backward.decisionLedger[0]?.decision).toBe('v2');
+  });
+
+  it('createInitialAppState: decisionLedger starts empty so the ledger is append-only from a clean slate', () => {
+    expect(createInitialAppState('t-1', 'goal').decisionLedger).toEqual([]);
   });
 });
