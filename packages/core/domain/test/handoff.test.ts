@@ -56,6 +56,30 @@ describe('assertValidHandoff · shape validation (spec §1)', () => {
     }
   });
 
+  it('enforces the fileRefs reference format — path + line only, never full code (iron rule 2)', () => {
+    const valid: string[][] = [
+      ['src/lru.ts:12'],
+      ['src/lru.ts:L12'],
+      ['src/lru.ts:12-48'],
+      ['packages/core/domain/src/handoff.ts:L10-L15'],
+    ];
+    for (const refs of valid) {
+      expect(() => assertValidHandoff(makeHandoffPacket({ fileRefs: refs }))).not.toThrow();
+    }
+    const malformed: string[][] = [
+      ['full source code'],
+      ['src/lru.ts'],
+      ['src/lru.ts:abc'],
+      ['my file.ts:10'],
+      [''],
+    ];
+    for (const refs of malformed) {
+      expect(() => assertValidHandoff(makeHandoffPacket({ fileRefs: refs }))).toThrow(
+        'invalid handoff packet',
+      );
+    }
+  });
+
   it('rejects a non-finite ts', () => {
     expect(() => assertValidHandoff(makeHandoffPacket({ ts: Number.NaN }))).toThrow(
       'invalid handoff packet',

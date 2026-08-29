@@ -602,6 +602,15 @@ describe('applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern
     expect(() => applyMutations(base, [mutation])).toThrow('invalid handoff packet');
   });
 
+  it('append(handoffPackets): rejects fileRefs that paste code instead of path:line references (iron rule 2)', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const mutation = appendMutation(
+      'handoffPackets',
+      makeHandoffEntry({ fileRefs: ['const x = 1; // full source'] }),
+    );
+    expect(() => applyMutations(base, [mutation])).toThrow('invalid handoff packet');
+  });
+
   it('append(handoffPackets): rejects keyDecisions referencing an unknown decision id (traceability, blueprint §14)', () => {
     const base = createInitialAppState('t-1', 'goal');
     const mutation = appendMutation(

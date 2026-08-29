@@ -24,6 +24,20 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
+/**
+ * fileRefs must be path + line references ("path:line" or "path:start-end"),
+ * never pasted code — boundary defense for projection iron rule 2.
+ */
+const FILE_REF_PATTERN = /^[^\s:]+:L?\d+(?:-L?\d+)?$/;
+
+function isFileRef(value: unknown): value is string {
+  return typeof value === 'string' && FILE_REF_PATTERN.test(value);
+}
+
+function isFileRefArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => isFileRef(item));
+}
+
 export function assertValidHandoff(packet: HandoffPacket): void {
   if (typeof packet !== 'object' || packet === null || Array.isArray(packet)) {
     throw new Error('invalid handoff packet: a handoff packet object is required');
@@ -34,12 +48,12 @@ export function assertValidHandoff(packet: HandoffPacket): void {
     isNonEmptyString(packet.done) &&
     isStringArray(packet.keyDecisions) &&
     isStringArray(packet.openIssues) &&
-    isStringArray(packet.fileRefs) &&
+    isFileRefArray(packet.fileRefs) &&
     typeof packet.ts === 'number' &&
     Number.isFinite(packet.ts);
   if (!valid) {
     throw new Error(
-      'invalid handoff packet: non-empty {fromRole, toRole, done}, string[] {keyDecisions, openIssues, fileRefs}, and a finite ts are required',
+      'invalid handoff packet: non-empty {fromRole, toRole, done}, string[] {keyDecisions, openIssues}, fileRefs entries shaped "path:line" or "path:start-end" (never full code), and a finite ts are required',
     );
   }
 }
