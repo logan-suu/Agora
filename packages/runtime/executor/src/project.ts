@@ -6,10 +6,13 @@ import type { ProjectionView } from './base';
  *
  * Every roster-declared slice is built here from structured State only — never
  * the raw chat log (iron rule 1), and code travels as path+line refs only
- * (iron rule 2). Slices whose State sources land in later phases return
- * explicit empty defaults (R9), annotated with the upgrade task. Iron rule 3
- * (rationale-follows-decision) needs the decision ledger (task 3.1) and is out
- * of scope here.
+ * (iron rule 2). Iron rule 3 (rationale-follows-decision) projects
+ * leader-authority entries from state.decisionLedger with their rationale
+ * (task 3.3). Slices whose State sources land in later phases return explicit
+ * empty defaults (R9), annotated with the upgrade task; the §7 view-level
+ * channels localContext (Phase 6) and blockingObjections (Phase 8) have no
+ * State fields yet and are not roster-declared, so no slice machinery exists
+ * for them until then.
  */
 export function project(
   state: AppState,
@@ -49,8 +52,15 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
       return { goal: state.goal };
     case 'requirements':
       return state.requirements.map((requirement) => ({ ...requirement }));
-    case 'leaderDecisions':
-      return []; // task 3.1 decisionLedger upgrade point
+    case 'leaderDecisions': {
+      // Iron rule 3: rationale travels with the decision (spec §7). Task 3.3
+      // plan ruling: leader-authority entries only — the slice name and the §2
+      // PM row list "relevant leader decisions"; per-role relevance refinement
+      // lands with Phase 6 channels (R9 upgrade point). WO: defensive copies.
+      return state.decisionLedger
+        .filter((entry) => entry.authority === 'leader')
+        .map((entry) => ({ ...entry }));
+    }
     case 'repoStructure':
       return {}; // Phase 1 repoSnapshot upgrade point
     case 'conventions':

@@ -1,6 +1,7 @@
 import {
   type AppState,
   createInitialAppState,
+  type Decision,
   type Requirement,
   type TestResults,
 } from '@agora/core-domain';
@@ -8,9 +9,10 @@ import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { describe, expect, it } from 'vitest';
 import { project } from '../src/project';
 
-// Task 2.4 (spec §7 slice table). Pure data assertions, no mocks (R11):
-// positive slice shapes for all six roles, the three-rule negative guarantees,
-// and the no-silent-degradation guard for unimplemented slice names.
+// Task 2.4 (spec §7 slice table) + task 3.3 (iron rule 3: decisions carry
+// rationale). Pure data assertions, no mocks (R11): positive slice shapes for
+// all six roles, the three-rule negative guarantees, and the
+// no-silent-degradation guard for unimplemented slice names.
 
 const REQ: Requirement = {
   id: 'req-1',
@@ -34,6 +36,16 @@ const TEST_RESULTS: TestResults = {
     },
     { test: 'ttl expires', message: 'other', file: 'src/b.test.ts', line: 1 },
   ],
+};
+
+const LEADER_DECISION: Decision = {
+  id: 'dec-1',
+  topic: 'cache-eviction',
+  decision: 'LRU over LFU',
+  rationale: 'SENTINEL-LEADER-RATIONALE',
+  authority: 'leader',
+  by: 'leader',
+  ts: 1,
 };
 
 function makeState(overrides: Partial<AppState> = {}): AppState {
@@ -78,11 +90,48 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     });
   });
 
-  it('PM gets goal, full requirements, and an explicitly empty leaderDecisions (3.1 upgrade point)', () => {
-    const view = slicesOf(makeState({ requirements: [REQ] }), 'PM');
+  it('PM gets goal, full requirements, and leader decisions with rationale attached (iron rule 3)', () => {
+    const supersedingLeader: Decision = {
+      ...LEADER_DECISION,
+      id: 'dec-2',
+      decision: 'TwoQueue over plain LRU',
+      rationale: 'SENTINEL-REVISED-RATIONALE',
+      supersedes: 'dec-1',
+      ts: 2,
+    };
+    const agentEntry: Decision = {
+      id: 'dec-3',
+      topic: 'cache-eviction',
+      decision: 'SENTINEL-AGENT-DECISION',
+      rationale: 'architect preference only',
+      authority: 'agent',
+      by: 'ARCHITECT',
+      ts: 3,
+    };
+    const view = slicesOf(
+      makeState({
+        requirements: [REQ],
+        decisionLedger: [LEADER_DECISION, supersedingLeader, agentEntry],
+      }),
+      'PM',
+    );
     expect(view.goal).toEqual({ goal: 'build an LRU cache' });
     expect(view.requirements).toEqual([REQ]);
-    expect(view.leaderDecisions).toEqual([]);
+    expect(view.leaderDecisions).toEqual([LEADER_DECISION, supersedingLeader]);
+    const json = JSON.stringify(view.leaderDecisions);
+    expect(json).toContain('SENTINEL-LEADER-RATIONALE');
+    expect(json).toContain('SENTINEL-REVISED-RATIONALE');
+    expect(json).toContain('"supersedes":"dec-1"');
+    expect(json).not.toContain('SENTINEL-AGENT-DECISION');
+  });
+
+  it('leaderDecisions defaults to [] on an empty ledger and yields defensive copies (WO)', () => {
+    expect(slicesOf(makeState(), 'PM').leaderDecisions).toEqual([]);
+    const ledger = [LEADER_DECISION];
+    const view = slicesOf(makeState({ decisionLedger: ledger }), 'PM');
+    const projected = view.leaderDecisions as Decision[];
+    expect(projected[0]).toEqual(LEADER_DECISION);
+    expect(projected[0]).not.toBe(ledger[0]);
   });
 
   it('ARCHITECT gets requirements, explicit-empty repoStructure (Phase 1), and conventions', () => {
@@ -275,6 +324,7 @@ describe('project (task 2.4, spec §7 slice table)', () => {
       conventions: { style: 'biome' },
       architecture: { modules: ['cache'], interfaces: [{ name: 'Cache' }] },
       pendingPatch: { diff: 'x' },
+      decisionLedger: [LEADER_DECISION],
     });
     for (const spec of DEFAULT_ROSTER) {
       expect(() => project(rich, spec.role, DEFAULT_ROSTER)).not.toThrow();

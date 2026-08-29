@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-29T14:00:00.000Z",
+  "last_updated": "2026-08-29T14:30:00.000Z",
   "current_phase": 3,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -520,15 +520,16 @@
           "id": "3.3",
           "title": "投影完善：三条铁律 + project() 精确切片",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/详细设计方案.md §7"
           ],
           "dependencies": [
             "3.1"
           ],
-          "test_file": null,
-          "notes": "三铁律：永不投原始群聊 log（只投结构化切片+所属 channel localContext）；代码传引用不传全文（fileRefs 路径+行号）；理由随决策走（rationale 防下游推翻上游）。"
+          "test_file": "packages/runtime/executor/test/project.test.ts",
+          "notes": "三铁律：永不投原始群聊 log（只投结构化切片+所属 channel localContext）；代码传引用不传全文（fileRefs 路径+行号）；理由随决策走（rationale 防下游推翻上游）。\n[2026-08-29 开工·用户确认] 状态置 in_progress。\n[2026-08-29 计划批准·用户确认] 切片语义裁决=A：leaderDecisions 仅投影 authority='leader' 条目（切片名+详细设计 §2 PM 行「相关 leader 决策」字面语义），按角色相关性细化延至 Phase 6 channels（届时才有成员资格信息基础，R9 升级点）。改动面三处：① project.ts 切片实现+文件头注释（铁律 3 已实现；channels localContext/blockingObjections 为 Phase 6/8 R9 升级点）；② project.test.ts 占位测试改写为铁律 3 套件+drift-guard fixture 增补 decisionLedger；③ 详细设计 §7 实装记录（R12）。project() 签名零变更（R9）。\n[2026-08-29 Code+Check·TDD 红→绿] RED 实测 2 failed/14 passed（占位 return [] 命中新断言）；实现后定向 16/16 绿。实现：leaderDecisions = state.decisionLedger.filter(authority==='leader').map(defensive copy)（WO 只读投影）。测试覆盖：leader 级带 rationale 进投影（哨兵）/supersedes 链可见/agent 级排除（哨兵负向）/空账本 []/视图条目非 State 条目引用（拷贝守卫）；铁律 1/2 既有守卫测试不动。\n[门禁实测] typecheck 0 错（tsc --noEmit）；lint 0 违规（biome check .，123 files）；test 306 passed / 2 skipped（34 files，2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY，无回归）。注：当前 shell 无 pnpm，三门禁以 node_modules/.bin 等价命令执行。G5：纯投影纯函数任务，无沙箱/Harness 执行链路对象，注明暂缺（3.1/3.2 先例）；投影消费链路（worker-runtime.loop→project()）由既有 e2e 全量回归覆盖。R1 未触 State 写入；R2 强化（铁律 3 落地）；R9 零签名变更；R10 不变。R12 详细设计 §7 实装记录已补。待 /commit-agora 建 PR，合并后 /pr-merge-agora 收尾标 done（级联翻转 3.4→ready）。",
+          "last_updated": "2026-08-29T14:30:00.000Z"
         },
         {
           "id": "3.4",
