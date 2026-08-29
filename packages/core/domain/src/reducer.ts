@@ -1,3 +1,5 @@
+import type { HandoffPacket } from './handoff';
+import { assertAppendableHandoff } from './handoff';
 import type { Decision } from './ledger';
 import { assertAppendableDecision } from './ledger';
 import type {
@@ -44,6 +46,7 @@ export type SetField = (typeof SET_FIELDS)[number];
 export const ENABLED_APPEND_FIELDS: readonly AppendField[] = [
   'messages',
   'decisionLedger',
+  'handoffPackets',
   'reviewComments',
 ];
 export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = ['subtasks', 'requirements'];
@@ -158,6 +161,13 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
       return {
         ...state,
         decisionLedger: deduplicatedAppend(state.decisionLedger, value) as Decision[],
+      };
+    }
+    case 'handoffPackets': {
+      assertAppendableHandoff(state.decisionLedger, value as HandoffPacket);
+      return {
+        ...state,
+        handoffPackets: deduplicatedAppend(state.handoffPackets, value) as HandoffPacket[],
       };
     }
     default:
