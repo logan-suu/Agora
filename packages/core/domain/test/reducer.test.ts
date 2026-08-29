@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { AppState, Decision, Message, Mutation, Requirement } from '../src/index';
+import type {
+  AppState,
+  Decision,
+  HandoffPacket,
+  Message,
+  Mutation,
+  Requirement,
+} from '../src/index';
 import {
   APPEND_FIELDS,
   appendMutation,
@@ -349,7 +356,13 @@ describe('mutation builders', () => {
     // Task 2.3 Phase 2 unlock: humanGate carries the iteration-limit escalation (spec §1/§3).
     // Task 2.4 Phase 2 unlock: conventions feeds the §7 projection slice (ARCHITECT/CODER/REVIEWER).
     // Task 3.1 Phase 3 unlock: decisionLedger records decisions with authority levels (spec §1 / blueprint §14).
-    expect([...ENABLED_APPEND_FIELDS]).toEqual(['messages', 'decisionLedger', 'reviewComments']);
+    // Task 3.2 Phase 3 unlock: handoffPackets carry structured role-switch handoffs (spec §1 / pattern ④).
+    expect([...ENABLED_APPEND_FIELDS]).toEqual([
+      'messages',
+      'decisionLedger',
+      'handoffPackets',
+      'reviewComments',
+    ]);
     expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['subtasks', 'requirements']);
     expect([...ENABLED_SET_FIELDS]).toEqual([
       'testResults',
@@ -515,5 +528,99 @@ describe('applyMutations · Phase 3 unlocked field (task 3.1)', () => {
 
   it('createInitialAppState: decisionLedger starts empty so the ledger is append-only from a clean slate', () => {
     expect(createInitialAppState('t-1', 'goal').decisionLedger).toEqual([]);
+  });
+});
+
+describe('applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④)', () => {
+  function makeHandoffEntry(overrides: Partial<HandoffPacket> = {}): HandoffPacket {
+    return {
+      fromRole: 'CODER',
+      toRole: 'TESTER',
+      done: 'LRU cache implemented and self-tested',
+      keyDecisions: [],
+      openIssues: [],
+      fileRefs: [],
+      ts: 1,
+      ...overrides,
+    };
+  }
+
+  function makeLedgerDecision(id: string): Decision {
+    return {
+      id,
+      topic: `topic-${id}`,
+      decision: `decision-${id}`,
+      rationale: `rationale-${id}`,
+      authority: 'agent',
+      by: 'PM',
+      ts: 1,
+    };
+  }
+
+  it('append(handoffPackets): two appends commute to the same packet set (no identity key — normalize by ts)', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const first = appendMutation(
+      'handoffPackets',
+      makeHandoffEntry({ fromRole: 'CODER', toRole: 'TESTER', ts: 1 }),
+    );
+    const second = appendMutation(
+      'handoffPackets',
+      makeHandoffEntry({ fromRole: 'TESTER', toRole: 'REVIEWER', ts: 2 }),
+    );
+    const forward = applyMutations(base, [first, second]);
+    const backward = applyMutations(base, [second, first]);
+    const sortByTs = (packets: HandoffPacket[]) => [...packets].sort((a, b) => a.ts - b.ts);
+    expect(sortByTs(forward.handoffPackets)).toEqual(sortByTs(backward.handoffPackets));
+  });
+
+  it('append(handoffPackets): replaying the same packet is idempotent via deep-equal dedup (no id field in spec §1)', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const mutation = appendMutation('handoffPackets', makeHandoffEntry());
+    const once = applyMutations(base, [mutation]);
+    const twice = applyMutations(once, [mutation]);
+    expect(twice.handoffPackets).toHaveLength(1);
+    expect(twice.handoffPackets[0]).toEqual(once.handoffPackets[0]);
+  });
+
+  it('append(handoffPackets): two distinct packets are both kept — deep-equal dedup must not conflate them', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const coderHandoff = appendMutation(
+      'handoffPackets',
+      makeHandoffEntry({ fromRole: 'CODER', toRole: 'TESTER', ts: 1 }),
+    );
+    const testerHandoff = appendMutation(
+      'handoffPackets',
+      makeHandoffEntry({ fromRole: 'TESTER', toRole: 'REVIEWER', ts: 2 }),
+    );
+    const next = applyMutations(base, [coderHandoff, testerHandoff]);
+    expect(next.handoffPackets).toHaveLength(2);
+  });
+
+  it('append(handoffPackets): rejects a malformed packet at the reducer boundary (3.1 boundary-validation precedent)', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const mutation = appendMutation('handoffPackets', { fromRole: 'CODER' });
+    expect(() => applyMutations(base, [mutation])).toThrow('invalid handoff packet');
+  });
+
+  it('append(handoffPackets): rejects keyDecisions referencing an unknown decision id (traceability, blueprint §14)', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const mutation = appendMutation(
+      'handoffPackets',
+      makeHandoffEntry({ keyDecisions: ['dec-ghost'] }),
+    );
+    expect(() => applyMutations(base, [mutation])).toThrow('unknown decision id');
+  });
+
+  it('append(handoffPackets): accepts keyDecisions referencing decisions already recorded in the ledger', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const seed = appendMutation('decisionLedger', makeLedgerDecision('dec-1'));
+    const handoff = appendMutation('handoffPackets', makeHandoffEntry({ keyDecisions: ['dec-1'] }));
+    const next = applyMutations(base, [seed, handoff]);
+    expect(next.handoffPackets).toHaveLength(1);
+    expect(next.handoffPackets[0]?.keyDecisions).toEqual(['dec-1']);
+  });
+
+  it('createInitialAppState: handoffPackets starts empty so handoffs are append-only from a clean slate', () => {
+    expect(createInitialAppState('t-1', 'goal').handoffPackets).toEqual([]);
   });
 });

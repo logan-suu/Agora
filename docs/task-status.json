@@ -504,7 +504,7 @@
           "id": "3.2",
           "title": "handoffPackets 结构化交接包",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/详细设计方案.md §1",
             "docs/框架调研与借鉴决策.md 模式④"
@@ -513,7 +513,8 @@
             "3.1"
           ],
           "test_file": null,
-          "notes": "core/domain/handoff.ts。HandoffPacket{fromRole,toRole,done,keyDecisions,openIssues,fileRefs}；角色切换时由 Coordinator 触发生成。借鉴 AutoGen Handoff-as-tool 协议（模式④）：载荷写入共享状态切片供投影消费，不 splice 进对话流。"
+          "notes": "core/domain/handoff.ts。HandoffPacket{fromRole,toRole,done,keyDecisions,openIssues,fileRefs}；角色切换时由 Coordinator 触发生成。借鉴 AutoGen Handoff-as-tool 协议（模式④）：载荷写入共享状态切片供投影消费，不 splice 进对话流。[2026-08-29 开工·用户确认] 状态置 in_progress。[2026-08-29 计划批准·用户确认] 两项裁决：① Coordinator 角色切换生成接线延后至 3.3/3.5（本任务仅域层，接线点已定位：coordinator.ts 五处 nextRole 翻转的 dispatch/evaluate 函数）；② keyDecisions 引用完整性纳入 reducer 边界校验（悬空 decision id throw，镜像 3.1 supersedes 先例）。[2026-08-29 Code+Check·TDD 红→绿] RED 实测 17 failed/58 passed（handoff.test.ts 模块未导出 9 例 + reducer 门控 disabledFieldError/初始 undefined 8 例）；实现后域层 75/75 绿。改动面：① 新建 core/domain/handoff.ts（HandoffPacket 接口 §1 逐字无 id 字段 + assertValidHandoff 形状校验 + assertAppendableHandoff(ledger, packet) 形状+keyDecisions 引用完整性，零依赖零 I/O R8/L1）；② state.ts AppState+=handoffPackets: HandoffPacket[]（必填，reviewComments 与 decisionLedger 之间对齐 §1 协作层相对顺序）+ createInitialAppState 初始 []；③ reducer.ts ENABLED_APPEND_FIELDS+=handoffPackets（0.2 预铺「表内加一项+补一个 case」路径，签名未变）+ applyAppend 补 case（边界 assert→deduplicatedAppend，无 id 字段走深相等去重幂等）；④ index.ts 导出。测试：handoff.test.ts 9 例（形状校验/悬空引用/纯函数性）+ reducer.test.ts 新 describe 7 例（交换律按 ts 归一化排序/幂等重放/不同 packet 不被深相等误合并/畸形边界拒绝/悬空引用拒绝/ledger 既有 id 通过/初始空）+ 门控断言同步 + state.test.ts fixture 补 handoffPackets:[]。无 mock（R11，纯域层纯函数，真实断言无弱化）。[门禁实测] pnpm typecheck exit=0；pnpm lint exit=0（biome --write 修 2 测试文件格式后 123 files 0 违规）；pnpm test 303 passed / 2 skipped（34 files，较 3.1 基线 284 +19 例，2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。R1 写入全走 applyMutations（append 家族，交换律+幂等测试锁定）；R9 零签名变更（Mutation 联合 0.2 已定稿、Executor/SandboxManager 未触、AppState 纯增量字段）；R10 camelCase + handoff.ts 对齐 §0 目录树。G5：纯域层任务无沙箱/Harness 执行链路对象，注明暂缺（3.1 先例）。R12 详细设计 §1 实装记录已补。待 /commit-agora 建 PR，合并后 /pr-merge-agora 收尾标 done。",
+          "last_updated": "2026-08-29T07:20:00.000Z"
         },
         {
           "id": "3.3",

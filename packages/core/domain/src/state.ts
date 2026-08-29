@@ -1,3 +1,4 @@
+import type { HandoffPacket } from './handoff';
 import type { Decision } from './ledger';
 
 export type Phase =
@@ -92,6 +93,7 @@ export interface AppState {
   messages: Message[];
   requirements: Requirement[];
   reviewComments: Record<string, unknown>[];
+  handoffPackets: HandoffPacket[];
   decisionLedger: Decision[];
   architecture?: Record<string, unknown>;
   conventions?: Record<string, unknown>;
@@ -111,6 +113,7 @@ export function createInitialAppState(taskId: string, goal: string): AppState {
     messages: [],
     requirements: [],
     reviewComments: [],
+    handoffPackets: [],
     decisionLedger: [],
   };
 }

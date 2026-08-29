@@ -29,6 +29,7 @@ describe('createInitialAppState', () => {
       messages: [],
       requirements: [],
       reviewComments: [],
+      handoffPackets: [],
       decisionLedger: [],
       pendingPatch: { files: ['src/lru.ts'] },
       nextRole: 'TESTER',
