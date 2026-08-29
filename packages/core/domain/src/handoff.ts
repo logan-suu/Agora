@@ -5,12 +5,12 @@ export interface HandoffPacket {
   toRole: string;
   done: string;
   /**
-   * 关联 decisionLedger 的 id
+   * Ids referencing decisionLedger entries
    */
   keyDecisions: string[];
   openIssues: string[];
   /**
-   * 路径+行号引用，不贴代码
+   * Path + line references, never full code
    */
   fileRefs: string[];
   ts: number;
