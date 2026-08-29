@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-28T21:59:44.000Z",
+  "last_updated": "2026-08-29T12:45:00.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -179,6 +179,23 @@
       "resolved_by": null,
       "created_at": "2026-08-28T17:12:53.000Z",
       "notes": "Resolution condition: unlock the pendingPatch set op when a real consumer lands — evaluate at task 2.5 e2e (does the CODER patch-submission flow need to carry patch metadata through State for the REVIEWER pendingDiff slice?), else slide to Phase 3 patch-reference work. EVALUATED at 2.5 (user-approved disposition): the six-role e2e proves the CODER→REVIEWER patch flow works entirely via worktree refs (branchOrPatch.worktrees slice) + REVIEWER's in-loop git_diff — final state has pendingPatch unset for the whole run (asserted in phase2-exit chain 1), so no consumer exists. Sliding to Phase 3 patch-reference work; unlock still follows the pre-paved path (SET_FIELDS + ENABLED_SET_FIELDS + applySet case, signature unchanged) plus an R12 实装记录 in 详细设计方案 §1."
+    },
+    {
+      "id": "DEF-011",
+      "source": "CodeRabbit (PR #31 review, merge-risk note) + /pr-review-agora",
+      "pr": 31,
+      "pr_url": "https://github.com/logan-suu/Agora/pull/31",
+      "comment_id": null,
+      "comment_url": "https://github.com/logan-suu/Agora/pull/31#pullrequestreview-3206044257",
+      "task": "3.4",
+      "severity": "minor",
+      "item": "Write-side legality of cross-topic supersedes (assertSupersedesIsLegal does not check topic equality)",
+      "detail": "CodeRabbit flagged that a decision on topic Y may legally supersede a decision on topic X: assertSupersedesIsLegal (core/domain/ledger.ts:58-71) only validates target existence + agent-cannot-supersede-leader, and addDecision's conflict signal filters same-topic entries, so a cross-topic supersedes is constructible through the public API. Read-side impact is already fixed in PR #31 (collapseSupersededDecisions now collapses only in-topic pointers; cross-topic targets keep full fidelity, so projections never hide a topic's only decision text). The write-side question — should cross-topic supersedes be rejected at the ledger boundary — is a new L1 domain rule not defined by spec §1 (which only mandates target-existence + authority checks and explicitly parks conflict-classification logic in Phase 8), so adding it requires a spec ruling per R12, not a silent code change.",
+      "target_phase": 8,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-29T12:45:00.000Z",
+      "notes": "Resolution condition: when Phase 8 conflict classification lands (spec §1 '同 topic 冲突以原始信号返回，分类逻辑留 Phase 8'), rule whether supersedes must be same-topic and, if so, extend assertSupersedesIsLegal with a topic-equality check + ledger regression tests + an R12 实装记录 in 详细设计方案 §1. Until then the read-side collapse is topic-scoped, which bounds the blast radius to reduced compression (never information loss)."
     }
   ]
 }

@@ -51,15 +51,26 @@ export function compressWhenOverThreshold<T>(
  * Deterministic supersede-chain collapse for the decision ledger (ruling ③):
  * every entry superseded by another entry in the slice becomes a tombstone
  * keeping its retrieval id; heads keep full fidelity. Original append order
- * is preserved (no regrouping). An agent entry can never supersede a leader
- * entry (ledger.ts), so pointers between slice members are self-contained.
+ * is preserved (no regrouping). Collapse is topic-scoped: only an in-topic
+ * supersedes pointer collapses its target — a cross-topic pointer is ignored
+ * and the target keeps full fidelity, so a tombstone can never hide the only
+ * full text of its topic (iron rule 3). An agent entry can never supersede a
+ * leader entry (ledger.ts). Whether cross-topic supersedes should be rejected
+ * at the write side is a Phase 8 conflict-classification question (spec §1),
+ * tracked in docs/deferred-items.json.
  */
 export function collapseSupersededDecisions(
   entries: readonly Decision[],
 ): readonly (Decision | SupersededTombstone)[] {
+  const byId = new Map<string, Decision>();
+  for (const entry of entries) byId.set(entry.id, entry);
   const supersededBy = new Map<string, string>();
   for (const entry of entries) {
-    if (entry.supersedes !== undefined) supersededBy.set(entry.supersedes, entry.id);
+    const targetId = entry.supersedes;
+    if (targetId === undefined) continue;
+    const target = byId.get(targetId);
+    if (target === undefined || target.topic !== entry.topic) continue;
+    supersededBy.set(targetId, entry.id);
   }
   return entries.map((entry) => {
     const by = supersededBy.get(entry.id);

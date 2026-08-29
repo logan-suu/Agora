@@ -100,6 +100,29 @@ describe('compressWhenOverThreshold (task 3.4, spec §7)', () => {
     expect(out[2]).toEqual(entries[2]);
   });
 
+  it('cross-topic supersede does not collapse: the superseded entry keeps full fidelity (a tombstone must never point outside its topic)', () => {
+    const entries = [
+      makeDecision('x1', { topic: 'auth', rationale: LONG }),
+      makeDecision('x2', { topic: 'cache', supersedes: 'x1', ts: 2, rationale: LONG }),
+    ];
+    const out = compressWhenOverThreshold(entries, 10, collapseSupersededDecisions);
+    expect(kinds(out)).toEqual(['head', 'head']);
+    expect(out[0]).toEqual(entries[0]);
+    expect(out[1]).toEqual(entries[1]);
+  });
+
+  it('same-topic collapse wins over a cross-topic pointer at the same target: only in-topic supersedes record tombstones', () => {
+    const entries = [
+      makeDecision('a1', { topic: 'auth', rationale: LONG }),
+      makeDecision('a2', { topic: 'auth', supersedes: 'a1', ts: 2, rationale: LONG }),
+      makeDecision('b1', { topic: 'cache', supersedes: 'a1', ts: 3, rationale: LONG }),
+    ];
+    const out = compressWhenOverThreshold(entries, 10, collapseSupersededDecisions);
+    expect(out[0]).toEqual({ id: 'a1', topic: 'auth', supersededBy: 'a2' });
+    expect(out[1]).toEqual(entries[1]);
+    expect(out[2]).toEqual(entries[2]);
+  });
+
   it('iron rule 3 bound: over threshold with zero superseded entries keeps every head verbatim (never drops live decisions)', () => {
     const entries = [
       makeDecision('d1', { rationale: LONG }),
