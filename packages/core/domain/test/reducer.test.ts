@@ -482,6 +482,37 @@ describe('applyMutations · Phase 3 unlocked field (task 3.1)', () => {
     expect(backward.decisionLedger[0]?.decision).toBe('v2');
   });
 
+  it('append(decisionLedger): rejects a malformed entry at the reducer boundary (set-field precedent)', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const mutation = appendMutation('decisionLedger', { id: 'dec-1' });
+    expect(() => applyMutations(base, [mutation])).toThrow('invalid decision');
+  });
+
+  it('append(decisionLedger): an agent-level entry cannot supersede a leader-level one at the reducer boundary (blueprint §14)', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const leader = appendMutation(
+      'decisionLedger',
+      makeDecisionEntry('dec-1', { authority: 'leader', by: 'leader' }),
+    );
+    const agentOverride = appendMutation(
+      'decisionLedger',
+      makeDecisionEntry('dec-2', { authority: 'agent', supersedes: 'dec-1' }),
+    );
+    const afterLeader = applyMutations(base, [leader]);
+    expect(() => applyMutations(afterLeader, [agentOverride])).toThrow(
+      'only the leader may override',
+    );
+  });
+
+  it('append(decisionLedger): rejects supersedes pointing at an unknown decision id', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const mutation = appendMutation(
+      'decisionLedger',
+      makeDecisionEntry('dec-2', { supersedes: 'dec-ghost' }),
+    );
+    expect(() => applyMutations(base, [mutation])).toThrow('unknown decision id');
+  });
+
   it('createInitialAppState: decisionLedger starts empty so the ledger is append-only from a clean slate', () => {
     expect(createInitialAppState('t-1', 'goal').decisionLedger).toEqual([]);
   });

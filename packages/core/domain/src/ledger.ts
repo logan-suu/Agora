@@ -24,6 +24,9 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 function assertValidDecision(decision: Decision): void {
+  if (typeof decision !== 'object' || decision === null || Array.isArray(decision)) {
+    throw new Error('invalid decision: a decision object is required');
+  }
   const valid =
     isNonEmptyString(decision.id) &&
     isNonEmptyString(decision.topic) &&
@@ -52,6 +55,26 @@ function sameContent(left: Decision, right: Decision): boolean {
   );
 }
 
+function assertSupersedesIsLegal(ledger: readonly Decision[], decision: Decision): void {
+  if (decision.supersedes === undefined) return;
+  const superseded = ledger.find((entry) => entry.id === decision.supersedes);
+  if (superseded === undefined) {
+    throw new Error(
+      `decision "${decision.id}" supersedes unknown decision id "${decision.supersedes}"`,
+    );
+  }
+  if (superseded.authority === 'leader' && decision.authority === 'agent') {
+    throw new Error(
+      `decision "${decision.id}" (authority=agent) cannot supersede leader-level decision "${superseded.id}": only the leader may override a leader-level decision (blueprint §14)`,
+    );
+  }
+}
+
+export function assertAppendableDecision(ledger: readonly Decision[], decision: Decision): void {
+  assertValidDecision(decision);
+  assertSupersedesIsLegal(ledger, decision);
+}
+
 export function addDecision(
   ledger: readonly Decision[],
   decision: Decision,
@@ -68,19 +91,7 @@ export function addDecision(
     );
   }
 
-  if (decision.supersedes !== undefined) {
-    const superseded = ledger.find((entry) => entry.id === decision.supersedes);
-    if (superseded === undefined) {
-      throw new Error(
-        `decision "${decision.id}" supersedes unknown decision id "${decision.supersedes}"`,
-      );
-    }
-    if (superseded.authority === 'leader' && decision.authority === 'agent') {
-      throw new Error(
-        `decision "${decision.id}" (authority=agent) cannot supersede leader-level decision "${superseded.id}": only the leader may override a leader-level decision (blueprint §14)`,
-      );
-    }
-  }
+  assertSupersedesIsLegal(ledger, decision);
 
   const conflicts: DecisionConflict[] = ledger
     .filter((entry) => entry.topic === decision.topic && entry.id !== decision.supersedes)

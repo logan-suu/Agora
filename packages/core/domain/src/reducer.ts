@@ -1,4 +1,5 @@
 import type { Decision } from './ledger';
+import { assertAppendableDecision } from './ledger';
 import type {
   AppState,
   HumanGate,
@@ -152,11 +153,13 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
           unknown
         >[],
       };
-    case 'decisionLedger':
+    case 'decisionLedger': {
+      assertAppendableDecision(state.decisionLedger, value as Decision);
       return {
         ...state,
         decisionLedger: deduplicatedAppend(state.decisionLedger, value) as Decision[],
       };
+    }
     default:
       throw new Error(`no writer registered for append field "${field}"`);
   }

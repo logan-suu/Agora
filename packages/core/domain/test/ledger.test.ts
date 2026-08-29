@@ -52,6 +52,8 @@ describe('addDecision · append semantics (spec §1)', () => {
       makeDecision({ by: '' }),
       makeDecision({ authority: 'pm' as unknown as Decision['authority'] }),
       makeDecision({ ts: Number.NaN }),
+      null as unknown as Decision,
+      undefined as unknown as Decision,
     ];
     for (const bad of malformed) {
       expect(() => addDecision([], bad)).toThrow('invalid decision');
