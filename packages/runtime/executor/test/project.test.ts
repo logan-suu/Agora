@@ -331,3 +331,85 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     }
   });
 });
+
+describe('project slice compression (task 3.4, spec §7 cross-agent slice compression)', () => {
+  // Deliberately local (not imported): asserts the tombstone shape, not module exports.
+  type TombstoneLike = { id: string; topic: string; supersededBy: string };
+
+  const LONG = 'x'.repeat(4200);
+
+  it('PM leaderDecisions collapses over threshold: head rationale travels, superseded rationale replaced by an id-bearing tombstone, WO copies kept', () => {
+    const d1: Decision = {
+      id: 'dec-1',
+      topic: 'cache-eviction',
+      decision: 'LRU over LFU',
+      rationale: `SENTINEL-SUPERSEDED ${LONG}`,
+      authority: 'leader',
+      by: 'leader',
+      ts: 1,
+    };
+    const d2: Decision = {
+      id: 'dec-2',
+      topic: 'cache-eviction',
+      decision: 'TwoQueue over plain LRU',
+      rationale: `SENTINEL-HEAD ${LONG}`,
+      authority: 'leader',
+      by: 'leader',
+      supersedes: 'dec-1',
+      ts: 2,
+    };
+    const agent: Decision = {
+      id: 'dec-3',
+      topic: 'cache-eviction',
+      decision: 'SENTINEL-AGENT-DECISION',
+      rationale: 'architect preference only',
+      authority: 'agent',
+      by: 'ARCHITECT',
+      ts: 3,
+    };
+    const ledger = [d1, d2, agent];
+    const projected = slicesOf(makeState({ decisionLedger: ledger }), 'PM').leaderDecisions as (
+      | Decision
+      | TombstoneLike
+    )[];
+    expect(projected[0]).toEqual({ id: 'dec-1', topic: 'cache-eviction', supersededBy: 'dec-2' });
+    const json = JSON.stringify(projected);
+    expect(json).toContain('SENTINEL-HEAD');
+    expect(json).not.toContain('SENTINEL-SUPERSEDED');
+    expect(json).not.toContain('SENTINEL-AGENT-DECISION');
+    const head = projected[1] as Decision;
+    expect(head).not.toBe(ledger[1]); // WO: defensive copy survives compression
+  });
+
+  it('compressed tombstones keep every role view free of raw-log fields (iron rule 1)', () => {
+    const d1: Decision = {
+      id: 'dec-1',
+      topic: 'cache-eviction',
+      decision: 'LRU over LFU',
+      rationale: LONG,
+      authority: 'leader',
+      by: 'leader',
+      ts: 1,
+    };
+    const d2: Decision = {
+      id: 'dec-2',
+      topic: 'cache-eviction',
+      decision: 'TwoQueue over plain LRU',
+      rationale: LONG,
+      authority: 'leader',
+      by: 'leader',
+      supersedes: 'dec-1',
+      ts: 2,
+    };
+    for (const spec of DEFAULT_ROSTER) {
+      const json = JSON.stringify(
+        slicesOf(makeState({ decisionLedger: [d1, d2], messages: chatLog() }), spec.role),
+      );
+      expect(json).not.toContain('SENTINEL-PM-PAYLOAD');
+      expect(json).not.toContain('SENTINEL-PM-DISPLAY');
+      expect(json).not.toContain('msgId');
+      expect(json).not.toContain('channelId');
+      expect(json).not.toContain('fromRole');
+    }
+  });
+});

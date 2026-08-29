@@ -1,5 +1,10 @@
 import type { AppState, RoleId, RoleSpec } from '@agora/core-domain';
 import type { ProjectionView } from './base';
+import {
+  collapseSupersededDecisions,
+  compressWhenOverThreshold,
+  SLICE_COMPRESSION_THRESHOLD_CHARS,
+} from './slice-compression';
 
 /**
  * Role projection implementing the spec §7 slice table (task 2.4; D1/WO).
@@ -12,7 +17,9 @@ import type { ProjectionView } from './base';
  * empty defaults (R9), annotated with the upgrade task; the §7 view-level
  * channels localContext (Phase 6) and blockingObjections (Phase 8) have no
  * State fields yet and are not roster-declared, so no slice machinery exists
- * for them until then.
+ * for them until then. Cross-agent slice compression (task 3.4, spec §7)
+ * applies to the ledger slice at read time; State stays the complete truth
+ * (see slice-compression.ts for the division of labor with ctx.compaction).
  */
 export function project(
   state: AppState,
@@ -57,9 +64,17 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
       // plan ruling: leader-authority entries only — the slice name and the §2
       // PM row list "relevant leader decisions"; per-role relevance refinement
       // lands with Phase 6 channels (R9 upgrade point). WO: defensive copies.
-      return state.decisionLedger
+      // Task 3.4 (spec §7): read-time slice compression, State stays the
+      // complete truth — rulings and ctx.compaction boundary in
+      // slice-compression.ts.
+      const leaderEntries = state.decisionLedger
         .filter((entry) => entry.authority === 'leader')
         .map((entry) => ({ ...entry }));
+      return compressWhenOverThreshold(
+        leaderEntries,
+        SLICE_COMPRESSION_THRESHOLD_CHARS,
+        collapseSupersededDecisions,
+      );
     }
     case 'repoStructure':
       return {}; // Phase 1 repoSnapshot upgrade point
