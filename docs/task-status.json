@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-29T19:10:06.371Z",
+  "last_updated": "2026-08-30T02:45:02.871Z",
   "current_phase": 3,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -559,8 +559,8 @@
             "3.4"
           ],
           "test_file": "tests/integration/phase3/phase3-exit.test.ts",
-          "notes": "长对话场景回归：上下文规模受控、决策理由可达、交接无损。\n[2026-08-29 开工·用户确认] 状态置 in_progress。进入 EPCC-V Explore：读取 §6 四机制源码与 0.7/1.6/2.5 集成测试先例后出计划等批准。\n[2026-08-29 计划批准·用户确认] 改动面 2 处：①runtime/executor barrel 加性导出 slice-compression（测试需 SLICE_COMPRESSION_THRESHOLD_CHARS，R9 零签名变更）②新建 tests/integration/phase3/phase3-exit.test.ts 三 describe：长对话场景（seed 8 条决策=2 条 supersedes 链+跨 topic 指针+1 agent 条目，2 个交接包引 head+被 supersede+agent 条目，六角色编排跑通）+短对话对照（<阈值逐字投影）+R1 写入门禁直连（agent 越权 supersede leader 拒绝/交接包引用未知 id 拒绝）。唯一 mock=脚本化 LLM（文件头注明，R11）；沙箱/worktree/git/node --test 全真实。\n[2026-08-29 Code+Check] 定向 5/5 绿（修 2 处：seed builder leader 默认 authority；检索链断言改为沿墓碑跳走到 head——链中下一跳可为墓碑，对齐 3.4 塌缩语义）。[门禁实测] typecheck 0 错；lint 0 违规（biome check .，126 files，格式自动修 1 处）；全量 test 324 passed / 2 skipped（36 files，2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。对账：移出本文件实测基线=319 passed / 2 skipped（35 files，init 摘要曾记 317 有 ±2 偏差，以实测为准），319+5=324 零回归。G5：真实沙箱/worktree/git 链路照常真实跑通，唯一 mock=外部 LLM。exit_criteria 逐条验证：上下文规模受控（PM 投影 leaderDecisions 序列化≤4000 阈值且远小于 State 全量，agent 条目被过滤）；决策理由可达（head rationale 全文在投影，墓碑沿 supersededBy 走到 head 检索链闭合）；交接无损（终态 State 台账 8 条完整+handoffPackets 深等，keyDecisions 全部可在 State 解析，被 supersede 的 id 经墓碑可寻址）；四机制就位（台账 R1 seam+投影 pre-step 覆写真实消费+压缩读时塌缩+交接 reducer 校验一次运行全穿过）。跨阶段注意：3.5 为 Phase 3 出口门禁，完成合并后 Phase 4（4.1 依赖 3.5）方可开工。下一步 /commit-agora。",
-          "last_updated": "2026-08-29T19:10:06.371Z"
+          "notes": "长对话场景回归：上下文规模受控、决策理由可达、交接无损。\n[2026-08-29 开工·用户确认] 状态置 in_progress。进入 EPCC-V Explore：读取 §6 四机制源码与 0.7/1.6/2.5 集成测试先例后出计划等批准。\n[2026-08-29 计划批准·用户确认] 改动面 2 处：①runtime/executor barrel 加性导出 slice-compression（测试需 SLICE_COMPRESSION_THRESHOLD_CHARS，R9 零签名变更）②新建 tests/integration/phase3/phase3-exit.test.ts 三 describe：长对话场景（seed 8 条决策=2 条 supersedes 链+跨 topic 指针+1 agent 条目，2 个交接包引 head+被 supersede+agent 条目，六角色编排跑通）+短对话对照（<阈值逐字投影）+R1 写入门禁直连（agent 越权 supersede leader 拒绝/交接包引用未知 id 拒绝）。唯一 mock=脚本化 LLM（文件头注明，R11）；沙箱/worktree/git/node --test 全真实。\n[2026-08-29 Code+Check] 定向 5/5 绿（修 2 处：seed builder leader 默认 authority；检索链断言改为沿墓碑跳走到 head——链中下一跳可为墓碑，对齐 3.4 塌缩语义）。[门禁实测] typecheck 0 错；lint 0 违规（biome check .，126 files，格式自动修 1 处）；全量 test 324 passed / 2 skipped（36 files，2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。对账：移出本文件实测基线=319 passed / 2 skipped（35 files，init 摘要曾记 317 有 ±2 偏差，以实测为准），319+5=324 零回归。G5：真实沙箱/worktree/git 链路照常真实跑通，唯一 mock=外部 LLM。exit_criteria 逐条验证：上下文规模受控（PM 投影 leaderDecisions 序列化≤4000 阈值且远小于 State 全量，agent 条目被过滤）；决策理由可达（head rationale 全文在投影，墓碑沿 supersededBy 走到 head 检索链闭合）；交接无损（终态 State 台账 8 条完整+handoffPackets 深等，keyDecisions 全部可在 State 解析，被 supersede 的 id 经墓碑可寻址）；四机制就位（台账 R1 seam+投影 pre-step 覆写真实消费+压缩读时塌缩+交接 reducer 校验一次运行全穿过）。跨阶段注意：3.5 为 Phase 3 出口门禁，完成合并后 Phase 4（4.1 依赖 3.5）方可开工。下一步 /commit-agora。\n[2026-08-29 提交] PR #32 已创建（test/phase3-exit-integration → dev-1.0.0，https://github.com/logan-suu/Agora/pull/32）：新增 tests/integration/phase3/phase3-exit.test.ts（长对话 3 链 + 短对话对照 + R1 写入门禁直连，5 例）+ runtime-executor barrel 加性导出 slice-compression。门禁全绿：typecheck 0 错 / lint 0 违规 / 全量 324 passed / 2 skipped（基线 319+5 对账闭合零回归）。状态保持 in_progress，待人类合并后 /pr-merge-agora 标 done（合并即 Phase 3 出口达成，Phase 4 解锁）。",
+          "last_updated": "2026-08-30T02:45:02.871Z"
         }
       ]
     },
