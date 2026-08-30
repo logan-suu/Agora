@@ -231,12 +231,13 @@ function dispatchAfterPlanning(state: AppState, clock: Clock): CoordinatorDecisi
 }
 
 function activeCoderSubtaskId(state: AppState): string {
-  const subtask = state.subtasks.find(
+  const active = state.subtasks.filter(
     (entry) => entry.ownerRole === 'CODER' && entry.status === 'in_progress',
   );
-  if (subtask === undefined) {
+  const subtask = active[0];
+  if (active.length !== 1 || subtask === undefined) {
     throw new Error(
-      'no in_progress CODER subtask in state; sequential routing requires exactly one active subtask',
+      `sequential routing requires exactly one in_progress CODER subtask, found ${active.length}`,
     );
   }
   return subtask.id;

@@ -580,6 +580,14 @@ describe('coordinator.decide · tier-aware topology routing (task 4.2, spec §3)
     expect(next.subtasks[0]?.status).toBe('in_progress');
   });
 
+  it('throws when more than one CODER subtask is in_progress (invariant enforcement)', () => {
+    const state = applyMutations(tier2SplitState(), [
+      mergeByIdMutation('subtasks', 't-1-sub-1', { status: 'in_progress' }),
+      setMutation('phase', 'coding'),
+    ]);
+    expect(() => decide(state, clock())).toThrow(/exactly one in_progress CODER subtask/);
+  });
+
   it('review changes_requested reopens all subtasks and re-activates the first (裁决③保守重开, DEF-013)', () => {
     const state = applyMutations(tier2SplitState(), [
       mergeByIdMutation('subtasks', 't-1-sub-0', { status: 'done' }),

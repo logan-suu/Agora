@@ -44,7 +44,12 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
         goal: state.goal,
         phase: state.phase,
         iterationCount: state.iterationCount,
-        complexity: state.complexity ?? null, // task 4.2: tier wired from entry (4.1 ruling ③)
+        // task 4.2: tier wired from entry (4.1 ruling ③). WO: defensive
+        // copies — the projection must never hand out the live State object.
+        complexity:
+          state.complexity === undefined
+            ? null
+            : { tier: state.complexity.tier, signals: { ...state.complexity.signals } },
         workers: [], // Phase 9 worker registry
         testSummary:
           state.testResults === undefined

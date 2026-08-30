@@ -99,6 +99,11 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     expect(slicesOf(makeState(), 'COORDINATOR')['global.summary']).toMatchObject({
       complexity: null,
     });
+    // WO: the projection copies the slice — the live State object never leaks.
+    const summary = slicesOf(tiered, 'COORDINATOR')['global.summary'] as {
+      complexity: { signals: Record<string, unknown> } | null;
+    };
+    expect(summary.complexity?.signals).not.toBe(tiered.complexity?.signals);
   });
 
   it('PM gets goal, full requirements, and leader decisions with rationale attached (iron rule 3)', () => {
