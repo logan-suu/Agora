@@ -196,6 +196,23 @@
       "resolved_by": null,
       "created_at": "2026-08-29T12:45:00.000Z",
       "notes": "Resolution condition: when Phase 8 conflict classification lands (spec §1 '同 topic 冲突以原始信号返回，分类逻辑留 Phase 8'), rule whether supersedes must be same-topic and, if so, extend assertSupersedesIsLegal with a topic-equality check + ledger regression tests + an R12 实装记录 in 详细设计方案 §1. Until then the read-side collapse is topic-scoped, which bounds the blast radius to reduced compression (never information loss)."
+    },
+    {
+      "id": "DEF-012",
+      "source": "/test-phase-agora Phase 3 exit coverage review + user ruling (2026-08-30)",
+      "pr": 32,
+      "pr_url": "https://github.com/logan-suu/Agora/pull/32",
+      "comment_id": null,
+      "comment_url": null,
+      "task": "3.5",
+      "severity": "minor",
+      "item": "Coordinator does not generate handoffPackets at role switches (five nextRole flips in coordinator.ts)",
+      "detail": "Spec source: 开发计划安排 §6.3 交接包「生成逻辑：在角色切换时由 Coordinator 触发」(mirrored by task 3.2's own description). Task 3.2 遗留① deferred the wiring to 3.3/3.5 (resolution condition: the five nextRole flips in coordinator.ts dispatch/evaluate functions), but 3.3 (projection scope) and 3.5 (user-approved scope: barrel export + exit test only) both shipped without it, and the deferral was never ledgered. Surfaced by the Phase 3 exit coverage review (/test-phase-agora): cross-package chain coverage 5/6 — phase3-exit seeds handoff packets manually, so a real run has no generation path. Already in place: HandoffPacket structure + assertValidHandoff/assertAppendableHandoff gates (core/domain/handoff.ts), the reducer append gate with keyDecisions referential integrity, and R1 seam assertions in phase3-exit — only the generation trigger is missing.",
+      "target_phase": 4,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-30T03:22:40.000Z",
+      "notes": "Resolution condition: wire Coordinator handoff generation in task 4.4 (Coordinator progress ledger) — the first task where Coordinator mints structured ledger/state mutations. The five nextRole flips (dispatchPM→ARCHITECT, planning→CODER, coding→TESTER, testing-loop→CODER, review-loop→CODER) must append a HandoffPacket built from State (fromRole=stage just finished, done=stage outputs summary, keyDecisions=cited decision ids, fileRefs=state file refs). Acceptance: an integration chain asserts packets appear WITHOUT manual seeding. Phase 3 exit accepted with this gap recorded (user ruling 2026-08-30, PR #32 scope unchanged); check this entry at the Phase 4 exit gate."
     }
   ]
 }
