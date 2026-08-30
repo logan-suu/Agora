@@ -299,7 +299,7 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 
 新会话一律先执行 `$agora-init-session`。
 
-```
+```text
 Explore  读 documents_required 章节 + 相关代码；逐字粘贴约束原文；发现文档矛盾必须暂停上报
 Plan     产出实现计划（改哪些文件/接口/schema/测试），等人确认
 Code     小步实现，一次一个可验证单元；TDD：写测试→红→写实现→绿
@@ -429,7 +429,7 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 
 > Codex 从仓库根目录向下自动加载 `AGENTS.md`，并从 `.agents/skills/` 发现项目级工作流。Skill 通过 `$skill-name` 显式调用，也可在请求与其 description 匹配时自动触发。`.opencode/commands/` 仅为迁移期兼容副本，不是 Codex 真相源。
 
-```
+```text
 - 新会话第一条工作流永远是 `$agora-init-session`
 - 优先读本文件与相关规格章节再动手；不要凭想象实现
 - 大改动先出计划让人确认；小步提交便于验证
@@ -440,7 +440,7 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 
 项目级 Skills：
 
-```
+```text
 $agora-init-session     新会话初始化          $agora-status           状态速览
 $agora-next-task        下一个 ready 任务      $agora-do-task <id>     执行指定任务
 $agora-retry-task       重试中断任务           $agora-read-spec        规格速读
@@ -517,7 +517,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 
 ## 14. 动态上下文
 
-```
+```text
 人力        1 名独立开发者（AI Native 全程，Codex）
 当前阶段    禁止在本文件静态记录；每次从 docs/task-status.json 的 current_phase 与任务 status 读取
 阶段策略    先回合制单 worker 跑稳闭环，Phase 9 再升真并行；每阶段有可演示产出才进下一阶段
