@@ -14,7 +14,7 @@ import type { Executor, StepResult } from '@agora/runtime-executor';
 import { describe, expect, it } from 'vitest';
 import { MAX_ITERATIONS } from '../src/coordinator';
 import type { OrchestrationDeps } from '../src/index';
-import { runOrchestration, WorkerRuntime } from '../src/index';
+import { entry, runOrchestration, WorkerRuntime } from '../src/index';
 
 class FakeExecutor implements Executor {
   private readonly queue: StepResult[];
@@ -244,5 +244,30 @@ describe('runOrchestration · human_gate escalation hook (task 2.3)', () => {
     expect(final.humanGate?.phase).toBe('testing');
     expect(final.messages.filter((m) => m.type === 'feedback')).toHaveLength(MAX_ITERATIONS);
     expect(final.messages.filter((m) => m.type === 'escalation')).toHaveLength(1);
+  });
+});
+
+describe('entry · complexity evaluation (task 4.1, spec §3)', () => {
+  it('evaluates and writes the complexity slice exactly once for a Tier 0 goal', () => {
+    const entered = entry(createInitialAppState('lru-1', '实现带 TTL 的 LRU 缓存'));
+    expect(entered.complexity?.tier).toBe(0);
+    expect(entered.complexity?.signals.rule).toBe('tier0.single_entity');
+  });
+
+  it('preserves an already-set complexity untouched so replays stay idempotent', () => {
+    const seeded = applyMutations(createInitialAppState('lru-1', 'g'), [
+      setMutation('complexity', { tier: 2, signals: { rule: 'tier2.multi_module' } }),
+    ]);
+    const entered = entry(seeded);
+    expect(entered).toBe(seeded);
+    expect(entered.complexity).toEqual({ tier: 2, signals: { rule: 'tier2.multi_module' } });
+  });
+
+  it('touches nothing besides complexity (writes go through applyMutations only)', () => {
+    const initial = createInitialAppState('lru-1', '实现带 TTL 的 LRU 缓存');
+    const entered = entry(initial);
+    const { complexity, ...rest } = entered;
+    expect(complexity).toBeDefined();
+    expect(rest).toEqual(initial);
   });
 });

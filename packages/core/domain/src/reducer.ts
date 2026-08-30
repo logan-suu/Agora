@@ -4,6 +4,7 @@ import type { Decision } from './ledger';
 import { assertAppendableDecision } from './ledger';
 import type {
   AppState,
+  Complexity,
   HumanGate,
   Message,
   Phase,
@@ -40,6 +41,7 @@ export const SET_FIELDS = [
   'integration',
   'architecture',
   'conventions',
+  'complexity',
 ] as const;
 export type SetField = (typeof SET_FIELDS)[number];
 
@@ -58,6 +60,7 @@ export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'humanGate',
   'architecture',
   'conventions',
+  'complexity',
 ];
 
 export type Mutation =
@@ -104,6 +107,19 @@ function isHumanGate(value: unknown): value is HumanGate {
     record.options.every((option) => typeof option === 'string') &&
     typeof record.phase === 'string' &&
     PHASES.includes(record.phase as Phase)
+  );
+}
+
+function isComplexity(value: unknown): value is Complexity {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.tier === 'number' &&
+    Number.isInteger(record.tier) &&
+    (record.tier === 0 || record.tier === 1 || record.tier === 2) &&
+    typeof record.signals === 'object' &&
+    record.signals !== null &&
+    !Array.isArray(record.signals)
   );
 }
 
@@ -238,6 +254,11 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
         throw new Error('conventions must be a non-array object');
       }
       return { ...state, conventions: value as Record<string, unknown> };
+    case 'complexity':
+      if (!isComplexity(value)) {
+        throw new Error('complexity must be { tier: 0 | 1 | 2; signals: Record<string, unknown> }');
+      }
+      return { ...state, complexity: value };
     default:
       throw new Error(`no writer registered for set field "${field}"`);
   }
