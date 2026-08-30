@@ -4,6 +4,8 @@ import { evaluateRouteWhen } from './route-conditions';
 
 export const MAX_ITERATIONS = 8;
 
+export const TEST_FAILURE_REVIEW_THRESHOLD = 2;
+
 export const HUMAN_GATE_OPTIONS: readonly string[] = ['extend', 'take-over', 'abort'];
 
 export interface Assignment {
@@ -54,7 +56,7 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     case 'testing':
       return evaluateTestResults(state, clock, options?.roster);
     case 'review':
-      return evaluateReview(state, clock);
+      return evaluateReview(state, clock, options?.roster);
     case 'done':
       return { route: { kind: 'finalize' }, mutations: [] };
     default:
@@ -282,6 +284,31 @@ function ifIterationLimit(state: AppState, clock: Clock): CoordinatorDecision | 
   };
 }
 
+function latestCoordinatorControlMessage(state: AppState): Message | undefined {
+  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+    const message = state.messages[index];
+    if (
+      message !== undefined &&
+      message.fromRole === 'COORDINATOR' &&
+      (message.type === 'announce' || message.type === 'feedback' || message.type === 'escalation')
+    ) {
+      return message;
+    }
+  }
+  return undefined;
+}
+
+function currentTestFailureStreak(state: AppState): number {
+  const latest = latestCoordinatorControlMessage(state);
+  if (latest?.payload.reason !== 'tests_failed') return 0;
+  const recorded = latest.payload.failureStreak;
+  return typeof recorded === 'number' && Number.isInteger(recorded) && recorded > 0 ? recorded : 1;
+}
+
+function isRootCauseReview(state: AppState): boolean {
+  return latestCoordinatorControlMessage(state)?.payload.reason === 'repeated_test_failures';
+}
+
 function evaluateTestResults(
   state: AppState,
   clock: Clock,
@@ -347,6 +374,33 @@ function evaluateTestResults(
   }
   const escalation = ifIterationLimit(state, clock);
   if (escalation !== undefined) return escalation;
+  const failureStreak = currentTestFailureStreak(state) + 1;
+  if (failureStreak >= TEST_FAILURE_REVIEW_THRESHOLD && hasRole(roster, 'REVIEWER')) {
+    return {
+      route: { kind: 'worker', batch: [{ role: 'REVIEWER' }], parallel: false },
+      mutations: [
+        setMutation('iterationCount', state.iterationCount + 1),
+        setMutation('nextRole', 'REVIEWER'),
+        setMutation('phase', 'review'),
+        appendMutation(
+          'messages',
+          announce(
+            clock,
+            {
+              nextRole: 'REVIEWER',
+              reason: 'repeated_test_failures',
+              failureStreak,
+              failed: state.testResults.failed,
+              total: state.testResults.total,
+            },
+            `测试连续失败 ${failureStreak} 轮，派发 REVIEWER 审查根因`,
+          ),
+        ),
+      ],
+    };
+  }
+  const reviewerUnavailable =
+    failureStreak >= TEST_FAILURE_REVIEW_THRESHOLD && !hasRole(roster, 'REVIEWER');
   const feedback: Message = {
     msgId: clock.newId(),
     channelId: 'main',
@@ -355,8 +409,10 @@ function evaluateTestResults(
     type: 'feedback',
     payload: {
       reason: 'tests_failed',
+      failureStreak,
       failed: state.testResults.failed,
       total: state.testResults.total,
+      ...(reviewerUnavailable ? { degraded: true, degradedReason: 'reviewer_not_rostered' } : {}),
     },
     display: `测试未通过（${state.testResults.failed}/${state.testResults.total}），退回 CODER 第 ${state.iterationCount + 1} 轮`,
     ts: clock.now(),
@@ -403,7 +459,26 @@ function reopenForRework(state: AppState): { mutations: Mutation[]; subtaskId: s
   };
 }
 
-function evaluateReview(state: AppState, clock: Clock): CoordinatorDecision {
+function upgradedComplexity(state: AppState, verdictEntry: Record<string, unknown>) {
+  const previousTier = tierOf(state);
+  return {
+    tier: Math.min(2, previousTier + 1) as 0 | 1 | 2,
+    signals: {
+      ...(state.complexity?.signals ?? {}),
+      escalation: {
+        reason: 'reviewer_architecture_issue',
+        previousTier,
+        reviewCommentId: typeof verdictEntry.id === 'string' ? verdictEntry.id : null,
+      },
+    },
+  };
+}
+
+function evaluateReview(
+  state: AppState,
+  clock: Clock,
+  roster: readonly RoleSpec[] | undefined,
+): CoordinatorDecision {
   const verdictEntry = reviewVerdictEntry(state);
   if (verdictEntry === undefined) {
     throw new Error(
@@ -412,11 +487,47 @@ function evaluateReview(state: AppState, clock: Clock): CoordinatorDecision {
   }
   const verdict = verdictEntry.verdict;
   if (verdict === 'approved') {
+    if (isRootCauseReview(state)) {
+      throw new Error(
+        'repeated-test-failure root-cause review requires a changes_requested verdict',
+      );
+    }
     return { route: { kind: 'finalize' }, mutations: [] };
   }
   if (verdict === 'changes_requested') {
     const escalation = ifIterationLimit(state, clock);
     if (escalation !== undefined) return escalation;
+    const issueScope = verdictEntry.issueScope ?? 'implementation';
+    if (issueScope !== 'implementation' && issueScope !== 'architecture') {
+      throw new Error('REVIEWER verdict issueScope must be "implementation" or "architecture"');
+    }
+    if (issueScope === 'architecture' && hasRole(roster, 'ARCHITECT')) {
+      const complexity = upgradedComplexity(state, verdictEntry);
+      return {
+        route: { kind: 'worker', batch: [{ role: 'ARCHITECT' }], parallel: false },
+        mutations: [
+          setMutation('iterationCount', state.iterationCount + 1),
+          setMutation('nextRole', 'ARCHITECT'),
+          setMutation('phase', 'planning'),
+          setMutation('complexity', complexity),
+          appendMutation(
+            'messages',
+            announce(
+              clock,
+              {
+                nextRole: 'ARCHITECT',
+                reason: 'reviewer_architecture_issue',
+                previousTier: tierOf(state),
+                tier: complexity.tier,
+                reviewCommentId: complexity.signals.escalation.reviewCommentId,
+              },
+              `REVIEWER 指出架构问题，复杂度 Tier ${tierOf(state)}→${complexity.tier}，拉 ARCHITECT 重设计`,
+            ),
+          ),
+        ],
+      };
+    }
+    const architectUnavailable = issueScope === 'architecture';
     const feedback: Message = {
       msgId: clock.newId(),
       channelId: 'main',
@@ -425,8 +536,12 @@ function evaluateReview(state: AppState, clock: Clock): CoordinatorDecision {
       type: 'feedback',
       payload: {
         reason: 'review_changes_requested',
+        issueScope,
         summary: verdictEntry.summary ?? null,
         comments: state.reviewComments,
+        ...(architectUnavailable
+          ? { degraded: true, degradedReason: 'architect_not_rostered' }
+          : {}),
       },
       display: `评审退回（${state.reviewComments.length} 条意见），退回 CODER 第 ${state.iterationCount + 1} 轮`,
       ts: clock.now(),
@@ -443,6 +558,9 @@ function evaluateReview(state: AppState, clock: Clock): CoordinatorDecision {
         setMutation('iterationCount', state.iterationCount + 1),
         setMutation('nextRole', 'CODER'),
         setMutation('phase', 'coding'),
+        ...(architectUnavailable
+          ? [setMutation('complexity', upgradedComplexity(state, verdictEntry))]
+          : []),
         appendMutation('messages', feedback),
       ],
     };

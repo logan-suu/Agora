@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import {
   type AppState,
+  appendMutation,
   applyMutations,
   mergeByIdMutation,
   PHASE0_ROSTER,
@@ -18,6 +19,7 @@ import {
   createPhase2Runtime,
   PHASE2_TOOL_SURFACE,
   type Phase2Runtime,
+  reviewerTurnMutations,
 } from '../../../packages/core/__tests__/e2e/phase2-runtime';
 
 /**
@@ -59,6 +61,35 @@ import {
 const SUBTASK_STATUS_FILE = 'subtask-status.json';
 /** TESTER handoff file (Phase 0 protocol, reused). */
 const TEST_RESULTS_FILE = 'test-results.json';
+
+describe('REVIEWER structured verdict scope (task 4.3)', () => {
+  it('accepts architecture scope and preserves it in the append mutation', () => {
+    expect(
+      reviewerTurnMutations(
+        '[{"id":"rv-1","kind":"verdict","verdict":"changes_requested","issueScope":"architecture","summary":"split boundary"}]',
+      ),
+    ).toEqual([
+      appendMutation('reviewComments', {
+        id: 'rv-1',
+        kind: 'verdict',
+        verdict: 'changes_requested',
+        issueScope: 'architecture',
+        summary: 'split boundary',
+      }),
+    ]);
+  });
+
+  it('keeps missing issueScope backward-compatible and rejects unknown scopes', () => {
+    expect(() =>
+      reviewerTurnMutations(
+        '[{"id":"rv-1","kind":"verdict","verdict":"changes_requested","issueScope":"style"}]',
+      ),
+    ).toThrow(/issueScope/);
+    expect(
+      reviewerTurnMutations('[{"id":"rv-2","kind":"verdict","verdict":"changes_requested"}]'),
+    ).toHaveLength(1);
+  });
+});
 
 const MATH_SOURCE_V1 = `// Simple math module (Phase 2 exit task).
 function add(a, b) {

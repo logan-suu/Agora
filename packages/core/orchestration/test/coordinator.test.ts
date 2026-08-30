@@ -86,6 +86,26 @@ function reviewState(verdict: 'approved' | 'changes_requested', iterationCount =
   ]);
 }
 
+const FULL_ROSTER: RoleSpec[] = (
+  ['COORDINATOR', 'PM', 'ARCHITECT', 'CODER', 'TESTER', 'REVIEWER'] as const
+).map((role) => ({
+  role,
+  enabled: true,
+  executor: 'harness' as const,
+  systemPrompt: '',
+  tools: [],
+  projection: [],
+  routeWhen: 'always',
+}));
+
+function nextFailedTestRound(state: AppState): AppState {
+  return applyMutations(state, [
+    setMutation('phase', 'testing'),
+    setMutation('nextRole', 'TESTER'),
+    setMutation('testResults', { passed: false, total: 3, failed: 3, failures: [] }),
+  ]);
+}
+
 describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () => {
   it('routes PM from clarifying while the goal is ambiguous (no requirements yet)', () => {
     const decision = decide(createInitialAppState('t-1', '实现带 TTL 的 LRU 缓存'), clock());
@@ -366,22 +386,161 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
   });
 });
 
-describe('coordinator.decide · tier-aware topology routing (task 4.2, spec §3)', () => {
-  // Full six-role machine built inline (core-domain only exports PHASE0_ROSTER;
-  // roles-definitions is not an orchestration dependency — same pattern as the
-  // pmOnlyRoster test above).
-  const FULL_ROSTER: RoleSpec[] = (
-    ['COORDINATOR', 'PM', 'ARCHITECT', 'CODER', 'TESTER', 'REVIEWER'] as const
-  ).map((role) => ({
-    role,
-    enabled: true,
-    executor: 'harness' as const,
-    systemPrompt: '',
-    tools: [],
-    projection: [],
-    routeWhen: 'always',
-  }));
+describe('coordinator.decide · feedback escalation (task 4.3, spec §3)', () => {
+  function afterFirstTestFailure(): AppState {
+    const first = testingState(false, 0);
+    return applyMutations(
+      first,
+      decide(first, {
+        newId: () => 'first-failure-feedback',
+        now: () => 900,
+        roster: FULL_ROSTER,
+      }).mutations,
+    );
+  }
 
+  it('keeps the first consecutive test failure in the CODER repair loop', () => {
+    const state = testingState(false, 0);
+    const decision = decide(state, { ...clock(), roster: FULL_ROSTER });
+
+    expect(decision.route.kind).toBe('worker');
+    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
+    expect(decision.route.batch[0].role).toBe('CODER');
+    const next = applyMutations(state, decision.mutations);
+    expect(next.messages.at(-1)?.payload).toMatchObject({
+      reason: 'tests_failed',
+      failureStreak: 1,
+    });
+  });
+
+  it('routes REVIEWER on the second consecutive test failure when rostered', () => {
+    const state = nextFailedTestRound(afterFirstTestFailure());
+    const decision = decide(state, { ...clock(), roster: FULL_ROSTER });
+
+    expect(decision.route.kind).toBe('worker');
+    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
+    expect(decision.route.batch[0].role).toBe('REVIEWER');
+    const next = applyMutations(state, decision.mutations);
+    expect(next.phase).toBe('review');
+    expect(next.nextRole).toBe('REVIEWER');
+    expect(next.iterationCount).toBe(2);
+    expect(next.messages.at(-1)?.payload).toMatchObject({
+      reason: 'repeated_test_failures',
+      failureStreak: 2,
+    });
+  });
+
+  it('degrades visibly to CODER when the repeated-failure roster has no REVIEWER', () => {
+    const state = nextFailedTestRound(afterFirstTestFailure());
+    const decision = decide(state, { ...clock(), roster: PHASE0_ROSTER });
+
+    expect(decision.route.kind).toBe('worker');
+    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
+    expect(decision.route.batch[0].role).toBe('CODER');
+    const next = applyMutations(state, decision.mutations);
+    expect(next.messages.at(-1)?.payload).toMatchObject({
+      reason: 'tests_failed',
+      failureStreak: 2,
+      degraded: true,
+      degradedReason: 'reviewer_not_rostered',
+    });
+  });
+
+  it('keeps iteration-limit humanGate above repeated-failure escalation', () => {
+    const state = applyMutations(nextFailedTestRound(afterFirstTestFailure()), [
+      setMutation('iterationCount', MAX_ITERATIONS),
+    ]);
+    expect(decide(state, { ...clock(), roster: FULL_ROSTER }).route.kind).toBe('human_gate');
+  });
+
+  it('defaults a missing issueScope to implementation and returns review changes to CODER', () => {
+    const decision = decide(reviewState('changes_requested'), {
+      ...clock(),
+      roster: FULL_ROSTER,
+    });
+    expect(decision.route.kind).toBe('worker');
+    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
+    expect(decision.route.batch[0].role).toBe('CODER');
+  });
+
+  it.each([
+    { from: 0 as const, to: 1 as const },
+    { from: 1 as const, to: 2 as const },
+    { from: 2 as const, to: 2 as const },
+  ])('upgrades architecture scope monotonically from Tier $from to $to', ({ from, to }) => {
+    const base = applyMutations(reviewState('changes_requested'), [
+      setMutation('complexity', { tier: from, signals: { rule: 'test-fixture', keep: true } }),
+      appendMutation('reviewComments', {
+        id: `rc-architecture-${from}`,
+        kind: 'verdict',
+        verdict: 'changes_requested',
+        issueScope: 'architecture',
+        summary: 'boundary design is wrong',
+      }),
+    ]);
+    const decision = decide(base, { ...clock(), roster: FULL_ROSTER });
+
+    expect(decision.route.kind).toBe('worker');
+    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
+    expect(decision.route.batch[0].role).toBe('ARCHITECT');
+    const next = applyMutations(base, decision.mutations);
+    expect(next.phase).toBe('planning');
+    expect(next.complexity).toEqual({
+      tier: to,
+      signals: {
+        rule: 'test-fixture',
+        keep: true,
+        escalation: {
+          reason: 'reviewer_architecture_issue',
+          previousTier: from,
+          reviewCommentId: `rc-architecture-${from}`,
+        },
+      },
+    });
+  });
+
+  it('degrades visibly to CODER when architecture escalation has no ARCHITECT', () => {
+    const state = applyMutations(reviewState('changes_requested'), [
+      appendMutation('reviewComments', {
+        id: 'rc-architecture',
+        kind: 'verdict',
+        verdict: 'changes_requested',
+        issueScope: 'architecture',
+      }),
+    ]);
+    const decision = decide(state, { ...clock(), roster: PHASE0_ROSTER });
+
+    expect(decision.route.kind).toBe('worker');
+    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
+    expect(decision.route.batch[0].role).toBe('CODER');
+    const next = applyMutations(state, decision.mutations);
+    expect(next.messages.at(-1)?.payload).toMatchObject({
+      degraded: true,
+      degradedReason: 'architect_not_rostered',
+    });
+  });
+
+  it('rejects approved verdicts during a repeated-test-failure root-cause review', () => {
+    const secondFailure = nextFailedTestRound(afterFirstTestFailure());
+    const review = applyMutations(
+      secondFailure,
+      decide(secondFailure, { ...clock(), roster: FULL_ROSTER }).mutations,
+    );
+    const withVerdict = applyMutations(review, [
+      appendMutation('reviewComments', {
+        id: 'rc-invalid-approved',
+        kind: 'verdict',
+        verdict: 'approved',
+      }),
+    ]);
+
+    expect(() => decide(withVerdict, { ...clock(), roster: FULL_ROSTER })).toThrow(
+      /root-cause review.*changes_requested/,
+    );
+  });
+});
+
+describe('coordinator.decide · tier-aware topology routing (task 4.2, spec §3)', () => {
   function tiered(tier: 0 | 1 | 2, state: AppState): AppState {
     return applyMutations(state, [
       setMutation('complexity', { tier, signals: { rule: 'test-fixture' } }),

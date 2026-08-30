@@ -78,7 +78,7 @@ const PHASE2_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   TESTER:
     '\n\n[Phase 2 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
   REVIEWER:
-    '\n\n[Phase 2 working rules]\n- Your §2 grant is read-only: fs_read to inspect files, git_diff to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array as your final message; the verdict entry must be shaped {"kind":"verdict","verdict":"approved"|"changes_requested","summary":"..."} and may be followed by comment entries.',
+    '\n\n[Phase 2 working rules]\n- Your §2 grant is read-only: fs_read to inspect files, git_diff to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array as your final message; the verdict entry must be shaped {"kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."} and may be followed by comment entries. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested.',
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -172,6 +172,16 @@ export function reviewerTurnMutations(text: string | null): Mutation[] {
     if (entry.kind === 'verdict') {
       if (entry.verdict !== 'approved' && entry.verdict !== 'changes_requested') {
         throw new Error('REVIEWER verdict must be "approved" or "changes_requested"');
+      }
+      if (
+        entry.issueScope !== undefined &&
+        entry.issueScope !== 'implementation' &&
+        entry.issueScope !== 'architecture'
+      ) {
+        throw new Error('REVIEWER verdict issueScope must be "implementation" or "architecture"');
+      }
+      if (entry.verdict === 'approved' && entry.issueScope === 'architecture') {
+        throw new Error('REVIEWER approved verdict cannot use architecture issueScope');
       }
     }
     return appendMutation('reviewComments', entry);
