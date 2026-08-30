@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-29T12:45:00.000Z",
+  "last_updated": "2026-08-30T03:36:59.095Z",
   "items": [
     {
       "id": "DEF-001",
@@ -174,11 +174,11 @@
       "severity": "minor",
       "item": "AppState.pendingPatch has no write op in the §1 Mutation union",
       "detail": "§1 defines pendingPatch (code-layer reference field) but the Mutation union lists no op for it — same gap class as #22/#25. Task 2.4 projection reads it read-only with an explicit null default (R9, no silent absence). Unlocked writers are consumer-driven per repo precedent (2.2 requirements, 2.4 conventions), and there is no real consumer yet: TESTER/REVIEWER consume worktree path refs via branchOrPatch.worktrees and can pull diffs themselves with git/fs tools (iron rule 2 — truth lives in the worktree).",
-      "target_phase": 3,
+      "target_phase": 4,
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-08-28T17:12:53.000Z",
-      "notes": "Resolution condition: unlock the pendingPatch set op when a real consumer lands — evaluate at task 2.5 e2e (does the CODER patch-submission flow need to carry patch metadata through State for the REVIEWER pendingDiff slice?), else slide to Phase 3 patch-reference work. EVALUATED at 2.5 (user-approved disposition): the six-role e2e proves the CODER→REVIEWER patch flow works entirely via worktree refs (branchOrPatch.worktrees slice) + REVIEWER's in-loop git_diff — final state has pendingPatch unset for the whole run (asserted in phase2-exit chain 1), so no consumer exists. Sliding to Phase 3 patch-reference work; unlock still follows the pre-paved path (SET_FIELDS + ENABLED_SET_FIELDS + applySet case, signature unchanged) plus an R12 实装记录 in 详细设计方案 §1."
+      "notes": "Resolution condition: unlock the pendingPatch set op when a real consumer lands — evaluate at task 2.5 e2e (does the CODER patch-submission flow need to carry patch metadata through State for the REVIEWER pendingDiff slice?), else slide to Phase 3 patch-reference work. EVALUATED at 2.5 (user-approved disposition): the six-role e2e proves the CODER→REVIEWER patch flow works entirely via worktree refs (branchOrPatch.worktrees slice) + REVIEWER's in-loop git_diff — final state has pendingPatch unset for the whole run (asserted in phase2-exit chain 1), so no consumer exists. Sliding to Phase 3 patch-reference work; unlock still follows the pre-paved path (SET_FIELDS + ENABLED_SET_FIELDS + applySet case, signature unchanged) plus an R12 实装记录 in 详细设计方案 §1. [2026-08-30 user ruling, option A] Phase 3 is closing with no consumer landed, so the entry is re-pointed target_phase 3 → 4 instead of lingering past its target: the pendingPatch write op stays locked until a real patch-reference consumer appears (unlock path unchanged). Re-check at the Phase 4 exit gate."
     },
     {
       "id": "DEF-011",
@@ -196,6 +196,23 @@
       "resolved_by": null,
       "created_at": "2026-08-29T12:45:00.000Z",
       "notes": "Resolution condition: when Phase 8 conflict classification lands (spec §1 '同 topic 冲突以原始信号返回，分类逻辑留 Phase 8'), rule whether supersedes must be same-topic and, if so, extend assertSupersedesIsLegal with a topic-equality check + ledger regression tests + an R12 实装记录 in 详细设计方案 §1. Until then the read-side collapse is topic-scoped, which bounds the blast radius to reduced compression (never information loss)."
+    },
+    {
+      "id": "DEF-012",
+      "source": "/test-phase-agora Phase 3 exit coverage review + user ruling (2026-08-30)",
+      "pr": 32,
+      "pr_url": "https://github.com/logan-suu/Agora/pull/32",
+      "comment_id": null,
+      "comment_url": null,
+      "task": "3.5",
+      "severity": "minor",
+      "item": "Coordinator does not generate handoffPackets at role switches (five nextRole flips in coordinator.ts)",
+      "detail": "Spec source: 开发计划安排 §6.3 交接包「生成逻辑：在角色切换时由 Coordinator 触发」(mirrored by task 3.2's own description). Task 3.2 遗留① deferred the wiring to 3.3/3.5 (resolution condition: the five nextRole flips in coordinator.ts dispatch/evaluate functions), but 3.3 (projection scope) and 3.5 (user-approved scope: barrel export + exit test only) both shipped without it, and the deferral was never ledgered. Surfaced by the Phase 3 exit coverage review (/test-phase-agora): cross-package chain coverage 5/6 — phase3-exit seeds handoff packets manually, so a real run has no generation path. Already in place: HandoffPacket structure + assertValidHandoff/assertAppendableHandoff gates (core/domain/handoff.ts), the reducer append gate with keyDecisions referential integrity, and R1 seam assertions in phase3-exit — only the generation trigger is missing.",
+      "target_phase": 4,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-30T03:22:40.000Z",
+      "notes": "Resolution condition: wire Coordinator handoff generation in task 4.4 (Coordinator progress ledger) — the first task where Coordinator mints structured ledger/state mutations. The five nextRole flips (dispatchPM→ARCHITECT, planning→CODER, coding→TESTER, testing-loop→CODER, review-loop→CODER) must append a HandoffPacket built from State (fromRole=stage just finished, done=stage outputs summary, keyDecisions=cited decision ids, fileRefs=state file refs). Acceptance: an integration chain asserts packets appear WITHOUT manual seeding. Phase 3 exit accepted with this gap recorded (user ruling 2026-08-30, PR #32 scope unchanged); check this entry at the Phase 4 exit gate."
     }
   ]
 }
