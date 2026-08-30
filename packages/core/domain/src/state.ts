@@ -84,6 +84,11 @@ export interface HumanGate {
   phase: Phase;
 }
 
+export interface Complexity {
+  tier: 0 | 1 | 2;
+  signals: Record<string, unknown>;
+}
+
 export interface AppState {
   taskId: string;
   goal: string;
@@ -101,6 +106,7 @@ export interface AppState {
   testResults?: TestResults;
   nextRole?: string;
   humanGate?: HumanGate;
+  complexity?: Complexity;
 }
 
 export function createInitialAppState(taskId: string, goal: string): AppState {

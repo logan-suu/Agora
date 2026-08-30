@@ -1,5 +1,6 @@
 import type { AppState, RoleSpec } from '@agora/core-domain';
 import { applyMutations, setMutation } from '@agora/core-domain';
+import { evaluateComplexity } from './complexity';
 import { decide } from './coordinator';
 import type { WorkerRuntime } from './worker-runtime';
 
@@ -14,8 +15,10 @@ export interface OrchestrationDeps {
 }
 
 export function entry(state: AppState): AppState {
-  // Phase 0 退化：State 已由 createInitialAppState 初始化；complexity 评估归 Tier 任务（4.1）。
-  return state;
+  if (state.complexity !== undefined) return state;
+  return applyMutations(state, [
+    setMutation('complexity', evaluateComplexity({ goal: state.goal })),
+  ]);
 }
 
 export async function runOrchestration(

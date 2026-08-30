@@ -357,6 +357,7 @@ describe('mutation builders', () => {
     // Task 2.4 Phase 2 unlock: conventions feeds the §7 projection slice (ARCHITECT/CODER/REVIEWER).
     // Task 3.1 Phase 3 unlock: decisionLedger records decisions with authority levels (spec §1 / blueprint §14).
     // Task 3.2 Phase 3 unlock: handoffPackets carry structured role-switch handoffs (spec §1 / pattern ④).
+    // Task 4.1 Phase 4 unlock: complexity.tier feeds adaptive orchestration (spec §3).
     expect([...ENABLED_APPEND_FIELDS]).toEqual([
       'messages',
       'decisionLedger',
@@ -372,6 +373,7 @@ describe('mutation builders', () => {
       'humanGate',
       'architecture',
       'conventions',
+      'complexity',
     ]);
   });
 
@@ -631,5 +633,71 @@ describe('applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern
 
   it('createInitialAppState: handoffPackets starts empty so handoffs are append-only from a clean slate', () => {
     expect(createInitialAppState('t-1', 'goal').handoffPackets).toEqual([]);
+  });
+});
+
+describe('applyMutations · Phase 4 unlocked field (task 4.1, spec §1/§3)', () => {
+  it('applies set("complexity") with the §1 shape {tier, signals}', () => {
+    const state = applyMutations(createInitialAppState('t-1', 'goal'), [
+      setMutation('complexity', { tier: 0, signals: { rule: 'tier0.single_entity' } }),
+    ]);
+    expect(state.complexity).toEqual({ tier: 0, signals: { rule: 'tier0.single_entity' } });
+  });
+
+  it('set(complexity): last-write-wins overwrite with stable replays', () => {
+    const initial = createInitialAppState('t-1', 'goal');
+    const once = applyMutations(initial, [
+      setMutation('complexity', { tier: 0, signals: { rule: 'tier0.single_entity' } }),
+    ]);
+    const twice = applyMutations(once, [
+      setMutation('complexity', { tier: 2, signals: { rule: 'tier2.multi_module' } }),
+    ]);
+    expect(once.complexity?.tier).toBe(0);
+    expect(twice.complexity?.tier).toBe(2);
+    const replay = applyMutations(initial, [
+      setMutation('complexity', { tier: 0, signals: { rule: 'tier0.single_entity' } }),
+      setMutation('complexity', { tier: 2, signals: { rule: 'tier2.multi_module' } }),
+    ]);
+    expect(replay.complexity).toEqual(twice.complexity);
+  });
+
+  it('rejects malformed complexity values instead of storing an unroutable tier', () => {
+    const state = createInitialAppState('t-1', 'goal');
+    const bad = [
+      null,
+      ['tier', 0],
+      { tier: 0 },
+      { signals: {} },
+      { tier: 3, signals: {} },
+      { tier: 1.5, signals: {} },
+      { tier: '1', signals: {} },
+      { tier: 1, signals: [] },
+      { tier: 1, signals: 'none' },
+    ] as unknown[];
+    for (const value of bad) {
+      expect(() => applyMutations(state, [setMutation('complexity', value)])).toThrow(
+        'complexity must be { tier: 0 | 1 | 2; signals: Record<string, unknown> }',
+      );
+      expect(state.complexity).toBeUndefined();
+    }
+  });
+
+  it('createInitialAppState leaves complexity unset so the entry node evaluates it exactly once', () => {
+    expect('complexity' in createInitialAppState('t-1', 'goal')).toBe(false);
+  });
+
+  it('cross-op commutativity: set(complexity) and append(messages) commute to an equivalent terminal state', () => {
+    const initial = createInitialAppState('t-1', 'goal');
+    const message = makeMessage();
+    const setThenAppend = applyMutations(initial, [
+      setMutation('complexity', { tier: 1, signals: { rule: 'tier1.default' } }),
+      appendMutation('messages', message),
+    ]);
+    const appendThenSet = applyMutations(initial, [
+      appendMutation('messages', message),
+      setMutation('complexity', { tier: 1, signals: { rule: 'tier1.default' } }),
+    ]);
+    expect(setThenAppend.complexity).toEqual(appendThenSet.complexity);
+    expect(sortMessages(setThenAppend)).toEqual(sortMessages(appendThenSet));
   });
 });
