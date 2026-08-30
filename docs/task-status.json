@@ -2,8 +2,8 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-30T03:25:00.000Z",
-  "current_phase": 3,
+  "last_updated": "2026-08-30T03:49:54.728Z",
+  "current_phase": 4,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
     {
@@ -480,7 +480,7 @@
     {
       "id": 3,
       "name": "上下文工程（决策台账 + 交接包 + 投影铁律，1 周）",
-      "status": "in_progress",
+      "status": "done",
       "integration_test": "3.5",
       "exit_criteria": "上下文不随对话变长而崩：台账/交接/投影/压缩四机制就位",
       "tasks": [
@@ -550,7 +550,7 @@
           "id": "3.5",
           "title": "Phase 3 出口集成测试",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/开发计划安排.md §6"
           ],
@@ -559,8 +559,8 @@
             "3.4"
           ],
           "test_file": "tests/integration/phase3/phase3-exit.test.ts",
-          "notes": "长对话场景回归：上下文规模受控、决策理由可达、交接无损。\n[2026-08-29 开工·用户确认] 状态置 in_progress。进入 EPCC-V Explore：读取 §6 四机制源码与 0.7/1.6/2.5 集成测试先例后出计划等批准。\n[2026-08-29 计划批准·用户确认] 改动面 2 处：①runtime/executor barrel 加性导出 slice-compression（测试需 SLICE_COMPRESSION_THRESHOLD_CHARS，R9 零签名变更）②新建 tests/integration/phase3/phase3-exit.test.ts 三 describe：长对话场景（seed 8 条决策=2 条 supersedes 链+跨 topic 指针+1 agent 条目，2 个交接包引 head+被 supersede+agent 条目，六角色编排跑通）+短对话对照（<阈值逐字投影）+R1 写入门禁直连（agent 越权 supersede leader 拒绝/交接包引用未知 id 拒绝）。唯一 mock=脚本化 LLM（文件头注明，R11）；沙箱/worktree/git/node --test 全真实。\n[2026-08-29 Code+Check] 定向 5/5 绿（修 2 处：seed builder leader 默认 authority；检索链断言改为沿墓碑跳走到 head——链中下一跳可为墓碑，对齐 3.4 塌缩语义）。[门禁实测] typecheck 0 错；lint 0 违规（biome check .，126 files，格式自动修 1 处）；全量 test 324 passed / 2 skipped（36 files，2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。对账：移出本文件实测基线=319 passed / 2 skipped（35 files，init 摘要曾记 317 有 ±2 偏差，以实测为准），319+5=324 零回归。G5：真实沙箱/worktree/git 链路照常真实跑通，唯一 mock=外部 LLM。exit_criteria 逐条验证：上下文规模受控（PM 投影 leaderDecisions 序列化≤4000 阈值且远小于 State 全量，agent 条目被过滤）；决策理由可达（head rationale 全文在投影，墓碑沿 supersededBy 走到 head 检索链闭合）；交接无损（终态 State 台账 8 条完整+handoffPackets 深等，keyDecisions 全部可在 State 解析，被 supersede 的 id 经墓碑可寻址）；四机制就位（台账 R1 seam+投影 pre-step 覆写真实消费+压缩读时塌缩+交接 reducer 校验一次运行全穿过）。跨阶段注意：3.5 为 Phase 3 出口门禁，完成合并后 Phase 4（4.1 依赖 3.5）方可开工。下一步 /commit-agora。\n[2026-08-29 提交] PR #32 已创建（test/phase3-exit-integration → dev-1.0.0，https://github.com/logan-suu/Agora/pull/32）：新增 tests/integration/phase3/phase3-exit.test.ts（长对话 3 链 + 短对话对照 + R1 写入门禁直连，5 例）+ runtime-executor barrel 加性导出 slice-compression。门禁全绿：typecheck 0 错 / lint 0 违规 / 全量 324 passed / 2 skipped（基线 319+5 对账闭合零回归）。状态保持 in_progress，待人类合并后 /pr-merge-agora 标 done（合并即 Phase 3 出口达成，Phase 4 解锁）。[2026-08-30 /test-phase-agora 复跑·出口门禁验证] tests/integration/phase3/ 5/5 绿（1.52s）；全量 324 passed / 2 skipped（36 files，2 skip=既有 G5 live-LLM 需 DEEPSEEK_API_KEY，Docker 真实容器全绿）；typecheck 0 错 / lint 0 违规（126 files）。PR #32 OPEN/MERGEABLE，CodeRabbit SUCCESS 0 actionable。跨包链路覆盖 5/6（P0 2/2、P1 2/3、P2 1/1）：唯一缺口=Coordinator 角色切换生成 handoffPackets 接线（开发计划 §6.3『生成逻辑：在角色切换时由 Coordinator 触发』+ 3.2 遗留①承诺 3.3/3.5 实装，均未落地且未入台账）——用户裁决（2026-08-30）入 DEF 台账延后：登记 DEF-012（docs/deferred-items.json，target_phase=4，解除条件挂靠 4.4 Coordinator 进度台账），PR #32 范围不变，出口测试交接包 seed 语义不受影响。",
-          "last_updated": "2026-08-30T02:45:02.871Z"
+          "notes": "长对话场景回归：上下文规模受控、决策理由可达、交接无损。\n[2026-08-29 开工·用户确认] 状态置 in_progress。进入 EPCC-V Explore：读取 §6 四机制源码与 0.7/1.6/2.5 集成测试先例后出计划等批准。\n[2026-08-29 计划批准·用户确认] 改动面 2 处：①runtime/executor barrel 加性导出 slice-compression（测试需 SLICE_COMPRESSION_THRESHOLD_CHARS，R9 零签名变更）②新建 tests/integration/phase3/phase3-exit.test.ts 三 describe：长对话场景（seed 8 条决策=2 条 supersedes 链+跨 topic 指针+1 agent 条目，2 个交接包引 head+被 supersede+agent 条目，六角色编排跑通）+短对话对照（<阈值逐字投影）+R1 写入门禁直连（agent 越权 supersede leader 拒绝/交接包引用未知 id 拒绝）。唯一 mock=脚本化 LLM（文件头注明，R11）；沙箱/worktree/git/node --test 全真实。\n[2026-08-29 Code+Check] 定向 5/5 绿（修 2 处：seed builder leader 默认 authority；检索链断言改为沿墓碑跳走到 head——链中下一跳可为墓碑，对齐 3.4 塌缩语义）。[门禁实测] typecheck 0 错；lint 0 违规（biome check .，126 files，格式自动修 1 处）；全量 test 324 passed / 2 skipped（36 files，2 skip 为既有 G5 live-LLM 需 DEEPSEEK_API_KEY）。对账：移出本文件实测基线=319 passed / 2 skipped（35 files，init 摘要曾记 317 有 ±2 偏差，以实测为准），319+5=324 零回归。G5：真实沙箱/worktree/git 链路照常真实跑通，唯一 mock=外部 LLM。exit_criteria 逐条验证：上下文规模受控（PM 投影 leaderDecisions 序列化≤4000 阈值且远小于 State 全量，agent 条目被过滤）；决策理由可达（head rationale 全文在投影，墓碑沿 supersededBy 走到 head 检索链闭合）；交接无损（终态 State 台账 8 条完整+handoffPackets 深等，keyDecisions 全部可在 State 解析，被 supersede 的 id 经墓碑可寻址）；四机制就位（台账 R1 seam+投影 pre-step 覆写真实消费+压缩读时塌缩+交接 reducer 校验一次运行全穿过）。跨阶段注意：3.5 为 Phase 3 出口门禁，完成合并后 Phase 4（4.1 依赖 3.5）方可开工。下一步 /commit-agora。\n[2026-08-29 提交] PR #32 已创建（test/phase3-exit-integration → dev-1.0.0，https://github.com/logan-suu/Agora/pull/32）：新增 tests/integration/phase3/phase3-exit.test.ts（长对话 3 链 + 短对话对照 + R1 写入门禁直连，5 例）+ runtime-executor barrel 加性导出 slice-compression。门禁全绿：typecheck 0 错 / lint 0 违规 / 全量 324 passed / 2 skipped（基线 319+5 对账闭合零回归）。状态保持 in_progress，待人类合并后 /pr-merge-agora 标 done（合并即 Phase 3 出口达成，Phase 4 解锁）。[2026-08-30 /test-phase-agora 复跑·出口门禁验证] tests/integration/phase3/ 5/5 绿（1.52s）；全量 324 passed / 2 skipped（36 files，2 skip=既有 G5 live-LLM 需 DEEPSEEK_API_KEY，Docker 真实容器全绿）；typecheck 0 错 / lint 0 违规（126 files）。PR #32 OPEN/MERGEABLE，CodeRabbit SUCCESS 0 actionable。跨包链路覆盖 5/6（P0 2/2、P1 2/3、P2 1/1）：唯一缺口=Coordinator 角色切换生成 handoffPackets 接线（开发计划 §6.3『生成逻辑：在角色切换时由 Coordinator 触发』+ 3.2 遗留①承诺 3.3/3.5 实装，均未落地且未入台账）——用户裁决（2026-08-30）入 DEF 台账延后：登记 DEF-012（docs/deferred-items.json，target_phase=4，解除条件挂靠 4.4 Coordinator 进度台账），PR #32 范围不变，出口测试交接包 seed 语义不受影响。\n[2026-08-30 /pr-merge-agora 收尾] PR #32 已合并（merge commit e0459a8，base dev-1.0.0），本地分支 test/phase3-exit-integration 已清理，dev-1.0.0 已同步（36789ce..e0459a8）。任务标 done——Phase 3 出口集成测试完成，出口达成。G5 实测结论（合并前 /test-phase-agora 复跑）：出口测试 5/5 绿；全量 324 passed / 2 skipped（36 files，2 skip=既有 G5 live-LLM 需 DEEPSEEK_API_KEY）；真实沙箱/worktree/git/Docker 链路照常真实跑通，唯一 mock=外部 LLM（脚本化，文件头注明，R11 允许）；typecheck 0 错 / lint 0 违规；exit_criteria 四机制（台账/交接/投影/压缩）全部验证通过。遗留/延期项：无新增，既有延期项见 docs/deferred-items.json。级联翻转：4.1→ready；Phase 3 status→done；current_phase 3→4。",
+          "last_updated": "2026-08-30T03:49:54.728Z"
         }
       ]
     },
@@ -575,7 +575,7 @@
           "id": "4.1",
           "title": "复杂度评估 complexity.tier（Tier 0/1/2）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/详细设计方案.md §3",
             "docs/项目蓝图.md §9"
