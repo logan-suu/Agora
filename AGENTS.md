@@ -5,7 +5,7 @@
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
-**决策记录**：蓝图为主要决策定稿处——重大架构决策集中于 §21「已定决策」，个别按章节落位（如 §16 实时通信 / §17 阶段路线），均带 `[YYYY-MM-DD 架构决策更新]` 标记。**真相源层级**：每条决策的完整定义以其来源文档章节为准；`docs/task-status.json` 的 `standing_decisions` 是唯一的摘要索引（ID / 一句话规则 / source 指针）；本文档只按 ID 引用。决策变更时必须经 `/sync-docs-agora` 一并更新，不得只改其一
+**决策记录**：蓝图为主要决策定稿处——重大架构决策集中于 §21「已定决策」，个别按章节落位（如 §16 实时通信 / §17 阶段路线），均带 `[YYYY-MM-DD 架构决策更新]` 标记。**真相源层级**：每条决策的完整定义以其来源文档章节为准；`docs/task-status.json` 的 `standing_decisions` 是唯一的摘要索引（ID / 一句话规则 / source 指针）；本文档只按 ID 引用。决策变更时必须经 `$agora-sync-docs` 一并更新，不得只改其一
 
 ---
 
@@ -51,9 +51,9 @@
 | 部署/韧性/错误恢复 | 架构 §6/§9 | 韧性表逐项落地 |
 | 阶段目标/里程碑/时间线 | 开发计划安排 对应节 + task-status `exit_criteria` | 出口标准逐条核对 |
 | Spike/执行链路验证 | 详细设计 §9 + 架构 §4 | 最小闭环链路 |
-| 决策变更后文档同步 | `/sync-docs-agora` 命令流程 + 蓝图 §21 | 同步顺序与标记规范 |
+| 决策变更后文档同步 | `$agora-sync-docs` Skill 流程 + 蓝图 §21 | 同步顺序与标记规范 |
 
-> **决策变更同步·浓缩顺序**：① 蓝图（§21 或对应章节，打标记）→ ② 详细设计对应节 → ③ 系统架构 / 技术选型（如涉及）→ ④ 开发计划安排 + `task-status.json`（含 standing_decisions）→ ⑤ AGENTS.md（如涉及红线）。逐步操作清单以 `/sync-docs-agora` 命令文件为唯一详版。
+> **决策变更同步·浓缩顺序**：① 蓝图（§21 或对应章节，打标记）→ ② 详细设计对应节 → ③ 系统架构 / 技术选型（如涉及）→ ④ 开发计划安排 + `task-status.json`（含 standing_decisions）→ ⑤ AGENTS.md（如涉及红线）。逐步操作清单以 `$agora-sync-docs` Skill 为唯一详版。
 
 ### 0.3 Agent 文档读取规范
 
@@ -166,8 +166,8 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 
 - 所有开发变更一律：`git checkout dev-1.0.0 && git checkout -b {type}/{description}` → 提交 → `gh pr create --base dev-1.0.0`（标题正文全英文）。
 - **禁止**直接向 `main` 或 `dev-1.0.0` push 功能代码；PR 由人类审阅合并，Agent 不得自动合并。
-- **豁免（[2026-08-26 架构决策更新]）**：`/pr-merge-agora` 收尾时，**纯 `docs/task-status.json` 任务状态记录**（status/last_updated/notes 的收尾更新）允许直接在 `dev-1.0.0` 上提交并推送，不走功能分支/PR，避免为纯状态记录形成合并链。**豁免仅限该文件且仅限收尾记录**；任何代码变更（`packages/`、`apps/`、`tests/` 等源码）仍强制走功能分支 + PR + 人类合并；Agent 仍不得自动合并其他 PR。
-- 合并后执行 `/pr-merge-agora` 同步本地并收尾任务状态。
+- **豁免（[2026-08-26 架构决策更新]）**：`$agora-pr-merge` 收尾时，**纯 `docs/task-status.json` 任务状态记录**（status/last_updated/notes 的收尾更新）允许直接在 `dev-1.0.0` 上提交并推送，不走功能分支/PR，避免为纯状态记录形成合并链。**豁免仅限该文件且仅限收尾记录**；任何代码变更（`packages/`、`apps/`、`tests/` 等源码）仍强制走功能分支 + PR + 人类合并；Agent 仍不得自动合并其他 PR。
+- 合并后执行 `$agora-pr-merge` 同步本地并收尾任务状态。
 - `main` 的更新只发生在阶段里程碑（如 MVP 验收、Demo 冻结），由人类确认后从 `dev-1.0.0` 发起 dev→main 的 PR。
 
 ### 3.1.2 Commit Message 格式
@@ -257,7 +257,8 @@ agora/
 │   ├── phase{N}/                   # Phase N 跨包集成测试（出口验收级）
 │   └── cross-phase/                # 跨 Phase 联调（累进回归，N 不破坏 N-1）
 ├── docs/                           # 7 份设计文档 + task-status.json（见 §0.1）
-├── .opencode/commands/             # 12 个自定义命令
+├── .agents/skills/                 # 14 个 Codex 项目级工作流 Skill（主入口）
+├── .opencode/commands/             # OpenCode 兼容副本（迁移验证后再退役）
 ├── AGENTS.md
 └── pnpm-workspace.yaml
 .data/                              # 运行时状态（gitignored）：projects/{projectId}/tasks/{taskId}/{state.json,events.jsonl}
@@ -296,15 +297,15 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 
 ## 7. 工作流：EPCC-V（每个任务必须遵循）
 
-新会话一律先执行 `/init-session-agora`。
+新会话一律先执行 `$agora-init-session`。
 
-```
+```text
 Explore  读 documents_required 章节 + 相关代码；逐字粘贴约束原文；发现文档矛盾必须暂停上报
 Plan     产出实现计划（改哪些文件/接口/schema/测试），等人确认
 Code     小步实现，一次一个可验证单元；TDD：写测试→红→写实现→绿
 Check    pnpm typecheck + pnpm lint + pnpm test
 Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5）；证据留档进 notes
-交付     /commit-agora：门禁→功能分支提交→PR(base=dev-1.0.0)；PR 合并后 /pr-merge-agora 标 done→级联翻转→阶段收尾
+交付     $agora-commit：门禁→功能分支提交→PR(base=dev-1.0.0)；PR 合并后 $agora-pr-merge 标 done→级联翻转→阶段收尾
 ```
 
 铁律：
@@ -347,13 +348,13 @@ pending -> ready -> in_progress -> done
 |---|---|---|
 | `pending` | 已定义，依赖未满足 | 级联自动翻转 |
 | `ready` | 依赖全部 done，等待执行 | Agent 幂等级联 |
-| `in_progress` | 开工确认后 / 执行中 | Agent（经 `/do-task-agora` 等） |
+| `in_progress` | 开工确认后 / 执行中 | Agent（经 `$agora-do-task` 等） |
 | `blocked` | 外部阻塞，notes 注明解除条件 | Agent，解除后回 ready |
-| `done` | 门禁 G1-G7 全过 + PR 已合并到 dev-1.0.0 | `/pr-merge-agora` 收尾时 |
+| `done` | 门禁 G1-G7 全过 + PR 已合并到 dev-1.0.0 | `$agora-pr-merge` 收尾时 |
 
 ### 8.1.2 done 转换规则（PR 合并流）
 
-- 代码类任务：`/commit-agora` 创建 PR 后任务**保持 `in_progress`**（notes 记 PR 链接与实现摘要）；PR 合并到 `dev-1.0.0` 后由 `/pr-merge-agora` 标 `done`，notes 补记合并 hash、G5 实测结果。
+- 代码类任务：`$agora-commit` 创建 PR 后任务**保持 `in_progress`**（notes 记 PR 链接与实现摘要）；PR 合并到 `dev-1.0.0` 后由 `$agora-pr-merge` 标 `done`，notes 补记合并 hash、G5 实测结果。
 - 非代码类任务（文档/调研/验证产出）：产出经人类确认后标 `done`。
 - `main` 仅在阶段里程碑（MVP 验收 / Demo 冻结）由人类确认后从 `dev-1.0.0` 发起 dev→main PR，不影响任务级 done 判定。
 
@@ -424,12 +425,12 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 
 ---
 
-## 10. 在 OpenCode 中的工作约定
+## 10. 在 Codex 中的工作约定
 
-> 本节命令集为 OpenCode 工作流优化；若使用其他 IDE（Cursor/Windsurf/Claude Code 等），请将各命令视为手动工作流步骤，按序执行其背后的检查项。
+> Codex 从仓库根目录向下自动加载 `AGENTS.md`，并从 `.agents/skills/` 发现项目级工作流。Skill 通过 `$skill-name` 显式调用，也可在请求与其 description 匹配时自动触发。`.opencode/commands/` 仅为迁移期兼容副本，不是 Codex 真相源。
 
-```
-- 新会话第一条命令永远是 /init-session-agora
+```text
+- 新会话第一条工作流永远是 `$agora-init-session`
 - 优先读本文件与相关规格章节再动手；不要凭想象实现
 - 大改动先出计划让人确认；小步提交便于验证
 - 需要外部库/新依赖前先核对《技术选型文档》§12，未列入的先讨论
@@ -437,16 +438,16 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 - 无用户明确要求不擅自 commit/push
 ```
 
-快捷命令：
+项目级 Skills：
 
-```
-/init-session-agora     新会话初始化          /status-agora           状态速览
-/next-task-agora        下一个 ready 任务      /do-task-agora <id>     执行指定任务
-/retry-task-agora       重试中断任务           /read-spec-agora        规格速读
-/explain-agora          概念溯源解释           /sync-docs-agora        决策同步文档
-/commit-agora           门禁+提交+建 PR        /pr-review-agora        PR 架构预审+评论处理
-/pr-merge-agora         PR 合并后收尾          /test-unit-agora        单元测试
-/test-phase-agora       当前 Phase 集成测试    /test-integration-agora 累进全量回归
+```text
+$agora-init-session     新会话初始化          $agora-status           状态速览
+$agora-next-task        下一个 ready 任务      $agora-do-task <id>     执行指定任务
+$agora-retry-task       重试中断任务           $agora-read-spec        规格速读
+$agora-explain          概念溯源解释           $agora-sync-docs        决策同步文档
+$agora-commit           门禁+提交+建 PR        $agora-pr-review        PR 架构预审+评论处理
+$agora-pr-merge         PR 合并后收尾          $agora-test-unit        单元测试
+$agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累进全量回归
 ```
 
 ---
@@ -514,14 +515,14 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 
 ---
 
-## 14. 当前上下文
+## 14. 动态上下文
 
-```
-人力        1 名独立开发者（AI Native 全程，OpenCode + Sisyphus）
-当前阶段    Phase 0 未开始（current_phase=0），首个 ready 任务 0.1 工程初始化
+```text
+人力        1 名独立开发者（AI Native 全程，Codex）
+当前阶段    禁止在本文件静态记录；每次从 docs/task-status.json 的 current_phase 与任务 status 读取
 阶段策略    先回合制单 worker 跑稳闭环，Phase 9 再升真并行；每阶段有可演示产出才进下一阶段
 时间线      约 13 周到 Phase 10；Phase 5 完成（Week 7）必须产出秋招 Demo 录屏（开发计划 §17 检查点）
-验证基线    Phase 0 出口 = LRU 缓存任务端到端（State 传递 + Harness 接入 + 投影覆写三件事成立）
+验证基线    当前 Phase 出口以 docs/task-status.json 对应 phase.exit_criteria 为准
 ```
 
 一句话给 Agent：**先读规格、投影切片喂上下文、leader 拍板不搞共识、小步可验证、执行链路必实测、接口签名神圣不可轻改、能复用绝不自研、不确定就标注。**
