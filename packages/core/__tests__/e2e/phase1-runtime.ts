@@ -25,7 +25,7 @@ export const PHASE1_TOOL_SURFACE: readonly string[] = [
 /** Phase 1 working rules appended to each role's system prompt. */
 const PHASE1_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   CODER:
-    '\n\n[Phase 1 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write/fs_list).\n- Use fs_write for implementation files, fs_read/fs_list to inspect, and sandbox_run to verify quickly.\n- After implementing and verifying, use fs_write to store {"status":"done"} at the worktree root in `subtask-status.json`.',
+    '\n\n[Phase 1 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write/fs_list).\n- Use fs_write for implementation files, fs_read/fs_list to inspect, and sandbox_run to verify quickly.',
   TESTER:
     '\n\n[Phase 1 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write/fs_list).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
 };

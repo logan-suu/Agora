@@ -1,5 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { type AppState, applyMutations, PHASE0_ROSTER, setMutation } from '@agora/core-domain';
+import {
+  type AppState,
+  applyMutations,
+  mergeByIdMutation,
+  PHASE0_ROSTER,
+  setMutation,
+} from '@agora/core-domain';
 import { runOrchestration, WorkerRuntime } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import type { Worktree } from '@agora/runtime-sandbox';
@@ -646,6 +652,9 @@ describe('Phase 2 exit: iteration limit escalation (超限升级, task 2.3 seman
       LIMIT_TURNS,
       (initial) =>
         applyMutations(initial, [
+          // Mid-loop seed: the subtask an active CODER↔TESTER round would have
+          // in_progress (coordinator-owned lifecycle, task 4.2).
+          mergeByIdMutation('subtasks', 'exit-2-limit-sub-0', { status: 'in_progress' }),
           setMutation('iterationCount', 7),
           setMutation('phase', 'testing'),
           setMutation('testResults', FAILED_RESULTS),

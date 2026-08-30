@@ -90,6 +90,22 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     });
   });
 
+  it('COORDINATOR global.summary projects the complexity tier once entry evaluates it (task 4.2, 4.1 ruling ③ wiring)', () => {
+    const tiered = makeState({ complexity: { tier: 2, signals: { rule: 'tier2.multi_module' } } });
+    expect(slicesOf(tiered, 'COORDINATOR')['global.summary']).toMatchObject({
+      complexity: { tier: 2, signals: { rule: 'tier2.multi_module' } },
+    });
+    // Unset stays null (entry has not run / pre-4.1 replayed states).
+    expect(slicesOf(makeState(), 'COORDINATOR')['global.summary']).toMatchObject({
+      complexity: null,
+    });
+    // WO: the projection copies the slice — the live State object never leaks.
+    const summary = slicesOf(tiered, 'COORDINATOR')['global.summary'] as {
+      complexity: { signals: Record<string, unknown> } | null;
+    };
+    expect(summary.complexity?.signals).not.toBe(tiered.complexity?.signals);
+  });
+
   it('PM gets goal, full requirements, and leader decisions with rationale attached (iron rule 3)', () => {
     const supersedingLeader: Decision = {
       ...LEADER_DECISION,
