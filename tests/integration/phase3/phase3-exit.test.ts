@@ -113,6 +113,7 @@ const ARCHITECT_DESIGN_JSON = JSON.stringify({
 
 const REVIEW_APPROVED_JSON = JSON.stringify([
   {
+    id: 'rv-phase3-approved',
     kind: 'verdict',
     verdict: 'approved',
     summary: 'clean implementation, tests are authoritative',

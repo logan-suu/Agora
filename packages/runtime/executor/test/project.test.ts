@@ -282,19 +282,83 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     expect(slicesOf(makeState(), 'TESTER').interfaceContracts).toEqual({});
   });
 
-  it('REVIEWER gets pendingPatch, conventions, architecture with explicit empties', () => {
+  it('REVIEWER gets structured failure context without receiving raw coordinator messages', () => {
     const rich = makeState({
       pendingPatch: { diff: 'x' },
       conventions: { style: 'biome' },
       architecture: { modules: ['cache'] },
+      testResults: TEST_RESULTS,
+      messages: [
+        {
+          msgId: 'm-root-cause',
+          channelId: 'main',
+          fromRole: 'COORDINATOR',
+          type: 'announce',
+          payload: {
+            nextRole: 'REVIEWER',
+            reason: 'repeated_test_failures',
+            failureStreak: 2,
+          },
+          display: 'SENTINEL-RAW-ANNOUNCEMENT',
+          ts: 2,
+        },
+      ],
     });
-    expect(slicesOf(rich, 'REVIEWER').pendingPatch).toEqual({ diff: 'x' });
-    expect(slicesOf(rich, 'REVIEWER').conventions).toEqual({ style: 'biome' });
-    expect(slicesOf(rich, 'REVIEWER').architecture).toEqual({ modules: ['cache'] });
+    const reviewer = slicesOf(rich, 'REVIEWER');
+    expect(reviewer.pendingPatch).toEqual({ diff: 'x' });
+    expect(reviewer.conventions).toEqual({ style: 'biome' });
+    expect(reviewer.architecture).toEqual({ modules: ['cache'] });
+    expect(reviewer.reviewContext).toEqual({
+      mode: 'test_failure_root_cause',
+      reason: 'repeated_test_failures',
+      failureStreak: 2,
+    });
+    expect(reviewer.failingTests).toEqual(TEST_RESULTS);
+    expect(reviewer.fileRefs).toEqual([
+      { file: 'src/a.test.ts', lines: [3, 7] },
+      { file: 'src/b.test.ts', lines: [1] },
+    ]);
+    expect(JSON.stringify(reviewer)).not.toContain('SENTINEL-RAW-ANNOUNCEMENT');
+    expect(JSON.stringify(reviewer)).not.toContain('m-root-cause');
     const bare = slicesOf(makeState(), 'REVIEWER');
     expect(bare.pendingPatch).toBeNull();
     expect(bare.conventions).toEqual({});
     expect(bare.architecture).toEqual({});
+    expect(bare.reviewContext).toEqual({
+      mode: 'quality_review',
+      reason: null,
+      failureStreak: null,
+    });
+  });
+
+  it('ARCHITECT and CODER receive only the latest structured review turn', () => {
+    const first = { id: 'rv-1', kind: 'verdict', verdict: 'changes_requested' };
+    const currentComment = { id: 'rc-2', kind: 'comment', summary: 'split boundary' };
+    const currentVerdict = {
+      id: 'rv-2',
+      kind: 'verdict',
+      verdict: 'changes_requested',
+      issueScope: 'architecture',
+      summary: 'module boundary is wrong',
+    };
+    const state = makeState({
+      architecture: { modules: ['legacy'] },
+      reviewComments: [first, currentComment, currentVerdict],
+    });
+
+    for (const role of ['ARCHITECT', 'CODER']) {
+      const slices = slicesOf(state, role);
+      expect(slices.reviewFeedback).toEqual({
+        verdict: currentVerdict,
+        entries: [currentComment, currentVerdict],
+      });
+      expect((slices.reviewFeedback as { verdict: unknown }).verdict).not.toBe(currentVerdict);
+    }
+    expect(slicesOf(state, 'ARCHITECT').architecture).toEqual({ modules: ['legacy'] });
+    expect(slicesOf(makeState(), 'ARCHITECT').reviewFeedback).toEqual({
+      verdict: null,
+      entries: [],
+    });
   });
 
   it('iron rule 1 (R2): no role view ever carries the raw chat log', () => {

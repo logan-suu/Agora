@@ -78,7 +78,7 @@ const PHASE2_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   TESTER:
     '\n\n[Phase 2 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
   REVIEWER:
-    '\n\n[Phase 2 working rules]\n- Your §2 grant is read-only: fs_read to inspect files, git_diff to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array as your final message; the verdict entry must be shaped {"kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."} and may be followed by comment entries. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested.',
+    '\n\n[Phase 2 working rules]\n- Your §2 grant is read-only: fs_read to inspect files, git_diff to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array containing exactly one verdict entry shaped {"id":"rv-...","kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."}; other entries are optional comments. The verdict id must be a stable non-empty string. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested. A test_failure_root_cause review must return changes_requested.',
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -162,7 +162,7 @@ export function reviewerTurnMutations(text: string | null): Mutation[] {
   if (!Array.isArray(parsed)) {
     throw new Error('REVIEWER final message must be a JSON array of review entries');
   }
-  return parsed.map((entry) => {
+  const entries = parsed.map((entry) => {
     if (!isRecord(entry)) {
       throw new Error('REVIEWER review entries must be JSON objects');
     }
@@ -170,6 +170,9 @@ export function reviewerTurnMutations(text: string | null): Mutation[] {
       throw new Error('REVIEWER review entries need a string "kind"');
     }
     if (entry.kind === 'verdict') {
+      if (typeof entry.id !== 'string' || entry.id.length === 0) {
+        throw new Error('REVIEWER verdict needs a non-empty string id');
+      }
       if (entry.verdict !== 'approved' && entry.verdict !== 'changes_requested') {
         throw new Error('REVIEWER verdict must be "approved" or "changes_requested"');
       }
@@ -184,8 +187,13 @@ export function reviewerTurnMutations(text: string | null): Mutation[] {
         throw new Error('REVIEWER approved verdict cannot use architecture issueScope');
       }
     }
-    return appendMutation('reviewComments', entry);
+    return entry;
   });
+  const verdictCount = entries.filter((entry) => entry.kind === 'verdict').length;
+  if (verdictCount !== 1) {
+    throw new Error(`REVIEWER final message must contain exactly one verdict; got ${verdictCount}`);
+  }
+  return entries.map((entry) => appendMutation('reviewComments', entry));
 }
 
 /** Per-role final-text interpreters wired into the executor's readTurnMutations seam. */

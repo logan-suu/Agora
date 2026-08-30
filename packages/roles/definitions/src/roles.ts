@@ -31,9 +31,10 @@ export const ARCHITECT_ROLE: RoleSpec = {
   role: 'ARCHITECT',
   enabled: true,
   executor: 'harness',
-  systemPrompt: '你是架构师，给出可实现的设计与约定，关键决策附理由写入台账。',
+  systemPrompt:
+    '你是架构师，给出可实现的设计与约定；重设计时逐条回应结构化 reviewFeedback，关键决策附理由写入台账。',
   tools: ['fs.read', 'git.readonly'],
-  projection: ['requirements', 'repoStructure', 'conventions'],
+  projection: ['requirements', 'repoStructure', 'conventions', 'architecture', 'reviewFeedback'],
   routeWhen: 'requirementsReady',
 };
 
@@ -48,8 +49,16 @@ export const REVIEWER_ROLE: RoleSpec = {
   role: 'REVIEWER',
   enabled: true,
   executor: 'harness',
-  systemPrompt: '你是评审者，审查质量/规范/安全，产出可执行修改意见，通过结论需 leader 最终确认。',
+  systemPrompt:
+    '你是评审者，按结构化 reviewContext 审查质量/规范/安全或连续失败根因，结合 failingTests/fileRefs 产出可执行修改意见，通过结论需 leader 最终确认。',
   tools: ['fs.read', 'git.readonly', 'lint'],
-  projection: ['pendingPatch', 'conventions', 'architecture'],
+  projection: [
+    'pendingPatch',
+    'conventions',
+    'architecture',
+    'reviewContext',
+    'failingTests',
+    'fileRefs',
+  ],
   routeWhen: 'testsPassed',
 };
