@@ -1,0 +1,3 @@
+# Keep the complete repository constitution available as it evolves beyond
+# Codex's default 32 KiB project-instruction budget.
+project_doc_max_bytes = 65536

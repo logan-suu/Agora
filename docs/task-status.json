@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-30T18:25:25.000Z",
+  "last_updated": "2026-08-30T22:14:36.000Z",
   "current_phase": 4,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -48,12 +48,12 @@
     },
     {
       "id": "DEF",
-      "rule": "延期项统一记录于 docs/deferred-items.json（DEF-xxx 编号，含 source/pr/task/severity/detail/target_phase/status/notes/resolved_at）；任务 notes 只保留指向该文件的引用，不再内嵌 [DEF] 条目。阶段出口检查时逐条核对（/pr-review-agora 第七步）。",
+      "rule": "延期项统一记录于 docs/deferred-items.json（DEF-xxx 编号，含 source/pr/task/severity/detail/target_phase/status/notes/resolved_at）；任务 notes 只保留指向该文件的引用，不再内嵌 [DEF] 条目。阶段出口检查时逐条核对（$agora-pr-review）。",
       "source": "docs/deferred-items.json"
     },
     {
       "id": "GIT-DEV",
-      "rule": "/pr-merge-agora 收尾时，纯 docs/task-status.json 任务状态记录允许直接在 dev-1.0.0 提交并推送（不走功能分支/PR）；代码变更仍强制走功能分支+PR+人类合并，Agent 不自动合并",
+      "rule": "$agora-pr-merge 收尾时，纯 docs/task-status.json 任务状态记录允许直接在 dev-1.0.0 提交并推送（不走功能分支/PR）；代码变更仍强制走功能分支+PR+人类合并，Agent 不自动合并",
       "source": "AGENTS.md §3.1.1"
     }
   ],
