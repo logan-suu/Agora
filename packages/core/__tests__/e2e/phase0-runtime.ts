@@ -26,18 +26,17 @@ import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
 /** Phase 0 TESTER handoff file (written by the TESTER into the worktree root). */
 const TEST_RESULTS_FILE = 'test-results.json';
 
-/** Phase 0 CODER completion signal (written by the CODER into the worktree root). */
-const SUBTASK_STATUS_FILE = 'subtask-status.json';
-
 /**
  * Phase 0 working conventions appended to each role's system prompt by the
  * composition root. They teach the model the worktree-relative path rule and
- * the structured handoff files the executor reads back after the turn
- * (`test-results.json` for TESTER, `subtask-status.json` for CODER).
+ * the structured handoff file the executor reads back after the turn
+ * (`test-results.json` for TESTER). Task 4.2: subtask lifecycle is
+ * coordinator-owned (done is set by the coordinator on test pass), so the
+ * former CODER `subtask-status.json` completion signal is retired.
  */
 const PHASE0_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   CODER:
-    '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files (e.g. lru-cache.ts), fs_read to inspect, and sandbox_run to verify quickly.\n- After implementing and verifying, use fs_write to store {"status":"done"} at the worktree root in `subtask-status.json`.',
+    '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files (e.g. lru-cache.ts), fs_read to inspect, and sandbox_run to verify quickly.',
   TESTER:
     '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>` or `node <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
 };
@@ -154,16 +153,6 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
       return undefined;
     }
   };
-  const readSubtaskStatus = async (): Promise<{ id: string; status: string } | undefined> => {
-    try {
-      const content = await sandbox.read(worktree, SUBTASK_STATUS_FILE);
-      const parsed = JSON.parse(content) as { status?: unknown };
-      if (parsed.status !== 'done') return undefined;
-      return { id: subtaskId, status: 'done' };
-    } catch {
-      return undefined;
-    }
-  };
   const executors: HarnessExecutor[] = [];
   const workerRuntime = new WorkerRuntime({
     roster: PHASE0_ROSTER,
@@ -187,7 +176,6 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
         tools: catalog.all(),
         allowTools: resolved.allowNames,
         ...(spec.role === 'TESTER' ? { readTestResults } : {}),
-        ...(spec.role === 'CODER' ? { readSubtaskStatus } : {}),
       });
       executors.push(executor);
       return executor;

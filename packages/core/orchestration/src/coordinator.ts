@@ -73,6 +73,11 @@ function dispatchFromClarifying(
   clock: Clock,
   roster: readonly RoleSpec[] | undefined,
 ): CoordinatorDecision {
+  // Spec §3 Tier 0: 直接 CODER→TESTER 小环，跳过 PM/ARCH — even when rostered;
+  // REVIEWER stays roster-gated downstream (task 4.2 ruling ①).
+  if (tierOf(state) === 0) {
+    return dispatchCoder(state, clock, `Tier 0 小环：跳过 PM/ARCH，直接派发 CODER：${state.goal}`);
+  }
   const requirementsReady = evaluateRouteWhen(state, 'requirementsReady');
   if (!requirementsReady && hasRole(roster, 'PM')) {
     return dispatchPM(state, clock);
@@ -129,8 +134,13 @@ function dispatchArchitect(state: AppState, clock: Clock): CoordinatorDecision {
   };
 }
 
-function dispatchCoder(state: AppState, clock: Clock, display: string): CoordinatorDecision {
-  const subtaskId = `${state.taskId}-sub-0`;
+function dispatchCoder(
+  state: AppState,
+  clock: Clock,
+  display: string,
+  announceExtra: Record<string, unknown> = {},
+): CoordinatorDecision {
+  const subtaskId = subtaskIdAt(state, 0);
   const subtask: Subtask = {
     id: subtaskId,
     title: state.goal,
@@ -142,7 +152,70 @@ function dispatchCoder(state: AppState, clock: Clock, display: string): Coordina
     route: { kind: 'worker', batch: [{ role: 'CODER', subtaskId }], parallel: false },
     mutations: [
       mergeByIdMutation('subtasks', subtaskId, { ...subtask }),
-      appendMutation('messages', announce(clock, { nextRole: 'CODER', subtaskId }, display)),
+      appendMutation(
+        'messages',
+        announce(clock, { nextRole: 'CODER', subtaskId, ...announceExtra }, display),
+      ),
+      setMutation('nextRole', 'CODER'),
+      setMutation('phase', 'coding'),
+    ],
+  };
+}
+
+function tierOf(state: AppState): 0 | 1 | 2 {
+  return state.complexity?.tier ?? 1;
+}
+
+function subtaskIdAt(state: AppState, index: number): string {
+  return `${state.taskId}-sub-${String(index)}`;
+}
+
+function modulesOf(state: AppState): string[] {
+  const modules = state.architecture?.modules;
+  if (!Array.isArray(modules)) return [];
+  return modules.filter(
+    (module): module is string => typeof module === 'string' && module.length > 0,
+  );
+}
+
+function dispatchTier2Coder(state: AppState, clock: Clock): CoordinatorDecision {
+  const modules = modulesOf(state);
+  if (modules.length < 2) {
+    return dispatchCoder(state, clock, `Tier 2 无多模块拆分依据，退化为单 subtask：${state.goal}`, {
+      tier: 2,
+      degraded: true,
+      reason: 'architecture.modules missing or single',
+    });
+  }
+  const subtasks: Subtask[] = modules.map((title, index) => ({
+    id: subtaskIdAt(state, index),
+    title,
+    ownerRole: 'CODER',
+    dependsOn: [],
+    status: index === 0 ? 'in_progress' : 'todo',
+  }));
+  const first = subtasks[0];
+  if (first === undefined) {
+    throw new Error('unreachable: modules.length >= 2 guarantees at least two subtasks');
+  }
+  return {
+    route: { kind: 'worker', batch: [{ role: 'CODER', subtaskId: first.id }], parallel: false },
+    mutations: [
+      ...subtasks.map((subtask) => mergeByIdMutation('subtasks', subtask.id, { ...subtask })),
+      appendMutation(
+        'messages',
+        announce(
+          clock,
+          {
+            nextRole: 'CODER',
+            subtaskId: first.id,
+            tier: 2,
+            subtaskCount: subtasks.length,
+            degraded: false,
+          },
+          `设计完成（Tier 2，拆分 ${subtasks.length} 个 subtask），按依赖序派发首个 CODER：${first.title}`,
+        ),
+      ),
       setMutation('nextRole', 'CODER'),
       setMutation('phase', 'coding'),
     ],
@@ -153,19 +226,24 @@ function dispatchAfterPlanning(state: AppState, clock: Clock): CoordinatorDecisi
   if (!evaluateRouteWhen(state, 'designReady')) {
     throw new Error('phase "planning" requires architecture written by ARCHITECT via mutations');
   }
+  if (tierOf(state) === 2) return dispatchTier2Coder(state, clock);
   return dispatchCoder(state, clock, `设计完成，派发 CODER 实现：${state.goal}`);
 }
 
-function assignedCoderSubtaskId(state: AppState): string {
-  const subtask = state.subtasks.find((entry) => entry.ownerRole === 'CODER');
+function activeCoderSubtaskId(state: AppState): string {
+  const subtask = state.subtasks.find(
+    (entry) => entry.ownerRole === 'CODER' && entry.status === 'in_progress',
+  );
   if (subtask === undefined) {
-    throw new Error('no CODER-owned subtask in state; the fixed sequence requires one');
+    throw new Error(
+      'no in_progress CODER subtask in state; sequential routing requires exactly one active subtask',
+    );
   }
   return subtask.id;
 }
 
 function advanceToTesting(state: AppState): CoordinatorDecision {
-  const subtaskId = assignedCoderSubtaskId(state);
+  const subtaskId = activeCoderSubtaskId(state);
   return {
     route: { kind: 'worker', batch: [{ role: 'TESTER', subtaskId }], parallel: false },
     mutations: [setMutation('nextRole', 'TESTER'), setMutation('phase', 'testing')],
@@ -212,10 +290,45 @@ function evaluateTestResults(
     throw new Error('phase "testing" requires testResults written by TESTER via mutations');
   }
   if (state.testResults.passed) {
+    // Sequential activation (task 4.2): close the active subtask, then
+    // activate the next todo subtask whose dependsOn are all done — Phase 9
+    // swaps this pick-one step for the parallel batch (spec §0 退化实现原则).
+    const activeId = activeCoderSubtaskId(state);
+    const doneIds = new Set(
+      state.subtasks.filter((entry) => entry.status === 'done').map((entry) => entry.id),
+    );
+    doneIds.add(activeId);
+    const closeActive: Mutation[] = [mergeByIdMutation('subtasks', activeId, { status: 'done' })];
+    const next = state.subtasks.find(
+      (entry) =>
+        entry.ownerRole === 'CODER' &&
+        entry.status === 'todo' &&
+        entry.dependsOn.every((id) => doneIds.has(id)),
+    );
+    if (next !== undefined) {
+      return {
+        route: { kind: 'worker', batch: [{ role: 'CODER', subtaskId: next.id }], parallel: false },
+        mutations: [
+          ...closeActive,
+          mergeByIdMutation('subtasks', next.id, { status: 'in_progress' }),
+          setMutation('nextRole', 'CODER'),
+          setMutation('phase', 'coding'),
+          appendMutation(
+            'messages',
+            announce(
+              clock,
+              { nextRole: 'CODER', subtaskId: next.id, tier: tierOf(state) },
+              `subtask 完成（${activeId}），按依赖序激活下一个：${next.title}`,
+            ),
+          ),
+        ],
+      };
+    }
     if (hasRole(roster, 'REVIEWER')) {
       return {
         route: { kind: 'worker', batch: [{ role: 'REVIEWER' }], parallel: false },
         mutations: [
+          ...closeActive,
           setMutation('nextRole', 'REVIEWER'),
           setMutation('phase', 'review'),
           appendMutation(
@@ -229,7 +342,7 @@ function evaluateTestResults(
         ],
       };
     }
-    return { route: { kind: 'finalize' }, mutations: [] };
+    return { route: { kind: 'finalize' }, mutations: closeActive };
   }
   const escalation = ifIterationLimit(state, clock);
   if (escalation !== undefined) return escalation;
@@ -250,7 +363,7 @@ function evaluateTestResults(
   return {
     route: {
       kind: 'worker',
-      batch: [{ role: 'CODER', subtaskId: assignedCoderSubtaskId(state) }],
+      batch: [{ role: 'CODER', subtaskId: activeCoderSubtaskId(state) }],
       parallel: false,
     },
     mutations: [
@@ -268,6 +381,25 @@ function reviewVerdictEntry(state: AppState): Record<string, unknown> | undefine
     if (entry !== undefined && entry.kind === 'verdict') return entry;
   }
   return undefined;
+}
+
+function reopenForRework(state: AppState): { mutations: Mutation[]; subtaskId: string } {
+  const coderSubtasks = state.subtasks.filter((entry) => entry.ownerRole === 'CODER');
+  const first = coderSubtasks[0];
+  if (first === undefined) {
+    throw new Error('review rework requires at least one CODER subtask in state');
+  }
+  // Task 4.2 ruling ③: changes_requested targets the integrated whole, so every
+  // subtask reopens and the first re-activates — conservative superset. Phase 9
+  // refinement (DEF-013): target subtasks via reviewComments references.
+  return {
+    mutations: coderSubtasks.map((entry) =>
+      mergeByIdMutation('subtasks', entry.id, {
+        status: entry.id === first.id ? 'in_progress' : 'todo',
+      }),
+    ),
+    subtaskId: first.id,
+  };
 }
 
 function evaluateReview(state: AppState, clock: Clock): CoordinatorDecision {
@@ -298,13 +430,15 @@ function evaluateReview(state: AppState, clock: Clock): CoordinatorDecision {
       display: `评审退回（${state.reviewComments.length} 条意见），退回 CODER 第 ${state.iterationCount + 1} 轮`,
       ts: clock.now(),
     };
+    const reopen = reopenForRework(state);
     return {
       route: {
         kind: 'worker',
-        batch: [{ role: 'CODER', subtaskId: assignedCoderSubtaskId(state) }],
+        batch: [{ role: 'CODER', subtaskId: reopen.subtaskId }],
         parallel: false,
       },
       mutations: [
+        ...reopen.mutations,
         setMutation('iterationCount', state.iterationCount + 1),
         setMutation('nextRole', 'CODER'),
         setMutation('phase', 'coding'),

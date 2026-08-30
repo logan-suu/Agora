@@ -213,6 +213,23 @@
       "resolved_by": null,
       "created_at": "2026-08-30T03:22:40.000Z",
       "notes": "Resolution condition: wire Coordinator handoff generation in task 4.4 (Coordinator progress ledger) — the first task where Coordinator mints structured ledger/state mutations. The five nextRole flips (dispatchPM→ARCHITECT, planning→CODER, coding→TESTER, testing-loop→CODER, review-loop→CODER) must append a HandoffPacket built from State (fromRole=stage just finished, done=stage outputs summary, keyDecisions=cited decision ids, fileRefs=state file refs). Acceptance: an integration chain asserts packets appear WITHOUT manual seeding. Phase 3 exit accepted with this gap recorded (user ruling 2026-08-30, PR #32 scope unchanged); check this entry at the Phase 4 exit gate."
+    },
+    {
+      "id": "DEF-013",
+      "source": "task 4.2 plan ruling ③ (user-delegated execution, PR human review pending as merge backstop)",
+      "pr": null,
+      "pr_url": null,
+      "comment_id": null,
+      "comment_url": null,
+      "task": "4.2",
+      "severity": "minor",
+      "item": "Review rework granularity under multi-subtask Tier 2 (reopen-all is a conservative superset)",
+      "detail": "Task 4.2 ruling ③: with multiple subtasks, REVIEWER changes_requested reopens ALL subtasks and re-activates the first in array order — a conservative superset that never misses feedback targeting an earlier subtask, but may re-run unaffected units. Phase 4 has no per-subtask review refs (reviewComments are Record<string,unknown> from a thin executor), so narrower targeting is not yet implementable without inventing schema.",
+      "target_phase": 9,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-30T11:00:35.000Z",
+      "notes": "Resolution condition: when Phase 9 parallel dispatch lands, carry subtask refs in reviewComments (REVIEWER sees per-subtask worktree refs via branchOrPatch) and narrow reopenForRework to the referenced subset, keeping reopen-all as the fallback when no refs are present. Check this entry at the Phase 9 exit gate."
     }
   ]
 }

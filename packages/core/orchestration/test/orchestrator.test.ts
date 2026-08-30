@@ -56,12 +56,9 @@ function coderRound(round: number): FakeExecutor {
       ],
     },
     { kind: 'tool', output: {}, reachedSafeBoundary: true, mutations: [] },
-    {
-      kind: 'done',
-      output: {},
-      reachedSafeBoundary: true,
-      mutations: [mergeByIdMutation('subtasks', SUBTASK_ID, { status: 'done' })],
-    },
+    // task 4.2: subtask lifecycle is coordinator-owned (done is set by the
+    // coordinator on test pass) — the worker no longer self-marks done.
+    { kind: 'done', output: {}, reachedSafeBoundary: true, mutations: [] },
   ]);
 }
 

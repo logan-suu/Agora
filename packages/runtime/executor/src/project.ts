@@ -44,7 +44,7 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
         goal: state.goal,
         phase: state.phase,
         iterationCount: state.iterationCount,
-        complexity: null, // Phase 4 complexity tiers
+        complexity: state.complexity ?? null, // task 4.2: tier wired from entry (4.1 ruling ③)
         workers: [], // Phase 9 worker registry
         testSummary:
           state.testResults === undefined

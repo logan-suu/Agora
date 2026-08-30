@@ -41,9 +41,11 @@ import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
  *   diff-only surface for ARCHITECT/REVIEWER; the main-repo mutations
  *   git_createWorktree/git_merge are granted to no model role. `lint` resolves
  *   the biome-backed lint-server since task 2.5 (DEF-005 resolved).
- * - Structured handoffs: CODER/TESTER keep the Phase 0 file protocol
- *   (subtask-status.json / test-results.json read back through the executor
- *   callbacks). PM/ARCHITECT/REVIEWER have no fs.write grant (PM is tool-free
+ * - Structured handoffs: TESTER keeps the Phase 0 file protocol
+ *   (test-results.json read back through the executor callback). Task 4.2
+ *   retired the CODER `subtask-status.json` signal — subtask lifecycle is
+ *   coordinator-owned. PM/ARCHITECT/REVIEWER have no fs.write grant (PM is
+ *   tool-free
  *   per §2, ARCHITECT/REVIEWER are read-only), so their structured output is
  *   their turn's final assistant message, interpreted into State mutations by
  *   {@link pmTurnMutations} / {@link architectTurnMutations} /
@@ -63,8 +65,7 @@ export const PHASE2_TOOL_SURFACE: readonly string[] = [
   'lint',
 ];
 
-/** Phase 0 handoff files reused verbatim (CODER/TESTER file protocol). */
-const SUBTASK_STATUS_FILE = 'subtask-status.json';
+/** Phase 0 handoff file reused verbatim (TESTER file protocol). */
 const TEST_RESULTS_FILE = 'test-results.json';
 
 /** Working rules appended per role; teach the structured-output protocol. */
@@ -73,7 +74,7 @@ const PHASE2_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   ARCHITECT:
     '\n\n[Phase 2 working rules]\n- Your §2 grant is read-only (fs.read + git.readonly).\n- End your turn with a single JSON object as your final message shaped {"architecture":{...},"conventions":{...}}; both values must be plain JSON objects.',
   CODER:
-    '\n\n[Phase 2 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files, fs_read to inspect, and sandbox_run to verify quickly.\n- Submit your work with git_applyPatch (the worktree argument is injected): it stages and commits the worktree (add -A), so fs-written files land in the commit.\n- After implementing, use fs_write to store {"status":"done"} at the worktree root in `subtask-status.json`.',
+    '\n\n[Phase 2 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files, fs_read to inspect, and sandbox_run to verify quickly.\n- Submit your work with git_applyPatch (the worktree argument is injected): it stages and commits the worktree (add -A), so fs-written files land in the commit.',
   TESTER:
     '\n\n[Phase 2 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
   REVIEWER:
@@ -288,16 +289,6 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
       return undefined;
     }
   };
-  const readSubtaskStatus = async (): Promise<{ id: string; status: string } | undefined> => {
-    try {
-      const content = await sandbox.read(worktree, SUBTASK_STATUS_FILE);
-      const parsed = JSON.parse(content) as { status?: unknown };
-      if (parsed.status !== 'done') return undefined;
-      return { id: subtaskId, status: 'done' };
-    } catch {
-      return undefined;
-    }
-  };
   const executors: HarnessExecutor[] = [];
   const workerRuntime = new WorkerRuntime({
     roster: DEFAULT_ROSTER,
@@ -321,7 +312,6 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
         tools: catalog.all(),
         allowTools: resolved.allowNames,
         ...(spec.role === 'TESTER' ? { readTestResults } : {}),
-        ...(spec.role === 'CODER' ? { readSubtaskStatus } : {}),
         ...(turnMutations === undefined
           ? {}
           : { readTurnMutations: ({ text }) => turnMutations(text) }),
