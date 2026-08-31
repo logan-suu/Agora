@@ -16,7 +16,7 @@ export const PM_ROLE: RoleSpec = {
   systemPrompt:
     '你是产品经理，产出带验收标准的结构化需求。若 leader 新指令与已确认需求冲突，提 blocking 异议说明冲突点、等 leader 裁决，不擅自改需求。',
   tools: [],
-  projection: ['goal', 'requirements', 'leaderDecisions'],
+  projection: ['goal', 'requirements', 'leaderDecisions', 'coordinationContext'],
   routeWhen: 'goalAmbiguous',
 };
 
@@ -34,7 +34,14 @@ export const ARCHITECT_ROLE: RoleSpec = {
   systemPrompt:
     '你是架构师，给出可实现的设计与约定；重设计时逐条回应结构化 reviewFeedback，关键决策附理由写入台账。',
   tools: ['fs.read', 'git.readonly'],
-  projection: ['requirements', 'repoStructure', 'conventions', 'architecture', 'reviewFeedback'],
+  projection: [
+    'requirements',
+    'repoStructure',
+    'conventions',
+    'architecture',
+    'reviewFeedback',
+    'coordinationContext',
+  ],
   routeWhen: 'requirementsReady',
 };
 
@@ -59,6 +66,7 @@ export const REVIEWER_ROLE: RoleSpec = {
     'reviewContext',
     'failingTests',
     'fileRefs',
+    'coordinationContext',
   ],
   routeWhen: 'testsPassed',
 };

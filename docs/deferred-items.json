@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-30T03:36:59.095Z",
+  "last_updated": "2026-08-31T00:56:04.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -209,10 +209,11 @@
       "item": "Coordinator does not generate handoffPackets at role switches (five nextRole flips in coordinator.ts)",
       "detail": "Spec source: 开发计划安排 §6.3 交接包「生成逻辑：在角色切换时由 Coordinator 触发」(mirrored by task 3.2's own description). Task 3.2 遗留① deferred the wiring to 3.3/3.5 (resolution condition: the five nextRole flips in coordinator.ts dispatch/evaluate functions), but 3.3 (projection scope) and 3.5 (user-approved scope: barrel export + exit test only) both shipped without it, and the deferral was never ledgered. Surfaced by the Phase 3 exit coverage review (/test-phase-agora): cross-package chain coverage 5/6 — phase3-exit seeds handoff packets manually, so a real run has no generation path. Already in place: HandoffPacket structure + assertValidHandoff/assertAppendableHandoff gates (core/domain/handoff.ts), the reducer append gate with keyDecisions referential integrity, and R1 seam assertions in phase3-exit — only the generation trigger is missing.",
       "target_phase": 4,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "Codex (task 4.4)",
       "created_at": "2026-08-30T03:22:40.000Z",
-      "notes": "Resolution condition: wire Coordinator handoff generation in task 4.4 (Coordinator progress ledger) — the first task where Coordinator mints structured ledger/state mutations. The five nextRole flips (dispatchPM→ARCHITECT, planning→CODER, coding→TESTER, testing-loop→CODER, review-loop→CODER) must append a HandoffPacket built from State (fromRole=stage just finished, done=stage outputs summary, keyDecisions=cited decision ids, fileRefs=state file refs). Acceptance: an integration chain asserts packets appear WITHOUT manual seeding. Phase 3 exit accepted with this gap recorded (user ruling 2026-08-30, PR #32 scope unchanged); check this entry at the Phase 4 exit gate."
+      "notes": "Resolved in task 4.4: Coordinator now uses a single post-decision attachCoordinationArtifacts seam to append a HandoffPacket whenever an existing worker nextRole changes to a different worker role. The implementation is generic rather than limited to the original five flips; it derives leader decision ids and structured failure fileRefs/openIssues from State and still passes the reducer shape/referential-integrity gate. Evidence: packages/core/orchestration/test/coordinator.test.ts covers generic generation and non-generation cases; tests/integration/phase2/phase2-exit.test.ts runs the real Harness/MCP/LocalTempSandbox chain through PM→ARCHITECT→CODER→TESTER→REVIEWER and asserts four generated packets without manual seeding; tests/integration/cross-phase/phase4-coordination-ledger.test.ts verifies deterministic cross-package persistence/projection.",
+      "resolved_at": "2026-08-31T00:56:04.000Z"
     },
     {
       "id": "DEF-013",

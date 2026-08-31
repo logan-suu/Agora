@@ -1,4 +1,10 @@
-import type { AppState, RoleId, RoleSpec } from '@agora/core-domain';
+import {
+  type AppState,
+  type CoordinationLedgerPayload,
+  latestCoordinationLedger,
+  type RoleId,
+  type RoleSpec,
+} from '@agora/core-domain';
 import type { ProjectionView } from './base';
 import {
   collapseSupersededDecisions,
@@ -158,11 +164,71 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
     }
     case 'reviewFeedback':
       return latestReviewFeedback(state);
+    case 'coordinationContext':
+      return coordinationContext(state, role);
     default:
       // All roster-declared slices are implemented above (drift-guarded by
       // project.test); an unknown name is roster/implementation drift.
       throw new Error(`unknown projection slice "${slice}" declared for role "${String(role)}"`);
   }
+}
+
+function copiedLedger(ledger: CoordinationLedgerPayload): CoordinationLedgerPayload {
+  return {
+    ...ledger,
+    task: {
+      confirmedFacts: ledger.task.confirmedFacts.map((fact) => ({ ...fact })),
+      hypotheses: ledger.task.hypotheses.map((fact) => ({ ...fact })),
+      plan: ledger.task.plan.map((step) => ({ ...step, dependsOn: [...step.dependsOn] })),
+    },
+    progress: {
+      isRequestSatisfied: { ...ledger.progress.isRequestSatisfied },
+      isInLoop: { ...ledger.progress.isInLoop },
+      isProgressBeingMade: { ...ledger.progress.isProgressBeingMade },
+      nextSpeaker: { ...ledger.progress.nextSpeaker },
+      instructionOrQuestion: { ...ledger.progress.instructionOrQuestion },
+    },
+  };
+}
+
+function coordinationContext(state: AppState, role: RoleId): unknown {
+  const ledger = latestCoordinationLedger(state);
+  if (role === 'COORDINATOR') {
+    if (ledger === undefined) {
+      return {
+        revision: null,
+        task: { confirmedFacts: [], hypotheses: [], plan: [] },
+        progress: null,
+        completionCandidate: false,
+        stallCount: 0,
+        progressMarker: null,
+        replanned: false,
+        replanReason: null,
+      };
+    }
+    return copiedLedger(ledger);
+  }
+  if (ledger === undefined) {
+    return {
+      revision: null,
+      confirmedFacts: [],
+      plan: [],
+      instructionOrQuestion: null,
+      completionCandidate: false,
+    };
+  }
+  return {
+    revision: ledger.revision,
+    confirmedFacts: ledger.task.confirmedFacts.map((fact) => ({ ...fact })),
+    plan: ledger.task.plan
+      .filter((step) => step.role === role)
+      .map((step) => ({ ...step, dependsOn: [...step.dependsOn] })),
+    instructionOrQuestion:
+      ledger.progress.nextSpeaker.answer === role
+        ? ledger.progress.instructionOrQuestion.answer
+        : null,
+    completionCandidate: ledger.completionCandidate,
+  };
 }
 
 function latestCoordinatorControlMessage(

@@ -41,7 +41,7 @@ describe('PHASE0_ROSTER', () => {
   });
 
   it('declares projection slices and routeWhen placeholders for Phase 0 routing', () => {
-    expect(spec('COORDINATOR').projection).toEqual(['global.summary']);
+    expect(spec('COORDINATOR').projection).toEqual(['global.summary', 'coordinationContext']);
     expect(spec('COORDINATOR').routeWhen).toBe('always');
     expect(spec('CODER').projection).toEqual([
       'assignedSubtask',
@@ -50,12 +50,14 @@ describe('PHASE0_ROSTER', () => {
       'failingTests',
       'fileRefs',
       'reviewFeedback',
+      'coordinationContext',
     ]);
     expect(spec('CODER').routeWhen).toBe('designReady || testsFailed');
     expect(spec('TESTER').projection).toEqual([
       'acceptance',
       'branchOrPatch',
       'interfaceContracts',
+      'coordinationContext',
     ]);
     expect(spec('TESTER').routeWhen).toBe('codingDone');
   });
