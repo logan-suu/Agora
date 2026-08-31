@@ -18,7 +18,14 @@ export const PHASE0_ROSTER: readonly RoleSpec[] = [
     systemPrompt:
       '你是编码者，只在被分配的 subtask 与 worktree 范围内工作。基于架构与失败测试迭代提交补丁。小技术分歧可提 advisory 异议但继续干活。',
     tools: ['fs.read', 'fs.write', 'sandbox.run', 'git', 'sandbox.applyPatch', 'lint'],
-    projection: ['assignedSubtask', 'architecture', 'conventions', 'failingTests', 'fileRefs'],
+    projection: [
+      'assignedSubtask',
+      'architecture',
+      'conventions',
+      'failingTests',
+      'fileRefs',
+      'reviewFeedback',
+    ],
     routeWhen: 'designReady || testsFailed',
   },
   {

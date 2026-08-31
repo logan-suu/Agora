@@ -69,12 +69,18 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
       'requirements',
       'repoStructure',
       'conventions',
+      'architecture',
+      'reviewFeedback',
     ]);
     expect(spec(DEFAULT_ROSTER, 'REVIEWER').projection).toEqual([
       'pendingPatch',
       'conventions',
       'architecture',
+      'reviewContext',
+      'failingTests',
+      'fileRefs',
     ]);
+    expect(spec(DEFAULT_ROSTER, 'CODER').projection).toContain('reviewFeedback');
   });
 
   it('carries the §2 system prompts including their non-negotiable constraints', () => {

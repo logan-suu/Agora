@@ -49,6 +49,7 @@ describe('PHASE0_ROSTER', () => {
       'conventions',
       'failingTests',
       'fileRefs',
+      'reviewFeedback',
     ]);
     expect(spec('CODER').routeWhen).toBe('designReady || testsFailed');
     expect(spec('TESTER').projection).toEqual([

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import {
   type AppState,
+  appendMutation,
   applyMutations,
   mergeByIdMutation,
   PHASE0_ROSTER,
@@ -18,6 +19,7 @@ import {
   createPhase2Runtime,
   PHASE2_TOOL_SURFACE,
   type Phase2Runtime,
+  reviewerTurnMutations,
 } from '../../../packages/core/__tests__/e2e/phase2-runtime';
 
 /**
@@ -59,6 +61,49 @@ import {
 const SUBTASK_STATUS_FILE = 'subtask-status.json';
 /** TESTER handoff file (Phase 0 protocol, reused). */
 const TEST_RESULTS_FILE = 'test-results.json';
+
+describe('REVIEWER structured verdict scope (task 4.3)', () => {
+  it('accepts architecture scope and preserves it in the append mutation', () => {
+    expect(
+      reviewerTurnMutations(
+        '[{"id":"rv-1","kind":"verdict","verdict":"changes_requested","issueScope":"architecture","summary":"split boundary"}]',
+      ),
+    ).toEqual([
+      appendMutation('reviewComments', {
+        id: 'rv-1',
+        kind: 'verdict',
+        verdict: 'changes_requested',
+        issueScope: 'architecture',
+        summary: 'split boundary',
+      }),
+    ]);
+  });
+
+  it('keeps missing issueScope backward-compatible and rejects unknown scopes', () => {
+    expect(() =>
+      reviewerTurnMutations(
+        '[{"id":"rv-1","kind":"verdict","verdict":"changes_requested","issueScope":"style"}]',
+      ),
+    ).toThrow(/issueScope/);
+    expect(
+      reviewerTurnMutations('[{"id":"rv-2","kind":"verdict","verdict":"changes_requested"}]'),
+    ).toHaveLength(1);
+  });
+
+  it('requires exactly one verdict with a stable non-empty id per turn', () => {
+    expect(() => reviewerTurnMutations('[{"id":"c-1","kind":"comment"}]')).toThrow(
+      /exactly one verdict/,
+    );
+    expect(() =>
+      reviewerTurnMutations(
+        '[{"id":"v-1","kind":"verdict","verdict":"approved"},{"id":"v-2","kind":"verdict","verdict":"approved"}]',
+      ),
+    ).toThrow(/exactly one verdict/);
+    expect(() =>
+      reviewerTurnMutations('[{"kind":"verdict","verdict":"changes_requested"}]'),
+    ).toThrow(/non-empty string id/);
+  });
+});
 
 const MATH_SOURCE_V1 = `// Simple math module (Phase 2 exit task).
 function add(a, b) {
@@ -135,6 +180,16 @@ const NOTES_PATCH_V2 = [
   '',
 ].join('\n');
 
+const NOTES_PATCH_V3 = [
+  'diff --git a/notes-3.txt b/notes-3.txt',
+  'new file mode 100644',
+  '--- /dev/null',
+  '+++ b/notes-3.txt',
+  '@@ -0,0 +1 @@',
+  '+submitted by CODER via git_applyPatch (round 3)',
+  '',
+].join('\n');
+
 /** PM structured output (final message, tool-free role). */
 const PM_REQUIREMENTS_JSON = JSON.stringify([
   {
@@ -156,18 +211,55 @@ const ARCHITECT_DESIGN_JSON = JSON.stringify({
   },
   conventions: { moduleSystem: 'commonjs', testRunner: 'node:test' },
 });
+const ARCHITECT_REDESIGN_JSON = JSON.stringify({
+  architecture: {
+    summary:
+      'separate add and multiply implementations; multiplication must use the product operator',
+    interfaces: [
+      { name: 'add', module: 'math.js' },
+      { name: 'mul', module: 'math.js', invariant: 'returns a * b' },
+    ],
+  },
+  conventions: { moduleSystem: 'commonjs', testRunner: 'node:test' },
+});
 
 /** REVIEWER structured outputs (final message, read-only role). */
 const REVIEW_APPROVED_JSON = JSON.stringify([
   {
+    id: 'rv-approved',
     kind: 'verdict',
     verdict: 'approved',
     summary: 'clean implementation, tests are authoritative',
   },
 ]);
 const REVIEW_CHANGES_JSON = JSON.stringify([
-  { kind: 'comment', file: 'math.js', line: 6, note: 'mul must not fall back to addition' },
-  { kind: 'verdict', verdict: 'changes_requested', summary: 'mul returns a + b' },
+  {
+    id: 'rc-implementation',
+    kind: 'comment',
+    file: 'math.js',
+    line: 6,
+    note: 'mul must not fall back to addition',
+  },
+  {
+    id: 'rv-implementation',
+    kind: 'verdict',
+    verdict: 'changes_requested',
+    summary: 'mul returns a + b',
+  },
+]);
+const REVIEW_ARCHITECTURE_JSON = JSON.stringify([
+  {
+    id: 'rc-architecture',
+    kind: 'comment',
+    summary: 'the design does not state the multiplication invariant',
+  },
+  {
+    id: 'rv-architecture',
+    kind: 'verdict',
+    verdict: 'changes_requested',
+    issueScope: 'architecture',
+    summary: 'the module contract permits addition in mul',
+  },
 ]);
 
 const PASSED_RESULTS = { passed: true, total: 2, failed: 0, failures: [] };
@@ -261,6 +353,22 @@ const REVIEW_LOOP_TURNS: RoleTurns = {
   REVIEWER: [REVIEWER_TURN(REVIEW_CHANGES_JSON), REVIEWER_TURN(REVIEW_APPROVED_JSON)],
 };
 
+/** Feedback escalation: two failures → REVIEWER root cause → ARCHITECT redesign → green. */
+const ESCALATION_TURNS: RoleTurns = {
+  PM: [{ actions: [], final: PM_REQUIREMENTS_JSON }],
+  ARCHITECT: [
+    { actions: [], final: ARCHITECT_DESIGN_JSON },
+    { actions: [], final: ARCHITECT_REDESIGN_JSON },
+  ],
+  CODER: [
+    CODER_TURN(MATH_SOURCE_BUGGY, NOTES_PATCH_V1),
+    CODER_TURN(MATH_SOURCE_BUGGY, NOTES_PATCH_V2),
+    CODER_TURN(MATH_SOURCE_V1, NOTES_PATCH_V3),
+  ],
+  TESTER: [TESTER_TURN(FAILED_RESULTS), TESTER_TURN(FAILED_RESULTS), TESTER_TURN(PASSED_RESULTS)],
+  REVIEWER: [REVIEWER_TURN(REVIEW_ARCHITECTURE_JSON), REVIEWER_TURN(REVIEW_APPROVED_JSON)],
+};
+
 /** Iteration-limit escalation: seeded one round below the cap, tests keep failing. */
 const LIMIT_TURNS: RoleTurns = {
   CODER: [
@@ -318,16 +426,23 @@ class TurnScriptedLlmAdapter extends LlmAdapter {
 
 /** Parse the projected role from the first message (the pre-step projection). */
 function projectionRoleOf(call: GenerateOptions): string {
+  const view = projectionViewOf(call);
+  if (typeof view.role !== 'string') {
+    throw new Error('scripted adapter expected a role in the projection');
+  }
+  return view.role;
+}
+
+function projectionViewOf(call: GenerateOptions): {
+  role?: unknown;
+  slices?: Record<string, unknown>;
+} {
   const first = call.messages[0];
   const block = first === undefined ? undefined : first.content.find((b) => b.type === 'text');
   if (block === undefined || block.type !== 'text') {
     throw new Error('scripted adapter expected the projection as the first message block');
   }
-  const view = JSON.parse(block.text) as { role?: unknown };
-  if (typeof view.role !== 'string') {
-    throw new Error('scripted adapter expected a role in the projection');
-  }
-  return view.role;
+  return JSON.parse(block.text) as { role?: unknown; slices?: Record<string, unknown> };
 }
 
 /** Number of tool executions already completed: one tool-result block per executed call. */
@@ -638,6 +753,72 @@ describe('Phase 2 exit: review loop (review↔coding 回环, DEF-007 simplificat
     expect(readFileSync(`${runtime.worktree.path}/math.js`, 'utf8')).toBe(MATH_SOURCE_V2);
     // DEF-007: approval converges without a leader gate in Phase 2.
     expect(final.humanGate).toBeUndefined();
+  });
+});
+
+describe('Phase 2 exit: feedback escalation reaches informed REVIEWER and ARCHITECT (task 4.3)', () => {
+  let runtime: Phase2Runtime;
+  let final: AppState;
+  let adapter: TurnScriptedLlmAdapter;
+
+  beforeAll(async () => {
+    ({ runtime, final, adapter } = await runScriptedScenario(
+      'exit-2-feedback-escalation',
+      ESCALATION_TURNS,
+    ));
+  }, 60_000);
+
+  afterAll(async () => {
+    await runtime.dispose();
+  });
+
+  it('runs two failures through root-cause review and architecture redesign to done', () => {
+    expect(final.phase).toBe('done');
+    expect(final.testResults?.passed).toBe(true);
+    expect(final.complexity?.signals.escalation).toMatchObject({
+      reason: 'reviewer_architecture_issue',
+      reviewCommentId: 'rv-architecture',
+    });
+    expect(toolResultsOf(adapter.calls, 'sandbox_run')).toMatchObject([
+      { exitCode: 1 },
+      { exitCode: 1 },
+      { exitCode: 0 },
+    ]);
+  });
+
+  it('projects structured failure evidence to REVIEWER without raw message metadata', () => {
+    const reviewerStarts = roleCalls(adapter, 'REVIEWER').filter(
+      (call) => completedActionsOf(call) === 0,
+    );
+    expect(reviewerStarts).toHaveLength(2);
+    const rootCause = projectionViewOf(reviewerStarts[0] as GenerateOptions).slices;
+    expect(rootCause?.reviewContext).toEqual({
+      mode: 'test_failure_root_cause',
+      reason: 'repeated_test_failures',
+      failureStreak: 2,
+    });
+    expect(rootCause?.failingTests).toMatchObject({ passed: false, failed: 1 });
+    expect(rootCause?.fileRefs).toEqual([{ file: 'math.test.js', lines: [9] }]);
+    expect(JSON.stringify(rootCause)).not.toContain('channelId');
+    expect(JSON.stringify(rootCause)).not.toContain('fromRole');
+  });
+
+  it('projects the exact architecture verdict and current design to the redesign turn', () => {
+    const architectStarts = roleCalls(adapter, 'ARCHITECT').filter(
+      (call) => completedActionsOf(call) === 0,
+    );
+    expect(architectStarts).toHaveLength(2);
+    const redesign = projectionViewOf(architectStarts[1] as GenerateOptions).slices;
+    expect(redesign?.architecture).toMatchObject({
+      summary: 'single CommonJS module math.js exposing add/mul',
+    });
+    expect(redesign?.reviewFeedback).toMatchObject({
+      verdict: {
+        id: 'rv-architecture',
+        issueScope: 'architecture',
+        summary: 'the module contract permits addition in mul',
+      },
+    });
   });
 });
 

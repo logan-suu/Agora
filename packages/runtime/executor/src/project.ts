@@ -141,9 +141,70 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
     }
     case 'pendingPatch':
       return state.pendingPatch === undefined ? null : { ...state.pendingPatch };
+    case 'reviewContext': {
+      const control = latestCoordinatorControlMessage(state);
+      const reason = typeof control?.payload.reason === 'string' ? control.payload.reason : null;
+      const recordedStreak = control?.payload.failureStreak;
+      return {
+        mode: reason === 'repeated_test_failures' ? 'test_failure_root_cause' : 'quality_review',
+        reason,
+        failureStreak:
+          typeof recordedStreak === 'number' &&
+          Number.isInteger(recordedStreak) &&
+          recordedStreak > 0
+            ? recordedStreak
+            : null,
+      };
+    }
+    case 'reviewFeedback':
+      return latestReviewFeedback(state);
     default:
       // All roster-declared slices are implemented above (drift-guarded by
       // project.test); an unknown name is roster/implementation drift.
       throw new Error(`unknown projection slice "${slice}" declared for role "${String(role)}"`);
   }
+}
+
+function latestCoordinatorControlMessage(
+  state: AppState,
+): AppState['messages'][number] | undefined {
+  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+    const message = state.messages[index];
+    if (
+      message !== undefined &&
+      message.fromRole === 'COORDINATOR' &&
+      (message.type === 'announce' || message.type === 'feedback' || message.type === 'escalation')
+    ) {
+      return message;
+    }
+  }
+  return undefined;
+}
+
+function latestReviewFeedback(state: AppState): {
+  verdict: Record<string, unknown> | null;
+  entries: Record<string, unknown>[];
+} {
+  let verdictIndex = -1;
+  for (let index = state.reviewComments.length - 1; index >= 0; index -= 1) {
+    if (state.reviewComments[index]?.kind === 'verdict') {
+      verdictIndex = index;
+      break;
+    }
+  }
+  if (verdictIndex < 0) return { verdict: null, entries: [] };
+
+  let previousVerdictIndex = -1;
+  for (let index = verdictIndex - 1; index >= 0; index -= 1) {
+    if (state.reviewComments[index]?.kind === 'verdict') {
+      previousVerdictIndex = index;
+      break;
+    }
+  }
+  const verdict = state.reviewComments[verdictIndex];
+  if (verdict === undefined) return { verdict: null, entries: [] };
+  return {
+    verdict: { ...verdict },
+    entries: state.reviewComments.slice(previousVerdictIndex + 1).map((entry) => ({ ...entry })),
+  };
 }
