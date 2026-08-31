@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-31T00:56:04.000Z",
+  "last_updated": "2026-08-31T10:58:25.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -69,11 +69,11 @@
       "severity": "major",
       "item": "TOCTOU symlink race (CWE-367) between path validation and fs operation",
       "detail": "WorktreeFsService performs a synchronous lexical path validation then a separate fs call; a concurrent process replacing the target/an ancestor with an escaping symlink between assertInside and readFileSync/writeFileSync can break R7 confinement. Definitive fix needs openat-under-trusted-fd or an isolated concurrently-writable worktree; Node 20 lacks a clean dir-relative open API and the change is too large for the PR scope.",
-      "target_phase": 1,
+      "target_phase": 9,
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-08-27T07:10:00.000Z",
-      "notes": "packages/tools/fs/src/fs-service.ts + worktree-registry.ts, plus the sandbox read/write path (LocalTempSandbox/DockerSandbox host-side read/write validate via assertInside then perform the fs call). Release condition: DockerSandbox (1.4) provides worktree isolation as mitigation; re-evaluate whether an openat refactor is needed when true parallelism lands (Phase 4 / 9.2). [2026-08-27] Mitigation landed in task 1.4: DockerSandbox confines run() to a per-task container (NetworkMode none, bind-mounted worktree root), so the concurrently-writable host dir is no longer the command execution boundary; sandbox read/write TOCTOU remains open for LocalTempSandbox-hosted fs operations, tracked here until Phase 4 re-evaluation. [2026-08-27 PR#17 review] CodeRabbit raised the same TOCTOU on the sandbox read/write path (local-temp-sandbox.ts:44); acknowledged, covered by this entry (definitive fix needs descriptor-relative no-follow ops or an isolated worktree — out of PR scope, deferred to Phase 4)."
+      "notes": "packages/tools/fs/src/fs-service.ts + worktree-registry.ts, plus the sandbox read/write path (LocalTempSandbox/DockerSandbox host-side read/write validate via assertInside then perform the fs call). Release condition: DockerSandbox (1.4) provides worktree isolation as mitigation; re-evaluate whether an openat refactor is needed when true parallelism lands (Phase 4 / 9.2). [2026-08-27] Mitigation landed in task 1.4: DockerSandbox confines run() to a per-task container (NetworkMode none, bind-mounted worktree root), so the concurrently-writable host dir is no longer the command execution boundary; sandbox read/write TOCTOU remains open for LocalTempSandbox-hosted fs operations, tracked here until Phase 4 re-evaluation. [2026-08-27 PR#17 review] CodeRabbit raised the same TOCTOU on the sandbox read/write path (local-temp-sandbox.ts:44); acknowledged, covered by this entry (definitive fix needs descriptor-relative no-follow ops or an isolated worktree — out of PR scope, deferred to Phase 4). [2026-08-31 Phase 4 exit re-evaluation, Leader approved] Phase 4 still uses the sequential WorkerRuntime fallback, so the true concurrent replacement window has not expanded beyond the known host-side risk. Keep the item open and retarget it to Phase 9, where bounded parallel workers and worktree integration create the intended re-evaluation point."
     },
     {
       "id": "DEF-005",
@@ -174,11 +174,11 @@
       "severity": "minor",
       "item": "AppState.pendingPatch has no write op in the §1 Mutation union",
       "detail": "§1 defines pendingPatch (code-layer reference field) but the Mutation union lists no op for it — same gap class as #22/#25. Task 2.4 projection reads it read-only with an explicit null default (R9, no silent absence). Unlocked writers are consumer-driven per repo precedent (2.2 requirements, 2.4 conventions), and there is no real consumer yet: TESTER/REVIEWER consume worktree path refs via branchOrPatch.worktrees and can pull diffs themselves with git/fs tools (iron rule 2 — truth lives in the worktree).",
-      "target_phase": 4,
+      "target_phase": 9,
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-08-28T17:12:53.000Z",
-      "notes": "Resolution condition: unlock the pendingPatch set op when a real consumer lands — evaluate at task 2.5 e2e (does the CODER patch-submission flow need to carry patch metadata through State for the REVIEWER pendingDiff slice?), else slide to Phase 3 patch-reference work. EVALUATED at 2.5 (user-approved disposition): the six-role e2e proves the CODER→REVIEWER patch flow works entirely via worktree refs (branchOrPatch.worktrees slice) + REVIEWER's in-loop git_diff — final state has pendingPatch unset for the whole run (asserted in phase2-exit chain 1), so no consumer exists. Sliding to Phase 3 patch-reference work; unlock still follows the pre-paved path (SET_FIELDS + ENABLED_SET_FIELDS + applySet case, signature unchanged) plus an R12 实装记录 in 详细设计方案 §1. [2026-08-30 user ruling, option A] Phase 3 is closing with no consumer landed, so the entry is re-pointed target_phase 3 → 4 instead of lingering past its target: the pendingPatch write op stays locked until a real patch-reference consumer appears (unlock path unchanged). Re-check at the Phase 4 exit gate."
+      "notes": "Resolution condition: unlock the pendingPatch set op when a real consumer lands — evaluate at task 2.5 e2e (does the CODER patch-submission flow need to carry patch metadata through State for the REVIEWER pendingDiff slice?), else slide to Phase 3 patch-reference work. EVALUATED at 2.5 (user-approved disposition): the six-role e2e proves the CODER→REVIEWER patch flow works entirely via worktree refs (branchOrPatch.worktrees slice) + REVIEWER's in-loop git_diff — final state has pendingPatch unset for the whole run (asserted in phase2-exit chain 1), so no consumer exists. Sliding to Phase 3 patch-reference work; unlock still follows the pre-paved path (SET_FIELDS + ENABLED_SET_FIELDS + applySet case, signature unchanged) plus an R12 实装记录 in 详细设计方案 §1. [2026-08-30 user ruling, option A] Phase 3 is closing with no consumer landed, so the entry is re-pointed target_phase 3 → 4 instead of lingering past its target: the pendingPatch write op stays locked until a real patch-reference consumer appears (unlock path unchanged). Re-check at the Phase 4 exit gate. [2026-08-31 Phase 4 exit re-evaluation, Leader approved] Repository-wide inspection still finds only read-side projection plus fixture coverage; the real CODER→REVIEWER chain continues to use worktree references and git_diff, with no pendingPatch writer or consumer. Keep the Mutation op locked and retarget the next review to Phase 9 worktree integration."
     },
     {
       "id": "DEF-011",
