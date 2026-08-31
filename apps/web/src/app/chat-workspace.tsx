@@ -121,10 +121,6 @@ function LeftSidebar({ model, open }: { model: WorkspaceViewModel; open: boolean
           ))}
         </ul>
       </section>
-      <button className="collapse-control" type="button">
-        <span aria-hidden="true">‹</span>
-        Collapse
-      </button>
     </aside>
   );
 }
@@ -337,9 +333,9 @@ export function ChatWorkspace({ model = DEFAULT_WORKSPACE }: ChatWorkspaceProps)
           <span aria-hidden="true">#</span>
           {model.channel.name}
         </div>
-        <div className="live-status">
+        <div className="preview-status">
           <span />
-          Live
+          Local preview
         </div>
         <button
           className="icon-control"
