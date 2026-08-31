@@ -1,7 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { type FormEvent, type KeyboardEvent, type ReactNode, useMemo, useState } from 'react';
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   applyMention,
@@ -9,8 +16,10 @@ import {
   DEFAULT_WORKSPACE,
   filterMentionOptions,
   getMentionQuery,
-  nextMessageTimestamp,
+  mergeMessageById,
+  type PendingMessageSubmission,
   type PresenceStatus,
+  prepareMessageSubmission,
   sortMessagesByTimestamp,
   type TeamMemberView,
   type WorkspaceViewModel,
@@ -18,6 +27,7 @@ import {
 
 interface ChatWorkspaceProps {
   model?: WorkspaceViewModel;
+  projectId?: string;
 }
 
 const roleLabels: Record<string, string> = {
@@ -25,6 +35,7 @@ const roleLabels: Record<string, string> = {
   CODER: 'Coder',
   COORDINATOR: 'Coordinator',
   LEADER: 'Leader (You)',
+  leader: 'Leader (You)',
   PM: 'PM',
   REVIEWER: 'Reviewer',
   TESTER: 'Tester',
@@ -35,6 +46,7 @@ const roleInitials: Record<string, string> = {
   CODER: 'CO',
   COORDINATOR: 'C',
   LEADER: 'L',
+  leader: 'L',
   PM: 'P',
   REVIEWER: 'R',
   TESTER: 'T',
@@ -137,6 +149,45 @@ function displayWithMentions(display: string): ReactNode[] {
       ),
     ),
   );
+}
+
+function displayMessageFromUnknown(value: unknown): ChatMessageView | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  if (
+    typeof record.msgId !== 'string' ||
+    typeof record.fromRole !== 'string' ||
+    typeof record.display !== 'string' ||
+    typeof record.ts !== 'number'
+  ) {
+    return undefined;
+  }
+  return {
+    msgId: record.msgId,
+    fromRole: record.fromRole,
+    display: record.display,
+    ts: record.ts,
+  };
+}
+
+function parseDisplayMessage(data: string): ChatMessageView | undefined {
+  try {
+    return displayMessageFromUnknown(JSON.parse(data));
+  } catch {
+    return undefined;
+  }
+}
+
+function parseDisplayMessages(data: string): ChatMessageView[] | undefined {
+  try {
+    const value: unknown = JSON.parse(data);
+    if (!Array.isArray(value)) return undefined;
+    const messages = value.map(displayMessageFromUnknown);
+    if (messages.some((message) => message === undefined)) return undefined;
+    return messages as ChatMessageView[];
+  } catch {
+    return undefined;
+  }
 }
 
 function MessageRow({
@@ -277,9 +328,18 @@ function Composer({ draft, mentionOptions, onDraftChange, onMention, onSubmit }:
   );
 }
 
-export function ChatWorkspace({ model = DEFAULT_WORKSPACE }: ChatWorkspaceProps) {
+export function ChatWorkspace({
+  model = DEFAULT_WORKSPACE,
+  projectId = 'agora',
+}: ChatWorkspaceProps) {
   const [messages, setMessages] = useState(model.messages);
   const [draft, setDraft] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'live' | 'offline'>(
+    'connecting',
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string>();
+  const pendingSubmission = React.useRef<PendingMessageSubmission | undefined>(undefined);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const mentionQuery = getMentionQuery(draft);
@@ -288,26 +348,73 @@ export function ChatWorkspace({ model = DEFAULT_WORKSPACE }: ChatWorkspaceProps)
     [mentionQuery],
   );
 
+  useEffect(() => {
+    const search = new URLSearchParams({
+      projectId,
+      taskId: model.task.id,
+      channelId: model.channel.id,
+    });
+    const source = new EventSource(`/api/stream?${search.toString()}`);
+
+    const handleConnected = () => setConnectionStatus('live');
+    const handleSnapshot = (event: MessageEvent<string>) => {
+      const snapshot = parseDisplayMessages(event.data);
+      if (snapshot !== undefined) setMessages(snapshot);
+    };
+    const handleMessage = (event: MessageEvent<string>) => {
+      const message = parseDisplayMessage(event.data);
+      if (message !== undefined) {
+        setMessages((current) => mergeMessageById(current, message));
+      }
+    };
+
+    source.addEventListener('connected', handleConnected);
+    source.addEventListener('snapshot', handleSnapshot as EventListener);
+    source.addEventListener('message', handleMessage as EventListener);
+    source.onerror = () => setConnectionStatus('offline');
+
+    return () => source.close();
+  }, [model.channel.id, model.task.id, projectId]);
+
   function selectMention(role: string) {
     setDraft((current) => `${applyMention(current, role)} `);
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     const display = draft.trim();
-    if (display.length === 0) {
+    if (display.length === 0 || submitting) {
       return;
     }
 
-    setMessages((current) => [
-      ...current,
-      {
-        msgId: `leader-${Date.now()}`,
-        fromRole: 'LEADER',
-        display,
-        ts: nextMessageTimestamp(current),
-      },
-    ]);
-    setDraft('');
+    setSubmitting(true);
+    setSubmissionError(undefined);
+    const submission = prepareMessageSubmission(pendingSubmission.current, display, () =>
+      crypto.randomUUID(),
+    );
+    pendingSubmission.current = submission;
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          taskId: model.task.id,
+          channelId: model.channel.id,
+          msgId: submission.msgId,
+          display,
+          payload: { intent: 'chat', text: display },
+        }),
+      });
+      if (!response.ok) throw new Error(`Message submission failed (${response.status})`);
+      if (pendingSubmission.current?.msgId === submission.msgId) {
+        pendingSubmission.current = undefined;
+      }
+      setDraft('');
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : 'Message submission failed');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -335,7 +442,11 @@ export function ChatWorkspace({ model = DEFAULT_WORKSPACE }: ChatWorkspaceProps)
         </div>
         <div className="preview-status">
           <span />
-          Local preview
+          {connectionStatus === 'live'
+            ? 'Live'
+            : connectionStatus === 'offline'
+              ? 'Offline'
+              : 'Connecting'}
         </div>
         <button
           className="icon-control"
@@ -368,6 +479,11 @@ export function ChatWorkspace({ model = DEFAULT_WORKSPACE }: ChatWorkspaceProps)
           onMention={selectMention}
           onSubmit={sendMessage}
         />
+        {submissionError ? (
+          <p className="submission-error" role="alert">
+            {submissionError}
+          </p>
+        ) : null}
       </section>
       <RightSidebar model={model} open={rightOpen} />
 

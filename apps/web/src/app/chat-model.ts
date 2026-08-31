@@ -9,6 +9,11 @@ export interface ChatMessageView {
   reference?: string;
 }
 
+export interface PendingMessageSubmission {
+  msgId: string;
+  display: string;
+}
+
 export interface TeamMemberView {
   role: string;
   name: string;
@@ -47,6 +52,26 @@ export const MENTIONABLE_ROLES = [
 
 export function sortMessagesByTimestamp<T extends { ts: number }>(messages: readonly T[]): T[] {
   return [...messages].sort((left, right) => left.ts - right.ts);
+}
+
+export function mergeMessageById(
+  messages: readonly ChatMessageView[],
+  incoming: ChatMessageView,
+): ChatMessageView[] {
+  const existingIndex = messages.findIndex((message) => message.msgId === incoming.msgId);
+  if (existingIndex < 0) return [...messages, incoming];
+  const next = [...messages];
+  next[existingIndex] = incoming;
+  return next;
+}
+
+export function prepareMessageSubmission(
+  current: PendingMessageSubmission | undefined,
+  display: string,
+  createId: () => string,
+): PendingMessageSubmission {
+  if (current?.display === display) return current;
+  return { msgId: createId(), display };
 }
 
 export function nextMessageTimestamp(
@@ -89,8 +114,8 @@ export const DEFAULT_WORKSPACE: WorkspaceViewModel = {
     status: 'In progress',
   },
   channel: {
-    id: 'main-room',
-    name: 'main-room',
+    id: 'main',
+    name: 'main',
   },
   team: [
     { role: 'LEADER', name: 'Leader (You)', status: 'online' },

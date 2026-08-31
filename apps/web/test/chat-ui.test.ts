@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 import {
   applyMention,
   filterMentionOptions,
+  mergeMessageById,
   nextMessageTimestamp,
+  prepareMessageSubmission,
   sortMessagesByTimestamp,
   type WorkspaceViewModel,
 } from '../src/app/chat-model';
@@ -43,6 +45,31 @@ describe('chat UI model', () => {
     expect(nextMessageTimestamp([{ ts: 500 }, { ts: 900 }], 100)).toBe(901);
     expect(nextMessageTimestamp([{ ts: 500 }], 700)).toBe(700);
   });
+
+  it('merges repeated SSE messages by stable msgId', () => {
+    const original = [{ msgId: 'message-1', fromRole: 'leader', display: 'old', ts: 1 }];
+    const next = mergeMessageById(original, {
+      msgId: 'message-1',
+      fromRole: 'leader',
+      display: 'committed',
+      ts: 2,
+    });
+
+    expect(next).toEqual([{ msgId: 'message-1', fromRole: 'leader', display: 'committed', ts: 2 }]);
+    expect(original[0]?.display).toBe('old');
+  });
+
+  it('reuses the msgId when retrying the same logical message', () => {
+    let sequence = 0;
+    const createId = () => `message-${++sequence}`;
+    const first = prepareMessageSubmission(undefined, 'Ship it.', createId);
+    const retry = prepareMessageSubmission(first, 'Ship it.', createId);
+    const changed = prepareMessageSubmission(first, 'Ship it safely.', createId);
+
+    expect(retry).toBe(first);
+    expect(retry.msgId).toBe('message-1');
+    expect(changed).toEqual({ display: 'Ship it safely.', msgId: 'message-2' });
+  });
 });
 
 describe('ChatWorkspace', () => {
@@ -76,7 +103,7 @@ describe('ChatWorkspace', () => {
     expect(visibleText).toContain('@CODER tighten the cache eviction tests before review.');
     expect(html).not.toContain('RAW_PAYLOAD_MUST_NOT_RENDER');
     expect(html).toContain('aria-label="Message the team"');
-    expect(visibleText).toContain('Local preview');
+    expect(visibleText).toContain('Connecting');
     expect(visibleText).not.toContain('Live');
     expect(visibleText).not.toContain('Collapse');
   });

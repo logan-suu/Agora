@@ -23,13 +23,7 @@ export const APPEND_FIELDS = [
 ] as const;
 export type AppendField = (typeof APPEND_FIELDS)[number];
 
-export const MERGE_BY_ID_FIELDS = [
-  'workers',
-  'subtasks',
-  'channels',
-  'roster',
-  'requirements',
-] as const;
+export const MERGE_BY_ID_FIELDS = ['workers', 'subtasks', 'roster', 'requirements'] as const;
 export type MergeByIdField = (typeof MERGE_BY_ID_FIELDS)[number];
 
 export const SET_FIELDS = [

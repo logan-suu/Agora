@@ -9,6 +9,10 @@
     "start": "next start"
   },
   "dependencies": {
+    "@agora/comm-bus": "workspace:*",
+    "@agora/core-domain": "workspace:*",
+    "@agora/core-orchestration": "workspace:*",
+    "@agora/runtime-state": "workspace:*",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"

@@ -90,6 +90,7 @@ export interface Complexity {
 }
 
 export interface AppState {
+  projectId: string;
   taskId: string;
   goal: string;
   phase: Phase;
@@ -109,8 +110,13 @@ export interface AppState {
   complexity?: Complexity;
 }
 
-export function createInitialAppState(taskId: string, goal: string): AppState {
+export function createInitialAppState(
+  taskId: string,
+  goal: string,
+  projectId = 'default',
+): AppState {
   return {
+    projectId,
     taskId,
     goal,
     phase: 'clarifying',

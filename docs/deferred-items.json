@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-31T12:45:53.000Z",
+  "last_updated": "2026-08-31T16:38:52.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -241,13 +241,13 @@
       "comment_url": null,
       "task": "5.1",
       "severity": "major",
-      "item": "Phase 5+ State persistence has no implemented SQLite/JSONL adapter or dedicated task",
-      "detail": "系统架构设计文档 §9 requires Phase 5+ State persistence in SQLite/JSONL, but task 5.1 is scoped to the Next.js/SSE transport scaffold and the repository currently has no State persistence adapter. The Leader approved keeping SQLite out of 5.1 rather than silently expanding its dependency and architecture scope.",
+      "item": "Phase 5 Task State JSON persistence is specified but not yet implemented",
+      "detail": "Task 5.3 implemented the D6/D7 Phase 5 boundary: zero-dependency JSON task snapshots, atomic replacement, commit-before-delivery, idempotent msgId handling, and refresh/process-restart recovery. SQLite remains an optional future adapter.",
       "target_phase": 5,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "5.3",
       "created_at": "2026-08-31T11:57:20.000Z",
-      "notes": "Resolution condition: before task 5.6 can pass the Phase 5 exit gate, implement the specified SQLite/JSONL State persistence path in an approved task or make and synchronize a new architecture ruling that explicitly changes the Phase 5 deployment requirement. The in-process ChannelStream in 5.1 is transport-only and does not satisfy persistence or cross-instance delivery."
+      "notes": "Resolved 2026-08-31 by task 5.3. JsonTaskStateStore tests cover create-if-absent, atomic snapshots, per-task serialized concurrent commits, idempotent replay, path confinement, and corrupt JSON. MessageService tests prove commit-before-publish and no rollback on delivery failure. Web tests and production-browser G5 prove payload-free SSE, refresh recovery, and recovery after stopping/restarting Next from .data/projects/{projectId}/tasks/{taskId}/state.json."
     },
     {
       "id": "DEF-015",
@@ -259,12 +259,12 @@
       "task": "5.1",
       "severity": "major",
       "item": "SSE and HTTP publication routes have no server-derived identity or Channel participant authorization",
-      "detail": "The task 5.1 transport seam accepts caller-provided channelId/fromRole and does not consult Channel.participants. Adding account-level authentication here would conflict with the blueprint's explicit exclusion of SaaS account/permission scope, while formal MessageBus integration belongs to task 5.3 and the participant-aware Channel primitive belongs to Phase 6. Until that boundary lands, the routes are suitable only behind a trusted single-user deployment boundary and must not be treated as safe public multi-user endpoints.",
+      "detail": "Task 5.3 now requires projectId/taskId/channelId scope and server-stamps browser messages as leader, so caller-provided role spoofing is closed. The routes still do not consult canonical Project.channels participants; account authentication remains out of scope and the participant registry belongs to Phase 6. Until that boundary lands, the routes are suitable only behind a trusted single-user deployment boundary and must not be treated as safe public multi-user endpoints.",
       "target_phase": 6,
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-08-31T12:45:53.000Z",
-      "notes": "Resolution condition: before public exposure or no later than the Phase 6 exit gate, derive the sender/leader identity from trusted server context, validate channel membership against the canonical Channel registry for GET and POST routes, and add negative tests for unauthorized reads, message publication, role spoofing, and commands. If public deployment is required before Phase 6, this item becomes blocking and requires a synchronized Leader architecture ruling."
+      "notes": "Task 5.3 completed the Phase 5 portion: HTTP/SSE use projectId/taskId/channelId and browser POST identity is server-owned leader, with a negative spoofing test. Remaining resolution condition: before public exposure or no later than the Phase 6 exit gate, validate channel membership against canonical Project.channels for GET and POST routes and add negative tests for unauthorized reads, message publication, and commands. If public deployment is required before Phase 6, this item becomes blocking and requires a synchronized Leader architecture ruling."
     }
   ]
 }
