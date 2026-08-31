@@ -1,6 +1,6 @@
 import { toDisplayMessageEvent } from '@agora/comm-bus';
 
-import { encodeSseEvent } from './channel-stream';
+import { type ChannelEvent, encodeSseEvent } from './channel-stream';
 import { jsonError, readJsonObject, requiredString } from './http';
 import type { MessageRuntime } from './message-runtime';
 
@@ -57,20 +57,23 @@ export function createGetStream(runtime: MessageRuntime) {
 
     const scope = { projectId, taskId };
     const address = { ...scope, channelId };
-    const state = await runtime.initialize(scope, `Task ${taskId}`);
-    const snapshot = state.messages
-      .filter((message) => message.channelId === channelId)
-      .map((message) => toDisplayMessageEvent({ ...scope, message }));
-
     let cleanup = () => {};
+    let sendBootstrap = (_snapshot: unknown[]) => {};
+    let failStream = (_error: unknown) => {};
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
         let active = true;
+        let bootstrapped = false;
+        const buffered: ChannelEvent[] = [];
         const send = (frame: string) => {
           if (active) controller.enqueue(encoder.encode(frame));
         };
         const unsubscribe = runtime.stream.subscribe(address, (event) => {
-          send(encodeSseEvent(event));
+          if (bootstrapped) {
+            send(encodeSseEvent(event));
+          } else {
+            buffered.push(event);
+          }
         });
         const heartbeat = setInterval(() => send(': heartbeat\n\n'), HEARTBEAT_INTERVAL_MS);
 
@@ -85,20 +88,41 @@ export function createGetStream(runtime: MessageRuntime) {
           unsubscribe();
           request.signal.removeEventListener('abort', closeForAbort);
         };
+        sendBootstrap = (snapshot) => {
+          if (!active) return;
+          send(encodeSseEvent({ type: 'connected', data: address }));
+          send(encodeSseEvent({ type: 'snapshot', data: snapshot }));
+          bootstrapped = true;
+          for (const event of buffered) send(encodeSseEvent(event));
+          buffered.length = 0;
+        };
+        failStream = (error) => {
+          if (!active) return;
+          cleanup();
+          controller.error(error);
+        };
         request.signal.addEventListener('abort', closeForAbort, { once: true });
 
         if (request.signal.aborted) {
           closeForAbort();
           return;
         }
-
-        send(encodeSseEvent({ type: 'connected', data: address }));
-        send(encodeSseEvent({ type: 'snapshot', data: snapshot }));
       },
       cancel() {
         cleanup();
       },
     });
+
+    try {
+      const state = await runtime.initialize(scope, `Task ${taskId}`);
+      const snapshot = state.messages
+        .filter((message) => message.channelId === channelId)
+        .map((message) => toDisplayMessageEvent({ ...scope, message }));
+      sendBootstrap(snapshot);
+    } catch (error) {
+      failStream(error);
+      throw error;
+    }
 
     return new Response(body, {
       headers: {

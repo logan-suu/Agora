@@ -6,6 +6,7 @@ import {
   filterMentionOptions,
   mergeMessageById,
   nextMessageTimestamp,
+  prepareMessageSubmission,
   sortMessagesByTimestamp,
   type WorkspaceViewModel,
 } from '../src/app/chat-model';
@@ -56,6 +57,18 @@ describe('chat UI model', () => {
 
     expect(next).toEqual([{ msgId: 'message-1', fromRole: 'leader', display: 'committed', ts: 2 }]);
     expect(original[0]?.display).toBe('old');
+  });
+
+  it('reuses the msgId when retrying the same logical message', () => {
+    let sequence = 0;
+    const createId = () => `message-${++sequence}`;
+    const first = prepareMessageSubmission(undefined, 'Ship it.', createId);
+    const retry = prepareMessageSubmission(first, 'Ship it.', createId);
+    const changed = prepareMessageSubmission(first, 'Ship it safely.', createId);
+
+    expect(retry).toBe(first);
+    expect(retry.msgId).toBe('message-1');
+    expect(changed).toEqual({ display: 'Ship it safely.', msgId: 'message-2' });
   });
 });
 

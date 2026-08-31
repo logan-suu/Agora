@@ -1,3 +1,5 @@
+// Test seam: one case pauses the real MessageRuntime.initialize call to make the
+// snapshot-to-subscription race deterministic; the JSON store, commit, and stream stay real.
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -102,6 +104,68 @@ describe('persisted HTTP + SSE message flow', () => {
     expect(snapshot).toContain('"display":"Recover this after restart."');
     expect(snapshot).not.toContain('payload');
     expect(snapshot).not.toContain('never-stream-this');
+    await reader?.cancel();
+  });
+
+  it('bridges commits made while the persisted snapshot is opening into the live SSE tail', async () => {
+    const stream = new ChannelStream();
+    const runtime = createMessageRuntime(await temporaryRoot(), stream);
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    const address = { ...scope, channelId: 'main' };
+    await runtime.initialize(scope, 'Task task-a');
+
+    const realInitialize = runtime.initialize.bind(runtime);
+    let releaseSnapshot: (() => void) | undefined;
+    const snapshotPaused = new Promise<void>((resolve) => {
+      releaseSnapshot = resolve;
+    });
+    let markSnapshotRead: (() => void) | undefined;
+    const snapshotRead = new Promise<void>((resolve) => {
+      markSnapshotRead = resolve;
+    });
+    let pauseNextInitialize = true;
+    runtime.initialize = async (...args) => {
+      const state = await realInitialize(...args);
+      if (pauseNextInitialize) {
+        pauseNextInitialize = false;
+        markSnapshotRead?.();
+        await snapshotPaused;
+      }
+      return state;
+    };
+
+    const opening = createGetStream(runtime)(
+      new Request('http://localhost/api/stream?projectId=project-a&taskId=task-a&channelId=main'),
+    );
+    await snapshotRead;
+    const subscriberCountDuringSnapshot = stream.subscriberCount(address);
+
+    await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'during-open',
+        display: 'Do not lose this message.',
+        payload: { intent: 'chat' },
+      }),
+    );
+    releaseSnapshot?.();
+
+    const response = await opening;
+    const reader = response.body?.getReader();
+    const connected = decoder.decode((await reader?.read())?.value);
+    const snapshot = decoder.decode((await reader?.read())?.value);
+    const live = await Promise.race([
+      reader?.read().then((result) => decoder.decode(result.value)),
+      new Promise<string>((resolve) => setTimeout(() => resolve('timed-out'), 100)),
+    ]);
+
+    expect(subscriberCountDuringSnapshot).toBe(1);
+    expect(connected).toContain('event: connected');
+    expect(snapshot).toContain('event: snapshot');
+    expect(snapshot).not.toContain('during-open');
+    expect(live).toContain('event: message');
+    expect(live).toContain('during-open');
     await reader?.cancel();
   });
 });

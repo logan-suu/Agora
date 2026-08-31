@@ -9,6 +9,11 @@ export interface ChatMessageView {
   reference?: string;
 }
 
+export interface PendingMessageSubmission {
+  msgId: string;
+  display: string;
+}
+
 export interface TeamMemberView {
   role: string;
   name: string;
@@ -58,6 +63,15 @@ export function mergeMessageById(
   const next = [...messages];
   next[existingIndex] = incoming;
   return next;
+}
+
+export function prepareMessageSubmission(
+  current: PendingMessageSubmission | undefined,
+  display: string,
+  createId: () => string,
+): PendingMessageSubmission {
+  if (current?.display === display) return current;
+  return { msgId: createId(), display };
 }
 
 export function nextMessageTimestamp(

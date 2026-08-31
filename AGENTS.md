@@ -135,6 +135,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 前端          Next.js 15 + React 19（Phase 5 起）
 实时通信      SSE（收）+ HTTP POST（发），禁用 WebSocket
 持久化        文件系统 JSON/JSONL（.data/）为默认；Phase 5 TaskStateStore 原子快照强制落地；SQLite 仅复杂查询时可选
+部署          Phase 5–9 为单实例自托管后端；Vercel 仅前端；完整 Serverless/水平扩展须外部耐久存储+跨实例事件传输（D8）
 测试          Vitest 3.x
 代码质量      Biome 2.x（Lint + Format + Import 排序一体）
 模型路由      经 Harness agent/request：规划/评审强推理模型，编码代码专精模型
@@ -291,7 +292,7 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 并行度      上限 3 worker 同时跑；subtask.dependsOn 拓扑排序，依赖未满足不激活
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
-实时通信    SSE 收 + HTTP POST 发；Vercel Serverless 兼容；不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，SSE 不是事实源
+实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
 意图映射    @X 指派→nextRole=X；插新需求→更新 requirements/ledger+触发抢占；否决批准→驱动 humanGate
 ```
 
@@ -462,7 +463,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D7/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D8/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 

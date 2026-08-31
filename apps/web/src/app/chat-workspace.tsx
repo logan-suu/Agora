@@ -17,7 +17,9 @@ import {
   filterMentionOptions,
   getMentionQuery,
   mergeMessageById,
+  type PendingMessageSubmission,
   type PresenceStatus,
+  prepareMessageSubmission,
   sortMessagesByTimestamp,
   type TeamMemberView,
   type WorkspaceViewModel,
@@ -337,6 +339,7 @@ export function ChatWorkspace({
   );
   const [submitting, setSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string>();
+  const pendingSubmission = React.useRef<PendingMessageSubmission | undefined>(undefined);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const mentionQuery = getMentionQuery(draft);
@@ -385,7 +388,10 @@ export function ChatWorkspace({
 
     setSubmitting(true);
     setSubmissionError(undefined);
-    const msgId = crypto.randomUUID();
+    const submission = prepareMessageSubmission(pendingSubmission.current, display, () =>
+      crypto.randomUUID(),
+    );
+    pendingSubmission.current = submission;
     try {
       const response = await fetch('/api/messages', {
         method: 'POST',
@@ -394,12 +400,15 @@ export function ChatWorkspace({
           projectId,
           taskId: model.task.id,
           channelId: model.channel.id,
-          msgId,
+          msgId: submission.msgId,
           display,
           payload: { intent: 'chat', text: display },
         }),
       });
       if (!response.ok) throw new Error(`Message submission failed (${response.status})`);
+      if (pendingSubmission.current?.msgId === submission.msgId) {
+        pendingSubmission.current = undefined;
+      }
       setDraft('');
     } catch (error) {
       setSubmissionError(error instanceof Error ? error.message : 'Message submission failed');
