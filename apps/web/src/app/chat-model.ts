@@ -49,6 +49,17 @@ export function sortMessagesByTimestamp<T extends { ts: number }>(messages: read
   return [...messages].sort((left, right) => left.ts - right.ts);
 }
 
+export function mergeMessageById(
+  messages: readonly ChatMessageView[],
+  incoming: ChatMessageView,
+): ChatMessageView[] {
+  const existingIndex = messages.findIndex((message) => message.msgId === incoming.msgId);
+  if (existingIndex < 0) return [...messages, incoming];
+  const next = [...messages];
+  next[existingIndex] = incoming;
+  return next;
+}
+
 export function nextMessageTimestamp(
   messages: readonly { ts: number }[],
   now = Date.now(),
@@ -89,8 +100,8 @@ export const DEFAULT_WORKSPACE: WorkspaceViewModel = {
     status: 'In progress',
   },
   channel: {
-    id: 'main-room',
-    name: 'main-room',
+    id: 'main',
+    name: 'main',
   },
   team: [
     { role: 'LEADER', name: 'Leader (You)', status: 'online' },

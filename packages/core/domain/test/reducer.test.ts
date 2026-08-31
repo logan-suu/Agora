@@ -105,6 +105,10 @@ describe('applyMutations · append', () => {
 });
 
 describe('applyMutations · mergeById', () => {
+  it('does not expose task-level channels after D7 moved the registry to Project', () => {
+    expect([...MERGE_BY_ID_FIELDS]).not.toContain('channels');
+  });
+
   it('updates an existing element in place without duplicating it', () => {
     const base = applyMutations(createInitialAppState('t-1', 'goal'), [
       mergeByIdMutation('subtasks', 'st-1', makeSubtaskPatch('st-1')),

@@ -1,6 +1,12 @@
 export interface ChannelEvent {
-  type: 'connected' | 'message' | 'command';
+  type: 'connected' | 'snapshot' | 'message' | 'command';
   data: unknown;
+}
+
+export interface ChannelAddress {
+  projectId: string;
+  taskId: string;
+  channelId: string;
 }
 
 type ChannelListener = (event: ChannelEvent) => void;
@@ -8,10 +14,11 @@ type ChannelListener = (event: ChannelEvent) => void;
 export class ChannelStream {
   readonly #subscribers = new Map<string, Set<ChannelListener>>();
 
-  subscribe(channelId: string, listener: ChannelListener): () => void {
-    const listeners = this.#subscribers.get(channelId) ?? new Set<ChannelListener>();
+  subscribe(address: ChannelAddress, listener: ChannelListener): () => void {
+    const key = channelAddressKey(address);
+    const listeners = this.#subscribers.get(key) ?? new Set<ChannelListener>();
     listeners.add(listener);
-    this.#subscribers.set(channelId, listeners);
+    this.#subscribers.set(key, listeners);
 
     let active = true;
     return () => {
@@ -21,13 +28,13 @@ export class ChannelStream {
       active = false;
       listeners.delete(listener);
       if (listeners.size === 0) {
-        this.#subscribers.delete(channelId);
+        this.#subscribers.delete(key);
       }
     };
   }
 
-  publish(channelId: string, event: ChannelEvent): number {
-    const listeners = this.#subscribers.get(channelId);
+  publish(address: ChannelAddress, event: ChannelEvent): number {
+    const listeners = this.#subscribers.get(channelAddressKey(address));
     if (!listeners) {
       return 0;
     }
@@ -38,8 +45,8 @@ export class ChannelStream {
     return listeners.size;
   }
 
-  subscriberCount(channelId: string): number {
-    return this.#subscribers.get(channelId)?.size ?? 0;
+  subscriberCount(address: ChannelAddress): number {
+    return this.#subscribers.get(channelAddressKey(address))?.size ?? 0;
   }
 
   channelCount(): number {
@@ -49,6 +56,10 @@ export class ChannelStream {
   clear(): void {
     this.#subscribers.clear();
   }
+}
+
+function channelAddressKey(address: ChannelAddress): string {
+  return `${address.projectId}\u0000${address.taskId}\u0000${address.channelId}`;
 }
 
 export function encodeSseEvent(event: ChannelEvent): string {

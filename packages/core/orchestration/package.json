@@ -7,7 +7,9 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@agora/comm-bus": "workspace:*",
     "@agora/core-domain": "workspace:*",
-    "@agora/runtime-executor": "workspace:*"
+    "@agora/runtime-executor": "workspace:*",
+    "@agora/runtime-state": "workspace:*"
   }
 }

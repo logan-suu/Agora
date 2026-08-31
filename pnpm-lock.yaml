@@ -98,6 +98,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@agora/comm-bus':
+        specifier: workspace:*
+        version: link:../../packages/comm/bus
+      '@agora/core-domain':
+        specifier: workspace:*
+        version: link:../../packages/core/domain
+      '@agora/core-orchestration':
+        specifier: workspace:*
+        version: link:../../packages/core/orchestration
+      '@agora/runtime-state':
+        specifier: workspace:*
+        version: link:../../packages/runtime/state
       next:
         specifier: 'catalog:'
         version: 15.5.24(@opentelemetry/api@1.9.1)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -115,7 +127,11 @@ importers:
         specifier: 'catalog:'
         version: 19.2.5(@types/react@19.2.18)
 
-  packages/comm/bus: {}
+  packages/comm/bus:
+    dependencies:
+      '@agora/core-domain':
+        specifier: workspace:*
+        version: link:../../core/domain
 
   packages/comm/channels: {}
 
@@ -123,12 +139,18 @@ importers:
 
   packages/core/orchestration:
     dependencies:
+      '@agora/comm-bus':
+        specifier: workspace:*
+        version: link:../../comm/bus
       '@agora/core-domain':
         specifier: workspace:*
         version: link:../domain
       '@agora/runtime-executor':
         specifier: workspace:*
         version: link:../../runtime/executor
+      '@agora/runtime-state':
+        specifier: workspace:*
+        version: link:../../runtime/state
 
   packages/core/preemption: {}
 
@@ -212,6 +234,12 @@ importers:
       '@types/dockerode':
         specifier: 'catalog:'
         version: 4.0.1
+
+  packages/runtime/state:
+    dependencies:
+      '@agora/core-domain':
+        specifier: workspace:*
+        version: link:../../core/domain
 
   packages/shared: {}
 

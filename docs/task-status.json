@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-31T15:21:20.000Z",
+  "last_updated": "2026-08-31T16:49:03.000Z",
   "current_phase": 5,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -30,6 +30,16 @@
       "id": "D5",
       "rule": "阶段 0 沙箱 = LocalTempSandbox（fs.mkdtempSync + child_process.spawn），不依赖容器与真实 Git 分支；dockerode/simple-git 为 optionalDependencies；Docker 自阶段 1 接入",
       "source": "docs/详细设计方案.md §6/§9"
+    },
+    {
+      "id": "D6",
+      "rule": "消息提交与投递分离：应用服务先经 applyMutations + TaskStateStore 提交并持久化任务 State，成功后才发布 MessageCommitted；MessageBus 只投递已提交事件，SSE/UI 只接收不含 payload 的展示信封",
+      "source": "docs/项目蓝图.md §10/§21；docs/详细设计方案.md §5"
+    },
+    {
+      "id": "D7",
+      "rule": "Project.channels 是 Channel 注册表唯一真相源，AppState.messages 保存任务级消息；投递显式携带 projectId/taskId，Phase 5 退化固定 main，Phase 6 才启用动态 Channel/participants/sub 群，角色 inbox 归 comm/channels",
+      "source": "docs/项目蓝图.md §11/§20/§21；docs/详细设计方案.md §1/§5/§8"
     },
     {
       "id": "C4",
@@ -710,18 +720,22 @@
         },
         {
           "id": "5.3",
-          "title": "消息总线接入前端",
+          "title": "TaskStateStore + 消息提交/MessageBus/SSE 接入",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
-            "docs/详细设计方案.md §5"
+            "docs/项目蓝图.md §10/§11/§20/§21",
+            "docs/详细设计方案.md §1/§5/§8",
+            "docs/系统架构设计文档.md §2/§4/§9",
+            "docs/技术选型文档.md §9/§10",
+            "docs/开发计划安排.md §8"
           ],
           "dependencies": [
             "5.2"
           ],
-          "test_file": null,
-          "notes": "comm/bus 发布的消息推送到对应 channel 的 UI 流；leader 恒在 participants 故必收到。\n[2026-08-31 /agora-pr-merge] 依赖 5.2 已由 PR #42 合并并标 done（merge commit 881eda9），级联翻转 pending→ready。",
-          "last_updated": "2026-08-31T15:21:20.000Z"
+          "test_file": "packages/runtime/state/test/json-task-state-store.test.ts + packages/core/orchestration/test/message-service.test.ts + apps/web/test/message-flow.test.ts",
+          "notes": "D6/D7 Phase 5 退化落地：TaskStateStore 端口 + .data JSON 原子快照适配器；消息先经 applyMutations 提交/持久化，changed=true 后才发布 MessageCommitted；MessageBus 只投递，SSE/UI 只收不含 payload 的展示信封；HTTP/SSE 显式携带 projectId/taskId/channelId，浏览器消息由服务端标记 leader；每活动任务只支持固定 main，动态 Channel/participants/角色 inbox 留 6.1。任务完成时应关闭 DEF-014；DEF-015 的完整 participants 授权仍留 Phase 6。\n[2026-08-31 /agora-pr-merge] 依赖 5.2 已由 PR #42 合并并标 done（merge commit 881eda9），级联翻转 pending→ready。\n[2026-08-31 规格评审] Leader 确认 D6/D7，已按真相源顺序同步通信职责、Channel 所有权、Phase 5/6 边界与 JSON 持久化要求；任务仍为 ready，待重新锁定实现计划后开工。\n[2026-08-31 /agora-do-task] Leader 已确认 5.3 实现计划；依赖 5.2=done、Phase 4 出口 4.6=done，跨阶段门禁满足，任务置为 in_progress。按 TDD 分三单元实施：TaskStateStore、消息提交服务、SSE/UI 实链。\n[2026-08-31 Code·TDD 红→绿] 三单元均先确认红灯再实现：① AppState 增加 projectId，移除误列的 AppState.channels mutation 字段；TaskStateStore + JsonTaskStateStore 以 .data/projects/{projectId}/tasks/{taskId}/state.json 原子临时文件替换并按任务串行提交，覆盖初始化、幂等、12 路并发、路径防护与损坏 JSON；② MessageService 先 commit 后 publish，重复 msgId 不广播，投递失败不回滚持久事实；③ HTTP/SSE 显式三元作用域，服务端固定 leader，SSE/快照只含 display 信封，EventSource + POST 替代 UI 本地伪追加。DEF-014 已按实证关闭；DEF-015 保持 open，动态 participants 授权归 6.1。\n[2026-08-31 Check+Verify] pnpm typecheck exit=0；Biome 161 files 0 违规；next build exit=0（首页 3.79 kB、First Load JS 106 kB）；全量回归 46 files passed / 2 skipped、437 passed / 2 skipped，真实 DockerSandbox 15/15。任务专属测试：runtime state 5/5、MessageBus 1/1、message service 4/4、Web 18/18。Codex in-app browser 对生产构建 localhost:3100 实测：POST→SSE 回显、刷新恢复、停止并重启 Next 后由仓库根 .data 快照恢复；SSE 无 payload，console 0 error/warn；默认桌面与 390×844 均无横向溢出，移动端左右抽屉可开合。G5 生成数据已移至 /private/tmp/agora-5.3-g5.8uCiuW，未遗留工作树数据。任务保持 in_progress，待 $agora-commit 建 PR，人工合并后由 $agora-pr-merge 标 done。\n[2026-08-31 /agora-commit·交付门禁] 分支 feat/persisted-message-flow（base=dev-1.0.0）。typecheck exit=0；Biome 161 files 0 违规；next production build exit=0（首页 3.79 kB、First Load JS 106 kB）；全量回归 46 files passed / 2 skipped、437 passed / 2 skipped，真实 DockerSandbox 15/15。任务专属 G5 使用隔离数据根 /private/tmp/agora-5.3-commit-g5.HiVDFg：生产页面 POST→持久化→SSE 回显，刷新恢复与 Next 进程重启恢复均成功，页面 Agora/localhost:3100、Live、console 0 error/warn。git diff --check 通过；敏感数据模式扫描无命中。任务继续保持 in_progress，禁止 Agent 自动合并。",
+          "last_updated": "2026-08-31T16:49:03.000Z"
         },
         {
           "id": "5.4",
@@ -764,7 +778,7 @@
             "5.4"
           ],
           "test_file": null,
-          "notes": "SSE 连接稳定性 + 指令→编排动作映射正确性回归。"
+          "notes": "SSE 连接稳定性 + 指令→编排动作映射正确性回归；D6/D7 出口证据必须覆盖 State 先提交后投递、幂等 msgId 不重复推送、UI 不含 payload、projectId/taskId 作用域隔离，以及进程重启/页面刷新后从 JSON State 恢复。"
         }
       ]
     },
@@ -777,18 +791,18 @@
       "tasks": [
         {
           "id": "6.1",
-          "title": "Channel 数据结构 + 消息总线 channelId 路由升级",
+          "title": "项目级 Channel 注册表 + participants/角色 inbox 路由",
           "story": null,
           "status": "pending",
           "documents_required": [
-            "docs/详细设计方案.md §5",
-            "docs/项目蓝图.md §11"
+            "docs/详细设计方案.md §1/§5/§7/§8",
+            "docs/项目蓝图.md §11/§20/§21"
           ],
           "dependencies": [
             "5.6"
           ],
           "test_file": null,
-          "notes": "Channel{channelId, kind:'main'|'sub', participants, localContext, closed, bubbledSummary}。不变量：'leader' ∈ participants 恒成立（任何对话 leader 透明可见可介入）。publish(msg)：append 进 State.messages → 按 participants 投递。"
+          "notes": "D7：Project.channels 是 Channel 注册表唯一真相源；Channel{channelId, kind:'main'|'sub', participants, localContext, closed, bubbledSummary}，不变量 'leader' ∈ participants。实现 comm/channels 的 participants 路由与 inboxFor(project,task,role)，把已由 5.3 提交的 MessageCommitted 投递到 worker inbox；不得把 State 写入重新塞回 MessageBus，也不得在 AppState 复制 channels。"
         },
         {
           "id": "6.2",
