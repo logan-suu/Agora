@@ -1,0 +1,37 @@
+:root {
+  color: #171717;
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+}
+
+main {
+  width: min(100% - 3rem, 72rem);
+  margin: 0 auto;
+  padding: 4rem 0;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+p {
+  margin-top: 0.75rem;
+  color: #5f5f5f;
+  font-size: 1rem;
+  line-height: 1.5;
+}
