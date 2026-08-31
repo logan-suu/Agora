@@ -3,6 +3,8 @@ import {
   type AppState,
   appendMutation,
   applyMutations,
+  COORDINATION_LEDGER_KIND,
+  latestCoordinationLedger,
   mergeByIdMutation,
   PHASE0_ROSTER,
   setMutation,
@@ -598,6 +600,49 @@ describe('Phase 2 exit: six-role happy path (scripted LLM, real MCP fs/git + Loc
     for (const role of ['CODER', 'TESTER', 'REVIEWER']) {
       expect(roleCalls(adapter, role).some((c) => completedActionsOf(c) > 0)).toBe(true);
     }
+  });
+
+  it('chain 2b (task 4.4/DEF-012): Coordinator generates Ledger + handoffs without manual seeds', () => {
+    const ledgers = final.messages.filter(
+      (message) => message.payload.kind === COORDINATION_LEDGER_KIND,
+    );
+    expect(ledgers.length).toBeGreaterThanOrEqual(6);
+    expect(latestCoordinationLedger(final)).toMatchObject({
+      completionCandidate: true,
+      progress: {
+        isRequestSatisfied: {
+          reason: 'awaiting_leader_confirmation',
+          answer: false,
+          authority: 'leader',
+        },
+      },
+    });
+
+    expect(final.handoffPackets.map((packet) => `${packet.fromRole}->${packet.toRole}`)).toEqual([
+      'PM->ARCHITECT',
+      'ARCHITECT->CODER',
+      'CODER->TESTER',
+      'TESTER->REVIEWER',
+    ]);
+    for (const packet of final.handoffPackets) {
+      expect(packet.done.length).toBeGreaterThan(0);
+      expect(packet.keyDecisions).toEqual([]);
+    }
+
+    const firstCoderCall = roleCalls(adapter, 'CODER')[0];
+    if (firstCoderCall === undefined) throw new Error('missing CODER call');
+    const coderContext = projectionViewOf(firstCoderCall).slices?.coordinationContext as
+      | {
+          plan?: { role?: unknown }[];
+          instructionOrQuestion?: unknown;
+        }
+      | undefined;
+    expect(coderContext?.plan?.map((step) => step.role)).toEqual(['CODER']);
+    expect(typeof coderContext?.instructionOrQuestion).toBe('string');
+    const contextJson = JSON.stringify(coderContext);
+    expect(contextJson).not.toContain('channelId');
+    expect(contextJson).not.toContain('fromRole');
+    expect(contextJson).not.toContain('progressMarker');
   });
 
   it('chain 3: real worktree artifacts — committed patch, real node --test, real git diff', () => {

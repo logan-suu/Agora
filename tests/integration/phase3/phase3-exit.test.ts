@@ -491,7 +491,14 @@ describe('Phase 3 exit: long conversation (ledger+handoff seeded, scripted LLM, 
     }
 
     // Handoffs survive losslessly and every keyDecision id resolves in State.
-    expect(final.handoffPackets).toEqual(LONG_HANDOFF_PACKETS);
+    expect(final.handoffPackets.slice(0, LONG_HANDOFF_PACKETS.length)).toEqual(
+      LONG_HANDOFF_PACKETS,
+    );
+    expect(
+      final.handoffPackets
+        .slice(LONG_HANDOFF_PACKETS.length)
+        .map((packet) => `${packet.fromRole}->${packet.toRole}`),
+    ).toEqual(['PM->ARCHITECT', 'ARCHITECT->CODER', 'CODER->TESTER', 'TESTER->REVIEWER']);
     for (const packet of final.handoffPackets) {
       for (const id of packet.keyDecisions) {
         expect(

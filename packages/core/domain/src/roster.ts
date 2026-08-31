@@ -8,7 +8,7 @@ export const PHASE0_ROSTER: readonly RoleSpec[] = [
     systemPrompt:
       '你是团队协调者，基于复杂度与最近结果决定下一步激活谁、是否并行、是否升级 leader。你不写需求/设计/代码。输出 {nextRoles, parallel, reason, escalate?}。',
     tools: [],
-    projection: ['global.summary'],
+    projection: ['global.summary', 'coordinationContext'],
     routeWhen: 'always',
   },
   {
@@ -25,6 +25,7 @@ export const PHASE0_ROSTER: readonly RoleSpec[] = [
       'failingTests',
       'fileRefs',
       'reviewFeedback',
+      'coordinationContext',
     ],
     routeWhen: 'designReady || testsFailed',
   },
@@ -34,7 +35,7 @@ export const PHASE0_ROSTER: readonly RoleSpec[] = [
     executor: 'harness',
     systemPrompt: '你是测试者，以验收标准为客观判据编写并运行测试，产出结构化结果，不修业务代码。',
     tools: ['fs.read', 'fs.write', 'sandbox.run', 'git'],
-    projection: ['acceptance', 'branchOrPatch', 'interfaceContracts'],
+    projection: ['acceptance', 'branchOrPatch', 'interfaceContracts', 'coordinationContext'],
     routeWhen: 'codingDone',
   },
 ];

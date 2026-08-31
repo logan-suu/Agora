@@ -1,5 +1,7 @@
 import {
   type AppState,
+  COORDINATION_LEDGER_KIND,
+  type CoordinationLedgerPayload,
   createInitialAppState,
   type Decision,
   type Requirement,
@@ -68,6 +70,75 @@ function chatLog(): AppState['messages'] {
       ts: 1,
     },
   ];
+}
+
+function coordinationLedger(): CoordinationLedgerPayload {
+  return {
+    kind: COORDINATION_LEDGER_KIND,
+    revision: 2,
+    task: {
+      confirmedFacts: [
+        { key: 'goal', value: 'build cache' },
+        { key: 'testsPassed', value: false },
+      ],
+      hypotheses: [{ key: 'rootCause', value: 'SENTINEL-COORDINATOR-ONLY-HYPOTHESIS' }],
+      plan: [
+        {
+          id: 'plan-coder',
+          revision: 2,
+          role: 'CODER',
+          instruction: 'Fix TTL handling',
+          status: 'active',
+          dependsOn: [],
+        },
+        {
+          id: 'plan-tester',
+          revision: 2,
+          role: 'TESTER',
+          instruction: 'Re-run acceptance tests',
+          status: 'pending',
+          dependsOn: ['plan-coder'],
+        },
+      ],
+    },
+    progress: {
+      isRequestSatisfied: {
+        reason: 'task_incomplete',
+        answer: false,
+        authority: 'leader',
+      },
+      isInLoop: { reason: 'tests_failed', answer: true },
+      isProgressBeingMade: { reason: 'tests_failed', answer: false },
+      nextSpeaker: { reason: 'coordinator_route', answer: 'CODER' },
+      instructionOrQuestion: {
+        reason: 'coordinator_instruction',
+        answer: 'Fix TTL handling',
+      },
+    },
+    completionCandidate: false,
+    stallCount: 2,
+    progressMarker: 'SENTINEL-INTERNAL-PROGRESS-MARKER',
+    replanned: false,
+    replanReason: null,
+  };
+}
+
+function stateWithCoordinationLedger(): AppState {
+  const ledger = coordinationLedger();
+  return makeState({
+    messages: [
+      ...chatLog(),
+      {
+        msgId: 'ledger-1',
+        channelId: 'main',
+        fromRole: 'COORDINATOR',
+        type: 'chat',
+        payload: ledger,
+        display: 'SENTINEL-RAW-LEDGER-DISPLAY',
+        ts: 2,
+      },
+    ],
+  });
 }
 
 describe('project (task 2.4, spec §7 slice table)', () => {
@@ -409,6 +480,114 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     for (const spec of DEFAULT_ROSTER) {
       expect(() => project(rich, spec.role, DEFAULT_ROSTER)).not.toThrow();
     }
+  });
+});
+
+describe('project · coordinationContext (task 4.4, role-sliced Ledger)', () => {
+  it('projects the complete structured Ledger to COORDINATOR as defensive copies', () => {
+    const state = stateWithCoordinationLedger();
+    const context = slicesOf(state, 'COORDINATOR').coordinationContext as Record<string, unknown>;
+    const source = state.messages[1]?.payload as CoordinationLedgerPayload;
+
+    expect(context).toEqual(coordinationLedger());
+    expect(context).not.toBe(source);
+    expect((context.task as CoordinationLedgerPayload['task']).plan).not.toBe(source.task.plan);
+  });
+
+  it('gives a worker only its plan steps, confirmed facts, and current instruction', () => {
+    const context = slicesOf(stateWithCoordinationLedger(), 'CODER').coordinationContext;
+
+    expect(context).toEqual({
+      revision: 2,
+      confirmedFacts: [
+        { key: 'goal', value: 'build cache' },
+        { key: 'testsPassed', value: false },
+      ],
+      plan: [
+        {
+          id: 'plan-coder',
+          revision: 2,
+          role: 'CODER',
+          instruction: 'Fix TTL handling',
+          status: 'active',
+          dependsOn: [],
+        },
+      ],
+      instructionOrQuestion: 'Fix TTL handling',
+      completionCandidate: false,
+    });
+    const json = JSON.stringify(context);
+    expect(json).not.toContain('SENTINEL-COORDINATOR-ONLY-HYPOTHESIS');
+    expect(json).not.toContain('SENTINEL-INTERNAL-PROGRESS-MARKER');
+    expect(json).not.toContain('SENTINEL-PM-PAYLOAD');
+    expect(json).not.toContain('SENTINEL-RAW-LEDGER-DISPLAY');
+  });
+
+  it('filters plan steps for every business role and withholds another role instruction', () => {
+    const state = stateWithCoordinationLedger();
+    const tester = slicesOf(state, 'TESTER').coordinationContext as {
+      plan: { role: string }[];
+      instructionOrQuestion: string | null;
+    };
+    const architect = slicesOf(state, 'ARCHITECT').coordinationContext as {
+      plan: { role: string }[];
+      instructionOrQuestion: string | null;
+    };
+
+    expect(tester.plan.map((step) => step.role)).toEqual(['TESTER']);
+    expect(tester.instructionOrQuestion).toBeNull();
+    expect(architect.plan).toEqual([]);
+    expect(architect.instructionOrQuestion).toBeNull();
+  });
+
+  it('returns explicit empty coordination contexts before the first Ledger event', () => {
+    expect(slicesOf(makeState(), 'COORDINATOR').coordinationContext).toEqual({
+      revision: null,
+      task: { confirmedFacts: [], hypotheses: [], plan: [] },
+      progress: null,
+      completionCandidate: false,
+      stallCount: 0,
+      progressMarker: null,
+      replanned: false,
+      replanReason: null,
+    });
+    expect(slicesOf(makeState(), 'CODER').coordinationContext).toEqual({
+      revision: null,
+      confirmedFacts: [],
+      plan: [],
+      instructionOrQuestion: null,
+      completionCandidate: false,
+    });
+  });
+
+  it('fails closed instead of projecting undeclared Ledger fields', () => {
+    const ledger = coordinationLedger();
+    const firstStep = ledger.task.plan[0];
+    if (firstStep === undefined) throw new Error('fixture requires a plan step');
+    Object.assign(firstStep, { rawLog: 'SENTINEL-FORBIDDEN-RAW-LOG' });
+    const state = makeState({
+      messages: [
+        {
+          msgId: 'ledger-with-extra-field',
+          channelId: 'main',
+          fromRole: 'COORDINATOR',
+          type: 'chat',
+          payload: ledger,
+          display: 'invalid ledger',
+          ts: 1,
+        },
+      ],
+    });
+
+    const context = slicesOf(state, 'CODER').coordinationContext;
+    expect(context).toEqual({
+      revision: null,
+      confirmedFacts: [],
+      plan: [],
+      instructionOrQuestion: null,
+      completionCandidate: false,
+    });
+    expect(JSON.stringify(context)).not.toContain('SENTINEL-FORBIDDEN-RAW-LOG');
   });
 });
 

@@ -64,6 +64,7 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
       'goal',
       'requirements',
       'leaderDecisions',
+      'coordinationContext',
     ]);
     expect(spec(DEFAULT_ROSTER, 'ARCHITECT').projection).toEqual([
       'requirements',
@@ -71,6 +72,7 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
       'conventions',
       'architecture',
       'reviewFeedback',
+      'coordinationContext',
     ]);
     expect(spec(DEFAULT_ROSTER, 'REVIEWER').projection).toEqual([
       'pendingPatch',
@@ -79,6 +81,7 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
       'reviewContext',
       'failingTests',
       'fileRefs',
+      'coordinationContext',
     ]);
     expect(spec(DEFAULT_ROSTER, 'CODER').projection).toContain('reviewFeedback');
   });

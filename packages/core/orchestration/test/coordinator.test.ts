@@ -8,7 +8,12 @@ import {
   setMutation,
 } from '@agora/core-domain';
 import { describe, expect, it } from 'vitest';
-import { decide, MAX_ITERATIONS } from '../src/index';
+import {
+  COORDINATION_LEDGER_KIND,
+  decide,
+  latestCoordinationLedger,
+  MAX_ITERATIONS,
+} from '../src/index';
 
 interface DeterministicClock {
   newId: () => string;
@@ -22,6 +27,19 @@ function expectedGate(phase: AppState['phase']): Record<string, unknown> {
 function clock(): DeterministicClock {
   let counter = 0;
   return { newId: () => `id-${++counter}`, now: () => 1000 };
+}
+
+function latestCoordinatorControlPayload(state: AppState): Record<string, unknown> | undefined {
+  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+    const message = state.messages[index];
+    if (
+      message?.fromRole === 'COORDINATOR' &&
+      (message.type === 'announce' || message.type === 'feedback' || message.type === 'escalation')
+    ) {
+      return message.payload;
+    }
+  }
+  return undefined;
 }
 
 function stateAtPhase(phase: AppState['phase'], overrides?: Partial<AppState>): AppState {
@@ -186,7 +204,12 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
   it('finalizes when the REVIEWER verdict is approved (评审通过, DEF-007 Phase 2 simplification)', () => {
     const decision = decide(reviewState('approved'));
     expect(decision.route.kind).toBe('finalize');
-    expect(decision.mutations).toEqual([]);
+    expect(decision.mutations).toHaveLength(1);
+    expect(decision.mutations[0]).toMatchObject({
+      field: 'messages',
+      op: 'append',
+      value: { payload: { kind: COORDINATION_LEDGER_KIND, completionCandidate: true } },
+    });
   });
 
   it('sends a changes_requested verdict back to CODER with the review feedback (评审回环)', () => {
@@ -368,6 +391,108 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
   });
 });
 
+describe('coordinator.decide · structured coordination artifacts (task 4.4 + DEF-012)', () => {
+  it('appends one strict Ledger event for the chosen route without fabricating an initial handoff', () => {
+    const state = createInitialAppState('t-1', '实现带 TTL 的 LRU 缓存');
+    const decision = decide(state, { ...clock(), roster: FULL_ROSTER });
+    const next = applyMutations(state, decision.mutations);
+
+    const ledgers = next.messages.filter(
+      (message) => message.payload.kind === COORDINATION_LEDGER_KIND,
+    );
+    expect(ledgers).toHaveLength(1);
+    expect(ledgers[0]?.type).toBe('chat');
+    expect(latestCoordinationLedger(next)).toMatchObject({
+      kind: COORDINATION_LEDGER_KIND,
+      revision: 1,
+      progress: {
+        nextSpeaker: { reason: 'coordinator_route', answer: 'PM' },
+      },
+    });
+    expect(next.handoffPackets).toEqual([]);
+  });
+
+  it('generates a validated handoff for every real worker role switch with decision/file refs', () => {
+    const failure = {
+      test: 'ttl expires',
+      message: 'expected undefined',
+      file: 'src/cache.test.ts',
+      line: 27,
+    };
+    const state = applyMutations(requirementsReadyState(), [
+      setMutation('nextRole', 'PM'),
+      appendMutation('decisionLedger', {
+        id: 'leader-1',
+        topic: 'cache-policy',
+        decision: 'Use monotonic TTL',
+        rationale: 'Avoid wall-clock jumps',
+        authority: 'leader',
+        by: 'leader',
+        ts: 1,
+      }),
+      setMutation('testResults', {
+        passed: false,
+        total: 1,
+        failed: 1,
+        failures: [failure],
+      }),
+    ]);
+    const decision = decide(state, { ...clock(), roster: FULL_ROSTER });
+    const next = applyMutations(state, decision.mutations);
+
+    expect(next.nextRole).toBe('ARCHITECT');
+    expect(next.handoffPackets).toEqual([
+      {
+        fromRole: 'PM',
+        toRole: 'ARCHITECT',
+        done: expect.stringContaining('PM'),
+        keyDecisions: ['leader-1'],
+        openIssues: ['ttl expires: expected undefined'],
+        fileRefs: ['src/cache.test.ts:27'],
+        ts: 1000,
+      },
+    ]);
+  });
+
+  it('does not emit a handoff when the coordinator re-dispatches the same role', () => {
+    const state = applyMutations(createInitialAppState('t-1', 'g'), [
+      setMutation('nextRole', 'PM'),
+    ]);
+    const next = applyMutations(
+      state,
+      decide(state, { ...clock(), roster: FULL_ROSTER }).mutations,
+    );
+
+    expect(next.nextRole).toBe('PM');
+    expect(next.handoffPackets).toEqual([]);
+  });
+
+  it('records finalize as a completion candidate but never self-approves the request', () => {
+    const state = reviewState('approved');
+    const decision = decide(state, { ...clock(), roster: FULL_ROSTER });
+    const next = applyMutations(state, decision.mutations);
+    const ledger = latestCoordinationLedger(next);
+
+    expect(decision.route.kind).toBe('finalize');
+    expect(ledger?.completionCandidate).toBe(true);
+    expect(ledger?.progress.isRequestSatisfied).toEqual({
+      reason: 'awaiting_leader_confirmation',
+      answer: false,
+      authority: 'leader',
+    });
+    expect(ledger?.progress.nextSpeaker.answer).toBeNull();
+  });
+
+  it('records human_gate with LEADER as the next speaker', () => {
+    const state = testingState(false, MAX_ITERATIONS);
+    const decision = decide(state, { ...clock(), roster: FULL_ROSTER });
+    const next = applyMutations(state, decision.mutations);
+
+    expect(decision.route.kind).toBe('human_gate');
+    expect(latestCoordinationLedger(next)?.progress.nextSpeaker.answer).toBe('LEADER');
+  });
+});
+
 describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semantics)', () => {
   it('keeps the Phase 0 fixed CODER dispatch when the roster has no PM (PHASE0_ROSTER)', () => {
     const decision = decide(createInitialAppState('t-1', '实现带 TTL 的 LRU 缓存'), {
@@ -468,7 +593,7 @@ describe('coordinator.decide · feedback escalation (task 4.3, spec §3)', () =>
     if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
     expect(decision.route.batch[0].role).toBe('CODER');
     const next = applyMutations(state, decision.mutations);
-    expect(next.messages.at(-1)?.payload).toMatchObject({
+    expect(latestCoordinatorControlPayload(next)).toMatchObject({
       reason: 'tests_failed',
       failureStreak: 1,
     });
@@ -485,7 +610,7 @@ describe('coordinator.decide · feedback escalation (task 4.3, spec §3)', () =>
     expect(next.phase).toBe('review');
     expect(next.nextRole).toBe('REVIEWER');
     expect(next.iterationCount).toBe(2);
-    expect(next.messages.at(-1)?.payload).toMatchObject({
+    expect(latestCoordinatorControlPayload(next)).toMatchObject({
       reason: 'repeated_test_failures',
       failureStreak: 2,
     });
@@ -499,7 +624,7 @@ describe('coordinator.decide · feedback escalation (task 4.3, spec §3)', () =>
     if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
     expect(decision.route.batch[0].role).toBe('CODER');
     const next = applyMutations(state, decision.mutations);
-    expect(next.messages.at(-1)?.payload).toMatchObject({
+    expect(latestCoordinatorControlPayload(next)).toMatchObject({
       reason: 'tests_failed',
       failureStreak: 2,
       degraded: true,
@@ -569,7 +694,7 @@ describe('coordinator.decide · feedback escalation (task 4.3, spec §3)', () =>
     if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
     expect(decision.route.batch[0].role).toBe('CODER');
     const next = applyMutations(state, decision.mutations);
-    expect(next.messages.at(-1)?.payload).toMatchObject({
+    expect(latestCoordinatorControlPayload(next)).toMatchObject({
       degraded: true,
       degradedReason: 'architect_not_rostered',
     });

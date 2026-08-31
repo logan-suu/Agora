@@ -1,5 +1,14 @@
-import type { AppState, Message, Mutation, RoleId, RoleSpec, Subtask } from '@agora/core-domain';
-import { appendMutation, mergeByIdMutation, setMutation } from '@agora/core-domain';
+import type {
+  AppState,
+  HandoffPacket,
+  Message,
+  Mutation,
+  RoleId,
+  RoleSpec,
+  Subtask,
+} from '@agora/core-domain';
+import { appendMutation, applyMutations, mergeByIdMutation, setMutation } from '@agora/core-domain';
+import { buildCoordinationLedger, MAX_STALLS } from './progress-ledger';
 import { evaluateRouteWhen } from './route-conditions';
 
 export const MAX_ITERATIONS = 8;
@@ -46,22 +55,144 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     newId: options?.newId ?? (() => crypto.randomUUID()),
     now: options?.now ?? (() => Date.now()),
   };
+  let decision: CoordinatorDecision;
   switch (state.phase) {
     case 'clarifying':
-      return dispatchFromClarifying(state, clock, options?.roster);
+      decision = dispatchFromClarifying(state, clock, options?.roster);
+      break;
     case 'planning':
-      return dispatchAfterPlanning(state, clock);
+      decision = dispatchAfterPlanning(state, clock);
+      break;
     case 'coding':
-      return advanceToTesting(state);
+      decision = advanceToTesting(state);
+      break;
     case 'testing':
-      return evaluateTestResults(state, clock, options?.roster);
+      decision = evaluateTestResults(state, clock, options?.roster);
+      break;
     case 'review':
-      return evaluateReview(state, clock, options?.roster);
+      decision = evaluateReview(state, clock, options?.roster);
+      break;
     case 'done':
-      return { route: { kind: 'finalize' }, mutations: [] };
+      decision = { route: { kind: 'finalize' }, mutations: [] };
+      break;
     default:
       throw new Error(`phase "${String(state.phase)}" is not routable by the coordinator`);
   }
+  return attachCoordinationArtifacts(state, decision, clock, options?.roster);
+}
+
+function nextSpeakerFor(route: Route): string | null {
+  switch (route.kind) {
+    case 'worker':
+      return route.batch[0].role;
+    case 'human_gate':
+      return 'LEADER';
+    case 'finalize':
+    case 'integrate':
+      return null;
+  }
+}
+
+function appendedMessages(mutations: readonly Mutation[]): Message[] {
+  return mutations.flatMap((mutation) => {
+    if (mutation.op !== 'append' || mutation.field !== 'messages') return [];
+    const value = mutation.value;
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return [];
+    const candidate = value as Partial<Message>;
+    return typeof candidate.display === 'string' && typeof candidate.type === 'string'
+      ? [value as Message]
+      : [];
+  });
+}
+
+function instructionFor(decision: CoordinatorDecision): string {
+  const messages = appendedMessages(decision.mutations);
+  const latest = messages[messages.length - 1];
+  if (latest !== undefined) return latest.display;
+  const speaker = nextSpeakerFor(decision.route);
+  if (speaker !== null) return `Continue with ${speaker}`;
+  return decision.route.kind === 'finalize' ? 'Finalize the task result' : 'Integrate task outputs';
+}
+
+const LOOP_REASONS = new Set([
+  'tests_failed',
+  'repeated_test_failures',
+  'review_changes_requested',
+  'reviewer_architecture_issue',
+]);
+
+function loopReasonFor(decision: CoordinatorDecision): string | undefined {
+  for (const message of appendedMessages(decision.mutations)) {
+    const reason = message.payload.reason;
+    if (typeof reason === 'string' && LOOP_REASONS.has(reason)) return reason;
+  }
+  return undefined;
+}
+
+function handoffForRoleSwitch(
+  state: AppState,
+  route: Route,
+  clock: Clock,
+): HandoffPacket | undefined {
+  if (route.kind !== 'worker') return undefined;
+  const fromRole = state.nextRole;
+  const toRole = route.batch[0].role;
+  if (fromRole === undefined || fromRole === toRole) return undefined;
+
+  const openIssues = state.testResults?.failures.map(
+    (failure) => `${failure.test}: ${failure.message}`,
+  );
+  const fileRefs = [
+    ...new Set(
+      state.testResults?.failures.map((failure) => `${failure.file}:${String(failure.line)}`) ?? [],
+    ),
+  ];
+  return {
+    fromRole,
+    toRole,
+    done: `${fromRole} stage completed; Coordinator routed the structured handoff to ${toRole}`,
+    keyDecisions: state.decisionLedger
+      .filter((decision) => decision.authority === 'leader')
+      .map((decision) => decision.id),
+    openIssues: openIssues ?? [],
+    fileRefs,
+    ts: clock.now(),
+  };
+}
+
+function attachCoordinationArtifacts(
+  state: AppState,
+  decision: CoordinatorDecision,
+  clock: Clock,
+  roster: readonly RoleSpec[] | undefined,
+): CoordinatorDecision {
+  const handoff = handoffForRoleSwitch(state, decision.route, clock);
+  const mutations = [
+    ...decision.mutations,
+    ...(handoff === undefined ? [] : [appendMutation('handoffPackets', handoff)]),
+  ];
+  const projectedNext = mutations.length === 0 ? state : applyMutations(state, mutations);
+  const loopReason = loopReasonFor(decision);
+  const ledger = buildCoordinationLedger(projectedNext, {
+    nextSpeaker: nextSpeakerFor(decision.route),
+    instruction: instructionFor(decision),
+    completionCandidate: decision.route.kind === 'finalize',
+    ...(roster === undefined ? {} : { availableRoles: roster.map((spec) => spec.role) }),
+    ...(loopReason === undefined ? {} : { loopReason }),
+  });
+  const ledgerMessage: Message = {
+    msgId: clock.newId(),
+    channelId: 'main',
+    fromRole: 'COORDINATOR',
+    type: 'chat',
+    payload: ledger,
+    display: `Coordinator Ledger r${ledger.revision}: stall=${ledger.stallCount}/${MAX_STALLS}`,
+    ts: clock.now(),
+  };
+  return {
+    route: decision.route,
+    mutations: [...mutations, appendMutation('messages', ledgerMessage)],
+  };
 }
 
 function hasRole(roster: readonly RoleSpec[] | undefined, role: string): boolean {
