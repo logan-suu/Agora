@@ -363,7 +363,7 @@ function evaluateTestResults(
             'messages',
             announce(
               clock,
-              { nextRole: 'REVIEWER' },
+              { nextRole: 'REVIEWER', reviewCommentCursor: state.reviewComments.length },
               `测试全过（${state.testResults.total}/${state.testResults.total}），派发 REVIEWER 评审`,
             ),
           ),
@@ -389,6 +389,7 @@ function evaluateTestResults(
             {
               nextRole: 'REVIEWER',
               reason: 'repeated_test_failures',
+              reviewCommentCursor: state.reviewComments.length,
               failureStreak,
               failed: state.testResults.failed,
               total: state.testResults.total,
@@ -432,12 +433,32 @@ function evaluateTestResults(
   };
 }
 
-function reviewVerdictEntry(state: AppState): Record<string, unknown> | undefined {
-  for (let index = state.reviewComments.length - 1; index >= 0; index -= 1) {
-    const entry = state.reviewComments[index];
-    if (entry !== undefined && entry.kind === 'verdict') return entry;
+function currentReviewEntries(state: AppState): Record<string, unknown>[] {
+  let cursor: number | undefined;
+  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+    const message = state.messages[index];
+    if (
+      message?.fromRole === 'COORDINATOR' &&
+      message.type === 'announce' &&
+      message.payload.nextRole === 'REVIEWER'
+    ) {
+      const recorded = message.payload.reviewCommentCursor;
+      if (
+        typeof recorded !== 'number' ||
+        !Number.isInteger(recorded) ||
+        recorded < 0 ||
+        recorded > state.reviewComments.length
+      ) {
+        throw new Error('REVIEWER dispatch requires a valid reviewCommentCursor');
+      }
+      cursor = recorded;
+      break;
+    }
   }
-  return undefined;
+  if (cursor === undefined) {
+    throw new Error('phase "review" requires a current REVIEWER dispatch cursor');
+  }
+  return state.reviewComments.slice(cursor);
 }
 
 function reopenForRework(state: AppState): { mutations: Mutation[]; subtaskId: string } {
@@ -479,12 +500,15 @@ function evaluateReview(
   clock: Clock,
   roster: readonly RoleSpec[] | undefined,
 ): CoordinatorDecision {
-  const verdictEntry = reviewVerdictEntry(state);
-  if (verdictEntry === undefined) {
+  const reviewEntries = currentReviewEntries(state);
+  const verdictEntries = reviewEntries.filter((entry) => entry.kind === 'verdict');
+  if (verdictEntries.length !== 1) {
     throw new Error(
-      'phase "review" requires a verdict entry in reviewComments written by REVIEWER via mutations',
+      `current review turn must contain exactly one verdict; got ${verdictEntries.length}`,
     );
   }
+  const verdictEntry = verdictEntries[0];
+  if (verdictEntry === undefined) throw new Error('unreachable: verdict count is exactly one');
   const verdict = verdictEntry.verdict;
   if (verdict === 'approved') {
     if (isRootCauseReview(state)) {
@@ -538,12 +562,12 @@ function evaluateReview(
         reason: 'review_changes_requested',
         issueScope,
         summary: verdictEntry.summary ?? null,
-        comments: state.reviewComments,
+        comments: reviewEntries,
         ...(architectUnavailable
           ? { degraded: true, degradedReason: 'architect_not_rostered' }
           : {}),
       },
-      display: `评审退回（${state.reviewComments.length} 条意见），退回 CODER 第 ${state.iterationCount + 1} 轮`,
+      display: `评审退回（${reviewEntries.length} 条意见），退回 CODER 第 ${state.iterationCount + 1} 轮`,
       ts: clock.now(),
     };
     const reopen = reopenForRework(state);
