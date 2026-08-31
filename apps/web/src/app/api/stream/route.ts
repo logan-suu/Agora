@@ -27,6 +27,10 @@ export function GET(request: Request): Response {
       });
       const heartbeat = setInterval(() => send(': heartbeat\n\n'), HEARTBEAT_INTERVAL_MS);
 
+      const closeForAbort = () => {
+        cleanup();
+        controller.close();
+      };
       cleanup = () => {
         if (!active) {
           return;
@@ -34,13 +38,12 @@ export function GET(request: Request): Response {
         active = false;
         clearInterval(heartbeat);
         unsubscribe();
-        request.signal.removeEventListener('abort', cleanup);
+        request.signal.removeEventListener('abort', closeForAbort);
       };
-      request.signal.addEventListener('abort', cleanup, { once: true });
+      request.signal.addEventListener('abort', closeForAbort, { once: true });
 
       if (request.signal.aborted) {
-        cleanup();
-        controller.close();
+        closeForAbort();
         return;
       }
 

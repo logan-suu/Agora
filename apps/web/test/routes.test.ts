@@ -45,6 +45,22 @@ describe('GET /api/stream', () => {
     expect(response.status).toBe(200);
     expect(channelStream.subscriberCount('main')).toBe(0);
   });
+
+  it('closes an established SSE stream when its request is aborted', async () => {
+    const controller = new AbortController();
+    const response = openStream(
+      new Request('http://localhost/api/stream?channelId=main', {
+        signal: controller.signal,
+      }),
+    );
+    const reader = response.body?.getReader();
+
+    await reader?.read();
+    controller.abort();
+
+    await expect(reader?.read()).resolves.toEqual({ done: true, value: undefined });
+    expect(channelStream.subscriberCount('main')).toBe(0);
+  });
 });
 
 describe('POST /api/messages', () => {
