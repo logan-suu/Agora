@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-31T10:58:25.000Z",
+  "last_updated": "2026-08-31T11:57:20.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -231,6 +231,23 @@
       "resolved_by": null,
       "created_at": "2026-08-30T11:00:35.000Z",
       "notes": "Resolution condition: when Phase 9 parallel dispatch lands, carry subtask refs in reviewComments (REVIEWER sees per-subtask worktree refs via branchOrPatch) and narrow reopenForRework to the referenced subset, keeping reopen-all as the fallback when no refs are present. Check this entry at the Phase 9 exit gate."
+    },
+    {
+      "id": "DEF-014",
+      "source": "task 5.1 plan ruling (Leader approved 2026-08-31)",
+      "pr": null,
+      "pr_url": null,
+      "comment_id": null,
+      "comment_url": null,
+      "task": "5.1",
+      "severity": "major",
+      "item": "Phase 5+ State persistence has no implemented SQLite/JSONL adapter or dedicated task",
+      "detail": "系统架构设计文档 §9 requires Phase 5+ State persistence in SQLite/JSONL, but task 5.1 is scoped to the Next.js/SSE transport scaffold and the repository currently has no State persistence adapter. The Leader approved keeping SQLite out of 5.1 rather than silently expanding its dependency and architecture scope.",
+      "target_phase": 5,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-08-31T11:57:20.000Z",
+      "notes": "Resolution condition: before task 5.6 can pass the Phase 5 exit gate, implement the specified SQLite/JSONL State persistence path in an approved task or make and synchronize a new architecture ruling that explicitly changes the Phase 5 deployment requirement. The in-process ChannelStream in 5.1 is transport-only and does not satisfy persistence or cross-instance delivery."
     }
   ]
 }
