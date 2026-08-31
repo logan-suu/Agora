@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-08-31T01:31:53.000Z",
+  "last_updated": "2026-08-31T01:36:41.000Z",
   "current_phase": 4,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -622,7 +622,7 @@
           "id": "4.4",
           "title": "Coordinator 进度台账（MagenticOne Ledger 双循环改造版）",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/框架调研与借鉴决策.md §1.3 模式③",
             "docs/详细设计方案.md §3/§7",
@@ -633,14 +633,14 @@
             "4.2"
           ],
           "test_file": "packages/core/orchestration/test/progress-ledger.test.ts + packages/core/orchestration/test/coordinator.test.ts + packages/runtime/executor/test/project.test.ts + tests/integration/cross-phase/phase4-coordination-ledger.test.ts + tests/integration/phase2/phase2-exit.test.ts",
-          "notes": "借鉴 AutoGen MagenticOne：外层 facts/plan 台账 + 内层 progress ledger（严格 JSON：is_request_satisfied/is_in_loop/is_progress_being_made/next_speaker/instruction_or_question；max_stalls=3 触发重规划）。【关键改造】裁决由人类 leader 经 humanGate 持有（humanGate=is_request_satisfied），不由 LLM 拍板；台账按角色投影切片分发，不当纯文本全员广播。\n[2026-08-31 开工·用户确认] 状态置 in_progress。用户批准推荐方案：Ledger 以结构化 Coordinator message 事件持久化（不新增 AppState/Mutation 字段，R9）；纯函数确定性评估，不引入 LLM 裁决；completionCandidate 与仅 leader-authority 可置真的 isRequestSatisfied 分离；Phase 4 只落 humanGate 接缝、不抢跑 Phase 8；连续无效回环 maxStalls=3 触发外层 facts/plan 重建；按角色投影 coordinationContext，不广播原始消息。进入 EPCC-V Explore/Plan。\n[2026-08-31 Code+Check·TDD 红→绿] 新增 L1 coordination-ledger 严格 schema/latest reader、L2 progress-ledger 纯函数与 Coordinator 统一 attachCoordinationArtifacts 接缝；Ledger 以 type=chat 的 Coordinator message 经 applyMutations append 持久化，避免污染 4.3 控制事件恢复并保持 AppState/Mutation 签名不变。progress 明确区分 completionCandidate 与 leader-only isRequestSatisfied；loop/no-progress 累计 maxStalls=3 后 revision++ 并从结构化 State 重建 facts/plan。project() 新增 coordinationContext：Coordinator 完整台账，worker 仅本角色 plan/current instruction，均防御性拷贝且无有效 Ledger 时返回显式空 shape；六角色 roster 白名单同步。Coordinator 在真实 worker role 切换时通用生成 HandoffPacket，同角色重派/首次派发不生成，DEF-012 已在 deferred-items.json 标 resolved。TDD 证据：progress-ledger 9 例（含畸形嵌套拒绝）、coordinator 50 例、project 24 例、cross-phase 1 例；Phase 2 真实 Harness/MCP/LocalTempSandbox 链无手工 seed 验证 PM→ARCHITECT→CODER→TESTER→REVIEWER 四次交接。R1 所有写入走 applyMutations；R2 无原始群聊广播；R3 完成裁决仍归 leader；R9 无公开接口字段变更；R12 已同步蓝图 §9、详细设计 §3/§7、框架调研 §1.3、开发计划 §6.3/§7.3。最终门禁：pnpm typecheck exit=0；pnpm lint exit=0（Biome 132 files）；pnpm test 398 passed / 2 skipped（39 files；2 skip 为既有 live-LLM 需 DEEPSEEK_API_KEY）。G5：真实 DockerSandbox 15/15、真实 git/MCP/child_process、LocalTemp 与 Phase 0–3 累进链路全部通过，无 test double 替代新增能力。任务保持 in_progress，待 $agora-commit 建 PR；人工合并后由 $agora-pr-merge 标 done。\n[2026-08-31 /agora-commit] PR #38 已创建：https://github.com/logan-suu/Agora/pull/38（feat/coordinator-progress-ledger → dev-1.0.0，功能提交 4c5048b）。交付门禁在功能分支复跑：typecheck 0 错；Biome 132 files 0 违规；全量 398 passed / 2 skipped（既有 live-LLM 条件跳过）；task 4.4 专属 G5 17/17（Phase 2 真实 Harness/MCP/LocalTempSandbox 无 seed 交接链 + cross-phase Ledger 持久化/投影）；真实 DockerSandbox 15/15；敏感文件与新增内容扫描无命中。\n[2026-08-31 /agora-pr-review 修复] 用户授权修复 3 项有效发现：① plan status 原先先判历史完成 artifact，导致返工 ARCHITECT/再次 TESTER 虽为 nextSpeaker 却标 done；改为 nextSpeaker 优先 active，并补两条回归。② Ledger 所谓严格 schema 原仅校验必填字段，未知字段可经对象展开进入角色投影；现 payload/task/fact/plan/progress/五个 reasoned answer 全层 exact-key，project() 再显式白名单重建，形成 R2 双重防线；补 10 个对象边界拒绝 + CODER fail-closed 投影测试。③ 采纳 CodeRabbit discussion_r3891107947，开发计划 §7.3 补 confirmed facts，与蓝图 §9/详细设计 §7/运行时一致；详细设计 §3 留实装记录。TDD 红灯：定向 37 中 4 failed（ARCHITECT/TESTER 状态 2 + exact-key 1 + 投影泄漏 1）；修复后定向 37/37。门禁：typecheck 0 错；Biome 132 files 0 违规；全量 402 passed / 2 skipped（较 PR 初始 398 净增 4，2 skip 为既有 live-LLM）；task 4.4 G5 17/17；真实 DockerSandbox 15/15。无新增延期项。修复提交 7f37089 已推送至 PR #38；已用英文回复 CodeRabbit discussion_r3891107947（reply discussion_r3891154615）并仅将该已处理线程标记 resolved。任务保持 in_progress，禁止自动合并，待人类审阅合并后由 $agora-pr-merge 收尾。",
-          "last_updated": "2026-08-31T01:31:53.000Z"
+          "notes": "借鉴 AutoGen MagenticOne：外层 facts/plan 台账 + 内层 progress ledger（严格 JSON：is_request_satisfied/is_in_loop/is_progress_being_made/next_speaker/instruction_or_question；max_stalls=3 触发重规划）。【关键改造】裁决由人类 leader 经 humanGate 持有（humanGate=is_request_satisfied），不由 LLM 拍板；台账按角色投影切片分发，不当纯文本全员广播。\n[2026-08-31 开工·用户确认] 状态置 in_progress。用户批准推荐方案：Ledger 以结构化 Coordinator message 事件持久化（不新增 AppState/Mutation 字段，R9）；纯函数确定性评估，不引入 LLM 裁决；completionCandidate 与仅 leader-authority 可置真的 isRequestSatisfied 分离；Phase 4 只落 humanGate 接缝、不抢跑 Phase 8；连续无效回环 maxStalls=3 触发外层 facts/plan 重建；按角色投影 coordinationContext，不广播原始消息。进入 EPCC-V Explore/Plan。\n[2026-08-31 Code+Check·TDD 红→绿] 新增 L1 coordination-ledger 严格 schema/latest reader、L2 progress-ledger 纯函数与 Coordinator 统一 attachCoordinationArtifacts 接缝；Ledger 以 type=chat 的 Coordinator message 经 applyMutations append 持久化，避免污染 4.3 控制事件恢复并保持 AppState/Mutation 签名不变。progress 明确区分 completionCandidate 与 leader-only isRequestSatisfied；loop/no-progress 累计 maxStalls=3 后 revision++ 并从结构化 State 重建 facts/plan。project() 新增 coordinationContext：Coordinator 完整台账，worker 仅本角色 plan/current instruction，均防御性拷贝且无有效 Ledger 时返回显式空 shape；六角色 roster 白名单同步。Coordinator 在真实 worker role 切换时通用生成 HandoffPacket，同角色重派/首次派发不生成，DEF-012 已在 deferred-items.json 标 resolved。TDD 证据：progress-ledger 9 例（含畸形嵌套拒绝）、coordinator 50 例、project 24 例、cross-phase 1 例；Phase 2 真实 Harness/MCP/LocalTempSandbox 链无手工 seed 验证 PM→ARCHITECT→CODER→TESTER→REVIEWER 四次交接。R1 所有写入走 applyMutations；R2 无原始群聊广播；R3 完成裁决仍归 leader；R9 无公开接口字段变更；R12 已同步蓝图 §9、详细设计 §3/§7、框架调研 §1.3、开发计划 §6.3/§7.3。最终门禁：pnpm typecheck exit=0；pnpm lint exit=0（Biome 132 files）；pnpm test 398 passed / 2 skipped（39 files；2 skip 为既有 live-LLM 需 DEEPSEEK_API_KEY）。G5：真实 DockerSandbox 15/15、真实 git/MCP/child_process、LocalTemp 与 Phase 0–3 累进链路全部通过，无 test double 替代新增能力。任务保持 in_progress，待 $agora-commit 建 PR；人工合并后由 $agora-pr-merge 标 done。\n[2026-08-31 /agora-commit] PR #38 已创建：https://github.com/logan-suu/Agora/pull/38（feat/coordinator-progress-ledger → dev-1.0.0，功能提交 4c5048b）。交付门禁在功能分支复跑：typecheck 0 错；Biome 132 files 0 违规；全量 398 passed / 2 skipped（既有 live-LLM 条件跳过）；task 4.4 专属 G5 17/17（Phase 2 真实 Harness/MCP/LocalTempSandbox 无 seed 交接链 + cross-phase Ledger 持久化/投影）；真实 DockerSandbox 15/15；敏感文件与新增内容扫描无命中。\n[2026-08-31 /agora-pr-review 修复] 用户授权修复 3 项有效发现：① plan status 原先先判历史完成 artifact，导致返工 ARCHITECT/再次 TESTER 虽为 nextSpeaker 却标 done；改为 nextSpeaker 优先 active，并补两条回归。② Ledger 所谓严格 schema 原仅校验必填字段，未知字段可经对象展开进入角色投影；现 payload/task/fact/plan/progress/五个 reasoned answer 全层 exact-key，project() 再显式白名单重建，形成 R2 双重防线；补 10 个对象边界拒绝 + CODER fail-closed 投影测试。③ 采纳 CodeRabbit discussion_r3891107947，开发计划 §7.3 补 confirmed facts，与蓝图 §9/详细设计 §7/运行时一致；详细设计 §3 留实装记录。TDD 红灯：定向 37 中 4 failed（ARCHITECT/TESTER 状态 2 + exact-key 1 + 投影泄漏 1）；修复后定向 37/37。门禁：typecheck 0 错；Biome 132 files 0 违规；全量 402 passed / 2 skipped（较 PR 初始 398 净增 4，2 skip 为既有 live-LLM）；task 4.4 G5 17/17；真实 DockerSandbox 15/15。无新增延期项。修复提交 7f37089 已推送至 PR #38；已用英文回复 CodeRabbit discussion_r3891107947（reply discussion_r3891154615）并仅将该已处理线程标记 resolved。任务保持 in_progress，禁止自动合并，待人类审阅合并后由 $agora-pr-merge 收尾。\n[2026-08-31 /agora-pr-merge 收尾] PR #38 已由人工合并至 dev-1.0.0（merge commit 3da7846ad07aaa854f2f4b83b62b5e5f40ece74a）；任务标 done。G1–G7 证据复核：规格/文档同步；typecheck 0 错；Biome 132 files 0 违规；全量 402 passed / 2 skipped（2 skip 为既有 live-LLM）；task 4.4 G5 17/17（真实 Harness/MCP/LocalTempSandbox 无 seed 交接链 + cross-phase Ledger 投影）且真实 DockerSandbox 15/15；敏感扫描无命中。DEF-012 已 resolved；既有 DEF-004/DEF-010 留 Phase 4 出口/Phase 9.2 核对。级联翻转：4.5 pending→ready；4.6 依赖 4.5 未 done 保持 pending。Phase 4 仍 in_progress，current_phase 保持 4。",
+          "last_updated": "2026-08-31T01:36:41.000Z"
         },
         {
           "id": "4.5",
           "title": "端到端验证（简单 vs 复杂任务）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/开发计划安排.md §7"
           ],
@@ -649,7 +649,8 @@
             "4.4"
           ],
           "test_file": null,
-          "notes": "用例 1「实现一个函数」预期 Tier 0 跳过 PM/ARCH；用例 2「实现一个 REST API 服务」预期 Tier 2 全队出动。"
+          "notes": "用例 1「实现一个函数」预期 Tier 0 跳过 PM/ARCH；用例 2「实现一个 REST API 服务」预期 Tier 2 全队出动。\n[2026-08-31 /agora-pr-merge] 级联翻转 pending→ready（依赖 4.3、4.4 已 done，PR #38 merge commit 3da7846）。",
+          "last_updated": "2026-08-31T01:36:41.000Z"
         },
         {
           "id": "4.6",
