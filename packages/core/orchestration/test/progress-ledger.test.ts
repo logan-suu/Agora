@@ -192,6 +192,33 @@ describe('buildCoordinationLedger (task 4.4, MagenticOne adaptation)', () => {
     expect(recovered.task.plan.map((step) => step.role)).toEqual(['CODER', 'TESTER']);
   });
 
+  it.each([
+    {
+      role: 'ARCHITECT',
+      state: {
+        ...createInitialAppState('task-44', 'Build a cache'),
+        architecture: { modules: ['legacy-cache'] },
+      },
+    },
+    {
+      role: 'TESTER',
+      state: {
+        ...createInitialAppState('task-44', 'Build a cache'),
+        testResults: { passed: true, total: 1, failed: 0, failures: [] },
+      },
+    },
+  ])(
+    'marks the currently routed $role plan step active even when old artifacts exist',
+    ({ role, state }) => {
+      const ledger = buildCoordinationLedger(
+        state,
+        observation({ nextSpeaker: role, instruction: `Run ${role} again` }),
+      );
+
+      expect(ledger.task.plan.find((step) => step.role === role)?.status).toBe('active');
+    },
+  );
+
   it('reads only well-shaped Coordinator ledger events from the append-only message stream', () => {
     const state = createInitialAppState('task-44', 'Build a cache');
     const ledger = buildCoordinationLedger(state, observation());
@@ -221,6 +248,48 @@ describe('buildCoordinationLedger (task 4.4, MagenticOne adaptation)', () => {
     const withMalformed = record(state, malformed, 1);
 
     expect(latestCoordinationLedger(withMalformed)).toBeUndefined();
+  });
+
+  it('rejects undeclared fields at every Ledger object boundary', () => {
+    const state = createInitialAppState('task-44', 'Build a cache');
+    const valid = buildCoordinationLedger(state, observation());
+    const withExtra = (
+      mutate: (payload: ReturnType<typeof buildCoordinationLedger>) => void,
+    ): ReturnType<typeof buildCoordinationLedger> => {
+      const payload = structuredClone(valid);
+      mutate(payload);
+      return payload;
+    };
+    const malformed = [
+      withExtra((payload) => Object.assign(payload, { rawLog: 'forbidden' })),
+      withExtra((payload) => Object.assign(payload.task, { rawLog: 'forbidden' })),
+      withExtra((payload) => {
+        const fact = payload.task.confirmedFacts[0];
+        if (fact === undefined) throw new Error('fixture requires a confirmed fact');
+        Object.assign(fact, { rawLog: 'forbidden' });
+      }),
+      withExtra((payload) => {
+        const step = payload.task.plan[0];
+        if (step === undefined) throw new Error('fixture requires a plan step');
+        Object.assign(step, { rawLog: 'forbidden' });
+      }),
+      withExtra((payload) => Object.assign(payload.progress, { rawLog: 'forbidden' })),
+      withExtra((payload) =>
+        Object.assign(payload.progress.isRequestSatisfied, { rawLog: 'forbidden' }),
+      ),
+      withExtra((payload) => Object.assign(payload.progress.isInLoop, { rawLog: 'forbidden' })),
+      withExtra((payload) =>
+        Object.assign(payload.progress.isProgressBeingMade, { rawLog: 'forbidden' }),
+      ),
+      withExtra((payload) => Object.assign(payload.progress.nextSpeaker, { rawLog: 'forbidden' })),
+      withExtra((payload) =>
+        Object.assign(payload.progress.instructionOrQuestion, { rawLog: 'forbidden' }),
+      ),
+    ];
+
+    for (const [index, payload] of malformed.entries()) {
+      expect(latestCoordinationLedger(record(state, payload, index))).toBeUndefined();
+    }
   });
 
   it('uses camelCase ledger fields and JSON-safe role answers', () => {

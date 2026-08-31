@@ -91,11 +91,8 @@ function planOf(
         role === observation.nextSpeaker
           ? observation.instruction
           : `Complete the ${String(role)} stage when routed`,
-      status: roleIsDone(state, role)
-        ? 'done'
-        : role === observation.nextSpeaker
-          ? 'active'
-          : 'pending',
+      status:
+        role === observation.nextSpeaker ? 'active' : roleIsDone(state, role) ? 'done' : 'pending',
       dependsOn: previous === undefined ? [] : [`coordination-plan-r${revision}-${String(index)}`],
     };
   });

@@ -51,12 +51,31 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  const actual = Object.keys(value);
+  return actual.length === keys.length && keys.every((key) => key in value);
+}
+
+const REASONED_ANSWER_KEYS = ['reason', 'answer'] as const;
+
 function isReasonedBoolean(value: unknown): boolean {
-  return isRecord(value) && typeof value.reason === 'string' && typeof value.answer === 'boolean';
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, REASONED_ANSWER_KEYS) &&
+    typeof value.reason === 'string' &&
+    typeof value.answer === 'boolean'
+  );
 }
 
 function isLedgerFact(value: unknown): boolean {
-  if (!isRecord(value) || typeof value.key !== 'string' || value.key.length === 0) return false;
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ['key', 'value']) ||
+    typeof value.key !== 'string' ||
+    value.key.length === 0
+  ) {
+    return false;
+  }
   return (
     value.value === null ||
     typeof value.value === 'string' ||
@@ -70,6 +89,7 @@ const PLAN_STATUSES = new Set(['pending', 'active', 'done', 'blocked']);
 function isLedgerPlanStep(value: unknown): boolean {
   return (
     isRecord(value) &&
+    hasExactKeys(value, ['id', 'revision', 'role', 'instruction', 'status', 'dependsOn']) &&
     typeof value.id === 'string' &&
     value.id.length > 0 &&
     typeof value.revision === 'number' &&
@@ -86,7 +106,23 @@ function isLedgerPlanStep(value: unknown): boolean {
 }
 
 function isLedgerPayload(value: unknown): value is CoordinationLedgerPayload {
-  if (!isRecord(value) || value.kind !== COORDINATION_LEDGER_KIND) return false;
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      'kind',
+      'revision',
+      'task',
+      'progress',
+      'completionCandidate',
+      'stallCount',
+      'progressMarker',
+      'replanned',
+      'replanReason',
+    ]) ||
+    value.kind !== COORDINATION_LEDGER_KIND
+  ) {
+    return false;
+  }
   if (
     typeof value.revision !== 'number' ||
     !Number.isInteger(value.revision) ||
@@ -101,7 +137,20 @@ function isLedgerPayload(value: unknown): value is CoordinationLedgerPayload {
   ) {
     return false;
   }
-  if (!isRecord(value.task) || !isRecord(value.progress)) return false;
+  if (
+    !isRecord(value.task) ||
+    !hasExactKeys(value.task, ['confirmedFacts', 'hypotheses', 'plan']) ||
+    !isRecord(value.progress) ||
+    !hasExactKeys(value.progress, [
+      'isRequestSatisfied',
+      'isInLoop',
+      'isProgressBeingMade',
+      'nextSpeaker',
+      'instructionOrQuestion',
+    ])
+  ) {
+    return false;
+  }
   if (
     !Array.isArray(value.task.confirmedFacts) ||
     !Array.isArray(value.task.hypotheses) ||
@@ -114,15 +163,19 @@ function isLedgerPayload(value: unknown): value is CoordinationLedgerPayload {
   }
   const progress = value.progress;
   return (
-    isReasonedBoolean(progress.isRequestSatisfied) &&
     isRecord(progress.isRequestSatisfied) &&
+    hasExactKeys(progress.isRequestSatisfied, ['reason', 'answer', 'authority']) &&
+    typeof progress.isRequestSatisfied.reason === 'string' &&
+    typeof progress.isRequestSatisfied.answer === 'boolean' &&
     progress.isRequestSatisfied.authority === 'leader' &&
     isReasonedBoolean(progress.isInLoop) &&
     isReasonedBoolean(progress.isProgressBeingMade) &&
     isRecord(progress.nextSpeaker) &&
+    hasExactKeys(progress.nextSpeaker, REASONED_ANSWER_KEYS) &&
     typeof progress.nextSpeaker.reason === 'string' &&
     (typeof progress.nextSpeaker.answer === 'string' || progress.nextSpeaker.answer === null) &&
     isRecord(progress.instructionOrQuestion) &&
+    hasExactKeys(progress.instructionOrQuestion, REASONED_ANSWER_KEYS) &&
     typeof progress.instructionOrQuestion.reason === 'string' &&
     typeof progress.instructionOrQuestion.answer === 'string'
   );

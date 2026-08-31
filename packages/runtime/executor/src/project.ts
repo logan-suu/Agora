@@ -173,13 +173,33 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
   }
 }
 
+function copiedFact(
+  fact: CoordinationLedgerPayload['task']['confirmedFacts'][number],
+): CoordinationLedgerPayload['task']['confirmedFacts'][number] {
+  return { key: fact.key, value: fact.value };
+}
+
+function copiedPlanStep(
+  step: CoordinationLedgerPayload['task']['plan'][number],
+): CoordinationLedgerPayload['task']['plan'][number] {
+  return {
+    id: step.id,
+    revision: step.revision,
+    role: step.role,
+    instruction: step.instruction,
+    status: step.status,
+    dependsOn: [...step.dependsOn],
+  };
+}
+
 function copiedLedger(ledger: CoordinationLedgerPayload): CoordinationLedgerPayload {
   return {
-    ...ledger,
+    kind: ledger.kind,
+    revision: ledger.revision,
     task: {
-      confirmedFacts: ledger.task.confirmedFacts.map((fact) => ({ ...fact })),
-      hypotheses: ledger.task.hypotheses.map((fact) => ({ ...fact })),
-      plan: ledger.task.plan.map((step) => ({ ...step, dependsOn: [...step.dependsOn] })),
+      confirmedFacts: ledger.task.confirmedFacts.map(copiedFact),
+      hypotheses: ledger.task.hypotheses.map(copiedFact),
+      plan: ledger.task.plan.map(copiedPlanStep),
     },
     progress: {
       isRequestSatisfied: { ...ledger.progress.isRequestSatisfied },
@@ -188,6 +208,11 @@ function copiedLedger(ledger: CoordinationLedgerPayload): CoordinationLedgerPayl
       nextSpeaker: { ...ledger.progress.nextSpeaker },
       instructionOrQuestion: { ...ledger.progress.instructionOrQuestion },
     },
+    completionCandidate: ledger.completionCandidate,
+    stallCount: ledger.stallCount,
+    progressMarker: ledger.progressMarker,
+    replanned: ledger.replanned,
+    replanReason: ledger.replanReason,
   };
 }
 
@@ -219,10 +244,8 @@ function coordinationContext(state: AppState, role: RoleId): unknown {
   }
   return {
     revision: ledger.revision,
-    confirmedFacts: ledger.task.confirmedFacts.map((fact) => ({ ...fact })),
-    plan: ledger.task.plan
-      .filter((step) => step.role === role)
-      .map((step) => ({ ...step, dependsOn: [...step.dependsOn] })),
+    confirmedFacts: ledger.task.confirmedFacts.map(copiedFact),
+    plan: ledger.task.plan.filter((step) => step.role === role).map(copiedPlanStep),
     instructionOrQuestion:
       ledger.progress.nextSpeaker.answer === role
         ? ledger.progress.instructionOrQuestion.answer

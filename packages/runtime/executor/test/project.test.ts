@@ -559,6 +559,36 @@ describe('project · coordinationContext (task 4.4, role-sliced Ledger)', () => 
       completionCandidate: false,
     });
   });
+
+  it('fails closed instead of projecting undeclared Ledger fields', () => {
+    const ledger = coordinationLedger();
+    const firstStep = ledger.task.plan[0];
+    if (firstStep === undefined) throw new Error('fixture requires a plan step');
+    Object.assign(firstStep, { rawLog: 'SENTINEL-FORBIDDEN-RAW-LOG' });
+    const state = makeState({
+      messages: [
+        {
+          msgId: 'ledger-with-extra-field',
+          channelId: 'main',
+          fromRole: 'COORDINATOR',
+          type: 'chat',
+          payload: ledger,
+          display: 'invalid ledger',
+          ts: 1,
+        },
+      ],
+    });
+
+    const context = slicesOf(state, 'CODER').coordinationContext;
+    expect(context).toEqual({
+      revision: null,
+      confirmedFacts: [],
+      plan: [],
+      instructionOrQuestion: null,
+      completionCandidate: false,
+    });
+    expect(JSON.stringify(context)).not.toContain('SENTINEL-FORBIDDEN-RAW-LOG');
+  });
 });
 
 describe('project slice compression (task 3.4, spec §7 cross-agent slice compression)', () => {
