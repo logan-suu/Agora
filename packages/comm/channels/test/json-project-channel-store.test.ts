@@ -25,7 +25,6 @@ function subChannel(channelId = 'sub-task-a'): SubChannel {
     topic: 'Investigate task A',
     createdBy: 'CODER',
     participants: ['leader', 'CODER'],
-    localContext: [],
     closed: false,
   };
 }
@@ -189,6 +188,33 @@ describe('JsonProjectChannelStore', () => {
         createMainChannel(ENABLED_ROLES),
       ]),
     ).rejects.toThrow('partial sub-channel lifecycle metadata');
+  });
+
+  it('refuses to discard a legacy summary through an unrelated channel commit', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonProjectChannelStore(root, ENABLED_ROLES);
+    await store.initialize('project-a', [createMainChannel(ENABLED_ROLES)]);
+    await writeFile(
+      join(root, 'projects/project-a/channels.json'),
+      `${JSON.stringify({
+        projectId: 'project-a',
+        revision: 2,
+        channels: [
+          createMainChannel(ENABLED_ROLES),
+          { ...subChannel(), closed: true, bubbledSummary: 'Do not lose this.' },
+        ],
+      })}\n`,
+      'utf8',
+    );
+    const snapshot = await store.load('project-a');
+    if (snapshot === undefined) throw new Error('expected legacy snapshot');
+
+    await expect(store.commit('project-a', snapshot.revision, snapshot.channels)).rejects.toThrow(
+      'must be migrated before commit',
+    );
+    await expect(store.legacyBubbledSummaries('project-a')).resolves.toMatchObject([
+      { summary: 'Do not lose this.' },
+    ]);
   });
 
   it('serializes same-project commits so concurrent stale writers cannot overwrite each other', async () => {

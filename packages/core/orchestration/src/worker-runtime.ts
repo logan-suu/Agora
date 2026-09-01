@@ -6,6 +6,10 @@ import type { Assignment } from './coordinator';
 export interface WorkerRuntimeDeps {
   roster: readonly RoleSpec[];
   buildExecutor(spec: RoleSpec, assign: Assignment): Executor;
+  buildChannelContext?: (
+    state: AppState,
+    role: string,
+  ) => readonly unknown[] | Promise<readonly unknown[]>;
   handleOutput?: StepOutputHandler;
   transition?: StateTransition;
 }
@@ -89,9 +93,17 @@ export class WorkerRuntime {
         await handle.executor.saveSafePoint();
         return current;
       }
+      const channelContext =
+        this.deps.buildChannelContext === undefined
+          ? []
+          : await this.deps.buildChannelContext(current, handle.role);
+      if (this.paused) {
+        await handle.executor.saveSafePoint();
+        return current;
+      }
       const result = await handle.executor.step({
         sessionId: crypto.randomUUID(),
-        view: project(current, handle.role, this.deps.roster),
+        view: project(current, handle.role, this.deps.roster, channelContext),
       });
       if (this.deps.handleOutput !== undefined) {
         await this.deps.handleOutput(current, handle.role, result.output);

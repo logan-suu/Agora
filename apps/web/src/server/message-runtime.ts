@@ -1,7 +1,7 @@
 import { basename, dirname, resolve } from 'node:path';
 import type { MessageBus, MessageCommitted } from '@agora/comm-bus';
 import { toDisplayMessageEvent } from '@agora/comm-bus';
-import { JsonProjectChannelStore } from '@agora/comm-channels';
+import { DerivedChannelContextBuilder, JsonProjectChannelStore } from '@agora/comm-channels';
 import {
   type AppState,
   createMainChannel,
@@ -13,11 +13,16 @@ import {
 import {
   ChannelLifecycleRejectedError,
   ChannelLifecycleService,
+  ChannelSummaryReconciler,
   type MessageCommitResult,
   MessageService,
   type MutationCommitResult,
 } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
+import {
+  type ChannelSummaryGenerator,
+  HarnessChannelSummaryGenerator,
+} from '@agora/runtime-executor';
 import { JsonTaskStateStore, type TaskScope } from '@agora/runtime-state';
 
 import { type LeaderActionStatus, parseLeaderIntent, planLeaderIntent } from '../lib/intent';
@@ -50,11 +55,18 @@ export class MessageRuntime {
   readonly stream: ChannelStream;
   readonly #service: MessageService;
   readonly #lifecycle: ChannelLifecycleService;
+  readonly #summaryReconciler: ChannelSummaryReconciler;
   readonly #roster: readonly RoleSpec[];
+  readonly #channelContext = new DerivedChannelContextBuilder();
   readonly #enabledRoles: readonly RoleId[];
   readonly #leaderQueues = new Map<string, Promise<void>>();
 
-  constructor(root: string, stream: ChannelStream, roster: readonly RoleSpec[]) {
+  constructor(
+    root: string,
+    stream: ChannelStream,
+    roster: readonly RoleSpec[],
+    summaryGenerator: ChannelSummaryGenerator = new HarnessChannelSummaryGenerator(),
+  ) {
     this.root = root;
     this.store = new JsonTaskStateStore(root);
     this.#enabledRoles = roster.filter((spec) => spec.enabled).map((spec) => spec.role);
@@ -62,17 +74,26 @@ export class MessageRuntime {
     this.stream = stream;
     this.#service = new MessageService(this.store, new SseMessageBus(stream), this.channels);
     this.#lifecycle = new ChannelLifecycleService(this.channels, this.#service, this.#enabledRoles);
+    this.#summaryReconciler = new ChannelSummaryReconciler({
+      channels: this.channels,
+      messages: this.#service,
+      state: this.store,
+      generator: summaryGenerator,
+      legacySummaries: (projectId) => this.channels.legacyBubbledSummaries(projectId),
+    });
     this.#roster = roster;
   }
 
   async initialize(scope: TaskScope, goal: string): Promise<AppState> {
     await this.ensureProjectChannels(scope.projectId);
-    return this.#service.initialize(scope, goal);
+    const state = await this.#service.initialize(scope, goal);
+    return (await this.#summaryReconciler.reconcile(scope)) ?? state;
   }
 
   async initializeState(scope: TaskScope, state: AppState): Promise<AppState> {
     await this.ensureProjectChannels(scope.projectId);
-    return this.store.initialize(scope, state);
+    const initialized = await this.store.initialize(scope, state);
+    return (await this.#summaryReconciler.reconcile(scope)) ?? initialized;
   }
 
   commitMutations(scope: TaskScope, mutations: readonly Mutation[]): Promise<MutationCommitResult> {
@@ -85,6 +106,20 @@ export class MessageRuntime {
 
   ensureProjectChannels(projectId: string) {
     return this.channels.initialize(projectId, [createMainChannel(this.#enabledRoles)]);
+  }
+
+  async channelContextFor(state: AppState, role: string) {
+    const snapshot = await this.channels.load(state.projectId);
+    if (snapshot === undefined) {
+      throw new Error(
+        `project channel store is not initialized for projectId "${state.projectId}"`,
+      );
+    }
+    return this.#channelContext.build(snapshot, state, role);
+  }
+
+  reconcileChannels(scope: TaskScope): Promise<AppState | undefined> {
+    return this.#summaryReconciler.reconcile(scope);
   }
 
   async commitLeaderMessage(
@@ -118,6 +153,7 @@ export class MessageRuntime {
     if (existing !== undefined) {
       return { state: current, published: false, message: existing, action: actionFrom(existing) };
     }
+    await this.#summaryReconciler.reconcile(scope);
 
     const intent = parseLeaderIntent(input.display);
     let lifecycleRejection: LeaderActionStatus | undefined;
@@ -143,6 +179,7 @@ export class MessageRuntime {
           actionId: input.msgId,
           channelId: intent.channelId,
         });
+        await this.#summaryReconciler.reconcile(scope);
       }
     } catch (error) {
       if (!(error instanceof ChannelLifecycleRejectedError)) throw error;
@@ -213,6 +250,7 @@ export class MessageRuntime {
         actionId: record.actionId,
         channelId: record.channelId,
       });
+      await this.#summaryReconciler.reconcile(scope);
       return;
     }
     throw new Error('unknown structured channel action output');
@@ -240,8 +278,9 @@ export function createMessageRuntime(
   root: string,
   stream = new ChannelStream(),
   roster: readonly RoleSpec[] = DEFAULT_ROSTER,
+  summaryGenerator?: ChannelSummaryGenerator,
 ): MessageRuntime {
-  return new MessageRuntime(root, stream, roster);
+  return new MessageRuntime(root, stream, roster, summaryGenerator);
 }
 
 export function getOrCreateMessageRuntime(

@@ -12,9 +12,7 @@ export interface MessageRef {
 interface ChannelBase {
   channelId: string;
   participants: ParticipantId[];
-  localContext: MessageRef[];
   closed: boolean;
-  bubbledSummary?: string;
 }
 
 export interface MainChannel extends ChannelBase {
@@ -29,6 +27,7 @@ export interface SubChannel extends ChannelBase {
   threadId: string;
   topic: string;
   createdBy: ParticipantId;
+  bubbledSummaryRef?: MessageRef;
 }
 
 export type Channel = MainChannel | SubChannel;
@@ -39,7 +38,6 @@ export function createMainChannel(enabledRoles: readonly RoleId[]): MainChannel 
     channelId: 'main',
     kind: 'main',
     participants: ['leader', ...enabledRoles],
-    localContext: [],
     closed: false,
   };
 }
@@ -88,10 +86,9 @@ export function assertValidChannelRegistry(
     if (typeof channel.closed !== 'boolean') {
       throw new Error(`channel "${channelId}" closed must be boolean`);
     }
-    if (channel.bubbledSummary !== undefined && typeof channel.bubbledSummary !== 'string') {
-      throw new Error(`channel "${channelId}" bubbledSummary must be a string`);
+    if ('localContext' in channel || 'bubbledSummary' in channel) {
+      throw new Error(`channel "${channelId}" contains a retired derived field`);
     }
-
     const participants = stringArray(channel.participants, `channel "${channelId}" participants`);
     assertUnique(participants, `channel "${channelId}" participants`);
     if (!participants.includes('leader')) {
@@ -103,20 +100,13 @@ export function assertValidChannelRegistry(
         ? requiredSafeSegment(channel.taskId, 'sub channel taskId')
         : undefined;
 
-    const localContext = arrayValue(channel.localContext, `channel "${channelId}" localContext`);
-    for (const reference of localContext) {
-      const record = channelRecord(reference);
-      const taskId = requiredSafeSegment(record.taskId, 'localContext taskId');
-      requiredNonEmptyString(record.msgId, 'localContext msgId');
-      if (subTaskId !== undefined && taskId !== subTaskId) {
-        throw new Error(`sub channel "${channelId}" localContext taskId must match channel taskId`);
-      }
-    }
-
     if (channel.kind === 'main') {
       mainCount += 1;
       if (channelId !== 'main') throw new Error('main channelId must be "main"');
       if ('taskId' in channel) throw new Error('main channel must not declare taskId');
+      if ('bubbledSummaryRef' in channel) {
+        throw new Error('main channel must not declare bubbledSummaryRef');
+      }
       if (channel.closed) throw new Error('main channel must remain open');
       if (!sameStringSet(participants, ['leader', ...enabledRoles])) {
         throw new Error('main channel participants must equal leader plus enabled roster');
@@ -142,6 +132,22 @@ export function assertValidChannelRegistry(
     }
     if (!participants.includes(createdBy)) {
       throw new Error(`sub channel "${channelId}" must include creator "${createdBy}"`);
+    }
+    if (channel.bubbledSummaryRef !== undefined) {
+      const reference = channelRecord(channel.bubbledSummaryRef);
+      const taskId = requiredSafeSegment(reference.taskId, 'bubbledSummaryRef taskId');
+      const msgId = requiredNonEmptyString(reference.msgId, 'bubbledSummaryRef msgId');
+      if (!channel.closed) {
+        throw new Error(`sub channel "${channelId}" must be closed before summary is referenced`);
+      }
+      if (taskId !== subTaskId) {
+        throw new Error(
+          `sub channel "${channelId}" bubbledSummaryRef taskId must match channel taskId`,
+        );
+      }
+      if (msgId !== `channel-bubble:${channelId}`) {
+        throw new Error(`sub channel "${channelId}" bubbledSummaryRef msgId must be stable`);
+      }
     }
   }
 

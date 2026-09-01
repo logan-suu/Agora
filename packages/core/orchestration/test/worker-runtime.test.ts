@@ -1,6 +1,6 @@
 import type { Message, Mutation } from '@agora/core-domain';
 import { applyMutations, createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
-import type { Executor, StepResult } from '@agora/runtime-executor';
+import type { Executor, ProjectionView, StepResult } from '@agora/runtime-executor';
 import { describe, expect, it } from 'vitest';
 import { WorkerRuntime } from '../src/index';
 
@@ -16,8 +16,8 @@ class FakeExecutor implements Executor {
     this.queue = [...steps];
   }
 
-  async step(context: { sessionId: string }): Promise<StepResult> {
-    this.stepCalls.push({ sessionId: context.sessionId });
+  async step(context: { sessionId: string; view: ProjectionView }): Promise<StepResult> {
+    this.stepCalls.push({ sessionId: context.sessionId, view: context.view });
     const next = this.queue.shift();
     if (next === undefined) throw new Error('fake executor exhausted its scripted steps');
     return next;
@@ -35,6 +35,7 @@ class FakeExecutor implements Executor {
 
 interface StepContextLog {
   sessionId: string;
+  view: ProjectionView;
 }
 
 function chatMessage(msgId: string): Message {
@@ -66,6 +67,50 @@ function runtimeWith(fakes: FakeExecutor[]): WorkerRuntime {
 }
 
 describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
+  it('derives fresh role-scoped ChannelContext before every worker step', async () => {
+    const fake = new FakeExecutor([stepOf('llm', []), stepOf('done', [])]);
+    let revision = 0;
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => fake,
+      buildChannelContext: async (_state, role) => [
+        { channelId: 'sub-a', role, revision: ++revision },
+      ],
+    });
+
+    await runtime.runOne(createInitialAppState('t-1', 'g'), { role: 'CODER' });
+
+    expect(fake.stepCalls.map((call) => call.view.slices.channels)).toEqual([
+      [{ channelId: 'sub-a', role: 'CODER', revision: 1 }],
+      [{ channelId: 'sub-a', role: 'CODER', revision: 2 }],
+    ]);
+  });
+
+  it('honors a pause requested while asynchronous ChannelContext construction is pending', async () => {
+    const fake = new FakeExecutor([]);
+    let releaseContext = () => {};
+    const contextGate = new Promise<void>((resolve) => {
+      releaseContext = resolve;
+    });
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => fake,
+      buildChannelContext: async () => {
+        await contextGate;
+        return [];
+      },
+    });
+
+    const running = runtime.runOne(createInitialAppState('t-1', 'g'), { role: 'CODER' });
+    await Promise.resolve();
+    runtime.paused = true;
+    releaseContext();
+
+    await expect(running).resolves.toMatchObject({ taskId: 't-1' });
+    expect(fake.stepCalls).toHaveLength(0);
+    expect(fake.safePointCalls).toEqual(['cursor']);
+  });
+
   it('merges every step mutation in order through applyMutations without mutating the input state', async () => {
     const fake = new FakeExecutor([
       stepOf('llm', [{ field: 'messages', op: 'append', value: chatMessage('m1') }]),

@@ -129,8 +129,18 @@ describe('persisted HTTP + SSE message flow', () => {
       action: { status: 'applied' },
     });
     await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({
-      revision: 2,
-      channels: [{ channelId: 'main' }, { channelId: 'sub-6-task-a-leader-open-1', closed: true }],
+      revision: 3,
+      channels: [
+        { channelId: 'main' },
+        {
+          channelId: 'sub-6-task-a-leader-open-1',
+          closed: true,
+          bubbledSummaryRef: {
+            taskId: 'task-a',
+            msgId: 'channel-bubble:sub-6-task-a-leader-open-1',
+          },
+        },
+      ],
     });
   });
 
@@ -198,7 +208,7 @@ describe('persisted HTTP + SSE message flow', () => {
     });
   });
 
-  it('omits local context and bubbled summary from the channel list DTO', async () => {
+  it('omits the bubbled summary reference from the channel list DTO', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };
     await runtime.initialize(scope, 'Task task-a');
@@ -214,8 +224,7 @@ describe('persisted HTTP + SSE message flow', () => {
         topic: 'Private topic',
         createdBy: 'leader',
         participants: ['leader', 'CODER'],
-        localContext: [{ taskId: scope.taskId, msgId: 'private-message' }],
-        bubbledSummary: 'PRIVATE SUMMARY',
+        bubbledSummaryRef: { taskId: scope.taskId, msgId: 'channel-bubble:sub-private' },
         closed: true,
       },
     ]);
@@ -225,8 +234,7 @@ describe('persisted HTTP + SSE message flow', () => {
     );
     const body = await response.json();
 
-    expect(JSON.stringify(body)).not.toContain('PRIVATE SUMMARY');
-    expect(JSON.stringify(body)).not.toContain('private-message');
+    expect(JSON.stringify(body)).not.toContain('channel-bubble:sub-private');
     expect(body).toMatchObject({ channels: [{ channelId: 'main' }, { channelId: 'sub-private' }] });
   });
 
@@ -313,7 +321,6 @@ describe('persisted HTTP + SSE message flow', () => {
         topic: 'Private inspection',
         createdBy: 'leader',
         participants: ['leader', 'CODER'],
-        localContext: [],
         closed: false,
       },
     ]);
@@ -353,7 +360,6 @@ describe('persisted HTTP + SSE message flow', () => {
         topic: 'Other task',
         createdBy: 'leader',
         participants: ['leader', 'CODER'],
-        localContext: [],
         closed: false,
       },
       {
@@ -364,7 +370,6 @@ describe('persisted HTTP + SSE message flow', () => {
         topic: 'Closed task',
         createdBy: 'leader',
         participants: ['leader', 'CODER'],
-        localContext: [],
         closed: true,
       },
     ]);

@@ -49,6 +49,7 @@ describe('createWebTaskCompositionFactory', () => {
         goal: 'Build safely',
         transition: async (state) => state,
         handleOutput: async () => {},
+        buildChannelContext: async () => [],
       }),
     ).rejects.toThrow();
     expect(sandbox.teardownCalls).toBe(1);

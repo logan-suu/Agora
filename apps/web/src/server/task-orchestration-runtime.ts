@@ -54,6 +54,7 @@ export type TaskCompositionFactory = (input: {
   goal: string;
   transition: StateTransition;
   handleOutput: StepOutputHandler;
+  buildChannelContext: (state: AppState, role: string) => Promise<readonly unknown[]>;
 }) => Promise<TaskComposition>;
 
 interface ActiveRun {
@@ -113,9 +114,13 @@ export class TaskOrchestrationRuntime {
           throw new TaskGoalConflictError(input, persisted.goal);
         }
         await this.messages.ensureProjectChannels(input.projectId);
+        const reconciled = await this.messages.reconcileChannels(input);
+        if (reconciled === undefined) {
+          throw new Error('task state disappeared after channel reconciliation');
+        }
         const startOutcome: 'completed' | 'interrupted' =
-          persisted.phase === 'done' ? 'completed' : 'interrupted';
-        const summary = summaryFrom(persisted, startOutcome);
+          reconciled.phase === 'done' ? 'completed' : 'interrupted';
+        const summary = summaryFrom(reconciled, startOutcome);
         return {
           ...summary,
           requestId: input.requestId,
@@ -136,6 +141,7 @@ export class TaskOrchestrationRuntime {
         transition,
         handleOutput: (state, role, output) =>
           this.messages.handleWorkerOutput(state, role, output),
+        buildChannelContext: (state, role) => this.messages.channelContextFor(state, role),
       });
       const initialState = await this.messages.initializeState(input, composition.initialState);
       const run: ActiveRun = {

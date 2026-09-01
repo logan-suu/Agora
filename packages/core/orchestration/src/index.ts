@@ -1,4 +1,5 @@
 export * from './channel-lifecycle';
+export * from './channel-summary-reconciler';
 export * from './complexity';
 export * from './coordinator';
 export * from './message-service';

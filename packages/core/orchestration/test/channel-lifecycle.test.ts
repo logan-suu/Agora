@@ -80,7 +80,6 @@ describe('ChannelLifecycleService', () => {
       topic: 'Investigate the cache race',
       createdBy: 'CODER',
       participants: ['leader', 'CODER', 'TESTER'],
-      localContext: [],
       closed: false,
     });
     expect(bus.events).toHaveLength(1);
