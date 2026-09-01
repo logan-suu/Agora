@@ -24,7 +24,9 @@ export function createPostMessage(runtime: MessageRuntime) {
     }
 
     const scope = { projectId, taskId };
-    await runtime.initialize(scope, `Task ${taskId}`);
+    if ((await runtime.store.load(scope)) === undefined) {
+      return jsonError('task not found; create it through POST /api/tasks first', 404);
+    }
     const result = await runtime.commitLeaderMessage(scope, {
       msgId,
       channelId,
@@ -111,7 +113,11 @@ export function createGetStream(runtime: MessageRuntime) {
     });
 
     try {
-      const state = await runtime.initialize(scope, `Task ${taskId}`);
+      const state = await runtime.store.load(scope);
+      if (state === undefined) {
+        cleanup();
+        return jsonError('task not found; create it through POST /api/tasks first', 404);
+      }
       const snapshot = state.messages
         .filter((message) => message.channelId === channelId)
         .map((message) => toDisplayMessageEvent({ ...scope, message }));

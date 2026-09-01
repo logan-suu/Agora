@@ -1,5 +1,5 @@
-import type { Message } from '@agora/core-domain';
-import { createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
+import type { Message, Mutation } from '@agora/core-domain';
+import { applyMutations, createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
 import type { Executor, StepResult } from '@agora/runtime-executor';
 import { describe, expect, it } from 'vitest';
 import { WorkerRuntime } from '../src/index';
@@ -84,6 +84,35 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     for (const call of fake.stepCalls) {
       expect(call.sessionId).toBeTruthy();
     }
+  });
+
+  it('routes every worker step through the injected asynchronous state transition', async () => {
+    const fake = new FakeExecutor([
+      stepOf('llm', [{ field: 'messages', op: 'append', value: chatMessage('m1') }]),
+      stepOf('done', [{ field: 'messages', op: 'append', value: chatMessage('m2') }]),
+    ]);
+    const transitions: readonly Mutation[][] = [];
+    const mutableTransitions = transitions as Mutation[][];
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => fake,
+      transition: async (state, mutations) => {
+        mutableTransitions.push([...mutations]);
+        return applyMutations(state, mutations);
+      },
+    });
+
+    const result = await runtime.runOne(createInitialAppState('t-1', 'g'), {
+      role: 'CODER',
+      subtaskId: 's-1',
+    });
+
+    expect(transitions).toHaveLength(2);
+    expect(transitions.map((batch) => batch[0]?.value)).toEqual([
+      chatMessage('m1'),
+      chatMessage('m2'),
+    ]);
+    expect(result.messages.map((entry) => entry.msgId)).toEqual(['m1', 'm2']);
   });
 
   it('stops the loop exactly on a kind="done" step result', async () => {

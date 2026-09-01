@@ -183,6 +183,25 @@ describe('runOrchestration (Phase 0 fixed loop)', () => {
     expect(final.iterationCount).toBe(1);
     expect(final.phase).toBe('done');
   });
+
+  it('routes entry, coordinator, and finalize mutations through the injected transition', async () => {
+    const batches: string[][] = [];
+    const deps = orchestrationWith([coderRound(1)], [testerRound(true)]);
+    deps.transition = async (state, mutations) => {
+      batches.push(mutations.map((mutation) => mutation.field));
+      return applyMutations(state, mutations);
+    };
+
+    const final = await runOrchestration(
+      createInitialAppState('lru-1', '实现带 TTL 的 LRU 缓存'),
+      deps,
+    );
+
+    expect(batches[0]).toEqual(['complexity']);
+    expect(batches.some((batch) => batch.includes('subtasks'))).toBe(true);
+    expect(batches.at(-1)).toEqual(['phase']);
+    expect(final.phase).toBe('done');
+  });
 });
 
 describe('runOrchestration · human_gate escalation hook (task 2.3)', () => {

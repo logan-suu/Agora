@@ -19,6 +19,12 @@ export interface PlannedMessage {
   mutations: readonly Mutation[];
 }
 
+export interface MutationCommitResult {
+  state: AppState;
+  changed: boolean;
+  publishedMessages: readonly Message[];
+}
+
 export class MessageService {
   readonly #store: TaskStateStore;
   readonly #bus: MessageBus;
@@ -77,6 +83,36 @@ export class MessageService {
 
       await this.#bus.publish({ ...scope, message: planned.message });
       return { state: commit.state, published: true, message: planned.message };
+    });
+  }
+
+  async commitMutations(
+    scope: TaskScope,
+    mutations: readonly Mutation[],
+  ): Promise<MutationCommitResult> {
+    return this.#enqueue(scope, async () => {
+      const current = await this.#store.load(scope);
+      if (current === undefined) {
+        throw new Error(
+          `task state is not initialized for projectId "${scope.projectId}" and taskId "${scope.taskId}"`,
+        );
+      }
+
+      for (const mutation of mutations) {
+        if (mutation.op === 'append' && mutation.field === 'messages') {
+          this.#assertMainChannel(mutation.value as Message);
+        }
+      }
+      const commit = await this.#store.commit(scope, mutations);
+      const existingIds = new Set(current.messages.map((message) => message.msgId));
+      const publishedMessages = commit.state.messages.filter(
+        (message) => !existingIds.has(message.msgId),
+      );
+      for (const message of publishedMessages) {
+        this.#assertMainChannel(message);
+        await this.#bus.publish({ ...scope, message });
+      }
+      return { state: commit.state, changed: commit.changed, publishedMessages };
     });
   }
 

@@ -1,4 +1,4 @@
-// Test seam: one case pauses the real MessageRuntime.initialize call to make the
+// Test seam: one case pauses the real TaskStateStore.load call to make the
 // snapshot-to-subscription race deterministic; the JSON store, commit, and stream stay real.
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../src/server/channel-stream';
 import { createGetStream, createPostMessage } from '../src/server/message-handlers';
-import { createMessageRuntime } from '../src/server/message-runtime';
+import { createMessageRuntime, getOrCreateMessageRuntime } from '../src/server/message-runtime';
 
 const decoder = new TextDecoder();
 const roots: string[] = [];
@@ -34,8 +34,27 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('reuses one process runtime across separately bundled route modules', async () => {
+    const root = await temporaryRoot();
+    const registry: { messageRuntime: ReturnType<typeof createMessageRuntime> | undefined } = {
+      messageRuntime: undefined,
+    };
+    let createCount = 0;
+    const create = () => {
+      createCount += 1;
+      return createMessageRuntime(root, new ChannelStream());
+    };
+
+    const first = getOrCreateMessageRuntime(registry, create);
+    const second = getOrCreateMessageRuntime(registry, create);
+
+    expect(second).toBe(first);
+    expect(createCount).toBe(1);
+  });
+
   it('carries a persisted Leader assignment into one real Coordinator dispatch', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    await runtime.initialize({ projectId: 'project-a', taskId: 'task-a' }, 'Task task-a');
     const postMessage = createPostMessage(runtime);
 
     const posted = await postMessage(
@@ -84,6 +103,7 @@ describe('persisted HTTP + SSE message flow', () => {
   it('server-stamps leader, persists payload, and streams only the display envelope', async () => {
     const stream = new ChannelStream();
     const runtime = createMessageRuntime(await temporaryRoot(), stream);
+    await runtime.initialize({ projectId: 'project-a', taskId: 'task-a' }, 'Task task-a');
     const openStream = createGetStream(runtime);
     const postMessage = createPostMessage(runtime);
     const response = await openStream(
@@ -136,6 +156,7 @@ describe('persisted HTTP + SSE message flow', () => {
     const root = await temporaryRoot();
     const firstStream = new ChannelStream();
     const firstRuntime = createMessageRuntime(root, firstStream);
+    await firstRuntime.initialize({ projectId: 'project-a', taskId: 'task-a' }, 'Task task-a');
     const postMessage = createPostMessage(firstRuntime);
     const body = {
       projectId: 'project-a',
@@ -177,7 +198,7 @@ describe('persisted HTTP + SSE message flow', () => {
     const address = { ...scope, channelId: 'main' };
     await runtime.initialize(scope, 'Task task-a');
 
-    const realInitialize = runtime.initialize.bind(runtime);
+    const realLoad = runtime.store.load.bind(runtime.store);
     let releaseSnapshot: (() => void) | undefined;
     const snapshotPaused = new Promise<void>((resolve) => {
       releaseSnapshot = resolve;
@@ -186,11 +207,11 @@ describe('persisted HTTP + SSE message flow', () => {
     const snapshotRead = new Promise<void>((resolve) => {
       markSnapshotRead = resolve;
     });
-    let pauseNextInitialize = true;
-    runtime.initialize = async (...args) => {
-      const state = await realInitialize(...args);
-      if (pauseNextInitialize) {
-        pauseNextInitialize = false;
+    let pauseNextLoad = true;
+    runtime.store.load = async (...args) => {
+      const state = await realLoad(...args);
+      if (pauseNextLoad) {
+        pauseNextLoad = false;
         markSnapshotRead?.();
         await snapshotPaused;
       }

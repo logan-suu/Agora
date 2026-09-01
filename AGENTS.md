@@ -296,6 +296,9 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
             其余能力显式 rejected/deferred，按 Phase 6/8/9 解锁，不走临时 command 旁路
+Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
+            全实例最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
+            刷新不依赖活容器，静态消息不得充当真实闭环证据
 ```
 
 ---
@@ -465,7 +468,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D9/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D10/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 

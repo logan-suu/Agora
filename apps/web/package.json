@@ -13,12 +13,19 @@
     "@agora/core-domain": "workspace:*",
     "@agora/core-orchestration": "workspace:*",
     "@agora/roles-definitions": "workspace:*",
+    "@agora/runtime-executor": "workspace:*",
+    "@agora/runtime-sandbox": "workspace:*",
     "@agora/runtime-state": "workspace:*",
+    "@agora/tools-bridge": "workspace:*",
+    "@agora/tools-fs": "workspace:*",
+    "@agora/tools-git": "workspace:*",
+    "dockerode": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-llm": "0.1.1-rc.2",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:"
   }

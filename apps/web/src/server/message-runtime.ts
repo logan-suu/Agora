@@ -1,8 +1,12 @@
 import { basename, dirname, resolve } from 'node:path';
 import type { MessageBus, MessageCommitted } from '@agora/comm-bus';
 import { toDisplayMessageEvent } from '@agora/comm-bus';
-import type { AppState, Message, RoleSpec } from '@agora/core-domain';
-import { type MessageCommitResult, MessageService } from '@agora/core-orchestration';
+import type { AppState, Message, Mutation, RoleSpec } from '@agora/core-domain';
+import {
+  type MessageCommitResult,
+  MessageService,
+  type MutationCommitResult,
+} from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { JsonTaskStateStore, type TaskScope } from '@agora/runtime-state';
 
@@ -30,12 +34,14 @@ class SseMessageBus implements MessageBus {
 }
 
 export class MessageRuntime {
+  readonly root: string;
   readonly store: JsonTaskStateStore;
   readonly stream: ChannelStream;
   readonly #service: MessageService;
   readonly #roster: readonly RoleSpec[];
 
   constructor(root: string, stream: ChannelStream, roster: readonly RoleSpec[]) {
+    this.root = root;
     this.store = new JsonTaskStateStore(root);
     this.stream = stream;
     this.#service = new MessageService(this.store, new SseMessageBus(stream));
@@ -44,6 +50,14 @@ export class MessageRuntime {
 
   initialize(scope: TaskScope, goal: string): Promise<AppState> {
     return this.#service.initialize(scope, goal);
+  }
+
+  initializeState(scope: TaskScope, state: AppState): Promise<AppState> {
+    return this.store.initialize(scope, state);
+  }
+
+  commitMutations(scope: TaskScope, mutations: readonly Mutation[]): Promise<MutationCommitResult> {
+    return this.#service.commitMutations(scope, mutations);
   }
 
   commitMessage(scope: TaskScope, message: Message): Promise<MessageCommitResult> {
@@ -90,6 +104,16 @@ export function createMessageRuntime(
   return new MessageRuntime(root, stream, roster);
 }
 
+export function getOrCreateMessageRuntime(
+  registry: { messageRuntime: MessageRuntime | undefined },
+  create: () => MessageRuntime,
+): MessageRuntime {
+  if (registry.messageRuntime !== undefined) return registry.messageRuntime;
+  const runtime = create();
+  registry.messageRuntime = runtime;
+  return runtime;
+}
+
 function actionFrom(message: Message): LeaderActionStatus {
   const action = message.payload.action;
   if (typeof action !== 'object' || action === null || Array.isArray(action)) {
@@ -116,4 +140,21 @@ const workspaceRoot =
     ? resolve(workingDirectory, '../..')
     : workingDirectory;
 const defaultDataRoot = process.env.AGORA_DATA_ROOT ?? resolve(workspaceRoot, '.data');
-export const messageRuntime = createMessageRuntime(defaultDataRoot, channelStream);
+const processRegistry = globalThis as typeof globalThis & {
+  __agoraMessageRuntime?: MessageRuntime;
+};
+export const messageRuntime = getOrCreateMessageRuntime(
+  {
+    get messageRuntime() {
+      return processRegistry.__agoraMessageRuntime;
+    },
+    set messageRuntime(runtime: MessageRuntime | undefined) {
+      if (runtime === undefined) {
+        delete processRegistry.__agoraMessageRuntime;
+      } else {
+        processRegistry.__agoraMessageRuntime = runtime;
+      }
+    },
+  },
+  () => createMessageRuntime(defaultDataRoot, channelStream),
+);

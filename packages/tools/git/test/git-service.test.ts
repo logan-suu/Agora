@@ -14,6 +14,7 @@ import { simpleGit } from 'simple-git';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   GIT_TEARDOWN_STAGING,
+  initializeRegisteredWorktree,
   validateBranchName,
   validateRefArg,
   validateTaskId,
@@ -39,6 +40,18 @@ describe('WorktreeGitService', () => {
     roots.push(result.path);
     return result;
   }
+
+  it('initializes and registers an existing sandbox worktree for host-side git tools', async () => {
+    const registry = new WorktreeRegistry();
+    const path = mkdtempSync(join(tmpdir(), 'agora-existing-worktree-'));
+    roots.push(path);
+
+    await initializeRegisteredWorktree(registry, path);
+
+    expect(registry.canonicalOf(path)).toBeDefined();
+    expect(await simpleGit(path).revparse(['--verify', 'HEAD'])).toBeTruthy();
+    expect((await simpleGit(path).log()).latest?.message).toBe('initial');
+  });
 
   it('lazily creates a temp main repo with an initial commit', async () => {
     const registry = new WorktreeRegistry();
