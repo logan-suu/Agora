@@ -1,8 +1,8 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-01T15:16:00.000Z",
+  "last_updated": "2026-09-01T18:37:45.000Z",
   "current_phase": 6,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -57,6 +57,11 @@
       "source": "docs/项目蓝图.md §10/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§9；docs/开发计划安排.md §8/§17"
     },
     {
+      "id": "D11",
+      "rule": "自 Phase 6 建立渐进式工程 Eval：复用成熟 Coding Agent Benchmark 的任务/环境/Outcome Grader，自建 Agora 协作语义的 Process/Efficiency/Safety Grader；各 Phase 增量追加已解锁能力，Phase 10 做重复对照与失败分析。Benchmark 不替代测试/G5，未实测指标不得对外宣称，外部评测工具不进入默认产品运行时",
+      "source": "docs/项目蓝图.md §3/§17/§21；docs/详细设计方案.md §11；docs/系统架构设计文档.md §7；docs/技术选型文档.md §11.3；docs/开发计划安排.md §9-§13"
+    },
+    {
       "id": "C4",
       "rule": "Phase 0 采用 Coordinator → Coder → Tester 三角色闭环（采纳《开发计划安排》，已同步蓝图/详细设计）",
       "source": "docs/开发计划安排.md §3"
@@ -97,7 +102,7 @@
       },
       {
         "path": "docs/详细设计方案.md",
-        "role": "落码规格：State schema/角色/编排/抢占/通信/执行器/投影/多租户"
+        "role": "落码规格：State schema/角色/编排/抢占/通信/执行器/投影/多租户/工程 Eval"
       },
       {
         "path": "docs/系统架构设计文档.md",
@@ -109,7 +114,7 @@
       },
       {
         "path": "docs/开发计划安排.md",
-        "role": "Phase 0-10 任务分解与时间估算（本文件的任务来源）"
+        "role": "Phase 0-10 的 62 个任务、渐进式 Eval 与时间估算（本文件的任务来源）"
       },
       {
         "path": "docs/框架调研与借鉴决策.md",
@@ -156,32 +161,32 @@
     },
     {
       "id": "M6",
-      "deliverable": "Phase 6 完成：多形态通信（main + sub 群）",
-      "target": "Week 8",
+      "deliverable": "Phase 6 完成：多形态通信 + Eval 骨架",
+      "target": "Week 8.5",
       "status": "pending"
     },
     {
       "id": "M7",
-      "deliverable": "Phase 7 完成：角色热插拔",
-      "target": "Week 9",
+      "deliverable": "Phase 7 完成：角色热插拔 + Eval 增量",
+      "target": "Week 9.5",
       "status": "pending"
     },
     {
       "id": "M8",
-      "deliverable": "Phase 8 完成：人工卡点 + 冲突裁决（humanGate 终止并分叉）",
-      "target": "Week 10",
+      "deliverable": "Phase 8 完成：人工卡点 + 冲突裁决 Eval",
+      "target": "Week 10.5",
       "status": "pending"
     },
     {
       "id": "M9",
-      "deliverable": "Phase 9 完成：真并行升级",
-      "target": "Week 11.5",
+      "deliverable": "Phase 9 完成：真并行升级 + 对照基线",
+      "target": "Week 12",
       "status": "pending"
     },
     {
       "id": "M10",
-      "deliverable": "Phase 10 完成：厚 Agent 接入 + 产品化打磨 + 部署",
-      "target": "Week 13",
+      "deliverable": "Phase 10 完成：产品化 + 最终 Benchmark 报告",
+      "target": "Week 14",
       "status": "pending"
     }
   ],
@@ -813,10 +818,10 @@
     },
     {
       "id": 6,
-      "name": "多形态通信（Channel 原语 + sub 群 + 冒泡，1 周）",
+      "name": "多形态通信 + 工程 Eval 骨架（Channel 原语 + sub 群 + 冒泡，1.5 周）",
       "status": "in_progress",
-      "integration_test": "6.4",
-      "exit_criteria": "像真实团队一样通信：main 群 + 动态 sub 群，结论必回流",
+      "integration_test": "6.5",
+      "exit_criteria": "像真实团队一样通信：main 群 + 动态 sub 群，结论必回流；工程 Eval 可重复运行并形成 Phase 0–6 基线",
       "tasks": [
         {
           "id": "6.1",
@@ -868,17 +873,36 @@
         },
         {
           "id": "6.4",
-          "title": "Phase 6 出口集成测试",
+          "title": "工程 Eval 基础设施 + Phase 0–6 基线任务集",
           "story": null,
           "status": "pending",
           "documents_required": [
+            "docs/项目蓝图.md §3/§17/§21",
+            "docs/详细设计方案.md §11",
+            "docs/系统架构设计文档.md §7",
+            "docs/技术选型文档.md §11.3",
             "docs/开发计划安排.md §9"
           ],
           "dependencies": [
             "6.3"
           ],
-          "test_file": null,
-          "notes": "多群并发消息流 + 隔离性（非成员不可见）+ 冒泡完整性回归。"
+          "test_file": "tests/evals/phase6/run-phase6-baseline.eval.ts",
+          "notes": "D11 首次落地：定稿 AgoraEvalTask/EvalResult、可重复 runner、固定模型/环境/预算元数据与 Outcome/Process/Efficiency/Safety 四类 Grader；建立 8–12 个 Phase 0–6 小任务，覆盖真实编码闭环、消息 commit-before-publish、main/sub 作用域、participant/localContext 隔离与冒泡。复用既有 Harness/MCP/Docker/JSON/SSE 生产链，不复制第二套 Agent/沙箱；结果独立于产品 State/KB。公开 Benchmark adapter 延后 10.5；本任务不是阶段出口门禁，6.5 仍须跑全量集成/G5。"
+        },
+        {
+          "id": "6.5",
+          "title": "Phase 6 出口集成测试",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/开发计划安排.md §9",
+            "docs/详细设计方案.md §11"
+          ],
+          "dependencies": [
+            "6.4"
+          ],
+          "test_file": "tests/integration/phase6/phase6-exit.test.ts",
+          "notes": "多群并发消息流 + 隔离性（非成员不可见）+ 冒泡完整性回归；审计 6.4 Eval runner 可重复、结果 schema/fixture 版本可追溯且不修改产品 State/KB。Benchmark 结果不替代本出口的确定性测试与 G5。"
         }
       ]
     },
@@ -899,7 +923,7 @@
             "docs/项目蓝图.md §12"
           ],
           "dependencies": [
-            "6.4"
+            "6.5"
           ],
           "test_file": null,
           "notes": "角色是数据不是代码：增删改注册表即可，无需改编排。模板库（roles/definitions/）供招募选择。"
@@ -954,13 +978,14 @@
           "story": null,
           "status": "pending",
           "documents_required": [
-            "docs/开发计划安排.md §10"
+            "docs/开发计划安排.md §10",
+            "docs/详细设计方案.md §11"
           ],
           "dependencies": [
             "7.4"
           ],
-          "test_file": null,
-          "notes": "招/辞/接手全流程回归 + 护栏负向用例（尝试删 Coordinator 应被拒）。"
+          "test_file": "tests/integration/phase7/phase7-exit.test.ts",
+          "notes": "招/辞/接手全流程回归 + 护栏负向用例（尝试删 Coordinator 应被拒）；向固定 Eval 集追加角色加入、离职强制交接、接手、孤儿职责升级与 Coordinator 不可删除场景，同时验证产物与 handoff/authority/roster 过程不变量。Eval 增量不替代出口测试/G5。"
         }
       ]
     },
@@ -1036,15 +1061,16 @@
           "story": null,
           "status": "pending",
           "documents_required": [
-            "docs/开发计划安排.md §11"
+            "docs/开发计划安排.md §11",
+            "docs/详细设计方案.md §11"
           ],
           "dependencies": [
             "8.2",
             "8.3",
             "8.4"
           ],
-          "test_file": null,
-          "notes": "humanGate 终止→资源释放→裁决→Fork 恢复全链路；blocking/advisory 分类准确性；权威级别覆盖规则回归。"
+          "test_file": "tests/integration/phase8/phase8-exit.test.ts",
+          "notes": "humanGate 终止→资源释放→裁决→Fork 恢复全链路；blocking/advisory 分类准确性；权威级别覆盖规则回归。向固定 Eval 集追加脚本化 Leader 事件、Terminate & Fork、资源释放与 trace 完整性场景，禁止 LLM 自行扮演最终裁决者。"
         }
       ]
     },
@@ -1104,7 +1130,8 @@
           "story": null,
           "status": "pending",
           "documents_required": [
-            "docs/开发计划安排.md §12"
+            "docs/开发计划安排.md §12",
+            "docs/详细设计方案.md §11"
           ],
           "dependencies": [
             "9.2",
@@ -1119,22 +1146,23 @@
           "story": null,
           "status": "pending",
           "documents_required": [
-            "docs/开发计划安排.md §12"
+            "docs/开发计划安排.md §12",
+            "docs/详细设计方案.md §11"
           ],
           "dependencies": [
             "9.4"
           ],
-          "test_file": null,
-          "notes": "并行一致性（reducer 交换幂等实测）+ 抢占安全点无撕裂 + 合并冲突升级路径回归。"
+          "test_file": "tests/integration/phase9/phase9-exit.test.ts",
+          "notes": "并行一致性（reducer 交换幂等实测）+ 抢占安全点无撕裂 + 合并冲突升级路径回归。固定任务/模型/预算比较串行、并发 2、并发 3，记录成功率、时延、token/费用、冲突、返工与资源峰值；追加未满足依赖不得激活、worktree 冲突升级与 mutation 幂等 Eval。"
         }
       ]
     },
     {
       "id": 10,
-      "name": "产品化打磨（厚 Agent 接入 + 部署 + 验收，1.5 周）",
+      "name": "产品化打磨 + 最终 Benchmark（厚 Agent 接入 + 部署 + Eval，2 周）",
       "status": "not_started",
-      "integration_test": "10.6",
-      "exit_criteria": "可直接演示的完整产品：厚执行器可选接入、错误恢复健壮、一键部署",
+      "integration_test": "10.7",
+      "exit_criteria": "可直接演示且有可审计证据的完整产品：厚执行器可选接入、错误恢复健壮、一键部署、最终 Benchmark 报告完成",
       "tasks": [
         {
           "id": "10.1",
@@ -1197,33 +1225,57 @@
         },
         {
           "id": "10.5",
-          "title": "README 完善 + 产品演示录屏（终版）",
+          "title": "成熟 Benchmark 适配 + 最终对照与报告",
           "story": null,
           "status": "pending",
           "documents_required": [
-            "docs/项目蓝图.md §18"
-          ],
-          "dependencies": [
-            "10.4"
-          ],
-          "test_file": null,
-          "notes": "README 更新实际 Quick Start（替换占位仓库地址）；录制终版演示录屏用于秋招作品集；面试讲点备答清单核对（《项目蓝图》§18 高频追问）。"
-        },
-        {
-          "id": "10.6",
-          "title": "Phase 10 出口验收（对照蓝图成功标准）",
-          "story": null,
-          "status": "pending",
-          "documents_required": [
-            "docs/项目蓝图.md §1"
+            "docs/项目蓝图.md §3/§17/§18/§21",
+            "docs/详细设计方案.md §11",
+            "docs/系统架构设计文档.md §7",
+            "docs/技术选型文档.md §11.3",
+            "docs/开发计划安排.md §13"
           ],
           "dependencies": [
             "10.1",
             "10.3",
+            "10.4"
+          ],
+          "test_file": "tests/evals/phase10/run-final-benchmark.eval.ts",
+          "notes": "D11 最终落地：以外部 adapter 接入 SWE-bench Verified、Terminal-Bench/Harbor 等成熟任务/环境/Outcome Grader 的小型固定子集，同时保留 Agora 协作语义 holdout；完成单 Agent/多 Agent、全量历史/角色投影、串行/并行、固定模型/角色路由对照。固定数据集版本/任务 ID、adapter、模型、工具、预算、超时和环境，重复运行并报告均值、方差、失败分类、成本与时延；公开集/内部集分开报告，不刷榜。Harbor/Python/uv 等依赖须在开工时重新核对版本/许可证/网络成本且不得进入默认产品运行时。"
+        },
+        {
+          "id": "10.6",
+          "title": "README 完善 + 产品演示录屏（终版）",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §18",
+            "docs/详细设计方案.md §11"
+          ],
+          "dependencies": [
             "10.5"
           ],
           "test_file": null,
-          "notes": "对照五条成功标准逐项验收：①能跑通闭环（中小规模编码任务自主完成全流程）②产品形态完整生动（群聊实时呈现+可观测+一键部署）③协作可控（职责清晰/可断点/可中途插决策）④工程质量稳（上下文不崩/并行不乱/行为可预期）⑤可扩展（增删角色/换模型工具改动局部化）。"
+          "notes": "README 更新实际 Quick Start（替换占位仓库地址）；录制终版演示录屏用于秋招作品集；面试讲点备答清单核对（《项目蓝图》§18 高频追问）。只允许引用 10.5 最终 Eval 的可复现结果；未运行、单样本或无方差/失败说明的数字不得进入 README、简历或对外材料。"
+        },
+        {
+          "id": "10.7",
+          "title": "Phase 10 出口验收（对照蓝图成功标准）",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §1/§21",
+            "docs/详细设计方案.md §11",
+            "docs/开发计划安排.md §13"
+          ],
+          "dependencies": [
+            "10.1",
+            "10.2",
+            "10.3",
+            "10.6"
+          ],
+          "test_file": "tests/integration/phase10/phase10-exit.test.ts",
+          "notes": "对照五条成功标准逐项验收：①能跑通闭环（中小规模编码任务自主完成全流程）②产品形态完整生动（群聊实时呈现+可观测+一键部署）③协作可控（职责清晰/可断点/可中途插决策）④工程质量稳（上下文不崩/并行不乱/行为可预期）⑤可扩展（增删角色/换模型工具改动局部化）。同时审计 10.5 Benchmark 的任务/环境/模型/预算/重复次数可追溯、公开集与 holdout 分离、统计/失败分类完整，且 Benchmark 未替代全量测试/G5。"
         }
       ]
     }
