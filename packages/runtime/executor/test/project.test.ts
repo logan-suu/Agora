@@ -142,6 +142,19 @@ function stateWithCoordinationLedger(): AppState {
 }
 
 describe('project (task 2.4, spec §7 slice table)', () => {
+  it('adds only the caller-supplied defensive ChannelContext without changing the first three args', () => {
+    const channelContext = [{ channelId: 'sub-a', entries: [{ ref: { msgId: 'm1' } }] }];
+    const withContext = project(makeState(), 'CODER', DEFAULT_ROSTER, channelContext);
+    const withoutContext = project(makeState(), 'CODER', DEFAULT_ROSTER);
+
+    expect(withContext.slices.channels).toEqual(channelContext);
+    expect(withoutContext.slices.channels).toEqual([]);
+    (withContext.slices.channels as typeof channelContext)[0]?.entries.push({
+      ref: { msgId: 'mutated' },
+    });
+    expect(channelContext[0]?.entries).toEqual([{ ref: { msgId: 'm1' } }]);
+  });
+
   it('COORDINATOR global.summary carries phase/test summary with explicit Phase 4/9 empties', () => {
     const view = slicesOf(makeState({ testResults: TEST_RESULTS }), 'COORDINATOR');
     expect(view['global.summary']).toEqual({

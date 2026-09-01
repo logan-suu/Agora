@@ -54,6 +54,7 @@ export type TaskCompositionFactory = (input: {
   goal: string;
   transition: StateTransition;
   handleOutput: StepOutputHandler;
+  buildChannelContext: (state: AppState, role: string) => Promise<readonly unknown[]>;
 }) => Promise<TaskComposition>;
 
 interface ActiveRun {
@@ -113,6 +114,7 @@ export class TaskOrchestrationRuntime {
           throw new TaskGoalConflictError(input, persisted.goal);
         }
         await this.messages.ensureProjectChannels(input.projectId);
+        await this.messages.reconcileChannels(input);
         const startOutcome: 'completed' | 'interrupted' =
           persisted.phase === 'done' ? 'completed' : 'interrupted';
         const summary = summaryFrom(persisted, startOutcome);
@@ -136,6 +138,7 @@ export class TaskOrchestrationRuntime {
         transition,
         handleOutput: (state, role, output) =>
           this.messages.handleWorkerOutput(state, role, output),
+        buildChannelContext: (state, role) => this.messages.channelContextFor(state, role),
       });
       const initialState = await this.messages.initializeState(input, composition.initialState);
       const run: ActiveRun = {

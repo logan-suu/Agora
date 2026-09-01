@@ -17,7 +17,7 @@ import type { Decision } from '@agora/core-domain';
  * (R2). Heads are never dropped (iron rule 3: rationale travels with the
  * decision), so the collapsed slice is the deterministic size floor; when it
  * still exceeds the threshold it is returned as-is (best effort). LLM-backed
- * summarization and channel localContext adoption are Phase 6 R9 upgrade
+ * summarization and derived ChannelContext adoption are Phase 6 R9 upgrade
  * points.
  */
 

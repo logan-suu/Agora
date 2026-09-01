@@ -23,7 +23,6 @@ function subChannel(
     topic: `Topic ${channelId}`,
     createdBy: 'leader',
     participants,
-    localContext: [],
     closed: false,
   };
 }

@@ -279,7 +279,6 @@ describe('MessageService', () => {
         channelId: 'main',
         kind: 'main',
         participants: ['leader', 'COORDINATOR', 'CODER', 'TESTER'],
-        localContext: [],
         closed: false,
       },
       {
@@ -290,7 +289,6 @@ describe('MessageService', () => {
         topic: 'Task A',
         createdBy: 'leader',
         participants: ['leader', 'CODER'],
-        localContext: [],
         closed: false,
       },
     ]);
@@ -320,7 +318,6 @@ describe('MessageService', () => {
         topic: 'Other task',
         createdBy: 'leader',
         participants: ['leader', 'CODER'],
-        localContext: [],
         closed: false,
       },
       {
@@ -331,7 +328,6 @@ describe('MessageService', () => {
         topic: 'Coder only',
         createdBy: 'leader',
         participants: ['leader', 'CODER'],
-        localContext: [],
         closed: false,
       },
       {
@@ -342,7 +338,6 @@ describe('MessageService', () => {
         topic: 'Closed',
         createdBy: 'leader',
         participants: ['leader', 'CODER'],
-        localContext: [],
         closed: true,
       },
     ]);

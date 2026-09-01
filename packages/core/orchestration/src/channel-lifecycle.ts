@@ -114,7 +114,6 @@ export class ChannelLifecycleService {
           topic,
           createdBy: input.actor,
           participants,
-          localContext: [],
           closed: false,
         };
         const commit = await this.#channels.commit(input.scope.projectId, snapshot.revision, [

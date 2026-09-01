@@ -21,9 +21,9 @@ import {
  * leader-authority entries from state.decisionLedger with their rationale
  * (task 3.3). Slices whose State sources land in later phases return explicit
  * empty defaults (R9), annotated with the upgrade task; the §7 view-level
- * channels localContext (Phase 6) and blockingObjections (Phase 8) have no
- * State fields yet and are not roster-declared, so no slice machinery exists
- * for them until then. Cross-agent slice compression (task 3.4, spec §7)
+ * blockingObjections (Phase 8) has no State field yet and is not
+ * roster-declared, so no slice machinery exists for it until then. Cross-agent
+ * slice compression (task 3.4, spec §7)
  * applies to the ledger slice at read time; State stays the complete truth
  * (see slice-compression.ts for the division of labor with ctx.compaction).
  */
@@ -31,6 +31,7 @@ export function project(
   state: AppState,
   role: RoleId,
   roster: readonly RoleSpec[],
+  channelContext: readonly unknown[] = [],
 ): ProjectionView {
   const spec = roster.find((entry) => entry.role === role);
   const slices: Record<string, unknown> = {};
@@ -39,6 +40,7 @@ export function project(
       slices[slice] = sliceOf(state, role, slice);
     }
   }
+  slices.channels = structuredClone([...channelContext]);
   return { role: String(role), slices };
 }
 

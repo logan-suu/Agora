@@ -25,7 +25,6 @@ function sub(overrides: Partial<SubChannel> = {}): SubChannel {
     topic: 'Task A',
     createdBy: 'leader',
     participants: ['leader', 'CODER'],
-    localContext: [],
     closed: false,
     ...overrides,
   };

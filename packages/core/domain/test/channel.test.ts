@@ -13,7 +13,6 @@ function subChannel(overrides: Partial<Channel> = {}): Channel {
     topic: 'Investigate task A',
     createdBy: 'CODER',
     participants: ['leader', 'CODER', 'TESTER'],
-    localContext: [{ taskId: 'task-a', msgId: 'message-1' }],
     closed: false,
     ...overrides,
   } as Channel;
@@ -27,7 +26,6 @@ describe('Channel registry invariants', () => {
       channelId: 'main',
       kind: 'main',
       participants: ['leader', ...ENABLED_ROLES],
-      localContext: [],
       closed: false,
     });
     expect(() => assertValidChannelRegistry([main, subChannel()], ENABLED_ROLES)).not.toThrow();
@@ -100,12 +98,42 @@ describe('Channel registry invariants', () => {
       error: 'sub channel "sub-task-a-coder-tester" must include creator "COORDINATOR"',
     },
     {
-      name: 'an unscoped local context reference',
+      name: 'a summary reference for another task',
       channels: [
         createMainChannel(ENABLED_ROLES),
-        subChannel({ localContext: [{ taskId: '', msgId: 'message-1' }] }),
+        subChannel({
+          closed: true,
+          bubbledSummaryRef: {
+            taskId: 'task-b',
+            msgId: 'channel-bubble:sub-task-a-coder-tester',
+          },
+        }),
       ],
-      error: 'localContext taskId must be a safe non-empty segment',
+      error: 'bubbledSummaryRef taskId must match channel taskId',
+    },
+    {
+      name: 'a summary reference on an open channel',
+      channels: [
+        createMainChannel(ENABLED_ROLES),
+        subChannel({
+          bubbledSummaryRef: {
+            taskId: 'task-a',
+            msgId: 'channel-bubble:sub-task-a-coder-tester',
+          },
+        }),
+      ],
+      error: 'must be closed before summary is referenced',
+    },
+    {
+      name: 'a non-stable summary reference',
+      channels: [
+        createMainChannel(ENABLED_ROLES),
+        subChannel({
+          closed: true,
+          bubbledSummaryRef: { taskId: 'task-a', msgId: 'message-1' },
+        }),
+      ],
+      error: 'bubbledSummaryRef msgId must be stable',
     },
   ])('rejects $name', ({ channels, error }) => {
     expect(() => assertValidChannelRegistry(channels, ENABLED_ROLES)).toThrow(error);

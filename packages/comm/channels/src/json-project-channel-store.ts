@@ -53,6 +53,18 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
     });
   }
 
+  /** Read-only bridge for the 6.3 cross-store legacy-summary migration. */
+  async legacyBubbledSummaries(projectId: string): Promise<LegacyBubbledSummary[]> {
+    this.#validateProjectId(projectId);
+    return this.#enqueue(projectId, async () => {
+      const snapshot = await this.#readSnapshot(projectId);
+      if (snapshot === undefined) return [];
+      const migration = migrateLegacySubChannels(snapshot.channels);
+      this.#validateChannels(migration.channels);
+      return structuredClone(migration.legacySummaries);
+    });
+  }
+
   async commit(
     projectId: string,
     expectedRevision: number,
@@ -74,6 +86,23 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
         throw new Error(
           `project channel commit expected revision ${expectedRevision} but found ${current.revision}`,
         );
+      }
+
+      const raw = await this.#readSnapshot(projectId);
+      const legacySummaries = migrateLegacySubChannels(raw?.channels).legacySummaries;
+      for (const legacy of legacySummaries) {
+        const candidate = normalizedChannels.find(
+          (channel) => channel.kind === 'sub' && channel.channelId === legacy.channelId,
+        );
+        if (
+          candidate?.kind !== 'sub' ||
+          candidate.bubbledSummaryRef?.taskId !== legacy.taskId ||
+          candidate.bubbledSummaryRef.msgId !== `channel-bubble:${legacy.channelId}`
+        ) {
+          throw new Error(
+            `legacy bubbledSummary for channel "${legacy.channelId}" must be migrated before commit`,
+          );
+        }
       }
 
       if (canonicalJson(current.channels) === canonicalJson(normalizedChannels)) {
@@ -107,6 +136,37 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
   }
 
   async #loadSnapshot(projectId: string): Promise<ProjectChannelSnapshot | undefined> {
+    const parsed = await this.#readSnapshot(projectId);
+    if (parsed === undefined) return undefined;
+    let snapshot = parsed;
+    const migration = migrateLegacySubChannels(snapshot.channels);
+    let normalizedChannels: Channel[];
+    try {
+      this.#validateChannels(migration.channels);
+      normalizedChannels = normalizeChannelParticipants(migration.channels, this.#enabledRoles);
+    } catch (error) {
+      throw new Error(
+        `invalid project channel JSON at "${this.#snapshotPath(projectId)}": invalid channel registry`,
+        { cause: error },
+      );
+    }
+    if (
+      migration.legacySummaries.length === 0 &&
+      (migration.changed || canonicalJson(snapshot.channels) !== canonicalJson(normalizedChannels))
+    ) {
+      snapshot = {
+        projectId,
+        revision: snapshot.revision + 1,
+        channels: normalizedChannels,
+      };
+      await this.#writeSnapshot(snapshot);
+    } else {
+      snapshot = { projectId, revision: snapshot.revision, channels: normalizedChannels };
+    }
+    return snapshot;
+  }
+
+  async #readSnapshot(projectId: string): Promise<ProjectChannelSnapshot | undefined> {
     const path = this.#snapshotPath(projectId);
     let contents: string;
     try {
@@ -133,27 +193,6 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
     }
     if (!Number.isInteger(snapshot.revision) || snapshot.revision < 0) {
       throw new Error(`invalid project channel JSON at "${path}": invalid revision`);
-    }
-    const migration = migrateLegacySubChannels(snapshot.channels);
-    let normalizedChannels: Channel[];
-    try {
-      this.#validateChannels(migration.channels);
-      normalizedChannels = normalizeChannelParticipants(migration.channels, this.#enabledRoles);
-    } catch (error) {
-      throw new Error(`invalid project channel JSON at "${path}": invalid channel registry`, {
-        cause: error,
-      });
-    }
-    if (
-      migration.changed ||
-      canonicalJson(snapshot.channels) !== canonicalJson(normalizedChannels)
-    ) {
-      snapshot = {
-        projectId,
-        revision: snapshot.revision + 1,
-        channels: normalizedChannels,
-      };
-      await this.#writeSnapshot(snapshot);
     }
     return snapshot;
   }
@@ -188,15 +227,33 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
   }
 }
 
-function migrateLegacySubChannels(channels: unknown): { channels: unknown; changed: boolean } {
-  if (!Array.isArray(channels)) return { channels, changed: false };
+function migrateLegacySubChannels(channels: unknown): {
+  channels: unknown;
+  changed: boolean;
+  legacySummaries: LegacyBubbledSummary[];
+} {
+  if (!Array.isArray(channels)) return { channels, changed: false, legacySummaries: [] };
 
   let changed = false;
+  const legacySummaries: LegacyBubbledSummary[] = [];
   const migrated = structuredClone(channels) as unknown[];
   for (const value of migrated) {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) continue;
     const channel = value as Record<string, unknown>;
-    if (channel.kind !== 'sub') continue;
+    if (channel.localContext !== undefined) {
+      validateLegacyLocalContext(channel);
+      delete channel.localContext;
+      changed = true;
+    }
+    if (channel.kind !== 'sub') {
+      if (channel.bubbledSummary !== undefined) {
+        throw new Error('main channel must not declare bubbledSummary');
+      }
+      continue;
+    }
+    if (channel.bubbledSummary !== undefined && typeof channel.bubbledSummary !== 'string') {
+      throw new Error(`channel "${String(channel.channelId)}" bubbledSummary must be a string`);
+    }
 
     const fields = ['threadId', 'topic', 'createdBy'] as const;
     const presentCount = fields.filter((field) => field in channel).length;
@@ -206,14 +263,71 @@ function migrateLegacySubChannels(channels: unknown): { channels: unknown; chang
       channel.topic = `Legacy channel ${channel.channelId}`;
       channel.createdBy = 'leader';
       changed = true;
-      continue;
-    }
-    if (presentCount !== fields.length) {
+    } else if (presentCount !== fields.length) {
       throw new Error('partial sub-channel lifecycle metadata');
+    }
+    if (typeof channel.bubbledSummary === 'string') {
+      if (
+        typeof channel.channelId !== 'string' ||
+        typeof channel.taskId !== 'string' ||
+        typeof channel.threadId !== 'string'
+      ) {
+        throw new Error('legacy bubbledSummary requires complete channel identity');
+      }
+      if (channel.closed !== true) {
+        throw new Error('legacy bubbledSummary requires a closed sub-channel');
+      }
+      legacySummaries.push({
+        channelId: channel.channelId,
+        taskId: channel.taskId,
+        threadId: channel.threadId,
+        summary: channel.bubbledSummary,
+      });
+      delete channel.bubbledSummary;
+      changed = true;
     }
   }
 
-  return { channels: migrated, changed };
+  return { channels: migrated, changed, legacySummaries };
+}
+
+function validateLegacyLocalContext(channel: Record<string, unknown>): void {
+  if (!Array.isArray(channel.localContext)) {
+    throw new Error('legacy localContext must be an array');
+  }
+  for (const value of channel.localContext) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new Error('legacy localContext entries must be objects');
+    }
+    const reference = value as Record<string, unknown>;
+    if (
+      Object.keys(reference).length !== 2 ||
+      !Object.hasOwn(reference, 'taskId') ||
+      !Object.hasOwn(reference, 'msgId')
+    ) {
+      throw new Error('legacy localContext entries must contain only taskId and msgId');
+    }
+    if (typeof reference.taskId !== 'string' || !SAFE_PROJECT_ID.test(reference.taskId)) {
+      throw new Error('legacy localContext taskId must be a safe non-empty segment');
+    }
+    if (typeof reference.msgId !== 'string' || reference.msgId.length === 0) {
+      throw new Error('legacy localContext msgId must be a non-empty string');
+    }
+    if (
+      channel.kind === 'sub' &&
+      typeof channel.taskId === 'string' &&
+      reference.taskId !== channel.taskId
+    ) {
+      throw new Error('legacy sub channel localContext taskId must match channel taskId');
+    }
+  }
+}
+
+export interface LegacyBubbledSummary {
+  channelId: string;
+  taskId: string;
+  threadId: string;
+  summary: string;
 }
 
 function cloneSnapshot(snapshot: ProjectChannelSnapshot): ProjectChannelSnapshot {
