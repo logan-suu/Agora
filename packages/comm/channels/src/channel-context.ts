@@ -25,6 +25,7 @@ export interface ChannelContext {
   topic?: string;
   entries: ChannelContextEntry[];
   omittedRefs: MessageRef[];
+  omittedRefCount: number;
 }
 
 export interface ChannelContextBuilder {
@@ -50,7 +51,10 @@ export class DerivedChannelContextBuilder implements ChannelContextBuilder {
         if (channel.kind === 'main' && message.type === 'chat') return [];
         return [entryOf(task.taskId, message)];
       });
-      const { entries, omittedRefs } = withinBudget(candidates, CHANNEL_CONTEXT_BUDGET_CHARS);
+      const { entries, omittedRefs, omittedRefCount } = withinBudget(
+        candidates,
+        CHANNEL_CONTEXT_BUDGET_CHARS,
+      );
       return [
         {
           channelId: channel.channelId,
@@ -58,6 +62,7 @@ export class DerivedChannelContextBuilder implements ChannelContextBuilder {
           ...(channel.kind === 'sub' ? { threadId: channel.threadId, topic: channel.topic } : {}),
           entries,
           omittedRefs,
+          omittedRefCount,
         },
       ];
     });
@@ -139,24 +144,40 @@ function picked(
 function withinBudget(
   candidates: readonly ChannelContextEntry[],
   budget: number,
-): { entries: ChannelContextEntry[]; omittedRefs: MessageRef[] } {
+): { entries: ChannelContextEntry[]; omittedRefs: MessageRef[]; omittedRefCount: number } {
   const retained: ChannelContextEntry[] = [];
-  let used = 2;
   let boundary = candidates.length;
   for (let index = candidates.length - 1; index >= 0; index -= 1) {
     const candidate = candidates[index];
     if (candidate === undefined) continue;
-    const cost = JSON.stringify(candidate).length + (retained.length === 0 ? 0 : 1);
-    if (used + cost > budget) {
+    const next = [structuredClone(candidate), ...retained];
+    if (budgetedLength(next, [], index) > budget) {
       boundary = index + 1;
       break;
     }
     retained.unshift(structuredClone(candidate));
-    used += cost;
     boundary = index;
+  }
+  const omittedRefCount = boundary;
+  const omittedRefs: MessageRef[] = [];
+  for (let index = boundary - 1; index >= 0; index -= 1) {
+    const candidate = candidates[index];
+    if (candidate === undefined) continue;
+    const next = [{ ...candidate.ref }, ...omittedRefs];
+    if (budgetedLength(retained, next, omittedRefCount) > budget) break;
+    omittedRefs.unshift({ ...candidate.ref });
   }
   return {
     entries: retained,
-    omittedRefs: candidates.slice(0, boundary).map((entry) => ({ ...entry.ref })),
+    omittedRefs,
+    omittedRefCount,
   };
+}
+
+function budgetedLength(
+  entries: readonly ChannelContextEntry[],
+  omittedRefs: readonly MessageRef[],
+  omittedRefCount: number,
+): number {
+  return JSON.stringify({ entries, omittedRefs, omittedRefCount }).length;
 }

@@ -4,12 +4,14 @@ import {
   type ProjectChannelStore,
 } from '@agora/comm-channels';
 import {
+  type AppState,
   type ChannelSummary,
+  emptyChannelSummary,
   type Message,
   parseChannelSummary,
   type SubChannel,
 } from '@agora/core-domain';
-import { type ChannelSummaryGenerator, emptySummary } from '@agora/runtime-executor';
+import type { ChannelSummaryGenerator } from '@agora/runtime-executor';
 import type { TaskScope, TaskStateStore } from '@agora/runtime-state';
 
 import type { MessageService } from './message-service';
@@ -33,11 +35,11 @@ export class ChannelSummaryReconciler {
     this.#options = options;
   }
 
-  async reconcile(scope: TaskScope): Promise<void> {
+  async reconcile(scope: TaskScope): Promise<AppState | undefined> {
     const state = await this.#options.state.load(scope);
-    if (state === undefined) return;
+    if (state === undefined) return undefined;
     const snapshot = await this.#options.channels.load(scope.projectId);
-    if (snapshot === undefined) return;
+    if (snapshot === undefined) return state;
     const legacy = new Map(
       (await this.#options.legacySummaries?.(scope.projectId))
         ?.filter((entry) => entry.taskId === scope.taskId)
@@ -48,6 +50,7 @@ export class ChannelSummaryReconciler {
       if (channel.bubbledSummaryRef !== undefined && !legacy.has(channel.channelId)) continue;
       await this.#reconcileOne(scope, channel, legacy.get(channel.channelId));
     }
+    return this.#requiredState(scope);
   }
 
   async #reconcileOne(
@@ -65,7 +68,7 @@ export class ChannelSummaryReconciler {
       const generated =
         legacy === undefined
           ? sourceEntries.length === 0
-            ? emptySummary()
+            ? emptyChannelSummary()
             : await this.#options.generator.generate({
                 channel: initialChannel,
                 entries: sourceEntries,
@@ -123,7 +126,7 @@ export class ChannelSummaryReconciler {
     }
   }
 
-  async #requiredState(scope: TaskScope) {
+  async #requiredState(scope: TaskScope): Promise<AppState> {
     const state = await this.#options.state.load(scope);
     if (state === undefined) throw new Error('task state disappeared during channel reconcile');
     return state;

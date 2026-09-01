@@ -93,16 +93,17 @@ export class WorkerRuntime {
         await handle.executor.saveSafePoint();
         return current;
       }
+      const channelContext =
+        this.deps.buildChannelContext === undefined
+          ? []
+          : await this.deps.buildChannelContext(current, handle.role);
+      if (this.paused) {
+        await handle.executor.saveSafePoint();
+        return current;
+      }
       const result = await handle.executor.step({
         sessionId: crypto.randomUUID(),
-        view: project(
-          current,
-          handle.role,
-          this.deps.roster,
-          this.deps.buildChannelContext === undefined
-            ? []
-            : await this.deps.buildChannelContext(current, handle.role),
-        ),
+        view: project(current, handle.role, this.deps.roster, channelContext),
       });
       if (this.deps.handleOutput !== undefined) {
         await this.deps.handleOutput(current, handle.role, result.output);

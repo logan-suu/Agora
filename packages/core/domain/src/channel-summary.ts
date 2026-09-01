@@ -10,6 +10,15 @@ export interface ChannelSummary {
   sourceMsgIds: string[];
 }
 
+export function emptyChannelSummary(): ChannelSummary {
+  return {
+    conclusion: 'No conclusion recorded.',
+    keyDecisions: [],
+    openQuestions: [],
+    sourceMsgIds: [],
+  };
+}
+
 export function parseChannelSummary(
   value: unknown,
   allowedSourceMsgIds: ReadonlySet<string>,

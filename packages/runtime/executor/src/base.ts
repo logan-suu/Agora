@@ -1,4 +1,4 @@
-import type { Mutation } from '@agora/core-domain';
+import type { ChannelSummary, Mutation, SubChannel } from '@agora/core-domain';
 
 export interface ProjectionView {
   role: string;
@@ -22,4 +22,19 @@ export interface Executor {
   saveSafePoint(): Promise<string>;
   loadSafePoint(cursor: string): Promise<void>;
   injectInbox(view: ProjectionView): void;
+}
+
+export interface ChannelSummarySourceEntry {
+  ref: { taskId: string; msgId: string };
+  fromRole: string;
+  type: string;
+  content?: Record<string, unknown>;
+}
+
+/** L3 port implemented by the thin Harness adapter in Phase 0–9. */
+export interface ChannelSummaryGenerator {
+  generate(input: {
+    channel: SubChannel;
+    entries: readonly ChannelSummarySourceEntry[];
+  }): Promise<ChannelSummary>;
 }

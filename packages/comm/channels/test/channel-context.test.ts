@@ -108,9 +108,13 @@ describe('DerivedChannelContextBuilder', () => {
     const context = new DerivedChannelContextBuilder().build(project, task, 'CODER')[1];
 
     expect(context).toBeDefined();
-    expect(JSON.stringify(context?.entries).length).toBeLessThanOrEqual(
-      CHANNEL_CONTEXT_BUDGET_CHARS,
-    );
+    expect(
+      JSON.stringify({
+        entries: context?.entries,
+        omittedRefs: context?.omittedRefs,
+        omittedRefCount: context?.omittedRefCount,
+      }).length,
+    ).toBeLessThanOrEqual(CHANNEL_CONTEXT_BUDGET_CHARS);
     expect(context?.entries.at(-1)?.ref.msgId).toBe('message-7');
     expect(context?.omittedRefs.map((ref) => ref.msgId)).toEqual([
       'message-0',
@@ -119,6 +123,28 @@ describe('DerivedChannelContextBuilder', () => {
       'message-3',
       'message-4',
     ]);
+    expect(context?.omittedRefCount).toBe(5);
+  });
+
+  it('bounds omitted refs together with entries and reports refs dropped by the budget', () => {
+    const messages = Array.from({ length: 500 }, (_, index) =>
+      message({ msgId: `message-${String(index).padStart(4, '0')}`, payload: {}, ts: index }),
+    );
+    const task = { ...createInitialAppState('task-a', 'goal', 'project-a'), messages };
+    const context = new DerivedChannelContextBuilder().build(project, task, 'CODER')[1];
+
+    expect(context).toBeDefined();
+    expect(
+      JSON.stringify({
+        entries: context?.entries,
+        omittedRefs: context?.omittedRefs,
+        omittedRefCount: context?.omittedRefCount,
+      }).length,
+    ).toBeLessThanOrEqual(CHANNEL_CONTEXT_BUDGET_CHARS);
+    expect(context?.omittedRefCount).toBe(500 - (context?.entries.length ?? 0));
+    expect(context?.omittedRefs.length).toBeLessThan(context?.omittedRefCount ?? 0);
+    const omittedIds = context?.omittedRefs.map((ref) => ref.msgId) ?? [];
+    expect(omittedIds).toEqual([...omittedIds].sort());
   });
 
   it('returns defensive copies', () => {

@@ -87,15 +87,13 @@ export class MessageRuntime {
   async initialize(scope: TaskScope, goal: string): Promise<AppState> {
     await this.ensureProjectChannels(scope.projectId);
     const state = await this.#service.initialize(scope, goal);
-    await this.#summaryReconciler.reconcile(scope);
-    return state;
+    return (await this.#summaryReconciler.reconcile(scope)) ?? state;
   }
 
   async initializeState(scope: TaskScope, state: AppState): Promise<AppState> {
     await this.ensureProjectChannels(scope.projectId);
     const initialized = await this.store.initialize(scope, state);
-    await this.#summaryReconciler.reconcile(scope);
-    return initialized;
+    return (await this.#summaryReconciler.reconcile(scope)) ?? initialized;
   }
 
   commitMutations(scope: TaskScope, mutations: readonly Mutation[]): Promise<MutationCommitResult> {
@@ -120,7 +118,7 @@ export class MessageRuntime {
     return this.#channelContext.build(snapshot, state, role);
   }
 
-  reconcileChannels(scope: TaskScope): Promise<void> {
+  reconcileChannels(scope: TaskScope): Promise<AppState | undefined> {
     return this.#summaryReconciler.reconcile(scope);
   }
 

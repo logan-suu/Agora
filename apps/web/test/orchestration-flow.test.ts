@@ -272,6 +272,40 @@ describe('TaskOrchestrationRuntime', () => {
     });
   });
 
+  it('reloads the canonical state after restore reconciliation adds a summary message', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    const messages = createMessageRuntime(root, new ChannelStream());
+    await messages.initializeState(
+      scope,
+      createInitialAppState(scope.taskId, 'Goal', scope.projectId),
+    );
+    const snapshot = await messages.channels.load(scope.projectId);
+    if (snapshot === undefined) throw new Error('expected initialized channels');
+    await messages.channels.commit(scope.projectId, snapshot.revision, [
+      ...snapshot.channels,
+      {
+        channelId: 'sub-empty',
+        kind: 'sub',
+        taskId: scope.taskId,
+        threadId: 'thread-empty',
+        topic: 'Empty closed channel',
+        createdBy: 'CODER',
+        participants: ['leader', 'CODER'],
+        closed: true,
+      },
+    ]);
+    const restarted = new TaskOrchestrationRuntime(messages, successfulFactory(Promise.resolve()));
+
+    await expect(
+      restarted.start({ ...scope, requestId: 'restore-summary', goal: 'Goal' }),
+    ).resolves.toMatchObject({
+      startOutcome: 'interrupted',
+      messageCount: 1,
+    });
+  });
+
   it('rejects a second active run anywhere in the Phase 5 backend instance', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
     roots.push(root);
