@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyMention,
   filterMentionOptions,
+  leaderActionNoticeFromResponse,
   mergeMessageById,
   nextMessageTimestamp,
   prepareMessageSubmission,
@@ -69,6 +70,33 @@ describe('chat UI model', () => {
     expect(retry).toBe(first);
     expect(retry.msgId).toBe('message-1');
     expect(changed).toEqual({ display: 'Ship it safely.', msgId: 'message-2' });
+  });
+
+  it('turns rejected and deferred Leader actions into visible notices', () => {
+    expect(
+      leaderActionNoticeFromResponse({
+        action: { status: 'rejected', reason: 'unknown role "UNKNOWN"' },
+      }),
+    ).toEqual({ kind: 'rejected', text: 'Command rejected: unknown role "UNKNOWN"' });
+    expect(
+      leaderActionNoticeFromResponse({
+        action: {
+          status: 'deferred',
+          targetPhase: 6,
+          reason: 'dynamic sub channels are implemented in Phase 6',
+        },
+      }),
+    ).toEqual({
+      kind: 'deferred',
+      text: 'Command deferred to Phase 6: dynamic sub channels are implemented in Phase 6',
+    });
+    expect(leaderActionNoticeFromResponse({ action: { status: 'none' } })).toBeUndefined();
+  });
+
+  it('rejects malformed message responses instead of swallowing action status', () => {
+    expect(() => leaderActionNoticeFromResponse({ accepted: true })).toThrow(
+      'invalid Leader action response',
+    );
   });
 });
 

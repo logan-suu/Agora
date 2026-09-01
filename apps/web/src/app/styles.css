@@ -534,6 +534,29 @@ textarea:focus-visible {
   cursor: not-allowed;
 }
 
+.submission-error,
+.submission-notice {
+  width: calc(100% - clamp(32px, 8vw, 104px));
+  max-width: 940px;
+  margin: -14px auto 16px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.submission-error,
+.submission-notice-rejected {
+  color: #ff8b8b;
+}
+
+.submission-notice-deferred {
+  color: #f0bd67;
+}
+
+.submission-notice-applied {
+  color: var(--green);
+}
+
 .mention-menu {
   position: absolute;
   right: auto;

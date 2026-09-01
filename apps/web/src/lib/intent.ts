@@ -82,7 +82,8 @@ export function parseLeaderIntent(display: string): LeaderIntent {
   const remainder = separator < 0 ? '' : text.slice(separator).trim();
 
   if (firstToken.startsWith('@')) {
-    if (!ROLE_MENTION.test(firstToken)) {
+    const hasAdditionalMention = remainder.split(/\s+/).some((token) => token.startsWith('@'));
+    if (!ROLE_MENTION.test(firstToken) || hasAdditionalMention) {
       return {
         kind: 'invalid',
         reason: 'a leading assignment must contain exactly one valid @ROLE token',

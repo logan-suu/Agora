@@ -38,6 +38,9 @@ describe('parseLeaderIntent', () => {
     expect(parseLeaderIntent('@CODER,@TESTER split the work')).toMatchObject({
       kind: 'invalid',
     });
+    expect(parseLeaderIntent('@CODER @TESTER split the work')).toMatchObject({
+      kind: 'invalid',
+    });
     expect(parseLeaderIntent('@ split the work')).toMatchObject({ kind: 'invalid' });
   });
 
