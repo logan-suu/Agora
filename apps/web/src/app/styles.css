@@ -40,6 +40,7 @@ body {
 }
 
 button,
+input,
 textarea {
   color: inherit;
   font: inherit;
@@ -50,6 +51,7 @@ button {
 }
 
 button:focus-visible,
+input:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -198,14 +200,16 @@ textarea:focus-visible {
 .sidebar-section,
 .task-summary,
 .task-progress,
-.active-workers {
+.active-workers,
+.artifact-summary {
   padding: 28px 24px 0;
 }
 
 .sidebar-section h2,
 .task-summary h2,
 .task-progress h2,
-.active-workers h2 {
+.active-workers h2,
+.artifact-summary h2 {
   margin: 0 0 16px;
   color: var(--text-muted);
   font-family: var(--mono);
@@ -362,10 +366,104 @@ textarea:focus-visible {
 .chat-column {
   grid-area: chat;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 0;
   background: var(--bg);
+}
+
+.task-launcher {
+  padding: 18px clamp(24px, 5vw, 72px) 0;
+  border-bottom: 1px solid var(--border-soft);
+  background: #0a1018;
+}
+
+.task-launcher form {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) minmax(240px, 1fr) auto;
+  gap: 12px;
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+.task-launcher label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.task-launcher input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  background: var(--surface);
+  font-family: var(--sans);
+  font-size: 0.86rem;
+}
+
+.task-launcher button {
+  align-self: end;
+  min-width: 112px;
+  min-height: 42px;
+  border-radius: 7px;
+  color: #fff;
+  background: var(--accent);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.task-launcher button:disabled {
+  color: #8290a4;
+  background: #1b2737;
+  cursor: not-allowed;
+}
+
+.runtime-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  max-width: 940px;
+  margin: 12px auto 14px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+}
+
+.runtime-strip span:first-child {
+  color: var(--amber);
+  text-transform: uppercase;
+}
+
+.runtime-strip span[data-status="completed"] {
+  color: var(--green);
+}
+
+.runtime-strip span[data-status="failed"] {
+  color: #ff8b8b;
+}
+
+.task-error {
+  max-width: 940px;
+  margin: -4px auto 14px;
+  color: #ff8b8b;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+}
+
+.artifact-summary code {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #68a1ff;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.6;
 }
 
 .mobile-context {
@@ -825,7 +923,7 @@ textarea:focus-visible {
   }
 
   .chat-column {
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
   }
 
   .mobile-context {
@@ -856,6 +954,24 @@ textarea:focus-visible {
 
   .message-list {
     padding: 24px 18px 12px;
+  }
+
+  .task-launcher {
+    padding: 12px 10px 0;
+  }
+
+  .task-launcher form {
+    grid-template-columns: minmax(100px, 0.4fr) minmax(0, 1fr);
+  }
+
+  .task-launcher .goal-field {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .task-launcher button {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .message-row {

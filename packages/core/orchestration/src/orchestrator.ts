@@ -1,8 +1,8 @@
-import type { AppState, RoleSpec } from '@agora/core-domain';
+import type { AppState, Mutation, RoleSpec } from '@agora/core-domain';
 import { applyMutations, setMutation } from '@agora/core-domain';
 import { evaluateComplexity } from './complexity';
 import { decide } from './coordinator';
-import type { WorkerRuntime } from './worker-runtime';
+import type { StateTransition, WorkerRuntime } from './worker-runtime';
 
 export interface OrchestrationDeps {
   workerRuntime: WorkerRuntime;
@@ -12,6 +12,7 @@ export interface OrchestrationDeps {
    * the fixed CODER↔TESTER slice; omit for the full 6-role machine.
    */
   roster?: readonly RoleSpec[];
+  transition?: StateTransition;
 }
 
 export function entry(state: AppState): AppState {
@@ -25,11 +26,18 @@ export async function runOrchestration(
   initialState: AppState,
   deps: OrchestrationDeps,
 ): Promise<AppState> {
-  let state = entry(initialState);
+  const transition = (state: AppState, mutations: readonly Mutation[]): Promise<AppState> =>
+    deps.transition?.(state, mutations) ?? Promise.resolve(applyMutations(state, mutations));
+  let state = initialState;
+  if (state.complexity === undefined) {
+    state = await transition(state, [
+      setMutation('complexity', evaluateComplexity({ goal: state.goal })),
+    ]);
+  }
   while (state.phase !== 'done') {
     const decision = decide(state, deps.roster === undefined ? undefined : { roster: deps.roster });
     if (decision.mutations.length > 0) {
-      state = applyMutations(state, decision.mutations);
+      state = await transition(state, decision.mutations);
     }
     const route = decision.route;
     switch (route.kind) {
@@ -37,7 +45,7 @@ export async function runOrchestration(
         state = await deps.workerRuntime.runOne(state, route.batch[0]);
         break;
       case 'finalize':
-        state = applyMutations(state, [setMutation('phase', 'done')]);
+        state = await transition(state, [setMutation('phase', 'done')]);
         break;
       case 'integrate':
         throw new Error('integrate node is excluded from the Phase 0 slice (spec §9)');

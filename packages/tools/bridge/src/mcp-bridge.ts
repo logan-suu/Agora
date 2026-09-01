@@ -1,11 +1,16 @@
 import type { SandboxManager, Worktree } from '@agora/runtime-sandbox';
 import { createSandboxRunTool, wireToolName } from '@agora/runtime-sandbox';
 import { createFsServer, WorktreeRegistry } from '@agora/tools-fs';
-import { createGitServer } from '@agora/tools-git';
+import { createGitServer, type GitService } from '@agora/tools-git';
 import { createLintServer } from '@agora/tools-lint';
 import { createTestServer } from '@agora/tools-test';
 import type { ContentBlock } from '@deepseek-ai/dsh-llm';
-import type { JsonValue, ParameterSchemaSpec, ToolDefinition } from '@deepseek-ai/dsh-tools';
+import {
+  defineTool,
+  type JsonValue,
+  type ParameterSchemaSpec,
+  type ToolDefinition,
+} from '@deepseek-ai/dsh-tools';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -42,6 +47,8 @@ export interface ToolCatalogOptions {
   getWorktree(): Promise<Worktree>;
   /** Git main repo path; when omitted the git service lazily creates a temp main repo. */
   mainRepoPath?: string;
+  /** Optional caller-owned git service for an existing sandbox worktree. */
+  gitService?: GitService;
   /** Default cooperative timeout for MCP-backed fs/git calls (default 30000, R7). */
   mcpTimeoutMs?: number;
 }
@@ -283,6 +290,7 @@ export async function createToolCatalog(options: ToolCatalogOptions): Promise<To
   const testServer = createTestServer({ registry });
   const gitServer = createGitServer({
     registry,
+    ...(options.gitService === undefined ? {} : { service: options.gitService }),
     ...(options.mainRepoPath === undefined ? {} : { mainRepoPath: options.mainRepoPath }),
   });
   const lintServer = createLintServer({ registry });
@@ -349,14 +357,13 @@ function bridgeMcpTool(
   spec: McpToolSpec,
   deps: ToolCatalogOptions,
 ): ToolDefinition {
-  return {
+  return defineTool({
     name: spec.wireName,
     description: spec.description,
     parameters: spec.parameters,
     ...(spec.timeoutMs === undefined ? {} : { timeoutMs: spec.timeoutMs }),
     output: {
-      // Unconstrained JSON root (JsonSchemaNode: omit `type` for any JSON value).
-      schema: {},
+      schema: { type: 'json' },
       render: (_args, value) => [textBlock(JSON.stringify(value))],
     },
     async execute(args, exec) {
@@ -383,7 +390,7 @@ function bridgeMcpTool(
       if (content !== undefined && content.isError === true) throw new Error(mcpError(result));
       return looseParse(mcpText(result));
     },
-  };
+  });
 }
 
 /** Race a task against `signal`, settling gracefully (not rejecting) on abort. */
@@ -440,7 +447,7 @@ function mcpError(result: CallToolOutcome): string {
 }
 
 /** Parse a tool result as JSON when possible, else keep the raw text. */
-function looseParse(text: string): unknown {
+function looseParse(text: string): JsonValue {
   try {
     return JSON.parse(text) as JsonValue;
   } catch {

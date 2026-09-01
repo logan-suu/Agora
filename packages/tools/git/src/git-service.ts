@@ -118,6 +118,26 @@ export function validateRefArg(ref: string, label: string): string {
 export const GIT_TEARDOWN_STAGING = join(tmpdir(), 'agora-git-trash');
 
 /**
+ * Prepare an existing SandboxManager worktree for the host-side git MCP tools.
+ * Docker bind mounts expose the same directory on the host, so git metadata is
+ * initialized here while file execution remains inside the container.
+ */
+export async function initializeRegisteredWorktree(
+  registry: WorktreeRegistry,
+  root: string,
+): Promise<void> {
+  const canonicalRoot = realpathSync(resolve(root));
+  const git = simpleGit(canonicalRoot);
+  if (!(await git.checkIsRepo())) {
+    await git.init();
+    await git.addConfig('user.name', 'Agora');
+    await git.addConfig('user.email', 'agora@localhost');
+    await git.commit('initial', [], { '--allow-empty': null });
+  }
+  registry.register(root);
+}
+
+/**
  * Worktree-scoped git service (spec §6 `git-server`).
  *
  * Holds ONE main repository (decision: mainRepo + linked worktree model).

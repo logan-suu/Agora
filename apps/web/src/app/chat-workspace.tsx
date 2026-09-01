@@ -8,6 +8,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useTransition,
 } from 'react';
 
 import {
@@ -23,6 +24,7 @@ import {
   type PresenceStatus,
   prepareMessageSubmission,
   sortMessagesByTimestamp,
+  type TaskRuntimeView,
   type TeamMemberView,
   type WorkspaceViewModel,
 } from './chat-model';
@@ -235,7 +237,15 @@ function MessageList({ messages, team }: { messages: ChatMessageView[]; team: Te
   );
 }
 
-function RightSidebar({ model, open }: { model: WorkspaceViewModel; open: boolean }) {
+function RightSidebar({
+  model,
+  open,
+  task,
+}: {
+  model: WorkspaceViewModel;
+  open: boolean;
+  task?: TaskRuntimeView | undefined;
+}) {
   return (
     <aside className="right-sidebar" data-open={open} aria-label="Task status">
       <section className="task-summary">
@@ -248,10 +258,14 @@ function RightSidebar({ model, open }: { model: WorkspaceViewModel; open: boolea
       <section className="task-progress">
         <h2>Progress</h2>
         <ol>
-          <li className="progress-done">Define message model</li>
-          <li className="progress-active">Build accessible UI components</li>
-          <li>Verify responsive states</li>
-          <li>Run quality gates</li>
+          <li className={task ? 'progress-done' : 'progress-active'}>Create task</li>
+          <li className={task?.runStatus === 'running' ? 'progress-active' : undefined}>
+            Run six-role orchestration
+          </li>
+          <li className={task?.testResults?.passed ? 'progress-done' : undefined}>Pass tests</li>
+          <li className={task?.runStatus === 'completed' ? 'progress-done' : undefined}>
+            Produce artifact
+          </li>
         </ol>
       </section>
       <section className="active-workers">
@@ -268,7 +282,73 @@ function RightSidebar({ model, open }: { model: WorkspaceViewModel; open: boolea
           ))}
         </ul>
       </section>
+      {task?.artifactPath ? (
+        <section className="artifact-summary">
+          <h2>Artifact</h2>
+          <code>{task.artifactPath}</code>
+        </section>
+      ) : null}
     </aside>
+  );
+}
+
+function TaskLauncher({
+  taskId,
+  goal,
+  pending,
+  task,
+  error,
+  onTaskIdChange,
+  onGoalChange,
+  onStart,
+}: {
+  taskId: string;
+  goal: string;
+  pending: boolean;
+  task?: TaskRuntimeView | undefined;
+  error?: string | undefined;
+  onTaskIdChange: (value: string) => void;
+  onGoalChange: (value: string) => void;
+  onStart: () => void;
+}) {
+  return (
+    <section className="task-launcher" aria-label="Task runner">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onStart();
+        }}
+      >
+        <label>
+          <span>Task ID</span>
+          <input value={taskId} onChange={(event) => onTaskIdChange(event.target.value)} />
+        </label>
+        <label className="goal-field">
+          <span>Goal</span>
+          <input value={goal} onChange={(event) => onGoalChange(event.target.value)} />
+        </label>
+        <button disabled={pending || taskId.trim() === '' || goal.trim() === ''} type="submit">
+          {pending ? 'Starting…' : task?.runStatus === 'running' ? 'Running' : 'Start task'}
+        </button>
+      </form>
+      <div className="runtime-strip" role="status">
+        <span data-status={task?.runStatus ?? 'not-started'}>
+          {task?.runStatus.replace('_', ' ') ?? 'not started'}
+        </span>
+        <span>Phase: {task?.phase ?? '—'}</span>
+        <span>Worker: {task?.currentRole ?? '—'}</span>
+        {task?.testResults ? (
+          <span>
+            Tests: {task.testResults.passed ? 'passed' : 'failed'} ({task.testResults.total})
+          </span>
+        ) : null}
+      </div>
+      {error ? (
+        <p className="task-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
@@ -278,9 +358,17 @@ interface ComposerProps {
   onDraftChange: (value: string) => void;
   onMention: (role: string) => void;
   onSubmit: () => void;
+  disabled?: boolean;
 }
 
-function Composer({ draft, mentionOptions, onDraftChange, onMention, onSubmit }: ComposerProps) {
+function Composer({
+  draft,
+  mentionOptions,
+  onDraftChange,
+  onMention,
+  onSubmit,
+  disabled = false,
+}: ComposerProps) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit();
@@ -315,6 +403,7 @@ function Composer({ draft, mentionOptions, onDraftChange, onMention, onSubmit }:
         </span>
         <textarea
           aria-label="Message the team"
+          disabled={disabled}
           onChange={(event) => onDraftChange(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Message the team or @mention a role…"
@@ -323,7 +412,11 @@ function Composer({ draft, mentionOptions, onDraftChange, onMention, onSubmit }:
         />
         <span className="composer-hint">Shift + Enter for new line</span>
       </label>
-      <button className="send-button" disabled={draft.trim().length === 0} type="submit">
+      <button
+        className="send-button"
+        disabled={disabled || draft.trim().length === 0}
+        type="submit"
+      >
         Send
       </button>
     </form>
@@ -335,10 +428,15 @@ export function ChatWorkspace({
   projectId = 'agora',
 }: ChatWorkspaceProps) {
   const [messages, setMessages] = useState(model.messages);
+  const [taskId, setTaskId] = useState(model.task.id);
+  const [goal, setGoal] = useState(model.task.title);
+  const [task, setTask] = useState<TaskRuntimeView>();
+  const [taskError, setTaskError] = useState<string>();
+  const [taskPending, startTaskTransition] = useTransition();
   const [draft, setDraft] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'live' | 'offline'>(
-    'connecting',
-  );
+  const [connectionStatus, setConnectionStatus] = useState<
+    'idle' | 'connecting' | 'live' | 'offline'
+  >('idle');
   const [submitting, setSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string>();
   const [submissionNotice, setSubmissionNotice] = useState<LeaderActionNotice>();
@@ -351,10 +449,65 @@ export function ChatWorkspace({
     [mentionQuery],
   );
 
+  const runtimeModel = useMemo<WorkspaceViewModel>(() => {
+    const currentRole = task?.runStatus === 'running' ? task.currentRole : null;
+    return {
+      ...model,
+      task: {
+        id: taskId,
+        title: goal,
+        status: task?.runStatus.replace('_', ' ') ?? 'Not started',
+      },
+      team: model.team.map((member) => ({
+        ...member,
+        status:
+          member.role === currentRole
+            ? 'active'
+            : member.status === 'active'
+              ? 'online'
+              : member.status,
+      })),
+      activeWorkers:
+        currentRole === null
+          ? []
+          : [
+              {
+                role: currentRole,
+                name: roleLabels[currentRole] ?? currentRole,
+                detail: `Executing ${task?.phase ?? 'task'} stage`,
+              },
+            ],
+      messages: [],
+    };
+  }, [goal, model, task, taskId]);
+
   useEffect(() => {
+    let active = true;
+    const search = new URLSearchParams({ projectId, taskId });
+    void fetch(`/api/tasks?${search.toString()}`)
+      .then(async (response) => {
+        if (!active || response.status === 404) return;
+        if (!response.ok) throw new Error(`Task recovery failed (${response.status})`);
+        const recovered = (await response.json()) as TaskRuntimeView;
+        if (active) {
+          setTask(recovered);
+          setGoal(recovered.goal);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) setTaskError(error instanceof Error ? error.message : 'Task recovery failed');
+      });
+    return () => {
+      active = false;
+    };
+  }, [projectId, taskId]);
+
+  useEffect(() => {
+    if (task === undefined) return;
+    setConnectionStatus('connecting');
     const search = new URLSearchParams({
       projectId,
-      taskId: model.task.id,
+      taskId,
       channelId: model.channel.id,
     });
     const source = new EventSource(`/api/stream?${search.toString()}`);
@@ -377,7 +530,55 @@ export function ChatWorkspace({
     source.onerror = () => setConnectionStatus('offline');
 
     return () => source.close();
-  }, [model.channel.id, model.task.id, projectId]);
+  }, [model.channel.id, projectId, taskId, task !== undefined]);
+
+  useEffect(() => {
+    if (task?.runStatus !== 'running') return;
+    let active = true;
+    const refresh = async () => {
+      const search = new URLSearchParams({ projectId, taskId });
+      const response = await fetch(`/api/tasks?${search.toString()}`);
+      if (response.ok && active) setTask((await response.json()) as TaskRuntimeView);
+    };
+    const timer = setInterval(() => void refresh(), 1000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [projectId, task?.runStatus, taskId]);
+
+  function changeTaskId(value: string) {
+    setTaskId(value);
+    setTask(undefined);
+    setTaskError(undefined);
+    setMessages([]);
+  }
+
+  function startTask() {
+    const normalizedTaskId = taskId.trim();
+    const normalizedGoal = goal.trim();
+    if (normalizedTaskId === '' || normalizedGoal === '' || taskPending) return;
+    setTaskError(undefined);
+    startTaskTransition(async () => {
+      try {
+        const response = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            taskId: normalizedTaskId,
+            requestId: crypto.randomUUID(),
+            goal: normalizedGoal,
+          }),
+        });
+        const body = (await response.json()) as TaskRuntimeView & { error?: string };
+        if (!response.ok) throw new Error(body.error ?? `Task start failed (${response.status})`);
+        setTask(body);
+      } catch (error) {
+        setTaskError(error instanceof Error ? error.message : 'Task start failed');
+      }
+    });
+  }
 
   function selectMention(role: string) {
     setDraft((current) => `${applyMention(current, role)} `);
@@ -402,7 +603,7 @@ export function ChatWorkspace({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectId,
-          taskId: model.task.id,
+          taskId,
           channelId: model.channel.id,
           msgId: submission.msgId,
           display,
@@ -442,7 +643,7 @@ export function ChatWorkspace({
         </div>
         <div className="channel-title">
           <span aria-hidden="true">#</span>
-          {model.channel.name}
+          {runtimeModel.channel.name}
         </div>
         <div className="preview-status">
           <span />
@@ -450,7 +651,9 @@ export function ChatWorkspace({
             ? 'Live'
             : connectionStatus === 'offline'
               ? 'Offline'
-              : 'Connecting'}
+              : connectionStatus === 'connecting'
+                ? 'Connecting'
+                : 'Idle'}
         </div>
         <button
           className="icon-control"
@@ -466,22 +669,33 @@ export function ChatWorkspace({
         </button>
       </header>
 
-      <LeftSidebar model={model} open={leftOpen} />
+      <LeftSidebar model={runtimeModel} open={leftOpen} />
       <section className="chat-column">
         <div className="mobile-context">
           <TerminalMark />
           <span>
-            {model.task.id} {model.task.title} · {model.task.status} · {model.activeWorkers.length}{' '}
-            active
+            {runtimeModel.task.id} {runtimeModel.task.title} · {runtimeModel.task.status} ·{' '}
+            {runtimeModel.activeWorkers.length} active
           </span>
         </div>
-        <MessageList messages={messages} team={model.team} />
+        <TaskLauncher
+          taskId={taskId}
+          goal={goal}
+          pending={taskPending}
+          task={task}
+          error={taskError}
+          onTaskIdChange={changeTaskId}
+          onGoalChange={setGoal}
+          onStart={startTask}
+        />
+        <MessageList messages={messages} team={runtimeModel.team} />
         <Composer
           draft={draft}
           mentionOptions={mentionOptions}
           onDraftChange={setDraft}
           onMention={selectMention}
           onSubmit={sendMessage}
+          disabled={task === undefined}
         />
         {submissionError ? (
           <p className="submission-error" role="alert">
@@ -497,7 +711,7 @@ export function ChatWorkspace({
           </p>
         ) : null}
       </section>
-      <RightSidebar model={model} open={rightOpen} />
+      <RightSidebar model={runtimeModel} open={rightOpen} task={task} />
 
       {leftOpen || rightOpen ? (
         <button

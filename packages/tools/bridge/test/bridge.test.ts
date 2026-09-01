@@ -112,8 +112,12 @@ describe('createToolCatalog (MCP → Harness bridge, task 1.5)', () => {
     try {
       const byName = new Map(fixture.catalog.all().map((tool) => [tool.name, tool]));
       const readParams = byName.get('fs_read')?.parameters as Record<string, unknown>;
-      expect(Object.keys(readParams)).toEqual(['path', 'range']);
-      expect('worktree' in readParams).toBe(false);
+      expect(readParams.type).toBe('object');
+      expect(Object.keys(readParams.properties as Record<string, unknown>)).toEqual([
+        'path',
+        'range',
+      ]);
+      expect('worktree' in (readParams.properties as Record<string, unknown>)).toBe(false);
     } finally {
       await fixture.dispose();
     }

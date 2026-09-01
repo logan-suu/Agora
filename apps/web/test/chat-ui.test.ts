@@ -131,7 +131,7 @@ describe('ChatWorkspace', () => {
     expect(visibleText).toContain('@CODER tighten the cache eviction tests before review.');
     expect(html).not.toContain('RAW_PAYLOAD_MUST_NOT_RENDER');
     expect(html).toContain('aria-label="Message the team"');
-    expect(visibleText).toContain('Connecting');
+    expect(visibleText).toContain('Idle');
     expect(visibleText).not.toContain('Live');
     expect(visibleText).not.toContain('Collapse');
   });

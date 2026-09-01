@@ -17,7 +17,9 @@ async function testRuntime() {
   const root = await mkdtemp(join(tmpdir(), 'agora-route-test-'));
   roots.push(root);
   const stream = new ChannelStream();
-  return { runtime: createMessageRuntime(root, stream), stream };
+  const runtime = createMessageRuntime(root, stream);
+  await runtime.initialize(address, 'Task task-a');
+  return { runtime, stream };
 }
 
 afterEach(async () => {
@@ -36,6 +38,21 @@ describe('GET /api/stream', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'projectId, taskId, and channelId are required',
     });
+  });
+
+  it('does not create a placeholder task when the stream scope is unknown', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-route-test-'));
+    roots.push(root);
+    const runtime = createMessageRuntime(root, new ChannelStream());
+
+    const response = await createGetStream(runtime)(
+      new Request('http://localhost/api/stream?projectId=project-a&taskId=missing&channelId=main'),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(
+      runtime.store.load({ projectId: 'project-a', taskId: 'missing' }),
+    ).resolves.toBeUndefined();
   });
 
   it('opens an SSE stream with snapshot and releases its subscription when cancelled', async () => {
@@ -103,6 +120,24 @@ describe('POST /api/messages', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'projectId, taskId, channelId, msgId, and display are required',
     });
+  });
+
+  it('does not create a placeholder task for an unknown message scope', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-route-test-'));
+    roots.push(root);
+    const runtime = createMessageRuntime(root, new ChannelStream());
+
+    const response = await createPostMessage(runtime)(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({ ...address, taskId: 'missing', msgId: 'message-1', display: 'Go' }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(
+      runtime.store.load({ projectId: 'project-a', taskId: 'missing' }),
+    ).resolves.toBeUndefined();
   });
 
   it('commits chat with server-owned identity and payload', async () => {

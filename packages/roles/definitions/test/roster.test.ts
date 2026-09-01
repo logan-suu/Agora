@@ -5,6 +5,7 @@ import {
   DEFAULT_ROSTER,
   PM_ROLE,
   REVIEWER_ROLE,
+  SIX_ROLE_HANDOFF,
   validateRoster,
 } from '../src/index';
 
@@ -92,6 +93,11 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
     expect(spec(DEFAULT_ROSTER, 'ARCHITECT').systemPrompt).toContain('附理由写入台账');
     expect(spec(DEFAULT_ROSTER, 'REVIEWER').systemPrompt).toContain('leader 最终确认');
     expect(spec(DEFAULT_ROSTER, 'REVIEWER').systemPrompt).toContain('可执行修改意见');
+  });
+
+  it('requires the reviewer handoff to emit raw JSON without prose or markdown', () => {
+    expect(SIX_ROLE_HANDOFF.REVIEWER).toContain('raw JSON array only');
+    expect(SIX_ROLE_HANDOFF.REVIEWER).toContain('Do not output prose or markdown');
   });
 
   it('declares routeWhen skeleton conditions for the new roles (evaluator lands in task 2.2)', () => {

@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type Message, setMutation } from '@agora/core-domain';
+import { appendMutation, type Message, setMutation } from '@agora/core-domain';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { MessageBus, MessageCommitted } from '../../../comm/bus/src/index';
 import { JsonTaskStateStore, type TaskScope } from '../../../runtime/state/src/index';
@@ -163,6 +163,55 @@ describe('MessageService', () => {
 
     await expect(service.commitMessage(scope, message())).rejects.toThrow('delivery unavailable');
     await expect(store.load(scope)).resolves.toMatchObject({ messages: [message()] });
+  });
+
+  it('commits orchestration mutations before publishing every newly appended agent message', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const bus = new RecordingBus();
+    const service = new MessageService(store, bus);
+    await service.initialize(scope, 'Build the message flow');
+    const first = message({
+      msgId: 'agent-1',
+      fromRole: 'CODER',
+      display: 'Implementation ready.',
+    });
+    const second = message({ msgId: 'agent-2', fromRole: 'TESTER', display: 'Tests passed.' });
+    bus.onPublish = async (event) => {
+      const persisted = await store.load(scope);
+      expect(persisted?.phase).toBe('testing');
+      expect(persisted?.messages.map((item) => item.msgId)).toEqual(['agent-1', 'agent-2']);
+      expect(persisted?.messages.some((item) => item.msgId === event.message.msgId)).toBe(true);
+    };
+
+    const result = await service.commitMutations(scope, [
+      appendMutation('messages', first),
+      setMutation('phase', 'testing'),
+      appendMutation('messages', second),
+    ]);
+
+    expect(result.changed).toBe(true);
+    expect(result.publishedMessages).toEqual([first, second]);
+    expect(bus.events).toEqual([
+      { ...scope, message: first },
+      { ...scope, message: second },
+    ]);
+  });
+
+  it('does not republish an idempotent orchestration message replay', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const bus = new RecordingBus();
+    const service = new MessageService(store, bus);
+    await service.initialize(scope, 'Build the message flow');
+    const agentMessage = message({ msgId: 'agent-1', fromRole: 'COORDINATOR' });
+    const mutations = [appendMutation('messages', agentMessage)] as const;
+
+    const first = await service.commitMutations(scope, mutations);
+    const replay = await service.commitMutations(scope, mutations);
+
+    expect(first.publishedMessages).toEqual([agentMessage]);
+    expect(replay.changed).toBe(false);
+    expect(replay.publishedMessages).toEqual([]);
+    expect(bus.events).toHaveLength(1);
   });
 
   it('keeps Phase 5 message submission on the main channel', async () => {
