@@ -145,10 +145,10 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
       published: false,
     });
     const deferred = await post(
-      messageRequest({ ...address, msgId: 'deferred-1', display: '/channel CODER TESTER' }),
+      messageRequest({ ...address, msgId: 'deferred-1', display: '/approve gate-1' }),
     );
     await expect(deferred.json()).resolves.toMatchObject({
-      action: { status: 'deferred', targetPhase: 6 },
+      action: { status: 'deferred', targetPhase: 8 },
     });
     const phase8Deferred = await post(
       messageRequest({ ...address, msgId: 'deferred-8', display: '/approve gate-1' }),

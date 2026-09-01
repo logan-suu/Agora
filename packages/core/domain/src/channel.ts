@@ -26,6 +26,9 @@ export interface MainChannel extends ChannelBase {
 export interface SubChannel extends ChannelBase {
   kind: 'sub';
   taskId: string;
+  threadId: string;
+  topic: string;
+  createdBy: ParticipantId;
 }
 
 export type Channel = MainChannel | SubChannel;
@@ -39,6 +42,26 @@ export function createMainChannel(enabledRoles: readonly RoleId[]): MainChannel 
     localContext: [],
     closed: false,
   };
+}
+
+export function normalizeChannelParticipants(
+  channels: readonly Channel[],
+  enabledRoles: readonly RoleId[],
+): Channel[] {
+  assertValidChannelRegistry(channels, enabledRoles);
+  const participantOrder = new Map<string, number>([
+    ['leader', 0],
+    ...enabledRoles.map((role, index) => [role, index + 1] as const),
+  ]);
+
+  return channels.map((channel) => ({
+    ...structuredClone(channel),
+    participants: [...channel.participants].sort(
+      (left, right) =>
+        (participantOrder.get(left) ?? Number.MAX_SAFE_INTEGER) -
+        (participantOrder.get(right) ?? Number.MAX_SAFE_INTEGER),
+    ),
+  }));
 }
 
 export function assertValidChannelRegistry(
@@ -109,6 +132,16 @@ export function assertValidChannelRegistry(
       if (!enabled.has(participant)) {
         throw new Error(`sub channel "${channelId}" participant "${participant}" is not enabled`);
       }
+    }
+
+    requiredSafeSegment(channel.threadId, 'sub channel threadId');
+    requiredNonEmptyString(channel.topic, 'sub channel topic');
+    const createdBy = requiredNonEmptyString(channel.createdBy, 'sub channel createdBy');
+    if (createdBy !== 'leader' && !enabled.has(createdBy)) {
+      throw new Error(`sub channel "${channelId}" createdBy "${createdBy}" is not enabled`);
+    }
+    if (!participants.includes(createdBy)) {
+      throw new Error(`sub channel "${channelId}" must include creator "${createdBy}"`);
     }
   }
 

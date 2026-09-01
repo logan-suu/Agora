@@ -1,7 +1,12 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { assertValidChannelRegistry, type Channel, type RoleId } from '@agora/core-domain';
+import {
+  assertValidChannelRegistry,
+  type Channel,
+  normalizeChannelParticipants,
+  type RoleId,
+} from '@agora/core-domain';
 
 import type { ProjectChannelCommit, ProjectChannelSnapshot, ProjectChannelStore } from './base';
 
@@ -24,6 +29,7 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
   ): Promise<ProjectChannelSnapshot> {
     this.#validateProjectId(projectId);
     this.#validateChannels(initial);
+    const normalizedInitial = normalizeChannelParticipants(initial, this.#enabledRoles);
 
     return this.#enqueue(projectId, async () => {
       const existing = await this.#loadSnapshot(projectId);
@@ -32,7 +38,7 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
       const snapshot: ProjectChannelSnapshot = {
         projectId,
         revision: 0,
-        channels: cloneChannels(initial),
+        channels: cloneChannels(normalizedInitial),
       };
       await this.#writeSnapshot(snapshot);
       return cloneSnapshot(snapshot);
@@ -41,10 +47,10 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
 
   async load(projectId: string): Promise<ProjectChannelSnapshot | undefined> {
     this.#validateProjectId(projectId);
-    const pending = this.#queues.get(projectId);
-    if (pending !== undefined) await pending;
-    const snapshot = await this.#loadSnapshot(projectId);
-    return snapshot === undefined ? undefined : cloneSnapshot(snapshot);
+    return this.#enqueue(projectId, async () => {
+      const snapshot = await this.#loadSnapshot(projectId);
+      return snapshot === undefined ? undefined : cloneSnapshot(snapshot);
+    });
   }
 
   async commit(
@@ -57,6 +63,7 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
       throw new Error('expectedRevision must be a non-negative integer');
     }
     this.#validateChannels(channels);
+    const normalizedChannels = normalizeChannelParticipants(channels, this.#enabledRoles);
 
     return this.#enqueue(projectId, async () => {
       const current = await this.#loadSnapshot(projectId);
@@ -69,14 +76,14 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
         );
       }
 
-      if (canonicalJson(current.channels) === canonicalJson(channels)) {
+      if (canonicalJson(current.channels) === canonicalJson(normalizedChannels)) {
         return { snapshot: cloneSnapshot(current), changed: false };
       }
 
       const snapshot: ProjectChannelSnapshot = {
         projectId,
         revision: current.revision + 1,
-        channels: cloneChannels(channels),
+        channels: cloneChannels(normalizedChannels),
       };
       await this.#writeSnapshot(snapshot);
       return { snapshot: cloneSnapshot(snapshot), changed: true };
@@ -127,12 +134,26 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
     if (!Number.isInteger(snapshot.revision) || snapshot.revision < 0) {
       throw new Error(`invalid project channel JSON at "${path}": invalid revision`);
     }
+    const migration = migrateLegacySubChannels(snapshot.channels);
+    let normalizedChannels: Channel[];
     try {
-      this.#validateChannels(snapshot.channels);
+      this.#validateChannels(migration.channels);
+      normalizedChannels = normalizeChannelParticipants(migration.channels, this.#enabledRoles);
     } catch (error) {
       throw new Error(`invalid project channel JSON at "${path}": invalid channel registry`, {
         cause: error,
       });
+    }
+    if (
+      migration.changed ||
+      canonicalJson(snapshot.channels) !== canonicalJson(normalizedChannels)
+    ) {
+      snapshot = {
+        projectId,
+        revision: snapshot.revision + 1,
+        channels: normalizedChannels,
+      };
+      await this.#writeSnapshot(snapshot);
     }
     return snapshot;
   }
@@ -165,6 +186,34 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
   #validateChannels(channels: unknown): asserts channels is readonly Channel[] {
     assertValidChannelRegistry(channels, this.#enabledRoles);
   }
+}
+
+function migrateLegacySubChannels(channels: unknown): { channels: unknown; changed: boolean } {
+  if (!Array.isArray(channels)) return { channels, changed: false };
+
+  let changed = false;
+  const migrated = structuredClone(channels) as unknown[];
+  for (const value of migrated) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) continue;
+    const channel = value as Record<string, unknown>;
+    if (channel.kind !== 'sub') continue;
+
+    const fields = ['threadId', 'topic', 'createdBy'] as const;
+    const presentCount = fields.filter((field) => field in channel).length;
+    if (presentCount === 0) {
+      if (typeof channel.channelId !== 'string') continue;
+      channel.threadId = `legacy-${channel.channelId}`;
+      channel.topic = `Legacy channel ${channel.channelId}`;
+      channel.createdBy = 'leader';
+      changed = true;
+      continue;
+    }
+    if (presentCount !== fields.length) {
+      throw new Error('partial sub-channel lifecycle metadata');
+    }
+  }
+
+  return { channels: migrated, changed };
 }
 
 function cloneSnapshot(snapshot: ProjectChannelSnapshot): ProjectChannelSnapshot {

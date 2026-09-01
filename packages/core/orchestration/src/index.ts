@@ -1,3 +1,4 @@
+export * from './channel-lifecycle';
 export * from './complexity';
 export * from './coordinator';
 export * from './message-service';

@@ -144,3 +144,37 @@ export function createGetStream(runtime: MessageRuntime) {
     });
   };
 }
+
+export function createGetChannels(runtime: MessageRuntime) {
+  return async function getChannels(request: Request): Promise<Response> {
+    const search = new URL(request.url).searchParams;
+    const projectId = requiredString(search.get('projectId'));
+    const taskId = requiredString(search.get('taskId'));
+    if (!projectId || !taskId) return jsonError('projectId and taskId are required');
+    if ((await runtime.store.load({ projectId, taskId })) === undefined) {
+      return jsonError('task not found; create it through POST /api/tasks first', 404);
+    }
+    const snapshot = await runtime.ensureProjectChannels(projectId);
+    const channels = snapshot.channels
+      .filter((channel) => channel.kind === 'main' || channel.taskId === taskId)
+      .map((channel) =>
+        channel.kind === 'main'
+          ? {
+              channelId: channel.channelId,
+              kind: channel.kind,
+              participants: channel.participants,
+              closed: channel.closed,
+            }
+          : {
+              channelId: channel.channelId,
+              kind: channel.kind,
+              taskId: channel.taskId,
+              threadId: channel.threadId,
+              topic: channel.topic,
+              participants: channel.participants,
+              closed: channel.closed,
+            },
+      );
+    return Response.json({ channels });
+  };
+}

@@ -10,6 +10,8 @@ export type DeferredLeaderIntent =
 
 export type LeaderIntent =
   | { kind: 'assign'; targetRole: string; instruction: string }
+  | { kind: 'open_sub_channel'; requestedRoles: string[]; topic: string }
+  | { kind: 'close_sub_channel'; channelId: string }
   | { kind: 'chat'; text: string }
   | {
       kind: 'deferred';
@@ -64,14 +66,11 @@ const DEFERRED_COMMANDS: Readonly<
     targetPhase: 8,
     reason: 'objection resolution is implemented in Phase 8',
   },
-  '/channel': {
-    requestedKind: 'open_sub_channel',
-    targetPhase: 6,
-    reason: 'dynamic sub channels are implemented in Phase 6',
-  },
 };
 
 const ROLE_MENTION = /^@[A-Za-z][A-Za-z0-9_-]*$/;
+const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const SAFE_CHANNEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 export function parseLeaderIntent(display: string): LeaderIntent {
   const text = display.trim();
@@ -97,6 +96,7 @@ export function parseLeaderIntent(display: string): LeaderIntent {
   }
 
   if (firstToken.startsWith('/')) {
+    if (firstToken.toLowerCase() === '/channel') return parseChannelIntent(remainder);
     const deferred = DEFERRED_COMMANDS[firstToken.toLowerCase()];
     if (deferred === undefined) {
       return { kind: 'invalid', reason: `unknown leader command "${firstToken}"` };
@@ -131,6 +131,9 @@ export function planLeaderIntent(
         },
         mutations: [],
       };
+    case 'open_sub_channel':
+    case 'close_sub_channel':
+      return { intent, action: { status: 'applied' }, mutations: [] };
     case 'assign': {
       const role = roster.find((entry) => entry.role.toUpperCase() === intent.targetRole);
       if (role === undefined) {
@@ -152,6 +155,35 @@ export function planLeaderIntent(
       };
     }
   }
+}
+
+function parseChannelIntent(remainder: string): LeaderIntent {
+  const [operation, argument, ...tail] = remainder.split(/\s+/);
+  if (operation === 'open') {
+    const topic = tail.join(' ').trim();
+    const requestedRoles = (argument ?? '').split(',').map((role) => role.toUpperCase());
+    if (
+      topic.length === 0 ||
+      requestedRoles.length === 0 ||
+      requestedRoles.some((role) => !ROLE_NAME.test(role))
+    ) {
+      return {
+        kind: 'invalid',
+        reason: 'channel open syntax is /channel open ROLE[,ROLE...] <topic>',
+      };
+    }
+    return { kind: 'open_sub_channel', requestedRoles, topic };
+  }
+  if (operation === 'close' && argument !== undefined && tail.length === 0) {
+    if (!SAFE_CHANNEL_ID.test(argument)) {
+      return { kind: 'invalid', reason: 'channelId must be a safe non-empty segment' };
+    }
+    return { kind: 'close_sub_channel', channelId: argument };
+  }
+  return {
+    kind: 'invalid',
+    reason: 'channel syntax is /channel open ROLE[,ROLE...] <topic> or /channel close <channelId>',
+  };
 }
 
 function rejected(intent: LeaderIntent, reason: string): LeaderIntentPlan {

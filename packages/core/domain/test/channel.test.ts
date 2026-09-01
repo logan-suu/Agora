@@ -9,6 +9,9 @@ function subChannel(overrides: Partial<Channel> = {}): Channel {
     channelId: 'sub-task-a-coder-tester',
     kind: 'sub',
     taskId: 'task-a',
+    threadId: 'thread-a',
+    topic: 'Investigate task A',
+    createdBy: 'CODER',
     participants: ['leader', 'CODER', 'TESTER'],
     localContext: [{ taskId: 'task-a', msgId: 'message-1' }],
     closed: false,
@@ -72,6 +75,29 @@ describe('Channel registry invariants', () => {
       name: 'a sub channel without a task scope',
       channels: [createMainChannel(ENABLED_ROLES), subChannel({ taskId: '' })],
       error: 'sub channel taskId must be a safe non-empty segment',
+    },
+    {
+      name: 'a sub channel without a thread identity',
+      channels: [createMainChannel(ENABLED_ROLES), subChannel({ threadId: '' })],
+      error: 'sub channel threadId must be a safe non-empty segment',
+    },
+    {
+      name: 'a sub channel without a topic',
+      channels: [createMainChannel(ENABLED_ROLES), subChannel({ topic: '' })],
+      error: 'sub channel topic must be a non-empty string',
+    },
+    {
+      name: 'a sub channel created by a disabled role',
+      channels: [createMainChannel(ENABLED_ROLES), subChannel({ createdBy: 'REVIEWER' })],
+      error: 'sub channel "sub-task-a-coder-tester" createdBy "REVIEWER" is not enabled',
+    },
+    {
+      name: 'a sub channel whose creator is not a participant',
+      channels: [
+        createMainChannel(ENABLED_ROLES),
+        subChannel({ createdBy: 'COORDINATOR', participants: ['leader', 'CODER', 'TESTER'] }),
+      ],
+      error: 'sub channel "sub-task-a-coder-tester" must include creator "COORDINATOR"',
     },
     {
       name: 'an unscoped local context reference',

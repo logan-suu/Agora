@@ -11,7 +11,11 @@ import { JsonTaskStateStore } from '@agora/runtime-state';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../src/server/channel-stream';
-import { createGetStream, createPostMessage } from '../src/server/message-handlers';
+import {
+  createGetChannels,
+  createGetStream,
+  createPostMessage,
+} from '../src/server/message-handlers';
 import { createMessageRuntime, getOrCreateMessageRuntime } from '../src/server/message-runtime';
 
 const decoder = new TextDecoder();
@@ -35,6 +39,197 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('persists a structured Agent channel action through the Web composition boundary', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    const state = await runtime.initialize(scope, 'Task task-a');
+
+    await runtime.handleWorkerOutput(state, 'CODER', {
+      channelAction: {
+        kind: 'open_sub_channel',
+        actionId: 'assistant-action-1',
+        requestedRoles: ['TESTER'],
+        topic: 'Reproduce the cache race',
+      },
+    });
+
+    await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 1,
+      channels: [
+        { channelId: 'main' },
+        {
+          channelId: 'sub-6-task-a-assistant-action-1',
+          createdBy: 'CODER',
+          participants: ['leader', 'CODER', 'TESTER'],
+        },
+      ],
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      messages: [
+        {
+          msgId: 'channel-open:sub-6-task-a-assistant-action-1',
+          payload: { kind: 'sub_channel_opened' },
+        },
+      ],
+    });
+  });
+
+  it('opens, lists, and closes a sub-channel through Leader messages', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const postMessage = createPostMessage(runtime);
+
+    const opened = await postMessage(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'leader-open-1',
+        display: '/channel open TESTER,CODER Investigate the cache race',
+      }),
+    );
+    await expect(opened.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'applied' },
+    });
+
+    const listed = await createGetChannels(runtime)(
+      new Request('http://localhost/api/channels?projectId=project-a&taskId=task-a'),
+    );
+    await expect(listed.json()).resolves.toEqual({
+      channels: [
+        {
+          channelId: 'main',
+          kind: 'main',
+          participants: ['leader', 'COORDINATOR', 'PM', 'ARCHITECT', 'CODER', 'TESTER', 'REVIEWER'],
+          closed: false,
+        },
+        {
+          channelId: 'sub-6-task-a-leader-open-1',
+          kind: 'sub',
+          taskId: 'task-a',
+          threadId: 'leader-open-1',
+          topic: 'Investigate the cache race',
+          participants: ['leader', 'CODER', 'TESTER'],
+          closed: false,
+        },
+      ],
+    });
+
+    const closed = await postMessage(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'leader-close-1',
+        display: '/channel close sub-6-task-a-leader-open-1',
+      }),
+    );
+    await expect(closed.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'applied' },
+    });
+    await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 2,
+      channels: [{ channelId: 'main' }, { channelId: 'sub-6-task-a-leader-open-1', closed: true }],
+    });
+  });
+
+  it('persists a rejected Leader message when a channel lifecycle request is invalid', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+
+    const response = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'leader-invalid-open',
+        display: '/channel open UNKNOWN Investigate the cache race',
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'rejected', reason: expect.stringContaining('UNKNOWN') },
+    });
+    await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({ revision: 0 });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      messages: [
+        {
+          msgId: 'leader-invalid-open',
+          payload: { action: { status: 'rejected' } },
+        },
+      ],
+    });
+  });
+
+  it('checks a replayed Leader msgId before applying any channel lifecycle side effect', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const postMessage = createPostMessage(runtime);
+
+    await postMessage(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'stable-message',
+        display: 'Original text',
+      }),
+    );
+    const replay = await postMessage(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'stable-message',
+        display: '/channel open TESTER This must not execute',
+      }),
+    );
+
+    await expect(replay.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'none' },
+      published: false,
+    });
+    await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 0,
+      channels: [{ channelId: 'main' }],
+    });
+  });
+
+  it('omits local context and bubbled summary from the channel list DTO', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const snapshot = await runtime.channels.load(scope.projectId);
+    if (snapshot === undefined) throw new Error('expected initialized project channels');
+    await runtime.channels.commit(scope.projectId, snapshot.revision, [
+      ...snapshot.channels,
+      {
+        channelId: 'sub-private',
+        kind: 'sub',
+        taskId: scope.taskId,
+        threadId: 'private-thread',
+        topic: 'Private topic',
+        createdBy: 'leader',
+        participants: ['leader', 'CODER'],
+        localContext: [{ taskId: scope.taskId, msgId: 'private-message' }],
+        bubbledSummary: 'PRIVATE SUMMARY',
+        closed: true,
+      },
+    ]);
+
+    const response = await createGetChannels(runtime)(
+      new Request('http://localhost/api/channels?projectId=project-a&taskId=task-a'),
+    );
+    const body = await response.json();
+
+    expect(JSON.stringify(body)).not.toContain('PRIVATE SUMMARY');
+    expect(JSON.stringify(body)).not.toContain('private-message');
+    expect(body).toMatchObject({ channels: [{ channelId: 'main' }, { channelId: 'sub-private' }] });
+  });
+
   it('reuses one process runtime across separately bundled route modules', async () => {
     const root = await temporaryRoot();
     const registry: { messageRuntime: ReturnType<typeof createMessageRuntime> | undefined } = {
@@ -114,6 +309,9 @@ describe('persisted HTTP + SSE message flow', () => {
         channelId: 'sub-task-a',
         kind: 'sub',
         taskId: scope.taskId,
+        threadId: 'legacy-test-sub-task-a',
+        topic: 'Private inspection',
+        createdBy: 'leader',
         participants: ['leader', 'CODER'],
         localContext: [],
         closed: false,
@@ -151,6 +349,9 @@ describe('persisted HTTP + SSE message flow', () => {
         channelId: 'other-task',
         kind: 'sub',
         taskId: 'task-b',
+        threadId: 'other-task-thread',
+        topic: 'Other task',
+        createdBy: 'leader',
         participants: ['leader', 'CODER'],
         localContext: [],
         closed: false,
@@ -159,6 +360,9 @@ describe('persisted HTTP + SSE message flow', () => {
         channelId: 'closed-task-a',
         kind: 'sub',
         taskId: 'task-a',
+        threadId: 'closed-task-thread',
+        topic: 'Closed task',
+        createdBy: 'leader',
         participants: ['leader', 'CODER'],
         localContext: [],
         closed: true,

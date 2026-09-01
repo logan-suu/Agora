@@ -51,13 +51,36 @@ describe('parseLeaderIntent', () => {
     ['/approve gate-1', 'human_gate_resolution', 8],
     ['/reject gate-1', 'human_gate_resolution', 8],
     ['/resolve-objection obj-1', 'objection_resolution', 8],
-    ['/channel CODER TESTER', 'open_sub_channel', 6],
   ] as const)('maps %s to an explicit deferred phase', (display, requestedKind, targetPhase) => {
     expect(parseLeaderIntent(display)).toMatchObject({
       kind: 'deferred',
       requestedKind,
       targetPhase,
     });
+  });
+
+  it('parses strict Phase 6 channel open and close commands', () => {
+    expect(parseLeaderIntent('/channel open tester,coder Investigate the cache race')).toEqual({
+      kind: 'open_sub_channel',
+      requestedRoles: ['TESTER', 'CODER'],
+      topic: 'Investigate the cache race',
+    });
+    expect(parseLeaderIntent('/channel close sub-task-a-action-1')).toEqual({
+      kind: 'close_sub_channel',
+      channelId: 'sub-task-a-action-1',
+    });
+  });
+
+  it.each([
+    '/channel',
+    '/channel open',
+    '/channel open CODER',
+    '/channel open CODER, Cache race',
+    '/channel close',
+    '/channel close sub-a trailing',
+    '/channel archive sub-a',
+  ])('rejects malformed channel command %s', (display) => {
+    expect(parseLeaderIntent(display)).toMatchObject({ kind: 'invalid' });
   });
 
   it('rejects unknown slash commands instead of silently treating them as chat', () => {
@@ -114,8 +137,10 @@ describe('planLeaderIntent', () => {
       action: { status: 'none' },
       mutations: [],
     });
-    expect(planLeaderIntent(parseLeaderIntent('/channel CODER'), state, roster)).toMatchObject({
-      action: { status: 'deferred', targetPhase: 6 },
+    expect(
+      planLeaderIntent(parseLeaderIntent('/channel open CODER investigate'), state, roster),
+    ).toMatchObject({
+      action: { status: 'applied' },
       mutations: [],
     });
     expect(planLeaderIntent(parseLeaderIntent('/unknown'), state, roster)).toMatchObject({
