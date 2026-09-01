@@ -1,3 +1,4 @@
+export * from './channel';
 export * from './coordination-ledger';
 export * from './handoff';
 export * from './ledger';

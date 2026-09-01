@@ -113,7 +113,7 @@ R5  阶段 0–9 所有 Worker 强制薄执行器（Harness）；RoleSpec.extern
 R6  阶段 0–N KnowledgeBase 只读（Write-Block），Librarian 仅空桩，不引入向量检索依赖；sliceKB 阶段 0 返回空对象
 R7  阶段 0 沙箱只用 LocalTempSandbox；文件操作限定沙箱目录内；run 默认超时 30s；dockerode/simple-git 为 optionalDependencies
 R8  分层依赖倒置：L1 core/domain 禁止任何 I/O（fs/http/child_process）；L2 编排只能调用 L3 端口接口；业务代码不直接 child_process（沙箱包内除外且经 MCP server 暴露）
-R9  接口先行：Executor/SandboxManager 自阶段 0 定稿；TaskStateStore/MessageBus 在首次落地任务 5.3 定稿；此后阶段退化只改实现体不改签名。D6 规定 MessageBus 不修改 State
+R9  接口先行：Executor/SandboxManager 自阶段 0 定稿；TaskStateStore/MessageBus 在首次落地任务 5.3 定稿；ProjectChannelStore 在首次落地任务 6.1 定稿；此后阶段退化只改实现体不改签名。D6 规定 MessageBus 不修改 State 或保存 inbox
 R10 目录与命名严格对齐架构文档 L1-L4 映射；State 字段 camelCase；角色用字面量联合 'COORDINATOR'|'PM'|'ARCHITECT'|'CODER'|'TESTER'|'REVIEWER'
 R11 测试红线：禁止弱化断言或 mock 绕过真实代码让测试变绿；必须分析根因（业务 bug→修代码；测试有误→修测试）；mock 必须在文件头注明原因；真实依赖优先。澄清：单元测试中 mock 外部依赖允许（注明原因）；G5 执行链路验收不得以 test double 替代真实实现；LocalTempSandbox 属真实实现而非 mock
 R12 有代码变更必须同步受影响文档；重大决策更新蓝图 §21 并打 [YYYY-MM-DD 架构决策更新] 标记；文档冲突作为 GitHub Issue 记录，不得写入 task-status.json
@@ -135,7 +135,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 前端          Next.js 15 + React 19（Phase 5 起）
 实时通信      SSE（收）+ HTTP POST（发），禁用 WebSocket
 持久化        文件系统 JSON/JSONL（.data/）为默认；Phase 5 TaskStateStore 原子快照强制落地；SQLite 仅复杂查询时可选
-部署          Phase 5–9 为单实例自托管后端；Vercel 仅前端；完整 Serverless/水平扩展须外部耐久存储+跨实例事件传输（D8）
+部署          Phase 5–9 为单实例自托管后端；Vercel 仅前端；完整 Serverless/水平扩展须外部耐久 TaskStateStore + ProjectChannelStore + 跨实例事件传输（D8）
 测试          Vitest 3.x
 代码质量      Biome 2.x（Lint + Format + Import 排序一体）
 模型路由      经 Harness agent/request：规划/评审强推理模型，编码代码专精模型
@@ -208,6 +208,7 @@ L1 领域模型层   packages/core/domain                   State/Reducer/RoleSp
 L2 编排应用层   packages/core/orchestration            Orchestrator 主循环/Coordinator 路由/complexity
                 packages/core/preemption               Preemptor 配合式抢占信号控制
 L3 端口抽象层   packages/comm/bus                      MessageBus 接口（Port）
+                packages/comm/channels                 ProjectChannelStore 端口 + Channel/Inbox 读模型
                 runtime/executor/base.ts               Executor 接口
                 runtime/sandbox                        SandboxManager 接口
                 runtime/state                          TaskStateStore 接口
@@ -216,7 +217,7 @@ L4 基础设施层   runtime/executor/harness-executor.ts   薄执行器（P0-P9
                 runtime/sandbox/local-temp-sandbox.ts  LocalTempSandbox（P0）/ docker(P1+)
                 runtime/state/json-task-state-store.ts JSON State 原子快照适配器（P5）
                 packages/tools/*                       MCP servers
-数据与配置      packages/comm/channels                 Channel/Inbox 管理（基于 State 的 Adapter）
+数据与配置      packages/comm/channels                 ProjectChannelStore JSON 适配器 + Channel/Inbox 管理
                 packages/roles/definitions             RoleSpec YAML/TS；packages/shared 类型常量
 交互层          apps/web                               Next.js 群聊前端（P5+）
 ```

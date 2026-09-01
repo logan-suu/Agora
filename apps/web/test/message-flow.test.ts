@@ -100,6 +100,99 @@ describe('persisted HTTP + SSE message flow', () => {
     ).toBe(true);
   });
 
+  it('persists the project main registry and addresses a registered sub channel', async () => {
+    const root = await temporaryRoot();
+    const runtime = createMessageRuntime(root, new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const initial = await runtime.channels.load(scope.projectId);
+    if (initial === undefined) throw new Error('expected initialized project channels');
+    await runtime.channels.commit(scope.projectId, initial.revision, [
+      ...initial.channels,
+      {
+        channelId: 'sub-task-a',
+        kind: 'sub',
+        taskId: scope.taskId,
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: false,
+      },
+    ]);
+
+    const response = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'sub-task-a',
+        msgId: 'leader-sub-message',
+        display: 'Please inspect this privately.',
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      messages: [{ msgId: 'leader-sub-message', channelId: 'sub-task-a', fromRole: 'leader' }],
+    });
+    await expect(createMessageRuntime(root).channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 1,
+      channels: [{ channelId: 'main' }, { channelId: 'sub-task-a' }],
+    });
+  });
+
+  it('rejects invalid browser Channel scope without persisting or streaming a message', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const initial = await runtime.channels.load(scope.projectId);
+    if (initial === undefined) throw new Error('expected initialized project channels');
+    await runtime.channels.commit(scope.projectId, initial.revision, [
+      ...initial.channels,
+      {
+        channelId: 'other-task',
+        kind: 'sub',
+        taskId: 'task-b',
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: false,
+      },
+      {
+        channelId: 'closed-task-a',
+        kind: 'sub',
+        taskId: 'task-a',
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: true,
+      },
+    ]);
+    const streamed: unknown[] = [];
+    const unsubscribe = runtime.stream.subscribe(
+      { ...scope, channelId: 'closed-task-a' },
+      (event) => streamed.push(event),
+    );
+
+    for (const channelId of ['missing', 'other-task', 'closed-task-a']) {
+      const response = await createPostMessage(runtime)(
+        postRequest({
+          ...scope,
+          channelId,
+          msgId: `invalid-${channelId}`,
+          display: 'This must be rejected.',
+        }),
+      );
+      expect(response.status).toBe(400);
+    }
+
+    const invalidStream = await createGetStream(runtime)(
+      new Request(
+        'http://localhost/api/stream?projectId=project-a&taskId=task-a&channelId=other-task',
+      ),
+    );
+    expect(invalidStream.status).toBe(400);
+    expect(runtime.stream.subscriberCount({ ...scope, channelId: 'other-task' })).toBe(0);
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({ messages: [] });
+    expect(streamed).toEqual([]);
+    unsubscribe();
+  });
+
   it('server-stamps leader, persists payload, and streams only the display envelope', async () => {
     const stream = new ChannelStream();
     const runtime = createMessageRuntime(await temporaryRoot(), stream);

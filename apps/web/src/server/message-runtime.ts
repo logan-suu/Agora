@@ -1,7 +1,15 @@
 import { basename, dirname, resolve } from 'node:path';
 import type { MessageBus, MessageCommitted } from '@agora/comm-bus';
 import { toDisplayMessageEvent } from '@agora/comm-bus';
-import type { AppState, Message, Mutation, RoleSpec } from '@agora/core-domain';
+import { JsonProjectChannelStore } from '@agora/comm-channels';
+import {
+  type AppState,
+  createMainChannel,
+  type Message,
+  type Mutation,
+  type RoleId,
+  type RoleSpec,
+} from '@agora/core-domain';
 import {
   type MessageCommitResult,
   MessageService,
@@ -36,23 +44,29 @@ class SseMessageBus implements MessageBus {
 export class MessageRuntime {
   readonly root: string;
   readonly store: JsonTaskStateStore;
+  readonly channels: JsonProjectChannelStore;
   readonly stream: ChannelStream;
   readonly #service: MessageService;
   readonly #roster: readonly RoleSpec[];
+  readonly #enabledRoles: readonly RoleId[];
 
   constructor(root: string, stream: ChannelStream, roster: readonly RoleSpec[]) {
     this.root = root;
     this.store = new JsonTaskStateStore(root);
+    this.#enabledRoles = roster.filter((spec) => spec.enabled).map((spec) => spec.role);
+    this.channels = new JsonProjectChannelStore(root, this.#enabledRoles);
     this.stream = stream;
-    this.#service = new MessageService(this.store, new SseMessageBus(stream));
+    this.#service = new MessageService(this.store, new SseMessageBus(stream), this.channels);
     this.#roster = roster;
   }
 
-  initialize(scope: TaskScope, goal: string): Promise<AppState> {
+  async initialize(scope: TaskScope, goal: string): Promise<AppState> {
+    await this.#initializeChannels(scope.projectId);
     return this.#service.initialize(scope, goal);
   }
 
-  initializeState(scope: TaskScope, state: AppState): Promise<AppState> {
+  async initializeState(scope: TaskScope, state: AppState): Promise<AppState> {
+    await this.#initializeChannels(scope.projectId);
     return this.store.initialize(scope, state);
   }
 
@@ -93,6 +107,10 @@ export class MessageRuntime {
     });
 
     return { ...result, action: actionFrom(result.message) };
+  }
+
+  #initializeChannels(projectId: string) {
+    return this.channels.initialize(projectId, [createMainChannel(this.#enabledRoles)]);
   }
 }
 

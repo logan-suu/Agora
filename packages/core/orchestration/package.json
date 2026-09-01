@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@agora/comm-bus": "workspace:*",
+    "@agora/comm-channels": "workspace:*",
     "@agora/core-domain": "workspace:*",
     "@agora/runtime-executor": "workspace:*",
     "@agora/runtime-state": "workspace:*"
