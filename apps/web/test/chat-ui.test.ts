@@ -114,6 +114,15 @@ describe('chat UI model', () => {
     ).rejects.toThrow('task backend unavailable');
   });
 
+  it('preserves the HTTP status when a channel error body is not JSON', async () => {
+    await expect(
+      fetchChannelRegistry(
+        '/api/channels',
+        async () => new Response('Service unavailable', { status: 503 }),
+      ),
+    ).rejects.toThrow('Channel refresh failed (503)');
+  });
+
   it('loads only validated channel display metadata', async () => {
     await expect(
       fetchChannelRegistry('/api/channels', async () =>

@@ -58,7 +58,7 @@ describe('persisted HTTP + SSE message flow', () => {
       channels: [
         { channelId: 'main' },
         {
-          channelId: 'sub-task-a-assistant-action-1',
+          channelId: 'sub-6-task-a-assistant-action-1',
           createdBy: 'CODER',
           participants: ['leader', 'CODER', 'TESTER'],
         },
@@ -67,7 +67,7 @@ describe('persisted HTTP + SSE message flow', () => {
     await expect(runtime.store.load(scope)).resolves.toMatchObject({
       messages: [
         {
-          msgId: 'sub-task-a-assistant-action-1-opened',
+          msgId: 'channel-open:sub-6-task-a-assistant-action-1',
           payload: { kind: 'sub_channel_opened' },
         },
       ],
@@ -105,12 +105,11 @@ describe('persisted HTTP + SSE message flow', () => {
           closed: false,
         },
         {
-          channelId: 'sub-task-a-leader-open-1',
+          channelId: 'sub-6-task-a-leader-open-1',
           kind: 'sub',
           taskId: 'task-a',
           threadId: 'leader-open-1',
           topic: 'Investigate the cache race',
-          createdBy: 'leader',
           participants: ['leader', 'CODER', 'TESTER'],
           closed: false,
         },
@@ -122,7 +121,7 @@ describe('persisted HTTP + SSE message flow', () => {
         ...scope,
         channelId: 'main',
         msgId: 'leader-close-1',
-        display: '/channel close sub-task-a-leader-open-1',
+        display: '/channel close sub-6-task-a-leader-open-1',
       }),
     );
     await expect(closed.json()).resolves.toMatchObject({
@@ -131,7 +130,7 @@ describe('persisted HTTP + SSE message flow', () => {
     });
     await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({
       revision: 2,
-      channels: [{ channelId: 'main' }, { channelId: 'sub-task-a-leader-open-1', closed: true }],
+      channels: [{ channelId: 'main' }, { channelId: 'sub-6-task-a-leader-open-1', closed: true }],
     });
   });
 
@@ -163,6 +162,72 @@ describe('persisted HTTP + SSE message flow', () => {
         },
       ],
     });
+  });
+
+  it('checks a replayed Leader msgId before applying any channel lifecycle side effect', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const postMessage = createPostMessage(runtime);
+
+    await postMessage(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'stable-message',
+        display: 'Original text',
+      }),
+    );
+    const replay = await postMessage(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'stable-message',
+        display: '/channel open TESTER This must not execute',
+      }),
+    );
+
+    await expect(replay.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'none' },
+      published: false,
+    });
+    await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 0,
+      channels: [{ channelId: 'main' }],
+    });
+  });
+
+  it('omits local context and bubbled summary from the channel list DTO', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const snapshot = await runtime.channels.load(scope.projectId);
+    if (snapshot === undefined) throw new Error('expected initialized project channels');
+    await runtime.channels.commit(scope.projectId, snapshot.revision, [
+      ...snapshot.channels,
+      {
+        channelId: 'sub-private',
+        kind: 'sub',
+        taskId: scope.taskId,
+        threadId: 'private-thread',
+        topic: 'Private topic',
+        createdBy: 'leader',
+        participants: ['leader', 'CODER'],
+        localContext: [{ taskId: scope.taskId, msgId: 'private-message' }],
+        bubbledSummary: 'PRIVATE SUMMARY',
+        closed: true,
+      },
+    ]);
+
+    const response = await createGetChannels(runtime)(
+      new Request('http://localhost/api/channels?projectId=project-a&taskId=task-a'),
+    );
+    const body = await response.json();
+
+    expect(JSON.stringify(body)).not.toContain('PRIVATE SUMMARY');
+    expect(JSON.stringify(body)).not.toContain('private-message');
+    expect(body).toMatchObject({ channels: [{ channelId: 'main' }, { channelId: 'sub-private' }] });
   });
 
   it('reuses one process runtime across separately bundled route modules', async () => {

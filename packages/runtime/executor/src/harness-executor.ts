@@ -368,7 +368,8 @@ export class HarnessExecutor implements Executor {
       fromRole: this.spec.role,
       type: 'chat' as const,
       payload: channelAction === undefined ? {} : { channelAction },
-      display: text,
+      display:
+        text.length > 0 || channelAction === undefined ? text : channelActionDisplay(channelAction),
       ts: Date.now(),
     };
   }
@@ -399,6 +400,7 @@ type ParsedChannelAction =
   | {
       kind: 'open_sub_channel';
       actionId: string;
+      threadId?: string;
       requestedRoles: string[];
       topic: string;
     }
@@ -446,7 +448,12 @@ function validateChannelAction(value: unknown, actionId: string): ParsedChannelA
   }
   const record = value as Record<string, unknown>;
   if (record.kind === 'open_sub_channel') {
-    assertExactKeys(record, ['kind', 'requestedRoles', 'topic']);
+    assertExactKeys(
+      record,
+      record.threadId === undefined
+        ? ['kind', 'requestedRoles', 'topic']
+        : ['kind', 'requestedRoles', 'threadId', 'topic'],
+    );
     if (
       !Array.isArray(record.requestedRoles) ||
       !record.requestedRoles.every((role) => typeof role === 'string' && role.length > 0)
@@ -456,9 +463,16 @@ function validateChannelAction(value: unknown, actionId: string): ParsedChannelA
     if (typeof record.topic !== 'string' || record.topic.length === 0) {
       throw new Error('invalid agora channel action: topic must be a non-empty string');
     }
+    if (
+      record.threadId !== undefined &&
+      (typeof record.threadId !== 'string' || !SAFE_CHANNEL_SEGMENT.test(record.threadId))
+    ) {
+      throw new Error('invalid agora channel action: threadId must be a safe non-empty segment');
+    }
     return {
       kind: 'open_sub_channel',
       actionId,
+      ...(record.threadId === undefined ? {} : { threadId: record.threadId }),
       requestedRoles: [...record.requestedRoles],
       topic: record.topic,
     };
@@ -471,6 +485,14 @@ function validateChannelAction(value: unknown, actionId: string): ParsedChannelA
     return { kind: 'close_sub_channel', actionId, channelId: record.channelId };
   }
   throw new Error('invalid agora channel action: unknown kind');
+}
+
+const SAFE_CHANNEL_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+function channelActionDisplay(action: ParsedChannelAction): string {
+  return action.kind === 'open_sub_channel'
+    ? `Requested opening a sub-channel: ${action.topic}.`
+    : `Requested closing sub-channel ${action.channelId}.`;
 }
 
 function assertExactKeys(record: Record<string, unknown>, expected: readonly string[]): void {

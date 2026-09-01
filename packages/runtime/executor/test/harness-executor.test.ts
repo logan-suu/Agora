@@ -69,7 +69,7 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
 
   it('extracts one strict final channel action into output and payload while stripping it from display', async () => {
     const fake = new FakeLlmAdapter(
-      'I need a focused test thread.\n<agora-channel-action>{"kind":"open_sub_channel","requestedRoles":["TESTER"],"topic":"Reproduce cache race"}</agora-channel-action>',
+      'I need a focused test thread.\n<agora-channel-action>{"kind":"open_sub_channel","threadId":"cache-investigation","requestedRoles":["TESTER"],"topic":"Reproduce cache race"}</agora-channel-action>',
     );
     const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
     try {
@@ -88,11 +88,36 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
         channelAction: {
           kind: 'open_sub_channel',
           actionId: message.msgId,
+          threadId: 'cache-investigation',
           requestedRoles: ['TESTER'],
           topic: 'Reproduce cache race',
         },
       });
       expect(message.display).toBe('I need a focused test thread.');
+      expect(message.payload).toEqual({ channelAction: result.output.channelAction });
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('keeps a control-only audit message with a deterministic nonempty display', async () => {
+    const fake = new FakeLlmAdapter(
+      '<agora-channel-action>{"kind":"close_sub_channel","channelId":"sub-cache"}</agora-channel-action>',
+    );
+    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+    try {
+      const result = await executor.step({
+        sessionId: 'ses-control-only',
+        view: project(codingState(), 'CODER', PHASE0_ROSTER),
+      });
+      const mutation = result.mutations[0];
+      if (mutation?.op !== 'append' || mutation.field !== 'messages') {
+        throw new Error('expected assistant message mutation');
+      }
+      const message = mutation.value as Message;
+
+      expect(message.display).toBe('Requested closing sub-channel sub-cache.');
+      expect(message.display).not.toContain('agora-channel-action');
       expect(message.payload).toEqual({ channelAction: result.output.channelAction });
     } finally {
       await executor.dispose();

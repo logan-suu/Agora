@@ -157,10 +157,24 @@ export function createGetChannels(runtime: MessageRuntime) {
     const snapshot = await runtime.ensureProjectChannels(projectId);
     const channels = snapshot.channels
       .filter((channel) => channel.kind === 'main' || channel.taskId === taskId)
-      .map(({ localContext: _localContext, bubbledSummary, ...channel }) => ({
-        ...channel,
-        ...(bubbledSummary === undefined ? {} : { bubbledSummary }),
-      }));
+      .map((channel) =>
+        channel.kind === 'main'
+          ? {
+              channelId: channel.channelId,
+              kind: channel.kind,
+              participants: channel.participants,
+              closed: channel.closed,
+            }
+          : {
+              channelId: channel.channelId,
+              kind: channel.kind,
+              taskId: channel.taskId,
+              threadId: channel.threadId,
+              topic: channel.topic,
+              participants: channel.participants,
+              closed: channel.closed,
+            },
+      );
     return Response.json({ channels });
   };
 }

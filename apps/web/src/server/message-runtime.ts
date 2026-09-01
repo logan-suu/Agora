@@ -52,6 +52,7 @@ export class MessageRuntime {
   readonly #lifecycle: ChannelLifecycleService;
   readonly #roster: readonly RoleSpec[];
   readonly #enabledRoles: readonly RoleId[];
+  readonly #leaderQueues = new Map<string, Promise<void>>();
 
   constructor(root: string, stream: ChannelStream, roster: readonly RoleSpec[]) {
     this.root = root;
@@ -95,6 +96,29 @@ export class MessageRuntime {
       ts: number;
     },
   ): Promise<MessageCommitResult & { action: LeaderActionStatus }> {
+    return this.#enqueueLeader(scope, () => this.#commitLeaderMessage(scope, input));
+  }
+
+  async #commitLeaderMessage(
+    scope: TaskScope,
+    input: {
+      msgId: string;
+      channelId: string;
+      display: string;
+      ts: number;
+    },
+  ): Promise<MessageCommitResult & { action: LeaderActionStatus }> {
+    const current = await this.store.load(scope);
+    if (current === undefined) {
+      throw new Error(
+        `task state is not initialized for projectId "${scope.projectId}" and taskId "${scope.taskId}"`,
+      );
+    }
+    const existing = current.messages.find((message) => message.msgId === input.msgId);
+    if (existing !== undefined) {
+      return { state: current, published: false, message: existing, action: actionFrom(existing) };
+    }
+
     const intent = parseLeaderIntent(input.display);
     let lifecycleRejection: LeaderActionStatus | undefined;
     try {
@@ -113,7 +137,12 @@ export class MessageRuntime {
         if (input.channelId !== 'main') {
           throw new ChannelLifecycleRejectedError('channel lifecycle commands must use main');
         }
-        await this.#lifecycle.close({ scope, actor: 'leader', channelId: intent.channelId });
+        await this.#lifecycle.close({
+          scope,
+          actor: 'leader',
+          actionId: input.msgId,
+          channelId: intent.channelId,
+        });
       }
     } catch (error) {
       if (!(error instanceof ChannelLifecycleRejectedError)) throw error;
@@ -154,6 +183,7 @@ export class MessageRuntime {
     if (record.kind === 'open_sub_channel') {
       if (
         typeof record.actionId !== 'string' ||
+        (record.threadId !== undefined && typeof record.threadId !== 'string') ||
         !Array.isArray(record.requestedRoles) ||
         !record.requestedRoles.every((requested) => typeof requested === 'string') ||
         typeof record.topic !== 'string'
@@ -164,6 +194,7 @@ export class MessageRuntime {
         scope,
         actor: role,
         actionId: record.actionId,
+        ...(record.threadId === undefined ? {} : { threadId: record.threadId }),
         requestedRoles: record.requestedRoles,
         topic: record.topic,
       });
@@ -173,10 +204,35 @@ export class MessageRuntime {
       if (typeof record.channelId !== 'string') {
         throw new Error('invalid structured close_sub_channel output');
       }
-      await this.#lifecycle.close({ scope, actor: role, channelId: record.channelId });
+      if (typeof record.actionId !== 'string') {
+        throw new Error('invalid structured close_sub_channel output');
+      }
+      await this.#lifecycle.close({
+        scope,
+        actor: role,
+        actionId: record.actionId,
+        channelId: record.channelId,
+      });
       return;
     }
     throw new Error('unknown structured channel action output');
+  }
+
+  async #enqueueLeader<T>(scope: TaskScope, operation: () => Promise<T>): Promise<T> {
+    const key = `${scope.projectId}\u0000${scope.taskId}`;
+    const previous = this.#leaderQueues.get(key) ?? Promise.resolve();
+    const result = previous.catch(() => undefined).then(operation);
+    const tail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.#leaderQueues.set(key, tail);
+
+    try {
+      return await result;
+    } finally {
+      if (this.#leaderQueues.get(key) === tail) this.#leaderQueues.delete(key);
+    }
   }
 }
 

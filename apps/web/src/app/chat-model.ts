@@ -84,7 +84,14 @@ export async function fetchChannelRegistry(
   fetcher: typeof fetch = fetch,
 ): Promise<ChannelView[]> {
   const response = await fetcher(url);
-  const body = (await response.json()) as { channels?: unknown; error?: string };
+  let body: { channels?: unknown; error?: string } | undefined;
+  try {
+    body = (await response.json()) as { channels?: unknown; error?: string };
+  } catch (error) {
+    if (!response.ok)
+      throw new Error(`Channel refresh failed (${response.status})`, { cause: error });
+    throw new Error('invalid Channel registry response', { cause: error });
+  }
   if (!response.ok) throw new Error(body.error ?? `Channel refresh failed (${response.status})`);
   if (!Array.isArray(body.channels)) throw new Error('invalid Channel registry response');
 

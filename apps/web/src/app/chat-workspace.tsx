@@ -467,6 +467,7 @@ export function ChatWorkspace({
   >('idle');
   const [submitting, setSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string>();
+  const [channelRefreshError, setChannelRefreshError] = useState<string>();
   const [submissionNotice, setSubmissionNotice] = useState<LeaderActionNotice>();
   const pendingSubmission = React.useRef<PendingMessageSubmission | undefined>(undefined);
   const [leftOpen, setLeftOpen] = useState(false);
@@ -575,20 +576,24 @@ export function ChatWorkspace({
       try {
         const search = new URLSearchParams({ projectId, taskId });
         const refreshed = await fetchChannelRegistry(`/api/channels?${search.toString()}`);
-        if (active) setChannels(refreshed);
+        if (active) {
+          setChannels(refreshed);
+          setChannelRefreshError(undefined);
+        }
       } catch (error) {
         if (active) {
-          setSubmissionError(error instanceof Error ? error.message : 'Channel refresh failed');
+          setChannelRefreshError(error instanceof Error ? error.message : 'Channel refresh failed');
         }
       }
     };
     void refresh();
-    const timer = setInterval(() => void refresh(), 2000);
+    const timer =
+      task.runStatus === 'running' ? setInterval(() => void refresh(), 2000) : undefined;
     return () => {
       active = false;
-      clearInterval(timer);
+      if (timer !== undefined) clearInterval(timer);
     };
-  }, [channelRefreshNonce, projectId, task !== undefined, taskId]);
+  }, [channelRefreshNonce, projectId, task?.runStatus, taskId]);
 
   useEffect(() => {
     if (task?.runStatus !== 'running') return;
@@ -784,6 +789,11 @@ export function ChatWorkspace({
         {submissionError ? (
           <p className="submission-error" role="alert">
             {submissionError}
+          </p>
+        ) : null}
+        {channelRefreshError ? (
+          <p className="submission-error" role="alert">
+            {channelRefreshError}
           </p>
         ) : null}
         {submissionNotice ? (

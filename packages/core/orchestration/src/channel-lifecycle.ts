@@ -18,6 +18,7 @@ export interface OpenSubChannelInput {
 export interface CloseSubChannelInput {
   scope: TaskScope;
   actor: ParticipantId;
+  actionId: string;
   channelId: string;
 }
 
@@ -96,8 +97,17 @@ export class ChannelLifecycleService {
         }
         channel = existing;
       } else {
+        const channelId = subChannelId(input.scope.taskId, actionId);
+        const conflictingChannel = snapshot.channels.find(
+          (candidate) => candidate.channelId === channelId,
+        );
+        if (conflictingChannel !== undefined) {
+          throw new ChannelLifecycleRejectedError(
+            `channelId conflicts with another thread: "${channelId}"`,
+          );
+        }
         channel = {
-          channelId: `sub-${safeSegment(input.scope.taskId, 'taskId')}-${actionId}`,
+          channelId,
           kind: 'sub',
           taskId: input.scope.taskId,
           threadId,
@@ -122,7 +132,7 @@ export class ChannelLifecycleService {
       }
 
       const announcement = await this.#messages.commitMessage(input.scope, {
-        msgId: `${channel.channelId}-opened`,
+        msgId: `channel-open:${channel.channelId}`,
         threadId: channel.threadId,
         channelId: 'main',
         fromRole: input.actor,
@@ -145,6 +155,7 @@ export class ChannelLifecycleService {
   close(input: CloseSubChannelInput): Promise<ChannelLifecycleResult> {
     return this.#enqueue(input.scope.projectId, async () => {
       this.#assertActor(input.actor);
+      safeSegment(input.actionId, 'actionId');
       const channelId = safeSegment(input.channelId, 'channelId');
       if (channelId === 'main') {
         throw new ChannelLifecycleRejectedError('main channel cannot be closed');
@@ -191,7 +202,7 @@ export class ChannelLifecycleService {
       }
 
       const announcement = await this.#messages.commitMessage(input.scope, {
-        msgId: `${channel.channelId}-closed`,
+        msgId: `channel-close:${channel.channelId}`,
         threadId: channel.threadId,
         channelId: 'main',
         fromRole: input.actor,
@@ -249,6 +260,11 @@ function safeSegment(value: string, field: string): string {
     throw new ChannelLifecycleRejectedError(`${field} must be a safe non-empty segment`);
   }
   return value;
+}
+
+function subChannelId(taskId: string, actionId: string): string {
+  const safeTaskId = safeSegment(taskId, 'taskId');
+  return `sub-${safeTaskId.length}-${safeTaskId}-${actionId}`;
 }
 
 function nonEmptyString(value: string, field: string): string {

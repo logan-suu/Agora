@@ -55,7 +55,7 @@ describe('ChannelLifecycleService', () => {
         channels: [
           { channelId: 'main' },
           {
-            channelId: 'sub-task-a-action-1',
+            channelId: 'sub-6-task-a-action-1',
             threadId: 'action-1',
             participants: ['leader', 'CODER', 'TESTER'],
           },
@@ -73,7 +73,7 @@ describe('ChannelLifecycleService', () => {
 
     expect(result).toMatchObject({ changed: true, announced: true });
     expect(result.channel).toEqual({
-      channelId: 'sub-task-a-action-1',
+      channelId: 'sub-6-task-a-action-1',
       kind: 'sub',
       taskId: 'task-a',
       threadId: 'action-1',
@@ -85,10 +85,10 @@ describe('ChannelLifecycleService', () => {
     });
     expect(bus.events).toHaveLength(1);
     expect(bus.events[0]?.message).toMatchObject({
-      msgId: 'sub-task-a-action-1-opened',
+      msgId: 'channel-open:sub-6-task-a-action-1',
       channelId: 'main',
       type: 'announce',
-      payload: { kind: 'sub_channel_opened', channelId: 'sub-task-a-action-1' },
+      payload: { kind: 'sub_channel_opened', channelId: 'sub-6-task-a-action-1' },
     });
   });
 
@@ -138,7 +138,12 @@ describe('ChannelLifecycleService', () => {
       }),
     ).rejects.toThrow('conflicts with existing sub-channel');
 
-    await lifecycle.close({ scope, actor: 'leader', channelId: 'sub-task-a-action-1' });
+    await lifecycle.close({
+      scope,
+      actor: 'leader',
+      actionId: 'close-action-1',
+      channelId: 'sub-6-task-a-action-1',
+    });
     await expect(
       lifecycle.open({
         scope,
@@ -162,21 +167,28 @@ describe('ChannelLifecycleService', () => {
     });
 
     await expect(
-      lifecycle.close({ scope, actor: 'COORDINATOR', channelId: 'sub-task-a-action-1' }),
+      lifecycle.close({
+        scope,
+        actor: 'COORDINATOR',
+        actionId: 'close-denied',
+        channelId: 'sub-6-task-a-action-1',
+      }),
     ).rejects.toThrow('is not allowed to close');
-    await expect(lifecycle.close({ scope, actor: 'leader', channelId: 'main' })).rejects.toThrow(
-      'main channel cannot be closed',
-    );
+    await expect(
+      lifecycle.close({ scope, actor: 'leader', actionId: 'close-main', channelId: 'main' }),
+    ).rejects.toThrow('main channel cannot be closed');
 
     const first = await lifecycle.close({
       scope,
       actor: 'TESTER',
-      channelId: 'sub-task-a-action-1',
+      actionId: 'close-action-1',
+      channelId: 'sub-6-task-a-action-1',
     });
     const replay = await lifecycle.close({
       scope,
       actor: 'TESTER',
-      channelId: 'sub-task-a-action-1',
+      actionId: 'close-action-1',
+      channelId: 'sub-6-task-a-action-1',
     });
 
     expect(first).toMatchObject({ changed: true, announced: true, channel: { closed: true } });
@@ -184,8 +196,8 @@ describe('ChannelLifecycleService', () => {
     expect((await channels.load(scope.projectId))?.revision).toBe(2);
     expect(bus.events).toHaveLength(2);
     expect(bus.events[1]?.message).toMatchObject({
-      msgId: 'sub-task-a-action-1-closed',
-      payload: { kind: 'sub_channel_closed', channelId: 'sub-task-a-action-1' },
+      msgId: 'channel-close:sub-6-task-a-action-1',
+      payload: { kind: 'sub_channel_closed', channelId: 'sub-6-task-a-action-1' },
     });
   });
 
@@ -202,7 +214,7 @@ describe('ChannelLifecycleService', () => {
     await expect(lifecycle.open(request)).rejects.toThrow('task state is not initialized');
     await expect(channels.load(scope.projectId)).resolves.toMatchObject({
       revision: 1,
-      channels: [{ channelId: 'main' }, { channelId: 'sub-task-a-action-1' }],
+      channels: [{ channelId: 'main' }, { channelId: 'sub-6-task-a-action-1' }],
     });
 
     await messages.initialize(scope, 'Implement channel lifecycle');
@@ -211,5 +223,41 @@ describe('ChannelLifecycleService', () => {
     expect(retry).toMatchObject({ changed: false, announced: true });
     expect((await channels.load(scope.projectId))?.revision).toBe(1);
     expect((await states.load(scope))?.messages).toHaveLength(1);
+  });
+
+  it('uses an injective task-length prefix and rejects same-action thread conflicts as business errors', async () => {
+    const { lifecycle, messages } = await setup();
+    const firstScope = { projectId: scope.projectId, taskId: 'a-b' };
+    const secondScope = { projectId: scope.projectId, taskId: 'a' };
+    await messages.initialize(firstScope, 'First task');
+    await messages.initialize(secondScope, 'Second task');
+
+    const first = await lifecycle.open({
+      scope: firstScope,
+      actor: 'CODER',
+      actionId: 'c',
+      requestedRoles: ['TESTER'],
+      topic: 'First topic',
+    });
+    const second = await lifecycle.open({
+      scope: secondScope,
+      actor: 'CODER',
+      actionId: 'b-c',
+      requestedRoles: ['TESTER'],
+      topic: 'Second topic',
+    });
+
+    expect(first.channel.channelId).toBe('sub-3-a-b-c');
+    expect(second.channel.channelId).toBe('sub-1-a-b-c');
+    await expect(
+      lifecycle.open({
+        scope: secondScope,
+        actor: 'CODER',
+        actionId: 'b-c',
+        threadId: 'different-thread',
+        requestedRoles: ['TESTER'],
+        topic: 'Second topic',
+      }),
+    ).rejects.toThrow('channelId conflicts with another thread');
   });
 });
