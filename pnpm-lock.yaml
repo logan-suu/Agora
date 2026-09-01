@@ -107,6 +107,9 @@ importers:
       '@agora/core-orchestration':
         specifier: workspace:*
         version: link:../../packages/core/orchestration
+      '@agora/roles-definitions':
+        specifier: workspace:*
+        version: link:../../packages/roles/definitions
       '@agora/runtime-state':
         specifier: workspace:*
         version: link:../../packages/runtime/state

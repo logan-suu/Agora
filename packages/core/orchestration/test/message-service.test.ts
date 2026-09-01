@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { Message } from '@agora/core-domain';
+import { type Message, setMutation } from '@agora/core-domain';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { MessageBus, MessageCommitted } from '../../../comm/bus/src/index';
 import { JsonTaskStateStore, type TaskScope } from '../../../runtime/state/src/index';
@@ -74,6 +74,81 @@ describe('MessageService', () => {
     expect(first.published).toBe(true);
     expect(replay.published).toBe(false);
     expect(bus.events).toHaveLength(1);
+  });
+
+  it('commits a planned leader message and its action mutations before publishing', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const bus = new RecordingBus();
+    const service = new MessageService(store, bus);
+    await service.initialize(scope, 'Build the message flow');
+    const leaderMessage = message({
+      display: '@CODER implement the cache',
+      payload: { kind: 'leader_intent', action: { status: 'applied' } },
+    });
+    bus.onPublish = async () => {
+      await expect(store.load(scope)).resolves.toMatchObject({
+        nextRole: 'CODER',
+        messages: [leaderMessage],
+      });
+    };
+
+    const result = await service.commitPlannedMessage(scope, leaderMessage.msgId, () => ({
+      message: leaderMessage,
+      mutations: [setMutation('nextRole', 'CODER')],
+    }));
+
+    expect(result).toMatchObject({ published: true, message: leaderMessage });
+    expect(result.state.nextRole).toBe('CODER');
+    expect(bus.events).toEqual([{ ...scope, message: leaderMessage }]);
+  });
+
+  it('does not re-plan or reapply actions when a committed msgId is retried later', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const bus = new RecordingBus();
+    const service = new MessageService(store, bus);
+    await service.initialize(scope, 'Build the message flow');
+    const leaderMessage = message({ display: '@CODER implement the cache' });
+
+    await service.commitPlannedMessage(scope, leaderMessage.msgId, () => ({
+      message: leaderMessage,
+      mutations: [setMutation('nextRole', 'CODER')],
+    }));
+    await store.commit(scope, [setMutation('nextRole', 'TESTER')]);
+
+    let replanned = false;
+    const replay = await service.commitPlannedMessage(scope, leaderMessage.msgId, () => {
+      replanned = true;
+      return { message: leaderMessage, mutations: [setMutation('nextRole', 'CODER')] };
+    });
+
+    expect(replanned).toBe(false);
+    expect(replay).toMatchObject({ published: false, message: leaderMessage });
+    expect(replay.state.nextRole).toBe('TESTER');
+    expect(bus.events).toHaveLength(1);
+  });
+
+  it('serializes concurrent retries so a logical leader action is planned once', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const bus = new RecordingBus();
+    const service = new MessageService(store, bus);
+    await service.initialize(scope, 'Build the message flow');
+    const leaderMessage = message({ display: '@CODER implement the cache' });
+    let plans = 0;
+    const plan = () => {
+      plans += 1;
+      return { message: leaderMessage, mutations: [setMutation('nextRole', 'CODER')] };
+    };
+
+    const results = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        service.commitPlannedMessage(scope, leaderMessage.msgId, plan),
+      ),
+    );
+
+    expect(plans).toBe(1);
+    expect(results.filter((result) => result.published)).toHaveLength(1);
+    expect(bus.events).toHaveLength(1);
+    await expect(store.load(scope)).resolves.toMatchObject({ nextRole: 'CODER' });
   });
 
   it('keeps the committed snapshot when downstream delivery fails', async () => {

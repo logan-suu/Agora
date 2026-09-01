@@ -402,7 +402,6 @@ export function ChatWorkspace({
           channelId: model.channel.id,
           msgId: submission.msgId,
           display,
-          payload: { intent: 'chat', text: display },
         }),
       });
       if (!response.ok) throw new Error(`Message submission failed (${response.status})`);

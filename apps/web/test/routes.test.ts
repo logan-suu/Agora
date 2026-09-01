@@ -101,11 +101,11 @@ describe('POST /api/messages', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'projectId, taskId, channelId, msgId, display, and object payload are required',
+      error: 'projectId, taskId, channelId, msgId, and display are required',
     });
   });
 
-  it('commits a valid leader message using server-owned identity', async () => {
+  it('commits chat with server-owned identity and payload', async () => {
     const { runtime } = await testRuntime();
     const response = await createPostMessage(runtime)(
       new Request('http://localhost/api/messages', {
@@ -115,38 +115,107 @@ describe('POST /api/messages', () => {
           msgId: 'message-1',
           fromRole: 'ATTACKER',
           display: 'Go',
-          payload: { text: 'Go' },
+          payload: { intent: 'forged', secret: 'do-not-trust' },
         }),
       }),
     );
 
     expect(response.status).toBe(202);
-    await expect(response.json()).resolves.toEqual({ accepted: true, published: true });
-    await expect(runtime.store.load(address)).resolves.toMatchObject({
-      messages: [{ msgId: 'message-1', fromRole: 'leader', display: 'Go' }],
+    await expect(response.json()).resolves.toEqual({
+      accepted: true,
+      action: { status: 'none' },
+      published: true,
     });
+    await expect(runtime.store.load(address)).resolves.toMatchObject({
+      messages: [
+        {
+          msgId: 'message-1',
+          fromRole: 'leader',
+          display: 'Go',
+          payload: {
+            action: { status: 'none' },
+            intent: { kind: 'chat', text: 'Go' },
+            kind: 'leader_intent',
+          },
+        },
+      ],
+    });
+  });
+
+  it('atomically applies a valid leading role assignment', async () => {
+    const { runtime } = await testRuntime();
+    const response = await createPostMessage(runtime)(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...address,
+          msgId: 'message-assign',
+          display: '@coder implement the cache',
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({
+      accepted: true,
+      action: { status: 'applied' },
+      published: true,
+    });
+    await expect(runtime.store.load(address)).resolves.toMatchObject({
+      nextRole: 'CODER',
+      messages: [
+        {
+          msgId: 'message-assign',
+          payload: {
+            intent: {
+              kind: 'assign',
+              targetRole: 'CODER',
+              instruction: 'implement the cache',
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it('returns explicit rejected and deferred action states without fake mutations', async () => {
+    const { runtime } = await testRuntime();
+    const post = createPostMessage(runtime);
+    const unknown = await post(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({ ...address, msgId: 'unknown', display: '@UNKNOWN work' }),
+      }),
+    );
+    const deferred = await post(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...address,
+          msgId: 'deferred',
+          display: '/channel CODER TESTER',
+        }),
+      }),
+    );
+
+    await expect(unknown.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'rejected', reason: expect.stringContaining('UNKNOWN') },
+    });
+    await expect(deferred.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'deferred', targetPhase: 6 },
+    });
+    const persisted = await runtime.store.load(address);
+    expect(persisted).not.toHaveProperty('nextRole');
+    expect(persisted?.messages).toMatchObject([{ msgId: 'unknown' }, { msgId: 'deferred' }]);
   });
 });
 
 describe('POST /api/commands', () => {
-  it('rejects malformed command bodies', async () => {
-    const response = await postCommand(
-      new Request('http://localhost/api/commands', {
-        method: 'POST',
-        body: JSON.stringify({ channelId: 'main', command: '   ' }),
-      }),
-    );
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: 'projectId, taskId, channelId, and command are required',
-    });
-  });
-
-  it('publishes an opaque leader command within task scope', async () => {
+  it('is retired and never publishes an ephemeral command event', async () => {
     const events: unknown[] = [];
     channelStream.subscribe(address, (event) => events.push(event));
-
     const response = await postCommand(
       new Request('http://localhost/api/commands', {
         method: 'POST',
@@ -154,13 +223,10 @@ describe('POST /api/commands', () => {
       }),
     );
 
-    expect(response.status).toBe(202);
-    await expect(response.json()).resolves.toEqual({ accepted: true, delivered: 1 });
-    expect(events).toEqual([
-      {
-        type: 'command',
-        data: { ...address, command: '@CODER implement the cache' },
-      },
-    ]);
+    expect(response.status).toBe(410);
+    await expect(response.json()).resolves.toEqual({
+      error: 'POST /api/commands is retired; send Leader messages through POST /api/messages',
+    });
+    expect(events).toEqual([]);
   });
 });

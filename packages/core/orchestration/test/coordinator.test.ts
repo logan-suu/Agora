@@ -138,6 +138,98 @@ function nextFailedTestRound(state: AppState): AppState {
 }
 
 describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () => {
+  it('consumes the latest applied Leader assignment once before normal phase routing', () => {
+    const state = applyMutations(requirementsReadyState(), [
+      appendMutation('messages', {
+        msgId: 'leader-assign-reviewer',
+        channelId: 'main',
+        fromRole: 'leader',
+        type: 'chat',
+        payload: {
+          kind: 'leader_intent',
+          intent: {
+            kind: 'assign',
+            targetRole: 'REVIEWER',
+            instruction: 'inspect the cache contract',
+          },
+          action: { status: 'applied' },
+        },
+        display: '@REVIEWER inspect the cache contract',
+        ts: 900,
+      }),
+      setMutation('nextRole', 'REVIEWER'),
+    ]);
+
+    const override = decide(state, { ...clock(), roster: FULL_ROSTER });
+    expect(override.route).toEqual({
+      kind: 'worker',
+      batch: [{ role: 'REVIEWER' }],
+      parallel: false,
+    });
+    expect(override.mutations).toContainEqual(
+      expect.objectContaining({
+        op: 'append',
+        field: 'messages',
+        value: expect.objectContaining({
+          fromRole: 'COORDINATOR',
+          payload: expect.objectContaining({
+            reason: 'leader_assignment',
+            sourceMsgId: 'leader-assign-reviewer',
+            nextRole: 'REVIEWER',
+          }),
+        }),
+      }),
+    );
+    expect(
+      latestCoordinationLedger(applyMutations(state, override.mutations))?.progress
+        .instructionOrQuestion.answer,
+    ).toBe('inspect the cache contract');
+
+    const afterOverride = applyMutations(state, override.mutations);
+    const normal = decide(afterOverride, { ...clock(), roster: FULL_ROSTER });
+    expect(normal.route).toEqual({
+      kind: 'worker',
+      batch: [{ role: 'ARCHITECT' }],
+      parallel: false,
+    });
+  });
+
+  it('treats older unapplied Leader assignments as superseded by the latest one', () => {
+    const assignment = (msgId: string, targetRole: string, ts: number) =>
+      appendMutation('messages', {
+        msgId,
+        channelId: 'main',
+        fromRole: 'leader',
+        type: 'chat',
+        payload: {
+          kind: 'leader_intent',
+          intent: { kind: 'assign', targetRole, instruction: `activate ${targetRole}` },
+          action: { status: 'applied' },
+        },
+        display: `@${targetRole} activate ${targetRole}`,
+        ts,
+      });
+    const state = applyMutations(requirementsReadyState(), [
+      assignment('older', 'PM', 100),
+      assignment('latest', 'TESTER', 200),
+      setMutation('nextRole', 'TESTER'),
+    ]);
+
+    const latest = decide(state, { ...clock(), roster: FULL_ROSTER });
+    expect(latest.route).toEqual({
+      kind: 'worker',
+      batch: [{ role: 'TESTER' }],
+      parallel: false,
+    });
+    const afterLatest = applyMutations(state, latest.mutations);
+    const normal = decide(afterLatest, { ...clock(), roster: FULL_ROSTER });
+    expect(normal.route).toEqual({
+      kind: 'worker',
+      batch: [{ role: 'ARCHITECT' }],
+      parallel: false,
+    });
+  });
+
   it('routes PM from clarifying while the goal is ambiguous (no requirements yet)', () => {
     const decision = decide(createInitialAppState('t-1', '实现带 TTL 的 LRU 缓存'), clock());
 

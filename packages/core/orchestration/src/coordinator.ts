@@ -55,30 +55,131 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     newId: options?.newId ?? (() => crypto.randomUUID()),
     now: options?.now ?? (() => Date.now()),
   };
+  const leaderOverride = consumeLeaderAssignment(state, clock, options?.roster);
   let decision: CoordinatorDecision;
-  switch (state.phase) {
-    case 'clarifying':
-      decision = dispatchFromClarifying(state, clock, options?.roster);
-      break;
-    case 'planning':
-      decision = dispatchAfterPlanning(state, clock);
-      break;
-    case 'coding':
-      decision = advanceToTesting(state);
-      break;
-    case 'testing':
-      decision = evaluateTestResults(state, clock, options?.roster);
-      break;
-    case 'review':
-      decision = evaluateReview(state, clock, options?.roster);
-      break;
-    case 'done':
-      decision = { route: { kind: 'finalize' }, mutations: [] };
-      break;
-    default:
-      throw new Error(`phase "${String(state.phase)}" is not routable by the coordinator`);
+  if (leaderOverride !== undefined) {
+    decision = leaderOverride;
+  } else {
+    switch (state.phase) {
+      case 'clarifying':
+        decision = dispatchFromClarifying(state, clock, options?.roster);
+        break;
+      case 'planning':
+        decision = dispatchAfterPlanning(state, clock);
+        break;
+      case 'coding':
+        decision = advanceToTesting(state);
+        break;
+      case 'testing':
+        decision = evaluateTestResults(state, clock, options?.roster);
+        break;
+      case 'review':
+        decision = evaluateReview(state, clock, options?.roster);
+        break;
+      case 'done':
+        decision = { route: { kind: 'finalize' }, mutations: [] };
+        break;
+      default:
+        throw new Error(`phase "${String(state.phase)}" is not routable by the coordinator`);
+    }
   }
   return attachCoordinationArtifacts(state, decision, clock, options?.roster);
+}
+
+interface AppliedLeaderAssignment {
+  msgId: string;
+  targetRole: string;
+  instruction: string;
+}
+
+function latestAppliedLeaderAssignment(state: AppState): AppliedLeaderAssignment | undefined {
+  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+    const message = state.messages[index];
+    if (message?.fromRole !== 'leader' || message.payload.kind !== 'leader_intent') continue;
+    const intent = message.payload.intent;
+    const action = message.payload.action;
+    if (
+      typeof intent !== 'object' ||
+      intent === null ||
+      Array.isArray(intent) ||
+      typeof action !== 'object' ||
+      action === null ||
+      Array.isArray(action)
+    ) {
+      continue;
+    }
+    const intentRecord = intent as Record<string, unknown>;
+    const actionRecord = action as Record<string, unknown>;
+    if (
+      intentRecord.kind === 'assign' &&
+      typeof intentRecord.targetRole === 'string' &&
+      typeof intentRecord.instruction === 'string' &&
+      actionRecord.status === 'applied'
+    ) {
+      return {
+        msgId: message.msgId,
+        targetRole: intentRecord.targetRole,
+        instruction: intentRecord.instruction,
+      };
+    }
+  }
+  return undefined;
+}
+
+function assignmentWasConsumed(state: AppState, msgId: string): boolean {
+  return state.messages.some(
+    (message) =>
+      message.fromRole === 'COORDINATOR' &&
+      message.payload.reason === 'leader_assignment' &&
+      message.payload.sourceMsgId === msgId,
+  );
+}
+
+function consumeLeaderAssignment(
+  state: AppState,
+  clock: Clock,
+  roster: readonly RoleSpec[] | undefined,
+): CoordinatorDecision | undefined {
+  if (state.phase === 'done' || state.humanGate !== undefined) return undefined;
+  const assignment = latestAppliedLeaderAssignment(state);
+  if (
+    assignment === undefined ||
+    assignmentWasConsumed(state, assignment.msgId) ||
+    state.nextRole !== assignment.targetRole
+  ) {
+    return undefined;
+  }
+
+  const role = roster?.find((entry) => entry.role === assignment.targetRole);
+  if (roster !== undefined && (role === undefined || !role.enabled)) {
+    throw new Error(
+      `applied Leader assignment targets unavailable role "${assignment.targetRole}"`,
+    );
+  }
+
+  const control = {
+    reason: 'leader_assignment',
+    sourceMsgId: assignment.msgId,
+    nextRole: assignment.targetRole,
+  };
+  const instruction =
+    assignment.instruction.length > 0
+      ? assignment.instruction
+      : `Leader activated ${assignment.targetRole}`;
+  if (assignment.targetRole === 'CODER') {
+    return dispatchCoder(state, clock, instruction, control);
+  }
+  return {
+    route: {
+      kind: 'worker',
+      batch: [{ role: assignment.targetRole }],
+      parallel: false,
+    },
+    mutations: [
+      setMutation('nextRole', assignment.targetRole),
+      appendMutation('messages', announce(clock, control, instruction)),
+    ],
+  };
 }
 
 function nextSpeakerFor(route: Route): string | null {
