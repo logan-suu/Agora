@@ -21,6 +21,9 @@ function subChannel(channelId = 'sub-task-a'): SubChannel {
     channelId,
     kind: 'sub',
     taskId: 'task-a',
+    threadId: 'thread-a',
+    topic: 'Investigate task A',
+    createdBy: 'CODER',
     participants: ['leader', 'CODER'],
     localContext: [],
     closed: false,
@@ -88,6 +91,104 @@ describe('JsonProjectChannelStore', () => {
 
     expect(result.changed).toBe(false);
     expect(result.snapshot.revision).toBe(0);
+  });
+
+  it('normalizes participant sets to leader-first roster order before comparing content', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonProjectChannelStore(root, ENABLED_ROLES);
+    const channel = subChannel();
+    const initialized = await store.initialize('project-a', [
+      createMainChannel(ENABLED_ROLES),
+      { ...channel, participants: ['CODER', 'leader'] },
+    ]);
+
+    expect(initialized.channels[1]?.participants).toEqual(['leader', 'CODER']);
+
+    const result = await store.commit('project-a', initialized.revision, [
+      createMainChannel(ENABLED_ROLES),
+      { ...channel, participants: ['leader', 'CODER'] },
+    ]);
+
+    expect(result.changed).toBe(false);
+    expect(result.snapshot.revision).toBe(0);
+  });
+
+  it('migrates a complete legacy sub-channel shape once during initialization', async () => {
+    const root = await temporaryRoot();
+    const firstStore = new JsonProjectChannelStore(root, ENABLED_ROLES);
+    await firstStore.initialize('project-a', [createMainChannel(ENABLED_ROLES)]);
+    const persistedPath = join(root, 'projects/project-a/channels.json');
+    await writeFile(
+      persistedPath,
+      `${JSON.stringify({
+        projectId: 'project-a',
+        revision: 3,
+        channels: [
+          createMainChannel(ENABLED_ROLES),
+          {
+            channelId: 'sub-task-a',
+            kind: 'sub',
+            taskId: 'task-a',
+            participants: ['CODER', 'leader'],
+            localContext: [],
+            closed: false,
+          },
+        ],
+      })}\n`,
+      'utf8',
+    );
+
+    const migrated = await new JsonProjectChannelStore(root, ENABLED_ROLES).initialize(
+      'project-a',
+      [createMainChannel(ENABLED_ROLES)],
+    );
+
+    expect(migrated).toEqual({
+      projectId: 'project-a',
+      revision: 4,
+      channels: [
+        createMainChannel(ENABLED_ROLES),
+        {
+          ...subChannel(),
+          threadId: 'legacy-sub-task-a',
+          topic: 'Legacy channel sub-task-a',
+          createdBy: 'leader',
+        },
+      ],
+    });
+    expect(JSON.parse(await readFile(persistedPath, 'utf8'))).toEqual(migrated);
+  });
+
+  it('fails fast when legacy lifecycle metadata is only partially present', async () => {
+    const root = await temporaryRoot();
+    const firstStore = new JsonProjectChannelStore(root, ENABLED_ROLES);
+    await firstStore.initialize('project-a', [createMainChannel(ENABLED_ROLES)]);
+    await writeFile(
+      join(root, 'projects/project-a/channels.json'),
+      `${JSON.stringify({
+        projectId: 'project-a',
+        revision: 1,
+        channels: [
+          createMainChannel(ENABLED_ROLES),
+          {
+            channelId: 'sub-task-a',
+            kind: 'sub',
+            taskId: 'task-a',
+            threadId: 'thread-a',
+            participants: ['leader', 'CODER'],
+            localContext: [],
+            closed: false,
+          },
+        ],
+      })}\n`,
+      'utf8',
+    );
+
+    await expect(
+      new JsonProjectChannelStore(root, ENABLED_ROLES).initialize('project-a', [
+        createMainChannel(ENABLED_ROLES),
+      ]),
+    ).rejects.toThrow('partial sub-channel lifecycle metadata');
   });
 
   it('serializes same-project commits so concurrent stale writers cannot overwrite each other', async () => {

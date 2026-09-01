@@ -11,6 +11,8 @@ import {
   type RoleSpec,
 } from '@agora/core-domain';
 import {
+  ChannelLifecycleRejectedError,
+  ChannelLifecycleService,
   type MessageCommitResult,
   MessageService,
   type MutationCommitResult,
@@ -47,6 +49,7 @@ export class MessageRuntime {
   readonly channels: JsonProjectChannelStore;
   readonly stream: ChannelStream;
   readonly #service: MessageService;
+  readonly #lifecycle: ChannelLifecycleService;
   readonly #roster: readonly RoleSpec[];
   readonly #enabledRoles: readonly RoleId[];
 
@@ -57,6 +60,7 @@ export class MessageRuntime {
     this.channels = new JsonProjectChannelStore(root, this.#enabledRoles);
     this.stream = stream;
     this.#service = new MessageService(this.store, new SseMessageBus(stream), this.channels);
+    this.#lifecycle = new ChannelLifecycleService(this.channels, this.#service, this.#enabledRoles);
     this.#roster = roster;
   }
 
@@ -91,9 +95,34 @@ export class MessageRuntime {
       ts: number;
     },
   ): Promise<MessageCommitResult & { action: LeaderActionStatus }> {
+    const intent = parseLeaderIntent(input.display);
+    let lifecycleRejection: LeaderActionStatus | undefined;
+    try {
+      if (intent.kind === 'open_sub_channel') {
+        if (input.channelId !== 'main') {
+          throw new ChannelLifecycleRejectedError('channel lifecycle commands must use main');
+        }
+        await this.#lifecycle.open({
+          scope,
+          actor: 'leader',
+          actionId: input.msgId,
+          requestedRoles: intent.requestedRoles,
+          topic: intent.topic,
+        });
+      } else if (intent.kind === 'close_sub_channel') {
+        if (input.channelId !== 'main') {
+          throw new ChannelLifecycleRejectedError('channel lifecycle commands must use main');
+        }
+        await this.#lifecycle.close({ scope, actor: 'leader', channelId: intent.channelId });
+      }
+    } catch (error) {
+      if (!(error instanceof ChannelLifecycleRejectedError)) throw error;
+      lifecycleRejection = { status: 'rejected', reason: error.message };
+    }
+
     const result = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
-      const intent = parseLeaderIntent(input.display);
       const planned = planLeaderIntent(intent, state, this.#roster);
+      const action = lifecycleRejection ?? planned.action;
       const message: Message = {
         msgId: input.msgId,
         channelId: input.channelId,
@@ -102,7 +131,7 @@ export class MessageRuntime {
         payload: {
           kind: 'leader_intent',
           intent: planned.intent,
-          action: planned.action,
+          action,
         },
         display: input.display,
         ts: input.ts,
@@ -111,6 +140,43 @@ export class MessageRuntime {
     });
 
     return { ...result, action: actionFrom(result.message) };
+  }
+
+  async handleWorkerOutput(
+    state: AppState,
+    role: string,
+    output: Record<string, unknown>,
+  ): Promise<void> {
+    const action = output.channelAction;
+    if (typeof action !== 'object' || action === null || Array.isArray(action)) return;
+    const record = action as Record<string, unknown>;
+    const scope = { projectId: state.projectId, taskId: state.taskId };
+    if (record.kind === 'open_sub_channel') {
+      if (
+        typeof record.actionId !== 'string' ||
+        !Array.isArray(record.requestedRoles) ||
+        !record.requestedRoles.every((requested) => typeof requested === 'string') ||
+        typeof record.topic !== 'string'
+      ) {
+        throw new Error('invalid structured open_sub_channel output');
+      }
+      await this.#lifecycle.open({
+        scope,
+        actor: role,
+        actionId: record.actionId,
+        requestedRoles: record.requestedRoles,
+        topic: record.topic,
+      });
+      return;
+    }
+    if (record.kind === 'close_sub_channel') {
+      if (typeof record.channelId !== 'string') {
+        throw new Error('invalid structured close_sub_channel output');
+      }
+      await this.#lifecycle.close({ scope, actor: role, channelId: record.channelId });
+      return;
+    }
+    throw new Error('unknown structured channel action output');
   }
 }
 

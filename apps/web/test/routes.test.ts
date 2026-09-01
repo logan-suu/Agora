@@ -228,7 +228,7 @@ describe('POST /api/messages', () => {
         body: JSON.stringify({
           ...address,
           msgId: 'deferred',
-          display: '/channel CODER TESTER',
+          display: '/approve gate-1',
         }),
       }),
     );
@@ -239,7 +239,7 @@ describe('POST /api/messages', () => {
     });
     await expect(deferred.json()).resolves.toMatchObject({
       accepted: true,
-      action: { status: 'deferred', targetPhase: 6 },
+      action: { status: 'deferred', targetPhase: 8 },
     });
     const persisted = await runtime.store.load(address);
     expect(persisted).not.toHaveProperty('nextRole');

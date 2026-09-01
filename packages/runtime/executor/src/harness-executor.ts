@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import {
   appendMutation,
   type Mutation,
@@ -242,9 +244,12 @@ export class HarnessExecutor implements Executor {
       throw new Error(`agent turn failed: ${failureMessage(failure)}`);
     }
 
-    const text = lastAssistantText(agent);
-    const mutations: Mutation[] =
-      text === null ? [] : [appendMutation('messages', this.toAgoraMessage(text))];
+    const turn = lastAssistantTurn(agent, context.sessionId);
+    const parsed = turn === null ? null : parseChannelAction(turn.text, turn.msgId);
+    const text = parsed?.text ?? turn?.text ?? null;
+    const message =
+      turn === null ? null : this.toAgoraMessage(turn.msgId, text as string, parsed?.channelAction);
+    const mutations: Mutation[] = message === null ? [] : [appendMutation('messages', message)];
     if (this.readTestResults !== undefined) {
       const testResults = await this.readTestResults();
       if (testResults !== undefined) {
@@ -262,7 +267,12 @@ export class HarnessExecutor implements Executor {
     }
     return {
       kind: 'done',
-      output: text === null ? {} : { text },
+      output:
+        text === null
+          ? {}
+          : parsed?.channelAction === undefined
+            ? { text }
+            : { text, channelAction: parsed.channelAction },
       reachedSafeBoundary: true,
       mutations,
     };
@@ -351,13 +361,13 @@ export class HarnessExecutor implements Executor {
     });
   }
 
-  private toAgoraMessage(text: string) {
+  private toAgoraMessage(msgId: string, text: string, channelAction?: ParsedChannelAction) {
     return {
-      msgId: crypto.randomUUID(),
+      msgId,
       channelId: 'main',
       fromRole: this.spec.role,
       type: 'chat' as const,
-      payload: {},
+      payload: channelAction === undefined ? {} : { channelAction },
       display: text,
       ts: Date.now(),
     };
@@ -380,8 +390,106 @@ function failureMessage(error: unknown): string {
   }
 }
 
-/** Extract the last assistant text block from the durable session log. */
-function lastAssistantText(agent: Agent): string | null {
+interface AssistantTurn {
+  text: string;
+  msgId: string;
+}
+
+type ParsedChannelAction =
+  | {
+      kind: 'open_sub_channel';
+      actionId: string;
+      requestedRoles: string[];
+      topic: string;
+    }
+  | { kind: 'close_sub_channel'; actionId: string; channelId: string };
+
+interface ParsedAssistantText {
+  text: string;
+  channelAction?: ParsedChannelAction;
+}
+
+const CHANNEL_ACTION_OPEN = '<agora-channel-action>';
+const CHANNEL_ACTION_CLOSE = '</agora-channel-action>';
+const CHANNEL_ACTION_PATTERN = /<agora-channel-action>([\s\S]*?)<\/agora-channel-action>/g;
+
+function parseChannelAction(text: string, actionId: string): ParsedAssistantText {
+  if (!text.includes(CHANNEL_ACTION_OPEN) && !text.includes(CHANNEL_ACTION_CLOSE)) return { text };
+
+  const trimmed = text.trimEnd();
+  const matches = [...trimmed.matchAll(CHANNEL_ACTION_PATTERN)];
+  const match = matches[0];
+  if (
+    matches.length !== 1 ||
+    match === undefined ||
+    match.index === undefined ||
+    match.index + match[0].length !== trimmed.length ||
+    occurrences(trimmed, CHANNEL_ACTION_OPEN) !== 1 ||
+    occurrences(trimmed, CHANNEL_ACTION_CLOSE) !== 1
+  ) {
+    throw new Error('invalid agora channel action: expected one final control block');
+  }
+
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1] ?? '');
+  } catch (error) {
+    throw new Error('invalid agora channel action: malformed JSON', { cause: error });
+  }
+  const channelAction = validateChannelAction(value, actionId);
+  return { text: trimmed.slice(0, match.index).trimEnd(), channelAction };
+}
+
+function validateChannelAction(value: unknown, actionId: string): ParsedChannelAction {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('invalid agora channel action: payload must be an object');
+  }
+  const record = value as Record<string, unknown>;
+  if (record.kind === 'open_sub_channel') {
+    assertExactKeys(record, ['kind', 'requestedRoles', 'topic']);
+    if (
+      !Array.isArray(record.requestedRoles) ||
+      !record.requestedRoles.every((role) => typeof role === 'string' && role.length > 0)
+    ) {
+      throw new Error('invalid agora channel action: requestedRoles must contain role strings');
+    }
+    if (typeof record.topic !== 'string' || record.topic.length === 0) {
+      throw new Error('invalid agora channel action: topic must be a non-empty string');
+    }
+    return {
+      kind: 'open_sub_channel',
+      actionId,
+      requestedRoles: [...record.requestedRoles],
+      topic: record.topic,
+    };
+  }
+  if (record.kind === 'close_sub_channel') {
+    assertExactKeys(record, ['kind', 'channelId']);
+    if (typeof record.channelId !== 'string' || record.channelId.length === 0) {
+      throw new Error('invalid agora channel action: channelId must be a non-empty string');
+    }
+    return { kind: 'close_sub_channel', actionId, channelId: record.channelId };
+  }
+  throw new Error('invalid agora channel action: unknown kind');
+}
+
+function assertExactKeys(record: Record<string, unknown>, expected: readonly string[]): void {
+  const keys = Object.keys(record).sort();
+  const canonicalExpected = [...expected].sort();
+  if (
+    keys.length !== canonicalExpected.length ||
+    keys.some((key, index) => key !== canonicalExpected[index])
+  ) {
+    throw new Error('invalid agora channel action: unexpected fields');
+  }
+}
+
+function occurrences(text: string, needle: string): number {
+  return text.split(needle).length - 1;
+}
+
+/** Extract the last assistant text block and stable event identity from the durable session log. */
+function lastAssistantTurn(agent: Agent, sessionId: string): AssistantTurn | null {
   for (let i = agent.session.events.length - 1; i >= 0; i -= 1) {
     const event = agent.session.events[i];
     if (event?.type === 'assistant/message') {
@@ -390,7 +498,11 @@ function lastAssistantText(agent: Agent): string | null {
       for (let j = message.content.length - 1; j >= 0; j -= 1) {
         const block = message.content[j] as { type?: string; text?: string } | undefined;
         if (block?.type === 'text' && typeof block.text === 'string' && block.text !== '') {
-          return block.text;
+          const digest = createHash('sha256')
+            .update(`${sessionId}:${event.seq}`)
+            .digest('hex')
+            .slice(0, 24);
+          return { text: block.text, msgId: `assistant-${digest}` };
         }
       }
     }

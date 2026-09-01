@@ -48,6 +48,7 @@ describe('createWebTaskCompositionFactory', () => {
         scope: { projectId: 'project-a', taskId: 'task-a' },
         goal: 'Build safely',
         transition: async (state) => state,
+        handleOutput: async () => {},
       }),
     ).rejects.toThrow();
     expect(sandbox.teardownCalls).toBe(1);

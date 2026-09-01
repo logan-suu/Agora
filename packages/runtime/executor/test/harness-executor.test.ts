@@ -1,4 +1,9 @@
-import { type AppState, createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
+import {
+  type AppState,
+  createInitialAppState,
+  type Message,
+  PHASE0_ROSTER,
+} from '@agora/core-domain';
 import { LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { describe, expect, it } from 'vitest';
 import { HarnessExecutor } from '../src/harness-executor';
@@ -10,6 +15,10 @@ import { project } from '../src/project';
 class FakeLlmAdapter extends LlmAdapter {
   public readonly calls: { provider: string; model: string; messagesText: string }[] = [];
 
+  constructor(private readonly reply = 'fake reply') {
+    super();
+  }
+
   async *stream(options: Parameters<LlmAdapter['stream']>[0]): AsyncIterable<StreamChunk> {
     const messagesText = options.messages
       .map((m) => m.content.map((c) => (c.type === 'text' ? c.text : '')).join(''))
@@ -20,8 +29,8 @@ class FakeLlmAdapter extends LlmAdapter {
       messagesText,
     });
     yield { type: 'block-start', index: 0, blockType: 'text' };
-    yield { type: 'text-delta', index: 0, text: 'fake reply' };
-    yield { type: 'block-end', index: 0, block: { type: 'text', text: 'fake reply' } };
+    yield { type: 'text-delta', index: 0, text: this.reply };
+    yield { type: 'block-end', index: 0, block: { type: 'text', text: this.reply } };
     yield { type: 'usage', usage: { inputTokens: 2, outputTokens: 1 } };
     yield { type: 'finish', reason: { kind: 'stop' } };
   }
@@ -53,6 +62,74 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
       expect(result.output).toEqual({ text: 'fake reply' });
       expect(result.mutations).toHaveLength(1);
       expect(result.mutations[0]).toMatchObject({ field: 'messages', op: 'append' });
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('extracts one strict final channel action into output and payload while stripping it from display', async () => {
+    const fake = new FakeLlmAdapter(
+      'I need a focused test thread.\n<agora-channel-action>{"kind":"open_sub_channel","requestedRoles":["TESTER"],"topic":"Reproduce cache race"}</agora-channel-action>',
+    );
+    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+    try {
+      const result = await executor.step({
+        sessionId: 'ses-channel-action',
+        view: project(codingState(), 'CODER', PHASE0_ROSTER),
+      });
+      const mutation = result.mutations[0];
+      if (mutation?.op !== 'append' || mutation.field !== 'messages') {
+        throw new Error('expected assistant message mutation');
+      }
+      const message = mutation.value as Message;
+
+      expect(result.output).toEqual({
+        text: 'I need a focused test thread.',
+        channelAction: {
+          kind: 'open_sub_channel',
+          actionId: message.msgId,
+          requestedRoles: ['TESTER'],
+          topic: 'Reproduce cache race',
+        },
+      });
+      expect(message.display).toBe('I need a focused test thread.');
+      expect(message.payload).toEqual({ channelAction: result.output.channelAction });
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it.each([
+    {
+      name: 'malformed JSON',
+      reply: 'text\n<agora-channel-action>{broken}</agora-channel-action>',
+    },
+    {
+      name: 'an unknown action kind',
+      reply: 'text\n<agora-channel-action>{"kind":"archive"}</agora-channel-action>',
+    },
+    {
+      name: 'multiple action blocks',
+      reply:
+        '<agora-channel-action>{"kind":"close_sub_channel","channelId":"sub-a"}</agora-channel-action>\n<agora-channel-action>{"kind":"close_sub_channel","channelId":"sub-b"}</agora-channel-action>',
+    },
+    {
+      name: 'trailing nonempty text',
+      reply:
+        '<agora-channel-action>{"kind":"close_sub_channel","channelId":"sub-a"}</agora-channel-action>\nmore',
+    },
+  ])('fails the step for $name', async ({ reply }) => {
+    const executor = new HarnessExecutor(CODER_SPEC, {
+      adapter: new FakeLlmAdapter(reply),
+      provider: 'agora',
+    });
+    try {
+      await expect(
+        executor.step({
+          sessionId: 'ses-invalid-channel-action',
+          view: project(codingState(), 'CODER', PHASE0_ROSTER),
+        }),
+      ).rejects.toThrow('invalid agora channel action');
     } finally {
       await executor.dispose();
     }

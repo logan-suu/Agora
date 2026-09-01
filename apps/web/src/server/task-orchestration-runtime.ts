@@ -2,6 +2,7 @@ import { type AppState, mergeByIdMutation, type RoleSpec } from '@agora/core-dom
 import {
   runOrchestration,
   type StateTransition,
+  type StepOutputHandler,
   type WorkerRuntime,
 } from '@agora/core-orchestration';
 import type { TaskScope } from '@agora/runtime-state';
@@ -52,6 +53,7 @@ export type TaskCompositionFactory = (input: {
   scope: TaskScope;
   goal: string;
   transition: StateTransition;
+  handleOutput: StepOutputHandler;
 }) => Promise<TaskComposition>;
 
 interface ActiveRun {
@@ -132,6 +134,8 @@ export class TaskOrchestrationRuntime {
         scope: input,
         goal: input.goal,
         transition,
+        handleOutput: (state, role, output) =>
+          this.messages.handleWorkerOutput(state, role, output),
       });
       const initialState = await this.messages.initializeState(input, composition.initialState);
       const run: ActiveRun = {

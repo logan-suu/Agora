@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-01T18:37:45.000Z",
+  "last_updated": "2026-09-01T20:16:09.000Z",
   "current_phase": 6,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -38,7 +38,7 @@
     },
     {
       "id": "D7",
-      "rule": "Project.channels 是 Channel 注册表唯一真相源，项目级 JSON 原子快照可重启恢复；旧任务 State 存在而 Channel 快照缺失时幂等补建 main，损坏快照 fail-fast。enabled roster 唯一且排除 leader；对象属性顺序不触发 revision。AppState.messages 保存任务级消息，sub 绑定 taskId，inbox 从 Channel 快照 + 任务 State 重建；MessageBus 不存 inbox",
+      "rule": "Project.channels 是 Channel 注册表唯一真相源，项目级 JSON 原子快照可重启恢复；旧任务 State 缺 Channel 快照时幂等补 main，6.1 legacy sub 首次初始化确定性补生命周期元数据，其他损坏 fail-fast。participants 是集合并按 leader+enabled roster 标准化，顺序差异不触发 revision；sub 持久化 taskId/threadId/topic/createdBy，同 task+thread 幂等唯一。生命周期按 project 串行并用稳定 actionId 去重；AppState.messages 保存任务级消息，inbox 从 Channel 快照 + 任务 State 重建；MessageBus 不存 inbox",
       "source": "docs/项目蓝图.md §11/§20/§21；docs/详细设计方案.md §1/§5/§7/§8"
     },
     {
@@ -48,8 +48,8 @@
     },
     {
       "id": "D9",
-      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；planned message 一次只含一个主消息，动作 mutations 禁止写 messages，消息与动作原子、幂等提交后才投递。多消息编排走逐条校验/投递的批量服务；其他能力按 Phase 6/8/9 解锁，不走临时 command 旁路",
-      "source": "docs/项目蓝图.md §10/§17/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2；docs/技术选型文档.md §9.2"
+      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 生命周期仍走同入口，但因 Project.channels 与任务消息分属两份持久真相，采用稳定 actionId 的可重试 saga：先幂等提交 Channel，再经 D6 补原消息/announce；不走临时 command 旁路。Phase 8/9 意图继续按阶段解锁",
+      "source": "docs/项目蓝图.md §10/§11/§17/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§4.3；docs/技术选型文档.md §9.2"
     },
     {
       "id": "D10",
@@ -846,16 +846,19 @@
           "id": "6.2",
           "title": "sub 群生命周期（发起/通信/关闭）",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
-            "docs/详细设计方案.md §5"
+            "docs/项目蓝图.md §10/§11/§21",
+            "docs/详细设计方案.md §1/§5",
+            "docs/系统架构设计文档.md §4.3",
+            "docs/开发计划安排.md §9"
           ],
           "dependencies": [
             "6.1"
           ],
-          "test_file": null,
-          "notes": "agent 自发为主（新群 participants 自动并入 leader）+ Leader 可发起；threadId 会话链支撑问答/升级/异议挂起-作答-resume。Coordinator 轻量治理：去重、防小群无序膨胀。\n[2026-09-01 /agora-pr-merge] 依赖 6.1 已由 PR #47 合并并标 done（merge commit 7657327），级联翻转 pending→ready。",
-          "last_updated": "2026-09-01T15:16:00.000Z"
+          "test_file": "packages/core/orchestration/test/channel-lifecycle.test.ts",
+          "notes": "agent 自发为主（新群 participants 自动并入 leader）+ Leader 可发起；threadId 会话链支撑问答/升级的持久链与路由，异议 humanGate/resume 明确留 Phase 8。Coordinator 轻量治理：同 taskId+threadId 去重、防小群无序膨胀。\n[2026-09-01 /agora-pr-merge] 依赖 6.1 已由 PR #47 合并并标 done（merge commit 7657327），级联翻转 pending→ready。\n[2026-09-01 /agora-sync-docs·规格评审] Leader 确认先评审再实现。修订后 6.2 定稿：sub 持久化 threadId/topic/createdBy；participants 为集合并按 leader+enabled roster 标准化；稳定 actionId（Leader=msgId）提供 open/close 幂等，同 task+thread 语义冲突明确失败；actor 由组合根绑定，只有 leader/participant 可关闭，main 不可关闭；生命周期服务按 project 串行，先提交 ProjectChannelStore，再经 D6 补原消息/稳定 announce，失败重试不回滚/不重复 Channel。agent 最终回复末尾至多一个严格 channel-action 控制块，Harness 剥离 display、以 assistant msgId 绑定 actionId 后复用 StepResult.output，不修改冻结端口。GET /api/channels 从持久快照派生 main+当前 task sub 展示元数据，UI 可刷新/切群且不扩 MessageBus。6.2 close 只置 closed+main 公告，bubbledSummary 归 6.3，humanGate/resume 归 Phase 8。任务保持 ready，待实现计划确认。\n[2026-09-01 /agora-do-task] Leader 已批准修订后的五单元 TDD 计划；依赖 6.1=done、Phase 5 出口 5.6=done、current_phase=6，跨阶段门禁满足。任务置 in_progress，分支 feat/sub-channel-lifecycle；按 Channel schema/迁移→生命周期服务→Agent output→Leader/API→UI/G5 顺序实施。\n[2026-09-01 Code+Check+Verify] 五个 TDD 单元完成：① SubChannel 必填 threadId/topic/createdBy、participants 标准化及 legacy 全缺字段一次性 revision 迁移，部分缺失 fail-fast；② L2 ChannelLifecycleService 按 project 串行，实现 open/close 权限、幂等、语义冲突与关闭后禁止重开，严格 Channel-first 后稳定 main announce；③ Harness 严格解析唯一末尾 channel-action，剥离 display，以持久 assistant event 派生稳定 msgId/actionId，经 StepResult.output 回传；WorkerRuntime 在 State transition 前调用可选 handleOutput；④ Leader `/channel open ROLE[,ROLE...] <topic>` 与 `/channel close <channelId>`、GET /api/channels 和 Web 组合根落地；⑤ UI 频道列表/选中切换 SSE+POST、初始化/动作后/2 秒短轮询刷新，closed 可读不可写。G5：真实 JsonProjectChannelStore + JsonTaskStateStore + HTTP/MessageBus 链验证 Leader 与 Agent action 均先落 Channel 再落 State/announce，失败重试补消息且不重复 Channel。门禁：typecheck 0 错；Biome 187 files 0 违规；全量 58 files passed / 2 skipped、550 passed / 2 skipped；真实 DockerSandbox 15/15、Phase 5 Docker/Harness/MCP 累积链通过；任务定向 3 files/27 tests 通过；git diff --check 通过。任务保持 in_progress，待 `$agora-commit` 交付，Agent 不自动合并。\n[2026-09-01 /agora-commit·交付门禁] 分支 feat/sub-channel-lifecycle（base=dev-1.0.0，HEAD 与 origin/dev-1.0.0 同基线）。交付审计发现并以 TDD 修复生命周期业务拒绝：非法角色等预校验错误现在保留 Leader 原消息并返回 rejected，Channel revision 不变；仅捕获 ChannelLifecycleRejectedError，存储/投递故障继续 fail-fast。最终门禁：typecheck exit=0；Biome 187 files 0 违规；任务专属真实 JSON Channel/State + Harness output + HTTP/MessageBus 链 3 files/28 tests 全绿；Next production build 成功；全量 58 files passed / 2 skipped、551 passed / 2 skipped，真实 DockerSandbox 15/15、Phase 5 Docker/Harness/MCP 累积链通过；git diff --check、tracking JSON、敏感文件名与高置信凭据模式扫描均通过，无 secrets/.env/token。任务保持 in_progress，禁止 Agent 自动合并。",
+          "last_updated": "2026-09-01T20:16:09.000Z"
         },
         {
           "id": "6.3",
@@ -869,7 +872,7 @@
             "6.2"
           ],
           "test_file": null,
-          "notes": "closed=true 时生成 bubbledSummary（结论摘要+关键决策及理由）冒泡回 main 群并写台账，防止信息孤岛。可见范围只由 Channel.participants 决定；是否纳入上下文仍由投影裁定。"
+          "notes": "消费 6.2 已关闭且尚无 bubbledSummary 的 sub：以稳定 msgId 先将结论摘要+关键决策及理由冒泡回 main 群，再经项目级 revision commit 写入 bubbledSummary；重试不得重复 main 消息。可见范围只由 Channel.participants 决定；是否纳入上下文仍由投影裁定。humanGate 裁决/resume 仍归 Phase 8。"
         },
         {
           "id": "6.4",

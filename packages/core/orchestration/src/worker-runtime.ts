@@ -1,13 +1,20 @@
 import type { AppState, Mutation, RoleSpec } from '@agora/core-domain';
 import { applyMutations } from '@agora/core-domain';
-import { type Executor, project } from '@agora/runtime-executor';
+import { type Executor, project, type StepResult } from '@agora/runtime-executor';
 import type { Assignment } from './coordinator';
 
 export interface WorkerRuntimeDeps {
   roster: readonly RoleSpec[];
   buildExecutor(spec: RoleSpec, assign: Assignment): Executor;
+  handleOutput?: StepOutputHandler;
   transition?: StateTransition;
 }
+
+export type StepOutputHandler = (
+  state: AppState,
+  role: string,
+  output: StepResult['output'],
+) => Promise<void>;
 
 export type StateTransition = (
   state: AppState,
@@ -86,6 +93,9 @@ export class WorkerRuntime {
         sessionId: crypto.randomUUID(),
         view: project(current, handle.role, this.deps.roster),
       });
+      if (this.deps.handleOutput !== undefined) {
+        await this.deps.handleOutput(current, handle.role, result.output);
+      }
       current = await this.transition(current, result.mutations);
       if (result.kind === 'done') handle.done = true;
     }

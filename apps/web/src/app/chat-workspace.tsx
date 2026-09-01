@@ -13,8 +13,10 @@ import {
 
 import {
   applyMention,
+  type ChannelView,
   type ChatMessageView,
   DEFAULT_WORKSPACE,
+  fetchChannelRegistry,
   fetchTaskRuntime,
   filterMentionOptions,
   getMentionQuery,
@@ -120,15 +122,35 @@ function TeamRow({ member }: { member: TeamMemberView }) {
   );
 }
 
-function LeftSidebar({ model, open }: { model: WorkspaceViewModel; open: boolean }) {
+function LeftSidebar({
+  model,
+  channels,
+  selectedChannelId,
+  open,
+  onSelectChannel,
+}: {
+  model: WorkspaceViewModel;
+  channels: ChannelView[];
+  selectedChannelId: string;
+  open: boolean;
+  onSelectChannel: (channelId: string) => void;
+}) {
   return (
     <aside className="left-sidebar" data-open={open} aria-label="Workspace navigation">
       <section className="sidebar-section">
         <h2>Channels</h2>
-        <button className="channel-row channel-row-selected" type="button">
-          <span aria-hidden="true">#</span>
-          {model.channel.name}
-        </button>
+        {channels.map((channel) => (
+          <button
+            className={`channel-row${channel.id === selectedChannelId ? ' channel-row-selected' : ''}`}
+            key={channel.id}
+            type="button"
+            onClick={() => onSelectChannel(channel.id)}
+          >
+            <span aria-hidden="true">#</span>
+            <span className="channel-row-label">{channel.name}</span>
+            {channel.closed ? <small>closed</small> : null}
+          </button>
+        ))}
       </section>
       <section className="sidebar-section team-section">
         <h2>Team</h2>
@@ -429,6 +451,11 @@ export function ChatWorkspace({
   projectId = 'agora',
 }: ChatWorkspaceProps) {
   const [messages, setMessages] = useState(model.messages);
+  const [channels, setChannels] = useState<ChannelView[]>(
+    model.channels ?? [{ ...model.channel, kind: 'main', closed: false }],
+  );
+  const [selectedChannelId, setSelectedChannelId] = useState(model.channel.id);
+  const [channelRefreshNonce, setChannelRefreshNonce] = useState(0);
   const [taskId, setTaskId] = useState(model.task.id);
   const [goal, setGoal] = useState(model.task.title);
   const [task, setTask] = useState<TaskRuntimeView>();
@@ -452,8 +479,16 @@ export function ChatWorkspace({
 
   const runtimeModel = useMemo<WorkspaceViewModel>(() => {
     const currentRole = task?.runStatus === 'running' ? task.currentRole : null;
+    const selectedChannel = channels.find((channel) => channel.id === selectedChannelId) ??
+      channels[0] ?? {
+        ...model.channel,
+        kind: 'main' as const,
+        closed: false,
+      };
     return {
       ...model,
+      channel: { id: selectedChannel.id, name: selectedChannel.name },
+      channels,
       task: {
         id: taskId,
         title: goal,
@@ -480,7 +515,7 @@ export function ChatWorkspace({
             ],
       messages: [],
     };
-  }, [goal, model, task, taskId]);
+  }, [channels, goal, model, selectedChannelId, task, taskId]);
 
   useEffect(() => {
     let active = true;
@@ -509,7 +544,7 @@ export function ChatWorkspace({
     const search = new URLSearchParams({
       projectId,
       taskId,
-      channelId: model.channel.id,
+      channelId: runtimeModel.channel.id,
     });
     const source = new EventSource(`/api/stream?${search.toString()}`);
 
@@ -531,7 +566,29 @@ export function ChatWorkspace({
     source.onerror = () => setConnectionStatus('offline');
 
     return () => source.close();
-  }, [model.channel.id, projectId, taskId, task !== undefined]);
+  }, [projectId, runtimeModel.channel.id, taskId, task !== undefined]);
+
+  useEffect(() => {
+    if (task === undefined) return;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const search = new URLSearchParams({ projectId, taskId });
+        const refreshed = await fetchChannelRegistry(`/api/channels?${search.toString()}`);
+        if (active) setChannels(refreshed);
+      } catch (error) {
+        if (active) {
+          setSubmissionError(error instanceof Error ? error.message : 'Channel refresh failed');
+        }
+      }
+    };
+    void refresh();
+    const timer = setInterval(() => void refresh(), 2000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [channelRefreshNonce, projectId, task !== undefined, taskId]);
 
   useEffect(() => {
     if (task?.runStatus !== 'running') return;
@@ -562,6 +619,8 @@ export function ChatWorkspace({
     setTask(undefined);
     setTaskError(undefined);
     setMessages([]);
+    setChannels([{ id: 'main', name: 'main', kind: 'main', closed: false }]);
+    setSelectedChannelId('main');
   }
 
   function startTask() {
@@ -584,6 +643,7 @@ export function ChatWorkspace({
         const body = (await response.json()) as TaskRuntimeView & { error?: string };
         if (!response.ok) throw new Error(body.error ?? `Task start failed (${response.status})`);
         setTask(body);
+        setChannelRefreshNonce((current) => current + 1);
       } catch (error) {
         setTaskError(error instanceof Error ? error.message : 'Task start failed');
       }
@@ -614,13 +674,14 @@ export function ChatWorkspace({
         body: JSON.stringify({
           projectId,
           taskId,
-          channelId: model.channel.id,
+          channelId: runtimeModel.channel.id,
           msgId: submission.msgId,
           display,
         }),
       });
       if (!response.ok) throw new Error(`Message submission failed (${response.status})`);
       setSubmissionNotice(leaderActionNoticeFromResponse(await response.json()));
+      setChannelRefreshNonce((current) => current + 1);
       if (pendingSubmission.current?.msgId === submission.msgId) {
         pendingSubmission.current = undefined;
       }
@@ -679,7 +740,17 @@ export function ChatWorkspace({
         </button>
       </header>
 
-      <LeftSidebar model={runtimeModel} open={leftOpen} />
+      <LeftSidebar
+        model={runtimeModel}
+        channels={channels}
+        selectedChannelId={runtimeModel.channel.id}
+        open={leftOpen}
+        onSelectChannel={(channelId) => {
+          setSelectedChannelId(channelId);
+          setMessages([]);
+          setLeftOpen(false);
+        }}
+      />
       <section className="chat-column">
         <div className="mobile-context">
           <TerminalMark />
@@ -705,7 +776,10 @@ export function ChatWorkspace({
           onDraftChange={setDraft}
           onMention={selectMention}
           onSubmit={sendMessage}
-          disabled={task === undefined}
+          disabled={
+            task === undefined ||
+            channels.find((channel) => channel.id === runtimeModel.channel.id)?.closed === true
+          }
         />
         {submissionError ? (
           <p className="submission-error" role="alert">

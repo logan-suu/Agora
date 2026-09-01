@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
   applyMention,
+  fetchChannelRegistry,
   fetchTaskRuntime,
   filterMentionOptions,
   leaderActionNoticeFromResponse,
@@ -112,6 +113,42 @@ describe('chat UI model', () => {
       ),
     ).rejects.toThrow('task backend unavailable');
   });
+
+  it('loads only validated channel display metadata', async () => {
+    await expect(
+      fetchChannelRegistry('/api/channels', async () =>
+        Response.json({
+          channels: [
+            {
+              channelId: 'main',
+              kind: 'main',
+              participants: ['leader', 'CODER'],
+              closed: false,
+            },
+            {
+              channelId: 'sub-task-a-action-1',
+              kind: 'sub',
+              taskId: 'task-a',
+              threadId: 'action-1',
+              topic: 'Cache race',
+              createdBy: 'CODER',
+              participants: ['leader', 'CODER'],
+              closed: true,
+              localContext: [{ msgId: 'must-not-cross-read-model' }],
+            },
+          ],
+        }),
+      ),
+    ).resolves.toEqual([
+      { id: 'main', name: 'main', kind: 'main', closed: false },
+      {
+        id: 'sub-task-a-action-1',
+        name: 'Cache race',
+        kind: 'sub',
+        closed: true,
+      },
+    ]);
+  });
 });
 
 describe('ChatWorkspace', () => {
@@ -119,6 +156,10 @@ describe('ChatWorkspace', () => {
     const model: WorkspaceViewModel = {
       task: { id: '5.2', title: 'Group chat UI', status: 'In progress' },
       channel: { id: 'main-room', name: 'main-room' },
+      channels: [
+        { id: 'main-room', name: 'main-room', kind: 'main', closed: false },
+        { id: 'sub-task-a', name: 'Cache race', kind: 'sub', closed: true },
+      ],
       team: [
         { role: 'LEADER', name: 'Leader (You)', status: 'online' },
         { role: 'CODER', name: 'Coder', status: 'active' },
@@ -139,6 +180,8 @@ describe('ChatWorkspace', () => {
     const visibleText = html.replace(/<[^>]+>/g, '');
 
     expect(html).toContain('Channels');
+    expect(visibleText).toContain('Cache race');
+    expect(visibleText).toContain('closed');
     expect(html).toContain('Team');
     expect(html).toContain('Current task');
     expect(html).toContain('Active workers');

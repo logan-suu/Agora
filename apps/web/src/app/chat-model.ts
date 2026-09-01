@@ -31,6 +31,13 @@ export interface ActiveWorkerView {
   detail: string;
 }
 
+export interface ChannelView {
+  id: string;
+  name: string;
+  kind: 'main' | 'sub';
+  closed: boolean;
+}
+
 export interface WorkspaceViewModel {
   task: {
     id: string;
@@ -41,6 +48,7 @@ export interface WorkspaceViewModel {
     id: string;
     name: string;
   };
+  channels?: ChannelView[];
   team: TeamMemberView[];
   activeWorkers: ActiveWorkerView[];
   messages: ChatMessageView[];
@@ -69,6 +77,39 @@ export async function fetchTaskRuntime(
     throw new Error(body.error ?? `Task refresh failed (${response.status})`);
   }
   return body;
+}
+
+export async function fetchChannelRegistry(
+  url: string,
+  fetcher: typeof fetch = fetch,
+): Promise<ChannelView[]> {
+  const response = await fetcher(url);
+  const body = (await response.json()) as { channels?: unknown; error?: string };
+  if (!response.ok) throw new Error(body.error ?? `Channel refresh failed (${response.status})`);
+  if (!Array.isArray(body.channels)) throw new Error('invalid Channel registry response');
+
+  return body.channels.map((value) => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new Error('invalid Channel registry response');
+    }
+    const record = value as Record<string, unknown>;
+    if (
+      typeof record.channelId !== 'string' ||
+      (record.kind !== 'main' && record.kind !== 'sub') ||
+      typeof record.closed !== 'boolean'
+    ) {
+      throw new Error('invalid Channel registry response');
+    }
+    if (record.kind === 'sub' && typeof record.topic !== 'string') {
+      throw new Error('invalid Channel registry response');
+    }
+    return {
+      id: record.channelId,
+      name: record.kind === 'main' ? 'main' : (record.topic as string),
+      kind: record.kind,
+      closed: record.closed,
+    };
+  });
 }
 
 export const MENTIONABLE_ROLES = [
@@ -174,6 +215,7 @@ export const DEFAULT_WORKSPACE: WorkspaceViewModel = {
     id: 'main',
     name: 'main',
   },
+  channels: [{ id: 'main', name: 'main', kind: 'main', closed: false }],
   team: [
     { role: 'LEADER', name: 'Leader (You)', status: 'online' },
     { role: 'COORDINATOR', name: 'Coordinator', status: 'online' },

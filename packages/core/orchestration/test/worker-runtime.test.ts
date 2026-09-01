@@ -115,6 +115,31 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     expect(result.messages.map((entry) => entry.msgId)).toEqual(['m1', 'm2']);
   });
 
+  it('handles structured step output before applying that step state transition', async () => {
+    const fake = new FakeExecutor([
+      {
+        ...stepOf('done', [{ field: 'messages', op: 'append', value: chatMessage('m1') }]),
+        output: { channelAction: { kind: 'close_sub_channel', channelId: 'sub-a' } },
+      },
+    ]);
+    const order: string[] = [];
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => fake,
+      handleOutput: async (_state, role, output) => {
+        order.push(`output:${role}:${String('channelAction' in output)}`);
+      },
+      transition: async (state, mutations) => {
+        order.push('transition');
+        return applyMutations(state, mutations);
+      },
+    });
+
+    await runtime.runOne(createInitialAppState('t-1', 'g'), { role: 'CODER' });
+
+    expect(order).toEqual(['output:CODER:true', 'transition']);
+  });
+
   it('stops the loop exactly on a kind="done" step result', async () => {
     const fake = new FakeExecutor([stepOf('done', [])]);
     const runtime = runtimeWith([fake]);
