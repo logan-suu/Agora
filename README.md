@@ -138,11 +138,11 @@ Open [http://localhost:3000](http://localhost:3000), then:
 1. enter a stable **Task ID** such as `ttl-lru-demo`;
 2. enter a concrete **Goal**;
 3. select **Start task**;
-4. follow the active role, messages, test result, review result, and artifact path;
-5. refresh after completion to verify persisted recovery;
-6. send a message beginning with one valid mention, such as `@TESTER re-check the acceptance criteria`, to exercise the current Phase 5 Leader-intent path.
+4. while the task is still running, send a message beginning with one valid mention, such as `@TESTER re-check the acceptance criteria`, to exercise the current Phase 5 Leader-intent path;
+5. follow the active role, messages, test result, review result, and artifact path;
+6. refresh after completion to verify persisted recovery.
 
-The web UI currently uses the fixed project ID `agora` and fixed channel ID `main`. Only one task may be actively running at a time. Starting another active task returns a visible conflict instead of silently creating unsupported parallel work.
+The web UI currently uses the fixed project ID `agora` and fixed channel ID `main`. Only one task may be actively running at a time. Starting another active task returns a visible conflict instead of silently creating unsupported parallel work. Assignments sent after a task reaches `done` are deliberately rejected by the Phase 5 Leader-intent contract.
 
 ### Configuration
 

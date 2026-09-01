@@ -1,7 +1,6 @@
 // R11/G5: only the external LLM boundary is scripted for deterministic automation.
 // JsonTaskStateStore, MessageService, Coordinator, MessageBus/SSE, DockerSandbox,
-// Harness, MCP tools, host Git, Node tests, and the Web composition are real.
-import { execFileSync } from 'node:child_process';
+// Harness, MCP tools, host Git metadata, containerized Node tests, and the Web composition are real.
 import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -10,7 +9,7 @@ import { join } from 'node:path';
 import { applyMutations, createInitialAppState, setMutation } from '@agora/core-domain';
 import { decide, latestCoordinationLedger } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
-import { Dockerode } from '@agora/runtime-sandbox';
+import { createSandbox, Dockerode, type RunResult } from '@agora/runtime-sandbox';
 import { CallId, type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -24,6 +23,18 @@ import { TaskOrchestrationRuntime } from '../../../apps/web/src/server/task-orch
 
 const decoder = new TextDecoder();
 const roots: string[] = [];
+const cleanups: Array<() => Promise<void> | void> = [];
+
+function registerCleanup(cleanup: () => Promise<void> | void): void {
+  cleanups.push(cleanup);
+}
+
+function registerReader(reader: ReadableStreamDefaultReader<Uint8Array> | undefined): void {
+  if (reader === undefined) return;
+  registerCleanup(async () => {
+    await reader.cancel().catch(() => {});
+  });
+}
 
 async function temporaryRoot(prefix: string): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), prefix));
@@ -47,7 +58,18 @@ function taskRequest(body: Record<string, unknown>): Request {
 
 afterEach(async () => {
   vi.useRealTimers();
+  const cleanupErrors: unknown[] = [];
+  for (const cleanup of cleanups.splice(0).reverse()) {
+    try {
+      await cleanup();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(cleanupErrors, 'Phase 5 test resource cleanup failed');
+  }
 });
 
 describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
@@ -59,20 +81,32 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
     const address = { ...scope, channelId: 'main' };
     await runtime.initialize(scope, 'Inspect the cache contract');
 
+    let sequence = 0;
+    let commitSequence: number | undefined;
+    let publishSequence: number | undefined;
+    const realCommit = runtime.store.commit.bind(runtime.store);
+    vi.spyOn(runtime.store, 'commit').mockImplementation(async (...args) => {
+      const result = await realCommit(...args);
+      commitSequence = ++sequence;
+      return result;
+    });
     let stateObservedAtPublish: Promise<boolean> | undefined;
     const unsubscribeAudit = stream.subscribe(address, (event) => {
       if (event.type !== 'message' || stateObservedAtPublish !== undefined) return;
+      publishSequence = ++sequence;
       stateObservedAtPublish = runtime.store
         .load(scope)
         .then(
           (state) => state?.messages.some((message) => message.msgId === 'assignment-1') ?? false,
         );
     });
+    registerCleanup(unsubscribeAudit);
 
     const response = await createGetStream(runtime)(
       new Request('http://localhost/api/stream?projectId=project-a&taskId=task-a&channelId=main'),
     );
     const reader = response.body?.getReader();
+    registerReader(reader);
     expect(response.status).toBe(200);
     expect(decoder.decode((await reader?.read())?.value)).toContain('event: connected');
     expect(decoder.decode((await reader?.read())?.value)).toContain('event: snapshot');
@@ -93,6 +127,9 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
       published: true,
     });
     await expect(stateObservedAtPublish).resolves.toBe(true);
+    expect(commitSequence).toBeDefined();
+    expect(publishSequence).toBeDefined();
+    expect(commitSequence).toBeLessThan(publishSequence as number);
 
     const live = decoder.decode((await reader?.read())?.value);
     expect(live).toContain('event: message');
@@ -251,6 +288,7 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
       new Request('http://localhost/api/stream?projectId=project-a&taskId=task-a&channelId=main'),
     );
     const snapshotReader = snapshotResponse.body?.getReader();
+    registerReader(snapshotReader);
     await snapshotReader?.read();
     const snapshot = decoder.decode((await snapshotReader?.read())?.value);
     expect(snapshot).toContain('assignment-1');
@@ -323,6 +361,7 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
 
     const response = await opening;
     const reader = response.body?.getReader();
+    registerReader(reader);
     expect(decoder.decode((await reader?.read())?.value)).toContain('event: connected');
     const snapshot = decoder.decode((await reader?.read())?.value);
     const tail = decoder.decode((await reader?.read())?.value);
@@ -340,6 +379,7 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
       ),
     );
     const heartbeatReader = heartbeatResponse.body?.getReader();
+    registerReader(heartbeatReader);
     await heartbeatReader?.read();
     await heartbeatReader?.read();
     await vi.advanceTimersByTimeAsync(15_000);
@@ -458,9 +498,56 @@ const finalText: Readonly<Record<string, string>> = {
   ]),
 };
 
+function toolResultOf(call: GenerateOptions, toolName: string): unknown | undefined {
+  for (const message of call.messages) {
+    for (const block of message.content) {
+      if (block.type !== 'tool-call' || block.name !== toolName) continue;
+      for (const other of call.messages) {
+        const result = other.content.find(
+          (candidate) => candidate.type === 'tool-result' && candidate.toolCallId === block.id,
+        );
+        if (result?.type !== 'tool-result') continue;
+        const text = result.content.find((candidate) => candidate.type === 'text');
+        if (text?.type === 'text') return JSON.parse(text.text) as unknown;
+      }
+    }
+  }
+  return undefined;
+}
+
+function requireSuccessfulSandboxRun(value: unknown): RunResult {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('exitCode' in value) ||
+    !('stdout' in value) ||
+    !('stderr' in value) ||
+    !('timedOut' in value)
+  ) {
+    throw new Error('sandbox_run did not return a structured RunResult');
+  }
+  const result = value as Record<string, unknown>;
+  if (
+    (typeof result.exitCode !== 'number' && result.exitCode !== null) ||
+    typeof result.stdout !== 'string' ||
+    typeof result.stderr !== 'string' ||
+    typeof result.timedOut !== 'boolean'
+  ) {
+    throw new Error('sandbox_run returned an invalid RunResult');
+  }
+  const runResult = result as unknown as RunResult;
+  if (runResult.exitCode !== 0 || runResult.timedOut || !runResult.stdout.includes('pass 3')) {
+    throw new Error(
+      `sandbox_run failed or lacked passing test output (exitCode=${String(runResult.exitCode)}, timedOut=${String(runResult.timedOut)}): ${runResult.stderr}`,
+    );
+  }
+  return runResult;
+}
+
 class ScriptedExternalLlm extends LlmAdapter {
   private sequence = 0;
   private gateConsumed = false;
+  sandboxRunResult: RunResult | undefined;
 
   constructor(private readonly firstRequestGate: Promise<void>) {
     super();
@@ -477,6 +564,9 @@ class ScriptedExternalLlm extends LlmAdapter {
         count + message.content.filter((block) => block.type === 'tool-result').length,
       0,
     );
+    if (role === 'TESTER' && completed === 2) {
+      this.sandboxRunResult = requireSuccessfulSandboxRun(toolResultOf(options, 'sandbox_run'));
+    }
     const action = actions[role]?.[completed];
     if (action === undefined) {
       yield* textChunks(finalText[role] ?? 'done');
@@ -520,11 +610,23 @@ function* textChunks(text: string): Iterable<StreamChunk> {
   yield { type: 'finish', reason: { kind: 'stop' } };
 }
 
+describe('Phase 5 G5 evidence guards', () => {
+  it('rejects a scripted pass when the real sandbox test failed', () => {
+    expect(() =>
+      requireSuccessfulSandboxRun({ exitCode: 1, stdout: '', stderr: 'failed', timedOut: false }),
+    ).toThrow('sandbox_run');
+    expect(() =>
+      requireSuccessfulSandboxRun({ exitCode: 0, stdout: '', stderr: '', timedOut: false }),
+    ).toThrow('sandbox_run');
+  });
+});
+
 describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
   it('runs one browser-shaped task to durable completion and releases the single-run slot', async () => {
     const docker = connectDocker();
     expect(docker, 'Phase 5 G5 requires a reachable Docker daemon').not.toBeNull();
     if (docker === null) throw new Error('Phase 5 G5 requires a reachable Docker daemon');
+    await docker.ping();
 
     const root = await temporaryRoot('agora-phase5-docker-exit-');
     const stream = new ChannelStream();
@@ -533,22 +635,26 @@ describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
     const firstRequestGate = new Promise<void>((resolve) => {
       releaseFirstRequest = resolve;
     });
+    const adapter = new ScriptedExternalLlm(firstRequestGate);
     const runtime = new TaskOrchestrationRuntime(
       messages,
       createWebTaskCompositionFactory({
         dataRoot: root,
         sandboxConfig: { kind: 'docker', docker },
         executorOptions: {
-          adapter: new ScriptedExternalLlm(firstRequestGate),
+          adapter,
           provider: 'agora-phase5-exit',
         },
       }),
     );
+    registerCleanup(() => runtime.disposeAll());
+    registerCleanup(releaseFirstRequest);
     const address = { projectId: 'demo', taskId: 'phase5-exit', channelId: 'main' };
     const delivered: unknown[] = [];
     const unsubscribe = stream.subscribe(address, (event) => {
       if (event.type === 'message') delivered.push(event.data);
     });
+    registerCleanup(unsubscribe);
     const postTask = createPostTask(runtime);
     const startBody = {
       projectId: 'demo',
@@ -584,6 +690,8 @@ describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
       phase: 'done',
       testResults: { passed: true, total: 3, failed: 0 },
     });
+    expect(adapter.sandboxRunResult).toMatchObject({ exitCode: 0, timedOut: false });
+    expect(adapter.sandboxRunResult?.stdout).toContain('pass 3');
     expect(summary?.artifactPath).toContain(
       join('projects', 'demo', 'tasks', 'phase5-exit', 'artifacts', 'worktree'),
     );
@@ -592,11 +700,29 @@ describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
       throw new Error('expected archived Phase 5 artifact');
     }
     expect(readFileSync(join(artifactPath, 'ttl-lru.js'), 'utf8')).toContain('class TtlLruCache');
-    const independentTest = execFileSync(process.execPath, ['--test', 'ttl-lru.test.js'], {
-      cwd: artifactPath,
-      encoding: 'utf8',
-    });
-    expect(independentTest).toContain('pass 3');
+    const verificationTaskId = 'phase5-artifact-verification';
+    const verificationSandbox = createSandbox({ kind: 'docker', docker });
+    registerCleanup(() => verificationSandbox.teardown(verificationTaskId));
+    const verificationWorktree = await verificationSandbox.createWorktree(
+      verificationTaskId,
+      'independent',
+    );
+    await verificationSandbox.write(
+      verificationWorktree,
+      'ttl-lru.js',
+      readFileSync(join(artifactPath, 'ttl-lru.js'), 'utf8'),
+    );
+    await verificationSandbox.write(
+      verificationWorktree,
+      'ttl-lru.test.js',
+      readFileSync(join(artifactPath, 'ttl-lru.test.js'), 'utf8'),
+    );
+    const independentTest = await verificationSandbox.run(
+      verificationWorktree,
+      'node --test ttl-lru.test.js',
+    );
+    expect(independentTest).toMatchObject({ exitCode: 0, timedOut: false });
+    expect(independentTest.stdout).toContain('pass 3');
 
     const state = await messages.store.load({ projectId: 'demo', taskId: 'phase5-exit' });
     expect(state?.messages.some((message) => message.fromRole === 'CODER')).toBe(true);
@@ -613,6 +739,7 @@ describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
         sandboxConfig: { kind: 'docker', docker },
       }),
     );
+    registerCleanup(() => restarted.disposeAll());
     await expect(
       restarted.summary({ projectId: 'demo', taskId: 'phase5-exit' }),
     ).resolves.toMatchObject({
@@ -647,9 +774,5 @@ describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
     await expect(
       runtime.summary({ projectId: 'demo', taskId: 'slot-reuse' }),
     ).resolves.toMatchObject({ runStatus: 'completed', phase: 'done' });
-
-    unsubscribe();
-    await runtime.disposeAll();
-    await restarted.disposeAll();
   }, 240_000);
 });
