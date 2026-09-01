@@ -17,6 +17,7 @@ import {
 import { WorkerRuntime } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import type { Executor, StepResult } from '@agora/runtime-executor';
+import { JsonTaskStateStore } from '@agora/runtime-state';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../src/server/channel-stream';
@@ -248,6 +249,26 @@ describe('TaskOrchestrationRuntime', () => {
     await expect(restarted.summary(scope)).resolves.toMatchObject({
       runStatus: 'interrupted',
       phase: 'clarifying',
+    });
+  });
+
+  it('backfills channels when lifecycle start discovers a legacy persisted task', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const scope = { projectId: 'legacy-project', taskId: 'legacy-task' };
+    await new JsonTaskStateStore(root).initialize(
+      scope,
+      createInitialAppState(scope.taskId, 'Legacy goal', scope.projectId),
+    );
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const restarted = new TaskOrchestrationRuntime(messages, successfulFactory(Promise.resolve()));
+
+    await expect(
+      restarted.start({ ...scope, requestId: 'legacy-restart', goal: 'Legacy goal' }),
+    ).resolves.toMatchObject({ startOutcome: 'interrupted', runStatus: 'interrupted' });
+    await expect(messages.channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 0,
+      channels: [{ channelId: 'main' }],
     });
   });
 

@@ -101,6 +101,9 @@ importers:
       '@agora/comm-bus':
         specifier: workspace:*
         version: link:../../packages/comm/bus
+      '@agora/comm-channels':
+        specifier: workspace:*
+        version: link:../../packages/comm/channels
       '@agora/core-domain':
         specifier: workspace:*
         version: link:../../packages/core/domain
@@ -157,7 +160,11 @@ importers:
         specifier: workspace:*
         version: link:../../core/domain
 
-  packages/comm/channels: {}
+  packages/comm/channels:
+    dependencies:
+      '@agora/core-domain':
+        specifier: workspace:*
+        version: link:../../core/domain
 
   packages/core/domain: {}
 
@@ -166,6 +173,9 @@ importers:
       '@agora/comm-bus':
         specifier: workspace:*
         version: link:../../comm/bus
+      '@agora/comm-channels':
+        specifier: workspace:*
+        version: link:../../comm/channels
       '@agora/core-domain':
         specifier: workspace:*
         version: link:../domain

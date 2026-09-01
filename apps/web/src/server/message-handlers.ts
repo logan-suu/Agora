@@ -1,4 +1,5 @@
 import { toDisplayMessageEvent } from '@agora/comm-bus';
+import { resolveParticipantChannel } from '@agora/comm-channels';
 
 import { type ChannelEvent, encodeSseEvent } from './channel-stream';
 import { jsonError, readJsonObject, requiredString } from './http';
@@ -19,13 +20,16 @@ export function createPostMessage(runtime: MessageRuntime) {
     if (!projectId || !taskId || !channelId || !msgId || !display) {
       return jsonError('projectId, taskId, channelId, msgId, and display are required');
     }
-    if (channelId !== 'main') {
-      return jsonError('Phase 5 only supports channelId "main"');
-    }
-
     const scope = { projectId, taskId };
     if ((await runtime.store.load(scope)) === undefined) {
       return jsonError('task not found; create it through POST /api/tasks first', 404);
+    }
+    const project = await runtime.ensureProjectChannels(projectId);
+    try {
+      const channel = resolveParticipantChannel(project, taskId, 'leader', channelId);
+      if (channel.closed) return jsonError(`channel "${channelId}" is closed`);
+    } catch (error) {
+      return jsonError(error instanceof Error ? error.message : 'invalid channel address');
     }
     const result = await runtime.commitLeaderMessage(scope, {
       msgId,
@@ -50,10 +54,6 @@ export function createGetStream(runtime: MessageRuntime) {
     if (!projectId || !taskId || !channelId) {
       return jsonError('projectId, taskId, and channelId are required');
     }
-    if (channelId !== 'main') {
-      return jsonError('Phase 5 only supports channelId "main"');
-    }
-
     const scope = { projectId, taskId };
     const address = { ...scope, channelId };
     let cleanup = () => {};
@@ -117,6 +117,13 @@ export function createGetStream(runtime: MessageRuntime) {
       if (state === undefined) {
         cleanup();
         return jsonError('task not found; create it through POST /api/tasks first', 404);
+      }
+      const project = await runtime.ensureProjectChannels(projectId);
+      try {
+        resolveParticipantChannel(project, taskId, 'leader', channelId);
+      } catch (error) {
+        cleanup();
+        return jsonError(error instanceof Error ? error.message : 'invalid channel address');
       }
       const snapshot = state.messages
         .filter((message) => message.channelId === channelId)

@@ -110,6 +110,7 @@ export class TaskOrchestrationRuntime {
         if (persisted.goal !== input.goal) {
           throw new TaskGoalConflictError(input, persisted.goal);
         }
+        await this.messages.ensureProjectChannels(input.projectId);
         const startOutcome: 'completed' | 'interrupted' =
           persisted.phase === 'done' ? 'completed' : 'interrupted';
         const summary = summaryFrom(persisted, startOutcome);

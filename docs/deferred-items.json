@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-08-31T16:38:52.000Z",
+  "last_updated": "2026-09-01T15:03:00.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -258,13 +258,14 @@
       "comment_url": null,
       "task": "5.1",
       "severity": "major",
-      "item": "SSE and HTTP publication routes have no server-derived identity or Channel participant authorization",
-      "detail": "Task 5.3 now requires projectId/taskId/channelId scope and server-stamps browser messages as leader, so caller-provided role spoofing is closed. The routes still do not consult canonical Project.channels participants; account authentication remains out of scope and the participant registry belongs to Phase 6. Until that boundary lands, the routes are suitable only behind a trusted single-user deployment boundary and must not be treated as safe public multi-user endpoints.",
+      "item": "SSE and HTTP routes do not validate canonical Channel scope; worker inbox lacks participant isolation",
+      "detail": "Task 5.3 requires projectId/taskId/channelId scope and server-stamps browser messages as leader, so caller-provided role spoofing is closed. The remaining Phase 6 gap is canonical Channel integrity: routes do not reject unknown, cross-task, or closed channels before State commit, and worker inbox routing does not yet filter by Project.channels participants. Browser account authentication remains explicitly out of scope: within the trusted single-user boundary the browser is leader, and leader is a participant of every Channel. Resolving this item therefore does not make unauthenticated public deployment safe.",
       "target_phase": 6,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "6.1",
       "created_at": "2026-08-31T12:45:53.000Z",
-      "notes": "Task 5.3 completed the Phase 5 portion: HTTP/SSE use projectId/taskId/channelId and browser POST identity is server-owned leader, with a negative spoofing test. Remaining resolution condition: before public exposure or no later than the Phase 6 exit gate, validate channel membership against canonical Project.channels for GET and POST routes and add negative tests for unauthorized reads, message publication, and commands. If public deployment is required before Phase 6, this item becomes blocking and requires a synchronized Leader architecture ruling."
+      "notes": "Task 5.3 completed the Phase 5 portion: HTTP/SSE use projectId/taskId/channelId and browser POST identity is server-owned leader, with a negative spoofing test. [2026-09-01 Leader-approved spec review] Resolution condition is now precise and testable: persist canonical Project.channels, reject unknown/cross-task/closed channels before State commit, prove non-participant workers cannot read or publish to a sub channel, and prove rejected publication neither mutates AppState.messages nor emits MessageCommitted. GET/POST browser tests operate as the server-derived leader, who may access every Channel by invariant; they test invalid Channel scope rather than fabricate an unauthenticated non-leader identity. [2026-09-01 Task 6.1 resolved] JsonProjectChannelStore persists canonical Project.channels with restart recovery; MessageService and HTTP/SSE reject invalid scope before commit; DerivedChannelInbox enforces participant visibility; negative tests prove no State or MessageCommitted/SSE side effect. This resolves DEF-015 under its Leader-approved Channel-integrity scope. Full account authentication remains an explicit deployment non-goal under D8, so the trusted single-user boundary is unchanged and resolution must not be represented as public multi-user safety.",
+      "resolved_at": "2026-09-01T15:03:00.000Z"
     }
   ]
 }

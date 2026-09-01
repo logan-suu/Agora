@@ -1,9 +1,10 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { appendMutation, type Message, setMutation } from '@agora/core-domain';
+import { appendMutation, createMainChannel, type Message, setMutation } from '@agora/core-domain';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { MessageBus, MessageCommitted } from '../../../comm/bus/src/index';
+import { JsonProjectChannelStore } from '../../../comm/channels/src/index';
 import { JsonTaskStateStore, type TaskScope } from '../../../runtime/state/src/index';
 
 import { MessageService } from '../src/index';
@@ -41,6 +42,19 @@ class RecordingBus implements MessageBus {
   }
 }
 
+async function createService(store: JsonTaskStateStore, bus: MessageBus): Promise<MessageService> {
+  const channels = new JsonProjectChannelStore(await temporaryRoot(), [
+    'COORDINATOR',
+    'CODER',
+    'TESTER',
+    'REVIEWER',
+  ]);
+  await channels.initialize(scope.projectId, [
+    createMainChannel(['COORDINATOR', 'CODER', 'TESTER', 'REVIEWER']),
+  ]);
+  return new MessageService(store, bus, channels);
+}
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -49,7 +63,7 @@ describe('MessageService', () => {
   it('persists a message before publishing its committed event', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();
-    const service = new MessageService(store, bus);
+    const service = await createService(store, bus);
     await service.initialize(scope, 'Build the message flow');
     bus.onPublish = async () => {
       const persisted = await store.load(scope);
@@ -65,7 +79,7 @@ describe('MessageService', () => {
   it('does not publish an idempotent msgId replay twice', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();
-    const service = new MessageService(store, bus);
+    const service = await createService(store, bus);
     await service.initialize(scope, 'Build the message flow');
 
     const first = await service.commitMessage(scope, message());
@@ -79,7 +93,7 @@ describe('MessageService', () => {
   it('commits a planned leader message and its action mutations before publishing', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();
-    const service = new MessageService(store, bus);
+    const service = await createService(store, bus);
     await service.initialize(scope, 'Build the message flow');
     const leaderMessage = message({
       display: '@CODER implement the cache',
@@ -102,10 +116,27 @@ describe('MessageService', () => {
     expect(bus.events).toEqual([{ ...scope, message: leaderMessage }]);
   });
 
+  it('rejects supplemental planned message mutations before any State or bus effect', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const bus = new RecordingBus();
+    const service = await createService(store, bus);
+    await service.initialize(scope, 'Build the message flow');
+
+    await expect(
+      service.commitPlannedMessage(scope, 'message-1', () => ({
+        message: message(),
+        mutations: [appendMutation('messages', message({ msgId: 'message-2' }))],
+      })),
+    ).rejects.toThrow('planned message mutations must not append messages');
+
+    await expect(store.load(scope)).resolves.toMatchObject({ messages: [] });
+    expect(bus.events).toEqual([]);
+  });
+
   it('does not re-plan or reapply actions when a committed msgId is retried later', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();
-    const service = new MessageService(store, bus);
+    const service = await createService(store, bus);
     await service.initialize(scope, 'Build the message flow');
     const leaderMessage = message({ display: '@CODER implement the cache' });
 
@@ -130,7 +161,7 @@ describe('MessageService', () => {
   it('serializes concurrent retries so a logical leader action is planned once', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();
-    const service = new MessageService(store, bus);
+    const service = await createService(store, bus);
     await service.initialize(scope, 'Build the message flow');
     const leaderMessage = message({ display: '@CODER implement the cache' });
     let plans = 0;
@@ -158,7 +189,7 @@ describe('MessageService', () => {
         throw new Error('delivery unavailable');
       },
     };
-    const service = new MessageService(store, bus);
+    const service = await createService(store, bus);
     await service.initialize(scope, 'Build the message flow');
 
     await expect(service.commitMessage(scope, message())).rejects.toThrow('delivery unavailable');
@@ -168,7 +199,7 @@ describe('MessageService', () => {
   it('commits orchestration mutations before publishing every newly appended agent message', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();
-    const service = new MessageService(store, bus);
+    const service = await createService(store, bus);
     await service.initialize(scope, 'Build the message flow');
     const first = message({
       msgId: 'agent-1',
@@ -200,7 +231,7 @@ describe('MessageService', () => {
   it('does not republish an idempotent orchestration message replay', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();
-    const service = new MessageService(store, bus);
+    const service = await createService(store, bus);
     await service.initialize(scope, 'Build the message flow');
     const agentMessage = message({ msgId: 'agent-1', fromRole: 'COORDINATOR' });
     const mutations = [appendMutation('messages', agentMessage)] as const;
@@ -214,19 +245,19 @@ describe('MessageService', () => {
     expect(bus.events).toHaveLength(1);
   });
 
-  it('keeps Phase 5 message submission on the main channel', async () => {
+  it('rejects a message addressed to a channel missing from the project registry', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
-    const service = new MessageService(store, new RecordingBus());
+    const service = await createService(store, new RecordingBus());
     await service.initialize(scope, 'Build the message flow');
 
     await expect(
       service.commitMessage(scope, message({ channelId: 'private-channel' })),
-    ).rejects.toThrow('main');
+    ).rejects.toThrow('does not exist');
   });
 
   it('rejects a non-main orchestration message before committing sibling mutations', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
-    const service = new MessageService(store, new RecordingBus());
+    const service = await createService(store, new RecordingBus());
     await service.initialize(scope, 'Build the message flow');
 
     await expect(
@@ -234,7 +265,92 @@ describe('MessageService', () => {
         setMutation('phase', 'testing'),
         appendMutation('messages', message({ channelId: 'private-channel' })),
       ]),
-    ).rejects.toThrow('main');
+    ).rejects.toThrow('does not exist');
     await expect(store.load(scope)).resolves.toMatchObject({ phase: 'clarifying', messages: [] });
+  });
+
+  it('uses the persisted Channel registry for dynamic addressing before State commit', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const bus = new RecordingBus();
+    const channels = new JsonProjectChannelStore(root, ['COORDINATOR', 'CODER', 'TESTER']);
+    await channels.initialize(scope.projectId, [
+      {
+        channelId: 'main',
+        kind: 'main',
+        participants: ['leader', 'COORDINATOR', 'CODER', 'TESTER'],
+        localContext: [],
+        closed: false,
+      },
+      {
+        channelId: 'sub-task-a',
+        kind: 'sub',
+        taskId: 'task-a',
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: false,
+      },
+    ]);
+    const service = new MessageService(store, bus, channels);
+    await service.initialize(scope, 'Build the message flow');
+    const subMessage = message({ channelId: 'sub-task-a', fromRole: 'CODER' });
+
+    await expect(service.commitMessage(scope, subMessage)).resolves.toMatchObject({
+      published: true,
+    });
+    await expect(store.load(scope)).resolves.toMatchObject({ messages: [subMessage] });
+    expect(bus.events).toEqual([{ ...scope, message: subMessage }]);
+  });
+
+  it('rejects cross-task, non-participant, and closed channels without State or bus effects', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const bus = new RecordingBus();
+    const channels = new JsonProjectChannelStore(root, ['COORDINATOR', 'CODER', 'TESTER']);
+    await channels.initialize(scope.projectId, [
+      createMainChannel(['COORDINATOR', 'CODER', 'TESTER']),
+      {
+        channelId: 'other-task',
+        kind: 'sub',
+        taskId: 'task-b',
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: false,
+      },
+      {
+        channelId: 'coder-only',
+        kind: 'sub',
+        taskId: 'task-a',
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: false,
+      },
+      {
+        channelId: 'closed',
+        kind: 'sub',
+        taskId: 'task-a',
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: true,
+      },
+    ]);
+    const service = new MessageService(store, bus, channels);
+    await service.initialize(scope, 'Build the message flow');
+
+    await expect(
+      service.commitMessage(scope, message({ msgId: 'cross-task', channelId: 'other-task' })),
+    ).rejects.toThrow('bound to taskId');
+    await expect(
+      service.commitMessage(
+        scope,
+        message({ msgId: 'non-participant', channelId: 'coder-only', fromRole: 'TESTER' }),
+      ),
+    ).rejects.toThrow('is not a participant');
+    await expect(
+      service.commitMessage(scope, message({ msgId: 'closed', channelId: 'closed' })),
+    ).rejects.toThrow('is closed');
+
+    await expect(store.load(scope)).resolves.toMatchObject({ messages: [] });
+    expect(bus.events).toEqual([]);
   });
 });

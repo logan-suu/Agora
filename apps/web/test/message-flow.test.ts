@@ -1,12 +1,13 @@
 // Test seam: one case pauses the real TaskStateStore.load call to make the
 // snapshot-to-subscription race deterministic; the JSON store, commit, and stream stay real.
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { applyMutations } from '@agora/core-domain';
+import { applyMutations, createInitialAppState } from '@agora/core-domain';
 import { decide, latestCoordinationLedger } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
+import { JsonTaskStateStore } from '@agora/runtime-state';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../src/server/channel-stream';
@@ -100,6 +101,99 @@ describe('persisted HTTP + SSE message flow', () => {
     ).toBe(true);
   });
 
+  it('persists the project main registry and addresses a registered sub channel', async () => {
+    const root = await temporaryRoot();
+    const runtime = createMessageRuntime(root, new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const initial = await runtime.channels.load(scope.projectId);
+    if (initial === undefined) throw new Error('expected initialized project channels');
+    await runtime.channels.commit(scope.projectId, initial.revision, [
+      ...initial.channels,
+      {
+        channelId: 'sub-task-a',
+        kind: 'sub',
+        taskId: scope.taskId,
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: false,
+      },
+    ]);
+
+    const response = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'sub-task-a',
+        msgId: 'leader-sub-message',
+        display: 'Please inspect this privately.',
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      messages: [{ msgId: 'leader-sub-message', channelId: 'sub-task-a', fromRole: 'leader' }],
+    });
+    await expect(createMessageRuntime(root).channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 1,
+      channels: [{ channelId: 'main' }, { channelId: 'sub-task-a' }],
+    });
+  });
+
+  it('rejects invalid browser Channel scope without persisting or streaming a message', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const initial = await runtime.channels.load(scope.projectId);
+    if (initial === undefined) throw new Error('expected initialized project channels');
+    await runtime.channels.commit(scope.projectId, initial.revision, [
+      ...initial.channels,
+      {
+        channelId: 'other-task',
+        kind: 'sub',
+        taskId: 'task-b',
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: false,
+      },
+      {
+        channelId: 'closed-task-a',
+        kind: 'sub',
+        taskId: 'task-a',
+        participants: ['leader', 'CODER'],
+        localContext: [],
+        closed: true,
+      },
+    ]);
+    const streamed: unknown[] = [];
+    const unsubscribe = runtime.stream.subscribe(
+      { ...scope, channelId: 'closed-task-a' },
+      (event) => streamed.push(event),
+    );
+
+    for (const channelId of ['missing', 'other-task', 'closed-task-a']) {
+      const response = await createPostMessage(runtime)(
+        postRequest({
+          ...scope,
+          channelId,
+          msgId: `invalid-${channelId}`,
+          display: 'This must be rejected.',
+        }),
+      );
+      expect(response.status).toBe(400);
+    }
+
+    const invalidStream = await createGetStream(runtime)(
+      new Request(
+        'http://localhost/api/stream?projectId=project-a&taskId=task-a&channelId=other-task',
+      ),
+    );
+    expect(invalidStream.status).toBe(400);
+    expect(runtime.stream.subscriberCount({ ...scope, channelId: 'other-task' })).toBe(0);
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({ messages: [] });
+    expect(streamed).toEqual([]);
+    unsubscribe();
+  });
+
   it('server-stamps leader, persists payload, and streams only the display envelope', async () => {
     const stream = new ChannelStream();
     const runtime = createMessageRuntime(await temporaryRoot(), stream);
@@ -189,6 +283,60 @@ describe('persisted HTTP + SSE message flow', () => {
     expect(snapshot).not.toContain('payload');
     expect(snapshot).not.toContain('never-stream-this');
     await reader?.cancel();
+  });
+
+  it('backfills canonical main for a legacy task snapshot that predates channels.json', async () => {
+    const root = await temporaryRoot();
+    const scope = { projectId: 'legacy-project', taskId: 'legacy-task' };
+    await new JsonTaskStateStore(root).initialize(
+      scope,
+      createInitialAppState(scope.taskId, 'Legacy task', scope.projectId),
+    );
+    const runtime = createMessageRuntime(root, new ChannelStream());
+
+    const posted = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'legacy-message',
+        display: 'Continue after upgrade.',
+      }),
+    );
+
+    expect(posted.status).toBe(202);
+    await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 0,
+      channels: [{ channelId: 'main', kind: 'main', closed: false }],
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      messages: [{ msgId: 'legacy-message' }],
+    });
+  });
+
+  it('fails fast instead of overwriting a corrupt legacy channel snapshot', async () => {
+    const root = await temporaryRoot();
+    const scope = { projectId: 'corrupt-project', taskId: 'legacy-task' };
+    await new JsonTaskStateStore(root).initialize(
+      scope,
+      createInitialAppState(scope.taskId, 'Legacy task', scope.projectId),
+    );
+    const channelPath = join(root, 'projects', scope.projectId, 'channels.json');
+    await mkdir(join(root, 'projects', scope.projectId), { recursive: true });
+    await writeFile(channelPath, '{broken', 'utf8');
+    const runtime = createMessageRuntime(root, new ChannelStream());
+
+    await expect(
+      createPostMessage(runtime)(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'must-not-commit',
+          display: 'Do not mask corruption.',
+        }),
+      ),
+    ).rejects.toThrow('invalid project channel JSON');
+    await expect(readFile(channelPath, 'utf8')).resolves.toBe('{broken');
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({ messages: [] });
   });
 
   it('bridges commits made while the persisted snapshot is opening into the live SSE tail', async () => {

@@ -1,5 +1,10 @@
 import type { MessageBus } from '@agora/comm-bus';
 import {
+  assertMessageChannelAccess,
+  type ProjectChannelSnapshot,
+  type ProjectChannelStore,
+} from '@agora/comm-channels';
+import {
   type AppState,
   appendMutation,
   createInitialAppState,
@@ -28,11 +33,13 @@ export interface MutationCommitResult {
 export class MessageService {
   readonly #store: TaskStateStore;
   readonly #bus: MessageBus;
+  readonly #channels: ProjectChannelStore;
   readonly #queues = new Map<string, Promise<void>>();
 
-  constructor(store: TaskStateStore, bus: MessageBus) {
+  constructor(store: TaskStateStore, bus: MessageBus, channels: ProjectChannelStore) {
     this.#store = store;
     this.#bus = bus;
+    this.#channels = channels;
   }
 
   initialize(scope: TaskScope, goal: string): Promise<AppState> {
@@ -43,7 +50,6 @@ export class MessageService {
   }
 
   async commitMessage(scope: TaskScope, message: Message): Promise<MessageCommitResult> {
-    this.#assertMainChannel(message);
     return this.commitPlannedMessage(scope, message.msgId, () => ({ message, mutations: [] }));
   }
 
@@ -71,7 +77,17 @@ export class MessageService {
           `planned message msgId "${planned.message.msgId}" does not match requested msgId "${msgId}"`,
         );
       }
-      this.#assertMainChannel(planned.message);
+      if (
+        planned.mutations.some(
+          (mutation) => mutation.op === 'append' && mutation.field === 'messages',
+        )
+      ) {
+        throw new Error(
+          'planned message mutations must not append messages; use commitMutations for multi-message commits',
+        );
+      }
+      const project = await this.#loadChannels(scope.projectId);
+      assertMessageChannelAccess(project, scope.taskId, planned.message);
 
       const commit = await this.#store.commit(scope, [
         appendMutation('messages', planned.message),
@@ -98,9 +114,15 @@ export class MessageService {
         );
       }
 
-      for (const mutation of mutations) {
-        if (mutation.op === 'append' && mutation.field === 'messages') {
-          this.#assertMainChannel(mutation.value as Message);
+      const messages = mutations.flatMap((mutation) =>
+        mutation.op === 'append' && mutation.field === 'messages'
+          ? [mutation.value as Message]
+          : [],
+      );
+      if (messages.length > 0) {
+        const project = await this.#loadChannels(scope.projectId);
+        for (const message of messages) {
+          assertMessageChannelAccess(project, scope.taskId, message);
         }
       }
       const commit = await this.#store.commit(scope, mutations);
@@ -109,17 +131,18 @@ export class MessageService {
         (message) => !existingIds.has(message.msgId),
       );
       for (const message of publishedMessages) {
-        this.#assertMainChannel(message);
         await this.#bus.publish({ ...scope, message });
       }
       return { state: commit.state, changed: commit.changed, publishedMessages };
     });
   }
 
-  #assertMainChannel(message: Message): void {
-    if (message.channelId !== 'main') {
-      throw new Error('Phase 5 message submission only supports channelId "main"');
+  async #loadChannels(projectId: string): Promise<ProjectChannelSnapshot> {
+    const snapshot = await this.#channels.load(projectId);
+    if (snapshot === undefined) {
+      throw new Error(`project channel store is not initialized for projectId "${projectId}"`);
     }
+    return snapshot;
   }
 
   async #enqueue<T>(scope: TaskScope, operation: () => Promise<T>): Promise<T> {
