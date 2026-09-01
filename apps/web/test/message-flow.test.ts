@@ -4,6 +4,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { applyMutations } from '@agora/core-domain';
+import { decide, latestCoordinationLedger } from '@agora/core-orchestration';
+import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../src/server/channel-stream';
@@ -31,6 +34,53 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('carries a persisted Leader assignment into one real Coordinator dispatch', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const postMessage = createPostMessage(runtime);
+
+    const posted = await postMessage(
+      postRequest({
+        projectId: 'project-a',
+        taskId: 'task-a',
+        channelId: 'main',
+        msgId: 'leader-assignment',
+        display: '@REVIEWER inspect the cache contract',
+      }),
+    );
+    await expect(posted.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'applied' },
+    });
+
+    const state = await runtime.store.load({ projectId: 'project-a', taskId: 'task-a' });
+    expect(state).toBeDefined();
+    if (state === undefined) throw new Error('expected persisted task state');
+    const decision = decide(state, {
+      roster: DEFAULT_ROSTER,
+      newId: (() => {
+        let id = 0;
+        return () => `coordinator-${++id}`;
+      })(),
+      now: () => 1000,
+    });
+
+    expect(decision.route).toEqual({
+      kind: 'worker',
+      batch: [{ role: 'REVIEWER' }],
+      parallel: false,
+    });
+    const dispatched = applyMutations(state, decision.mutations);
+    expect(latestCoordinationLedger(dispatched)?.progress.instructionOrQuestion.answer).toBe(
+      'inspect the cache contract',
+    );
+    expect(
+      dispatched.messages.some(
+        (message) =>
+          message.fromRole === 'COORDINATOR' && message.payload.sourceMsgId === 'leader-assignment',
+      ),
+    ).toBe(true);
+  });
+
   it('server-stamps leader, persists payload, and streams only the display envelope', async () => {
     const stream = new ChannelStream();
     const runtime = createMessageRuntime(await temporaryRoot(), stream);
@@ -56,7 +106,11 @@ describe('persisted HTTP + SSE message flow', () => {
     );
 
     expect(posted.status).toBe(202);
-    await expect(posted.json()).resolves.toEqual({ accepted: true, published: true });
+    await expect(posted.json()).resolves.toEqual({
+      accepted: true,
+      action: { status: 'none' },
+      published: true,
+    });
     const live = decoder.decode((await reader?.read())?.value);
     expect(live).toContain('event: message');
     expect(live).toContain('"fromRole":"leader"');
@@ -68,8 +122,13 @@ describe('persisted HTTP + SSE message flow', () => {
     expect(persisted?.messages[0]).toMatchObject({
       msgId: 'stable-message-1',
       fromRole: 'leader',
-      payload: { intent: 'implement', secret: 'agent-only' },
+      payload: {
+        action: { status: 'none' },
+        intent: { kind: 'chat', text: 'Ship the persisted flow.' },
+        kind: 'leader_intent',
+      },
     });
+    expect(JSON.stringify(persisted?.messages[0]?.payload)).not.toContain('agent-only');
     await reader?.cancel();
   });
 
@@ -89,7 +148,11 @@ describe('persisted HTTP + SSE message flow', () => {
 
     await postMessage(postRequest(body));
     const replay = await postMessage(postRequest(body));
-    await expect(replay.json()).resolves.toEqual({ accepted: true, published: false });
+    await expect(replay.json()).resolves.toEqual({
+      accepted: true,
+      action: { status: 'none' },
+      published: false,
+    });
 
     const restarted = createMessageRuntime(root, new ChannelStream());
     const response = await createGetStream(restarted)(

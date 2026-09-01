@@ -14,6 +14,11 @@ export interface PendingMessageSubmission {
   display: string;
 }
 
+export interface LeaderActionNotice {
+  kind: 'applied' | 'rejected' | 'deferred';
+  text: string;
+}
+
 export interface TeamMemberView {
   role: string;
   name: string;
@@ -72,6 +77,35 @@ export function prepareMessageSubmission(
 ): PendingMessageSubmission {
   if (current?.display === display) return current;
   return { msgId: createId(), display };
+}
+
+export function leaderActionNoticeFromResponse(value: unknown): LeaderActionNotice | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('invalid Leader action response');
+  }
+  const action = (value as Record<string, unknown>).action;
+  if (typeof action !== 'object' || action === null || Array.isArray(action)) {
+    throw new Error('invalid Leader action response');
+  }
+  const record = action as Record<string, unknown>;
+  if (record.status === 'none') return undefined;
+  if (record.status === 'applied') {
+    return { kind: 'applied', text: 'Leader assignment applied.' };
+  }
+  if (record.status === 'rejected' && typeof record.reason === 'string') {
+    return { kind: 'rejected', text: `Command rejected: ${record.reason}` };
+  }
+  if (
+    record.status === 'deferred' &&
+    (record.targetPhase === 6 || record.targetPhase === 8 || record.targetPhase === 9) &&
+    typeof record.reason === 'string'
+  ) {
+    return {
+      kind: 'deferred',
+      text: `Command deferred to Phase ${String(record.targetPhase)}: ${record.reason}`,
+    };
+  }
+  throw new Error('invalid Leader action response');
 }
 
 export function nextMessageTimestamp(

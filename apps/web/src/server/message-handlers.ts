@@ -15,12 +15,9 @@ export function createPostMessage(runtime: MessageRuntime) {
     const channelId = requiredString(body?.channelId);
     const msgId = requiredString(body?.msgId);
     const display = requiredString(body?.display);
-    const payload = objectRecord(body?.payload);
 
-    if (!projectId || !taskId || !channelId || !msgId || !display || !payload) {
-      return jsonError(
-        'projectId, taskId, channelId, msgId, display, and object payload are required',
-      );
+    if (!projectId || !taskId || !channelId || !msgId || !display) {
+      return jsonError('projectId, taskId, channelId, msgId, and display are required');
     }
     if (channelId !== 'main') {
       return jsonError('Phase 5 only supports channelId "main"');
@@ -28,17 +25,17 @@ export function createPostMessage(runtime: MessageRuntime) {
 
     const scope = { projectId, taskId };
     await runtime.initialize(scope, `Task ${taskId}`);
-    const result = await runtime.commitMessage(scope, {
+    const result = await runtime.commitLeaderMessage(scope, {
       msgId,
       channelId,
-      fromRole: 'leader',
-      type: 'chat',
-      payload,
       display,
       ts: Date.now(),
     });
 
-    return Response.json({ accepted: true, published: result.published }, { status: 202 });
+    return Response.json(
+      { accepted: true, published: result.published, action: result.action },
+      { status: 202 },
+    );
   };
 }
 
@@ -133,9 +130,4 @@ export function createGetStream(runtime: MessageRuntime) {
       },
     });
   };
-}
-
-function objectRecord(value: unknown): Record<string, unknown> | undefined {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
-  return value as Record<string, unknown>;
 }

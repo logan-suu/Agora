@@ -16,6 +16,8 @@ import {
   DEFAULT_WORKSPACE,
   filterMentionOptions,
   getMentionQuery,
+  type LeaderActionNotice,
+  leaderActionNoticeFromResponse,
   mergeMessageById,
   type PendingMessageSubmission,
   type PresenceStatus,
@@ -339,6 +341,7 @@ export function ChatWorkspace({
   );
   const [submitting, setSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string>();
+  const [submissionNotice, setSubmissionNotice] = useState<LeaderActionNotice>();
   const pendingSubmission = React.useRef<PendingMessageSubmission | undefined>(undefined);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
@@ -388,6 +391,7 @@ export function ChatWorkspace({
 
     setSubmitting(true);
     setSubmissionError(undefined);
+    setSubmissionNotice(undefined);
     const submission = prepareMessageSubmission(pendingSubmission.current, display, () =>
       crypto.randomUUID(),
     );
@@ -402,10 +406,10 @@ export function ChatWorkspace({
           channelId: model.channel.id,
           msgId: submission.msgId,
           display,
-          payload: { intent: 'chat', text: display },
         }),
       });
       if (!response.ok) throw new Error(`Message submission failed (${response.status})`);
+      setSubmissionNotice(leaderActionNoticeFromResponse(await response.json()));
       if (pendingSubmission.current?.msgId === submission.msgId) {
         pendingSubmission.current = undefined;
       }
@@ -482,6 +486,14 @@ export function ChatWorkspace({
         {submissionError ? (
           <p className="submission-error" role="alert">
             {submissionError}
+          </p>
+        ) : null}
+        {submissionNotice ? (
+          <p
+            className={`submission-notice submission-notice-${submissionNotice.kind}`}
+            role="status"
+          >
+            {submissionNotice.text}
           </p>
         ) : null}
       </section>
