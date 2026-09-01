@@ -18,12 +18,12 @@
 | 文档 | 文件路径 | 角色 |
 |---|---|---|
 | **项目蓝图** | `docs/项目蓝图.md` | 唯一主文档：定位/架构/分阶段路线/§21 已定决策定稿 |
-| **详细设计方案** | `docs/详细设计方案.md` | 落码规格：§0 工程结构与 Harness 约定 / §1 State schema / §2 角色 / §3 编排 / §4 抢占 / §5 通信 / §6 执行器沙箱 / §7 投影 / §8 多租户与 KB / §9 阶段 0 切片 / §10 校验 |
+| **详细设计方案** | `docs/详细设计方案.md` | 落码规格：§0 工程结构与 Harness 约定 / §1 State schema / §2 角色 / §3 编排 / §4 抢占 / §5 通信 / §6 执行器沙箱 / §7 投影 / §8 多租户与 KB / §9 阶段 0 切片 / §10 校验 / §11 工程 Eval |
 | **系统架构设计文档** | `docs/系统架构设计文档.md` | L1-L4 分层 / Monorepo 映射 / 关键路径（§4）/ 一致性模型（§5）/ 韧性表（§6）/ 扩展点（§7）/ 权衡（§8）/ 部署（§9） |
 | **技术选型文档** | `docs/技术选型文档.md` | 版本锁定（§12）/ 备选方案排除（§4）/ MCP 工具清单（§6）/ 沙箱（§7）/ SSE（§9）/ 持久化（§10）/ 决策记录（§13） |
 | **开发计划安排** | `docs/开发计划安排.md` | Phase 0-10 任务分解 / 里程碑 M0-M10 / 风险 / 秋招 Demo 检查点（§17） |
 | **框架调研与借鉴决策** | `docs/框架调研与借鉴决策.md` | AutoGen/AgentScope 源码级结论 / 8 个借鉴模式 / 借鉴-拒绝矩阵 |
-| **任务状态** | `docs/task-status.json` | 11 phase / 60 任务 / 依赖图 / standing_decisions——每个任务开工前必读 |
+| **任务状态** | `docs/task-status.json` | 11 phase / 62 任务 / 依赖图 / standing_decisions——每个任务开工前必读 |
 | **延期项台账** | `docs/deferred-items.json` | 全阶段延期项统一台账（DEF-NNN，格式对齐 iTestAgent）；常驻决策 DEF 的唯一数据源，阶段出口检查时逐条核对 |
 
 ### 0.2 任务类型 → 文档快速索引（Agent 必读）
@@ -51,6 +51,7 @@
 | 部署/韧性/错误恢复 | 架构 §6/§9 | 韧性表逐项落地 |
 | 阶段目标/里程碑/时间线 | 开发计划安排 对应节 + task-status `exit_criteria` | 出口标准逐条核对 |
 | Spike/执行链路验证 | 详细设计 §9 + 架构 §4 | 最小闭环链路 |
+| 工程 Benchmark/Eval | 详细设计 §11 + 蓝图 §3/§17/§21 + 选型 §11.3 | D11：成熟任务/Outcome Grader 复用 + Agora 协作语义 Grader；不替代测试/G5 |
 | 决策变更后文档同步 | `$agora-sync-docs` Skill 流程 + 蓝图 §21 | 同步顺序与标记规范 |
 
 > **决策变更同步·浓缩顺序**：① 蓝图（§21 或对应章节，打标记）→ ② 详细设计对应节 → ③ 系统架构 / 技术选型（如涉及）→ ④ 开发计划安排 + `task-status.json`（含 standing_decisions）→ ⑤ AGENTS.md（如涉及红线）。逐步操作清单以 `$agora-sync-docs` Skill 为唯一详版。
@@ -137,6 +138,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 持久化        文件系统 JSON/JSONL（.data/）为默认；Phase 5 TaskStateStore 原子快照强制落地；SQLite 仅复杂查询时可选
 部署          Phase 5–9 为单实例自托管后端；Vercel 仅前端；完整 Serverless/水平扩展须外部耐久 TaskStateStore + ProjectChannelStore + 跨实例事件传输（D8）
 测试          Vitest 3.x
+工程评测      渐进式 Agora Eval（Outcome/Process/Efficiency/Safety）；Phase 10 外部适配成熟 Coding Agent Benchmark
 代码质量      Biome 2.x（Lint + Format + Import 排序一体）
 模型路由      经 Harness agent/request：规划/评审强推理模型，编码代码专精模型
 ```
@@ -260,6 +262,9 @@ agora/
 ├── tests/integration/
 │   ├── phase{N}/                   # Phase N 跨包集成测试（出口验收级）
 │   └── cross-phase/                # 跨 Phase 联调（累进回归，N 不破坏 N-1）
+├── tests/evals/
+│   ├── phase{N}/                   # D11 渐进式工程 Eval 入口/fixture/grader（非默认 pnpm test）
+│   └── fixtures/                   # 小型自有任务；公开 Benchmark 仅记版本/ID，不复制数据集
 ├── docs/                           # 7 份设计文档 + task-status.json（见 §0.1）
 ├── .agents/skills/                 # 14 个 Codex 项目级工作流 Skill（主入口）
 ├── .opencode/commands/             # OpenCode 兼容副本（迁移验证后再退役）
@@ -273,6 +278,7 @@ agora/
 - 单元测试：各包内 `packages/<pkg>/test/*.test.ts` 或 `packages/<pkg>/__tests__/**`（Vitest 自动发现）
 - 集成测试：`tests/integration/phase{N}/phase{N}-*.test.ts`
 - 跨 Phase 联调：`tests/integration/cross-phase/*.test.ts`
+- 工程 Eval：`tests/evals/phase{N}/*.eval.ts`，通过独立 `pnpm eval:*` 脚本显式运行；禁止匹配默认 Vitest `*.test.ts`，避免全量测试意外触发真实模型/计费
 - `src/` 只放生产代码；task-status.json 的 `test_file` 字段指向具体测试路径
 - Mock 约定：真实依赖优先（真实临时目录/真实子进程/真实文件系统）；mock 必须在文件头注明原因（R11）
 
@@ -300,6 +306,9 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
             全实例最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
             刷新不依赖活容器，静态消息不得充当真实闭环证据
+工程评测    D11：Phase 6 起渐进式 Eval；复用成熟 Coding Agent Benchmark 的任务/环境/Outcome Grader，自建 Agora 的
+            Process/Efficiency/Safety Grader；公开集与 holdout 分开，Phase 10 重复对照并报告方差。Benchmark 不替代测试/G5，
+            未实测指标不得对外宣称，外部评测工具不进入默认产品运行时依赖
 ```
 
 ---
@@ -406,6 +415,7 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 [ ] 无敏感数据提交（G7）
 [ ] Commit message 符合 §3.1.2（英文祈使句）
 [ ] 相关文档已同步（R12）
+[ ] 如改动 D11 Eval：默认 `pnpm test` 未触发付费/非确定性 Eval；对外指标可追溯到固定任务/模型/预算/重复运行结果
 ```
 
 ### 9.3 Agent 禁忌清单
@@ -469,7 +479,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D10/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D11/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 
@@ -530,7 +540,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 人力        1 名独立开发者（AI Native 全程，Codex）
 当前阶段    禁止在本文件静态记录；每次从 docs/task-status.json 的 current_phase 与任务 status 读取
 阶段策略    先回合制单 worker 跑稳闭环，Phase 9 再升真并行；每阶段有可演示产出才进下一阶段
-时间线      约 13 周到 Phase 10；Phase 5 完成（Week 7）必须产出秋招 Demo 录屏（开发计划 §17 检查点）
+时间线      约 14 周到 Phase 10（含 D11 渐进式 Eval 与最终 Benchmark）；Phase 5 完成（Week 7）必须产出秋招 Demo 录屏（开发计划 §17 检查点）
 验证基线    当前 Phase 出口以 docs/task-status.json 对应 phase.exit_criteria 为准
 ```
 
