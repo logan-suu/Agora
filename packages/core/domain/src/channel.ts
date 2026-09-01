@@ -31,6 +31,7 @@ export interface SubChannel extends ChannelBase {
 export type Channel = MainChannel | SubChannel;
 
 export function createMainChannel(enabledRoles: readonly RoleId[]): MainChannel {
+  assertValidEnabledRoster(enabledRoles);
   return {
     channelId: 'main',
     kind: 'main',
@@ -46,10 +47,8 @@ export function assertValidChannelRegistry(
 ): asserts channels is readonly Channel[] {
   if (!Array.isArray(channels)) throw new Error('channels must be an array');
 
+  assertValidEnabledRoster(enabledRoles);
   const enabled = new Set<string>(enabledRoles);
-  if (enabled.size !== enabledRoles.length) {
-    throw new Error('enabled roster roles must be unique');
-  }
 
   const channelIds = new Set<string>();
   let mainCount = 0;
@@ -114,6 +113,18 @@ export function assertValidChannelRegistry(
   }
 
   if (mainCount !== 1) throw new Error('channel registry must contain exactly one main channel');
+}
+
+function assertValidEnabledRoster(enabledRoles: readonly RoleId[]): void {
+  if (!enabledRoles.every((role) => typeof role === 'string' && role.length > 0)) {
+    throw new Error('enabled roster roles must be non-empty strings');
+  }
+  if (new Set(enabledRoles).size !== enabledRoles.length) {
+    throw new Error('enabled roster roles must be unique');
+  }
+  if ((enabledRoles as readonly string[]).includes('leader')) {
+    throw new Error('enabled roster roles must not use reserved participant "leader"');
+  }
 }
 
 function channelRecord(value: unknown): Record<string, unknown> {

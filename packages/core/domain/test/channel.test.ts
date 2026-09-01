@@ -30,6 +30,15 @@ describe('Channel registry invariants', () => {
     expect(() => assertValidChannelRegistry([main, subChannel()], ENABLED_ROLES)).not.toThrow();
   });
 
+  it('rejects duplicate and reserved identities in the enabled roster before creating main', () => {
+    expect(() => createMainChannel(['CODER', 'CODER'])).toThrow(
+      'enabled roster roles must be unique',
+    );
+    expect(() => createMainChannel(['leader' as (typeof ENABLED_ROLES)[number]])).toThrow(
+      'enabled roster roles must not use reserved participant "leader"',
+    );
+  });
+
   it.each([
     {
       name: 'a missing main channel',

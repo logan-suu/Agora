@@ -1,12 +1,13 @@
 // Test seam: one case pauses the real TaskStateStore.load call to make the
 // snapshot-to-subscription race deterministic; the JSON store, commit, and stream stay real.
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { applyMutations } from '@agora/core-domain';
+import { applyMutations, createInitialAppState } from '@agora/core-domain';
 import { decide, latestCoordinationLedger } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
+import { JsonTaskStateStore } from '@agora/runtime-state';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../src/server/channel-stream';
@@ -282,6 +283,60 @@ describe('persisted HTTP + SSE message flow', () => {
     expect(snapshot).not.toContain('payload');
     expect(snapshot).not.toContain('never-stream-this');
     await reader?.cancel();
+  });
+
+  it('backfills canonical main for a legacy task snapshot that predates channels.json', async () => {
+    const root = await temporaryRoot();
+    const scope = { projectId: 'legacy-project', taskId: 'legacy-task' };
+    await new JsonTaskStateStore(root).initialize(
+      scope,
+      createInitialAppState(scope.taskId, 'Legacy task', scope.projectId),
+    );
+    const runtime = createMessageRuntime(root, new ChannelStream());
+
+    const posted = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'legacy-message',
+        display: 'Continue after upgrade.',
+      }),
+    );
+
+    expect(posted.status).toBe(202);
+    await expect(runtime.channels.load(scope.projectId)).resolves.toMatchObject({
+      revision: 0,
+      channels: [{ channelId: 'main', kind: 'main', closed: false }],
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      messages: [{ msgId: 'legacy-message' }],
+    });
+  });
+
+  it('fails fast instead of overwriting a corrupt legacy channel snapshot', async () => {
+    const root = await temporaryRoot();
+    const scope = { projectId: 'corrupt-project', taskId: 'legacy-task' };
+    await new JsonTaskStateStore(root).initialize(
+      scope,
+      createInitialAppState(scope.taskId, 'Legacy task', scope.projectId),
+    );
+    const channelPath = join(root, 'projects', scope.projectId, 'channels.json');
+    await mkdir(join(root, 'projects', scope.projectId), { recursive: true });
+    await writeFile(channelPath, '{broken', 'utf8');
+    const runtime = createMessageRuntime(root, new ChannelStream());
+
+    await expect(
+      createPostMessage(runtime)(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'must-not-commit',
+          display: 'Do not mask corruption.',
+        }),
+      ),
+    ).rejects.toThrow('invalid project channel JSON');
+    await expect(readFile(channelPath, 'utf8')).resolves.toBe('{broken');
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({ messages: [] });
   });
 
   it('bridges commits made while the persisted snapshot is opening into the live SSE tail', async () => {

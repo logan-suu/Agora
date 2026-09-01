@@ -72,6 +72,24 @@ describe('JsonProjectChannelStore', () => {
     );
   });
 
+  it('does not advance revision when only ordinary object key insertion order differs', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonProjectChannelStore(root, ENABLED_ROLES);
+    const main = createMainChannel(ENABLED_ROLES);
+    const initialized = await store.initialize('project-a', [
+      { ...main, metadata: { alpha: 1, beta: 2 } } as typeof main,
+    ]);
+
+    const reordered = {
+      ...main,
+      metadata: Object.assign({}, { beta: 2 }, { alpha: 1 }),
+    } as typeof main;
+    const result = await store.commit('project-a', initialized.revision, [reordered]);
+
+    expect(result.changed).toBe(false);
+    expect(result.snapshot.revision).toBe(0);
+  });
+
   it('serializes same-project commits so concurrent stale writers cannot overwrite each other', async () => {
     const root = await temporaryRoot();
     const store = new JsonProjectChannelStore(root, ENABLED_ROLES);

@@ -69,7 +69,7 @@ export class JsonProjectChannelStore implements ProjectChannelStore {
         );
       }
 
-      if (JSON.stringify(current.channels) === JSON.stringify(channels)) {
+      if (canonicalJson(current.channels) === canonicalJson(channels)) {
         return { snapshot: cloneSnapshot(current), changed: false };
       }
 
@@ -177,6 +177,21 @@ function cloneSnapshot(snapshot: ProjectChannelSnapshot): ProjectChannelSnapshot
 
 function cloneChannels(channels: readonly Channel[]): Channel[] {
   return structuredClone([...channels]);
+}
+
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(canonicalValue(value));
+}
+
+function canonicalValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalValue);
+  if (typeof value !== 'object' || value === null) return value;
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => [key, canonicalValue(entry)]),
+  );
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {

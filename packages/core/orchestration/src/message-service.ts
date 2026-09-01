@@ -77,6 +77,15 @@ export class MessageService {
           `planned message msgId "${planned.message.msgId}" does not match requested msgId "${msgId}"`,
         );
       }
+      if (
+        planned.mutations.some(
+          (mutation) => mutation.op === 'append' && mutation.field === 'messages',
+        )
+      ) {
+        throw new Error(
+          'planned message mutations must not append messages; use commitMutations for multi-message commits',
+        );
+      }
       const project = await this.#loadChannels(scope.projectId);
       assertMessageChannelAccess(project, scope.taskId, planned.message);
 

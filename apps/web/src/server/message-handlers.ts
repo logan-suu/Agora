@@ -24,8 +24,7 @@ export function createPostMessage(runtime: MessageRuntime) {
     if ((await runtime.store.load(scope)) === undefined) {
       return jsonError('task not found; create it through POST /api/tasks first', 404);
     }
-    const project = await runtime.channels.load(projectId);
-    if (project === undefined) return jsonError('project channels not found', 404);
+    const project = await runtime.ensureProjectChannels(projectId);
     try {
       const channel = resolveParticipantChannel(project, taskId, 'leader', channelId);
       if (channel.closed) return jsonError(`channel "${channelId}" is closed`);
@@ -119,11 +118,7 @@ export function createGetStream(runtime: MessageRuntime) {
         cleanup();
         return jsonError('task not found; create it through POST /api/tasks first', 404);
       }
-      const project = await runtime.channels.load(projectId);
-      if (project === undefined) {
-        cleanup();
-        return jsonError('project channels not found', 404);
-      }
+      const project = await runtime.ensureProjectChannels(projectId);
       try {
         resolveParticipantChannel(project, taskId, 'leader', channelId);
       } catch (error) {

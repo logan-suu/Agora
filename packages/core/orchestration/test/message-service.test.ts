@@ -116,6 +116,23 @@ describe('MessageService', () => {
     expect(bus.events).toEqual([{ ...scope, message: leaderMessage }]);
   });
 
+  it('rejects supplemental planned message mutations before any State or bus effect', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const bus = new RecordingBus();
+    const service = await createService(store, bus);
+    await service.initialize(scope, 'Build the message flow');
+
+    await expect(
+      service.commitPlannedMessage(scope, 'message-1', () => ({
+        message: message(),
+        mutations: [appendMutation('messages', message({ msgId: 'message-2' }))],
+      })),
+    ).rejects.toThrow('planned message mutations must not append messages');
+
+    await expect(store.load(scope)).resolves.toMatchObject({ messages: [] });
+    expect(bus.events).toEqual([]);
+  });
+
   it('does not re-plan or reapply actions when a committed msgId is retried later', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();

@@ -61,12 +61,12 @@ export class MessageRuntime {
   }
 
   async initialize(scope: TaskScope, goal: string): Promise<AppState> {
-    await this.#initializeChannels(scope.projectId);
+    await this.ensureProjectChannels(scope.projectId);
     return this.#service.initialize(scope, goal);
   }
 
   async initializeState(scope: TaskScope, state: AppState): Promise<AppState> {
-    await this.#initializeChannels(scope.projectId);
+    await this.ensureProjectChannels(scope.projectId);
     return this.store.initialize(scope, state);
   }
 
@@ -76,6 +76,10 @@ export class MessageRuntime {
 
   commitMessage(scope: TaskScope, message: Message): Promise<MessageCommitResult> {
     return this.#service.commitMessage(scope, message);
+  }
+
+  ensureProjectChannels(projectId: string) {
+    return this.channels.initialize(projectId, [createMainChannel(this.#enabledRoles)]);
   }
 
   async commitLeaderMessage(
@@ -107,10 +111,6 @@ export class MessageRuntime {
     });
 
     return { ...result, action: actionFrom(result.message) };
-  }
-
-  #initializeChannels(projectId: string) {
-    return this.channels.initialize(projectId, [createMainChannel(this.#enabledRoles)]);
   }
 }
 
