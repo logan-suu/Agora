@@ -15,6 +15,7 @@ import {
   applyMention,
   type ChatMessageView,
   DEFAULT_WORKSPACE,
+  fetchTaskRuntime,
   filterMentionOptions,
   getMentionQuery,
   type LeaderActionNotice,
@@ -536,9 +537,18 @@ export function ChatWorkspace({
     if (task?.runStatus !== 'running') return;
     let active = true;
     const refresh = async () => {
-      const search = new URLSearchParams({ projectId, taskId });
-      const response = await fetch(`/api/tasks?${search.toString()}`);
-      if (response.ok && active) setTask((await response.json()) as TaskRuntimeView);
+      try {
+        const search = new URLSearchParams({ projectId, taskId });
+        const refreshed = await fetchTaskRuntime(`/api/tasks?${search.toString()}`);
+        if (active) {
+          setTask(refreshed);
+          setTaskError(undefined);
+        }
+      } catch (error) {
+        if (active) {
+          setTaskError(error instanceof Error ? error.message : 'Task refresh failed');
+        }
+      }
     };
     const timer = setInterval(() => void refresh(), 1000);
     return () => {

@@ -84,11 +84,13 @@ describe('REVIEWER structured verdict scope (task 4.3)', () => {
   it('keeps missing issueScope backward-compatible and rejects unknown scopes', () => {
     expect(() =>
       reviewerTurnMutations(
-        '[{"id":"rv-1","kind":"verdict","verdict":"changes_requested","issueScope":"style"}]',
+        '[{"id":"rv-1","kind":"verdict","verdict":"changes_requested","issueScope":"style","summary":"wrong scope"}]',
       ),
     ).toThrow(/issueScope/);
     expect(
-      reviewerTurnMutations('[{"id":"rv-2","kind":"verdict","verdict":"changes_requested"}]'),
+      reviewerTurnMutations(
+        '[{"id":"rv-2","kind":"verdict","verdict":"changes_requested","summary":"fix needed"}]',
+      ),
     ).toHaveLength(1);
   });
 
@@ -98,11 +100,13 @@ describe('REVIEWER structured verdict scope (task 4.3)', () => {
     );
     expect(() =>
       reviewerTurnMutations(
-        '[{"id":"v-1","kind":"verdict","verdict":"approved"},{"id":"v-2","kind":"verdict","verdict":"approved"}]',
+        '[{"id":"v-1","kind":"verdict","verdict":"approved","summary":"one"},{"id":"v-2","kind":"verdict","verdict":"approved","summary":"two"}]',
       ),
     ).toThrow(/exactly one verdict/);
     expect(() =>
-      reviewerTurnMutations('[{"kind":"verdict","verdict":"changes_requested"}]'),
+      reviewerTurnMutations(
+        '[{"kind":"verdict","verdict":"changes_requested","summary":"missing id"}]',
+      ),
     ).toThrow(/non-empty string id/);
   });
 });

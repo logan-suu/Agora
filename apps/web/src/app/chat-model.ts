@@ -59,6 +59,18 @@ export interface TaskRuntimeView {
   error?: string;
 }
 
+export async function fetchTaskRuntime(
+  url: string,
+  fetcher: typeof fetch = fetch,
+): Promise<TaskRuntimeView> {
+  const response = await fetcher(url);
+  const body = (await response.json()) as TaskRuntimeView & { error?: string };
+  if (!response.ok) {
+    throw new Error(body.error ?? `Task refresh failed (${response.status})`);
+  }
+  return body;
+}
+
 export const MENTIONABLE_ROLES = [
   'CODER',
   'TESTER',

@@ -20,13 +20,48 @@ const sockets = [
   join(process.env.HOME ?? '', '.docker/run/docker.sock'),
 ].filter((socket): socket is string => Boolean(socket));
 
+interface DockerEndpointOptions {
+  protocol: 'http' | 'https';
+  host: string;
+  port: number;
+}
+
+function dockerOptionsFromEndpoint(endpoint: string): DockerEndpointOptions | undefined {
+  if (!/^(?:tcp|https?):\/\//.test(endpoint)) return undefined;
+  const url = new URL(endpoint.replace(/^tcp:/, 'http:'));
+  return {
+    protocol: url.protocol === 'https:' ? 'https' : 'http',
+    host: url.hostname,
+    port: Number(url.port || (url.protocol === 'https:' ? 443 : 2375)),
+  };
+}
+
 function connectDocker(): Dockerode | null {
   for (const socket of sockets) {
-    if (socket.startsWith('unix://') || socket.startsWith('http://')) return new Dockerode();
+    if (socket.startsWith('unix://')) {
+      return new Dockerode({ socketPath: new URL(socket).pathname });
+    }
+    const endpoint = dockerOptionsFromEndpoint(socket);
+    if (endpoint !== undefined) return new Dockerode(endpoint);
     if (existsSync(socket)) return new Dockerode({ socketPath: socket });
   }
   return null;
 }
+
+describe('Docker G5 endpoint parsing', () => {
+  it('maps tcp and HTTP DOCKER_HOST endpoints to explicit Dockerode options', () => {
+    expect(dockerOptionsFromEndpoint('tcp://127.0.0.1:2375')).toEqual({
+      protocol: 'http',
+      host: '127.0.0.1',
+      port: 2375,
+    });
+    expect(dockerOptionsFromEndpoint('https://docker.example:2376')).toEqual({
+      protocol: 'https',
+      host: 'docker.example',
+      port: 2376,
+    });
+  });
+});
 
 const docker = connectDocker();
 const describeDocker = docker === null ? describe.skip : describe;
@@ -179,6 +214,7 @@ describeDocker('Web orchestration bridge (G5 real Docker/Harness/MCP chain)', ()
     const runtime = new TaskOrchestrationRuntime(
       messages,
       createWebTaskCompositionFactory({
+        dataRoot: root,
         sandboxConfig: { kind: 'docker', ...(docker === null ? {} : { docker }) },
         executorOptions: { adapter: new ScriptedAdapter(), provider: 'agora-web-g5' },
       }),
@@ -197,6 +233,9 @@ describeDocker('Web orchestration bridge (G5 real Docker/Harness/MCP chain)', ()
     expect(summary).toMatchObject({ runStatus: 'completed', phase: 'done' });
     expect(summary?.testResults).toMatchObject({ passed: true, total: 3 });
     expect(summary?.artifactPath).toBeTruthy();
+    expect(summary?.artifactPath).toContain(
+      join('projects', 'demo', 'tasks', 'ttl-lru-g5', 'artifacts', 'worktree'),
+    );
     expect(readFileSync(join(summary?.artifactPath ?? '', 'ttl-lru.js'), 'utf8')).toContain(
       'class TtlLruCache',
     );

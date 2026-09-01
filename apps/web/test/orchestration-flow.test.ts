@@ -62,7 +62,25 @@ class OneStepExecutor implements Executor {
   injectInbox(): void {}
 }
 
-function successfulFactory(gate: Promise<void>): TaskCompositionFactory {
+class FailingExecutor implements Executor {
+  async step(): Promise<StepResult> {
+    throw new Error('scripted worker failure');
+  }
+
+  async saveSafePoint(): Promise<string> {
+    return 'cursor';
+  }
+
+  async loadSafePoint(): Promise<void> {}
+
+  injectInbox(): void {}
+}
+
+function successfulFactory(
+  gate: Promise<void>,
+  lifecycle: { archived: number; disposed: number } = { archived: 0, disposed: 0 },
+  failCoder = false,
+): TaskCompositionFactory {
   return async ({ scope, goal, transition }) => {
     const initialState = applyMutations(
       createInitialAppState(scope.taskId, goal, scope.projectId),
@@ -81,6 +99,7 @@ function successfulFactory(gate: Promise<void>): TaskCompositionFactory {
       transition,
       buildExecutor: (spec) => {
         if (spec.role === 'CODER') {
+          if (failCoder) return new FailingExecutor();
           return new OneStepExecutor(
             {
               kind: 'done',
@@ -126,7 +145,13 @@ function successfulFactory(gate: Promise<void>): TaskCompositionFactory {
       workerRuntime,
       roster: DEFAULT_ROSTER,
       artifactPath: '/tmp/agora-demo-artifact',
-      dispose: async () => {},
+      archiveArtifact: async () => {
+        lifecycle.archived += 1;
+        return `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`;
+      },
+      dispose: async () => {
+        lifecycle.disposed += 1;
+      },
     };
   };
 }
@@ -145,7 +170,8 @@ describe('TaskOrchestrationRuntime', () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const runtime = new TaskOrchestrationRuntime(messages, successfulFactory(gate));
+    const lifecycle = { archived: 0, disposed: 0 };
+    const runtime = new TaskOrchestrationRuntime(messages, successfulFactory(gate, lifecycle));
     const published: string[] = [];
     stream.subscribe({ projectId: 'project-a', taskId: 'task-a', channelId: 'main' }, (event) => {
       if (
@@ -193,11 +219,12 @@ describe('TaskOrchestrationRuntime', () => {
       phase: 'done',
       currentRole: 'REVIEWER',
       testResults: { passed: true },
-      artifactPath: '/tmp/agora-demo-artifact',
+      artifactPath: '/durable/project-a/task-a/artifacts/worktree',
     });
     expect(published).toContain('coder-done');
     expect(published).toContain('tester-done');
     expect(published).toContain('reviewer-done');
+    expect(lifecycle).toEqual({ archived: 1, disposed: 1 });
 
     const restarted = new TaskOrchestrationRuntime(messages, successfulFactory(Promise.resolve()));
     await expect(
@@ -205,7 +232,7 @@ describe('TaskOrchestrationRuntime', () => {
     ).resolves.toMatchObject({
       runStatus: 'completed',
       phase: 'done',
-      artifactPath: '/tmp/agora-demo-artifact',
+      artifactPath: '/durable/project-a/task-a/artifacts/worktree',
     });
   });
 
@@ -222,6 +249,66 @@ describe('TaskOrchestrationRuntime', () => {
       runStatus: 'interrupted',
       phase: 'clarifying',
     });
+  });
+
+  it('rejects a second active run anywhere in the Phase 5 backend instance', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const runtime = new TaskOrchestrationRuntime(messages, successfulFactory(gate));
+
+    await runtime.start({
+      projectId: 'project-a',
+      taskId: 'task-a',
+      requestId: 'request-a',
+      goal: 'First goal',
+    });
+
+    const post = createPostTask(runtime);
+    const response = await post(
+      new Request('http://localhost/api/tasks', {
+        method: 'POST',
+        body: JSON.stringify({
+          projectId: 'project-b',
+          taskId: 'task-b',
+          requestId: 'request-b',
+          goal: 'Second goal',
+        }),
+      }),
+    );
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringContaining('active'),
+    });
+
+    release();
+    await runtime.waitForIdle({ projectId: 'project-a', taskId: 'task-a' });
+  });
+
+  it('archives available output and disposes resources when a run fails', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const lifecycle = { archived: 0, disposed: 0 };
+    const scope = { projectId: 'project-a', taskId: 'failed-task' };
+    const runtime = new TaskOrchestrationRuntime(
+      messages,
+      successfulFactory(Promise.resolve(), lifecycle, true),
+    );
+
+    await runtime.start({ ...scope, requestId: 'request-failed', goal: 'Build TTL LRU' });
+    await runtime.waitForIdle(scope);
+
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'failed',
+      artifactPath: '/durable/project-a/failed-task/artifacts/worktree',
+      error: 'scripted worker failure',
+    });
+    expect(lifecycle).toEqual({ archived: 1, disposed: 1 });
   });
 
   it('exposes create/start and refresh recovery through the task HTTP handlers', async () => {
@@ -271,7 +358,7 @@ describe('TaskOrchestrationRuntime', () => {
     await expect(recovered.json()).resolves.toMatchObject({
       runStatus: 'completed',
       phase: 'done',
-      artifactPath: '/tmp/agora-demo-artifact',
+      artifactPath: '/durable/project-a/task-a/artifacts/worktree',
     });
   });
 });

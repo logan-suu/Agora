@@ -4,5 +4,5 @@ import { TaskOrchestrationRuntime } from './task-orchestration-runtime';
 
 export const taskRuntime = new TaskOrchestrationRuntime(
   messageRuntime,
-  createWebTaskCompositionFactory(),
+  createWebTaskCompositionFactory({ dataRoot: messageRuntime.root }),
 );

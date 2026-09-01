@@ -70,14 +70,10 @@ export function architectTurnMutations(text: string | null): Mutation[] {
   if (!isRecord(architecture)) {
     throw new Error('ARCHITECT payload needs a non-array object "architecture"');
   }
-  const mutations: Mutation[] = [setMutation('architecture', architecture)];
-  if (conventions !== undefined) {
-    if (!isRecord(conventions)) {
-      throw new Error('ARCHITECT "conventions" must be a non-array object when present');
-    }
-    mutations.push(setMutation('conventions', conventions));
+  if (!isRecord(conventions)) {
+    throw new Error('ARCHITECT payload needs a non-array object "conventions"');
   }
-  return mutations;
+  return [setMutation('architecture', architecture), setMutation('conventions', conventions)];
 }
 
 export function reviewerTurnMutations(text: string | null): Mutation[] {
@@ -95,6 +91,9 @@ export function reviewerTurnMutations(text: string | null): Mutation[] {
       }
       if (entry.verdict !== 'approved' && entry.verdict !== 'changes_requested') {
         throw new Error('REVIEWER verdict must be "approved" or "changes_requested"');
+      }
+      if (typeof entry.summary !== 'string' || entry.summary.length === 0) {
+        throw new Error('REVIEWER verdict needs a non-empty string "summary"');
       }
       if (
         entry.issueScope !== undefined &&

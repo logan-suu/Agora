@@ -1,4 +1,4 @@
-import type { AppState, RoleSpec } from '@agora/core-domain';
+import { type AppState, mergeByIdMutation, type RoleSpec } from '@agora/core-domain';
 import {
   runOrchestration,
   type StateTransition,
@@ -44,6 +44,7 @@ export interface TaskComposition {
   workerRuntime: WorkerRuntime;
   roster: readonly RoleSpec[];
   artifactPath: string;
+  archiveArtifact(): Promise<string>;
   dispose(): Promise<void>;
 }
 
@@ -56,9 +57,9 @@ export type TaskCompositionFactory = (input: {
 interface ActiveRun {
   goal: string;
   status: Exclude<TaskRunStatus, 'interrupted'>;
-  composition: TaskComposition;
+  composition: TaskComposition | undefined;
   promise: Promise<void>;
-  error?: string;
+  error: string | undefined;
 }
 
 export class TaskGoalConflictError extends Error {
@@ -70,10 +71,19 @@ export class TaskGoalConflictError extends Error {
   }
 }
 
+export class TaskCapacityConflictError extends Error {
+  constructor(activeScope: TaskScope) {
+    super(
+      `Phase 5 backend already has an active run for ${activeScope.projectId}/${activeScope.taskId}`,
+    );
+    this.name = 'TaskCapacityConflictError';
+  }
+}
+
 /** Single-instance Phase 5 lifecycle registry required by decision D10. */
 export class TaskOrchestrationRuntime {
   readonly #runs = new Map<string, ActiveRun>();
-  readonly #queues = new Map<string, Promise<void>>();
+  #lifecycleQueue: Promise<void> = Promise.resolve();
 
   constructor(
     readonly messages: MessageRuntime,
@@ -81,7 +91,7 @@ export class TaskOrchestrationRuntime {
   ) {}
 
   async start(input: TaskStartInput): Promise<TaskStartResult> {
-    return this.#enqueue(input, async () => {
+    return this.#enqueueLifecycle(async () => {
       const existingRun = this.#runs.get(scopeKey(input));
       if (existingRun !== undefined) {
         if (existingRun.goal !== input.goal) {
@@ -110,6 +120,11 @@ export class TaskOrchestrationRuntime {
         };
       }
 
+      const activeEntry = [...this.#runs.entries()].find(([, run]) => run.status === 'running');
+      if (activeEntry !== undefined) {
+        throw new TaskCapacityConflictError(scopeFromKey(activeEntry[0]));
+      }
+
       const transition: StateTransition = async (_state, mutations) =>
         (await this.messages.commitMutations(input, mutations)).state;
       const composition = await this.createComposition({
@@ -123,21 +138,10 @@ export class TaskOrchestrationRuntime {
         status: 'running',
         composition,
         promise: Promise.resolve(),
+        error: undefined,
       };
       this.#runs.set(scopeKey(input), run);
-      run.promise = runOrchestration(initialState, {
-        workerRuntime: composition.workerRuntime,
-        roster: composition.roster,
-        transition,
-      }).then(
-        (finalState) => {
-          run.status = finalState.phase === 'done' ? 'completed' : 'needs_attention';
-        },
-        (error: unknown) => {
-          run.status = 'failed';
-          run.error = error instanceof Error ? error.message : String(error);
-        },
-      );
+      run.promise = this.#executeRun(input, run, initialState, transition);
 
       const summary = await this.#requiredSummary(input);
       return {
@@ -165,8 +169,55 @@ export class TaskOrchestrationRuntime {
   async disposeAll(): Promise<void> {
     const runs = [...this.#runs.values()];
     await Promise.all(runs.map((run) => run.promise));
-    await Promise.all(runs.map((run) => run.composition.dispose()));
     this.#runs.clear();
+  }
+
+  async #executeRun(
+    scope: TaskScope,
+    run: ActiveRun,
+    initialState: AppState,
+    transition: StateTransition,
+  ): Promise<void> {
+    const composition = run.composition;
+    if (composition === undefined) throw new Error('active task composition is unavailable');
+    let terminalStatus: ActiveRun['status'] = 'failed';
+    let terminalError: string | undefined;
+    try {
+      const finalState = await runOrchestration(initialState, {
+        workerRuntime: composition.workerRuntime,
+        roster: composition.roster,
+        transition,
+      });
+      terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
+    } catch (error) {
+      terminalError = errorMessage(error);
+    }
+
+    try {
+      const archivedPath = await composition.archiveArtifact();
+      const state = await this.messages.store.load(scope);
+      const subtask = state?.subtasks.find((entry) => entry.worktree === composition.artifactPath);
+      if (subtask === undefined) {
+        throw new Error('task artifact worktree is missing from persisted state');
+      }
+      await this.messages.commitMutations(scope, [
+        mergeByIdMutation('subtasks', subtask.id, { worktree: archivedPath }),
+      ]);
+    } catch (error) {
+      terminalStatus = 'failed';
+      terminalError = joinErrors(terminalError, `artifact archive failed: ${errorMessage(error)}`);
+    }
+
+    try {
+      await composition.dispose();
+    } catch (error) {
+      terminalStatus = 'failed';
+      terminalError = joinErrors(terminalError, `resource disposal failed: ${errorMessage(error)}`);
+    } finally {
+      run.composition = undefined;
+    }
+    run.status = terminalStatus;
+    run.error = terminalError;
   }
 
   async #requiredSummary(scope: TaskScope): Promise<TaskSummary> {
@@ -175,25 +226,34 @@ export class TaskOrchestrationRuntime {
     return summary;
   }
 
-  async #enqueue<T>(scope: TaskScope, operation: () => Promise<T>): Promise<T> {
-    const key = scopeKey(scope);
-    const previous = this.#queues.get(key) ?? Promise.resolve();
+  async #enqueueLifecycle<T>(operation: () => Promise<T>): Promise<T> {
+    const previous = this.#lifecycleQueue;
     const result = previous.catch(() => undefined).then(operation);
     const tail = result.then(
       () => undefined,
       () => undefined,
     );
-    this.#queues.set(key, tail);
-    try {
-      return await result;
-    } finally {
-      if (this.#queues.get(key) === tail) this.#queues.delete(key);
-    }
+    this.#lifecycleQueue = tail;
+    return result;
   }
 }
 
 function scopeKey(scope: TaskScope): string {
   return `${scope.projectId}\u0000${scope.taskId}`;
+}
+
+function scopeFromKey(key: string): TaskScope {
+  const [projectId, taskId] = key.split('\u0000');
+  if (projectId === undefined || taskId === undefined) throw new Error('invalid task scope key');
+  return { projectId, taskId };
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function joinErrors(current: string | undefined, next: string): string {
+  return current === undefined ? next : `${current}; ${next}`;
 }
 
 function summaryFrom(state: AppState, runStatus: TaskRunStatus, error?: string): TaskSummary {

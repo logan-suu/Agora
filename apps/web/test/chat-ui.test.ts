@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
   applyMention,
+  fetchTaskRuntime,
   filterMentionOptions,
   leaderActionNoticeFromResponse,
   mergeMessageById,
@@ -97,6 +98,19 @@ describe('chat UI model', () => {
     expect(() => leaderActionNoticeFromResponse({ accepted: true })).toThrow(
       'invalid Leader action response',
     );
+  });
+
+  it('surfaces task polling transport and HTTP failures', async () => {
+    await expect(
+      fetchTaskRuntime('/api/tasks', async () => {
+        throw new Error('network unavailable');
+      }),
+    ).rejects.toThrow('network unavailable');
+    await expect(
+      fetchTaskRuntime('/api/tasks', async () =>
+        Response.json({ error: 'task backend unavailable' }, { status: 503 }),
+      ),
+    ).rejects.toThrow('task backend unavailable');
   });
 });
 

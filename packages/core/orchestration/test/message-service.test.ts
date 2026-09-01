@@ -223,4 +223,18 @@ describe('MessageService', () => {
       service.commitMessage(scope, message({ channelId: 'private-channel' })),
     ).rejects.toThrow('main');
   });
+
+  it('rejects a non-main orchestration message before committing sibling mutations', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const service = new MessageService(store, new RecordingBus());
+    await service.initialize(scope, 'Build the message flow');
+
+    await expect(
+      service.commitMutations(scope, [
+        setMutation('phase', 'testing'),
+        appendMutation('messages', message({ channelId: 'private-channel' })),
+      ]),
+    ).rejects.toThrow('main');
+    await expect(store.load(scope)).resolves.toMatchObject({ phase: 'clarifying', messages: [] });
+  });
 });

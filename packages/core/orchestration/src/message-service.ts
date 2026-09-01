@@ -98,6 +98,11 @@ export class MessageService {
         );
       }
 
+      for (const mutation of mutations) {
+        if (mutation.op === 'append' && mutation.field === 'messages') {
+          this.#assertMainChannel(mutation.value as Message);
+        }
+      }
       const commit = await this.#store.commit(scope, mutations);
       const existingIds = new Set(current.messages.map((message) => message.msgId));
       const publishedMessages = commit.state.messages.filter(

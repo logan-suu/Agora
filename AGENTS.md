@@ -297,7 +297,8 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
             其余能力显式 rejected/deferred，按 Phase 6/8/9 解锁，不走临时 command 旁路
 Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
-            同任务最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE，静态消息不得充当真实闭环证据
+            全实例最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
+            刷新不依赖活容器，静态消息不得充当真实闭环证据
 ```
 
 ---

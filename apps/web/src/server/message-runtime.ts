@@ -34,12 +34,14 @@ class SseMessageBus implements MessageBus {
 }
 
 export class MessageRuntime {
+  readonly root: string;
   readonly store: JsonTaskStateStore;
   readonly stream: ChannelStream;
   readonly #service: MessageService;
   readonly #roster: readonly RoleSpec[];
 
   constructor(root: string, stream: ChannelStream, roster: readonly RoleSpec[]) {
+    this.root = root;
     this.store = new JsonTaskStateStore(root);
     this.stream = stream;
     this.#service = new MessageService(this.store, new SseMessageBus(stream));
