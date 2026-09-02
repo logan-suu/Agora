@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-01T23:14:32.000Z",
+  "last_updated": "2026-09-02T18:52:46.000Z",
   "current_phase": 6,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -58,7 +58,7 @@
     },
     {
       "id": "D11",
-      "rule": "自 Phase 6 建立渐进式工程 Eval：复用成熟 Coding Agent Benchmark 的任务/环境/Outcome Grader，自建 Agora 协作语义的 Process/Efficiency/Safety Grader；各 Phase 增量追加已解锁能力，Phase 10 做重复对照与失败分析。Benchmark 不替代测试/G5，未实测指标不得对外宣称，外部评测工具不进入默认产品运行时",
+      "rule": "自 Phase 6 建立渐进式工程 Eval：版本化任务与 canonical fingerprint 保证可重跑、可追溯，不承诺模型输出逐字节确定；deterministic/model profile 分开汇总。复用成熟 Coding Agent Benchmark 的任务/环境/Outcome Grader，自建 Agora 的 Process/Efficiency/Safety Grader；每次 run 隔离于 .data/evals/<runId>，只写评测专用 State，不触碰用户产品 State/KB。Grader 统一 pass/fail/unknown + evidence，指标不可伪造；Benchmark 不替代测试/G5，未实测指标不得对外宣称，外部工具不进入默认产品运行时",
       "source": "docs/项目蓝图.md §3/§17/§21；docs/详细设计方案.md §11；docs/系统架构设计文档.md §7；docs/技术选型文档.md §11.3；docs/开发计划安排.md §9-§13"
     },
     {
@@ -882,7 +882,7 @@
           "id": "6.4",
           "title": "工程 Eval 基础设施 + Phase 0–6 基线任务集",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §3/§17/§21",
             "docs/详细设计方案.md §11",
@@ -894,8 +894,8 @@
             "6.3"
           ],
           "test_file": "tests/evals/phase6/run-phase6-baseline.eval.ts",
-          "notes": "D11 首次落地：定稿 AgoraEvalTask/EvalResult、可重复 runner、固定模型/环境/预算元数据与 Outcome/Process/Efficiency/Safety 四类 Grader；建立 8–12 个 Phase 0–6 小任务，覆盖真实编码闭环、消息 commit-before-publish、main/sub 作用域、participant/ChannelContext 隔离与可恢复冒泡。复用既有 Harness/MCP/Docker/JSON/SSE 生产链，不复制第二套 Agent/沙箱；结果独立于产品 State/KB。公开 Benchmark adapter 延后 10.5；本任务不是阶段出口门禁，6.5 仍须跑全量集成/G5。\n[2026-09-01 /agora-pr-merge] 依赖 6.3 已由 PR #50 合并并标 done（merge commit b1d360e），级联翻转 pending→ready。",
-          "last_updated": "2026-09-01T23:14:32.000Z"
+          "notes": "D11 首次落地：定稿 AgoraEvalTask/EvalResult、可重复 runner、固定模型/环境/预算元数据与 Outcome/Process/Efficiency/Safety 四类 Grader；建立 8–12 个 Phase 0–6 小任务，覆盖真实编码闭环、消息 commit-before-publish、main/sub 作用域、participant/ChannelContext 隔离与可恢复冒泡。复用既有 Harness/MCP/Docker/JSON/SSE 生产链，不复制第二套 Agent/沙箱；评测专用 State/产物必须与用户产品 State/KB 隔离。公开 Benchmark adapter 延后 10.5；本任务不是阶段出口门禁，6.5 仍须跑全量集成/G5。\n[2026-09-01 /agora-pr-merge] 依赖 6.3 已由 PR #50 合并并标 done（merge commit b1d360e），级联翻转 pending→ready。\n[2026-09-02 /agora-sync-docs·规格评审] Leader 授权先评审再实现。D11 方向保留，修正四处不可验收口径：可重复=版本化输入/环境可重跑且可追溯，不承诺模型输出逐字节一致；AgoraEvalTask/EvalResult 补 task/runner/environment fingerprint、attempt/profile、结构化 pass|fail|unknown grader evidence 与带哈希 artifact；deterministic/model profile 分开汇总，前者不得宣称模型能力；生产组合根仅可在 .data/evals/<runId> 隔离 data root/workspace 写评测专用 State，不得触碰用户 .data/projects 或 KB。实现只用 Eval wrapper/observer 与既有 trace，不改冻结端口、不新增产品依赖，6.5/G5 门禁不变。任务保持 ready，待实现计划确认。\n[2026-09-02 /agora-do-task] Leader 确认修订后的四单元 TDD 计划；依赖 6.3=done、Phase 5 出口 5.6=done、current_phase=6，跨阶段门禁满足。任务置 in_progress，按契约/fingerprint→隔离 runner/profile→四类 grader/evidence→10 个 Phase 0–6 任务与分离基线实施。\n[2026-09-02 Code+Check 进展] 已完成版本化契约/校验、递归 canonical JSON + SHA-256 fingerprint、隔离且原子 result writer、失败留证、Outcome/Process/Efficiency/Safety 统一 grader checks、显式 unknown 指标、10 个 Phase 0–6 任务目录、真实 JSON Message/Channel/Context/Reconciler 场景及 Docker 编码/修复/路径边界场景。deterministic baseline 10/10 通过（3 个真实 Docker 场景）；跟踪 summary 记录全部 task fingerprint，cost 缺失保持 unknown。typecheck 0 错；Biome 205 files 0 违规；全量 68 files / 591 tests 全绿，含 live DeepSeek Harness/摘要、Docker/MCP、Phase 0–5 G5。model profile 的单个 live closed-channel summary 路径已实现，但专用命令的外部发送授权被安全审查拒绝；未绕过，等待 Leader 明确授权将该评测上下文发送至 api.deepseek.com 后运行。任务保持 in_progress。\n[2026-09-02 Model baseline] Leader 明确授权发送隔离的合成 Channel 评测上下文至 api.deepseek.com；真实无工具 Harness closed-channel summary 1/1 通过（约 7.44s），4 checks pass / 0 fail / 2 unknown。unknown 为生产端口未暴露的 token/cost/modelCalls，按 D11 不推算。deterministic/model profile 均已形成独立可审计摘要。\n[2026-09-02 /agora-commit gates] typecheck 0 错；Biome 206 files 0 违规；全量 68 files / 592 tests 全绿，含 live DeepSeek、Docker/MCP 与 Phase 0–5 累进链路；Task 6.4 deterministic G5 在获准访问本机 Docker 后 10/10 通过（3 个真实 Docker 场景）。敏感信息检查与 PR 证据随后补记；任务保持 in_progress，等待人类合并。",
+          "last_updated": "2026-09-02T18:52:46.000Z"
         },
         {
           "id": "6.5",
@@ -910,7 +910,8 @@
             "6.4"
           ],
           "test_file": "tests/integration/phase6/phase6-exit.test.ts",
-          "notes": "多群并发消息流 + 隔离性（非成员不可见）+ 冒泡完整性回归；审计 6.4 Eval runner 可重复、结果 schema/fixture 版本可追溯且不修改产品 State/KB。Benchmark 结果不替代本出口的确定性测试与 G5。"
+          "notes": "多群并发消息流 + 隔离性（非成员不可见）+ 冒泡完整性回归；审计 6.4 Eval runner 的版本化可重跑性、task/runner/environment fingerprint、profile 分离、结构化 grader evidence，以及只写 .data/evals/<runId> 评测专用 State 且不触碰用户产品 State/KB。Benchmark 结果不替代本出口的确定性测试与 G5。",
+          "last_updated": "2026-09-02T18:06:09.000Z"
         }
       ]
     },

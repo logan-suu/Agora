@@ -10,14 +10,19 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:phase6:deterministic": "vitest run --config vitest.eval.config.ts -t 'phase6 deterministic baseline'",
+    "eval:phase6:model": "vitest run --config vitest.eval.config.ts -t 'phase6 model baseline'"
   },
   "devDependencies": {
     "@agora/core-domain": "workspace:*",
     "@agora/core-orchestration": "workspace:*",
+    "@agora/comm-bus": "workspace:*",
+    "@agora/comm-channels": "workspace:*",
     "@agora/roles-definitions": "workspace:*",
     "@agora/runtime-executor": "workspace:*",
     "@agora/runtime-sandbox": "workspace:*",
+    "@agora/runtime-state": "workspace:*",
     "@agora/tools-bridge": "workspace:*",
     "@agora/tools-fs": "workspace:*",
     "@agora/tools-git": "workspace:*",
