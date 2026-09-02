@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-02T20:38:39.000Z",
+  "last_updated": "2026-09-02T21:49:18.000Z",
   "current_phase": 6,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -901,7 +901,7 @@
           "id": "6.5",
           "title": "Phase 6 出口集成测试",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/开发计划安排.md §9",
             "docs/详细设计方案.md §11"
@@ -910,8 +910,8 @@
             "6.4"
           ],
           "test_file": "tests/integration/phase6/phase6-exit.test.ts",
-          "notes": "多群并发消息流 + 隔离性（非成员不可见）+ 冒泡完整性回归；审计 6.4 Eval runner 的版本化可重跑性、task/runner/environment fingerprint、profile 分离、结构化 grader evidence，以及只写 .data/evals/<runId> 评测专用 State 且不触碰用户产品 State/KB。Benchmark 结果不替代本出口的确定性测试与 G5。\n[2026-09-02 /agora-pr-merge] 依赖 6.4 已由 PR #51 合并并标 done（merge commit 0cc8982），级联翻转 pending→ready。",
-          "last_updated": "2026-09-02T20:38:39.000Z"
+          "notes": "多群并发消息流 + 隔离性（非成员不可见）+ 冒泡完整性回归；审计 6.4 Eval runner 的版本化可重跑性、task/runner/environment fingerprint、profile 分离、结构化 grader evidence，以及只写 .data/evals/<runId> 评测专用 State 且不触碰用户产品 State/KB。Benchmark 结果不替代本出口的确定性测试与 G5。\n[2026-09-02 /agora-pr-merge] 依赖 6.4 已由 PR #51 合并并标 done（merge commit 0cc8982），级联翻转 pending→ready。\n[2026-09-02 /agora-do-task] Leader 批准执行 6.5；依赖 6.4=done、Phase 5 出口 5.6=done、current_phase=6，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划获批前不写测试或实现代码。\n[2026-09-02 /agora-do-task·Code+Check+Verify] 新增 tests/integration/phase6/phase6-exit.test.ts 两条出口测试：真实 MessageRuntime/HTTP/SSE/JsonTaskStateStore/JsonProjectChannelStore 链同时创建两个 sub、并发提交作用域消息、验证 participant default-deny 与 display/未知 payload 不泄漏，关闭后每群生成唯一 COORDINATOR main 摘要及 bubbledSummaryRef，重启 reconcile 不重复；真实 Eval runner 复核 10 个任务 fingerprint、deterministic/model profile 分离、final/pass、结构化 SHA-256 evidence 相对引用，并以用户 State/KB 哨兵证明只写规范 .data/evals/<runId>。仅外部 LLM 摘要边界使用文件头注明原因的确定性生成器。focused Phase 6=2/2；typecheck 0 错；Biome 207 files 0 违规。deterministic Eval 首次因受限环境 Docker socket EPERM 仅 7/10，获准访问本机 Docker 后 10/10 通过（3 个真实 node:20-slim Docker 场景）。完整 pnpm test 在 Docker/网络可用环境中 69 files / 601 tests 全绿，包含新出口测试、DockerSandbox 15/15、真实 DeepSeek Harness/closed-channel summary 与 LRU E2E、Phase 0–5 累积链。无生产接口或规格变更，无新增延期项；任务保持 in_progress，待 $agora-commit。\n[2026-09-02 /agora-commit·门禁] 分支 test/phase6-exit；typecheck 0 错；Biome 207 files 0 违规；Phase 6 focused 2/2；phase6-v2 deterministic Eval 10/10（3 个真实 Docker 场景）；完整 pnpm test 69 files / 601 tests 全绿，包含真实 DeepSeek Harness/closed-channel summary/LRU E2E、DockerSandbox 15/15 与 Phase 0–5 累积链。待敏感数据审查、精确暂存、提交与 PR。\n[2026-09-02 /agora-commit·PR] 功能提交 ed84669 已推送至 test/phase6-exit；PR #52：https://github.com/logan-suu/Agora/pull/52（base=dev-1.0.0，OPEN/MERGEABLE）。gitleaks staged 扫描无敏感信息。任务保持 in_progress，等待人类审阅与合并；Agent 不自动合并。\n[2026-09-02 /agora-pr-review·修复复审] CodeRabbit 行内评论有效：原出口测试只校验 SHA-256 字符串形状，不能证明 evidence 文件存在且摘要匹配。已在路径/穿越校验后读取每个 evidence 文件并重算 SHA-256 比对，缺失或错误摘要均 fail。Docstring coverage 警告不属于仓库门禁且测试辅助函数沿用现有风格，不实施。复核：Phase 6 focused 2/2；typecheck 0 错；Biome 207 files 0 违规；phase6-v2 deterministic Eval 10/10（3 个真实 Docker 场景）；完整 pnpm test 69 files / 601 tests 全绿，包含真实 DeepSeek Harness/closed-channel summary/LRU E2E（本轮约 266s）与 DockerSandbox 15/15。无新增延期项，任务保持 in_progress。",
+          "last_updated": "2026-09-02T21:49:18.000Z"
         }
       ]
     },
