@@ -47,6 +47,12 @@ importers:
 
   .:
     devDependencies:
+      '@agora/comm-bus':
+        specifier: workspace:*
+        version: link:packages/comm/bus
+      '@agora/comm-channels':
+        specifier: workspace:*
+        version: link:packages/comm/channels
       '@agora/core-domain':
         specifier: workspace:*
         version: link:packages/core/domain
@@ -62,6 +68,9 @@ importers:
       '@agora/runtime-sandbox':
         specifier: workspace:*
         version: link:packages/runtime/sandbox
+      '@agora/runtime-state':
+        specifier: workspace:*
+        version: link:packages/runtime/state
       '@agora/tools-bridge':
         specifier: workspace:*
         version: link:packages/tools/bridge
