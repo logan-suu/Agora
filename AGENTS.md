@@ -307,7 +307,8 @@ Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 
             全实例最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
             刷新不依赖活容器，静态消息不得充当真实闭环证据
 工程评测    D11：Phase 6 起渐进式 Eval；复用成熟 Coding Agent Benchmark 的任务/环境/Outcome Grader，自建 Agora 的
-            Process/Efficiency/Safety Grader；公开集与 holdout 分开，Phase 10 重复对照并报告方差。Benchmark 不替代测试/G5，
+            Process/Efficiency/Safety Grader；核心 check fail-closed，pass 只来自实际证据；结果 provisional→cleanup→final，
+            执行配置与审计元数据同源。公开集与 holdout 分开，Phase 10 重复对照并报告方差。Benchmark 不替代测试/G5，
             未实测指标不得对外宣称，外部评测工具不进入默认产品运行时依赖
 ```
 

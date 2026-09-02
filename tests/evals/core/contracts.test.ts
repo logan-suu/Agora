@@ -50,5 +50,29 @@ describe('Eval contracts', () => {
     expect(() =>
       validateEvalTask({ ...task, expectedInvariants: ['process.same', 'process.same'] }),
     ).toThrow('expectedInvariants');
+    expect(() =>
+      validateEvalTask({
+        ...task,
+        limits: { ...task.limits, maxCostUsd: Number.POSITIVE_INFINITY },
+      }),
+    ).toThrow('maxCostUsd');
+  });
+
+  it('validates nested outcome and leader-event fields', () => {
+    expect(() => validateEvalTask({ ...task, expectedOutcome: { assertions: [''] } })).toThrow(
+      'expectedOutcome.assertions',
+    );
+    expect(() =>
+      validateEvalTask({ ...task, expectedOutcome: { requiredFiles: ['a', 'a'] } }),
+    ).toThrow('expectedOutcome.requiredFiles');
+    expect(() => validateEvalTask({ ...task, expectedOutcome: {} })).toThrow(
+      'expectedOutcome must declare',
+    );
+    expect(() =>
+      validateEvalTask({
+        ...task,
+        leaderEvents: [{ at: { kind: 'step', value: -1 }, display: 'pause' }],
+      }),
+    ).toThrow('leaderEvents');
   });
 });

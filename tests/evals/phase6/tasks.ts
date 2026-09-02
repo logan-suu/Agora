@@ -19,12 +19,19 @@ function task(
   return {
     schemaVersion: 1,
     id: `phase6/${id}`,
-    version: '1.0.0',
+    version: '1.1.0',
     source: 'agora',
     profiles: model ? ['deterministic', 'model'] : ['deterministic'],
     goal,
     repository: { fixture, revision: 'phase6-fixture-v1' },
-    expectedOutcome: { assertions },
+    expectedOutcome:
+      id === 'coding-closure' || id === 'test-repair'
+        ? {
+            testCommand: 'node answer.test.js',
+            requiredFiles: ['answer.js', 'answer.test.js'],
+            assertions,
+          }
+        : { assertions },
     expectedInvariants: invariants,
     limits,
   };

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 export type EvalProfile = 'deterministic' | 'model';
 export type EvalStatus = 'pass' | 'fail' | 'unknown';
+export type EvalLifecycle = 'provisional' | 'final';
 export type MetricValue = number | 'unknown';
 
 export interface EvalLimits {
@@ -63,6 +64,7 @@ export interface EvalEnvironment {
 
 export interface EvalEfficiency {
   durationMs: number;
+  iterations: MetricValue;
   inputTokens: MetricValue;
   outputTokens: MetricValue;
   costUsd: MetricValue;
@@ -75,6 +77,8 @@ export interface EvalEfficiency {
 export interface EvalResult {
   schemaVersion: 1;
   runId: string;
+  lifecycle: EvalLifecycle;
+  overallStatus: EvalStatus;
   startedAt: string;
   finishedAt: string;
   taskId: string;
@@ -115,6 +119,43 @@ export function validateEvalTask(value: unknown): asserts value is AgoraEvalTask
     );
   }
   required(isRecord(value.expectedOutcome), 'expectedOutcome must be an object');
+  if (isRecord(value.expectedOutcome)) {
+    const outcome = value.expectedOutcome;
+    if (outcome.testCommand !== undefined) {
+      required(nonEmpty(outcome.testCommand), 'expectedOutcome.testCommand must be non-empty');
+    }
+    for (const field of ['requiredFiles', 'assertions'] as const) {
+      if (outcome[field] !== undefined) {
+        required(
+          uniqueNonEmptyStrings(outcome[field]),
+          `expectedOutcome.${field} must contain unique non-empty strings`,
+        );
+      }
+    }
+    required(
+      outcome.testCommand !== undefined ||
+        (Array.isArray(outcome.requiredFiles) && outcome.requiredFiles.length > 0) ||
+        (Array.isArray(outcome.assertions) && outcome.assertions.length > 0),
+      'expectedOutcome must declare at least one check',
+    );
+  }
+  if (value.leaderEvents !== undefined) {
+    required(Array.isArray(value.leaderEvents), 'leaderEvents must be an array');
+    if (Array.isArray(value.leaderEvents)) {
+      for (const event of value.leaderEvents) {
+        required(isRecord(event), 'leaderEvents entries must be objects');
+        if (!isRecord(event)) continue;
+        required(isRecord(event.at), 'leaderEvents.at must be an object');
+        if (isRecord(event.at)) {
+          const validAt =
+            (event.at.kind === 'phase' && nonEmpty(event.at.value)) ||
+            (event.at.kind === 'step' && nonNegativeInteger(event.at.value));
+          required(validAt, 'leaderEvents.at must contain a valid phase or step');
+        }
+        required(nonEmpty(event.display), 'leaderEvents.display must be non-empty');
+      }
+    }
+  }
   required(
     Array.isArray(value.expectedInvariants) &&
       value.expectedInvariants.every(nonEmpty) &&
@@ -133,7 +174,9 @@ export function validateEvalTask(value: unknown): asserts value is AgoraEvalTask
     }
     if (value.limits.maxCostUsd !== undefined) {
       required(
-        typeof value.limits.maxCostUsd === 'number' && value.limits.maxCostUsd >= 0,
+        typeof value.limits.maxCostUsd === 'number' &&
+          Number.isFinite(value.limits.maxCostUsd) &&
+          value.limits.maxCostUsd >= 0,
         'maxCostUsd must be a non-negative number',
       );
     }
@@ -180,6 +223,14 @@ function nonEmpty(value: unknown): value is string {
 
 function positiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
+}
+
+function nonNegativeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+function uniqueNonEmptyStrings(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(nonEmpty) && new Set(value).size === value.length;
 }
 
 function required(condition: boolean, message: string): asserts condition {

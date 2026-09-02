@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { basename, join, relative, resolve } from 'node:path';
+import { lstat, mkdir, readFile, realpath, rename, writeFile } from 'node:fs/promises';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 
 import {
   type AgoraEvalTask,
@@ -23,10 +23,13 @@ export interface EvalObservation {
   efficiency?: Partial<EvalEfficiency>;
 }
 
+export type EvalCleanup = () => Promise<Partial<EvalObservation> | undefined>;
+
 export interface EvalExecutionContext {
   runRoot: string;
   dataRoot: string;
   workspaceRoot: string;
+  registerCleanup(cleanup: EvalCleanup): void;
 }
 
 export interface RunEvalTaskOptions {
@@ -42,6 +45,7 @@ export interface RunEvalTaskOptions {
 }
 
 const UNKNOWN_EFFICIENCY: Omit<EvalEfficiency, 'durationMs'> = {
+  iterations: 'unknown',
   inputTokens: 'unknown',
   outputTokens: 'unknown',
   costUsd: 'unknown',
@@ -59,9 +63,7 @@ export async function runEvalTask(options: RunEvalTaskOptions): Promise<EvalResu
   if (!Number.isInteger(options.attempt) || options.attempt < 1) {
     throw new Error('attempt must be a positive integer');
   }
-  const evalRoot = resolve(options.evalRoot);
-  if (basename(evalRoot) !== 'evals') throw new Error('evalRoot must end in an evals directory');
-
+  const evalRoot = await prepareEvalRoot(options.evalRoot);
   const runId = `${safeId(options.task.id)}-${options.profile}-a${options.attempt}-${randomUUID()}`;
   const runRoot = join(evalRoot, runId);
   const dataRoot = join(runRoot, 'data');
@@ -69,35 +71,94 @@ export async function runEvalTask(options: RunEvalTaskOptions): Promise<EvalResu
   await mkdir(dataRoot, { recursive: true });
   await mkdir(workspaceRoot, { recursive: true });
 
+  const cleanups: EvalCleanup[] = [];
   const startedAt = new Date().toISOString();
   const started = performance.now();
   let observation: EvalObservation = {};
   let failure: EvalResult['failure'];
   try {
-    observation = await options.execute({ runRoot, dataRoot, workspaceRoot });
+    observation = await options.execute({
+      runRoot,
+      dataRoot,
+      workspaceRoot,
+      registerCleanup: (cleanup) => cleanups.push(cleanup),
+    });
   } catch (error) {
-    failure = {
-      category: 'execution',
-      detail: error instanceof Error ? error.message : String(error),
-    };
+    failure = errorRecord('execution', error);
   }
-  const durationMs = Math.max(0, Math.round(performance.now() - started));
-  const observationPath = join(runRoot, 'observation.json');
+
+  const resultPath = join(runRoot, 'result.json');
+  await writeJsonAtomic(
+    resultPath,
+    await buildResult(options, {
+      runId,
+      runRoot,
+      startedAt,
+      started,
+      observation,
+      failure,
+      lifecycle: 'provisional',
+    }),
+  );
+
+  for (const cleanup of cleanups.reverse()) {
+    try {
+      const cleanupObservation = await cleanup();
+      if (cleanupObservation !== undefined) {
+        observation = mergeObservation(observation, cleanupObservation);
+      }
+    } catch (error) {
+      failure ??= errorRecord('cleanup', error);
+    }
+  }
+
+  const final = await buildResult(options, {
+    runId,
+    runRoot,
+    startedAt,
+    started,
+    observation,
+    failure,
+    lifecycle: 'final',
+  });
+  await writeJsonAtomic(resultPath, final);
+  return final;
+}
+
+async function buildResult(
+  options: RunEvalTaskOptions,
+  state: {
+    runId: string;
+    runRoot: string;
+    startedAt: string;
+    started: number;
+    observation: EvalObservation;
+    failure?: EvalResult['failure'];
+    lifecycle: EvalResult['lifecycle'];
+  },
+): Promise<EvalResult> {
+  const durationMs = Math.max(0, Math.round(performance.now() - state.started));
+  const observationPath = join(state.runRoot, 'observation.json');
   await writeJsonAtomic(
     observationPath,
-    failure === undefined ? observation : { observation, failure },
+    state.failure === undefined
+      ? state.observation
+      : { observation: state.observation, failure: state.failure },
   );
-  const evidence = await artifactRef(runRoot, observationPath, 'application/json');
+  const evidence = await artifactRef(state.runRoot, observationPath, 'application/json');
   const efficiency: EvalEfficiency = {
     ...UNKNOWN_EFFICIENCY,
-    ...observation.efficiency,
+    ...state.observation.efficiency,
     durationMs,
   };
-  const checks = grade(options.task, observation, efficiency, evidence);
-  const result: EvalResult = {
+  const checks = grade(options.task, state.observation, efficiency, evidence);
+  return {
     schemaVersion: 1,
-    runId,
-    startedAt,
+    runId: state.runId,
+    lifecycle: state.lifecycle,
+    overallStatus:
+      state.lifecycle === 'provisional' ? 'unknown' : deriveOverallStatus(checks, state.failure),
+    startedAt: state.startedAt,
     finishedAt: new Date().toISOString(),
     taskId: options.task.id,
     taskVersion: options.task.version,
@@ -111,11 +172,65 @@ export async function runEvalTask(options: RunEvalTaskOptions): Promise<EvalResu
     limits: options.task.limits,
     checks,
     efficiency,
-    ...(failure === undefined ? {} : { failure }),
+    ...(state.failure === undefined ? {} : { failure: state.failure }),
     artifactRefs: [evidence],
   };
-  await writeJsonAtomic(join(runRoot, 'result.json'), result);
-  return result;
+}
+
+function deriveOverallStatus(
+  checks: readonly GraderCheck[],
+  failure: EvalResult['failure'],
+): EvalResult['overallStatus'] {
+  if (failure !== undefined || checks.some((entry) => entry.status === 'fail')) return 'fail';
+  if (checks.some((entry) => entry.category !== 'efficiency' && entry.status === 'unknown')) {
+    return 'fail';
+  }
+  return 'pass';
+}
+
+function mergeObservation(
+  current: EvalObservation,
+  update: Partial<EvalObservation>,
+): EvalObservation {
+  return {
+    ...current,
+    ...update,
+    assertions: { ...current.assertions, ...update.assertions },
+    invariants: { ...current.invariants, ...update.invariants },
+    efficiency: { ...current.efficiency, ...update.efficiency },
+  };
+}
+
+async function prepareEvalRoot(input: string): Promise<string> {
+  const evalRoot = resolve(input);
+  if (basename(evalRoot) !== 'evals' || basename(dirname(evalRoot)) !== '.data') {
+    throw new Error('evalRoot must be the canonical .data/evals directory');
+  }
+  await mkdir(dirname(evalRoot), { recursive: true });
+  try {
+    if ((await lstat(evalRoot)).isSymbolicLink()) {
+      throw new Error('evalRoot must not be a symbolic link');
+    }
+  } catch (error) {
+    if (!isMissingPath(error)) throw error;
+    await mkdir(evalRoot);
+  }
+  const [parentPath, rootPath] = await Promise.all([
+    realpath(dirname(evalRoot)),
+    realpath(evalRoot),
+  ]);
+  if (dirname(rootPath) !== parentPath || basename(rootPath) !== 'evals') {
+    throw new Error('evalRoot must resolve to the canonical .data/evals directory');
+  }
+  return rootPath;
+}
+
+function errorRecord(category: string, error: unknown): NonNullable<EvalResult['failure']> {
+  return { category, detail: error instanceof Error ? error.message : String(error) };
+}
+
+function isMissingPath(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }
 
 function grade(
@@ -183,9 +298,8 @@ function grade(
     ),
   );
   checks.push(
+    metricBudgetCheck('iterations', efficiency.iterations, task.limits.maxIterations, evidence),
     metricBudgetCheck('model-calls', efficiency.modelCalls, task.limits.maxModelCalls, evidence),
-  );
-  checks.push(
     metricBudgetCheck('tool-calls', efficiency.toolCalls, task.limits.maxToolCalls, evidence),
   );
   if (task.limits.maxCostUsd !== undefined) {

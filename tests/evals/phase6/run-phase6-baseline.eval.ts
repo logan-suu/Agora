@@ -3,11 +3,16 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { runEvalTask } from '../core/runner';
-import { executeDeterministicScenario, executeModelScenario } from './scenarios';
+import {
+  executeDeterministicScenario,
+  executeModelScenario,
+  PHASE6_DOCKER_CONFIG,
+  PHASE6_MODEL_CONFIG,
+} from './scenarios';
 import { PHASE6_EVAL_TASKS } from './tasks';
 
 const evalRoot = resolve('.data/evals');
-const runnerVersion = 'phase6-v1';
+const runnerVersion = 'phase6-v2';
 
 describe('phase6 deterministic baseline', () => {
   for (const task of PHASE6_EVAL_TASKS) {
@@ -22,17 +27,18 @@ describe('phase6 deterministic baseline', () => {
         modelConfig: { provider: 'scripted', model: 'phase6-fixture-v1', parameters: {} },
         environment: {
           sandbox: task.expectedInvariants.includes('safety.sandbox-only')
-            ? 'docker'
+            ? PHASE6_DOCKER_CONFIG.sandbox
             : 'isolated-node',
           imageOrRuntime: task.expectedInvariants.includes('safety.sandbox-only')
-            ? 'node:20-slim'
+            ? PHASE6_DOCKER_CONFIG.imageOrRuntime
             : process.version,
           platform: `${process.platform}-${process.arch}`,
         },
         execute: (context) => executeDeterministicScenario(task, context),
       });
       expect(result.failure).toBeUndefined();
-      expect(result.checks.filter((check) => check.status === 'fail')).toEqual([]);
+      expect(result.lifecycle).toBe('final');
+      expect(result.overallStatus).toBe('pass');
     });
   }
 });
@@ -48,7 +54,7 @@ describe('phase6 model baseline', () => {
         evalRoot,
         runnerVersion,
         systemVariant: 'multi-agent-role-projection',
-        modelConfig: { provider: 'deepseek-official', model: 'deepseek-v4-flash', parameters: {} },
+        modelConfig: PHASE6_MODEL_CONFIG,
         environment: {
           sandbox: 'no-tools-harness',
           imageOrRuntime: process.version,
@@ -57,7 +63,8 @@ describe('phase6 model baseline', () => {
         execute: (context) => executeModelScenario(task, context),
       });
       expect(result.failure).toBeUndefined();
-      expect(result.checks.filter((check) => check.status === 'fail')).toEqual([]);
+      expect(result.lifecycle).toBe('final');
+      expect(result.overallStatus).toBe('pass');
     });
   }
 });

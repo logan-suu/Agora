@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "runnerVersion": "phase6-v1",
+  "runnerVersion": "phase6-v2",
   "systemVariant": "multi-agent-role-projection",
-  "generatedAt": "2026-09-02T18:42:49.000Z",
+  "generatedAt": "2026-09-02T20:13:47.000Z",
   "profiles": {
     "deterministic": {
       "attemptsPerTask": 1,
       "tasks": 10,
       "passedTasks": 10,
       "failedTasks": 0,
-      "note": "Unknown checks are unavailable cost metrics and are not inferred."
+      "note": "All final core checks passed. Unknown checks are unavailable efficiency metrics and do not affect the fail-closed core verdict."
     },
     "model": {
       "status": "completed",
@@ -19,23 +19,23 @@
       "passedTasks": 1,
       "failedTasks": 0,
       "checks": {
-        "pass": 4,
+        "pass": 5,
         "fail": 0,
         "unknown": 2
       },
-      "note": "Token, cost, and model-call metrics remain unknown because the production ports do not expose them; no values were inferred."
+      "note": "The final fail-closed result passed. Token, cost, and model-call values remain unknown where production ports do not expose them; no values were inferred."
     }
   },
   "taskFingerprints": {
-    "phase6/bubble-recovery": "a756143d78b282b4e76cefae4e8f1a2a44e4c578c1465f2d9a5ef6d0c58d809d",
-    "phase6/coding-closure": "d1e3f42a1633c6f5dabe49d412c91bcd406c784281cbb7b2bb1221f69086e3ef",
-    "phase6/commit-before-publish": "7da68f42c531be04051f024cb67320ee6715fcaa739d444e168a97ac595d5cc6",
-    "phase6/context-redaction": "89bc019a3bccf11fd0cba9b08c95de1ac7c8eb838f3cccfe9449991de1f5520e",
-    "phase6/main-scope": "be141990a61feced8967c98626fcb71185bb471b48bd8778ed05134cb0415d53",
-    "phase6/message-retry": "2caa7d6f1d438935f2509cc9991db4d166caaa0b5d4c4cca8cb947c141459804",
-    "phase6/participant-isolation": "e7fe1f2961068b7c93fc0eb03f9086ec76b1d6b75e49142651a75f32f7656b50",
-    "phase6/sandbox-boundary": "13966424b79a07d1d4e740b7fc58172fbed89332e34b4ed73025573f07398745",
-    "phase6/sub-scope": "8287ee2765a47fe1b7b4038e23228922c078c23db510561601b744bf610a7054",
-    "phase6/test-repair": "b786005a746b9134a44d7e688e3e7170c857030480839ace7edcea09e06be355"
+    "phase6/bubble-recovery": "3f111bd078bc832adc9f8e81c29a6a30f4dd43ad704afcbcfe9dc4ad4d98a18e",
+    "phase6/coding-closure": "7ce583debc0ecb37061a38b6cb8f3d812a1447d1de2022e704473e9d7805f169",
+    "phase6/commit-before-publish": "89fe4a63b3413ddb56fda83d1d5b0e98df3aaa46c879e6dffb9a1ea9f2cf223d",
+    "phase6/context-redaction": "c9958220cdd8e4b196dca5203d381cee6dcf7182418c23716cf7d0ef6a1b5b76",
+    "phase6/main-scope": "ecafedea7c2055f453e227a43f8fa87f451dd395a0d7c9bf1d0d4927a27ffb80",
+    "phase6/message-retry": "a38e65994d889898fa47723f05d763854d9d01a3f41ee66e9052c271c4c8bd62",
+    "phase6/participant-isolation": "1876d7501e4b1dd3f8a3789fc132ab01b4debe8f0ceaf69dbb7d7c4076fe47b9",
+    "phase6/sandbox-boundary": "1b32e36b7dce9e002a36e72b7e32c4837192474123a53c1ae2a5576ed5e61ff8",
+    "phase6/sub-scope": "d1b6f34972df20a780857ad3c4e09210cc7cf1c947c232bcae40474f9be114f8",
+    "phase6/test-repair": "53859a7cbdf78689682c216dd918edc803006b9e5cf8d0fe507ba14c3a72d0f9"
   }
 }

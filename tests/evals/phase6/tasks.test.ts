@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { fingerprintTask, validateEvalTask } from '../core/contracts';
+import { executeDeterministicScenario } from './scenarios';
 import { PHASE6_EVAL_TASKS } from './tasks';
 
 describe('Phase 6 eval catalog', () => {
@@ -35,5 +36,22 @@ describe('Phase 6 eval catalog', () => {
     expect(summary.taskFingerprints).toEqual(
       Object.fromEntries(PHASE6_EVAL_TASKS.map((task) => [task.id, fingerprintTask(task)])),
     );
+  });
+
+  it('fails fast when a deterministic task has no mapped scenario', async () => {
+    const mappedTask = PHASE6_EVAL_TASKS.find((entry) => entry.id === 'phase6/coding-closure');
+    expect(mappedTask).toBeDefined();
+    if (mappedTask === undefined) throw new Error('fixture task missing');
+    await expect(
+      executeDeterministicScenario(
+        { ...mappedTask, id: 'phase6/unmapped' },
+        {
+          runRoot: '/tmp/unmapped',
+          dataRoot: '/tmp/unmapped/data',
+          workspaceRoot: '/tmp/unmapped/workspace',
+          registerCleanup: () => undefined,
+        },
+      ),
+    ).rejects.toThrow('no Phase 6 driver');
   });
 });
