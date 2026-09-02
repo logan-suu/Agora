@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { fingerprintTask, validateEvalTask } from '../core/contracts';
-import { executeDeterministicScenario } from './scenarios';
+import { executeDeterministicScenario, usesPhase6Docker } from './scenarios';
 import { PHASE6_EVAL_TASKS } from './tasks';
 
 describe('Phase 6 eval catalog', () => {
@@ -53,5 +53,11 @@ describe('Phase 6 eval catalog', () => {
         },
       ),
     ).rejects.toThrow('no Phase 6 driver');
+  });
+
+  it('classifies every Docker-backed scenario for matching audit metadata', () => {
+    expect(
+      PHASE6_EVAL_TASKS.filter((task) => usesPhase6Docker(task.id)).map((task) => task.id),
+    ).toEqual(['phase6/coding-closure', 'phase6/test-repair', 'phase6/sandbox-boundary']);
   });
 });

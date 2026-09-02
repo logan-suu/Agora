@@ -108,7 +108,7 @@ export async function runEvalTask(options: RunEvalTaskOptions): Promise<EvalResu
         observation = mergeObservation(observation, cleanupObservation);
       }
     } catch (error) {
-      failure ??= errorRecord('cleanup', error);
+      failure = aggregateFailure(failure, errorRecord('cleanup', error));
     }
   }
 
@@ -227,6 +227,19 @@ async function prepareEvalRoot(input: string): Promise<string> {
 
 function errorRecord(category: string, error: unknown): NonNullable<EvalResult['failure']> {
   return { category, detail: error instanceof Error ? error.message : String(error) };
+}
+
+function aggregateFailure(
+  current: EvalResult['failure'],
+  next: NonNullable<EvalResult['failure']>,
+): NonNullable<EvalResult['failure']> {
+  if (current === undefined) return next;
+  const causes = current.category === 'multiple' && current.causes ? current.causes : [current];
+  return {
+    category: 'multiple',
+    detail: 'multiple failures occurred',
+    causes: [...causes, next],
+  };
 }
 
 function isMissingPath(error: unknown): boolean {

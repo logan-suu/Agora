@@ -211,6 +211,37 @@ describe('Eval runner', () => {
     );
   });
 
+  it('preserves execution and cleanup failures in one final result', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-eval-multiple-failures-'));
+    roots.push(root);
+    const result = await runEvalTask({
+      task,
+      profile: 'deterministic',
+      attempt: 1,
+      evalRoot: join(root, '.data', 'evals'),
+      runnerVersion: 'phase6-v2',
+      systemVariant: 'x',
+      modelConfig: { provider: 'scripted', model: 'x', parameters: {} },
+      environment: { sandbox: 'test', imageOrRuntime: 'node-test', platform: process.platform },
+      execute: async ({ registerCleanup }) => {
+        registerCleanup(async () => {
+          throw new Error('cleanup broke too');
+        });
+        throw new Error('execution broke first');
+      },
+    });
+
+    expect(result.failure).toEqual({
+      category: 'multiple',
+      detail: 'multiple failures occurred',
+      causes: [
+        { category: 'execution', detail: 'execution broke first' },
+        { category: 'cleanup', detail: 'cleanup broke too' },
+      ],
+    });
+    expect(result.overallStatus).toBe('fail');
+  });
+
   it('rejects nested and symlinked eval roots', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-eval-root-'));
     roots.push(root);

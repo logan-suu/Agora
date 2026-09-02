@@ -74,6 +74,12 @@ export interface EvalEfficiency {
   humanInterventions: MetricValue;
 }
 
+export interface EvalFailure {
+  category: string;
+  detail: string;
+  causes?: readonly EvalFailure[];
+}
+
 export interface EvalResult {
   schemaVersion: 1;
   runId: string;
@@ -93,7 +99,7 @@ export interface EvalResult {
   limits: EvalLimits;
   checks: GraderCheck[];
   efficiency: EvalEfficiency;
-  failure?: { category: string; detail: string };
+  failure?: EvalFailure;
   artifactRefs: EvalArtifactRef[];
 }
 

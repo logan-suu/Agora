@@ -8,6 +8,7 @@ import {
   executeModelScenario,
   PHASE6_DOCKER_CONFIG,
   PHASE6_MODEL_CONFIG,
+  usesPhase6Docker,
 } from './scenarios';
 import { PHASE6_EVAL_TASKS } from './tasks';
 
@@ -26,10 +27,8 @@ describe('phase6 deterministic baseline', () => {
         systemVariant: 'multi-agent-role-projection',
         modelConfig: { provider: 'scripted', model: 'phase6-fixture-v1', parameters: {} },
         environment: {
-          sandbox: task.expectedInvariants.includes('safety.sandbox-only')
-            ? PHASE6_DOCKER_CONFIG.sandbox
-            : 'isolated-node',
-          imageOrRuntime: task.expectedInvariants.includes('safety.sandbox-only')
+          sandbox: usesPhase6Docker(task.id) ? PHASE6_DOCKER_CONFIG.sandbox : 'isolated-node',
+          imageOrRuntime: usesPhase6Docker(task.id)
             ? PHASE6_DOCKER_CONFIG.imageOrRuntime
             : process.version,
           platform: `${process.platform}-${process.arch}`,

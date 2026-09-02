@@ -30,6 +30,7 @@ const CONTEXT_SCENARIO_IDS = new Set([
   'participant-isolation',
   'context-redaction',
 ]);
+const DOCKER_SCENARIO_IDS = new Set(['coding-closure', 'test-repair', 'sandbox-boundary']);
 
 export const PHASE6_MODEL_CONFIG = Object.freeze({
   provider: 'deepseek-official',
@@ -43,12 +44,16 @@ export const PHASE6_DOCKER_CONFIG = Object.freeze({
   networkMode: 'none',
 });
 
+export function usesPhase6Docker(taskId: string): boolean {
+  return DOCKER_SCENARIO_IDS.has(taskId.slice(taskId.indexOf('/') + 1));
+}
+
 export async function executeDeterministicScenario(
   task: AgoraEvalTask,
   context: EvalExecutionContext,
 ): Promise<EvalObservation> {
   const shortId = task.id.slice(task.id.indexOf('/') + 1);
-  if (shortId === 'coding-closure' || shortId === 'test-repair' || shortId === 'sandbox-boundary') {
+  if (usesPhase6Docker(task.id)) {
     return sandboxScenario(task, shortId, context);
   }
   if (shortId === 'commit-before-publish' || shortId === 'message-retry') {
