@@ -2,6 +2,7 @@
 // HTTP/SSE, MessageRuntime, JsonTaskStateStore, JsonProjectChannelStore, Channel lifecycle,
 // MessageService, role projection, summary reconciliation, filesystem persistence, and Eval runner
 // use their real implementations. The full deterministic Eval command supplies Docker G5 evidence.
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -330,15 +331,18 @@ describe('Phase 6 Eval exit contract', () => {
     });
     expect(result.modelConfig).not.toEqual(PHASE6_MODEL_CONFIG);
     expect(result.checks.length).toBeGreaterThan(0);
+    const runRoot = join(dataRoot, 'evals', result.runId);
     for (const check of result.checks) {
       expect(check.evidenceRefs.length).toBeGreaterThan(0);
       for (const evidence of check.evidenceRefs) {
         expect(evidence.sha256).toMatch(/^[a-f0-9]{64}$/);
         expect(isAbsolute(evidence.path)).toBe(false);
         expect(evidence.path.split('/')).not.toContain('..');
+        const bytes = await readFile(join(runRoot, evidence.path));
+        expect(createHash('sha256').update(bytes).digest('hex')).toBe(evidence.sha256);
       }
     }
-    expect(existsSync(join(dataRoot, 'evals', result.runId, 'result.json'))).toBe(true);
+    expect(existsSync(join(runRoot, 'result.json'))).toBe(true);
     expect(await readFile(productSentinel, 'utf8')).toBe('{"owner":"user"}\n');
     expect(await readFile(kbSentinel, 'utf8')).toBe('{"writeBlocked":true}\n');
   });
