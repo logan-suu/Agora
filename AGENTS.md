@@ -45,7 +45,7 @@
 | 投影/压缩/三铁律/sliceKB | 详细设计 §7 + 蓝图 §8 | 三条投影铁律 + 存储与上下文分离 |
 | Project/KB/Librarian/GlobalScheduler/收件箱 | 详细设计 §8 + 蓝图 §20 | 独立世界隔离 + 终止并分叉（决策 D4） |
 | humanGate/异议双轨/权威级别 | 详细设计 §8 + 蓝图 §14 | blocking/advisory + leader 最高权威 |
-| 热插拔/招募离职交接 | 蓝图 §12 + 详细设计 §2 | Coordinator 不可删 + 先暂停再交接 |
+| 热插拔/招募离职交接 | 蓝图 §12 + 详细设计 §2/§5/§7 | D12 项目成员生命周期 + D13 任务入职接手；Coordinator 不可删 + 先 drain 再交接 |
 | 前端群聊 UI/SSE | 选型 §9 + 蓝图 §10 | display/payload 分离 + 展示层与 context 层解耦 |
 | 状态持久化（.data/JSONL） | 选型 §10 + 架构 §9 | Phase 5 TaskStateStore JSON 原子快照；SQLite 可选 |
 | 部署/韧性/错误恢复 | 架构 §6/§9 | 韧性表逐项落地 |
@@ -300,9 +300,9 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
-意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
+意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；浏览器 msgId 统一满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在副作用前校验；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
-            Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga；Phase 8/9 再解锁裁决与完整抢占，
+            Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga 与 /role onboard 单 Task State 接手；Phase 8/9 再解锁裁决与完整抢占，
             其余能力显式 rejected/deferred，不走临时 command 旁路
 Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
             全实例最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
@@ -317,6 +317,10 @@ Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 
             Phase 7 不实现全局 Preemptor/resume；权威源缺失 fail-closed，指派消费前失效进 Leader humanGate，Coordinator 恒 enabled；
             legacy 写后从正式路径复核才删除；
             Phase 7 自定义角色仅保证持久装载与 Leader 显式指派；departing 仅允许已登记活动 handle 的当前 Step 经 role-bound 接缝提交后停，不开放普通写入；任意角色自主调度见 DEF-016
+任务入职    D13：项目 addRole 只改 collaboration，任务 onboard 要求 enabled role，并经同一 POST /api/messages 以稳定 msgId 在单次 Task State commit
+            写入 Leader 主消息、nextRole 与同任务规范离职 handoff Message 引用；toRole=角色的未认领交接自动选择，toRole=leader 只接受 Leader
+            显式 from 引用；跨任务/冲突/重复认领 fail-closed；同 ID applied 重放返回前复核既存 canonical 消息、完整 receipt 与当前引用事实。project() 从最新 applied onboarding 事实派生系统级 onboardingContext，
+            不投原始群聊、不依赖 Channel 窗口/进程内状态；Phase 7 不虚构模板目录/任意 RoleSpec 编辑 UI，也不猜无稳定 Message 的普通 handoff packet
 ```
 
 ---
@@ -487,7 +491,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D12/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D13/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 

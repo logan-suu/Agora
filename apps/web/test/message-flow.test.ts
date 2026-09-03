@@ -44,6 +44,220 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('atomically persists role onboarding with direct handoff refs and keeps replay selection stable', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const post = createPostMessage(runtime);
+
+    await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'remove-coder',
+        display: '/role remove CODER to TESTER',
+      }),
+    );
+    const onboard = await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'onboard-tester',
+        display: '/role onboard TESTER',
+      }),
+    );
+
+    await expect(onboard.json()).resolves.toMatchObject({
+      accepted: true,
+      published: true,
+      action: { status: 'applied' },
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      nextRole: 'TESTER',
+      messages: expect.arrayContaining([
+        expect.objectContaining({
+          msgId: 'onboard-tester',
+          payload: {
+            kind: 'leader_intent',
+            intent: {
+              kind: 'onboard_role',
+              targetRole: 'TESTER',
+              entrustedHandoffMsgIds: [],
+            },
+            action: { status: 'applied' },
+            onboarding: {
+              actionId: 'onboard-tester',
+              role: 'TESTER',
+              handoffRefs: [{ taskId: 'task-a', msgId: 'role-departure:remove-coder' }],
+            },
+          },
+        }),
+      ]),
+    });
+
+    await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'remove-pm',
+        display: '/role remove PM to TESTER',
+      }),
+    );
+    const replay = await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'onboard-tester',
+        display: '/role onboard TESTER',
+      }),
+    );
+    await expect(replay.json()).resolves.toMatchObject({ published: false });
+    const replayed = await runtime.store.load(scope);
+    const receipt = replayed?.messages.find((message) => message.msgId === 'onboard-tester')
+      ?.payload.onboarding;
+    expect(receipt).toMatchObject({
+      handoffRefs: [{ taskId: 'task-a', msgId: 'role-departure:remove-coder' }],
+    });
+
+    await expect(
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'onboard-tester',
+          display: '/role onboard COORDINATOR',
+        }),
+      ),
+    ).rejects.toThrow(/conflicts/i);
+  });
+
+  it('fails closed when an applied onboarding replay has a persisted malformed receipt', async () => {
+    const root = await temporaryRoot();
+    const runtime = createMessageRuntime(root, new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const post = createPostMessage(runtime);
+
+    await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'onboard-tester-malformed',
+        display: '/role onboard TESTER',
+      }),
+    );
+
+    const statePath = join(root, 'projects', scope.projectId, 'tasks', scope.taskId, 'state.json');
+    const persisted = JSON.parse(await readFile(statePath, 'utf8')) as {
+      messages: Array<{ msgId: string; payload: Record<string, unknown> }>;
+    };
+    const onboarding = persisted.messages.find(
+      (message) => message.msgId === 'onboard-tester-malformed',
+    );
+    if (onboarding === undefined) throw new Error('expected persisted onboarding message');
+    delete onboarding.payload.onboarding;
+    await writeFile(statePath, `${JSON.stringify(persisted, null, 2)}\n`, 'utf8');
+
+    await expect(
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'onboard-tester-malformed',
+          display: '/role onboard TESTER',
+        }),
+      ),
+    ).rejects.toThrow(/applied onboarding receipt/i);
+  });
+
+  it('requires explicit from refs to claim a leader-hosted departure handoff', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const post = createPostMessage(runtime);
+
+    await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'remove-reviewer',
+        display: '/role remove REVIEWER',
+      }),
+    );
+    await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'onboard-tester-hosted',
+        display: '/role onboard TESTER from role-departure:remove-reviewer',
+      }),
+    );
+
+    const state = await runtime.store.load(scope);
+    expect(
+      state?.messages.find((message) => message.msgId === 'onboard-tester-hosted')?.payload
+        .onboarding,
+    ).toEqual({
+      actionId: 'onboard-tester-hosted',
+      role: 'TESTER',
+      handoffRefs: [{ taskId: 'task-a', msgId: 'role-departure:remove-reviewer' }],
+    });
+  });
+
+  it('rejects role onboarding outside main without applying nextRole', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const opened = await runtime.channels.load(scope.projectId);
+    if (opened === undefined) throw new Error('expected initialized channels');
+    await runtime.channels.commit(scope.projectId, opened.revision, [
+      ...opened.channels,
+      {
+        channelId: 'sub-onboarding',
+        kind: 'sub',
+        taskId: scope.taskId,
+        threadId: 'onboarding-thread',
+        topic: 'Onboarding',
+        createdBy: 'leader',
+        participants: ['leader', 'TESTER'],
+        closed: false,
+      },
+    ]);
+
+    const response = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'sub-onboarding',
+        msgId: 'onboard-tester-in-sub',
+        display: '/role onboard TESTER',
+      }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      action: { status: 'rejected', reason: expect.stringContaining('main') },
+    });
+    const replay = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'sub-onboarding',
+        msgId: 'onboard-tester-in-sub',
+        display: '/role onboard TESTER',
+      }),
+    );
+    await expect(replay.json()).resolves.toMatchObject({
+      action: { status: 'rejected', reason: expect.stringContaining('main') },
+      published: false,
+    });
+    const rejectedState = await runtime.store.load(scope);
+    expect(rejectedState?.messages).toHaveLength(1);
+    expect(rejectedState?.messages[0]).toMatchObject({
+      msgId: 'onboard-tester-in-sub',
+      payload: { action: { status: 'rejected', reason: expect.stringContaining('main') } },
+    });
+    expect(rejectedState?.messages[0]?.payload).not.toHaveProperty('onboarding');
+    expect(rejectedState?.nextRole).toBeUndefined();
+  });
+
   it('executes a Phase 7 role departure through the single Leader message endpoint', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };

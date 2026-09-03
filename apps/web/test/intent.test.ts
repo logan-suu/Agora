@@ -76,6 +76,23 @@ describe('parseLeaderIntent', () => {
     });
   });
 
+  it('parses the strict Phase 7 role onboarding command', () => {
+    expect(parseLeaderIntent('/role onboard tester')).toEqual({
+      kind: 'onboard_role',
+      targetRole: 'TESTER',
+      entrustedHandoffMsgIds: [],
+    });
+    expect(
+      parseLeaderIntent(
+        '/role onboard tester from role-departure:remove-coder,role-departure:remove-reviewer',
+      ),
+    ).toEqual({
+      kind: 'onboard_role',
+      targetRole: 'TESTER',
+      entrustedHandoffMsgIds: ['role-departure:remove-coder', 'role-departure:remove-reviewer'],
+    });
+  });
+
   it.each([
     '/role',
     '/role remove',
@@ -83,6 +100,10 @@ describe('parseLeaderIntent', () => {
     '/role remove CODER TESTER',
     '/role disable CODER',
     '/role remove @CODER',
+    '/role onboard',
+    '/role onboard TESTER from',
+    '/role onboard TESTER role-departure:remove-coder',
+    '/role onboard @TESTER',
   ])('rejects malformed role departure command %s', (display) => {
     expect(parseLeaderIntent(display)).toMatchObject({ kind: 'invalid' });
   });
@@ -111,6 +132,14 @@ describe('planLeaderIntent', () => {
   it('maps a valid enabled-role assignment to nextRole', () => {
     const state = createInitialAppState('task-a', 'Build a cache', 'project-a');
     const plan = planLeaderIntent(parseLeaderIntent('@CODER implement it'), state, roster);
+
+    expect(plan.action).toEqual({ status: 'applied' });
+    expect(plan.mutations).toEqual([setMutation('nextRole', 'CODER')]);
+  });
+
+  it('maps a valid enabled-role onboarding intent to nextRole', () => {
+    const state = createInitialAppState('task-a', 'Build a cache', 'project-a');
+    const plan = planLeaderIntent(parseLeaderIntent('/role onboard CODER'), state, roster);
 
     expect(plan.action).toEqual({ status: 'applied' });
     expect(plan.mutations).toEqual([setMutation('nextRole', 'CODER')]);

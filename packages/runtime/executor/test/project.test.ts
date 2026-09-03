@@ -142,6 +142,14 @@ function stateWithCoordinationLedger(): AppState {
 }
 
 describe('project (task 2.4, spec §7 slice table)', () => {
+  it('always includes the system-level onboardingContext outside RoleSpec projection declarations', () => {
+    expect(slicesOf(makeState(), 'CODER').onboardingContext).toEqual({
+      actionId: null,
+      role: 'CODER',
+      handoffs: [],
+    });
+  });
+
   it('adds only the caller-supplied defensive ChannelContext without changing the first three args', () => {
     const channelContext = [{ channelId: 'sub-a', entries: [{ ref: { msgId: 'm1' } }] }];
     const withContext = project(makeState(), 'CODER', DEFAULT_ROSTER, channelContext);

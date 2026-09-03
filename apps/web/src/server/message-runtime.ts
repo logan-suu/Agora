@@ -11,8 +11,11 @@ import {
   createMainChannel,
   type Message,
   type Mutation,
+  planRoleOnboarding,
+  type RoleOnboardingReceipt,
   type RoleSpec,
   type RosterEntry,
+  validateAppliedOnboardingMessage,
 } from '@agora/core-domain';
 import {
   ChannelLifecycleRejectedError,
@@ -222,6 +225,7 @@ export class MessageRuntime {
     }
     const existing = current.messages.find((message) => message.msgId === input.msgId);
     if (existing !== undefined) {
+      assertOnboardingReplay(current, existing, input.channelId, parseLeaderIntent(input.display));
       const collaboration = await this.collaboration.load(scope.projectId);
       if (collaboration === undefined) {
         throw new Error(
@@ -321,6 +325,11 @@ export class MessageRuntime {
                   reason: `role_departure_requires_replacement:${intent.targetRole}`,
                 };
         }
+      } else if (intent.kind === 'onboard_role' && input.channelId !== 'main') {
+        lifecycleRejection = {
+          status: 'rejected',
+          reason: 'role onboarding commands must use main',
+        };
       }
     } catch (error) {
       if (
@@ -334,7 +343,27 @@ export class MessageRuntime {
 
     const result = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
       const planned = planLeaderIntent(intent, state, enabledRoster, knownRoles);
-      const action = lifecycleRejection ?? departureAction ?? planned.action;
+      let action = lifecycleRejection ?? departureAction ?? planned.action;
+      let mutations = action.status === 'applied' ? planned.mutations : [];
+      let onboarding: RoleOnboardingReceipt | undefined;
+      if (intent.kind === 'onboard_role' && action.status === 'applied') {
+        try {
+          const onboardingPlan = planRoleOnboarding(
+            state,
+            collaboration.roster,
+            input.msgId,
+            intent,
+          );
+          onboarding = onboardingPlan.receipt;
+          mutations = onboardingPlan.mutations;
+        } catch (error) {
+          action = {
+            status: 'rejected',
+            reason: error instanceof Error ? error.message : 'role onboarding was rejected',
+          };
+          mutations = [];
+        }
+      }
       const message: Message = {
         msgId: input.msgId,
         channelId: input.channelId,
@@ -344,11 +373,12 @@ export class MessageRuntime {
           kind: 'leader_intent',
           intent: planned.intent,
           action,
+          ...(onboarding === undefined ? {} : { onboarding }),
         },
         display: input.display,
         ts: input.ts,
       };
-      return { message, mutations: planned.mutations };
+      return { message, mutations };
     });
 
     return { ...result, action: actionFrom(result.message) };
@@ -458,6 +488,45 @@ function actionFrom(message: Message): LeaderActionStatus {
     return { status, targetPhase, reason };
   }
   return { status: 'none' };
+}
+
+function assertOnboardingReplay(
+  state: AppState,
+  existing: Message,
+  channelId: string,
+  incoming: ReturnType<typeof parseLeaderIntent>,
+): void {
+  const persisted = existing.payload.intent;
+  const persistedRecord =
+    typeof persisted === 'object' && persisted !== null && !Array.isArray(persisted)
+      ? (persisted as Record<string, unknown>)
+      : undefined;
+  const persistedIsOnboarding = persistedRecord?.kind === 'onboard_role';
+  if (!persistedIsOnboarding && incoming.kind !== 'onboard_role') return;
+  const persistedIds = persistedRecord?.entrustedHandoffMsgIds;
+  const action = existing.payload.action;
+  const actionRecord =
+    typeof action === 'object' && action !== null && !Array.isArray(action)
+      ? (action as Record<string, unknown>)
+      : undefined;
+  const actionIsCanonical =
+    actionRecord?.status === 'applied' ||
+    (actionRecord?.status === 'rejected' && typeof actionRecord.reason === 'string');
+  const same =
+    persistedIsOnboarding &&
+    incoming.kind === 'onboard_role' &&
+    existing.payload.kind === 'leader_intent' &&
+    existing.fromRole === 'leader' &&
+    existing.type === 'chat' &&
+    existing.channelId === channelId &&
+    actionIsCanonical &&
+    persistedRecord?.targetRole === incoming.targetRole &&
+    Array.isArray(persistedIds) &&
+    persistedIds.length === incoming.entrustedHandoffMsgIds.length &&
+    persistedIds.every((value, index) => value === incoming.entrustedHandoffMsgIds[index]);
+  if (!same)
+    throw new Error(`onboarding action "${existing.msgId}" conflicts with its first write`);
+  if (actionRecord?.status === 'applied') validateAppliedOnboardingMessage(state, existing);
 }
 
 const workingDirectory = process.cwd();
