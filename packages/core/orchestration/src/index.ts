@@ -6,4 +6,5 @@ export * from './message-service';
 export * from './orchestrator';
 export * from './progress-ledger';
 export * from './project-roster-service';
+export * from './role-departure-service';
 export * from './worker-runtime';

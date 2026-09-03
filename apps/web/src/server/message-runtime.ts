@@ -22,6 +22,9 @@ import {
   MessageService,
   type MutationCommitResult,
   ProjectRosterService,
+  RoleDepartureRejectedError,
+  RoleDepartureService,
+  type RoleDrainPort,
 } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import {
@@ -63,6 +66,10 @@ export class MessageRuntime {
   readonly #service: MessageService;
   readonly #lifecycle: ChannelLifecycleService;
   readonly #summaryReconciler: ChannelSummaryReconciler;
+  readonly #departure: RoleDepartureService;
+  #roleDrain: RoleDrainPort = {
+    awaitSafePoint: async (_scope, role) => ({ role, activeWorkers: 0, safePointRefs: [] }),
+  };
   readonly #initialRoster: readonly RosterEntry[];
   readonly #channelContext = new DerivedChannelContextBuilder();
   readonly #leaderQueues = new Map<string, Promise<void>>();
@@ -87,6 +94,14 @@ export class MessageRuntime {
       this.collaboration,
     );
     this.#lifecycle = new ChannelLifecycleService(this.channels, this.#service, this.collaboration);
+    this.#departure = new RoleDepartureService({
+      collaboration: this.collaboration,
+      state: this.store,
+      messages: this.#service,
+      drain: {
+        awaitSafePoint: (scope, role) => this.#roleDrain.awaitSafePoint(scope, role),
+      },
+    });
     this.#summaryReconciler = new ChannelSummaryReconciler({
       channels: this.channels,
       messages: this.#service,
@@ -114,8 +129,20 @@ export class MessageRuntime {
     return this.#service.commitMutations(scope, mutations);
   }
 
+  commitWorkerStepMutations(
+    scope: TaskScope,
+    role: string,
+    mutations: readonly Mutation[],
+  ): Promise<MutationCommitResult> {
+    return this.#service.commitWorkerStepMutations(scope, role, mutations);
+  }
+
   commitMessage(scope: TaskScope, message: Message): Promise<MessageCommitResult> {
     return this.#service.commitMessage(scope, message);
+  }
+
+  bindRoleDrainPort(port: RoleDrainPort): void {
+    this.#roleDrain = port;
   }
 
   ensureProjectChannels(projectId: string) {
@@ -133,6 +160,20 @@ export class MessageRuntime {
     }
     const entry = snapshot.roster.find((candidate) => candidate.spec.role === role);
     if (entry?.status !== 'enabled') throw new Error(`role "${role}" is not enabled`);
+    return this.#channelContext.build(snapshot, state, role);
+  }
+
+  async workerStepChannelContextFor(state: AppState, role: string) {
+    const snapshot = await this.collaboration.load(state.projectId);
+    if (snapshot === undefined) {
+      throw new Error(
+        `project channel store is not initialized for projectId "${state.projectId}"`,
+      );
+    }
+    const entry = snapshot.roster.find((candidate) => candidate.spec.role === role);
+    if (entry?.status !== 'enabled' && entry?.status !== 'departing') {
+      throw new Error(`role "${role}" is not available for an in-flight worker step`);
+    }
     return this.#channelContext.build(snapshot, state, role);
   }
 
@@ -197,6 +238,7 @@ export class MessageRuntime {
 
     const intent = parseLeaderIntent(input.display);
     let lifecycleRejection: LeaderActionStatus | undefined;
+    let departureAction: LeaderActionStatus | undefined;
     try {
       if (intent.kind === 'open_sub_channel') {
         if (input.channelId !== 'main') {
@@ -220,15 +262,42 @@ export class MessageRuntime {
           channelId: intent.channelId,
         });
         await this.#summaryReconciler.reconcile(scope);
+      } else if (intent.kind === 'remove_role') {
+        if (input.channelId !== 'main') {
+          throw new RoleDepartureRejectedError('role departure commands must use main');
+        }
+        const plan = planLeaderIntent(intent, current, enabledRoster, knownRoles);
+        if (plan.action.status === 'applied') {
+          const result = await this.#departure.depart({
+            scope,
+            actor: 'leader',
+            actionId: input.msgId,
+            role: intent.targetRole,
+            ...(intent.successorRole === undefined ? {} : { successorRole: intent.successorRole }),
+            requestedTs: input.ts,
+          });
+          departureAction =
+            result.status === 'applied'
+              ? { status: 'applied' }
+              : {
+                  status: 'blocked',
+                  reason: `role_departure_requires_replacement:${intent.targetRole}`,
+                };
+        }
       }
     } catch (error) {
-      if (!(error instanceof ChannelLifecycleRejectedError)) throw error;
+      if (
+        !(error instanceof ChannelLifecycleRejectedError) &&
+        !(error instanceof RoleDepartureRejectedError)
+      ) {
+        throw error;
+      }
       lifecycleRejection = { status: 'rejected', reason: error.message };
     }
 
     const result = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
       const planned = planLeaderIntent(intent, state, enabledRoster, knownRoles);
-      const action = lifecycleRejection ?? planned.action;
+      const action = lifecycleRejection ?? departureAction ?? planned.action;
       const message: Message = {
         msgId: input.msgId,
         channelId: input.channelId,
@@ -341,6 +410,7 @@ function actionFrom(message: Message): LeaderActionStatus {
   const status = (action as Record<string, unknown>).status;
   if (status === 'applied' || status === 'none') return { status };
   const reason = (action as Record<string, unknown>).reason;
+  if (status === 'blocked' && typeof reason === 'string') return { status, reason };
   if (status === 'rejected' && typeof reason === 'string') return { status, reason };
   const targetPhase = (action as Record<string, unknown>).targetPhase;
   if (

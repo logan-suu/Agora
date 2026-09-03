@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-03T01:50:48.000Z",
+  "last_updated": "2026-09-03T12:13:18.000Z",
   "current_phase": 7,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -48,7 +48,7 @@
     },
     {
       "id": "D9",
-      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 生命周期仍走同入口：同任务串行且先检查持久 State 的重复 msgId，未命中才以稳定 actionId 执行 Channel-first、D6 message-second 可重试 saga；announce 按 Channel 实例稳定去重，不走临时 command 旁路。Phase 8/9 意图继续按阶段解锁",
+      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动 departing CAS→目标 step/end drain→Task State 交接/责任提交→departed CAS；重复请求从断点继续。Phase 8/9 裁决与完整抢占继续按阶段解锁，不走临时 command 旁路",
       "source": "docs/项目蓝图.md §10/§11/§17/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§4.3；docs/技术选型文档.md §9.2"
     },
     {
@@ -63,8 +63,8 @@
     },
     {
       "id": "D12",
-      "rule": "项目 roster 是唯一成员真相源且不复制进 AppState；RoleSpec 与 RosterEntry 生命周期分离。roster+channels 以 ProjectCollaborationSnapshot 同 revision 原子持久化，既有 ProjectChannelStore 签名不变。离职保留 departed 历史身份；新建 sub、发言、指派、路由和执行只允许 enabled，持久 roster 依赖缺失 fail-closed，指派消费前失效进入 Leader humanGate，Coordinator 恒 enabled。legacy 正式写后读回核对才删除，同内容双文件可由 initialize/load 幂等清理。Phase 7 自定义角色仅保证持久装载与 Leader 显式指派，任意角色自主调度按 DEF-016 延期",
-      "source": "docs/项目蓝图.md §6/§12/§20/§21；docs/详细设计方案.md §1/§2/§5/§8；docs/系统架构设计文档.md §5.4/§9；docs/技术选型文档.md §9/§10；docs/开发计划安排.md §10"
+      "rule": "项目 roster 是唯一成员真相源且不复制进 AppState；RoleSpec 与 RosterEntry 生命周期分离，departure 元数据为跨 collaboration/Task State 离职 saga 的恢复锚点。roster+channels 同 revision CAS，ProjectChannelStore 签名不变。离职顺序=departing CAS→目标 Worker 当前 step/end drain→确定性交接与责任提交→departed CAS；普通工作只允许 enabled，departing 仅允许已登记活动 handle 的当前在途 Step 经 role-bound 接缝提交后停。未完成责任无 enabled 接任者时写 humanGate、subtask blocked 且保持 awaiting_replacement，不得先 departed；完成后保留身份与 handoffRef。Coordinator 恒 enabled；完整 Preemptor 留 Phase 9；legacy 迁移规则与 DEF-016 边界不变",
+      "source": "docs/项目蓝图.md §6/§10/§12/§13/§20/§21；docs/详细设计方案.md §1/§2/§4/§5/§8；docs/系统架构设计文档.md §4.2/§5.4/§9；docs/技术选型文档.md §9/§10；docs/开发计划安排.md §10"
     },
     {
       "id": "C4",
@@ -950,17 +950,20 @@
           "id": "7.2",
           "title": "离职流程（强制交接文档）",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
-            "docs/项目蓝图.md §12",
-            "docs/详细设计方案.md §4"
+            "docs/项目蓝图.md §12/§13/§21",
+            "docs/详细设计方案.md §1/§2/§4/§5",
+            "docs/系统架构设计文档.md §4.2/§5.4",
+            "docs/技术选型文档.md §9",
+            "docs/开发计划安排.md §10"
           ],
           "dependencies": [
             "7.1"
           ],
-          "test_file": null,
-          "notes": "D12：removeRole 是受控离职状态机而非数组删除。Leader 指令→roster enabled|disabled→departing→Preemptor.requestPause→目标 Worker 到安全点暂停→生成 HandoffPacket（现状/关键决策及理由/未完成事项/文件产物入口/建议）→责任转移或空缺升级→roster departed；保留最小身份供历史 Channel/消息/审计引用，绝不硬删或静默丢责任。",
-          "last_updated": "2026-09-03T01:50:48.000Z"
+          "test_file": "tests/integration/phase7/phase7-role-departure.test.ts",
+          "notes": "D12：removeRole 是稳定 actionId 驱动的可恢复离职 saga，而非数组删除。顺序固定为 departing CAS→目标 Worker 当前 step/end drain→从已提交 State 确定性生成 HandoffPacket 并提交责任结果→departed CAS。普通工作只允许 enabled，departing 仅允许离职服务完成受限 drain；Phase 7 不抢跑全局 Preemptor/terminate/fork/resume。存在未完成责任且无 enabled 接任者时，subtask 标 blocked、写 humanGate 并保持 awaiting_replacement，绝不先 departed 或静默丢责；完成后保留最小身份、离职阶段与 handoffRef 供历史恢复/审计。\n[2026-09-03 /agora-do-task] Leader 批准启动 7.2；依赖 7.1=done、Phase 6 出口 6.5=done、current_phase=7，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划确认前不写测试或生产代码。\n[2026-09-03 /agora-read-spec→agora-sync-docs] Leader 确认先评审而非机械执行旧规格。复评发现 Phase 7 直接调用 Phase 9 Preemptor、departing 与 enabled-only 执行、暂停后交接主体、空缺即 departed、跨存储恢复及 HandoffPacket 描述六处不一致；已批准按蓝图→详细设计→架构/选型→开发计划→task-status/AGENTS 修订为目标角色 drain + 确定性交接 + 可恢复 saga。\n[2026-09-03 implementation] 已按确认计划完成 RoleDeparture 领域状态机、目标 Worker step/end drain、确定性 HandoffPacket/稳定 handoff Message、责任转移或 awaiting_replacement 阻断、D9 /role remove Web 接入及跨存储重试恢复。实现中发现 departing 后 main participants 已移除目标角色会阻断当前在途 Step 提交，已同步规格并收敛为仅绑定活动 handle/role 的 commitWorkerStepMutations 例外；新 Step、普通发言、其他角色与额外 Channel 副作用仍拒绝。G5：tests/integration/phase7/phase7-role-departure.test.ts 使用真实 HarnessExecutor、WorkerRuntime、HTTP、JSON stores、MessageService 与 collaboration CAS，验证在途 CODER Step 先持久化并保存安全点，再转移给 TESTER 并进入 departed；仅外部计费 LLM stream 使用脚本适配器。故障注入验证最终 CAS 失败后同 actionId 从 draining 继续，drain/message/packet 均不重复且沿用首次 requestedTs。任务保持 in_progress，待 $agora-commit 创建 PR 并由人类合并后才能 done。",
+          "last_updated": "2026-09-03T12:13:18.000Z"
         },
         {
           "id": "7.3",
@@ -974,8 +977,8 @@
             "7.1"
           ],
           "test_file": null,
-          "notes": "从模板库选角色或自定义 spec→注册进 roster+群里发入职公告→初始上下文 = 相关交接文档 + 当前 State 角色投影（只读该读的）。",
-          "last_updated": "2026-09-03T01:50:48.000Z"
+          "notes": "从模板库选角色或自定义 spec→注册进 roster+群里发入职公告→读取直接 toRole 命中的交接，或由 Leader 显式分配的 toRole=leader 托管离职交接→初始上下文 = 相关交接文档 + 当前 State 角色投影（只读该读的）。",
+          "last_updated": "2026-09-03T11:48:54.000Z"
         },
         {
           "id": "7.4",
@@ -990,7 +993,7 @@
             "7.3"
           ],
           "test_file": null,
-          "notes": "Coordinator 作为调度内核不可移除；任务进行中删角色必须优雅：配合式抢占到安全点→交接→转移→resume，不允许正干活时硬拔导致状态半截。"
+          "notes": "Coordinator 作为调度内核不可移除；Phase 7 运行中离职必须验证 departing 先阻断新工作、目标当前 Step 完整提交后保存安全点、确定性交接与责任处理先于 departed；目标不 resume。无接任者且有未完成责任必须保持 awaiting_replacement。全局抢占/resume 留 Phase 9。"
         },
         {
           "id": "7.5",
@@ -1005,7 +1008,7 @@
             "7.4"
           ],
           "test_file": "tests/integration/phase7/phase7-exit.test.ts",
-          "notes": "招/辞/接手全流程回归 + 护栏负向用例（尝试删 Coordinator 应被拒）；向固定 Eval 集追加角色加入、离职强制交接、接手、孤儿职责升级与 Coordinator 不可删除场景，同时验证产物与 handoff/authority/roster 过程不变量。Eval 增量不替代出口测试/G5。"
+          "notes": "招/辞/接手全流程回归 + 护栏负向用例（尝试删 Coordinator 应被拒）；离职链必须验证稳定 actionId 重试、departing 先阻断、目标当前 Step 完整提交+safePoint、确定性交接、责任转移先于 departed，以及无接任者保持 awaiting_replacement。向固定 Eval 集追加角色加入、离职强制交接、接手、孤儿职责升级与 Coordinator 不可删除场景，同时验证产物与 handoff/authority/roster 过程不变量。Eval 增量不替代出口测试/G5。"
         }
       ]
     },

@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   addRole,
+  beginRoleDeparture,
+  completeRoleDeparture,
   disableRole,
   enabledRoleSpecs,
   enableRole,
   normalizeRoleId,
   type RoleSpec,
   type RosterEntry,
+  recordRoleDepartureHandoff,
 } from '../src/index';
 
 const COORDINATOR: RoleSpec = {
@@ -32,6 +35,13 @@ const INITIAL: readonly RosterEntry[] = [
   { spec: COORDINATOR, status: 'enabled' },
   { spec: CODER, status: 'enabled' },
 ];
+
+const DEPARTURE = {
+  actionId: 'remove-coder-1',
+  taskId: 'task-7-2',
+  requestedTs: 1_000,
+  successorRole: 'TESTER',
+} as const;
 
 describe('project roster transitions', () => {
   it('normalizes role ids before identity comparison', () => {
@@ -95,7 +105,11 @@ describe('project roster transitions', () => {
 
     const departing: readonly RosterEntry[] = [
       { spec: COORDINATOR, status: 'enabled' },
-      { spec: CODER, status: 'departing' },
+      {
+        spec: CODER,
+        status: 'departing',
+        departure: { ...DEPARTURE, stage: 'draining' },
+      },
     ];
     expect(() => enableRole(departing, 'CODER')).toThrow(/departing/i);
     expect(() => disableRole(departing, 'CODER')).toThrow(/departing/i);
@@ -108,5 +122,101 @@ describe('project roster transitions', () => {
   it('derives executable definitions only from enabled entries', () => {
     const disabled = disableRole(INITIAL, 'CODER').roster;
     expect(enabledRoleSpecs(disabled).map((spec) => spec.role)).toEqual(['COORDINATOR']);
+  });
+
+  it('begins a durable departure from enabled or disabled and replays the same action as a no-op', () => {
+    const withTester: readonly RosterEntry[] = [
+      ...INITIAL,
+      { spec: { ...CODER, role: 'TESTER' }, status: 'enabled' },
+    ];
+    const begun = beginRoleDeparture(withTester, 'coder', DEPARTURE);
+
+    expect(begun.changed).toBe(true);
+    expect(begun.roster[1]).toEqual({
+      spec: CODER,
+      status: 'departing',
+      departure: { ...DEPARTURE, stage: 'draining' },
+    });
+    expect(beginRoleDeparture(begun.roster, 'CODER', DEPARTURE).changed).toBe(false);
+
+    const disabled = disableRole(withTester, 'CODER').roster;
+    expect(
+      beginRoleDeparture(disabled, 'CODER', { ...DEPARTURE, actionId: 'disabled' }).roster[1],
+    ).toMatchObject({ status: 'departing', departure: { actionId: 'disabled' } });
+  });
+
+  it('rejects coordinator departure, unknown or non-enabled successors, and conflicting actions', () => {
+    expect(() => beginRoleDeparture(INITIAL, 'COORDINATOR', DEPARTURE)).toThrow(/COORDINATOR/);
+    expect(() => beginRoleDeparture(INITIAL, 'CODER', DEPARTURE)).toThrow(/successor.*TESTER/i);
+
+    const withTester: readonly RosterEntry[] = [
+      ...INITIAL,
+      { spec: { ...CODER, role: 'TESTER' }, status: 'enabled' },
+    ];
+    expect(() =>
+      beginRoleDeparture(withTester, 'CODER', { ...DEPARTURE, successorRole: 'CODER' }),
+    ).toThrow(/successor/i);
+    const begun = beginRoleDeparture(withTester, 'CODER', DEPARTURE).roster;
+    expect(() =>
+      beginRoleDeparture(begun, 'CODER', { ...DEPARTURE, actionId: 'another-action' }),
+    ).toThrow(/conflict/i);
+  });
+
+  it('records a stable handoff before completing departure and preserves the departed identity', () => {
+    const withTester: readonly RosterEntry[] = [
+      ...INITIAL,
+      { spec: { ...CODER, role: 'TESTER' }, status: 'enabled' },
+    ];
+    const begun = beginRoleDeparture(withTester, 'CODER', DEPARTURE).roster;
+    const handoffRef = { taskId: 'task-7-2', msgId: 'role-departure:remove-coder-1' };
+    const recorded = recordRoleDepartureHandoff(
+      begun,
+      'CODER',
+      DEPARTURE.actionId,
+      handoffRef,
+      false,
+    );
+
+    expect(recorded.roster[1]).toMatchObject({
+      status: 'departing',
+      departure: { stage: 'handoff_committed', handoffRef },
+    });
+    expect(
+      recordRoleDepartureHandoff(recorded.roster, 'CODER', DEPARTURE.actionId, handoffRef, false)
+        .changed,
+    ).toBe(false);
+
+    const completed = completeRoleDeparture(recorded.roster, 'CODER', DEPARTURE.actionId);
+    expect(completed.roster[1]).toMatchObject({
+      spec: CODER,
+      status: 'departed',
+      departure: { stage: 'completed', handoffRef },
+    });
+    expect(completeRoleDeparture(completed.roster, 'CODER', DEPARTURE.actionId).changed).toBe(
+      false,
+    );
+  });
+
+  it('keeps an orphaned responsibility awaiting replacement and refuses completion', () => {
+    const begun = beginRoleDeparture(INITIAL, 'CODER', {
+      actionId: 'remove-coder-orphan',
+      taskId: 'task-7-2',
+      requestedTs: 2_000,
+    }).roster;
+    const waiting = recordRoleDepartureHandoff(
+      begun,
+      'CODER',
+      'remove-coder-orphan',
+      { taskId: 'task-7-2', msgId: 'role-departure:remove-coder-orphan' },
+      true,
+    );
+
+    expect(waiting.roster[1]).toMatchObject({
+      status: 'departing',
+      departure: { stage: 'awaiting_replacement' },
+    });
+    expect(() => completeRoleDeparture(waiting.roster, 'CODER', 'remove-coder-orphan')).toThrow(
+      /awaiting_replacement/i,
+    );
   });
 });

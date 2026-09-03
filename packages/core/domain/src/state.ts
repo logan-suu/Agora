@@ -79,9 +79,25 @@ export interface RoleSpec {
 
 export type RosterStatus = 'enabled' | 'disabled' | 'departing' | 'departed';
 
+export type DepartureStage =
+  | 'draining'
+  | 'handoff_committed'
+  | 'awaiting_replacement'
+  | 'completed';
+
+export interface RoleDeparture {
+  actionId: string;
+  taskId: string;
+  requestedTs: number;
+  successorRole?: RoleId;
+  stage: DepartureStage;
+  handoffRef?: { taskId: string; msgId: string };
+}
+
 export interface RosterEntry {
   spec: RoleSpec;
   status: RosterStatus;
+  departure?: RoleDeparture;
 }
 
 export interface HumanGate {

@@ -4,6 +4,7 @@ import {
   type StateTransition,
   type StepOutputHandler,
   type WorkerRuntime,
+  type WorkerStepTransition,
 } from '@agora/core-orchestration';
 import type { TaskScope } from '@agora/runtime-state';
 
@@ -54,6 +55,7 @@ export type TaskCompositionFactory = (input: {
   scope: TaskScope;
   goal: string;
   transition: StateTransition;
+  transitionStep?: WorkerStepTransition;
   handleOutput: StepOutputHandler;
   buildChannelContext: (state: AppState, role: string) => Promise<readonly unknown[]>;
   loadRoster?: () => Promise<readonly RoleSpec[]>;
@@ -93,7 +95,11 @@ export class TaskOrchestrationRuntime {
   constructor(
     readonly messages: MessageRuntime,
     readonly createComposition: TaskCompositionFactory,
-  ) {}
+  ) {
+    messages.bindRoleDrainPort({
+      awaitSafePoint: (scope, role) => this.#awaitRoleSafePoint(scope, role),
+    });
+  }
 
   async start(input: TaskStartInput): Promise<TaskStartResult> {
     return this.#enqueueLifecycle(async () => {
@@ -141,9 +147,14 @@ export class TaskOrchestrationRuntime {
         scope: input,
         goal: input.goal,
         transition,
+        transitionStep: (_state, role, mutations) =>
+          this.messages
+            .commitWorkerStepMutations(input, role, mutations)
+            .then((commit) => commit.state),
         handleOutput: (state, role, output) =>
           this.messages.handleWorkerOutput(state, role, output),
-        buildChannelContext: (state, role) => this.messages.channelContextFor(state, role),
+        buildChannelContext: (state, role) =>
+          this.messages.workerStepChannelContextFor(state, role),
         loadRoster: () => this.messages.enabledRoleSpecs(input.projectId),
       });
       const initialState = await this.messages.initializeState(input, composition.initialState);
@@ -184,6 +195,14 @@ export class TaskOrchestrationRuntime {
     const runs = [...this.#runs.values()];
     await Promise.all(runs.map((run) => run.promise));
     this.#runs.clear();
+  }
+
+  async #awaitRoleSafePoint(scope: TaskScope, role: string) {
+    const composition = this.#runs.get(scopeKey(scope))?.composition;
+    if (composition === undefined) {
+      return { role, activeWorkers: 0, safePointRefs: [] };
+    }
+    return composition.workerRuntime.awaitRoleSafePoint(role);
   }
 
   async #executeRun(

@@ -64,6 +64,29 @@ describe('parseLeaderIntent', () => {
     });
   });
 
+  it('parses the strict Phase 7 role departure command', () => {
+    expect(parseLeaderIntent('/role remove coder to tester')).toEqual({
+      kind: 'remove_role',
+      targetRole: 'CODER',
+      successorRole: 'TESTER',
+    });
+    expect(parseLeaderIntent('/role remove reviewer')).toEqual({
+      kind: 'remove_role',
+      targetRole: 'REVIEWER',
+    });
+  });
+
+  it.each([
+    '/role',
+    '/role remove',
+    '/role remove CODER to',
+    '/role remove CODER TESTER',
+    '/role disable CODER',
+    '/role remove @CODER',
+  ])('rejects malformed role departure command %s', (display) => {
+    expect(parseLeaderIntent(display)).toMatchObject({ kind: 'invalid' });
+  });
+
   it.each([
     '/channel',
     '/channel open',
@@ -142,6 +165,9 @@ describe('planLeaderIntent', () => {
       action: { status: 'applied' },
       mutations: [],
     });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove CODER'), state, roster, ['CODER']),
+    ).toMatchObject({ action: { status: 'applied' }, mutations: [] });
     expect(planLeaderIntent(parseLeaderIntent('/unknown'), state, roster)).toMatchObject({
       action: { status: 'rejected' },
       mutations: [],

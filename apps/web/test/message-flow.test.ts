@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { applyMutations, createInitialAppState } from '@agora/core-domain';
+import { applyMutations, createInitialAppState, mergeByIdMutation } from '@agora/core-domain';
 import { decide, latestCoordinationLedger } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { JsonTaskStateStore } from '@agora/runtime-state';
@@ -39,6 +39,61 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('executes a Phase 7 role departure through the single Leader message endpoint', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    runtime.bindRoleDrainPort({
+      awaitSafePoint: async (_scope, role) => ({
+        role,
+        activeWorkers: 0,
+        safePointRefs: [],
+      }),
+    });
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        mergeByIdMutation('subtasks', 'work-a', {
+          title: 'Implement task A',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+        }),
+      ]),
+    );
+
+    const response = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'leader-remove-coder',
+        display: '/role remove CODER to TESTER',
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'applied' },
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      subtasks: [{ id: 'work-a', ownerRole: 'TESTER', status: 'in_progress' }],
+      messages: [
+        { msgId: 'role-departure:leader-remove-coder', type: 'handoff' },
+        { msgId: 'leader-remove-coder', fromRole: 'leader' },
+      ],
+      handoffPackets: [{ fromRole: 'CODER', toRole: 'TESTER' }],
+    });
+    await expect(runtime.collaboration.load(scope.projectId)).resolves.toMatchObject({
+      roster: expect.arrayContaining([
+        expect.objectContaining({
+          spec: expect.objectContaining({ role: 'CODER' }),
+          status: 'departed',
+          departure: expect.objectContaining({ stage: 'completed' }),
+        }),
+      ]),
+    });
+  });
+
   it('persists a structured Agent channel action through the Web composition boundary', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };

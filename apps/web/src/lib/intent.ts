@@ -10,6 +10,7 @@ export type DeferredLeaderIntent =
 
 export type LeaderIntent =
   | { kind: 'assign'; targetRole: string; instruction: string }
+  | { kind: 'remove_role'; targetRole: string; successorRole?: string }
   | { kind: 'open_sub_channel'; requestedRoles: string[]; topic: string }
   | { kind: 'close_sub_channel'; channelId: string }
   | { kind: 'chat'; text: string }
@@ -23,6 +24,7 @@ export type LeaderIntent =
 
 export type LeaderActionStatus =
   | { status: 'applied' }
+  | { status: 'blocked'; reason: string }
   | { status: 'none' }
   | { status: 'rejected'; reason: string }
   | { status: 'deferred'; targetPhase: 6 | 8 | 9; reason: string };
@@ -97,6 +99,7 @@ export function parseLeaderIntent(display: string): LeaderIntent {
 
   if (firstToken.startsWith('/')) {
     if (firstToken.toLowerCase() === '/channel') return parseChannelIntent(remainder);
+    if (firstToken.toLowerCase() === '/role') return parseRoleIntent(remainder);
     const deferred = DEFERRED_COMMANDS[firstToken.toLowerCase()];
     if (deferred === undefined) {
       return { kind: 'invalid', reason: `unknown leader command "${firstToken}"` };
@@ -135,6 +138,30 @@ export function planLeaderIntent(
     case 'open_sub_channel':
     case 'close_sub_channel':
       return { intent, action: { status: 'applied' }, mutations: [] };
+    case 'remove_role': {
+      if (!knownRoles.some((entry) => entry.toUpperCase() === intent.targetRole)) {
+        return rejected(intent, `unknown role "${intent.targetRole}"`);
+      }
+      if (intent.targetRole === 'COORDINATOR') {
+        return rejected(intent, 'COORDINATOR cannot depart');
+      }
+      if (intent.successorRole === intent.targetRole) {
+        return rejected(intent, 'departure successor must differ from target');
+      }
+      if (
+        intent.successorRole !== undefined &&
+        !roster.some((entry) => entry.role.toUpperCase() === intent.successorRole)
+      ) {
+        return rejected(intent, `departure successor "${intent.successorRole}" must be enabled`);
+      }
+      if (state.phase === 'done') {
+        return rejected(intent, 'cannot remove a role after the task is done');
+      }
+      if (state.humanGate !== undefined) {
+        return rejected(intent, 'cannot remove a role while humanGate awaits leader resolution');
+      }
+      return { intent, action: { status: 'applied' }, mutations: [] };
+    }
     case 'assign': {
       const role = roster.find((entry) => entry.role.toUpperCase() === intent.targetRole);
       if (role === undefined) {
@@ -156,6 +183,34 @@ export function planLeaderIntent(
       };
     }
   }
+}
+
+function parseRoleIntent(remainder: string): LeaderIntent {
+  const tokens = remainder.split(/\s+/).filter((token) => token.length > 0);
+  if (tokens.length !== 2 && tokens.length !== 4) {
+    return {
+      kind: 'invalid',
+      reason: 'role remove syntax is /role remove <ROLE> [to <SUCCESSOR>]',
+    };
+  }
+  const [operation, role, connector, successor] = tokens;
+  if (
+    operation?.toLowerCase() !== 'remove' ||
+    role === undefined ||
+    !ROLE_NAME.test(role) ||
+    (tokens.length === 4 &&
+      (connector?.toLowerCase() !== 'to' || successor === undefined || !ROLE_NAME.test(successor)))
+  ) {
+    return {
+      kind: 'invalid',
+      reason: 'role remove syntax is /role remove <ROLE> [to <SUCCESSOR>]',
+    };
+  }
+  return {
+    kind: 'remove_role',
+    targetRole: role.toUpperCase(),
+    ...(successor === undefined ? {} : { successorRole: successor.toUpperCase() }),
+  };
 }
 
 function parseChannelIntent(remainder: string): LeaderIntent {

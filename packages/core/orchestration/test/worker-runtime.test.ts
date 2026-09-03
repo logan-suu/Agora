@@ -33,6 +33,43 @@ class FakeExecutor implements Executor {
   injectInbox(): void {}
 }
 
+class GatedExecutor implements Executor {
+  public readonly safePointCalls: string[] = [];
+  public readonly stepStarted: Promise<void>;
+  private markStepStarted = () => {};
+  private releaseStep = () => {};
+  private readonly stepGate = new Promise<void>((resolve) => {
+    this.releaseStep = resolve;
+  });
+
+  constructor() {
+    this.stepStarted = new Promise<void>((resolve) => {
+      this.markStepStarted = resolve;
+    });
+  }
+
+  async step(): Promise<StepResult> {
+    this.markStepStarted();
+    await this.stepGate;
+    return stepOf('llm', [
+      { field: 'messages', op: 'append', value: chatMessage('committed-before-drain') },
+    ]);
+  }
+
+  release(): void {
+    this.releaseStep();
+  }
+
+  async saveSafePoint(): Promise<string> {
+    this.safePointCalls.push('safe-cursor');
+    return 'safe-cursor';
+  }
+
+  async loadSafePoint(): Promise<void> {}
+
+  injectInbox(): void {}
+}
+
 interface StepContextLog {
   sessionId: string;
   view: ProjectionView;
@@ -107,6 +144,36 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     releaseContext();
 
     await expect(running).resolves.toMatchObject({ taskId: 't-1' });
+    expect(fake.stepCalls).toHaveLength(0);
+    expect(fake.safePointCalls).toEqual(['cursor']);
+  });
+
+  it('honors a target drain requested while asynchronous ChannelContext construction is pending', async () => {
+    const fake = new FakeExecutor([]);
+    let releaseContext = () => {};
+    const contextGate = new Promise<void>((resolve) => {
+      releaseContext = resolve;
+    });
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => fake,
+      buildChannelContext: async () => {
+        await contextGate;
+        return [];
+      },
+    });
+
+    const running = runtime.runOne(createInitialAppState('t-1', 'g'), { role: 'CODER' });
+    await Promise.resolve();
+    const draining = runtime.awaitRoleSafePoint('CODER');
+    releaseContext();
+
+    await expect(running).resolves.toMatchObject({ taskId: 't-1' });
+    await expect(draining).resolves.toEqual({
+      role: 'CODER',
+      activeWorkers: 1,
+      safePointRefs: ['cursor'],
+    });
     expect(fake.stepCalls).toHaveLength(0);
     expect(fake.safePointCalls).toEqual(['cursor']);
   });
@@ -201,7 +268,7 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
       roster: PHASE0_ROSTER,
       loadRoster: async () => {
         loads += 1;
-        return loads <= 2 ? PHASE0_ROSTER : PHASE0_ROSTER.filter((entry) => entry.role !== 'CODER');
+        return loads <= 3 ? PHASE0_ROSTER : PHASE0_ROSTER.filter((entry) => entry.role !== 'CODER');
       },
       buildExecutor: () => fake,
     });
@@ -210,6 +277,49 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
 
     expect(fake.stepCalls).toHaveLength(1);
     expect(fake.safePointCalls).toEqual(['cursor']);
+  });
+
+  it('drains only the target role after its current step transition is committed', async () => {
+    const fake = new GatedExecutor();
+    const order: string[] = [];
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => fake,
+      transition: async (state, mutations) => {
+        order.push('transition');
+        return applyMutations(state, mutations);
+      },
+    });
+
+    const running = runtime.runOne(createInitialAppState('t-1', 'g'), { role: 'CODER' });
+    await fake.stepStarted;
+
+    let drainSettled = false;
+    const draining = runtime.awaitRoleSafePoint('CODER').then((result) => {
+      drainSettled = true;
+      order.push('drained');
+      return result;
+    });
+    await Promise.resolve();
+    expect(drainSettled).toBe(false);
+
+    fake.release();
+
+    const [result, drain] = await Promise.all([running, draining]);
+    expect(result.messages.map((entry) => entry.msgId)).toEqual(['committed-before-drain']);
+    expect(drain).toEqual({ role: 'CODER', activeWorkers: 1, safePointRefs: ['safe-cursor'] });
+    expect(fake.safePointCalls).toEqual(['safe-cursor']);
+    expect(order).toEqual(['transition', 'drained']);
+  });
+
+  it('reports an immediate no-op drain when the target role has no active worker', async () => {
+    const runtime = runtimeWith([]);
+
+    await expect(runtime.awaitRoleSafePoint('TESTER')).resolves.toEqual({
+      role: 'TESTER',
+      activeWorkers: 0,
+      safePointRefs: [],
+    });
   });
 
   it('throws when the roster does not contain the requested role', async () => {
