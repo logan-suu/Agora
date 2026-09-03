@@ -33,6 +33,9 @@ function task(
 }
 
 export const PHASE7_INCREMENT_TASKS: readonly AgoraEvalTask[] = [
+  // D10 keeps Phase 7 inside a trusted single-user composition root. Project-level addRole has no
+  // D9 message protocol yet, so this scenario starts at the management-service boundary and does
+  // not claim caller-authentication or Leader-event coverage.
   task(
     'role-registration',
     'Register an enabled custom role and atomically update main membership.',
