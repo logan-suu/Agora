@@ -52,7 +52,7 @@ async function createService(store: JsonTaskStateStore, bus: MessageBus): Promis
   await channels.initialize(scope.projectId, [
     createMainChannel(['COORDINATOR', 'CODER', 'TESTER', 'REVIEWER']),
   ]);
-  return new MessageService(store, bus, channels);
+  return new MessageService(store, bus, channels, channels.collaboration);
 }
 
 afterEach(async () => {
@@ -292,7 +292,7 @@ describe('MessageService', () => {
         closed: false,
       },
     ]);
-    const service = new MessageService(store, bus, channels);
+    const service = new MessageService(store, bus, channels, channels.collaboration);
     await service.initialize(scope, 'Build the message flow');
     const subMessage = message({ channelId: 'sub-task-a', fromRole: 'CODER' });
 
@@ -341,7 +341,7 @@ describe('MessageService', () => {
         closed: true,
       },
     ]);
-    const service = new MessageService(store, bus, channels);
+    const service = new MessageService(store, bus, channels, channels.collaboration);
     await service.initialize(scope, 'Build the message flow');
 
     await expect(

@@ -12,6 +12,7 @@ export interface OrchestrationDeps {
    * the fixed CODER↔TESTER slice; omit for the full 6-role machine.
    */
   roster?: readonly RoleSpec[];
+  loadRoster?: () => Promise<readonly RoleSpec[]>;
   transition?: StateTransition;
 }
 
@@ -35,7 +36,8 @@ export async function runOrchestration(
     ]);
   }
   while (state.phase !== 'done') {
-    const decision = decide(state, deps.roster === undefined ? undefined : { roster: deps.roster });
+    const roster = (await deps.loadRoster?.()) ?? deps.roster;
+    const decision = decide(state, roster === undefined ? undefined : { roster });
     if (decision.mutations.length > 0) {
       state = await transition(state, decision.mutations);
     }

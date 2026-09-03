@@ -5,7 +5,6 @@ import { parseLeaderIntent, planLeaderIntent } from '../src/lib/intent';
 
 const enabledCoder: RoleSpec = {
   role: 'CODER',
-  enabled: true,
   executor: 'harness',
   systemPrompt: 'code',
   tools: [],
@@ -13,13 +12,7 @@ const enabledCoder: RoleSpec = {
   routeWhen: 'always',
 };
 
-const disabledTester: RoleSpec = {
-  ...enabledCoder,
-  role: 'TESTER',
-  enabled: false,
-};
-
-const roster = [enabledCoder, disabledTester];
+const roster = [enabledCoder];
 
 describe('parseLeaderIntent', () => {
   it('recognizes only a single leading mention as a deterministic assignment', () => {
@@ -100,7 +93,7 @@ describe('planLeaderIntent', () => {
     expect(plan.mutations).toEqual([setMutation('nextRole', 'CODER')]);
   });
 
-  it('rejects unknown and disabled roles without producing mutations', () => {
+  it('rejects roles absent from the enabled role definitions without producing mutations', () => {
     const state = createInitialAppState('task-a', 'Build a cache', 'project-a');
 
     expect(planLeaderIntent(parseLeaderIntent('@PM clarify it'), state, roster)).toMatchObject({
@@ -108,6 +101,12 @@ describe('planLeaderIntent', () => {
       mutations: [],
     });
     expect(planLeaderIntent(parseLeaderIntent('@TESTER test it'), state, roster)).toMatchObject({
+      action: { status: 'rejected', reason: expect.stringContaining('TESTER') },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(parseLeaderIntent('@TESTER test it'), state, roster, ['CODER', 'TESTER']),
+    ).toMatchObject({
       action: { status: 'rejected', reason: expect.stringContaining('disabled') },
       mutations: [],
     });

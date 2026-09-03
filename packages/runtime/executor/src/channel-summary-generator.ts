@@ -69,7 +69,6 @@ export class HarnessChannelSummaryGenerator implements ChannelSummaryGenerator {
 function summaryRole(model?: string): RoleSpec {
   return {
     role: 'COORDINATOR',
-    enabled: true,
     executor: 'harness',
     systemPrompt:
       'Summarize only the supplied channel facts. A fragmented fact is a serialized JSON entry ' +

@@ -88,7 +88,7 @@ async function fixture(options: { bus?: RecordingBus; channels?: ProjectChannelS
     messages: [sourceMessage()],
   });
   const bus = options.bus ?? new RecordingBus();
-  const messages = new MessageService(state, bus, channels);
+  const messages = new MessageService(state, bus, channels, actualChannels.collaboration);
   return { root, state, actualChannels, channels, bus, messages };
 }
 
@@ -199,7 +199,7 @@ describe('ChannelSummaryReconciler', () => {
     const generator = new FakeGenerator(generatedSummary());
     await new ChannelSummaryReconciler({
       channels,
-      messages: new MessageService(state, bus, channels),
+      messages: new MessageService(state, bus, channels, actual.collaboration),
       state,
       generator,
     }).reconcile(scope);
@@ -233,20 +233,29 @@ describe('ChannelSummaryReconciler', () => {
       })}\n`,
       'utf8',
     );
+    await channels.initialize(scope.projectId, [createMainChannel(roles)]);
     const generator = new FakeGenerator(generatedSummary());
     await new ChannelSummaryReconciler({
       channels,
-      messages: new MessageService(state, new RecordingBus(), channels),
+      messages: new MessageService(state, new RecordingBus(), channels, channels.collaboration),
       state,
       generator,
       legacySummaries: (projectId) => channels.legacyBubbledSummaries(projectId),
+      acknowledgeLegacySummary: (projectId, channelId) =>
+        channels.acknowledgeLegacyBubbledSummary(projectId, channelId),
     }).reconcile(scope);
 
     expect(generator.calls).toBe(0);
     expect((await state.load(scope))?.messages[0]?.display).toBe('Legacy conclusion.');
-    const persisted = await readFile(path, 'utf8');
+    const persisted = await readFile(
+      join(root, 'projects', scope.projectId, 'collaboration.json'),
+      'utf8',
+    );
     expect(persisted).not.toContain('localContext');
     expect(persisted).not.toContain('bubbledSummary"');
     expect(persisted).toContain('bubbledSummaryRef');
+    await expect(
+      readFile(join(root, 'projects', scope.projectId, 'legacy-channel-summaries.json'), 'utf8'),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });

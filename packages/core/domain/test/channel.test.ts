@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertValidChannelRegistry, type Channel, createMainChannel } from '../src/index';
+import {
+  assertValidChannelRegistry,
+  type Channel,
+  createMainChannel,
+  type RosterEntry,
+} from '../src/index';
 
 const ENABLED_ROLES = ['COORDINATOR', 'CODER', 'TESTER'] as const;
 
@@ -85,9 +90,9 @@ describe('Channel registry invariants', () => {
       error: 'sub channel topic must be a non-empty string',
     },
     {
-      name: 'a sub channel created by a disabled role',
+      name: 'a sub channel created by an unknown role',
       channels: [createMainChannel(ENABLED_ROLES), subChannel({ createdBy: 'REVIEWER' })],
-      error: 'sub channel "sub-task-a-coder-tester" createdBy "REVIEWER" is not enabled',
+      error: 'sub channel "sub-task-a-coder-tester" createdBy "REVIEWER" is not known',
     },
     {
       name: 'a sub channel whose creator is not a participant',
@@ -137,5 +142,25 @@ describe('Channel registry invariants', () => {
     },
   ])('rejects $name', ({ channels, error }) => {
     expect(() => assertValidChannelRegistry(channels, ENABLED_ROLES)).toThrow(error);
+  });
+
+  it('keeps historical sub-channel identities valid after a member is disabled', () => {
+    const roster: RosterEntry[] = ENABLED_ROLES.map((role) => ({
+      spec: {
+        role,
+        executor: 'harness',
+        systemPrompt: role,
+        tools: [],
+        projection: ['global.summary'],
+        routeWhen: 'always',
+      },
+      status: role === 'CODER' ? 'disabled' : 'enabled',
+    }));
+    const channels = [
+      createMainChannel(['COORDINATOR', 'TESTER']),
+      subChannel({ createdBy: 'CODER', participants: ['leader', 'CODER'] }),
+    ];
+
+    expect(() => assertValidChannelRegistry(channels, roster)).not.toThrow();
   });
 });

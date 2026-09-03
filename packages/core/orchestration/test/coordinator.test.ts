@@ -121,7 +121,6 @@ const FULL_ROSTER: RoleSpec[] = (
   ['COORDINATOR', 'PM', 'ARCHITECT', 'CODER', 'TESTER', 'REVIEWER'] as const
 ).map((role) => ({
   role,
-  enabled: true,
   executor: 'harness' as const,
   systemPrompt: '',
   tools: [],
@@ -192,6 +191,37 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
       batch: [{ role: 'ARCHITECT' }],
       parallel: false,
     });
+  });
+
+  it('escalates when an applied Leader assignment becomes unavailable before consumption', () => {
+    const state = applyMutations(requirementsReadyState(), [
+      appendMutation('messages', {
+        msgId: 'leader-assign-reviewer',
+        channelId: 'main',
+        fromRole: 'leader',
+        type: 'chat',
+        payload: {
+          kind: 'leader_intent',
+          intent: {
+            kind: 'assign',
+            targetRole: 'REVIEWER',
+            instruction: 'inspect the cache contract',
+          },
+          action: { status: 'applied' },
+        },
+        display: '@REVIEWER inspect the cache contract',
+        ts: 900,
+      }),
+      setMutation('nextRole', 'REVIEWER'),
+    ]);
+    const enabledRoster = FULL_ROSTER.filter((spec) => spec.role !== 'REVIEWER');
+
+    const decision = decide(state, { ...clock(), roster: enabledRoster });
+    const next = applyMutations(state, decision.mutations);
+
+    expect(decision.route.kind).toBe('human_gate');
+    expect(next.humanGate).toMatchObject({ reason: 'required_role_unavailable:REVIEWER' });
+    expect(next.messages.some((message) => message.payload.role === 'REVIEWER')).toBe(true);
   });
 
   it('treats older unapplied Leader assignments as superseded by the latest one', () => {
@@ -603,11 +633,10 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
     expect(next.subtasks[0]?.id).toBe('t-1-sub-0');
   });
 
-  it('skips PM when requirements are ready even if the roster has one, and skips ARCH when absent', () => {
+  it('gates for the Leader when the next required role is not enabled', () => {
     const pmOnlyRoster: RoleSpec[] = [
       {
         role: 'PM',
-        enabled: true,
         executor: 'harness',
         systemPrompt: '',
         tools: [],
@@ -619,9 +648,10 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
       ...clock(),
       roster: pmOnlyRoster,
     });
-    expect(decision.route.kind).toBe('worker');
-    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
-    expect(decision.route.batch[0].role).toBe('CODER');
+    expect(decision.route.kind).toBe('human_gate');
+    const next = applyMutations(requirementsReadyState(), decision.mutations);
+    expect(next.humanGate).toMatchObject({ reason: 'required_role_unavailable:CODER' });
+    expect(next.messages.some((message) => message.payload.role === 'CODER')).toBe(true);
   });
 
   it('increments iterationCount on each PM dispatch so a silent PM loop stays bounded', () => {

@@ -3,6 +3,7 @@ import {
   assertMessageChannelAccess,
   type ProjectChannelSnapshot,
   type ProjectChannelStore,
+  type ProjectCollaborationStore,
 } from '@agora/comm-channels';
 import {
   type AppState,
@@ -34,12 +35,19 @@ export class MessageService {
   readonly #store: TaskStateStore;
   readonly #bus: MessageBus;
   readonly #channels: ProjectChannelStore;
+  readonly #collaboration: ProjectCollaborationStore;
   readonly #queues = new Map<string, Promise<void>>();
 
-  constructor(store: TaskStateStore, bus: MessageBus, channels: ProjectChannelStore) {
+  constructor(
+    store: TaskStateStore,
+    bus: MessageBus,
+    channels: ProjectChannelStore,
+    collaboration: ProjectCollaborationStore,
+  ) {
     this.#store = store;
     this.#bus = bus;
     this.#channels = channels;
+    this.#collaboration = collaboration;
   }
 
   initialize(scope: TaskScope, goal: string): Promise<AppState> {
@@ -87,6 +95,7 @@ export class MessageService {
         );
       }
       const project = await this.#loadChannels(scope.projectId);
+      await this.#assertEnabledSender(scope.projectId, planned.message);
       assertMessageChannelAccess(project, scope.taskId, planned.message);
 
       const commit = await this.#store.commit(scope, [
@@ -122,6 +131,7 @@ export class MessageService {
       if (messages.length > 0) {
         const project = await this.#loadChannels(scope.projectId);
         for (const message of messages) {
+          await this.#assertEnabledSender(scope.projectId, message);
           assertMessageChannelAccess(project, scope.taskId, message);
         }
       }
@@ -143,6 +153,20 @@ export class MessageService {
       throw new Error(`project channel store is not initialized for projectId "${projectId}"`);
     }
     return snapshot;
+  }
+
+  async #assertEnabledSender(projectId: string, message: Message): Promise<void> {
+    if (message.fromRole === 'leader') return;
+    const snapshot = await this.#collaboration.load(projectId);
+    if (snapshot === undefined) {
+      throw new Error(
+        `project collaboration store is not initialized for projectId "${projectId}"`,
+      );
+    }
+    const enabled = snapshot.roster.some(
+      (entry) => entry.spec.role === message.fromRole && entry.status === 'enabled',
+    );
+    if (!enabled) throw new Error(`message sender "${message.fromRole}" is not enabled`);
   }
 
   async #enqueue<T>(scope: TaskScope, operation: () => Promise<T>): Promise<T> {

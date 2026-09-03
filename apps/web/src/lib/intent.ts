@@ -111,6 +111,7 @@ export function planLeaderIntent(
   intent: LeaderIntent,
   state: AppState,
   roster: readonly RoleSpec[],
+  knownRoles: readonly string[] = roster.map((entry) => entry.role),
 ): LeaderIntentPlan {
   switch (intent.kind) {
     case 'chat':
@@ -137,10 +138,10 @@ export function planLeaderIntent(
     case 'assign': {
       const role = roster.find((entry) => entry.role.toUpperCase() === intent.targetRole);
       if (role === undefined) {
+        if (knownRoles.some((entry) => entry.toUpperCase() === intent.targetRole)) {
+          return rejected(intent, `role "${intent.targetRole}" is disabled`);
+        }
         return rejected(intent, `unknown role "${intent.targetRole}"`);
-      }
-      if (!role.enabled) {
-        return rejected(intent, `role "${intent.targetRole}" is disabled`);
       }
       if (state.phase === 'done') {
         return rejected(intent, 'cannot assign a role after the task is done');

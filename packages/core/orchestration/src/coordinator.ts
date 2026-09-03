@@ -83,7 +83,36 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
         throw new Error(`phase "${String(state.phase)}" is not routable by the coordinator`);
     }
   }
+  if (
+    decision.route.kind === 'worker' &&
+    options?.roster !== undefined &&
+    !hasRole(options.roster, decision.route.batch[0].role)
+  ) {
+    decision = unavailableRoleGate(state, clock, decision.route.batch[0].role);
+  }
   return attachCoordinationArtifacts(state, decision, clock, options?.roster);
+}
+
+function unavailableRoleGate(state: AppState, clock: Clock, role: string): CoordinatorDecision {
+  return {
+    route: { kind: 'human_gate' },
+    mutations: [
+      setMutation('humanGate', {
+        reason: `required_role_unavailable:${role}`,
+        options: ['enable-role', 'reassign', 'abort'],
+        phase: state.phase,
+      }),
+      appendMutation('messages', {
+        msgId: clock.newId(),
+        channelId: 'main',
+        fromRole: 'COORDINATOR',
+        type: 'escalation',
+        payload: { reason: 'required_role_unavailable', role },
+        display: `Required role ${role} is disabled or unavailable; Leader action is required`,
+        ts: clock.now(),
+      }),
+    ],
+  };
 }
 
 interface AppliedLeaderAssignment {
@@ -151,10 +180,8 @@ function consumeLeaderAssignment(
   }
 
   const role = roster?.find((entry) => entry.role === assignment.targetRole);
-  if (roster !== undefined && (role === undefined || !role.enabled)) {
-    throw new Error(
-      `applied Leader assignment targets unavailable role "${assignment.targetRole}"`,
-    );
+  if (roster !== undefined && role === undefined) {
+    return unavailableRoleGate(state, clock, assignment.targetRole);
   }
 
   const control = {
