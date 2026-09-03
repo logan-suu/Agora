@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-03T15:35:32.000Z",
+  "last_updated": "2026-09-03T18:15:18.000Z",
   "current_phase": 7,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -48,7 +48,7 @@
     },
     {
       "id": "D9",
-      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动 departing CAS→目标 step/end drain→Task State 交接/责任提交→departed CAS；重复请求必须先按持久 departure 阶段从断点续办，不被已有 Leader Message 短路；saga 启动后的中断 fail-fast 且不写伪终态 rejected。Phase 8/9 裁决与完整抢占继续按阶段解锁，不走临时 command 旁路",
+      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动离职 saga；/role onboard 复用 msgId=actionId，在单个 Task State commit 中原子提交入职主消息、nextRole 与规范 handoff refs。Phase 8/9 裁决与完整抢占继续按阶段解锁，不走临时 command 旁路",
       "source": "docs/项目蓝图.md §10/§11/§17/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§4.3；docs/技术选型文档.md §9.2"
     },
     {
@@ -65,6 +65,11 @@
       "id": "D12",
       "rule": "项目 roster 是唯一成员真相源且不复制进 AppState；RoleSpec 与 RosterEntry 生命周期分离，departure 元数据为跨 collaboration/Task State 离职 saga 的恢复锚点。roster+channels 同 revision CAS，ProjectChannelStore 签名不变。离职顺序=departing CAS→目标 Worker 当前 step/end drain→确定性交接与责任提交→departed CAS；普通工作只允许 enabled，departing 仅允许已登记活动 handle 的当前在途 Step 经 role-bound 接缝提交后停。派生 handoff id 只能命中完整匹配的规范 Message+packet，冲突或责任后置条件不成立时 fail-closed。未完成责任无 enabled 接任者时写 humanGate、subtask blocked 且保持 awaiting_replacement，不得先 departed；完成后保留身份与 handoffRef。Coordinator 恒 enabled；完整 Preemptor 留 Phase 9；legacy 迁移规则与 DEF-016 边界不变",
       "source": "docs/项目蓝图.md §6/§10/§12/§13/§20/§21；docs/详细设计方案.md §1/§2/§4/§5/§8；docs/系统架构设计文档.md §4.2/§5.4/§9；docs/技术选型文档.md §9/§10；docs/开发计划安排.md §10"
+    },
+    {
+      "id": "D13",
+      "rule": "项目 addRole 与任务 onboard 分离：前者只改 D12 collaboration；后者要求目标 role enabled，并经 POST /api/messages 的稳定 msgId 在一次 Task State commit 中提交 Leader 主消息、nextRole 与既有 leader_intent payload 内的 onboarding receipt/handoff refs。只允许同任务未认领的规范 role-departure handoff Message：toRole=目标角色自动选择，toRole=leader 仅接受 Leader 显式 from 引用；Message/packet/handoffPackets/actionId 交叉校验，跨任务/冲突/重复认领 fail-closed。project() 从最新 applied onboarding 事实派生系统级 onboardingContext，不投原始群聊且可重启恢复；消费前角色失效进入既有 unavailable-role humanGate。Phase 7 不实现模板目录/任意 RoleSpec 编辑 UI，也不猜测无稳定 Message 的普通 handoff packet",
+      "source": "docs/项目蓝图.md §12/§21；docs/详细设计方案.md §1/§2/§5/§7；docs/系统架构设计文档.md §5.4；docs/技术选型文档.md §9.2；docs/开发计划安排.md §10"
     },
     {
       "id": "C4",
@@ -969,16 +974,20 @@
           "id": "7.3",
           "title": "入职流程（读交接接手）",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
-            "docs/项目蓝图.md §12"
+            "docs/项目蓝图.md §12/§21",
+            "docs/详细设计方案.md §1/§2/§5/§7",
+            "docs/系统架构设计文档.md §5.4",
+            "docs/技术选型文档.md §9.2",
+            "docs/开发计划安排.md §10"
           ],
           "dependencies": [
             "7.1"
           ],
-          "test_file": null,
-          "notes": "从模板库选角色或自定义 spec→注册进 roster+群里发入职公告→读取直接 toRole 命中的交接，或由 Leader 显式分配的 toRole=leader 托管离职交接→初始上下文 = 相关交接文档 + 当前 State 角色投影（只读该读的）。",
-          "last_updated": "2026-09-03T11:48:54.000Z"
+          "test_file": "tests/integration/phase7/phase7-role-onboarding.test.ts",
+          "notes": "D13：项目 addRole 只做 D12 成员登记；任务 onboard 要求目标 role enabled，并由 Leader 在目标任务 main 群通过稳定 /role onboard 意图原子提交主消息、nextRole 与规范离职 handoff refs。直接 toRole 命中只自动选择同任务未认领的规范 role-departure handoff Message；toRole=leader 托管交接必须由 Leader 显式 from 引用。project() 从最新 applied onboarding 事实派生系统级 onboardingContext，与当前 State 角色投影一并进入 D1 pre-step；不投原始群聊、不依赖 Channel 窗口或进程内状态。\n[2026-09-03 /agora-do-task] Leader 批准启动 7.3；依赖 7.1=done、Phase 6 出口 6.5=done、current_phase=7，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划确认前不写测试或生产代码。\n[2026-09-03 /agora-read-spec→agora-sync-docs] Leader 要求先评审而非机械执行旧规格。复评确认旧文本把项目级 addRole 与任务级接手混为跨存储动作，模板库/UI 无现有事实基础，交接缺稳定引用/认领规则，初始上下文也无 D1 持久投影入口。已新增 D13，并按蓝图→详细设计→架构/选型→开发计划→task-status/AGENTS 同步为项目登记与任务 onboard 分离、同任务规范离职 handoff Message 认领、单 Task State 原子提交及可恢复 onboardingContext。\n[2026-09-03 /agora-do-task·Code+Check+Verify] 按 Leader 确认后的 D13 完成 TDD 落码：新增 L1 planRoleOnboarding/deriveOnboardingContext，规范校验离职 handoff Message、packet、roster anchor、同任务引用与全局认领；Leader Intent 新增严格 /role onboard 解析，在既有 leader_intent 主消息的一次 Task State commit 中写 receipt+nextRole，重放保持 first-write-stays、异语义冲突 fail-closed；project() 无条件派生系统级 onboardingContext。单元/Web 回归覆盖直接交接、Leader 托管显式 from、不可用角色、未知/重复认领、receipt 漂移、持久化重放。G5 tests/integration/phase7/phase7-role-onboarding.test.ts 使用真实 HTTP、JSON TaskStateStore/ProjectCollaborationStore、MessageService、WorkerRuntime 与 HarnessExecutor，验证重启后从 State 重建交接并经 D1 投影送入 TESTER；原始 Leader/交接 display 未进入模型输入，唯一 test double 为文件头注明的外部计费 LLM stream。门禁：typecheck 0 错；Biome 221 files 0 违规；首轮原样 pnpm test 78 files/661 tests 全绿，含 live DeepSeek、Web Docker/Harness/MCP、DockerSandbox 15/15 与 Phase 0–7 累积回归；jq/diff 检查通过，无新增依赖或延期项。任务保持 in_progress，待 $agora-commit 交付。\n[2026-09-03 最终复核修正] 增补 sub 群 rejected 必须零 mutation 的边界后，定向 3 files/25 tests、typecheck、Biome、JSON/diff 均通过；标准 pnpm test 排除 3 个外部 DeepSeek live 用例后 75 files/659 tests 全绿，真实 DockerSandbox 15/15。最终原样 pnpm test 的 661 个其余测试通过，仅既有 Phase 0 live LRU 因模型未生成 TS 文件失败；随后原样单测两次均因 DeepSeek API 请求失败，断言与实现未改。该外部非确定性结果已如实保留，提交前需按 $agora-commit 再跑原样全量门禁。\n[2026-09-03 /agora-commit·门禁] 分支 feat/role-onboarding（base=dev-1.0.0）；typecheck 0 错；Biome 221 files 0 违规；原样 pnpm test 78 files/662 tests 全绿，包含 live DeepSeek、Web Docker/Harness/MCP、DockerSandbox 15/15 与 Phase 0–7 累积回归；7.3 专属真实链路 G5 1/1；JSON 与 git diff 检查通过。待精确暂存、gitleaks、提交、推送与创建 PR。",
+          "last_updated": "2026-09-03T18:15:18.000Z"
         },
         {
           "id": "7.4",

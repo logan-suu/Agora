@@ -1,6 +1,7 @@
 import {
   type AppState,
   type CoordinationLedgerPayload,
+  deriveOnboardingContext,
   latestCoordinationLedger,
   type RoleId,
   type RoleSpec,
@@ -41,6 +42,7 @@ export function project(
     }
   }
   slices.channels = structuredClone([...channelContext]);
+  slices.onboardingContext = deriveOnboardingContext(state, role);
   return { role: String(role), slices };
 }
 

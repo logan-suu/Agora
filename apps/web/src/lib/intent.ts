@@ -10,6 +10,7 @@ export type DeferredLeaderIntent =
 
 export type LeaderIntent =
   | { kind: 'assign'; targetRole: string; instruction: string }
+  | { kind: 'onboard_role'; targetRole: string; entrustedHandoffMsgIds: string[] }
   | { kind: 'remove_role'; targetRole: string; successorRole?: string }
   | { kind: 'open_sub_channel'; requestedRoles: string[]; topic: string }
   | { kind: 'close_sub_channel'; channelId: string }
@@ -73,6 +74,7 @@ const DEFERRED_COMMANDS: Readonly<
 const ROLE_MENTION = /^@[A-Za-z][A-Za-z0-9_-]*$/;
 const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const SAFE_CHANNEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const SAFE_MSG_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
 export function parseLeaderIntent(display: string): LeaderIntent {
   const text = display.trim();
@@ -162,6 +164,7 @@ export function planLeaderIntent(
       }
       return { intent, action: { status: 'applied' }, mutations: [] };
     }
+    case 'onboard_role':
     case 'assign': {
       const role = roster.find((entry) => entry.role.toUpperCase() === intent.targetRole);
       if (role === undefined) {
@@ -171,10 +174,20 @@ export function planLeaderIntent(
         return rejected(intent, `unknown role "${intent.targetRole}"`);
       }
       if (state.phase === 'done') {
-        return rejected(intent, 'cannot assign a role after the task is done');
+        return rejected(
+          intent,
+          intent.kind === 'assign'
+            ? 'cannot assign a role after the task is done'
+            : 'cannot onboard a role after the task is done',
+        );
       }
       if (state.humanGate !== undefined) {
-        return rejected(intent, 'cannot assign a role while humanGate awaits leader resolution');
+        return rejected(
+          intent,
+          intent.kind === 'assign'
+            ? 'cannot assign a role while humanGate awaits leader resolution'
+            : 'cannot onboard a role while humanGate awaits leader resolution',
+        );
       }
       return {
         intent,
@@ -187,11 +200,25 @@ export function planLeaderIntent(
 
 function parseRoleIntent(remainder: string): LeaderIntent {
   const tokens = remainder.split(/\s+/).filter((token) => token.length > 0);
-  if (tokens.length !== 2 && tokens.length !== 4) {
+  if (tokens[0]?.toLowerCase() === 'onboard') {
+    const role = tokens[1];
+    if (role === undefined || !ROLE_NAME.test(role)) return invalidRoleSyntax();
+    if (tokens.length === 2) {
+      return { kind: 'onboard_role', targetRole: role.toUpperCase(), entrustedHandoffMsgIds: [] };
+    }
+    if (tokens.length !== 4 || tokens[2]?.toLowerCase() !== 'from') return invalidRoleSyntax();
+    const ids = (tokens[3] ?? '').split(',');
+    if (ids.length === 0 || ids.some((id) => !SAFE_MSG_ID.test(id))) {
+      return invalidRoleSyntax();
+    }
     return {
-      kind: 'invalid',
-      reason: 'role remove syntax is /role remove <ROLE> [to <SUCCESSOR>]',
+      kind: 'onboard_role',
+      targetRole: role.toUpperCase(),
+      entrustedHandoffMsgIds: [...new Set(ids)],
     };
+  }
+  if (tokens.length !== 2 && tokens.length !== 4) {
+    return invalidRoleSyntax();
   }
   const [operation, role, connector, successor] = tokens;
   if (
@@ -201,15 +228,20 @@ function parseRoleIntent(remainder: string): LeaderIntent {
     (tokens.length === 4 &&
       (connector?.toLowerCase() !== 'to' || successor === undefined || !ROLE_NAME.test(successor)))
   ) {
-    return {
-      kind: 'invalid',
-      reason: 'role remove syntax is /role remove <ROLE> [to <SUCCESSOR>]',
-    };
+    return invalidRoleSyntax();
   }
   return {
     kind: 'remove_role',
     targetRole: role.toUpperCase(),
     ...(successor === undefined ? {} : { successorRole: successor.toUpperCase() }),
+  };
+}
+
+function invalidRoleSyntax(): LeaderIntent {
+  return {
+    kind: 'invalid',
+    reason:
+      'role syntax is /role remove <ROLE> [to <SUCCESSOR>] or /role onboard <ROLE> [from <HANDOFF_MSG_ID>[,<HANDOFF_MSG_ID>...]]',
   };
 }
 
