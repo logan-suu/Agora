@@ -10,6 +10,9 @@ const HEARTBEAT_INTERVAL_MS = 15_000;
 const encoder = new TextEncoder();
 
 export function createPostMessage(runtime: MessageRuntime) {
+  // D10 places this handler inside the trusted single-user composition root. Account-level
+  // authentication is outside the current product scope; the server binds accepted input to the
+  // Leader actor and still enforces task, channel, roster, command, and lifecycle authorization.
   return async function postMessage(request: Request): Promise<Response> {
     const body = await readJsonObject(request);
     const projectId = requiredString(body?.projectId);
