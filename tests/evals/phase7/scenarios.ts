@@ -89,6 +89,38 @@ export function usesPhase7Docker(taskId: string): boolean {
   return taskId.startsWith('phase6/') && usesPhase6Docker(taskId);
 }
 
+export function evaluateDepartureOrder(
+  events: readonly string[],
+  handoffCommittedWithTransferredOwner: boolean,
+  departedObservedTransferredOwner: boolean,
+): { safePointBeforeHandoff: boolean; responsibilityBeforeDeparted: boolean } {
+  const stepCommit = events.indexOf('step-commit');
+  const safePoint = events.indexOf('safe-point');
+  const handoffCommit = events.indexOf('handoff-commit');
+  const departedCommit = events.indexOf('departed-commit');
+  return {
+    safePointBeforeHandoff:
+      stepCommit >= 0 &&
+      safePoint >= 0 &&
+      handoffCommit >= 0 &&
+      stepCommit < safePoint &&
+      safePoint < handoffCommit,
+    responsibilityBeforeDeparted:
+      handoffCommittedWithTransferredOwner &&
+      departedObservedTransferredOwner &&
+      handoffCommit >= 0 &&
+      departedCommit >= 0 &&
+      handoffCommit < departedCommit,
+  };
+}
+
+export function excludesRawDisplays(
+  encodedProjection: string,
+  displays: readonly string[],
+): boolean {
+  return displays.every((display) => display.length === 0 || !encodedProjection.includes(display));
+}
+
 export async function executePhase7DeterministicScenario(
   task: AgoraEvalTask,
   context: EvalExecutionContext,
@@ -157,6 +189,41 @@ async function forcedHandoffScenario(context: EvalExecutionContext): Promise<Eva
   await runtime.initializeState(scope, initial);
   const adapter = new GatedAdapter();
   const events: string[] = [];
+  let handoffCommittedWithTransferredOwner = false;
+  let departedObservedTransferredOwner = false;
+  const taskCommit = runtime.store.commit.bind(runtime.store);
+  runtime.store.commit = async (commitScope, mutations) => {
+    const committed = await taskCommit(commitScope, mutations);
+    if (
+      !events.includes('handoff-commit') &&
+      committed.state.messages.some(
+        (message) => message.msgId === 'role-departure:remove-coder-eval',
+      )
+    ) {
+      handoffCommittedWithTransferredOwner =
+        committed.state.subtasks.find((entry) => entry.id === 'coding-work')?.ownerRole ===
+        'TESTER';
+      events.push('handoff-commit');
+    }
+    return committed;
+  };
+  const collaborationCommit = runtime.collaboration.commit.bind(runtime.collaboration);
+  runtime.collaboration.commit = async (projectId, expectedRevision, next) => {
+    const committed = await collaborationCommit(projectId, expectedRevision, next);
+    if (
+      !events.includes('departed-commit') &&
+      committed.snapshot.roster.some(
+        (entry) => entry.spec.role === 'CODER' && entry.status === 'departed',
+      )
+    ) {
+      const stateAtDeparture = await runtime.store.load(scope);
+      departedObservedTransferredOwner =
+        stateAtDeparture?.subtasks.find((entry) => entry.id === 'coding-work')?.ownerRole ===
+        'TESTER';
+      events.push('departed-commit');
+    }
+    return committed;
+  };
   const executors: AuditedHarnessExecutor[] = [];
   const worker = new WorkerRuntime({
     roster: DEFAULT_ROSTER,
@@ -190,7 +257,6 @@ async function forcedHandoffScenario(context: EvalExecutionContext): Promise<Eva
     adapter.release();
     const [, response] = await Promise.all([running, removal]);
     const responseBody = (await response.json()) as { action?: { status?: string } };
-    events.push('handoff-observed');
     const firstState = await requiredState(runtime, scope);
     const firstCollaboration = await requiredCollaboration(runtime, scope.projectId);
     const replayResponse = await postMessage(
@@ -213,6 +279,11 @@ async function forcedHandoffScenario(context: EvalExecutionContext): Promise<Eva
     );
     const coder = firstCollaboration.roster.find((entry) => entry.spec.role === 'CODER');
     const transferred = firstState.subtasks.find((entry) => entry.id === 'coding-work');
+    const departureOrder = evaluateDepartureOrder(
+      events,
+      handoffCommittedWithTransferredOwner,
+      departedObservedTransferredOwner,
+    );
     return observation(
       {
         'handoff.completed':
@@ -223,11 +294,11 @@ async function forcedHandoffScenario(context: EvalExecutionContext): Promise<Eva
       {
         'process.departing-before-drain': wasDepartingBeforeRelease,
         'process.safe-point-before-handoff':
-          events.indexOf('safe-point') > events.indexOf('step-commit') &&
-          events.indexOf('handoff-observed') > events.indexOf('safe-point') &&
-          handoffIndex > stepIndex,
+          departureOrder.safePointBeforeHandoff && handoffIndex > stepIndex,
         'process.responsibility-before-departed':
-          transferred?.ownerRole === 'TESTER' && coder?.departure?.stage === 'completed',
+          departureOrder.responsibilityBeforeDeparted &&
+          transferred?.ownerRole === 'TESTER' &&
+          coder?.departure?.stage === 'completed',
         'process.action-replay-idempotent':
           replayBody.published === false &&
           replayBody.action?.status === 'applied' &&
@@ -257,6 +328,7 @@ async function onboardingRecoveryScenario(context: EvalExecutionContext): Promis
   const channelContext = await restarted.channelContextFor(persisted, 'TESTER');
   const view = project(persisted, 'TESTER', roster, channelContext);
   const encoded = JSON.stringify(view);
+  const rawDisplays = persisted.messages.map((message) => message.display);
   const onboardingContext = view.slices.onboardingContext as {
     actionId?: string | null;
     handoffs?: Array<{ ref?: { msgId?: string } }>;
@@ -269,9 +341,7 @@ async function onboardingRecoveryScenario(context: EvalExecutionContext): Promis
     { 'onboarding.recovered': recovered },
     {
       'process.onboarding-from-persisted-state': recovered && persisted.nextRole === 'TESTER',
-      'process.no-raw-log':
-        !encoded.includes('/role onboard TESTER') &&
-        !encoded.includes('Role CODER handoff is ready'),
+      'process.no-raw-log': excludesRawDisplays(encoded, rawDisplays),
     },
   );
 }

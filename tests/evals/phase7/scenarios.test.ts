@@ -5,7 +5,11 @@ import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { runEvalTask } from '../core/runner';
-import { executePhase7DeterministicScenario } from './scenarios';
+import {
+  evaluateDepartureOrder,
+  excludesRawDisplays,
+  executePhase7DeterministicScenario,
+} from './scenarios';
 import { PHASE7_INCREMENT_TASKS } from './tasks';
 
 const roots: string[] = [];
@@ -51,4 +55,54 @@ describe('Phase 7 deterministic Eval scenarios', () => {
       }
     });
   }
+});
+
+describe('Phase 7 process evidence graders', () => {
+  it('rejects a handoff observed before its safe point even if the final state converges', () => {
+    expect(
+      evaluateDepartureOrder(
+        ['step-commit', 'handoff-commit', 'safe-point', 'departed-commit'],
+        true,
+        true,
+      ),
+    ).toEqual({
+      safePointBeforeHandoff: false,
+      responsibilityBeforeDeparted: true,
+    });
+  });
+
+  it('rejects departure committed before the handoff transfer', () => {
+    expect(
+      evaluateDepartureOrder(
+        ['step-commit', 'safe-point', 'departed-commit', 'handoff-commit'],
+        true,
+        false,
+      ),
+    ).toEqual({
+      safePointBeforeHandoff: true,
+      responsibilityBeforeDeparted: false,
+    });
+  });
+
+  it('accepts only the committed step, safe point, handoff, and departure order', () => {
+    expect(
+      evaluateDepartureOrder(
+        ['step-commit', 'safe-point', 'handoff-commit', 'departed-commit'],
+        true,
+        true,
+      ),
+    ).toEqual({
+      safePointBeforeHandoff: true,
+      responsibilityBeforeDeparted: true,
+    });
+  });
+
+  it('rejects any persisted raw display found in a projected view', () => {
+    expect(
+      excludesRawDisplays('projected /role remove CODER to TESTER', [
+        '/role remove CODER to TESTER',
+        '/role onboard TESTER',
+      ]),
+    ).toBe(false);
+  });
 });

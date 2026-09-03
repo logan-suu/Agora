@@ -111,6 +111,43 @@ describe('Phase 7 role-lifecycle exit chain', () => {
     );
     await runtime.initializeState(scope, initial);
 
+    const commitEvents: string[] = [];
+    let handoffCommittedWithTransferredOwner = false;
+    let departedObservedTransferredOwner = false;
+    const taskCommit = runtime.store.commit.bind(runtime.store);
+    runtime.store.commit = async (commitScope, mutations) => {
+      const committed = await taskCommit(commitScope, mutations);
+      if (
+        !commitEvents.includes('handoff-commit') &&
+        committed.state.messages.some(
+          (message) => message.msgId === 'role-departure:remove-coder-exit',
+        )
+      ) {
+        handoffCommittedWithTransferredOwner =
+          committed.state.subtasks.find((entry) => entry.id === 'coding-work')?.ownerRole ===
+          'TESTER';
+        commitEvents.push('handoff-commit');
+      }
+      return committed;
+    };
+    const collaborationCommit = runtime.collaboration.commit.bind(runtime.collaboration);
+    runtime.collaboration.commit = async (projectId, expectedRevision, next) => {
+      const committed = await collaborationCommit(projectId, expectedRevision, next);
+      if (
+        !commitEvents.includes('departed-commit') &&
+        committed.snapshot.roster.some(
+          (entry) => entry.spec.role === 'CODER' && entry.status === 'departed',
+        )
+      ) {
+        const stateAtDeparture = await runtime.store.load(scope);
+        departedObservedTransferredOwner =
+          stateAtDeparture?.subtasks.find((entry) => entry.id === 'coding-work')?.ownerRole ===
+          'TESTER';
+        commitEvents.push('departed-commit');
+      }
+      return committed;
+    };
+
     const beforeRegistration = await runtime.collaboration.load(scope.projectId);
     if (beforeRegistration === undefined) throw new Error('expected initial collaboration');
     await runtime.roster.addRole(scope.projectId, RELEASE_MANAGER);
@@ -138,11 +175,19 @@ describe('Phase 7 role-lifecycle exit chain', () => {
       roster: DEFAULT_ROSTER,
       loadRoster: () => runtime.enabledRoleSpecs(scope.projectId),
       buildChannelContext: (state, role) => runtime.workerStepChannelContextFor(state, role),
-      transitionStep: async (_state, role, mutations) =>
-        (await runtime.commitWorkerStepMutations(scope, role, mutations)).state,
+      transitionStep: async (_state, role, mutations) => {
+        const committed = await runtime.commitWorkerStepMutations(scope, role, mutations);
+        commitEvents.push('step-commit');
+        return committed.state;
+      },
       buildExecutor: (spec) => {
         const executor = new HarnessExecutor(spec, { adapter: coderAdapter, provider: 'agora' });
-        safePointSpy = vi.spyOn(executor, 'saveSafePoint');
+        const saveSafePoint = executor.saveSafePoint.bind(executor);
+        safePointSpy = vi.spyOn(executor, 'saveSafePoint').mockImplementation(async () => {
+          const ref = await saveSafePoint();
+          commitEvents.push('safe-point');
+          return ref;
+        });
         coderExecutors.push(executor);
         return executor;
       },
@@ -170,6 +215,14 @@ describe('Phase 7 role-lifecycle exit chain', () => {
       const [, removed] = await Promise.all([running, removal]);
       await expect(removed.json()).resolves.toMatchObject({ action: { status: 'applied' } });
       expect(safePointSpy).toHaveBeenCalledTimes(1);
+      expect(commitEvents).toEqual([
+        'step-commit',
+        'safe-point',
+        'handoff-commit',
+        'departed-commit',
+      ]);
+      expect(handoffCommittedWithTransferredOwner).toBe(true);
+      expect(departedObservedTransferredOwner).toBe(true);
 
       const stateAfterDeparture = await runtime.store.load(scope);
       const collaborationAfterDeparture = await runtime.collaboration.load(scope.projectId);
@@ -238,6 +291,7 @@ describe('Phase 7 role-lifecycle exit chain', () => {
       expect(testerAdapter.inputs).toHaveLength(1);
       expect(testerAdapter.inputs[0]).toContain('"actionId":"onboard-tester-exit"');
       expect(testerAdapter.inputs[0]).toContain('"msgId":"role-departure:remove-coder-exit"');
+      expect(testerAdapter.inputs[0]).not.toContain('/role remove CODER to TESTER');
       expect(testerAdapter.inputs[0]).not.toContain('/role onboard TESTER');
       expect(testerAdapter.inputs[0]).not.toContain('Role CODER handoff is ready');
 
