@@ -88,7 +88,7 @@ async function fixture(options: { bus?: RecordingBus; channels?: ProjectChannelS
     messages: [sourceMessage()],
   });
   const bus = options.bus ?? new RecordingBus();
-  const messages = new MessageService(state, bus, channels);
+  const messages = new MessageService(state, bus, channels, actualChannels.collaboration);
   return { root, state, actualChannels, channels, bus, messages };
 }
 
@@ -199,7 +199,7 @@ describe('ChannelSummaryReconciler', () => {
     const generator = new FakeGenerator(generatedSummary());
     await new ChannelSummaryReconciler({
       channels,
-      messages: new MessageService(state, bus, channels),
+      messages: new MessageService(state, bus, channels, actual.collaboration),
       state,
       generator,
     }).reconcile(scope);
@@ -237,7 +237,7 @@ describe('ChannelSummaryReconciler', () => {
     const generator = new FakeGenerator(generatedSummary());
     await new ChannelSummaryReconciler({
       channels,
-      messages: new MessageService(state, new RecordingBus(), channels),
+      messages: new MessageService(state, new RecordingBus(), channels, channels.collaboration),
       state,
       generator,
       legacySummaries: (projectId) => channels.legacyBubbledSummaries(projectId),

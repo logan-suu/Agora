@@ -181,9 +181,7 @@ function consumeLeaderAssignment(
 
   const role = roster?.find((entry) => entry.role === assignment.targetRole);
   if (roster !== undefined && role === undefined) {
-    throw new Error(
-      `applied Leader assignment targets unavailable role "${assignment.targetRole}"`,
-    );
+    return unavailableRoleGate(state, clock, assignment.targetRole);
   }
 
   const control = {

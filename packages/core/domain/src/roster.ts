@@ -104,7 +104,10 @@ export function addRole(roster: readonly RosterEntry[], requested: RoleSpec): Ro
   const spec = normalizeRoleSpec(requested);
   const existing = roster.find((entry) => entry.spec.role === spec.role);
   if (existing !== undefined) {
-    if (existing.status === 'enabled' && canonicalJson(existing.spec) === canonicalJson(spec)) {
+    if (
+      existing.status === 'enabled' &&
+      canonicalJson(normalizeRoleSpec(existing.spec)) === canonicalJson(spec)
+    ) {
       return unchanged(roster);
     }
     throw new Error(`role "${spec.role}" conflicts with an existing roster entry`);

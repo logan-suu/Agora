@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-02T23:44:17.000Z",
+  "last_updated": "2026-09-03T01:43:30.000Z",
   "current_phase": 7,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -63,7 +63,7 @@
     },
     {
       "id": "D12",
-      "rule": "项目 roster 是唯一成员真相源且不复制进 AppState；RoleSpec 与 RosterEntry 生命周期分离。roster+channels 以 ProjectCollaborationSnapshot 同 revision 原子持久化，既有 ProjectChannelStore 签名不变。离职保留 departed 历史身份；新建 sub、发言、指派、路由和执行只允许 enabled，Coordinator 恒 enabled。Phase 7 自定义角色仅保证持久装载与 Leader 显式指派，任意角色自主调度按 DEF-016 延期",
+      "rule": "项目 roster 是唯一成员真相源且不复制进 AppState；RoleSpec 与 RosterEntry 生命周期分离。roster+channels 以 ProjectCollaborationSnapshot 同 revision 原子持久化，既有 ProjectChannelStore 签名不变。离职保留 departed 历史身份；新建 sub、发言、指派、路由和执行只允许 enabled，持久 roster 依赖缺失 fail-closed，指派消费前失效进入 Leader humanGate，Coordinator 恒 enabled。legacy 正式写后读回核对才删除，同内容双文件可由 initialize/load 幂等清理。Phase 7 自定义角色仅保证持久装载与 Leader 显式指派，任意角色自主调度按 DEF-016 延期",
       "source": "docs/项目蓝图.md §6/§12/§20/§21；docs/详细设计方案.md §1/§2/§5/§8；docs/系统架构设计文档.md §5.4/§9；docs/技术选型文档.md §9/§10；docs/开发计划安排.md §10"
     },
     {

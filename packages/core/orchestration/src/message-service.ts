@@ -35,14 +35,14 @@ export class MessageService {
   readonly #store: TaskStateStore;
   readonly #bus: MessageBus;
   readonly #channels: ProjectChannelStore;
-  readonly #collaboration: ProjectCollaborationStore | undefined;
+  readonly #collaboration: ProjectCollaborationStore;
   readonly #queues = new Map<string, Promise<void>>();
 
   constructor(
     store: TaskStateStore,
     bus: MessageBus,
     channels: ProjectChannelStore,
-    collaboration?: ProjectCollaborationStore,
+    collaboration: ProjectCollaborationStore,
   ) {
     this.#store = store;
     this.#bus = bus;
@@ -156,7 +156,7 @@ export class MessageService {
   }
 
   async #assertEnabledSender(projectId: string, message: Message): Promise<void> {
-    if (message.fromRole === 'leader' || this.#collaboration === undefined) return;
+    if (message.fromRole === 'leader') return;
     const snapshot = await this.#collaboration.load(projectId);
     if (snapshot === undefined) {
       throw new Error(

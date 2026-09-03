@@ -165,4 +165,24 @@ describe('JsonProjectCollaborationStore', () => {
 
     await expect(store.load('project-a')).rejects.toThrow(/conflicting.*channels\.json/i);
   });
+
+  it('finishes crash-recovery cleanup when equivalent legacy and collaboration files coexist', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonProjectCollaborationStore(root);
+    const channels = [createMainChannel(['COORDINATOR', 'CODER', 'TESTER'])];
+    const snapshot = await store.initialize('project-a', DEFAULT_ROSTER, channels);
+    const legacyPath = join(root, 'projects/project-a/channels.json');
+    await writeFile(
+      legacyPath,
+      `${JSON.stringify({
+        projectId: snapshot.projectId,
+        revision: snapshot.revision,
+        channels: snapshot.channels,
+      })}\n`,
+      'utf8',
+    );
+
+    await expect(store.load('project-a')).resolves.toEqual(snapshot);
+    await expect(access(legacyPath)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
 });

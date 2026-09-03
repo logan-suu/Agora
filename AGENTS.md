@@ -311,7 +311,8 @@ Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 
             执行配置与审计元数据同源。公开集与 holdout 分开，Phase 10 重复对照并报告方差。Benchmark 不替代测试/G5，
             未实测指标不得对外宣称，外部评测工具不进入默认产品运行时依赖
 角色编制    D12：项目 roster 是唯一成员真相源，RoleSpec 与 RosterEntry 生命周期分离；roster+Channel 同 revision 原子持久化，
-            AppState 不复制 roster；离职保留 departed 历史身份。路由/执行/发言/新建 sub 只允许 enabled，Coordinator 恒 enabled；
+            AppState 不复制 roster；离职保留 departed 历史身份。路由/执行/发言/新建 sub 只允许 enabled，权威源缺失 fail-closed；
+            指派消费前失效进入 Leader humanGate；legacy 写后从正式路径复核才删除，Coordinator 恒 enabled；
             Phase 7 自定义角色仅保证持久装载与 Leader 显式指派，任意角色自主调度见 DEF-016
 ```
 

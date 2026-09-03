@@ -207,7 +207,7 @@ async function messageScenario(
         false;
     },
   };
-  const service = new MessageService(state, bus, channels);
+  const service = new MessageService(state, bus, channels, channels.collaboration);
   const first = await service.commitMessage(scope, message('logical-message', 'main'));
   const second = await service.commitMessage(scope, message('logical-message', 'main'));
   const stored = await state.load(scope);
@@ -319,7 +319,7 @@ async function bubbleScenario(
       published.push(entry.msgId);
     },
   };
-  const service = new MessageService(state, bus, channels);
+  const service = new MessageService(state, bus, channels, channels.collaboration);
   const { ChannelSummaryReconciler } = await import('@agora/core-orchestration');
   const reconciler = new ChannelSummaryReconciler({
     channels,

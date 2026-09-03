@@ -57,6 +57,12 @@ export class JsonProjectCollaborationStore implements ProjectCollaborationStore 
               legacy.channels,
             );
       await this.#writeSnapshot(snapshot);
+      const verified = await this.#readSnapshot(projectId);
+      if (verified === undefined || canonicalJson(verified) !== canonicalJson(snapshot)) {
+        throw new Error(
+          `project collaboration write verification failed for project "${projectId}"`,
+        );
+      }
       if (legacy !== undefined) {
         if (legacy.legacySummaries.length > 0) {
           await this.#writeLegacySummaries(projectId, legacy.legacySummaries);

@@ -59,6 +59,23 @@ describe('project roster transitions', () => {
     expect(replayed.roster).toEqual(added.roster);
   });
 
+  it('treats explicit undefined optional fields as an identical enabled replay', () => {
+    const explicitUndefined = {
+      ...CODER,
+      externalCmd: undefined,
+      model: undefined,
+    } as unknown as RoleSpec;
+    const roster: readonly RosterEntry[] = [
+      { spec: COORDINATOR, status: 'enabled' },
+      { spec: explicitUndefined, status: 'enabled' },
+    ];
+
+    const replayed = addRole(roster, { ...CODER });
+
+    expect(replayed.changed).toBe(false);
+    expect(replayed.roster).toEqual(roster);
+  });
+
   it('rejects a conflicting spec for an existing normalized identity', () => {
     expect(() => addRole(INITIAL, { ...CODER, role: 'coder', systemPrompt: 'Different.' })).toThrow(
       /conflict/i,

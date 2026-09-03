@@ -193,6 +193,37 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     });
   });
 
+  it('escalates when an applied Leader assignment becomes unavailable before consumption', () => {
+    const state = applyMutations(requirementsReadyState(), [
+      appendMutation('messages', {
+        msgId: 'leader-assign-reviewer',
+        channelId: 'main',
+        fromRole: 'leader',
+        type: 'chat',
+        payload: {
+          kind: 'leader_intent',
+          intent: {
+            kind: 'assign',
+            targetRole: 'REVIEWER',
+            instruction: 'inspect the cache contract',
+          },
+          action: { status: 'applied' },
+        },
+        display: '@REVIEWER inspect the cache contract',
+        ts: 900,
+      }),
+      setMutation('nextRole', 'REVIEWER'),
+    ]);
+    const enabledRoster = FULL_ROSTER.filter((spec) => spec.role !== 'REVIEWER');
+
+    const decision = decide(state, { ...clock(), roster: enabledRoster });
+    const next = applyMutations(state, decision.mutations);
+
+    expect(decision.route.kind).toBe('human_gate');
+    expect(next.humanGate).toMatchObject({ reason: 'required_role_unavailable:REVIEWER' });
+    expect(next.messages.some((message) => message.payload.role === 'REVIEWER')).toBe(true);
+  });
+
   it('treats older unapplied Leader assignments as superseded by the latest one', () => {
     const assignment = (msgId: string, targetRole: string, ts: number) =>
       appendMutation('messages', {

@@ -36,7 +36,7 @@ async function setup(initializeTask = true) {
   await channels.initialize(scope.projectId, [createMainChannel(ENABLED_ROLES)]);
   const states = new JsonTaskStateStore(root);
   const bus = new RecordingBus();
-  const messages = new MessageService(states, bus, channels);
+  const messages = new MessageService(states, bus, channels, channels.collaboration);
   if (initializeTask) await messages.initialize(scope, 'Implement channel lifecycle');
   const lifecycle = new ChannelLifecycleService(
     channels,
