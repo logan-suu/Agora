@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-03T01:43:30.000Z",
+  "last_updated": "2026-09-03T01:50:48.000Z",
   "current_phase": 7,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -931,7 +931,7 @@
           "id": "7.1",
           "title": "项目级 roster 动态管理（addRole/enable/disable + 协作快照持久化）",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/详细设计方案.md §1/§2/§5/§8",
             "docs/项目蓝图.md §6/§12/§20/§21",
@@ -943,14 +943,14 @@
             "6.5"
           ],
           "test_file": "apps/web/test/project-roster-g5-chain.test.ts",
-          "notes": "D12：RoleSpec 只描述能力，RosterEntry 保存 enabled/disabled/departing/departed 生命周期；项目 roster 与 Channel 进入同一 ProjectCollaborationSnapshot，以 revision CAS 原子持久化并同步 main participants。7.1 只实现 addRole/enableRole/disableRole、统一 enabled 门控与 Phase 6 channels.json 确定性迁移；removeRole 移入 7.2 离职状态机，禁止硬删除历史身份。自定义角色在 Phase 7 只保证持久装载、工具/投影作用域与 Leader 显式 @ROLE 指派，任意角色自主调度见 docs/deferred-items.json DEF-016。\n[2026-09-02 /agora-pr-merge] Phase 6 出口任务 6.5 已由 PR #52 合并并标 done（merge commit a3ede0c）；跨阶段门禁解除，级联翻转 pending→ready。\n[2026-09-02 /agora-sync-docs·规格复评] Leader 批准 D12，已先按蓝图→详细设计→架构/选型→开发计划→任务状态/AGENTS 收敛 roster 所有权、生命周期、Channel 历史合法性与 Phase 7 自定义角色边界。任务保持 ready，尚未开工。\n[2026-09-02 /agora-do-task] Leader 批准启动修订后的 7.1；依赖 6.5=done、Phase 6 出口已完成、current_phase=7，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划再次确认前不写测试或生产代码。\n[2026-09-02 /agora-do-task·Code+Check+Verify] D12 已落码：RoleSpec/成员状态分离，新增规范化 addRole/enableRole/disableRole；ProjectCollaborationStore+JSON revision CAS 定稿，JsonProjectChannelStore 改为兼容视图；ProjectRosterService 原子同步 main participants；旧 channels.json 迁移、双文件冲突 fail-fast，legacy summary 暂存经 reconciler 建立 main 唯一事实后清理；历史 sub 允许 disabled 身份，新增频道/消息/Leader 指派/Coordinator/Worker 统一 enabled 门控；运行中停用在 Harness step 边界保存安全点。新增领域、存储、服务、Web 重启与真实 Harness 通用 worker 测试。门禁：typecheck 0 错；Biome 215 files 0 违规；确定性回归 70 files / 603 tests 通过、3 个需实时 key 的测试按无 key 规则跳过；另行实测真实 DeepSeek Harness 两条 G5=2/2、Web Docker/Harness=6/6、DockerSandbox=15/15、D12 真实存储+投影+Harness 链=1/1。旧 Phase 0 LRU 实时 DeepSeek E2E 本轮外部请求长期未返回，已由更小实时 G5 与 Phase 5 完整真实链覆盖，不改其 600s 既有超时或断言。任务保持 in_progress，待 $agora-commit。\n[2026-09-02 /agora-commit·门禁] 分支 feat/project-roster-collaboration；typecheck 0 错；Biome 215 files 0 违规；7.1 focused G5 1/1；原样 pnpm test 74 files / 621 tests 全绿，包含真实 DeepSeek Harness/closed-channel summary/LRU E2E、Web Docker/Harness、DockerSandbox 15/15 与 Phase 0–6 累积链。待 gitleaks 暂存扫描、提交与 PR。\n[2026-09-02 /agora-commit·PR] 功能提交 8590826 已推送至 feat/project-roster-collaboration；PR #53：https://github.com/logan-suu/Agora/pull/53（base=dev-1.0.0）。gitleaks staged 扫描无敏感信息。任务保持 in_progress，等待人类审阅与合并；Agent 不自动合并。\n[2026-09-02 /agora-pr-review·规格复评与修复] 先复评 D12 再修 PR：确认总体方向合理，补齐 enabled-only add 重放、持久 roster fail-closed、失效指派 humanGate、迁移正式路径读回核对及同内容双文件恢复清理规则；按蓝图→详细设计→架构/选型→开发计划→standing decision/AGENTS 同步。TDD 红灯复现显式 undefined 重放 SyntaxError 与失效指派未处理异常；修复提交 e963a0c 规范化比较、收紧 MessageService 必需依赖、复用 Leader gate、迁移写后复核并补回归。门禁：focused 6 files / 82 tests；typecheck 0 错；Biome 215 files 0 违规；原样 pnpm test 74 files / 624 tests 全绿，含真实 DeepSeek 与 Docker 链；gitleaks 无泄漏。3 个 CodeRabbit inline 均英文回复并 resolved；load 纯读建议经复评不采纳，受限双文件 cleanup 明确为迁移崩溃恢复。任务保持 in_progress，等待人工合并；Agent 不自动合并。",
-          "last_updated": "2026-09-03T01:45:33.000Z"
+          "notes": "D12：RoleSpec 只描述能力，RosterEntry 保存 enabled/disabled/departing/departed 生命周期；项目 roster 与 Channel 进入同一 ProjectCollaborationSnapshot，以 revision CAS 原子持久化并同步 main participants。7.1 只实现 addRole/enableRole/disableRole、统一 enabled 门控与 Phase 6 channels.json 确定性迁移；removeRole 移入 7.2 离职状态机，禁止硬删除历史身份。自定义角色在 Phase 7 只保证持久装载、工具/投影作用域与 Leader 显式 @ROLE 指派，任意角色自主调度见 docs/deferred-items.json DEF-016。\n[2026-09-02 /agora-pr-merge] Phase 6 出口任务 6.5 已由 PR #52 合并并标 done（merge commit a3ede0c）；跨阶段门禁解除，级联翻转 pending→ready。\n[2026-09-02 /agora-sync-docs·规格复评] Leader 批准 D12，已先按蓝图→详细设计→架构/选型→开发计划→任务状态/AGENTS 收敛 roster 所有权、生命周期、Channel 历史合法性与 Phase 7 自定义角色边界。任务保持 ready，尚未开工。\n[2026-09-02 /agora-do-task] Leader 批准启动修订后的 7.1；依赖 6.5=done、Phase 6 出口已完成、current_phase=7，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划再次确认前不写测试或生产代码。\n[2026-09-02 /agora-do-task·Code+Check+Verify] D12 已落码：RoleSpec/成员状态分离，新增规范化 addRole/enableRole/disableRole；ProjectCollaborationStore+JSON revision CAS 定稿，JsonProjectChannelStore 改为兼容视图；ProjectRosterService 原子同步 main participants；旧 channels.json 迁移、双文件冲突 fail-fast，legacy summary 暂存经 reconciler 建立 main 唯一事实后清理；历史 sub 允许 disabled 身份，新增频道/消息/Leader 指派/Coordinator/Worker 统一 enabled 门控；运行中停用在 Harness step 边界保存安全点。新增领域、存储、服务、Web 重启与真实 Harness 通用 worker 测试。门禁：typecheck 0 错；Biome 215 files 0 违规；确定性回归 70 files / 603 tests 通过、3 个需实时 key 的测试按无 key 规则跳过；另行实测真实 DeepSeek Harness 两条 G5=2/2、Web Docker/Harness=6/6、DockerSandbox=15/15、D12 真实存储+投影+Harness 链=1/1。旧 Phase 0 LRU 实时 DeepSeek E2E 本轮外部请求长期未返回，已由更小实时 G5 与 Phase 5 完整真实链覆盖，不改其 600s 既有超时或断言。任务保持 in_progress，待 $agora-commit。\n[2026-09-02 /agora-commit·门禁] 分支 feat/project-roster-collaboration；typecheck 0 错；Biome 215 files 0 违规；7.1 focused G5 1/1；原样 pnpm test 74 files / 621 tests 全绿，包含真实 DeepSeek Harness/closed-channel summary/LRU E2E、Web Docker/Harness、DockerSandbox 15/15 与 Phase 0–6 累积链。待 gitleaks 暂存扫描、提交与 PR。\n[2026-09-02 /agora-commit·PR] 功能提交 8590826 已推送至 feat/project-roster-collaboration；PR #53：https://github.com/logan-suu/Agora/pull/53（base=dev-1.0.0）。gitleaks staged 扫描无敏感信息。任务保持 in_progress，等待人类审阅与合并；Agent 不自动合并。\n[2026-09-02 /agora-pr-review·规格复评与修复] 先复评 D12 再修 PR：确认总体方向合理，补齐 enabled-only add 重放、持久 roster fail-closed、失效指派 humanGate、迁移正式路径读回核对及同内容双文件恢复清理规则；按蓝图→详细设计→架构/选型→开发计划→standing decision/AGENTS 同步。TDD 红灯复现显式 undefined 重放 SyntaxError 与失效指派未处理异常；修复提交 e963a0c 规范化比较、收紧 MessageService 必需依赖、复用 Leader gate、迁移写后复核并补回归。门禁：focused 6 files / 82 tests；typecheck 0 错；Biome 215 files 0 违规；原样 pnpm test 74 files / 624 tests 全绿，含真实 DeepSeek 与 Docker 链；gitleaks 无泄漏。3 个 CodeRabbit inline 均英文回复并 resolved；load 纯读建议经复评不采纳，受限双文件 cleanup 明确为迁移崩溃恢复。任务保持 in_progress，等待人工合并；Agent 不自动合并。\n[2026-09-02 /agora-pr-merge 收尾] PR #53 已由人工合并至 dev-1.0.0（merge commit 786edcc06180dc6a86653b064e95328028ec1eb5）；任务标 done。G1–G7 证据复核：D12 规格先行复评并同步蓝图/详细设计/架构/选型/开发计划/standing decision/AGENTS；typecheck 0 错；Biome 215 files 0 违规；focused 6 files / 82 tests；原样 pnpm test 74 files / 624 tests 全绿，包含真实 DeepSeek Harness/LRU、Web Docker/Harness 与 DockerSandbox 15/15；迁移正式路径读回核对、同内容双文件恢复、消息 roster fail-closed、失效指派 humanGate 与 addRole 幂等边界均有回归。gitleaks、tracking JSON 与 git diff 检查通过，无新增延期项；DEF-016 保持 open 至 Phase 10。级联翻转 7.2、7.3 pending→ready；Phase 7 仍 in_progress，current_phase 保持 7。",
+          "last_updated": "2026-09-03T01:50:48.000Z"
         },
         {
           "id": "7.2",
           "title": "离职流程（强制交接文档）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/项目蓝图.md §12",
             "docs/详细设计方案.md §4"
@@ -959,13 +959,14 @@
             "7.1"
           ],
           "test_file": null,
-          "notes": "D12：removeRole 是受控离职状态机而非数组删除。Leader 指令→roster enabled|disabled→departing→Preemptor.requestPause→目标 Worker 到安全点暂停→生成 HandoffPacket（现状/关键决策及理由/未完成事项/文件产物入口/建议）→责任转移或空缺升级→roster departed；保留最小身份供历史 Channel/消息/审计引用，绝不硬删或静默丢责任。"
+          "notes": "D12：removeRole 是受控离职状态机而非数组删除。Leader 指令→roster enabled|disabled→departing→Preemptor.requestPause→目标 Worker 到安全点暂停→生成 HandoffPacket（现状/关键决策及理由/未完成事项/文件产物入口/建议）→责任转移或空缺升级→roster departed；保留最小身份供历史 Channel/消息/审计引用，绝不硬删或静默丢责任。",
+          "last_updated": "2026-09-03T01:50:48.000Z"
         },
         {
           "id": "7.3",
           "title": "入职流程（读交接接手）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/项目蓝图.md §12"
           ],
@@ -973,7 +974,8 @@
             "7.1"
           ],
           "test_file": null,
-          "notes": "从模板库选角色或自定义 spec→注册进 roster+群里发入职公告→初始上下文 = 相关交接文档 + 当前 State 角色投影（只读该读的）。"
+          "notes": "从模板库选角色或自定义 spec→注册进 roster+群里发入职公告→初始上下文 = 相关交接文档 + 当前 State 角色投影（只读该读的）。",
+          "last_updated": "2026-09-03T01:50:48.000Z"
         },
         {
           "id": "7.4",
