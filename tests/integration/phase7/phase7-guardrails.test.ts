@@ -193,6 +193,16 @@ describe('Phase 7 D12 guardrails', () => {
         )
         .toBe('departing');
 
+      const commitLeaderMessage = runtime.commitLeaderMessage.bind(runtime);
+      let markAssignmentQueued = () => {};
+      const assignmentQueued = new Promise<void>((resolve) => {
+        markAssignmentQueued = resolve;
+      });
+      vi.spyOn(runtime, 'commitLeaderMessage').mockImplementation((queuedScope, input) => {
+        const queued = commitLeaderMessage(queuedScope, input);
+        if (input.msgId === 'assign-departing-coder') markAssignmentQueued();
+        return queued;
+      });
       let assignmentSettled = false;
       const assignment = createPostMessage(runtime)(
         postRequest({
@@ -205,7 +215,7 @@ describe('Phase 7 D12 guardrails', () => {
         assignmentSettled = true;
         return response;
       });
-      await Promise.resolve();
+      await assignmentQueued;
       expect(assignmentSettled).toBe(false);
       const whileDeparting = await runtime.store.load(scope);
       if (whileDeparting === undefined) throw new Error('expected persisted task state');
@@ -340,6 +350,7 @@ describe('Phase 7 D12 guardrails', () => {
     });
 
     const replay = await request();
+    expect(replay.status).toBe(202);
     await expect(replay.json()).resolves.toMatchObject({
       published: false,
       action: { status: 'blocked' },
