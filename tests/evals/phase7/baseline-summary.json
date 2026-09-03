@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "runnerVersion": "phase7-v1",
+  "systemVariant": "multi-agent-role-projection",
+  "generatedAt": "2026-09-03T20:15:05.337Z",
+  "profiles": {
+    "deterministic": {
+      "attemptsPerTask": 1,
+      "tasks": 15,
+      "passedTasks": 15,
+      "failedTasks": 0,
+      "note": "The cumulative Phase 0-7 catalog passed all final core checks, including the Docker-backed Phase 6 scenarios and five Phase 7 role-lifecycle additions."
+    },
+    "model": {
+      "status": "completed",
+      "eligibleTasks": 1,
+      "completedTasks": 1,
+      "attemptsPerTask": 1,
+      "passedTasks": 1,
+      "failedTasks": 0,
+      "checks": {
+        "pass": 5,
+        "fail": 0,
+        "unknown": 2
+      },
+      "note": "The model profile remains separate from deterministic exit gates. Unknown efficiency values were not inferred."
+    }
+  },
+  "taskFingerprints": {
+    "phase6/bubble-recovery": "3f111bd078bc832adc9f8e81c29a6a30f4dd43ad704afcbcfe9dc4ad4d98a18e",
+    "phase6/coding-closure": "7ce583debc0ecb37061a38b6cb8f3d812a1447d1de2022e704473e9d7805f169",
+    "phase6/commit-before-publish": "89fe4a63b3413ddb56fda83d1d5b0e98df3aaa46c879e6dffb9a1ea9f2cf223d",
+    "phase6/context-redaction": "c9958220cdd8e4b196dca5203d381cee6dcf7182418c23716cf7d0ef6a1b5b76",
+    "phase6/main-scope": "ecafedea7c2055f453e227a43f8fa87f451dd395a0d7c9bf1d0d4927a27ffb80",
+    "phase6/message-retry": "a38e65994d889898fa47723f05d763854d9d01a3f41ee66e9052c271c4c8bd62",
+    "phase6/participant-isolation": "1876d7501e4b1dd3f8a3789fc132ab01b4debe8f0ceaf69dbb7d7c4076fe47b9",
+    "phase6/sandbox-boundary": "1b32e36b7dce9e002a36e72b7e32c4837192474123a53c1ae2a5576ed5e61ff8",
+    "phase6/sub-scope": "d1b6f34972df20a780857ad3c4e09210cc7cf1c947c232bcae40474f9be114f8",
+    "phase6/test-repair": "53859a7cbdf78689682c216dd918edc803006b9e5cf8d0fe507ba14c3a72d0f9",
+    "phase7/coordinator-protection": "7e67179bafee244d4fa1d46013dbece4b458358c92f25c1076f085dfe1831ba3",
+    "phase7/forced-handoff": "1433181bf39c7885098757e5b16d28fc50d7ee9d3a14862c2a4c1b87ec579f30",
+    "phase7/onboarding-recovery": "666cb6b06d7ee387e776573799d1843383be4f0bdea6181d0acc78864a71fe5b",
+    "phase7/orphan-escalation": "c7900260fde9a51eccda667dba3bcd1e8614005f1a108f634e4e301e6d034798",
+    "phase7/role-registration": "9a0bfcc60b13bea815bf4da546dd8ecc915a381416d33100b2f9e38e86388984"
+  }
+}
