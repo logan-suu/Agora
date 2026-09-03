@@ -10,7 +10,7 @@ import { UnknownRoleError, WorkerRuntime } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { HarnessExecutor } from '@agora/runtime-executor';
 import { LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { type ChannelEvent, ChannelStream } from '../../../apps/web/src/server/channel-stream';
 import { createPostMessage } from '../../../apps/web/src/server/message-handlers';
@@ -146,6 +146,7 @@ describe('Phase 7 D12 guardrails', () => {
     await runtime.initializeState(scope, initial);
     const adapter = new GatedAdapter();
     const executors: HarnessExecutor[] = [];
+    let saveSafePointSpy: ReturnType<typeof vi.spyOn> | undefined;
     const drains: Array<{
       role: string;
       activeWorkers: number;
@@ -159,6 +160,7 @@ describe('Phase 7 D12 guardrails', () => {
         (await runtime.commitWorkerStepMutations(scope, role, mutations)).state,
       buildExecutor: (spec) => {
         const executor = new HarnessExecutor(spec, { adapter, provider: 'agora' });
+        saveSafePointSpy = vi.spyOn(executor, 'saveSafePoint');
         executors.push(executor);
         return executor;
       },
@@ -191,21 +193,28 @@ describe('Phase 7 D12 guardrails', () => {
         )
         .toBe('departing');
 
-      const concurrent = createMessageRuntime(root, new ChannelStream());
-      const assignment = await concurrent.commitLeaderMessage(scope, {
-        msgId: 'assign-departing-coder',
-        channelId: 'main',
-        display: '@CODER start another step',
-        ts: 2_000,
+      let assignmentSettled = false;
+      const assignment = createPostMessage(runtime)(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'assign-departing-coder',
+          display: '@CODER start another step',
+        }),
+      ).then((response) => {
+        assignmentSettled = true;
+        return response;
       });
-      expect(assignment.action).toEqual({
-        status: 'rejected',
-        reason: 'role "CODER" is disabled',
-      });
-      const afterAssignment = await runtime.store.load(scope);
-      if (afterAssignment === undefined) throw new Error('expected persisted task state');
+      await Promise.resolve();
+      expect(assignmentSettled).toBe(false);
+      const whileDeparting = await runtime.store.load(scope);
+      if (whileDeparting === undefined) throw new Error('expected persisted task state');
+      expect(whileDeparting.messages).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ msgId: 'assign-departing-coder' })]),
+      );
+      expect(whileDeparting.nextRole).not.toBe('CODER');
       await expect(
-        concurrent.commitMessage(scope, {
+        runtime.commitMessage(scope, {
           msgId: 'departing-coder-message',
           channelId: 'main',
           fromRole: 'CODER',
@@ -215,17 +224,27 @@ describe('Phase 7 D12 guardrails', () => {
           ts: 2_001,
         }),
       ).rejects.toThrow(/not enabled/);
-      await expect(runtime.store.load(scope)).resolves.toEqual(afterAssignment);
+      await expect(runtime.store.load(scope)).resolves.toEqual(whileDeparting);
       await expect(
-        worker.runOne(afterAssignment, { role: 'CODER', subtaskId: 'new-coding-work' }),
+        worker.runOne(whileDeparting, { role: 'CODER', subtaskId: 'new-coding-work' }),
       ).rejects.toBeInstanceOf(UnknownRoleError);
       expect(executors).toHaveLength(1);
 
       adapter.release();
-      const [workerState, response] = await Promise.all([running, removal]);
+      const [workerState, response, assignmentResponse] = await Promise.all([
+        running,
+        removal,
+        assignment,
+      ]);
       expect(response.status).toBe(202);
       await expect(response.json()).resolves.toMatchObject({
         action: { status: 'applied' },
+      });
+      expect(assignmentResponse.status).toBe(202);
+      await expect(assignmentResponse.json()).resolves.toMatchObject({
+        accepted: true,
+        published: true,
+        action: { status: 'rejected', reason: 'role "CODER" is disabled' },
       });
       expect(workerState.messages.at(-1)).toMatchObject({
         fromRole: 'CODER',
@@ -246,6 +265,7 @@ describe('Phase 7 D12 guardrails', () => {
         { role: 'CODER', activeWorkers: 1, safePointRefs: [expect.any(String)] },
       ]);
       expect(adapter.streamCalls).toBe(1);
+      expect(saveSafePointSpy).toHaveBeenCalledTimes(1);
       expect(worker.paused).toBe(false);
       await expect(runtime.collaboration.load(scope.projectId)).resolves.toMatchObject({
         roster: expect.arrayContaining([
