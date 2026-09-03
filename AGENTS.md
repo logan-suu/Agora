@@ -302,7 +302,8 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
 意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
-            其余能力显式 rejected/deferred，按 Phase 6/8/9 解锁，不走临时 command 旁路
+            Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga；Phase 8/9 再解锁裁决与完整抢占，
+            其余能力显式 rejected/deferred，不走临时 command 旁路
 Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
             全实例最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
             刷新不依赖活容器，静态消息不得充当真实闭环证据
@@ -311,9 +312,11 @@ Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 
             执行配置与审计元数据同源。公开集与 holdout 分开，Phase 10 重复对照并报告方差。Benchmark 不替代测试/G5，
             未实测指标不得对外宣称，外部评测工具不进入默认产品运行时依赖
 角色编制    D12：项目 roster 是唯一成员真相源，RoleSpec 与 RosterEntry 生命周期分离；roster+Channel 同 revision 原子持久化，
-            AppState 不复制 roster；离职保留 departed 历史身份。路由/执行/发言/新建 sub 只允许 enabled，权威源缺失 fail-closed；
-            指派消费前失效进入 Leader humanGate；legacy 写后从正式路径复核才删除，Coordinator 恒 enabled；
-            Phase 7 自定义角色仅保证持久装载与 Leader 显式指派，任意角色自主调度见 DEF-016
+            AppState 不复制 roster；离职按 departing CAS→目标当前 step/end drain→确定性交接/责任提交→departed CAS，保留历史身份与 handoffRef；
+            普通路由/执行/发言/新建 sub 只允许 enabled，departing 仅允许离职服务受限 drain；未完成责任无接任者时保持 awaiting_replacement；
+            Phase 7 不实现全局 Preemptor/resume；权威源缺失 fail-closed，指派消费前失效进 Leader humanGate，Coordinator 恒 enabled；
+            legacy 写后从正式路径复核才删除；
+            Phase 7 自定义角色仅保证持久装载与 Leader 显式指派；departing 仅允许已登记活动 handle 的当前 Step 经 role-bound 接缝提交后停，不开放普通写入；任意角色自主调度见 DEF-016
 ```
 
 ---

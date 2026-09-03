@@ -115,6 +115,22 @@ export class MessageService {
     scope: TaskScope,
     mutations: readonly Mutation[],
   ): Promise<MutationCommitResult> {
+    return this.#commitMutations(scope, mutations);
+  }
+
+  async commitWorkerStepMutations(
+    scope: TaskScope,
+    role: string,
+    mutations: readonly Mutation[],
+  ): Promise<MutationCommitResult> {
+    return this.#commitMutations(scope, mutations, role);
+  }
+
+  async #commitMutations(
+    scope: TaskScope,
+    mutations: readonly Mutation[],
+    inFlightRole?: string,
+  ): Promise<MutationCommitResult> {
     return this.#enqueue(scope, async () => {
       const current = await this.#store.load(scope);
       if (current === undefined) {
@@ -131,8 +147,8 @@ export class MessageService {
       if (messages.length > 0) {
         const project = await this.#loadChannels(scope.projectId);
         for (const message of messages) {
-          await this.#assertEnabledSender(scope.projectId, message);
-          assertMessageChannelAccess(project, scope.taskId, message);
+          await this.#assertEnabledSender(scope.projectId, message, inFlightRole);
+          this.#assertChannelAccess(project, scope.taskId, message, inFlightRole);
         }
       }
       const commit = await this.#store.commit(scope, mutations);
@@ -155,7 +171,11 @@ export class MessageService {
     return snapshot;
   }
 
-  async #assertEnabledSender(projectId: string, message: Message): Promise<void> {
+  async #assertEnabledSender(
+    projectId: string,
+    message: Message,
+    inFlightRole?: string,
+  ): Promise<void> {
     if (message.fromRole === 'leader') return;
     const snapshot = await this.#collaboration.load(projectId);
     if (snapshot === undefined) {
@@ -164,9 +184,30 @@ export class MessageService {
       );
     }
     const enabled = snapshot.roster.some(
-      (entry) => entry.spec.role === message.fromRole && entry.status === 'enabled',
+      (entry) =>
+        entry.spec.role === message.fromRole &&
+        (entry.status === 'enabled' ||
+          (entry.status === 'departing' && message.fromRole === inFlightRole)),
     );
     if (!enabled) throw new Error(`message sender "${message.fromRole}" is not enabled`);
+  }
+
+  #assertChannelAccess(
+    project: ProjectChannelSnapshot,
+    taskId: string,
+    message: Message,
+    inFlightRole?: string,
+  ): void {
+    if (message.fromRole !== inFlightRole) {
+      assertMessageChannelAccess(project, taskId, message);
+      return;
+    }
+    const channel = project.channels.find((candidate) => candidate.channelId === message.channelId);
+    if (channel?.kind !== 'main') {
+      assertMessageChannelAccess(project, taskId, message);
+      return;
+    }
+    if (channel.closed) throw new Error(`channel "${channel.channelId}" is closed`);
   }
 
   async #enqueue<T>(scope: TaskScope, operation: () => Promise<T>): Promise<T> {

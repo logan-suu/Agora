@@ -4,7 +4,12 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { applyMutations, createInitialAppState } from '@agora/core-domain';
+import {
+  applyMutations,
+  beginRoleDeparture,
+  createInitialAppState,
+  mergeByIdMutation,
+} from '@agora/core-domain';
 import { decide, latestCoordinationLedger } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { JsonTaskStateStore } from '@agora/runtime-state';
@@ -39,6 +44,181 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('executes a Phase 7 role departure through the single Leader message endpoint', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    runtime.bindRoleDrainPort({
+      awaitSafePoint: async (_scope, role) => ({
+        role,
+        activeWorkers: 0,
+        safePointRefs: [],
+      }),
+    });
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        mergeByIdMutation('subtasks', 'work-a', {
+          title: 'Implement task A',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+        }),
+      ]),
+    );
+
+    const response = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'leader-remove-coder',
+        display: '/role remove CODER to TESTER',
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'applied' },
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      subtasks: [{ id: 'work-a', ownerRole: 'TESTER', status: 'in_progress' }],
+      messages: [
+        { msgId: 'role-departure:leader-remove-coder', type: 'handoff' },
+        { msgId: 'leader-remove-coder', fromRole: 'leader' },
+      ],
+      handoffPackets: [{ fromRole: 'CODER', toRole: 'TESTER' }],
+    });
+    await expect(runtime.collaboration.load(scope.projectId)).resolves.toMatchObject({
+      roster: expect.arrayContaining([
+        expect.objectContaining({
+          spec: expect.objectContaining({ role: 'CODER' }),
+          status: 'departed',
+          departure: expect.objectContaining({ stage: 'completed' }),
+        }),
+      ]),
+    });
+  });
+
+  it('resumes a persisted departure before returning an existing Leader message', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        mergeByIdMutation('subtasks', 'work-a', {
+          title: 'Implement task A',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+        }),
+      ]),
+    );
+    const project = await runtime.collaboration.load(scope.projectId);
+    if (project === undefined) throw new Error('expected initialized collaboration');
+    const departure = beginRoleDeparture(project.roster, 'CODER', {
+      actionId: 'persisted-remove-coder',
+      taskId: scope.taskId,
+      successorRole: 'TESTER',
+      requestedTs: 500,
+    });
+    const enabledRoles = departure.roster
+      .filter((entry) => entry.status === 'enabled')
+      .map((entry) => entry.spec.role);
+    await runtime.collaboration.commit(scope.projectId, project.revision, {
+      roster: departure.roster,
+      channels: project.channels.map((channel) =>
+        channel.kind === 'main'
+          ? { ...channel, participants: ['leader' as const, ...enabledRoles] }
+          : channel,
+      ),
+    });
+    await runtime.commitMessage(scope, {
+      msgId: 'persisted-remove-coder',
+      channelId: 'main',
+      fromRole: 'leader',
+      type: 'chat',
+      payload: {
+        kind: 'leader_intent',
+        action: { status: 'rejected', reason: 'interrupted legacy attempt' },
+      },
+      display: '/role remove CODER to TESTER',
+      ts: 500,
+    });
+
+    const response = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'persisted-remove-coder',
+        display: '/role remove CODER to TESTER',
+      }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      accepted: true,
+      published: false,
+      action: { status: 'applied' },
+    });
+    await expect(runtime.collaboration.load(scope.projectId)).resolves.toMatchObject({
+      roster: expect.arrayContaining([
+        expect.objectContaining({
+          spec: expect.objectContaining({ role: 'CODER' }),
+          status: 'departed',
+          departure: expect.objectContaining({ stage: 'completed' }),
+        }),
+      ]),
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      subtasks: [{ id: 'work-a', ownerRole: 'TESTER', status: 'in_progress' }],
+      handoffPackets: [{ fromRole: 'CODER', toRole: 'TESTER', ts: 500 }],
+    });
+  });
+
+  it('keeps a post-begin interruption retryable instead of persisting a rejected Leader message', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    let disableSuccessor = true;
+    runtime.bindRoleDrainPort({
+      awaitSafePoint: async (_scope, role) => {
+        if (disableSuccessor) {
+          disableSuccessor = false;
+          await runtime.roster.disableRole(scope.projectId, 'TESTER');
+        }
+        return { role, activeWorkers: 0, safePointRefs: [] };
+      },
+    });
+    const request = () =>
+      createPostMessage(runtime)(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'interrupted-remove-coder',
+          display: '/role remove CODER to TESTER',
+        }),
+      );
+
+    await expect(request()).rejects.toThrow(/successor "TESTER" is no longer enabled/);
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({ messages: [] });
+    await expect(runtime.collaboration.load(scope.projectId)).resolves.toMatchObject({
+      roster: expect.arrayContaining([
+        expect.objectContaining({
+          spec: expect.objectContaining({ role: 'CODER' }),
+          status: 'departing',
+          departure: expect.objectContaining({ stage: 'draining' }),
+        }),
+      ]),
+    });
+
+    await runtime.roster.enableRole(scope.projectId, 'TESTER');
+    const replay = await request();
+
+    await expect(replay.json()).resolves.toMatchObject({
+      accepted: true,
+      action: { status: 'applied' },
+    });
+  });
+
   it('persists a structured Agent channel action through the Web composition boundary', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };

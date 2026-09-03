@@ -64,6 +64,29 @@ describe('parseLeaderIntent', () => {
     });
   });
 
+  it('parses the strict Phase 7 role departure command', () => {
+    expect(parseLeaderIntent('/role remove coder to tester')).toEqual({
+      kind: 'remove_role',
+      targetRole: 'CODER',
+      successorRole: 'TESTER',
+    });
+    expect(parseLeaderIntent('/role remove reviewer')).toEqual({
+      kind: 'remove_role',
+      targetRole: 'REVIEWER',
+    });
+  });
+
+  it.each([
+    '/role',
+    '/role remove',
+    '/role remove CODER to',
+    '/role remove CODER TESTER',
+    '/role disable CODER',
+    '/role remove @CODER',
+  ])('rejects malformed role departure command %s', (display) => {
+    expect(parseLeaderIntent(display)).toMatchObject({ kind: 'invalid' });
+  });
+
   it.each([
     '/channel',
     '/channel open',
@@ -140,6 +163,66 @@ describe('planLeaderIntent', () => {
       planLeaderIntent(parseLeaderIntent('/channel open CODER investigate'), state, roster),
     ).toMatchObject({
       action: { status: 'applied' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove CODER'), state, roster, ['CODER']),
+    ).toMatchObject({ action: { status: 'applied' }, mutations: [] });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove UNKNOWN'), state, roster, ['CODER']),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'unknown role "UNKNOWN"' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove COORDINATOR'), state, roster, [
+        'COORDINATOR',
+      ]),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'COORDINATOR cannot depart' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove CODER to CODER'), state, roster, ['CODER']),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'departure successor must differ from target' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove CODER to TESTER'), state, roster, [
+        'CODER',
+        'TESTER',
+      ]),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'departure successor "TESTER" must be enabled' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(
+        parseLeaderIntent('/role remove CODER'),
+        { ...state, phase: 'done' },
+        roster,
+        ['CODER'],
+      ),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'cannot remove a role after the task is done' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(
+        parseLeaderIntent('/role remove CODER'),
+        {
+          ...state,
+          humanGate: { reason: 'review_required', options: ['approve'], phase: state.phase },
+        },
+        roster,
+        ['CODER'],
+      ),
+    ).toMatchObject({
+      action: {
+        status: 'rejected',
+        reason: 'cannot remove a role while humanGate awaits leader resolution',
+      },
       mutations: [],
     });
     expect(planLeaderIntent(parseLeaderIntent('/unknown'), state, roster)).toMatchObject({

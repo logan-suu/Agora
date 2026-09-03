@@ -41,7 +41,15 @@ export interface WebTaskCompositionOptions {
 export function createWebTaskCompositionFactory(
   options: WebTaskCompositionOptions = {},
 ): TaskCompositionFactory {
-  return async ({ scope, goal, transition, handleOutput, buildChannelContext, loadRoster }) => {
+  return async ({
+    scope,
+    goal,
+    transition,
+    transitionStep,
+    handleOutput,
+    buildChannelContext,
+    loadRoster,
+  }) => {
     const sandbox = options.sandbox ?? createSandbox(options.sandboxConfig ?? { kind: 'docker' });
     const worktree = await sandbox.createWorktree(scope.taskId, 'shared');
     const registry = new WorktreeRegistry();
@@ -88,6 +96,7 @@ export function createWebTaskCompositionFactory(
       roster: DEFAULT_ROSTER,
       ...(loadRoster === undefined ? {} : { loadRoster }),
       transition,
+      ...(transitionStep === undefined ? {} : { transitionStep }),
       handleOutput,
       buildChannelContext,
       buildExecutor: (spec): Executor => {

@@ -1,4 +1,4 @@
-import type { RoleSpec, RosterEntry, RosterStatus } from './state';
+import type { RoleDeparture, RoleSpec, RosterEntry, RosterStatus } from './state';
 
 const ROLE_ID = /^[A-Z][A-Z0-9_-]*$/;
 
@@ -49,6 +49,13 @@ export interface RosterTransition {
   changed: boolean;
 }
 
+export interface BeginRoleDepartureInput {
+  actionId: string;
+  taskId: string;
+  requestedTs: number;
+  successorRole?: string;
+}
+
 export function normalizeRoleId(role: string): string {
   const normalized = role.trim().toUpperCase();
   if (normalized === 'LEADER') throw new Error('role id "leader" is reserved');
@@ -78,13 +85,14 @@ export function assertValidRoster(roster: readonly RosterEntry[]): void {
     if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
       throw new Error('roster entry must be an object');
     }
-    assertExactKeys(entry, ['spec', 'status'], 'roster entry');
+    assertExactKeys(entry, ['spec', 'status', 'departure'], 'roster entry');
     if (!isRosterStatus(entry.status)) throw new Error(`invalid roster status: ${entry.status}`);
     const spec = normalizeRoleSpec(entry.spec);
     if (spec.role !== entry.spec.role)
       throw new Error(`roster role id must be normalized: ${spec.role}`);
     if (seen.has(spec.role)) throw new Error(`duplicate role in roster: ${spec.role}`);
     seen.add(spec.role);
+    assertDepartureForStatus(entry.status, entry.departure);
   }
   const coordinator = roster.find((entry) => entry.spec.role === 'COORDINATOR');
   if (coordinator?.status !== 'enabled') {
@@ -123,6 +131,115 @@ export function disableRole(roster: readonly RosterEntry[], role: string): Roste
   const normalized = normalizeRoleId(role);
   if (normalized === 'COORDINATOR') throw new Error('COORDINATOR cannot be disabled');
   return changeStatus(roster, normalized, 'disabled');
+}
+
+export function beginRoleDeparture(
+  roster: readonly RosterEntry[],
+  role: string,
+  input: BeginRoleDepartureInput,
+): RosterTransition {
+  assertValidRoster(roster);
+  const normalized = normalizeRoleId(role);
+  if (normalized === 'COORDINATOR') throw new Error('COORDINATOR cannot depart');
+  assertDepartureInput(input);
+  const successorRole =
+    input.successorRole === undefined ? undefined : normalizeRoleId(input.successorRole);
+  if (successorRole === normalized) throw new Error('departure successor must differ from target');
+  const index = roster.findIndex((entry) => entry.spec.role === normalized);
+  if (index < 0) throw new Error(`unknown role: ${normalized}`);
+  const current = roster[index];
+  if (current === undefined) throw new Error(`unknown role: ${normalized}`);
+  const requested: RoleDeparture = {
+    actionId: input.actionId,
+    taskId: input.taskId,
+    requestedTs: input.requestedTs,
+    ...(successorRole === undefined ? {} : { successorRole }),
+    stage: 'draining',
+  };
+  if (current.status === 'departing' || current.status === 'departed') {
+    if (sameDepartureRequest(current.departure, requested)) return unchanged(roster);
+    throw new Error(`role "${normalized}" departure conflicts with an existing action`);
+  }
+  if (successorRole !== undefined) {
+    const successor = roster.find((entry) => entry.spec.role === successorRole);
+    if (successor?.status !== 'enabled') {
+      throw new Error(`departure successor "${successorRole}" must be enabled`);
+    }
+  }
+  if (current.status !== 'enabled' && current.status !== 'disabled') {
+    throw new Error(`role "${normalized}" cannot begin departure from ${current.status}`);
+  }
+  const next = cloneRoster(roster);
+  next[index] = { spec: structuredClone(current.spec), status: 'departing', departure: requested };
+  assertValidRoster(next);
+  return changed(next);
+}
+
+export function recordRoleDepartureHandoff(
+  roster: readonly RosterEntry[],
+  role: string,
+  actionId: string,
+  handoffRef: { taskId: string; msgId: string },
+  awaitingReplacement: boolean,
+): RosterTransition {
+  assertValidRoster(roster);
+  const { index, entry } = departureEntry(roster, role, actionId);
+  if (entry.status === 'departed') {
+    if (
+      entry.departure?.handoffRef?.taskId === handoffRef.taskId &&
+      entry.departure.handoffRef.msgId === handoffRef.msgId
+    ) {
+      return unchanged(roster);
+    }
+    throw new Error(`role "${entry.spec.role}" departure handoff conflicts with completed action`);
+  }
+  const departure = entry.departure;
+  if (departure === undefined) throw new Error('departing role requires departure metadata');
+  if (handoffRef.taskId !== departure.taskId || handoffRef.msgId.length === 0) {
+    throw new Error('departure handoffRef must match taskId and have a non-empty msgId');
+  }
+  const stage = awaitingReplacement ? 'awaiting_replacement' : 'handoff_committed';
+  if (
+    departure.stage === stage &&
+    departure.handoffRef?.taskId === handoffRef.taskId &&
+    departure.handoffRef.msgId === handoffRef.msgId
+  ) {
+    return unchanged(roster);
+  }
+  if (departure.stage !== 'draining') {
+    throw new Error(`departure handoff cannot replace stage ${departure.stage}`);
+  }
+  const next = cloneRoster(roster);
+  next[index] = {
+    spec: structuredClone(entry.spec),
+    status: 'departing',
+    departure: { ...structuredClone(departure), stage, handoffRef: { ...handoffRef } },
+  };
+  assertValidRoster(next);
+  return changed(next);
+}
+
+export function completeRoleDeparture(
+  roster: readonly RosterEntry[],
+  role: string,
+  actionId: string,
+): RosterTransition {
+  assertValidRoster(roster);
+  const { index, entry } = departureEntry(roster, role, actionId);
+  if (entry.status === 'departed') return unchanged(roster);
+  const departure = entry.departure;
+  if (departure === undefined) throw new Error('departing role requires departure metadata');
+  if (departure.stage !== 'handoff_committed') {
+    throw new Error(`role "${entry.spec.role}" cannot complete departure from ${departure.stage}`);
+  }
+  const next = cloneRoster(roster);
+  next[index] = {
+    spec: structuredClone(entry.spec),
+    status: 'departed',
+    departure: { ...structuredClone(departure), stage: 'completed' },
+  };
+  assertValidRoster(next);
+  return changed(next);
 }
 
 function changeStatus(
@@ -186,6 +303,103 @@ function assertRoleSpec(spec: RoleSpec): void {
   if (spec.model !== undefined && typeof spec.model !== 'string') {
     throw new Error('role model must be a string');
   }
+}
+
+function assertDepartureInput(input: BeginRoleDepartureInput): void {
+  if (typeof input.actionId !== 'string' || input.actionId.length === 0) {
+    throw new Error('departure actionId must be non-empty');
+  }
+  if (typeof input.taskId !== 'string' || input.taskId.length === 0) {
+    throw new Error('departure taskId must be non-empty');
+  }
+  if (typeof input.requestedTs !== 'number' || !Number.isFinite(input.requestedTs)) {
+    throw new Error('departure requestedTs must be finite');
+  }
+}
+
+function assertDepartureForStatus(
+  status: RosterStatus,
+  departure: RoleDeparture | undefined,
+): void {
+  if (status === 'enabled' || status === 'disabled') {
+    if (departure !== undefined) throw new Error(`${status} roster entry cannot carry departure`);
+    return;
+  }
+  if (departure === undefined)
+    throw new Error(`${status} roster entry requires departure metadata`);
+  assertExactKeys(
+    departure,
+    ['actionId', 'taskId', 'requestedTs', 'successorRole', 'stage', 'handoffRef'],
+    'role departure',
+  );
+  assertDepartureInput(departure);
+  if (
+    departure.stage !== 'draining' &&
+    departure.stage !== 'handoff_committed' &&
+    departure.stage !== 'awaiting_replacement' &&
+    departure.stage !== 'completed'
+  ) {
+    throw new Error(`invalid departure stage: ${String(departure.stage)}`);
+  }
+  if (status === 'departed' && departure.stage !== 'completed') {
+    throw new Error('departed roster entry requires completed departure');
+  }
+  if (status === 'departing' && departure.stage === 'completed') {
+    throw new Error('departing roster entry cannot have completed departure');
+  }
+  if (
+    departure.successorRole !== undefined &&
+    normalizeRoleId(departure.successorRole) !== departure.successorRole
+  ) {
+    throw new Error(`departure successor role id must be normalized: ${departure.successorRole}`);
+  }
+  if (departure.stage !== 'draining') {
+    const ref = departure.handoffRef;
+    if (
+      ref === undefined ||
+      ref.taskId !== departure.taskId ||
+      typeof ref.msgId !== 'string' ||
+      ref.msgId.length === 0
+    ) {
+      throw new Error(`departure stage ${departure.stage} requires a matching handoffRef`);
+    }
+  } else if (departure.handoffRef !== undefined) {
+    throw new Error('draining departure cannot carry a handoffRef');
+  }
+}
+
+function departureEntry(
+  roster: readonly RosterEntry[],
+  role: string,
+  actionId: string,
+): { index: number; entry: RosterEntry } {
+  const normalized = normalizeRoleId(role);
+  const index = roster.findIndex((entry) => entry.spec.role === normalized);
+  const entry = roster[index];
+  if (entry === undefined) throw new Error(`unknown role: ${normalized}`);
+  if (
+    (entry.status !== 'departing' && entry.status !== 'departed') ||
+    entry.departure === undefined
+  ) {
+    throw new Error(`role "${normalized}" has no active departure`);
+  }
+  if (entry.departure.actionId !== actionId) {
+    throw new Error(`role "${normalized}" departure actionId conflicts with persisted action`);
+  }
+  return { index, entry };
+}
+
+function sameDepartureRequest(
+  current: RoleDeparture | undefined,
+  requested: RoleDeparture,
+): boolean {
+  return (
+    current !== undefined &&
+    current.actionId === requested.actionId &&
+    current.taskId === requested.taskId &&
+    current.requestedTs === requested.requestedTs &&
+    current.successorRole === requested.successorRole
+  );
 }
 
 function assertExactKeys(value: object, allowed: readonly string[], label: string): void {
