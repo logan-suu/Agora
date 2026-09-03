@@ -123,6 +123,18 @@ export function deriveOnboardingContext(state: AppState, requestedRole: RoleId):
   };
 }
 
+export function validateAppliedOnboardingMessage(
+  state: AppState,
+  message: Message,
+): RoleOnboardingReceipt {
+  const receipt = appliedOnboardingReceiptOrUndefined(state, message);
+  if (receipt === undefined) {
+    throw new Error(`message "${message.msgId}" is not an applied onboarding message`);
+  }
+  deriveOnboardingContext(state, receipt.role);
+  return receipt;
+}
+
 function claimedHandoffRefs(state: AppState, roster: readonly RosterEntry[]): Set<string> {
   const claims = new Map<string, string>();
   for (const message of state.messages) {

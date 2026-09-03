@@ -122,6 +122,32 @@ describe('POST /api/messages', () => {
     });
   });
 
+  it('rejects an unsafe msgId before reading task state or applying side effects', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-route-test-'));
+    roots.push(root);
+    const runtime = createMessageRuntime(root, new ChannelStream());
+
+    const response = await createPostMessage(runtime)(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...address,
+          taskId: 'missing',
+          msgId: 'unsafe/message',
+          display: 'Go',
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'msgId must be a safe stable token',
+    });
+    await expect(
+      runtime.store.load({ projectId: 'project-a', taskId: 'missing' }),
+    ).resolves.toBeUndefined();
+  });
+
   it('does not create a placeholder task for an unknown message scope', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-route-test-'));
     roots.push(root);

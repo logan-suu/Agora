@@ -300,7 +300,7 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
-意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
+意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；浏览器 msgId 统一满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在副作用前校验；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
             Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga 与 /role onboard 单 Task State 接手；Phase 8/9 再解锁裁决与完整抢占，
             其余能力显式 rejected/deferred，不走临时 command 旁路
@@ -319,7 +319,7 @@ Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 
             Phase 7 自定义角色仅保证持久装载与 Leader 显式指派；departing 仅允许已登记活动 handle 的当前 Step 经 role-bound 接缝提交后停，不开放普通写入；任意角色自主调度见 DEF-016
 任务入职    D13：项目 addRole 只改 collaboration，任务 onboard 要求 enabled role，并经同一 POST /api/messages 以稳定 msgId 在单次 Task State commit
             写入 Leader 主消息、nextRole 与同任务规范离职 handoff Message 引用；toRole=角色的未认领交接自动选择，toRole=leader 只接受 Leader
-            显式 from 引用；跨任务/冲突/重复认领 fail-closed。project() 从最新 applied onboarding 事实派生系统级 onboardingContext，
+            显式 from 引用；跨任务/冲突/重复认领 fail-closed；同 ID applied 重放返回前复核既存 canonical 消息、完整 receipt 与当前引用事实。project() 从最新 applied onboarding 事实派生系统级 onboardingContext，
             不投原始群聊、不依赖 Channel 窗口/进程内状态；Phase 7 不虚构模板目录/任意 RoleSpec 编辑 UI，也不猜无稳定 Message 的普通 handoff packet
 ```
 

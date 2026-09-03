@@ -1,6 +1,7 @@
 import { toDisplayMessageEvent } from '@agora/comm-bus';
 import { resolveParticipantChannel } from '@agora/comm-channels';
 
+import { isSafeMessageId } from '../lib/intent';
 import { type ChannelEvent, encodeSseEvent } from './channel-stream';
 import { jsonError, readJsonObject, requiredString } from './http';
 import type { MessageRuntime } from './message-runtime';
@@ -20,6 +21,7 @@ export function createPostMessage(runtime: MessageRuntime) {
     if (!projectId || !taskId || !channelId || !msgId || !display) {
       return jsonError('projectId, taskId, channelId, msgId, and display are required');
     }
+    if (!isSafeMessageId(msgId)) return jsonError('msgId must be a safe stable token');
     const scope = { projectId, taskId };
     if ((await runtime.store.load(scope)) === undefined) {
       return jsonError('task not found; create it through POST /api/tasks first', 404);

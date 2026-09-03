@@ -131,6 +131,45 @@ describe('persisted HTTP + SSE message flow', () => {
     ).rejects.toThrow(/conflicts/i);
   });
 
+  it('fails closed when an applied onboarding replay has a persisted malformed receipt', async () => {
+    const root = await temporaryRoot();
+    const runtime = createMessageRuntime(root, new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initialize(scope, 'Task task-a');
+    const post = createPostMessage(runtime);
+
+    await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'onboard-tester-malformed',
+        display: '/role onboard TESTER',
+      }),
+    );
+
+    const statePath = join(root, 'projects', scope.projectId, 'tasks', scope.taskId, 'state.json');
+    const persisted = JSON.parse(await readFile(statePath, 'utf8')) as {
+      messages: Array<{ msgId: string; payload: Record<string, unknown> }>;
+    };
+    const onboarding = persisted.messages.find(
+      (message) => message.msgId === 'onboard-tester-malformed',
+    );
+    if (onboarding === undefined) throw new Error('expected persisted onboarding message');
+    delete onboarding.payload.onboarding;
+    await writeFile(statePath, `${JSON.stringify(persisted, null, 2)}\n`, 'utf8');
+
+    await expect(
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'onboard-tester-malformed',
+          display: '/role onboard TESTER',
+        }),
+      ),
+    ).rejects.toThrow(/applied onboarding receipt/i);
+  });
+
   it('requires explicit from refs to claim a leader-hosted departure handoff', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };
@@ -196,6 +235,18 @@ describe('persisted HTTP + SSE message flow', () => {
 
     await expect(response.json()).resolves.toMatchObject({
       action: { status: 'rejected', reason: expect.stringContaining('main') },
+    });
+    const replay = await createPostMessage(runtime)(
+      postRequest({
+        ...scope,
+        channelId: 'sub-onboarding',
+        msgId: 'onboard-tester-in-sub',
+        display: '/role onboard TESTER',
+      }),
+    );
+    await expect(replay.json()).resolves.toMatchObject({
+      action: { status: 'rejected', reason: expect.stringContaining('main') },
+      published: false,
     });
     const rejectedState = await runtime.store.load(scope);
     expect(rejectedState?.messages).toHaveLength(1);

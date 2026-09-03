@@ -76,6 +76,10 @@ const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const SAFE_CHANNEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const SAFE_MSG_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
+export function isSafeMessageId(value: string): boolean {
+  return SAFE_MSG_ID.test(value);
+}
+
 export function parseLeaderIntent(display: string): LeaderIntent {
   const text = display.trim();
   if (text.length === 0) return { kind: 'invalid', reason: 'leader input cannot be empty' };
@@ -208,7 +212,7 @@ function parseRoleIntent(remainder: string): LeaderIntent {
     }
     if (tokens.length !== 4 || tokens[2]?.toLowerCase() !== 'from') return invalidRoleSyntax();
     const ids = (tokens[3] ?? '').split(',');
-    if (ids.length === 0 || ids.some((id) => !SAFE_MSG_ID.test(id))) {
+    if (ids.length === 0 || ids.some((id) => !isSafeMessageId(id))) {
       return invalidRoleSyntax();
     }
     return {

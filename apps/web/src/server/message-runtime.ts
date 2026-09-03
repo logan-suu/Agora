@@ -15,6 +15,7 @@ import {
   type RoleOnboardingReceipt,
   type RoleSpec,
   type RosterEntry,
+  validateAppliedOnboardingMessage,
 } from '@agora/core-domain';
 import {
   ChannelLifecycleRejectedError,
@@ -224,7 +225,7 @@ export class MessageRuntime {
     }
     const existing = current.messages.find((message) => message.msgId === input.msgId);
     if (existing !== undefined) {
-      assertOnboardingReplay(existing, input.channelId, parseLeaderIntent(input.display));
+      assertOnboardingReplay(current, existing, input.channelId, parseLeaderIntent(input.display));
       const collaboration = await this.collaboration.load(scope.projectId);
       if (collaboration === undefined) {
         throw new Error(
@@ -490,6 +491,7 @@ function actionFrom(message: Message): LeaderActionStatus {
 }
 
 function assertOnboardingReplay(
+  state: AppState,
   existing: Message,
   channelId: string,
   incoming: ReturnType<typeof parseLeaderIntent>,
@@ -502,17 +504,29 @@ function assertOnboardingReplay(
   const persistedIsOnboarding = persistedRecord?.kind === 'onboard_role';
   if (!persistedIsOnboarding && incoming.kind !== 'onboard_role') return;
   const persistedIds = persistedRecord?.entrustedHandoffMsgIds;
+  const action = existing.payload.action;
+  const actionRecord =
+    typeof action === 'object' && action !== null && !Array.isArray(action)
+      ? (action as Record<string, unknown>)
+      : undefined;
+  const actionIsCanonical =
+    actionRecord?.status === 'applied' ||
+    (actionRecord?.status === 'rejected' && typeof actionRecord.reason === 'string');
   const same =
     persistedIsOnboarding &&
     incoming.kind === 'onboard_role' &&
+    existing.payload.kind === 'leader_intent' &&
+    existing.fromRole === 'leader' &&
+    existing.type === 'chat' &&
     existing.channelId === channelId &&
-    existing.channelId === 'main' &&
+    actionIsCanonical &&
     persistedRecord?.targetRole === incoming.targetRole &&
     Array.isArray(persistedIds) &&
     persistedIds.length === incoming.entrustedHandoffMsgIds.length &&
     persistedIds.every((value, index) => value === incoming.entrustedHandoffMsgIds[index]);
   if (!same)
     throw new Error(`onboarding action "${existing.msgId}" conflicts with its first write`);
+  if (actionRecord?.status === 'applied') validateAppliedOnboardingMessage(state, existing);
 }
 
 const workingDirectory = process.cwd();
