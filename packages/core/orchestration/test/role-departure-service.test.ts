@@ -181,9 +181,12 @@ describe('RoleDepartureService', () => {
       status: 'blocked',
     });
     expect(saved?.humanGate).toEqual({
+      gateId: 'human-gate:role-departure:remove-coder-without-successor',
       reason: 'role_departure_requires_replacement:CODER',
       options: ['assign_enabled_successor'],
       phase: 'coding',
+      openedTs: 2000,
+      safePointRefs: [],
     });
     expect(
       (await collaboration.load(scope.projectId))?.roster.find(

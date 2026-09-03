@@ -26,6 +26,18 @@ async function makeWorktree(taskId = 'task-1', role = 'CODER'): Promise<Worktree
 }
 
 describe('LocalTempSandbox', () => {
+  it('suspends without moving the worktree and re-registers it for terminal teardown', async () => {
+    const sandbox = new LocalTempSandbox();
+    const worktree = await sandbox.createWorktree('task-d4', 'shared');
+    await sandbox.write(worktree, 'state.txt', 'durable');
+    await sandbox.suspend('task-d4');
+    expect(await sandbox.read(worktree, 'state.txt')).toBe('durable');
+
+    const restarted = new LocalTempSandbox();
+    await restarted.resume('task-d4', [{ role: 'shared', worktree }]);
+    expect(await restarted.read(worktree, 'state.txt')).toBe('durable');
+    await restarted.teardown('task-d4');
+  });
   it('createWorktree returns a real isolated temp directory under the OS temp dir', async () => {
     const wt = await makeWorktree('task-a', 'CODER');
     expect(wt.path.startsWith(tmpdir())).toBe(true);

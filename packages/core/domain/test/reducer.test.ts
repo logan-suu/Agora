@@ -401,12 +401,15 @@ describe('mutation builders', () => {
   });
 });
 
-describe('applyMutations · humanGate escalation field (task 2.3, spec §1/§3)', () => {
+describe('applyMutations · durable humanGate field (task 8.1, D4)', () => {
   function escalation(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
     return {
+      gateId: 'human-gate:trigger-1',
       reason: 'iteration_limit',
-      options: ['extend', 'take-over', 'abort'],
+      options: ['continue'],
       phase: 'testing',
+      openedTs: 1_700_000_000_000,
+      safePointRefs: ['agora-safe-point:v1:abc'],
       ...overrides,
     };
   }
@@ -415,10 +418,13 @@ describe('applyMutations · humanGate escalation field (task 2.3, spec §1/§3)'
     expect(createInitialAppState('t-1', 'goal').humanGate).toBeUndefined();
   });
 
-  it('applies set("humanGate") with the §1 shape {reason, options, phase}', () => {
+  it('applies a complete gate and clears it with set("humanGate", undefined)', () => {
     const state = createInitialAppState('t-1', 'goal');
-    const next = applyMutations(state, [setMutation('humanGate', escalation())]);
-    expect(next.humanGate).toEqual(escalation());
+    const gated = applyMutations(state, [setMutation('humanGate', escalation())]);
+    const cleared = applyMutations(gated, [setMutation('humanGate', undefined)]);
+    expect(gated.humanGate).toEqual(escalation());
+    expect(cleared.humanGate).toBeUndefined();
+    expect('humanGate' in cleared).toBe(false);
     expect(state.humanGate).toBeUndefined();
   });
 
@@ -440,16 +446,22 @@ describe('applyMutations · humanGate escalation field (task 2.3, spec §1/§3)'
       null,
       'iteration_limit',
       ['iteration_limit'],
+      escalation({ gateId: '' }),
       escalation({ reason: 42 }),
+      escalation({ reason: '' }),
       escalation({ options: 'extend' }),
       escalation({ options: ['extend', 7] }),
+      escalation({ options: [] }),
+      escalation({ options: ['continue', 'continue'] }),
       escalation({ phase: 99 }),
       escalation({ phase: 'bogus' }),
+      escalation({ openedTs: -1 }),
+      escalation({ safePointRefs: [''] }),
       {},
     ];
     for (const bad of malformed) {
       expect(() => applyMutations(state, [setMutation('humanGate', bad)])).toThrow(
-        'humanGate must be { reason: string; options: string[]; phase: Phase }',
+        'humanGate must be a complete durable gate',
       );
       expect(state.humanGate).toBeUndefined();
     }

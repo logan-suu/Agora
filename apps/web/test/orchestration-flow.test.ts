@@ -21,6 +21,7 @@ import { JsonTaskStateStore } from '@agora/runtime-state';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../src/server/channel-stream';
+import { createPostMessage } from '../src/server/message-handlers';
 import { createMessageRuntime } from '../src/server/message-runtime';
 import { createGetTask, createPostTask } from '../src/server/task-handlers';
 import {
@@ -82,10 +83,10 @@ function successfulFactory(
   lifecycle: { archived: number; disposed: number } = { archived: 0, disposed: 0 },
   failCoder = false,
 ): TaskCompositionFactory {
-  return async ({ scope, goal, transition }) => {
-    const initialState = applyMutations(
-      createInitialAppState(scope.taskId, goal, scope.projectId),
-      [
+  return async ({ scope, goal, transition, resume }) => {
+    const initialState =
+      resume?.state ??
+      applyMutations(createInitialAppState(scope.taskId, goal, scope.projectId), [
         mergeByIdMutation('subtasks', `${scope.taskId}-sub-0`, {
           title: goal,
           ownerRole: 'CODER',
@@ -93,8 +94,7 @@ function successfulFactory(
           status: 'todo',
           worktree: '/tmp/agora-demo-artifact',
         }),
-      ],
-    );
+      ]);
     const workerRuntime = new WorkerRuntime({
       roster: DEFAULT_ROSTER,
       transition,
@@ -146,6 +146,8 @@ function successfulFactory(
       workerRuntime,
       roster: DEFAULT_ROSTER,
       artifactPath: '/tmp/agora-demo-artifact',
+      saveSafePoints: async () => ['cursor'],
+      suspend: async () => undefined,
       archiveArtifact: async () => {
         lifecycle.archived += 1;
         return `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`;
@@ -162,6 +164,82 @@ afterEach(async () => {
 });
 
 describe('TaskOrchestrationRuntime', () => {
+  it('suspends without terminal archive and resumes from the persisted Leader receipt', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const lifecycle = { archived: 0, disposed: 0, suspended: 0 };
+    const base = successfulFactory(Promise.resolve(), lifecycle);
+    let resumedFrom: { actionId: string; resumeSessionId: string } | undefined;
+    const factory: TaskCompositionFactory = async (input) => {
+      const composition = await base(input);
+      if (input.resume !== undefined) {
+        resumedFrom = {
+          actionId: input.resume.actionId,
+          resumeSessionId: input.resume.receipt.resumeSessionId,
+        };
+        return composition;
+      }
+      return {
+        ...composition,
+        roster: composition.roster.filter((entry) => entry.role !== 'CODER'),
+        loadRoster: async () => composition.roster.filter((entry) => entry.role !== 'CODER'),
+        saveSafePoints: async () => ['opaque-checkpoint'],
+        suspend: async () => {
+          lifecycle.suspended += 1;
+        },
+      };
+    };
+    const runtime = new TaskOrchestrationRuntime(messages, factory);
+    const scope = { projectId: 'project-a', taskId: 'task-gated' };
+
+    await runtime.start({ ...scope, requestId: 'start-gated', goal: 'Build TTL LRU' });
+    await runtime.waitForIdle(scope);
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'needs_attention',
+      phase: 'clarifying',
+      artifactPath: '/tmp/agora-demo-artifact',
+    });
+    expect(lifecycle).toEqual({ archived: 0, disposed: 0, suspended: 1 });
+    const gateId = (await messages.store.load(scope))?.humanGate?.gateId;
+    if (gateId === undefined) throw new Error('expected persisted humanGate');
+
+    const post = createPostMessage(messages);
+    const resolveRequest = () =>
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...scope,
+          channelId: 'main',
+          msgId: 'continue-gated',
+          display: `/resolve-gate ${gateId} retry`,
+        }),
+      });
+    const response = await post(resolveRequest());
+    await expect(response.json()).resolves.toMatchObject({ action: { status: 'applied' } });
+    expect(resumedFrom).toEqual({
+      actionId: 'continue-gated',
+      resumeSessionId: 'human-gate-resume:continue-gated',
+    });
+    await runtime.waitForIdle(scope);
+    const completed = await runtime.summary(scope);
+    expect(completed?.error).toBeUndefined();
+    expect(completed).toMatchObject({
+      runStatus: 'completed',
+      phase: 'done',
+    });
+    expect(lifecycle).toEqual({ archived: 1, disposed: 1, suspended: 1 });
+    await expect(messages.store.load(scope)).resolves.toMatchObject({
+      messages: expect.arrayContaining([
+        expect.objectContaining({ msgId: 'continue-gated' }),
+        expect.objectContaining({ msgId: 'human-gate-resumed:continue-gated' }),
+      ]),
+    });
+    const replay = await post(resolveRequest());
+    await expect(replay.json()).resolves.toMatchObject({ published: false });
+    expect(lifecycle).toEqual({ archived: 1, disposed: 1, suspended: 1 });
+  });
+
   it('starts one persisted run, rejects a different goal, and recovers the completed summary', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
     roots.push(root);

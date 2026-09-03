@@ -1,6 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import { accessSync, constants as fsConstants, realpathSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { isAbsolute, resolve } from 'node:path';
 import type { WorktreeRegistry } from '@agora/tools-fs';
 import { parseTap, type TapFailure } from './tap';
 
@@ -52,7 +52,13 @@ export class WorktreeTestService implements TestService {
         passed,
         total: summary.total,
         failed: summary.failed,
-        failures: summary.failures,
+        failures: summary.failures.map((failure) => ({
+          ...failure,
+          file:
+            failure.file === '' || isAbsolute(failure.file)
+              ? failure.file
+              : resolve(canonicalRoot, failure.file),
+        })),
         ...(summary.coverage === undefined ? {} : { coverage: summary.coverage }),
       };
     }

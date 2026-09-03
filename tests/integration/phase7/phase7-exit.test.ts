@@ -181,7 +181,16 @@ describe('Phase 7 role-lifecycle exit chain', () => {
         return committed.state;
       },
       buildExecutor: (spec) => {
-        const executor = new HarnessExecutor(spec, { adapter: coderAdapter, provider: 'agora' });
+        const executor = new HarnessExecutor(spec, {
+          adapter: coderAdapter,
+          provider: 'agora',
+          sessionPersistence: {
+            root: join(root, 'harness-sessions'),
+            cwd: root,
+            projectId: scope.projectId,
+            taskId: scope.taskId,
+          },
+        });
         const saveSafePoint = executor.saveSafePoint.bind(executor);
         safePointSpy = vi.spyOn(executor, 'saveSafePoint').mockImplementation(async () => {
           const ref = await saveSafePoint();

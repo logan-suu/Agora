@@ -1,10 +1,9 @@
 /**
- * Pure TAP (Test Anything Protocol) parser for test-runner output.
+ * Pure parser for Node test-runner output.
  *
- * Node's built-in test runner (`node --test`) emits TAP v13 when stdout is not
- * a TTY. This parser extracts the aggregate test counts plus the structured
- * failure details (test name, message, source file/line) needed by the
- * `test-server` to produce a `State.testResults`-shaped result.
+ * Node 20 emits TAP v13 by default, while Node 24 emits the `spec` reporter by
+ * default. This parser accepts both forms and extracts the aggregate counts
+ * plus the structured failure details needed by the `test-server`.
  *
  * Kept free of I/O and MCP imports so it is unit-testable in isolation
  * (decision R11 / the fs-service split convention).
@@ -32,6 +31,7 @@ const TESTS_RE = /^#\s*tests\s+(\d+)/;
 const PASS_RE = /^#\s*pass\s+(\d+)/;
 const FAIL_RE = /^#\s*fail\s+(\d+)/;
 const COVERAGE_RE = /^#\s*coverage\s+([\d.]+)%/;
+const SPEC_SUMMARY_RE = /^ℹ\s+(tests|pass|fail)\s+(\d+)\s*$/;
 /** TAP plan line (`1..N`), a fallback aggregate count when `# tests` is absent. */
 const PLAN_RE = /^(\s*)1\.\.(\d+)\s*$/;
 const NOT_OK_RE = /^(\s*)not ok\s+\d+(?:\s*-\s*(.*))?$/;
@@ -39,7 +39,7 @@ const SUBTEST_RE = /^(\s*)#\s*Subtest:\s*(.+)$/;
 const DIAG_KEY_RE = /^(\s*)([A-Za-z_][\w-]*):\s*(.*)$/;
 
 /**
- * Parse a TAP v13 stream into an aggregate summary.
+ * Parse TAP v13 or Node's default spec reporter into an aggregate summary.
  *
  * Summary count lines (`# tests` / `# pass` / `# fail` / `# coverage`) may
  * appear both inside nested subtests and at the top level; the top-level
@@ -68,6 +68,13 @@ export function parseTap(output: string): TapSummary {
     if (m) failed = Number(m[1]);
     m = line.match(COVERAGE_RE);
     if (m) coverage = Number(m[1]);
+    m = line.match(SPEC_SUMMARY_RE);
+    if (m) {
+      const value = Number(m[2]);
+      if (m[1] === 'tests') total = value;
+      if (m[1] === 'pass') passed = value;
+      if (m[1] === 'fail') failed = value;
+    }
     m = line.match(PLAN_RE);
     if (m) total = Number(m[2]);
 
@@ -86,7 +93,45 @@ export function parseTap(output: string): TapSummary {
     i++;
   }
 
+  if (output.includes('✖ failing tests:')) {
+    failures.push(...parseSpecFailures(lines));
+  }
+
   return { total, passed, failed, failures, ...(coverage === undefined ? {} : { coverage }) };
+}
+
+/** Extract failure records from Node 24's default spec reporter detail section. */
+function parseSpecFailures(lines: string[]): TapFailure[] {
+  const failures: TapFailure[] = [];
+  let inFailureSection = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? '';
+    if (line.trim() === '✖ failing tests:') {
+      inFailureSection = true;
+      continue;
+    }
+    if (!inFailureSection || !line.startsWith('test at ')) continue;
+
+    const location = parseLocation(line.slice('test at '.length));
+    let headerIndex = i + 1;
+    while ((lines[headerIndex] ?? '').trim() === '') headerIndex++;
+    const header = (lines[headerIndex] ?? '').match(/^✖\s+(.+?)(?:\s+\([^)]*\))?\s*$/);
+    if (header === null) continue;
+
+    let messageIndex = headerIndex + 1;
+    while ((lines[messageIndex] ?? '').trim() === '') messageIndex++;
+    const message = (lines[messageIndex] ?? '').trim() || 'test failed';
+    failures.push({
+      test: (header[1] ?? '').trim(),
+      message,
+      file: location?.file ?? '',
+      line: location?.line ?? 0,
+    });
+    i = headerIndex;
+  }
+
+  return failures;
 }
 
 /** Nearest preceding `# Subtest: <name>` at the same-or-shallower indentation. */

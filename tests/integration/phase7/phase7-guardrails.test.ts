@@ -159,7 +159,16 @@ describe('Phase 7 D12 guardrails', () => {
       transitionStep: async (_state, role, mutations) =>
         (await runtime.commitWorkerStepMutations(scope, role, mutations)).state,
       buildExecutor: (spec) => {
-        const executor = new HarnessExecutor(spec, { adapter, provider: 'agora' });
+        const executor = new HarnessExecutor(spec, {
+          adapter,
+          provider: 'agora',
+          sessionPersistence: {
+            root: join(root, 'harness-sessions'),
+            cwd: root,
+            projectId: scope.projectId,
+            taskId: scope.taskId,
+          },
+        });
         saveSafePointSpy = vi.spyOn(executor, 'saveSafePoint');
         executors.push(executor);
         return executor;

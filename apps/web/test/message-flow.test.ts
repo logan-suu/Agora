@@ -9,6 +9,7 @@ import {
   beginRoleDeparture,
   createInitialAppState,
   mergeByIdMutation,
+  setMutation,
 } from '@agora/core-domain';
 import { decide, latestCoordinationLedger } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
@@ -44,6 +45,98 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('atomically resolves a durable humanGate and retries resume from the canonical receipt', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    const resumed: Array<{ actionId: string; resumeSessionId: string }> = [];
+    runtime.bindHumanGateLifecyclePort({
+      suspend: async () => {
+        throw new Error('unexpected suspend');
+      },
+      resume: async (_scope, actionId, receipt) => {
+        resumed.push({ actionId, resumeSessionId: receipt.resumeSessionId });
+      },
+    });
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        setMutation('iterationCount', 8),
+        setMutation('humanGate', {
+          gateId: 'human-gate:iteration-limit-1',
+          reason: 'iteration_limit',
+          options: ['continue'],
+          phase: 'coding',
+          openedTs: 100,
+          safePointRefs: ['opaque-safe-point-1'],
+        }),
+      ]),
+    );
+    const post = createPostMessage(runtime);
+    const request = () =>
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'resolve-iteration-1',
+          display: '/resolve-gate human-gate:iteration-limit-1 continue',
+        }),
+      );
+
+    const first = await request();
+    await expect(first.json()).resolves.toMatchObject({
+      accepted: true,
+      published: true,
+      action: { status: 'applied' },
+    });
+    const resolved = await runtime.store.load(scope);
+    expect(resolved?.iterationCount).toBe(0);
+    expect(resolved).not.toHaveProperty('humanGate');
+    expect(resolved?.messages).toContainEqual(
+      expect.objectContaining({
+        msgId: 'resolve-iteration-1',
+        payload: expect.objectContaining({
+          resolution: {
+            gateId: 'human-gate:iteration-limit-1',
+            option: 'continue',
+            safePointRefs: ['opaque-safe-point-1'],
+            resumeSessionId: 'human-gate-resume:resolve-iteration-1',
+          },
+        }),
+      }),
+    );
+    expect(resumed).toEqual([
+      {
+        actionId: 'resolve-iteration-1',
+        resumeSessionId: 'human-gate-resume:resolve-iteration-1',
+      },
+    ]);
+
+    const replay = await request();
+    await expect(replay.json()).resolves.toMatchObject({ published: false });
+    expect(resumed).toHaveLength(2);
+    await expect(
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'resolve-iteration-1',
+          display: '/resolve-gate human-gate:iteration-limit-1 retry',
+        }),
+      ),
+    ).rejects.toThrow(/conflicts/i);
+    await expect(
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'resolve-stale-gate',
+          display: '/resolve-gate human-gate:stale continue',
+        }),
+      ),
+    ).rejects.toThrow(/no active humanGate/i);
+    expect((await runtime.store.load(scope))?.messages).toHaveLength(1);
+  });
+
   it('atomically persists role onboarding with direct handoff refs and keeps replay selection stable', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };
@@ -311,6 +404,80 @@ describe('persisted HTTP + SSE message flow', () => {
         }),
       ]),
     });
+  });
+
+  it('assigns an enabled successor and completes an awaiting role-departure saga', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        mergeByIdMutation('subtasks', 'orphaned-work', {
+          title: 'Continue orphaned work',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+        }),
+      ]),
+    );
+    const post = createPostMessage(runtime);
+    const departure = await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'remove-coder-without-successor',
+        display: '/role remove CODER',
+      }),
+    );
+    await expect(departure.json()).resolves.toMatchObject({
+      action: { status: 'blocked', reason: 'role_departure_requires_replacement:CODER' },
+    });
+    const gateId = (await runtime.store.load(scope))?.humanGate?.gateId;
+    if (gateId === undefined) throw new Error('expected role-departure humanGate');
+
+    const resolution = await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'assign-tester-successor',
+        display: `/resolve-gate ${gateId} assign_enabled_successor TESTER`,
+      }),
+    );
+    await expect(resolution.json()).resolves.toMatchObject({
+      action: { status: 'applied' },
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      subtasks: [{ id: 'orphaned-work', ownerRole: 'TESTER', status: 'todo' }],
+    });
+    expect(await runtime.store.load(scope)).not.toHaveProperty('humanGate');
+    await expect(runtime.collaboration.load(scope.projectId)).resolves.toMatchObject({
+      roster: expect.arrayContaining([
+        expect.objectContaining({
+          spec: expect.objectContaining({ role: 'CODER' }),
+          status: 'departed',
+          departure: expect.objectContaining({
+            stage: 'completed',
+            successorRole: 'TESTER',
+          }),
+        }),
+      ]),
+      channels: [
+        expect.objectContaining({
+          channelId: 'main',
+          participants: expect.not.arrayContaining(['CODER']),
+        }),
+      ],
+    });
+
+    const replay = await post(
+      postRequest({
+        ...scope,
+        channelId: 'main',
+        msgId: 'assign-tester-successor',
+        display: `/resolve-gate ${gateId} assign_enabled_successor TESTER`,
+      }),
+    );
+    await expect(replay.json()).resolves.toMatchObject({ published: false });
   });
 
   it('resumes a persisted departure before returning an existing Leader message', async () => {

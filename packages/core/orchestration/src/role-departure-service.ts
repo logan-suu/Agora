@@ -6,9 +6,11 @@ import type {
 import {
   type AppState,
   appendMutation,
+  assignRoleDepartureSuccessor,
   beginRoleDeparture,
   completeRoleDeparture,
   type HandoffPacket,
+  type HumanGateRequest,
   type Message,
   mergeByIdMutation,
   normalizeRoleId,
@@ -18,7 +20,7 @@ import {
   setMutation,
 } from '@agora/core-domain';
 import type { TaskScope, TaskStateStore } from '@agora/runtime-state';
-
+import { type HumanGateRequestPort, materializeHumanGate } from './human-gate';
 import type { MessageService, MutationCommitResult } from './message-service';
 
 export interface RoleDrainPort {
@@ -43,11 +45,20 @@ export interface RoleDepartureResult {
   collaboration: ProjectCollaborationSnapshot;
 }
 
+export interface RoleDepartureSuccessorInput {
+  scope: TaskScope;
+  resolutionActionId: string;
+  role: string;
+  departureActionId: string;
+  successorRole: string;
+}
+
 interface RoleDepartureDeps {
   collaboration: ProjectCollaborationStore;
   state: TaskStateStore;
   messages: Pick<MessageService, 'commitMutations'>;
   drain: RoleDrainPort;
+  gate?: HumanGateRequestPort;
 }
 
 export class RoleDepartureRejectedError extends Error {
@@ -62,12 +73,21 @@ export class RoleDepartureService {
   readonly #state: TaskStateStore;
   readonly #messages: Pick<MessageService, 'commitMutations'>;
   readonly #drain: RoleDrainPort;
+  readonly #gate: HumanGateRequestPort;
 
   constructor(deps: RoleDepartureDeps) {
     this.#collaboration = deps.collaboration;
     this.#state = deps.state;
     this.#messages = deps.messages;
     this.#drain = deps.drain;
+    this.#gate = deps.gate ?? {
+      suspend: async (scope, request) =>
+        (
+          await this.#messages.commitMutations(scope, [
+            setMutation('humanGate', materializeHumanGate(request, [])),
+          ])
+        ).state,
+    };
   }
 
   async depart(input: RoleDepartureInput): Promise<RoleDepartureResult> {
@@ -195,6 +215,42 @@ export class RoleDepartureService {
     };
   }
 
+  async resumeWithSuccessor(input: RoleDepartureSuccessorInput): Promise<RoleDepartureResult> {
+    const role = normalizeRoleId(input.role);
+    const successor = normalizeRoleId(input.successorRole);
+    const state = await this.#loadState(input.scope);
+    const before = await this.#loadCollaboration(input.scope.projectId);
+    const departure = this.#departure(before, role, input.departureActionId);
+    if (departure.successorRole === successor && departure.stage === 'completed') {
+      return { status: 'applied', state, collaboration: before };
+    }
+    if (departure.stage !== 'awaiting_replacement') {
+      throw new Error(`role "${role}" is not awaiting a replacement`);
+    }
+    assertCanonicalDepartureHandoff(
+      state,
+      role,
+      departure,
+      `role-departure:${input.departureActionId}`,
+    );
+    assertCanonicalSuccessorResolution(state, input, departure);
+    if (state.subtasks.some((subtask) => subtask.ownerRole === role && subtask.status !== 'done')) {
+      throw new Error(`role "${role}" still owns unfinished responsibilities`);
+    }
+    const collaboration = (
+      await this.#transition(input.scope.projectId, (snapshot) => {
+        const assigned = assignRoleDepartureSuccessor(
+          snapshot.roster,
+          role,
+          input.departureActionId,
+          successor,
+        );
+        return completeRoleDeparture(assigned.roster, role, input.departureActionId);
+      })
+    ).snapshot;
+    return { status: 'applied', state, collaboration };
+  }
+
   async #commitHandoff(
     scope: TaskScope,
     state: AppState,
@@ -222,7 +278,7 @@ export class RoleDepartureService {
       display: `Role ${role} handoff is ready for ${packet.toRole}.`,
       ts: departure.requestedTs,
     };
-    return this.#messages.commitMutations(scope, [
+    const committed = await this.#messages.commitMutations(scope, [
       appendMutation('handoffPackets', packet),
       ...unfinished.map((subtask) =>
         mergeByIdMutation(
@@ -233,17 +289,18 @@ export class RoleDepartureService {
             : { ownerRole: departure.successorRole },
         ),
       ),
-      ...(awaitingReplacement
-        ? [
-            setMutation('humanGate', {
-              reason: `role_departure_requires_replacement:${role}`,
-              options: ['assign_enabled_successor'],
-              phase: state.phase,
-            }),
-          ]
-        : []),
       appendMutation('messages', message),
     ]);
+    if (!awaitingReplacement) return committed;
+    const request: HumanGateRequest = {
+      triggerMsgId: message.msgId,
+      triggerTs: message.ts,
+      reason: `role_departure_requires_replacement:${role}`,
+      options: ['assign_enabled_successor'],
+      phase: state.phase,
+    };
+    const gated = await this.#gate.suspend(scope, request);
+    return { ...committed, state: gated, changed: true };
   }
 
   async #transition(
@@ -340,6 +397,42 @@ function assertCanonicalDepartureHandoff(
       `handoff message "${messageId}" conflicts with the persisted departure facts`,
     );
   }
+}
+
+function assertCanonicalSuccessorResolution(
+  state: AppState,
+  input: RoleDepartureSuccessorInput,
+  departure: RoleDeparture,
+): void {
+  const message = state.messages.find((candidate) => candidate.msgId === input.resolutionActionId);
+  const intent = message?.payload.intent;
+  const action = message?.payload.action;
+  const receipt = message?.payload.resolution;
+  const intentRecord = isRecord(intent) ? intent : undefined;
+  const actionRecord = isRecord(action) ? action : undefined;
+  const receiptRecord = isRecord(receipt) ? receipt : undefined;
+  const gateId = `human-gate:${departure.handoffRef?.msgId ?? ''}`;
+  if (
+    message?.channelId !== 'main' ||
+    message.fromRole !== 'leader' ||
+    message.type !== 'chat' ||
+    message.payload.kind !== 'leader_intent' ||
+    intentRecord?.kind !== 'resolve_human_gate' ||
+    intentRecord.gateId !== gateId ||
+    intentRecord.option !== 'assign_enabled_successor' ||
+    intentRecord.argument !== input.successorRole ||
+    actionRecord?.status !== 'applied' ||
+    receiptRecord?.gateId !== gateId ||
+    receiptRecord.option !== 'assign_enabled_successor' ||
+    receiptRecord.argument !== input.successorRole ||
+    receiptRecord.resumeSessionId !== `human-gate-resume:${input.resolutionActionId}`
+  ) {
+    throw new Error(`successor resolution "${input.resolutionActionId}" is not canonical`);
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isHandoffPacket(value: unknown): value is HandoffPacket {

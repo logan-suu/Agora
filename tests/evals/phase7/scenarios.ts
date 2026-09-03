@@ -1,6 +1,8 @@
 // R11/G5: only the external paid LLM stream is scripted. HTTP intent handling,
 // JSON stores, collaboration CAS, roster transitions, WorkerRuntime, HarnessExecutor,
 // safe-point persistence, handoff construction, onboarding projection, and replay are real.
+import { join } from 'node:path';
+
 import {
   applyMutations,
   createInitialAppState,
@@ -74,8 +76,18 @@ class AuditedHarnessExecutor extends HarnessExecutor {
     spec: RoleSpec,
     adapter: LlmAdapter,
     private readonly events: string[],
+    persistence: { root: string; projectId: string; taskId: string },
   ) {
-    super(spec, { adapter, provider: 'agora' });
+    super(spec, {
+      adapter,
+      provider: 'agora',
+      sessionPersistence: {
+        root: join(persistence.root, 'harness-sessions'),
+        cwd: persistence.root,
+        projectId: persistence.projectId,
+        taskId: persistence.taskId,
+      },
+    });
   }
 
   override async saveSafePoint(): Promise<string> {
@@ -235,7 +247,11 @@ async function forcedHandoffScenario(context: EvalExecutionContext): Promise<Eva
       return committed.state;
     },
     buildExecutor: (spec) => {
-      const executor = new AuditedHarnessExecutor(spec, adapter, events);
+      const executor = new AuditedHarnessExecutor(spec, adapter, events, {
+        root: context.dataRoot,
+        projectId: scope.projectId,
+        taskId: scope.taskId,
+      });
       executors.push(executor);
       return executor;
     },

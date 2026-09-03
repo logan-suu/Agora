@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   addRole,
+  assignRoleDepartureSuccessor,
   beginRoleDeparture,
   completeRoleDeparture,
   disableRole,
@@ -200,7 +201,11 @@ describe('project roster transitions', () => {
   });
 
   it('keeps an orphaned responsibility awaiting replacement and refuses completion', () => {
-    const begun = beginRoleDeparture(INITIAL, 'CODER', {
+    const withTester: readonly RosterEntry[] = [
+      ...INITIAL,
+      { spec: { ...CODER, role: 'TESTER' }, status: 'enabled' },
+    ];
+    const begun = beginRoleDeparture(withTester, 'CODER', {
       actionId: 'remove-coder-orphan',
       taskId: 'task-7-2',
       requestedTs: 2_000,
@@ -220,5 +225,23 @@ describe('project roster transitions', () => {
     expect(() => completeRoleDeparture(waiting.roster, 'CODER', 'remove-coder-orphan')).toThrow(
       /awaiting_replacement/i,
     );
+
+    const assigned = assignRoleDepartureSuccessor(
+      waiting.roster,
+      'CODER',
+      'remove-coder-orphan',
+      'TESTER',
+    );
+    expect(assigned.roster[1]).toMatchObject({
+      status: 'departing',
+      departure: { stage: 'handoff_committed', successorRole: 'TESTER' },
+    });
+    expect(
+      assignRoleDepartureSuccessor(assigned.roster, 'CODER', 'remove-coder-orphan', 'TESTER')
+        .changed,
+    ).toBe(false);
+    expect(
+      completeRoleDeparture(assigned.roster, 'CODER', 'remove-coder-orphan').roster[1],
+    ).toMatchObject({ status: 'departed', departure: { stage: 'completed' } });
   });
 });

@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-03T21:51:58.000Z",
+  "last_updated": "2026-09-03T23:49:42.000Z",
   "current_phase": 8,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -23,8 +23,8 @@
     },
     {
       "id": "D4",
-      "rule": "进 humanGate 时销毁（Terminate）Harness 子进程释放资源；裁决后按 safePoint 游标重新 Fork（终止并分叉，取代 yieldSlot）；阶段 0 简化为任务即进程结束即销毁",
-      "source": "docs/详细设计方案.md §8"
+      "rule": "humanGate 采用持久 suspend→Leader resolve→真 Fork resume：gate 生产者只给瞬态请求，安全边界 flush session 后一次提交稳定 gateId + opaque safePointRefs，禁写半成品 gate；销毁进程内 executable composition 但保留 TaskState/worktree/Harness JSONL session。Leader 经 D9 单入口幂等裁决，canonical resolution receipt 复制 gateId/option/argument/safePointRefs 与确定性 resumeSessionId 后清 gate；全新 context 从 source completed-turn prefix 经公开 Agent factory 创建或接管带 parentSession/seedLength lineage 的 child Agent + Session，暂存 D1 投影并提交稳定 resumed 控制事实后恢复运行。Phase 8 只落回合制单任务与本地容量释放，Phase 9 再接 GlobalScheduler/多 worker 抢占；8.1 不新建重复的通用 TerminationCondition 框架",
+      "source": "docs/项目蓝图.md §14/§20/§21；docs/详细设计方案.md §1/§5/§6/§8；docs/系统架构设计文档.md §4.2/§9；docs/技术选型文档.md §4.1/§9.2/§10"
     },
     {
       "id": "D5",
@@ -48,7 +48,7 @@
     },
     {
       "id": "D9",
-      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；浏览器 msgId 必须满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在任何副作用前校验。planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动离职 saga；/role onboard 复用 msgId=actionId，在单个 Task State commit 中原子提交入职主消息、nextRole 与规范 handoff refs。Phase 8/9 裁决与完整抢占继续按阶段解锁，不走临时 command 旁路",
+      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；浏览器 msgId 必须满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在任何副作用前校验。planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动离职 saga；/role onboard 复用 msgId=actionId，在单个 Task State commit 中原子提交入职主消息、nextRole 与规范 handoff refs。Phase 8 /resolve-gate 必须绑定 gateId，复用 msgId=actionId，在单个 Task State commit 中写 canonical resolution receipt、原因特定 mutations 并清 gate；旧 /approve、/reject 拒绝。Phase 9 再解锁完整抢占，不走临时 command 旁路",
       "source": "docs/项目蓝图.md §10/§11/§17/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§4.3；docs/技术选型文档.md §9.2"
     },
     {
@@ -1027,26 +1027,29 @@
     },
     {
       "id": 8,
-      "name": "人工卡点与冲突裁决（humanGate 终止并分叉 + 异议双轨 + trace，1 周）",
+      "name": "人工卡点与冲突裁决（humanGate 持久 suspend/真 Fork resume + 异议双轨 + trace，1 周）",
       "status": "in_progress",
       "integration_test": "8.5",
       "exit_criteria": "可控、可裁决、可观测：humanGate 落地决策 D4，异议双轨运转",
       "tasks": [
         {
           "id": "8.1",
-          "title": "humanGate：终止并分叉（Terminate & Fork）",
+          "title": "humanGate：持久 suspend / Leader resolve / 真 Fork resume",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
-            "docs/详细设计方案.md §8",
-            "docs/框架调研与借鉴决策.md 模式①"
+            "docs/项目蓝图.md §14/§21 D4",
+            "docs/详细设计方案.md §1/§5/§6/§8",
+            "docs/系统架构设计文档.md §4.2/§9",
+            "docs/技术选型文档.md §4.1/§10/§12",
+            "docs/开发计划安排.md §11"
           ],
           "dependencies": [
             "7.5"
           ],
-          "test_file": null,
-          "notes": "决策 D4 核心落地：置 humanGate 字段→销毁（Terminate）该项目 Harness 子进程释放资源（并发名额自动交还全局池）→Leader 裁决后基于存储的 safePoint 事件游标重新 Fork 新进程恢复（loadSafePoint + applyAndResume）。同时落地 TerminationCondition 语义（增量式+可组合+StopMessage，借鉴调研模式①）。\n[2026-09-03 /agora-pr-merge] Phase 7 出口任务 7.5 已由 PR #57 合并并标 done，跨阶段门禁解除，级联翻转 pending→ready。",
-          "last_updated": "2026-09-03T21:51:58.000Z"
+          "test_file": "tests/integration/phase8/human-gate-lifecycle.test.ts",
+          "notes": "D4 核心落地：回合制单任务在已提交的 step/end 安全边界，由 gate 生产者给出瞬态请求；生命周期服务先 flush 项目/任务级 Harness session，全部成功后一次持久完整 gateId + opaque safePointRefs，禁写半成品 gate；随后 suspend 并销毁进程内 executable composition，保留 TaskState/worktree/Harness JSONL session 且不归档终态 artifact。Leader 经 POST /api/messages 以 /resolve-gate <gateId> <option> [argument] 和稳定 msgId=actionId 幂等裁决，一次 Task State commit 写含 safePointRefs + 确定性 resumeSessionId 的 canonical resolution receipt/reason-specific mutations/清 gate。全新 Harness context 从 source completed-turn prefix 经 ctx.agents.create 创建 lineage child；已存在 child 时严格复核后 ctx.agents.resume 接管。D1 投影暂存且稳定 human-gate-resumed:<actionId> 控制事实提交后才恢复 running。后端重启后仍可恢复；任一引用/作用域/boundary/lineage 失败均 fail-closed。Phase 8 不落 GlobalScheduler/多 worker 广播抢占；现有 iterationCount + humanGate 已具体化 AutoGen TerminationCondition 借鉴，本任务不新建重复框架。\n[2026-09-03 /agora-pr-merge] Phase 7 出口任务 7.5 已由 PR #57 合并并标 done，跨阶段门禁解除，级联翻转 pending→ready。\n[2026-09-03 /agora-sync-docs·规格复评] Leader 批准先修规格再实现。复评确认旧规格不可实现：内存 sessionId + no-op loadSafePoint 不能跨 dispose 恢复，Harness 是进程内 context 而非子进程，terminateAndFork():void 无法表达跨 Leader 等待的恢复事务，needs_attention 误走终态归档，且 Phase 8/9 抢占边界混淆。已按蓝图→详细设计→系统架构/技术选型→开发计划→task-status/AGENTS 同步 D4，并补齐 checkpoint 先落盘再开 gate、清 gate 后的 resolution receipt、确定性 child id 与 resumed 控制事实；复核已安装 Harness 公开 API 后，将不可正确绑定 Agent 的直接 ctx.sessions.fork 修正为 ctx.sessionPersistence.load + ctx.agents.create(seed/lineage)，已存在 child 则 ctx.agents.resume。\n[2026-09-03 /agora-do-task] Leader 批准启动 8.1；依赖 7.5=done、Phase 7 出口完成、current_phase=8，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；实现计划再次确认前不写测试或生产代码。\n[2026-09-03 Explore·规格一致性修正] 发现详细设计 §5 的 Phase 5 旧归档规则仍把 needs_attention 当终态，且 §4 的 Phase 7 离职 blocker 仍要求直接写缺 checkpoint 的旧 humanGate；两者均与已批准 D4 冲突。已修正为仅 completed|failed 归档，D4 needs_attention 保留 worktree/session；离职 blocker 自 8.1 起改交瞬态 HumanGateRequest，由生命周期服务 flush 后持久化完整 gate，禁止猜补旧 gate。生产代码现状仍保留这两条旧路径，纳入 8.1 TDD 迁移范围。\n[2026-09-03 实现与验证] 已完成完整 HumanGate schema、三种 resolver、Leader canonical receipt/重放、离职 successor 续办、官方 Harness JSONL flush/load 与确定性 lineage child、RecoverableSandboxManager、非终态 composition suspend/rebuild、D1 最新投影注入及稳定 resumed marker。Node 24.19 下 typecheck 与 Biome 全绿；77 个非外部环境测试文件共 655 tests 全绿，Phase 5 非 Docker 3 tests 另行全绿；Phase 8 G5 集成测试真实跑通 flush→dispose→全新 context→lineage child→继续完成，仅付费 LLM 响应为确定性 adapter。全量 pnpm 门禁受环境阻断：受限网络导致 pnpm 11 无法获取项目锁定 pnpm 9，Docker socket 返回 EPERM，live DeepSeek 请求失败；这些外部失败与本次逻辑无关，未弱化或跳过测试。任务按 PR 流程保持 in_progress。\n[2026-09-03 /agora-commit·门禁修复] 识别到 Node 24 默认 `node --test` 已从 TAP v13 切换为 spec reporter，旧 test-server 将真实测试数误解为 0。已 TDD 增加 TAP + Node 24 spec 双 reporter 解析及 worktree 相对失败路径规范化；关联 5 files / 43 tests 全绿。使用 Node 24.19 + 本机缓存 pnpm 9.15.9 完整复跑：typecheck 0 错、Biome 233 files 0 违规、Vitest 84 files / 694 tests 全绿；真实 DockerSandbox 15/15、Phase 5 Docker/Harness/MCP、两条 live DeepSeek 及 241s live LRU 端到端链路均通过。任务按 PR 流程保持 in_progress。",
+          "last_updated": "2026-09-03T23:49:42.000Z"
         },
         {
           "id": "8.2",
@@ -1107,7 +1110,7 @@
             "8.4"
           ],
           "test_file": "tests/integration/phase8/phase8-exit.test.ts",
-          "notes": "humanGate 终止→资源释放→裁决→Fork 恢复全链路；blocking/advisory 分类准确性；权威级别覆盖规则回归。向固定 Eval 集追加脚本化 Leader 事件、Terminate & Fork、资源释放与 trace 完整性场景，禁止 LLM 自行扮演最终裁决者。"
+          "notes": "humanGate 持久 suspend→资源释放→Leader resolve→真 Fork resume 全链路；blocking/advisory 分类准确性；权威级别覆盖规则回归。向固定 Eval 集追加脚本化 Leader 事件、resolution receipt、跨重启恢复、资源释放与 trace 完整性场景，禁止 LLM 自行扮演最终裁决者。"
         }
       ]
     },
@@ -1130,7 +1133,7 @@
             "8.5"
           ],
           "test_file": null,
-          "notes": "core/orchestration/worker-runtime.ts。Promise.all 并发上限默认 3（maxParallel）；batch.slice(0, maxParallel)；结果经合并函数归并各 worker mutations。各 worker 独立 Harness 子进程 + 独立隔离目录/worktree。"
+          "notes": "core/orchestration/worker-runtime.ts。Promise.all 并发上限默认 3（maxParallel）；batch.slice(0, maxParallel)；结果经合并函数归并各 worker mutations。各 worker 独立进程内 Harness context/session + 独立隔离目录/worktree。"
         },
         {
           "id": "9.2",

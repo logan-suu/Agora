@@ -96,11 +96,21 @@ function isHumanGate(value: unknown): value is HumanGate {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
   return (
+    typeof record.gateId === 'string' &&
+    record.gateId.length > 0 &&
     typeof record.reason === 'string' &&
+    record.reason.length > 0 &&
     Array.isArray(record.options) &&
-    record.options.every((option) => typeof option === 'string') &&
+    record.options.length > 0 &&
+    record.options.every((option) => typeof option === 'string' && option.length > 0) &&
+    new Set(record.options).size === record.options.length &&
     typeof record.phase === 'string' &&
-    PHASES.includes(record.phase as Phase)
+    PHASES.includes(record.phase as Phase) &&
+    typeof record.openedTs === 'number' &&
+    Number.isInteger(record.openedTs) &&
+    record.openedTs >= 0 &&
+    Array.isArray(record.safePointRefs) &&
+    record.safePointRefs.every((ref) => typeof ref === 'string' && ref.length > 0)
   );
 }
 
@@ -234,8 +244,12 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
       }
       return { ...state, iterationCount: value };
     case 'humanGate':
+      if (value === undefined) {
+        const { humanGate: _removed, ...withoutHumanGate } = state;
+        return withoutHumanGate;
+      }
       if (!isHumanGate(value)) {
-        throw new Error('humanGate must be { reason: string; options: string[]; phase: Phase }');
+        throw new Error('humanGate must be a complete durable gate');
       }
       return { ...state, humanGate: value };
     case 'architecture':

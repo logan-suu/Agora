@@ -169,9 +169,11 @@ describe('Phase 4 cumulative exit gate', () => {
     const gated = applyMutations(capped, gate.mutations);
 
     expect(gate.route.kind).toBe('human_gate');
-    expect(gated.humanGate).toEqual({
+    expect(gated.humanGate).toBeUndefined();
+    if (gate.route.kind !== 'human_gate') throw new Error('expected human_gate route');
+    expect(gate.route.request).toMatchObject({
       reason: 'iteration_limit',
-      options: ['extend', 'take-over', 'abort'],
+      options: ['continue'],
       phase: 'testing',
     });
   });

@@ -228,9 +228,12 @@ describe('runOrchestration · human_gate escalation hook (task 2.3)', () => {
 
     expect(final.phase).toBe('testing');
     expect(final.humanGate).toEqual({
+      gateId: expect.stringMatching(/^human-gate:/),
       reason: 'iteration_limit',
-      options: ['extend', 'take-over', 'abort'],
+      options: ['continue'],
       phase: 'testing',
+      openedTs: expect.any(Number),
+      safePointRefs: [],
     });
     expect(final.iterationCount).toBe(MAX_ITERATIONS);
     const escalations = final.messages.filter((m) => m.type === 'escalation');

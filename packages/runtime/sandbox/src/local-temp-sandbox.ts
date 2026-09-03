@@ -1,8 +1,17 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { assertInside } from './path-guard';
+import type { RecoverableWorktreeBinding } from './recoverable-sandbox-manager';
 import type { SandboxManager } from './sandbox-manager';
 import type { IntegrationResult, RunResult, Worktree } from './types';
 
@@ -68,6 +77,24 @@ export class LocalTempSandbox implements SandboxManager {
     mkdirSync(TEARDOWN_STAGING, { recursive: true });
     const destination = join(TEARDOWN_STAGING, basename(root));
     renameSync(root, destination);
+    return Promise.resolve();
+  }
+
+  /** Local mode has no container; keep the directory registered and untouched. */
+  suspend(_taskId: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** Re-register a persisted local worktree after composition/process reconstruction. */
+  resume(taskId: string, bindings: readonly RecoverableWorktreeBinding[]): Promise<void> {
+    if (bindings.length !== 1) {
+      return Promise.reject(new Error('LocalTempSandbox resume requires exactly one worktree'));
+    }
+    const path = bindings[0]?.worktree.path;
+    if (path === undefined || !statSync(path).isDirectory()) {
+      return Promise.reject(new Error('persisted local worktree is not an existing directory'));
+    }
+    this.roots.set(taskId, realpathSync(path));
     return Promise.resolve();
   }
 }

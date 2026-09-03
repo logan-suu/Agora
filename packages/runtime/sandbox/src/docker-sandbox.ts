@@ -1,9 +1,18 @@
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import type { Container } from 'dockerode';
 import Dockerode from 'dockerode';
 import { assertInside } from './path-guard';
+import type { RecoverableWorktreeBinding } from './recoverable-sandbox-manager';
 import type { SandboxManager } from './sandbox-manager';
 import type { IntegrationResult, RunResult, Worktree } from './types';
 
@@ -220,6 +229,50 @@ export class DockerSandbox implements SandboxManager {
     renameSync(record.hostRoot, join(TEARDOWN_STAGING, basename(record.hostRoot)));
   }
 
+  /** Stop runtime resources without moving the host worktree (D4 non-terminal suspend). */
+  async suspend(taskId: string): Promise<void> {
+    const record = this.containers.get(taskId);
+    if (record === undefined) return;
+    this.containers.delete(taskId);
+    await record.container.stop({ t: 2 }).catch(() => {});
+    await record.container.remove({ force: true }).catch(() => {});
+  }
+
+  /** Recreate the task container around explicitly persisted host worktree bindings. */
+  async resume(taskId: string, bindings: readonly RecoverableWorktreeBinding[]): Promise<void> {
+    if (bindings.length === 0) throw new Error('DockerSandbox resume requires a worktree binding');
+    const roles = new Map<string, string>();
+    let hostRoot: string | undefined;
+    for (const binding of bindings) {
+      const path = realpathSync(binding.worktree.path);
+      if (!statSync(path).isDirectory())
+        throw new Error('persisted Docker worktree is not a directory');
+      if (basename(path) !== sanitizeSegment(binding.role)) {
+        throw new Error(`persisted Docker worktree does not match role "${binding.role}"`);
+      }
+      const parent = dirname(path);
+      const base = realpathSync(this.baseDir);
+      const relativeRoot = relative(base, parent);
+      if (relativeRoot.startsWith('..') || relativeRoot === '') {
+        throw new Error('persisted Docker task root is outside the configured base directory');
+      }
+      if (hostRoot !== undefined && hostRoot !== parent) {
+        throw new Error('persisted Docker worktrees do not share one task root');
+      }
+      hostRoot = parent;
+      roles.set(binding.role, path);
+    }
+    const active = this.containers.get(taskId);
+    if (active !== undefined) {
+      if (active.hostRoot !== hostRoot || !sameRolePaths(active.roles, roles)) {
+        throw new Error(`task "${taskId}" already has a different active sandbox`);
+      }
+      return;
+    }
+    const record = await this.createContainer(taskId, hostRoot);
+    record.roles = roles;
+  }
+
   private async ensureContainer(taskId: string): Promise<ContainerRecord> {
     const existing = this.containers.get(taskId);
     if (existing !== undefined) {
@@ -241,9 +294,14 @@ export class DockerSandbox implements SandboxManager {
   }
 
   /** Create + start the per-task container and its host root (not serialized). */
-  private async createContainer(taskId: string): Promise<ContainerRecord> {
+  private async createContainer(
+    taskId: string,
+    existingHostRoot?: string,
+  ): Promise<ContainerRecord> {
     await this.ensureImage();
-    const hostRoot = mkdtempSync(join(this.baseDir, `agora-docker-${sanitizeSegment(taskId)}-`));
+    const hostRoot =
+      existingHostRoot ??
+      mkdtempSync(join(this.baseDir, `agora-docker-${sanitizeSegment(taskId)}-`));
     const container = await this.docker.createContainer({
       Image: this.image,
       Cmd: ['sleep', 'infinity'],
@@ -313,4 +371,15 @@ export class DockerSandbox implements SandboxManager {
 function sanitizeSegment(segment: string): string {
   const safe = segment.replace(/[^a-zA-Z0-9._-]/g, '_');
   return safe.length === 0 ? 'worktree' : safe;
+}
+
+function sameRolePaths(
+  left: ReadonlyMap<string, string>,
+  right: ReadonlyMap<string, string>,
+): boolean {
+  if (left.size !== right.size) return false;
+  for (const [role, path] of left) {
+    if (right.get(role) !== path) return false;
+  }
+  return true;
 }

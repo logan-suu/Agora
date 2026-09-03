@@ -1,7 +1,8 @@
-import type { AppState, Mutation, RoleSpec } from '@agora/core-domain';
+import type { AppState, HumanGateRequest, Mutation, RoleSpec } from '@agora/core-domain';
 import { applyMutations, setMutation } from '@agora/core-domain';
 import { evaluateComplexity } from './complexity';
 import { decide } from './coordinator';
+import { materializeHumanGate } from './human-gate';
 import type { StateTransition, WorkerRuntime } from './worker-runtime';
 
 export interface OrchestrationDeps {
@@ -14,6 +15,8 @@ export interface OrchestrationDeps {
   roster?: readonly RoleSpec[];
   loadRoster?: () => Promise<readonly RoleSpec[]>;
   transition?: StateTransition;
+  /** D4 composition-root hook: flush durable checkpoints before persisting a complete gate. */
+  suspendAtHumanGate?: (state: AppState, request: HumanGateRequest) => Promise<AppState>;
 }
 
 export function entry(state: AppState): AppState {
@@ -52,11 +55,12 @@ export async function runOrchestration(
       case 'integrate':
         throw new Error('integrate node is excluded from the Phase 0 slice (spec §9)');
       case 'human_gate':
-        // Spec §3 pseudocode awaits humanGate(state) then continues; the leader
-        // ruling loop does not exist until Phase 8, so continuing would re-trigger
-        // the gate forever. The Phase 2 escalation hook halts instead: state
-        // carries state.humanGate + the escalation message awaiting the leader.
-        // Phase 8 replaces this halt with the terminate-and-fork body (D4).
+        state =
+          deps.suspendAtHumanGate === undefined
+            ? await transition(state, [
+                setMutation('humanGate', materializeHumanGate(route.request, [])),
+              ])
+            : await deps.suspendAtHumanGate(state, route.request);
         return state;
     }
   }

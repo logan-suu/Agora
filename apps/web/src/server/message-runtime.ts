@@ -21,10 +21,14 @@ import {
   ChannelLifecycleRejectedError,
   ChannelLifecycleService,
   ChannelSummaryReconciler,
+  type HumanGateLifecyclePort,
+  type HumanGateResolutionReceipt,
   type MessageCommitResult,
   MessageService,
   type MutationCommitResult,
+  materializeHumanGate,
   ProjectRosterService,
+  planHumanGateResolution,
   RoleDepartureRejectedError,
   RoleDepartureService,
   type RoleDrainPort,
@@ -70,6 +74,7 @@ export class MessageRuntime {
   readonly #lifecycle: ChannelLifecycleService;
   readonly #summaryReconciler: ChannelSummaryReconciler;
   readonly #departure: RoleDepartureService;
+  #humanGate: HumanGateLifecyclePort;
   #roleDrain: RoleDrainPort = {
     awaitSafePoint: async (_scope, role) => ({ role, activeWorkers: 0, safePointRefs: [] }),
   };
@@ -96,6 +101,19 @@ export class MessageRuntime {
       this.channels,
       this.collaboration,
     );
+    this.#humanGate = {
+      suspend: async (scope, request) =>
+        (
+          await this.#service.commitMutations(scope, [
+            {
+              field: 'humanGate',
+              op: 'set',
+              value: materializeHumanGate(request, []),
+            },
+          ])
+        ).state,
+      resume: async () => undefined,
+    };
     this.#lifecycle = new ChannelLifecycleService(this.channels, this.#service, this.collaboration);
     this.#departure = new RoleDepartureService({
       collaboration: this.collaboration,
@@ -103,6 +121,9 @@ export class MessageRuntime {
       messages: this.#service,
       drain: {
         awaitSafePoint: (scope, role) => this.#roleDrain.awaitSafePoint(scope, role),
+      },
+      gate: {
+        suspend: (scope, request) => this.#humanGate.suspend(scope, request),
       },
     });
     this.#summaryReconciler = new ChannelSummaryReconciler({
@@ -146,6 +167,10 @@ export class MessageRuntime {
 
   bindRoleDrainPort(port: RoleDrainPort): void {
     this.#roleDrain = port;
+  }
+
+  bindHumanGateLifecyclePort(port: HumanGateLifecyclePort): void {
+    this.#humanGate = port;
   }
 
   ensureProjectChannels(projectId: string) {
@@ -223,9 +248,15 @@ export class MessageRuntime {
         `task state is not initialized for projectId "${scope.projectId}" and taskId "${scope.taskId}"`,
       );
     }
+    const incomingIntent = parseLeaderIntent(input.display);
     const existing = current.messages.find((message) => message.msgId === input.msgId);
     if (existing !== undefined) {
-      assertOnboardingReplay(current, existing, input.channelId, parseLeaderIntent(input.display));
+      assertOnboardingReplay(current, existing, input.channelId, incomingIntent);
+      if (incomingIntent.kind === 'resolve_human_gate') {
+        const receipt = assertHumanGateResolutionReplay(existing, input.channelId, incomingIntent);
+        await this.#completeDepartureResolution(scope, input.msgId, incomingIntent);
+        await this.#humanGate.resume(scope, input.msgId, receipt);
+      }
       const collaboration = await this.collaboration.load(scope.projectId);
       if (collaboration === undefined) {
         throw new Error(
@@ -277,7 +308,42 @@ export class MessageRuntime {
       .map((entry) => entry.spec);
     const knownRoles = collaboration.roster.map((entry) => entry.spec.role);
 
-    const intent = parseLeaderIntent(input.display);
+    const intent = incomingIntent;
+    if (intent.kind === 'resolve_human_gate') {
+      if (input.channelId !== 'main') {
+        throw new Error('humanGate resolution commands must use main');
+      }
+      const resolution = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
+        const plan = planHumanGateResolution(state, {
+          actionId: input.msgId,
+          gateId: intent.gateId,
+          option: intent.option,
+          ...(intent.argument === undefined ? {} : { argument: intent.argument }),
+          enabledRoles: enabledRoster.map((entry) => entry.role),
+        });
+        return {
+          message: {
+            msgId: input.msgId,
+            channelId: input.channelId,
+            fromRole: 'leader',
+            type: 'chat',
+            payload: {
+              kind: 'leader_intent',
+              intent,
+              action: { status: 'applied' },
+              resolution: plan.receipt,
+            },
+            display: input.display,
+            ts: input.ts,
+          },
+          mutations: plan.mutations,
+        };
+      });
+      const receipt = assertHumanGateResolutionReplay(resolution.message, input.channelId, intent);
+      await this.#completeDepartureResolution(scope, input.msgId, intent);
+      await this.#humanGate.resume(scope, input.msgId, receipt);
+      return { ...resolution, action: { status: 'applied' } };
+    }
     let lifecycleRejection: LeaderActionStatus | undefined;
     let departureAction: LeaderActionStatus | undefined;
     try {
@@ -448,6 +514,35 @@ export class MessageRuntime {
       if (this.#leaderQueues.get(key) === tail) this.#leaderQueues.delete(key);
     }
   }
+
+  async #completeDepartureResolution(
+    scope: TaskScope,
+    actionId: string,
+    intent: Extract<ReturnType<typeof parseLeaderIntent>, { kind: 'resolve_human_gate' }>,
+  ): Promise<void> {
+    if (intent.option !== 'assign_enabled_successor' || intent.argument === undefined) return;
+    const collaboration = await this.collaboration.load(scope.projectId);
+    if (collaboration === undefined) {
+      throw new Error(
+        `project collaboration store is not initialized for projectId "${scope.projectId}"`,
+      );
+    }
+    const entries = collaboration.roster.filter(
+      (entry) =>
+        entry.departure?.handoffRef !== undefined &&
+        `human-gate:${entry.departure.handoffRef.msgId}` === intent.gateId,
+    );
+    if (entries.length !== 1 || entries[0]?.departure === undefined) {
+      throw new Error(`humanGate "${intent.gateId}" does not identify one role departure`);
+    }
+    await this.#departure.resumeWithSuccessor({
+      scope,
+      resolutionActionId: actionId,
+      role: entries[0].spec.role,
+      departureActionId: entries[0].departure.actionId,
+      successorRole: intent.argument,
+    });
+  }
 }
 
 export function createMessageRuntime(
@@ -527,6 +622,61 @@ function assertOnboardingReplay(
   if (!same)
     throw new Error(`onboarding action "${existing.msgId}" conflicts with its first write`);
   if (actionRecord?.status === 'applied') validateAppliedOnboardingMessage(state, existing);
+}
+
+function assertHumanGateResolutionReplay(
+  existing: Message,
+  channelId: string,
+  incoming: Extract<ReturnType<typeof parseLeaderIntent>, { kind: 'resolve_human_gate' }>,
+): HumanGateResolutionReceipt {
+  const persisted = existing.payload.intent;
+  const intent =
+    typeof persisted === 'object' && persisted !== null && !Array.isArray(persisted)
+      ? (persisted as Record<string, unknown>)
+      : undefined;
+  const action = existing.payload.action;
+  const actionRecord =
+    typeof action === 'object' && action !== null && !Array.isArray(action)
+      ? (action as Record<string, unknown>)
+      : undefined;
+  const resolution = existing.payload.resolution;
+  const receipt =
+    typeof resolution === 'object' && resolution !== null && !Array.isArray(resolution)
+      ? (resolution as Record<string, unknown>)
+      : undefined;
+  const safePointRefs = receipt?.safePointRefs;
+  const sameArgument =
+    (intent?.argument === undefined && incoming.argument === undefined) ||
+    intent?.argument === incoming.argument;
+  const canonical =
+    existing.payload.kind === 'leader_intent' &&
+    existing.fromRole === 'leader' &&
+    existing.type === 'chat' &&
+    existing.channelId === channelId &&
+    intent?.kind === 'resolve_human_gate' &&
+    intent.gateId === incoming.gateId &&
+    intent.option === incoming.option &&
+    sameArgument &&
+    actionRecord?.status === 'applied' &&
+    receipt?.gateId === incoming.gateId &&
+    receipt.option === incoming.option &&
+    ((receipt.argument === undefined && incoming.argument === undefined) ||
+      receipt.argument === incoming.argument) &&
+    Array.isArray(safePointRefs) &&
+    safePointRefs.every((ref) => typeof ref === 'string' && ref.length > 0) &&
+    receipt.resumeSessionId === `human-gate-resume:${existing.msgId}`;
+  if (!canonical) {
+    throw new Error(
+      `humanGate resolution action "${existing.msgId}" conflicts with its first write`,
+    );
+  }
+  return {
+    gateId: incoming.gateId,
+    option: incoming.option,
+    ...(incoming.argument === undefined ? {} : { argument: incoming.argument }),
+    safePointRefs: [...(safePointRefs as string[])],
+    resumeSessionId: receipt.resumeSessionId as string,
+  };
 }
 
 const workingDirectory = process.cwd();
