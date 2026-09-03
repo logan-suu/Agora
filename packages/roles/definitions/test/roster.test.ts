@@ -27,9 +27,8 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
     ]);
   });
 
-  it('enables every role on the harness executor with model unset (decision D2)', () => {
+  it('defines every role on the harness executor with model unset (decision D2)', () => {
     for (const entry of DEFAULT_ROSTER) {
-      expect(entry.enabled).toBe(true);
       expect(entry.executor).toBe('harness');
       expect(entry.model).toBeUndefined();
     }

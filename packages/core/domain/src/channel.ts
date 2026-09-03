@@ -1,4 +1,4 @@
-import type { RoleId } from './state';
+import type { RoleId, RosterEntry } from './state';
 
 const SAFE_SCOPE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
@@ -44,12 +44,13 @@ export function createMainChannel(enabledRoles: readonly RoleId[]): MainChannel 
 
 export function normalizeChannelParticipants(
   channels: readonly Channel[],
-  enabledRoles: readonly RoleId[],
+  roster: readonly RoleId[] | readonly RosterEntry[],
 ): Channel[] {
-  assertValidChannelRegistry(channels, enabledRoles);
+  assertValidChannelRegistry(channels, roster);
+  const knownRoles = rosterRoleIds(roster);
   const participantOrder = new Map<string, number>([
     ['leader', 0],
-    ...enabledRoles.map((role, index) => [role, index + 1] as const),
+    ...knownRoles.map((role, index) => [role, index + 1] as const),
   ]);
 
   return channels.map((channel) => ({
@@ -64,12 +65,14 @@ export function normalizeChannelParticipants(
 
 export function assertValidChannelRegistry(
   channels: unknown,
-  enabledRoles: readonly RoleId[],
+  roster: readonly RoleId[] | readonly RosterEntry[],
 ): asserts channels is readonly Channel[] {
   if (!Array.isArray(channels)) throw new Error('channels must be an array');
 
+  const knownRoles = rosterRoleIds(roster);
+  const enabledRoles = enabledRoleIds(roster);
   assertValidEnabledRoster(enabledRoles);
-  const enabled = new Set<string>(enabledRoles);
+  const known = new Set<string>(knownRoles);
 
   const channelIds = new Set<string>();
   let mainCount = 0;
@@ -116,19 +119,19 @@ export function assertValidChannelRegistry(
 
     const agentParticipants = participants.filter((participant) => participant !== 'leader');
     if (agentParticipants.length === 0) {
-      throw new Error(`sub channel "${channelId}" must include at least one enabled role`);
+      throw new Error(`sub channel "${channelId}" must include at least one known role`);
     }
     for (const participant of agentParticipants) {
-      if (!enabled.has(participant)) {
-        throw new Error(`sub channel "${channelId}" participant "${participant}" is not enabled`);
+      if (!known.has(participant)) {
+        throw new Error(`sub channel "${channelId}" participant "${participant}" is not known`);
       }
     }
 
     requiredSafeSegment(channel.threadId, 'sub channel threadId');
     requiredNonEmptyString(channel.topic, 'sub channel topic');
     const createdBy = requiredNonEmptyString(channel.createdBy, 'sub channel createdBy');
-    if (createdBy !== 'leader' && !enabled.has(createdBy)) {
-      throw new Error(`sub channel "${channelId}" createdBy "${createdBy}" is not enabled`);
+    if (createdBy !== 'leader' && !known.has(createdBy)) {
+      throw new Error(`sub channel "${channelId}" createdBy "${createdBy}" is not known`);
     }
     if (!participants.includes(createdBy)) {
       throw new Error(`sub channel "${channelId}" must include creator "${createdBy}"`);
@@ -152,6 +155,18 @@ export function assertValidChannelRegistry(
   }
 
   if (mainCount !== 1) throw new Error('channel registry must contain exactly one main channel');
+}
+
+function rosterRoleIds(roster: readonly RoleId[] | readonly RosterEntry[]): RoleId[] {
+  return roster.map((entry) => (typeof entry === 'string' ? entry : entry.spec.role));
+}
+
+function enabledRoleIds(roster: readonly RoleId[] | readonly RosterEntry[]): RoleId[] {
+  return roster.flatMap((entry) =>
+    typeof entry === 'string' || entry.status === 'enabled'
+      ? [typeof entry === 'string' ? entry : entry.spec.role]
+      : [],
+  );
 }
 
 function assertValidEnabledRoster(enabledRoles: readonly RoleId[]): void {

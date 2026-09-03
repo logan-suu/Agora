@@ -194,6 +194,24 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     expect(fake.stepCalls).toHaveLength(1);
   });
 
+  it('stops at the next step boundary when the assigned role becomes disabled', async () => {
+    const fake = new FakeExecutor([stepOf('llm', [])]);
+    let loads = 0;
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      loadRoster: async () => {
+        loads += 1;
+        return loads <= 2 ? PHASE0_ROSTER : PHASE0_ROSTER.filter((entry) => entry.role !== 'CODER');
+      },
+      buildExecutor: () => fake,
+    });
+
+    await runtime.runOne(createInitialAppState('t-1', 'g'), { role: 'CODER' });
+
+    expect(fake.stepCalls).toHaveLength(1);
+    expect(fake.safePointCalls).toEqual(['cursor']);
+  });
+
   it('throws when the roster does not contain the requested role', async () => {
     const runtime = runtimeWith([new FakeExecutor([])]);
 

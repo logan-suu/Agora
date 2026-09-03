@@ -1,4 +1,4 @@
-import type { Channel } from '@agora/core-domain';
+import type { Channel, RosterEntry } from '@agora/core-domain';
 
 export interface ProjectChannelSnapshot {
   projectId: string;
@@ -19,4 +19,30 @@ export interface ProjectChannelStore {
     expectedRevision: number,
     channels: readonly Channel[],
   ): Promise<ProjectChannelCommit>;
+}
+
+export interface ProjectCollaborationSnapshot {
+  projectId: string;
+  revision: number;
+  roster: RosterEntry[];
+  channels: Channel[];
+}
+
+export interface ProjectCollaborationCommit {
+  snapshot: ProjectCollaborationSnapshot;
+  changed: boolean;
+}
+
+export interface ProjectCollaborationStore {
+  initialize(
+    projectId: string,
+    initialRoster: readonly RosterEntry[],
+    initialChannels: readonly Channel[],
+  ): Promise<ProjectCollaborationSnapshot>;
+  load(projectId: string): Promise<ProjectCollaborationSnapshot | undefined>;
+  commit(
+    projectId: string,
+    expectedRevision: number,
+    next: { roster: readonly RosterEntry[]; channels: readonly Channel[] },
+  ): Promise<ProjectCollaborationCommit>;
 }

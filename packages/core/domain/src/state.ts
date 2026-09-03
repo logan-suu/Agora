@@ -68,7 +68,6 @@ export interface TestResults {
 
 export interface RoleSpec {
   role: string;
-  enabled: boolean;
   executor: ExecutorType;
   systemPrompt: string;
   tools: string[];
@@ -76,6 +75,13 @@ export interface RoleSpec {
   routeWhen: string;
   externalCmd?: string;
   model?: string;
+}
+
+export type RosterStatus = 'enabled' | 'disabled' | 'departing' | 'departed';
+
+export interface RosterEntry {
+  spec: RoleSpec;
+  status: RosterStatus;
 }
 
 export interface HumanGate {

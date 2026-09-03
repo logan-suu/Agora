@@ -45,8 +45,8 @@ describe('JsonProjectChannelStore', () => {
     ).rejects.toThrow('main channel participants');
 
     expect(initialized).toEqual({ projectId: 'project-a', revision: 0, channels: initial });
-    const persistedPath = join(root, 'projects/project-a/channels.json');
-    expect(JSON.parse(await readFile(persistedPath, 'utf8'))).toEqual(initialized);
+    const persistedPath = join(root, 'projects/project-a/collaboration.json');
+    expect(JSON.parse(await readFile(persistedPath, 'utf8'))).toMatchObject(initialized);
     await expect(
       new JsonProjectChannelStore(root, ENABLED_ROLES).load('project-a'),
     ).resolves.toEqual(initialized);
@@ -114,8 +114,9 @@ describe('JsonProjectChannelStore', () => {
 
   it('migrates a complete legacy sub-channel shape once during initialization', async () => {
     const root = await temporaryRoot();
-    const firstStore = new JsonProjectChannelStore(root, ENABLED_ROLES);
-    await firstStore.initialize('project-a', [createMainChannel(ENABLED_ROLES)]);
+    await import('node:fs/promises').then(({ mkdir }) =>
+      mkdir(join(root, 'projects/project-a'), { recursive: true }),
+    );
     const persistedPath = join(root, 'projects/project-a/channels.json');
     await writeFile(
       persistedPath,
@@ -155,7 +156,10 @@ describe('JsonProjectChannelStore', () => {
         },
       ],
     });
-    expect(JSON.parse(await readFile(persistedPath, 'utf8'))).toEqual(migrated);
+    await expect(readFile(persistedPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(
+      JSON.parse(await readFile(join(root, 'projects/project-a/collaboration.json'), 'utf8')),
+    ).toMatchObject(migrated);
   });
 
   it('fails fast when legacy lifecycle metadata is only partially present', async () => {
@@ -192,8 +196,9 @@ describe('JsonProjectChannelStore', () => {
 
   it('refuses to discard a legacy summary through an unrelated channel commit', async () => {
     const root = await temporaryRoot();
-    const store = new JsonProjectChannelStore(root, ENABLED_ROLES);
-    await store.initialize('project-a', [createMainChannel(ENABLED_ROLES)]);
+    await import('node:fs/promises').then(({ mkdir }) =>
+      mkdir(join(root, 'projects/project-a'), { recursive: true }),
+    );
     await writeFile(
       join(root, 'projects/project-a/channels.json'),
       `${JSON.stringify({
@@ -206,8 +211,8 @@ describe('JsonProjectChannelStore', () => {
       })}\n`,
       'utf8',
     );
-    const snapshot = await store.load('project-a');
-    if (snapshot === undefined) throw new Error('expected legacy snapshot');
+    const store = new JsonProjectChannelStore(root, ENABLED_ROLES);
+    const snapshot = await store.initialize('project-a', [createMainChannel(ENABLED_ROLES)]);
 
     await expect(store.commit('project-a', snapshot.revision, snapshot.channels)).rejects.toThrow(
       'must be migrated before commit',

@@ -1,4 +1,4 @@
-import { PHASE0_ROSTER, type RoleSpec } from '@agora/core-domain';
+import { PHASE0_ROSTER, type RoleSpec, type RosterEntry } from '@agora/core-domain';
 import { ARCHITECT_ROLE, PM_ROLE, REVIEWER_ROLE } from './roles';
 
 function fromPhase0(role: string): RoleSpec {
@@ -25,6 +25,11 @@ export const DEFAULT_ROSTER: readonly RoleSpec[] = [
   fromPhase0('TESTER'),
   REVIEWER_ROLE,
 ];
+
+export const DEFAULT_ROSTER_ENTRIES: readonly RosterEntry[] = DEFAULT_ROSTER.map((spec) => ({
+  spec,
+  status: 'enabled',
+}));
 
 /**
  * Roster loading guard (task 2.1). Enforces the invariants a composition root

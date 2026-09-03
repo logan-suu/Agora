@@ -44,6 +44,7 @@ export interface TaskComposition {
   initialState: AppState;
   workerRuntime: WorkerRuntime;
   roster: readonly RoleSpec[];
+  loadRoster?: () => Promise<readonly RoleSpec[]>;
   artifactPath: string;
   archiveArtifact(): Promise<string>;
   dispose(): Promise<void>;
@@ -55,6 +56,7 @@ export type TaskCompositionFactory = (input: {
   transition: StateTransition;
   handleOutput: StepOutputHandler;
   buildChannelContext: (state: AppState, role: string) => Promise<readonly unknown[]>;
+  loadRoster?: () => Promise<readonly RoleSpec[]>;
 }) => Promise<TaskComposition>;
 
 interface ActiveRun {
@@ -142,6 +144,7 @@ export class TaskOrchestrationRuntime {
         handleOutput: (state, role, output) =>
           this.messages.handleWorkerOutput(state, role, output),
         buildChannelContext: (state, role) => this.messages.channelContextFor(state, role),
+        loadRoster: () => this.messages.enabledRoleSpecs(input.projectId),
       });
       const initialState = await this.messages.initializeState(input, composition.initialState);
       const run: ActiveRun = {
@@ -197,6 +200,7 @@ export class TaskOrchestrationRuntime {
       const finalState = await runOrchestration(initialState, {
         workerRuntime: composition.workerRuntime,
         roster: composition.roster,
+        ...(composition.loadRoster === undefined ? {} : { loadRoster: composition.loadRoster }),
         transition,
       });
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';

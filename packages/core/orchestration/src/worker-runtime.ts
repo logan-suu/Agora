@@ -5,6 +5,7 @@ import type { Assignment } from './coordinator';
 
 export interface WorkerRuntimeDeps {
   roster: readonly RoleSpec[];
+  loadRoster?: () => Promise<readonly RoleSpec[]>;
   buildExecutor(spec: RoleSpec, assign: Assignment): Executor;
   buildChannelContext?: (
     state: AppState,
@@ -56,7 +57,7 @@ export class WorkerRuntime {
   }
 
   async runOne(state: AppState, assign: Assignment): Promise<AppState> {
-    const spec = this.specOf(assign.role);
+    const spec = this.specOf(assign.role, await this.currentRoster());
     const executor = this.deps.buildExecutor(spec, assign);
     const handle: WorkerHandle = {
       id: crypto.randomUUID(),
@@ -80,8 +81,8 @@ export class WorkerRuntime {
     return current;
   }
 
-  private specOf(role: string): RoleSpec {
-    const spec = this.deps.roster.find((entry) => entry.role === role);
+  private specOf(role: string, roster: readonly RoleSpec[]): RoleSpec {
+    const spec = roster.find((entry) => entry.role === role);
     if (spec === undefined) throw new UnknownRoleError(role);
     return spec;
   }
@@ -90,6 +91,11 @@ export class WorkerRuntime {
     let current = state;
     while (!handle.done) {
       if (this.paused) {
+        await handle.executor.saveSafePoint();
+        return current;
+      }
+      const roster = await this.currentRoster();
+      if (!roster.some((entry) => entry.role === handle.role)) {
         await handle.executor.saveSafePoint();
         return current;
       }
@@ -103,7 +109,7 @@ export class WorkerRuntime {
       }
       const result = await handle.executor.step({
         sessionId: crypto.randomUUID(),
-        view: project(current, handle.role, this.deps.roster, channelContext),
+        view: project(current, handle.role, roster, channelContext),
       });
       if (this.deps.handleOutput !== undefined) {
         await this.deps.handleOutput(current, handle.role, result.output);
@@ -112,6 +118,10 @@ export class WorkerRuntime {
       if (result.kind === 'done') handle.done = true;
     }
     return current;
+  }
+
+  private currentRoster(): Promise<readonly RoleSpec[]> {
+    return this.deps.loadRoster?.() ?? Promise.resolve(this.deps.roster);
   }
 
   private transition(state: AppState, mutations: readonly Mutation[]): Promise<AppState> {

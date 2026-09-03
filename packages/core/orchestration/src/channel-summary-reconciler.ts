@@ -24,6 +24,7 @@ export interface ChannelSummaryReconcilerOptions {
   state: TaskStateStore;
   generator: ChannelSummaryGenerator;
   legacySummaries?: (projectId: string) => Promise<LegacyBubbledSummary[]>;
+  acknowledgeLegacySummary?: (projectId: string, channelId: string) => Promise<void>;
   clock?: () => number;
 }
 
@@ -105,6 +106,7 @@ export class ChannelSummaryReconciler {
         channel.bubbledSummaryRef.msgId === expectedRef.msgId &&
         !hasLegacy
       ) {
+        if (legacy !== undefined) await this.#acknowledgeLegacy(scope.projectId, channel.channelId);
         return;
       }
       const channels = snapshot.channels.map((candidate) =>
@@ -114,6 +116,7 @@ export class ChannelSummaryReconciler {
       );
       try {
         await this.#options.channels.commit(scope.projectId, snapshot.revision, channels);
+        if (legacy !== undefined) await this.#acknowledgeLegacy(scope.projectId, channel.channelId);
         return;
       } catch (error) {
         if (
@@ -124,6 +127,10 @@ export class ChannelSummaryReconciler {
         }
       }
     }
+  }
+
+  async #acknowledgeLegacy(projectId: string, channelId: string): Promise<void> {
+    await this.#options.acknowledgeLegacySummary?.(projectId, channelId);
   }
 
   async #requiredState(scope: TaskScope): Promise<AppState> {

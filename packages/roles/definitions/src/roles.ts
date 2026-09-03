@@ -11,7 +11,6 @@ import type { RoleSpec } from '@agora/core-domain';
  */
 export const PM_ROLE: RoleSpec = {
   role: 'PM',
-  enabled: true,
   executor: 'harness',
   systemPrompt:
     '你是产品经理，产出带验收标准的结构化需求。若 leader 新指令与已确认需求冲突，提 blocking 异议说明冲突点、等 leader 裁决，不擅自改需求。',
@@ -29,7 +28,6 @@ export const PM_ROLE: RoleSpec = {
  */
 export const ARCHITECT_ROLE: RoleSpec = {
   role: 'ARCHITECT',
-  enabled: true,
   executor: 'harness',
   systemPrompt:
     '你是架构师，给出可实现的设计与约定；重设计时逐条回应结构化 reviewFeedback，关键决策附理由写入台账。',
@@ -54,7 +52,6 @@ export const ARCHITECT_ROLE: RoleSpec = {
  */
 export const REVIEWER_ROLE: RoleSpec = {
   role: 'REVIEWER',
-  enabled: true,
   executor: 'harness',
   systemPrompt:
     '你是评审者，按结构化 reviewContext 审查质量/规范/安全或连续失败根因，结合 failingTests/fileRefs 产出可执行修改意见，通过结论需 leader 最终确认。',

@@ -8,10 +8,9 @@ function spec(role: string) {
 }
 
 describe('PHASE0_ROSTER', () => {
-  it('contains exactly the C4 triad with harness executors enabled (decision D2)', () => {
+  it('contains exactly the C4 triad with harness executors (decision D2)', () => {
     expect(PHASE0_ROSTER.map((entry) => entry.role)).toEqual(['COORDINATOR', 'CODER', 'TESTER']);
     for (const entry of PHASE0_ROSTER) {
-      expect(entry.enabled).toBe(true);
       expect(entry.executor).toBe('harness');
     }
   });

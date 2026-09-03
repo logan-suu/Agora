@@ -121,7 +121,6 @@ const FULL_ROSTER: RoleSpec[] = (
   ['COORDINATOR', 'PM', 'ARCHITECT', 'CODER', 'TESTER', 'REVIEWER'] as const
 ).map((role) => ({
   role,
-  enabled: true,
   executor: 'harness' as const,
   systemPrompt: '',
   tools: [],
@@ -603,11 +602,10 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
     expect(next.subtasks[0]?.id).toBe('t-1-sub-0');
   });
 
-  it('skips PM when requirements are ready even if the roster has one, and skips ARCH when absent', () => {
+  it('gates for the Leader when the next required role is not enabled', () => {
     const pmOnlyRoster: RoleSpec[] = [
       {
         role: 'PM',
-        enabled: true,
         executor: 'harness',
         systemPrompt: '',
         tools: [],
@@ -619,9 +617,10 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
       ...clock(),
       roster: pmOnlyRoster,
     });
-    expect(decision.route.kind).toBe('worker');
-    if (decision.route.kind !== 'worker') throw new Error('unreachable guard for narrowing');
-    expect(decision.route.batch[0].role).toBe('CODER');
+    expect(decision.route.kind).toBe('human_gate');
+    const next = applyMutations(requirementsReadyState(), decision.mutations);
+    expect(next.humanGate).toMatchObject({ reason: 'required_role_unavailable:CODER' });
+    expect(next.messages.some((message) => message.payload.role === 'CODER')).toBe(true);
   });
 
   it('increments iterationCount on each PM dispatch so a silent PM loop stays bounded', () => {

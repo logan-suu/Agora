@@ -1,4 +1,4 @@
-import type { ProjectChannelStore } from '@agora/comm-channels';
+import type { ProjectChannelStore, ProjectCollaborationStore } from '@agora/comm-channels';
 import type { ParticipantId, RoleId, SubChannel } from '@agora/core-domain';
 import type { TaskScope } from '@agora/runtime-state';
 
@@ -37,20 +37,20 @@ export class ChannelLifecycleRejectedError extends Error {
 
 export class ChannelLifecycleService {
   readonly #channels: ProjectChannelStore;
+  readonly #collaboration: ProjectCollaborationStore;
   readonly #messages: MessageService;
-  readonly #enabledRoles: readonly RoleId[];
   readonly #clock: () => number;
   readonly #queues = new Map<string, Promise<void>>();
 
   constructor(
     channels: ProjectChannelStore,
     messages: MessageService,
-    enabledRoles: readonly RoleId[],
+    collaboration: ProjectCollaborationStore,
     clock: () => number = Date.now,
   ) {
     this.#channels = channels;
     this.#messages = messages;
-    this.#enabledRoles = [...enabledRoles];
+    this.#collaboration = collaboration;
     this.#clock = clock;
   }
 
@@ -59,8 +59,14 @@ export class ChannelLifecycleService {
       const actionId = safeSegment(input.actionId, 'actionId');
       const threadId = safeSegment(input.threadId ?? actionId, 'threadId');
       const topic = nonEmptyString(input.topic, 'topic');
-      this.#assertActor(input.actor);
-      for (const role of input.requestedRoles) this.#assertEnabledRole(role, 'requested role');
+      const snapshot = await this.#loadProject(input.scope.projectId);
+      const enabledRoles = snapshot.roster
+        .filter((entry) => entry.status === 'enabled')
+        .map((entry) => entry.spec.role);
+      this.#assertActor(input.actor, enabledRoles);
+      for (const role of input.requestedRoles) {
+        this.#assertEnabledRole(role, 'requested role', enabledRoles);
+      }
 
       const requested = new Set<RoleId>(input.requestedRoles);
       if (input.actor !== 'leader') requested.add(input.actor);
@@ -71,10 +77,9 @@ export class ChannelLifecycleService {
       }
       const participants: ParticipantId[] = [
         'leader',
-        ...this.#enabledRoles.filter((role) => requested.has(role)),
+        ...enabledRoles.filter((role) => requested.has(role)),
       ];
 
-      const snapshot = await this.#loadProject(input.scope.projectId);
       const existing = snapshot.channels.find(
         (channel): channel is SubChannel =>
           channel.kind === 'sub' &&
@@ -153,7 +158,6 @@ export class ChannelLifecycleService {
 
   close(input: CloseSubChannelInput): Promise<ChannelLifecycleResult> {
     return this.#enqueue(input.scope.projectId, async () => {
-      this.#assertActor(input.actor);
       safeSegment(input.actionId, 'actionId');
       const channelId = safeSegment(input.channelId, 'channelId');
       if (channelId === 'main') {
@@ -161,6 +165,10 @@ export class ChannelLifecycleService {
       }
 
       const snapshot = await this.#loadProject(input.scope.projectId);
+      const enabledRoles = snapshot.roster
+        .filter((entry) => entry.status === 'enabled')
+        .map((entry) => entry.spec.role);
+      this.#assertActor(input.actor, enabledRoles);
       const existing = snapshot.channels.find((channel) => channel.channelId === channelId);
       if (existing === undefined) {
         throw new ChannelLifecycleRejectedError(`channel "${channelId}" does not exist`);
@@ -220,19 +228,21 @@ export class ChannelLifecycleService {
   }
 
   async #loadProject(projectId: string) {
-    const snapshot = await this.#channels.load(projectId);
+    const snapshot = await this.#collaboration.load(projectId);
     if (snapshot === undefined) {
-      throw new Error(`project channel store is not initialized for projectId "${projectId}"`);
+      throw new Error(
+        `project collaboration store is not initialized for projectId "${projectId}"`,
+      );
     }
     return snapshot;
   }
 
-  #assertActor(actor: ParticipantId): void {
-    if (actor !== 'leader') this.#assertEnabledRole(actor, 'actor');
+  #assertActor(actor: ParticipantId, enabledRoles: readonly RoleId[]): void {
+    if (actor !== 'leader') this.#assertEnabledRole(actor, 'actor', enabledRoles);
   }
 
-  #assertEnabledRole(role: RoleId, field: string): void {
-    if (!this.#enabledRoles.includes(role)) {
+  #assertEnabledRole(role: RoleId, field: string, enabledRoles: readonly RoleId[]): void {
+    if (!enabledRoles.includes(role)) {
       throw new ChannelLifecycleRejectedError(`${field} "${role}" is not enabled`);
     }
   }

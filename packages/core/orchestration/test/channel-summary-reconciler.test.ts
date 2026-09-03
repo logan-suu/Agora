@@ -233,6 +233,7 @@ describe('ChannelSummaryReconciler', () => {
       })}\n`,
       'utf8',
     );
+    await channels.initialize(scope.projectId, [createMainChannel(roles)]);
     const generator = new FakeGenerator(generatedSummary());
     await new ChannelSummaryReconciler({
       channels,
@@ -240,13 +241,21 @@ describe('ChannelSummaryReconciler', () => {
       state,
       generator,
       legacySummaries: (projectId) => channels.legacyBubbledSummaries(projectId),
+      acknowledgeLegacySummary: (projectId, channelId) =>
+        channels.acknowledgeLegacyBubbledSummary(projectId, channelId),
     }).reconcile(scope);
 
     expect(generator.calls).toBe(0);
     expect((await state.load(scope))?.messages[0]?.display).toBe('Legacy conclusion.');
-    const persisted = await readFile(path, 'utf8');
+    const persisted = await readFile(
+      join(root, 'projects', scope.projectId, 'collaboration.json'),
+      'utf8',
+    );
     expect(persisted).not.toContain('localContext');
     expect(persisted).not.toContain('bubbledSummary"');
     expect(persisted).toContain('bubbledSummaryRef');
+    await expect(
+      readFile(join(root, 'projects', scope.projectId, 'legacy-channel-summaries.json'), 'utf8'),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });

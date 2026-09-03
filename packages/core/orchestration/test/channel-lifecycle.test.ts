@@ -38,7 +38,12 @@ async function setup(initializeTask = true) {
   const bus = new RecordingBus();
   const messages = new MessageService(states, bus, channels);
   if (initializeTask) await messages.initialize(scope, 'Implement channel lifecycle');
-  const lifecycle = new ChannelLifecycleService(channels, messages, ENABLED_ROLES, () => 42);
+  const lifecycle = new ChannelLifecycleService(
+    channels,
+    messages,
+    channels.collaboration,
+    () => 42,
+  );
   return { bus, channels, lifecycle, messages, states };
 }
 

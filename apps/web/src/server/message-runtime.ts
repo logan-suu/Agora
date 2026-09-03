@@ -1,14 +1,18 @@
 import { basename, dirname, resolve } from 'node:path';
 import type { MessageBus, MessageCommitted } from '@agora/comm-bus';
 import { toDisplayMessageEvent } from '@agora/comm-bus';
-import { DerivedChannelContextBuilder, JsonProjectChannelStore } from '@agora/comm-channels';
+import {
+  DerivedChannelContextBuilder,
+  JsonProjectChannelStore,
+  JsonProjectCollaborationStore,
+} from '@agora/comm-channels';
 import {
   type AppState,
   createMainChannel,
   type Message,
   type Mutation,
-  type RoleId,
   type RoleSpec,
+  type RosterEntry,
 } from '@agora/core-domain';
 import {
   ChannelLifecycleRejectedError,
@@ -17,6 +21,7 @@ import {
   type MessageCommitResult,
   MessageService,
   type MutationCommitResult,
+  ProjectRosterService,
 } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import {
@@ -51,14 +56,15 @@ class SseMessageBus implements MessageBus {
 export class MessageRuntime {
   readonly root: string;
   readonly store: JsonTaskStateStore;
+  readonly collaboration: JsonProjectCollaborationStore;
   readonly channels: JsonProjectChannelStore;
+  readonly roster: ProjectRosterService;
   readonly stream: ChannelStream;
   readonly #service: MessageService;
   readonly #lifecycle: ChannelLifecycleService;
   readonly #summaryReconciler: ChannelSummaryReconciler;
-  readonly #roster: readonly RoleSpec[];
+  readonly #initialRoster: readonly RosterEntry[];
   readonly #channelContext = new DerivedChannelContextBuilder();
-  readonly #enabledRoles: readonly RoleId[];
   readonly #leaderQueues = new Map<string, Promise<void>>();
 
   constructor(
@@ -69,19 +75,27 @@ export class MessageRuntime {
   ) {
     this.root = root;
     this.store = new JsonTaskStateStore(root);
-    this.#enabledRoles = roster.filter((spec) => spec.enabled).map((spec) => spec.role);
-    this.channels = new JsonProjectChannelStore(root, this.#enabledRoles);
+    this.#initialRoster = roster.map((spec) => ({ spec, status: 'enabled' }));
+    this.collaboration = new JsonProjectCollaborationStore(root);
+    this.channels = new JsonProjectChannelStore(this.collaboration, this.#initialRoster);
+    this.roster = new ProjectRosterService(this.collaboration);
     this.stream = stream;
-    this.#service = new MessageService(this.store, new SseMessageBus(stream), this.channels);
-    this.#lifecycle = new ChannelLifecycleService(this.channels, this.#service, this.#enabledRoles);
+    this.#service = new MessageService(
+      this.store,
+      new SseMessageBus(stream),
+      this.channels,
+      this.collaboration,
+    );
+    this.#lifecycle = new ChannelLifecycleService(this.channels, this.#service, this.collaboration);
     this.#summaryReconciler = new ChannelSummaryReconciler({
       channels: this.channels,
       messages: this.#service,
       state: this.store,
       generator: summaryGenerator,
       legacySummaries: (projectId) => this.channels.legacyBubbledSummaries(projectId),
+      acknowledgeLegacySummary: (projectId, channelId) =>
+        this.channels.acknowledgeLegacyBubbledSummary(projectId, channelId),
     });
-    this.#roster = roster;
   }
 
   async initialize(scope: TaskScope, goal: string): Promise<AppState> {
@@ -105,17 +119,33 @@ export class MessageRuntime {
   }
 
   ensureProjectChannels(projectId: string) {
-    return this.channels.initialize(projectId, [createMainChannel(this.#enabledRoles)]);
+    return this.channels.initialize(projectId, [
+      createMainChannel(this.#initialRoster.map((entry) => entry.spec.role)),
+    ]);
   }
 
   async channelContextFor(state: AppState, role: string) {
-    const snapshot = await this.channels.load(state.projectId);
+    const snapshot = await this.collaboration.load(state.projectId);
     if (snapshot === undefined) {
       throw new Error(
         `project channel store is not initialized for projectId "${state.projectId}"`,
       );
     }
+    const entry = snapshot.roster.find((candidate) => candidate.spec.role === role);
+    if (entry?.status !== 'enabled') throw new Error(`role "${role}" is not enabled`);
     return this.#channelContext.build(snapshot, state, role);
+  }
+
+  async enabledRoleSpecs(projectId: string): Promise<RoleSpec[]> {
+    const snapshot = await this.collaboration.load(projectId);
+    if (snapshot === undefined) {
+      throw new Error(
+        `project collaboration store is not initialized for projectId "${projectId}"`,
+      );
+    }
+    return snapshot.roster
+      .filter((entry) => entry.status === 'enabled')
+      .map((entry) => structuredClone(entry.spec));
   }
 
   reconcileChannels(scope: TaskScope): Promise<AppState | undefined> {
@@ -154,6 +184,16 @@ export class MessageRuntime {
       return { state: current, published: false, message: existing, action: actionFrom(existing) };
     }
     await this.#summaryReconciler.reconcile(scope);
+    const collaboration = await this.collaboration.load(scope.projectId);
+    if (collaboration === undefined) {
+      throw new Error(
+        `project collaboration store is not initialized for projectId "${scope.projectId}"`,
+      );
+    }
+    const enabledRoster = collaboration.roster
+      .filter((entry) => entry.status === 'enabled')
+      .map((entry) => entry.spec);
+    const knownRoles = collaboration.roster.map((entry) => entry.spec.role);
 
     const intent = parseLeaderIntent(input.display);
     let lifecycleRejection: LeaderActionStatus | undefined;
@@ -187,7 +227,7 @@ export class MessageRuntime {
     }
 
     const result = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
-      const planned = planLeaderIntent(intent, state, this.#roster);
+      const planned = planLeaderIntent(intent, state, enabledRoster, knownRoles);
       const action = lifecycleRejection ?? planned.action;
       const message: Message = {
         msgId: input.msgId,
