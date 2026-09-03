@@ -239,4 +239,37 @@ describe('RoleDepartureService', () => {
       ),
     ).toMatchObject({ status: 'departed', departure: { stage: 'completed' } });
   });
+
+  it('fails closed when the derived handoff message id is occupied by another message', async () => {
+    const { drain, messages, service, state } = await fixture();
+    await messages.commitMessage(scope, {
+      msgId: 'role-departure:colliding-action',
+      channelId: 'main',
+      fromRole: 'leader',
+      type: 'chat',
+      payload: {},
+      display: 'Unrelated prior message',
+      ts: 500,
+    });
+
+    await expect(
+      service.depart({
+        scope,
+        actor: 'leader',
+        actionId: 'colliding-action',
+        role: 'CODER',
+        successorRole: 'TESTER',
+        requestedTs: 4_000,
+      }),
+    ).rejects.toThrow(/handoff message.*conflicts/i);
+
+    expect(drain.calls).toHaveLength(0);
+    await expect(state.load(scope)).resolves.toMatchObject({
+      subtasks: [
+        { id: 'done-z', ownerRole: 'CODER', status: 'done' },
+        { id: 'open-a', ownerRole: 'CODER', status: 'in_progress' },
+      ],
+      handoffPackets: [],
+    });
+  });
 });

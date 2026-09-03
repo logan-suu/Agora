@@ -89,6 +89,15 @@ export class RoleDepartureService {
       );
     }
     const existing = target.departure;
+    const messageId = `role-departure:${input.actionId}`;
+    const existingHandoffMessage = initialState.messages.find(
+      (message) => message.msgId === messageId,
+    );
+    if (existing === undefined && existingHandoffMessage !== undefined) {
+      throw new RoleDepartureRejectedError(
+        `handoff message id "${messageId}" conflicts with an existing non-departure message`,
+      );
+    }
     if (
       (target.status === 'departing' || target.status === 'departed') &&
       existing?.actionId !== input.actionId
@@ -120,13 +129,16 @@ export class RoleDepartureService {
     ).snapshot;
     let departure = this.#departure(collaboration, role, input.actionId);
     if (departure.stage === 'completed') {
-      return { status: 'applied', state: await this.#loadState(input.scope), collaboration };
+      const state = await this.#loadState(input.scope);
+      assertCanonicalDepartureHandoff(state, role, departure, messageId);
+      return { status: 'applied', state, collaboration };
     }
     if (departure.stage === 'awaiting_replacement') {
-      return { status: 'blocked', state: await this.#loadState(input.scope), collaboration };
+      const state = await this.#loadState(input.scope);
+      assertCanonicalDepartureHandoff(state, role, departure, messageId);
+      return { status: 'blocked', state, collaboration };
     }
 
-    const messageId = `role-departure:${input.actionId}`;
     let state = await this.#loadState(input.scope);
     const handoffAlreadyCommitted = state.messages.some((message) => message.msgId === messageId);
     if (!handoffAlreadyCommitted) {
@@ -140,12 +152,12 @@ export class RoleDepartureService {
           (entry) => entry.spec.role === departure.successorRole && entry.status === 'enabled',
         )
       ) {
-        throw new RoleDepartureRejectedError(
-          `departure successor "${departure.successorRole}" is no longer enabled`,
-        );
+        throw new Error(`departure successor "${departure.successorRole}" is no longer enabled`);
       }
       state = (await this.#commitHandoff(input.scope, state, role, departure, messageId)).state;
     }
+
+    assertCanonicalDepartureHandoff(state, role, departure, messageId);
 
     const unfinished = state.subtasks.filter(
       (subtask) => subtask.ownerRole === role && subtask.status !== 'done',
@@ -286,6 +298,82 @@ export class RoleDepartureService {
     }
     return entry.departure;
   }
+}
+
+function assertCanonicalDepartureHandoff(
+  state: AppState,
+  role: string,
+  departure: RoleDeparture,
+  messageId: string,
+): void {
+  const message = state.messages.find((candidate) => candidate.msgId === messageId);
+  const payload = message?.payload;
+  const packet = payload?.packet;
+  const expectedToRole = departure.successorRole ?? 'leader';
+  const canonicalMessage =
+    message !== undefined &&
+    message.channelId === 'main' &&
+    message.fromRole === 'COORDINATOR' &&
+    message.type === 'handoff' &&
+    message.to?.length === 1 &&
+    message.to[0] === expectedToRole &&
+    message.ts === departure.requestedTs &&
+    payload !== undefined &&
+    payload.kind === 'role_departure_handoff' &&
+    payload.actionId === departure.actionId &&
+    isHandoffPacket(packet) &&
+    packet.fromRole === role &&
+    packet.toRole === expectedToRole &&
+    packet.ts === departure.requestedTs &&
+    state.handoffPackets.some((candidate) => sameHandoffPacket(candidate, packet));
+  const unfinished = state.subtasks.filter(
+    (subtask) => subtask.ownerRole === role && subtask.status !== 'done',
+  );
+  const responsibilitiesCommitted =
+    departure.successorRole === undefined
+      ? unfinished.every((subtask) => subtask.status === 'blocked') &&
+        (unfinished.length === 0 ||
+          state.humanGate?.reason === `role_departure_requires_replacement:${role}`)
+      : unfinished.length === 0;
+  if (!canonicalMessage || !responsibilitiesCommitted) {
+    throw new RoleDepartureRejectedError(
+      `handoff message "${messageId}" conflicts with the persisted departure facts`,
+    );
+  }
+}
+
+function isHandoffPacket(value: unknown): value is HandoffPacket {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const packet = value as Partial<HandoffPacket>;
+  return (
+    typeof packet.fromRole === 'string' &&
+    typeof packet.toRole === 'string' &&
+    typeof packet.done === 'string' &&
+    Array.isArray(packet.keyDecisions) &&
+    packet.keyDecisions.every((entry) => typeof entry === 'string') &&
+    Array.isArray(packet.openIssues) &&
+    packet.openIssues.every((entry) => typeof entry === 'string') &&
+    Array.isArray(packet.fileRefs) &&
+    packet.fileRefs.every((entry) => typeof entry === 'string') &&
+    typeof packet.ts === 'number' &&
+    Number.isFinite(packet.ts)
+  );
+}
+
+function sameHandoffPacket(left: HandoffPacket, right: HandoffPacket): boolean {
+  return (
+    left.fromRole === right.fromRole &&
+    left.toRole === right.toRole &&
+    left.done === right.done &&
+    sameStrings(left.keyDecisions, right.keyDecisions) &&
+    sameStrings(left.openIssues, right.openIssues) &&
+    sameStrings(left.fileRefs, right.fileRefs) &&
+    left.ts === right.ts
+  );
+}
+
+function sameStrings(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((entry, index) => entry === right[index]);
 }
 
 function buildDepartureHandoff(

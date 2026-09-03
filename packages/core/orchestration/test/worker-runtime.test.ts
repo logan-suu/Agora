@@ -322,6 +322,20 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     });
   });
 
+  it('treats a naturally completed worker as quiescent without creating a late drain', async () => {
+    const fake = new FakeExecutor([stepOf('done', [])]);
+    const runtime = runtimeWith([fake]);
+
+    await runtime.runOne(createInitialAppState('t-1', 'g'), { role: 'CODER' });
+
+    await expect(runtime.awaitRoleSafePoint('CODER')).resolves.toEqual({
+      role: 'CODER',
+      activeWorkers: 0,
+      safePointRefs: [],
+    });
+    expect(fake.safePointCalls).toHaveLength(0);
+  });
+
   it('throws when the roster does not contain the requested role', async () => {
     const runtime = runtimeWith([new FakeExecutor([])]);
 

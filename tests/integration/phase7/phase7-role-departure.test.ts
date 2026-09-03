@@ -79,7 +79,7 @@ describe('Phase 7 role departure real execution chain', () => {
     const worker = new WorkerRuntime({
       roster: DEFAULT_ROSTER,
       loadRoster: () => messages.enabledRoleSpecs(scope.projectId),
-      buildChannelContext: (state, role) => messages.channelContextFor(state, role),
+      buildChannelContext: (state, role) => messages.workerStepChannelContextFor(state, role),
       transitionStep: async (_state, role, mutations) =>
         (await messages.commitWorkerStepMutations(scope, role, mutations)).state,
       buildExecutor: (spec) => {

@@ -168,6 +168,63 @@ describe('planLeaderIntent', () => {
     expect(
       planLeaderIntent(parseLeaderIntent('/role remove CODER'), state, roster, ['CODER']),
     ).toMatchObject({ action: { status: 'applied' }, mutations: [] });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove UNKNOWN'), state, roster, ['CODER']),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'unknown role "UNKNOWN"' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove COORDINATOR'), state, roster, [
+        'COORDINATOR',
+      ]),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'COORDINATOR cannot depart' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove CODER to CODER'), state, roster, ['CODER']),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'departure successor must differ from target' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(parseLeaderIntent('/role remove CODER to TESTER'), state, roster, [
+        'CODER',
+        'TESTER',
+      ]),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'departure successor "TESTER" must be enabled' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(
+        parseLeaderIntent('/role remove CODER'),
+        { ...state, phase: 'done' },
+        roster,
+        ['CODER'],
+      ),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'cannot remove a role after the task is done' },
+      mutations: [],
+    });
+    expect(
+      planLeaderIntent(
+        parseLeaderIntent('/role remove CODER'),
+        {
+          ...state,
+          humanGate: { reason: 'review_required', options: ['approve'], phase: state.phase },
+        },
+        roster,
+        ['CODER'],
+      ),
+    ).toMatchObject({
+      action: {
+        status: 'rejected',
+        reason: 'cannot remove a role while humanGate awaits leader resolution',
+      },
+      mutations: [],
+    });
     expect(planLeaderIntent(parseLeaderIntent('/unknown'), state, roster)).toMatchObject({
       action: { status: 'rejected' },
       mutations: [],

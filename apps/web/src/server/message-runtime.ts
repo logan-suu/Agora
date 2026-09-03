@@ -222,6 +222,43 @@ export class MessageRuntime {
     }
     const existing = current.messages.find((message) => message.msgId === input.msgId);
     if (existing !== undefined) {
+      const collaboration = await this.collaboration.load(scope.projectId);
+      if (collaboration === undefined) {
+        throw new Error(
+          `project collaboration store is not initialized for projectId "${scope.projectId}"`,
+        );
+      }
+      const departureEntries = collaboration.roster.filter(
+        (entry) => entry.departure?.actionId === input.msgId,
+      );
+      if (departureEntries.length > 1) {
+        throw new Error(`departure action "${input.msgId}" belongs to multiple roster entries`);
+      }
+      const departureEntry = departureEntries[0];
+      if (departureEntry?.departure !== undefined) {
+        const result = await this.#departure.depart({
+          scope,
+          actor: 'leader',
+          actionId: departureEntry.departure.actionId,
+          role: departureEntry.spec.role,
+          ...(departureEntry.departure.successorRole === undefined
+            ? {}
+            : { successorRole: departureEntry.departure.successorRole }),
+          requestedTs: departureEntry.departure.requestedTs,
+        });
+        return {
+          state: result.state,
+          published: false,
+          message: existing,
+          action:
+            result.status === 'applied'
+              ? { status: 'applied' }
+              : {
+                  status: 'blocked',
+                  reason: `role_departure_requires_replacement:${departureEntry.spec.role}`,
+                },
+        };
+      }
       return { state: current, published: false, message: existing, action: actionFrom(existing) };
     }
     await this.#summaryReconciler.reconcile(scope);

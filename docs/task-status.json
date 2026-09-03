@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-03T12:21:15.000Z",
+  "last_updated": "2026-09-03T13:19:45.000Z",
   "current_phase": 7,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -48,7 +48,7 @@
     },
     {
       "id": "D9",
-      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动 departing CAS→目标 step/end drain→Task State 交接/责任提交→departed CAS；重复请求从断点继续。Phase 8/9 裁决与完整抢占继续按阶段解锁，不走临时 command 旁路",
+      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动 departing CAS→目标 step/end drain→Task State 交接/责任提交→departed CAS；重复请求必须先按持久 departure 阶段从断点续办，不被已有 Leader Message 短路；saga 启动后的中断 fail-fast 且不写伪终态 rejected。Phase 8/9 裁决与完整抢占继续按阶段解锁，不走临时 command 旁路",
       "source": "docs/项目蓝图.md §10/§11/§17/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§4.3；docs/技术选型文档.md §9.2"
     },
     {
@@ -63,7 +63,7 @@
     },
     {
       "id": "D12",
-      "rule": "项目 roster 是唯一成员真相源且不复制进 AppState；RoleSpec 与 RosterEntry 生命周期分离，departure 元数据为跨 collaboration/Task State 离职 saga 的恢复锚点。roster+channels 同 revision CAS，ProjectChannelStore 签名不变。离职顺序=departing CAS→目标 Worker 当前 step/end drain→确定性交接与责任提交→departed CAS；普通工作只允许 enabled，departing 仅允许已登记活动 handle 的当前在途 Step 经 role-bound 接缝提交后停。未完成责任无 enabled 接任者时写 humanGate、subtask blocked 且保持 awaiting_replacement，不得先 departed；完成后保留身份与 handoffRef。Coordinator 恒 enabled；完整 Preemptor 留 Phase 9；legacy 迁移规则与 DEF-016 边界不变",
+      "rule": "项目 roster 是唯一成员真相源且不复制进 AppState；RoleSpec 与 RosterEntry 生命周期分离，departure 元数据为跨 collaboration/Task State 离职 saga 的恢复锚点。roster+channels 同 revision CAS，ProjectChannelStore 签名不变。离职顺序=departing CAS→目标 Worker 当前 step/end drain→确定性交接与责任提交→departed CAS；普通工作只允许 enabled，departing 仅允许已登记活动 handle 的当前在途 Step 经 role-bound 接缝提交后停。派生 handoff id 只能命中完整匹配的规范 Message+packet，冲突或责任后置条件不成立时 fail-closed。未完成责任无 enabled 接任者时写 humanGate、subtask blocked 且保持 awaiting_replacement，不得先 departed；完成后保留身份与 handoffRef。Coordinator 恒 enabled；完整 Preemptor 留 Phase 9；legacy 迁移规则与 DEF-016 边界不变",
       "source": "docs/项目蓝图.md §6/§10/§12/§13/§20/§21；docs/详细设计方案.md §1/§2/§4/§5/§8；docs/系统架构设计文档.md §4.2/§5.4/§9；docs/技术选型文档.md §9/§10；docs/开发计划安排.md §10"
     },
     {
@@ -962,8 +962,8 @@
             "7.1"
           ],
           "test_file": "tests/integration/phase7/phase7-role-departure.test.ts",
-          "notes": "D12：removeRole 是稳定 actionId 驱动的可恢复离职 saga，而非数组删除。顺序固定为 departing CAS→目标 Worker 当前 step/end drain→从已提交 State 确定性生成 HandoffPacket 并提交责任结果→departed CAS。普通工作只允许 enabled，departing 仅允许离职服务完成受限 drain；Phase 7 不抢跑全局 Preemptor/terminate/fork/resume。存在未完成责任且无 enabled 接任者时，subtask 标 blocked、写 humanGate 并保持 awaiting_replacement，绝不先 departed 或静默丢责；完成后保留最小身份、离职阶段与 handoffRef 供历史恢复/审计。\n[2026-09-03 /agora-do-task] Leader 批准启动 7.2；依赖 7.1=done、Phase 6 出口 6.5=done、current_phase=7，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划确认前不写测试或生产代码。\n[2026-09-03 /agora-read-spec→agora-sync-docs] Leader 确认先评审而非机械执行旧规格。复评发现 Phase 7 直接调用 Phase 9 Preemptor、departing 与 enabled-only 执行、暂停后交接主体、空缺即 departed、跨存储恢复及 HandoffPacket 描述六处不一致；已批准按蓝图→详细设计→架构/选型→开发计划→task-status/AGENTS 修订为目标角色 drain + 确定性交接 + 可恢复 saga。\n[2026-09-03 implementation] 已按确认计划完成 RoleDeparture 领域状态机、目标 Worker step/end drain、确定性 HandoffPacket/稳定 handoff Message、责任转移或 awaiting_replacement 阻断、D9 /role remove Web 接入及跨存储重试恢复。实现中发现 departing 后 main participants 已移除目标角色会阻断当前在途 Step 提交，已同步规格并收敛为仅绑定活动 handle/role 的 commitWorkerStepMutations 例外；新 Step、普通发言、其他角色与额外 Channel 副作用仍拒绝。G5：tests/integration/phase7/phase7-role-departure.test.ts 使用真实 HarnessExecutor、WorkerRuntime、HTTP、JSON stores、MessageService 与 collaboration CAS，验证在途 CODER Step 先持久化并保存安全点，再转移给 TESTER 并进入 departed；仅外部计费 LLM stream 使用脚本适配器。故障注入验证最终 CAS 失败后同 actionId 从 draining 继续，drain/message/packet 均不重复且沿用首次 requestedTs。\n[2026-09-03 /agora-commit] 已创建功能提交 40f7963（Implement recoverable role departure）并推送 feat/role-departure-saga；PR https://github.com/logan-suu/Agora/pull/54，base=dev-1.0.0。交付门禁：typecheck 通过、lint 通过、全量 test 76 files/643 tests 通过、7.2 专属 G5 通过、敏感信息模式扫描通过、git diff --check 通过。任务按合并流保持 in_progress，待人类合并 PR 后由 $agora-pr-merge 标 done。",
-          "last_updated": "2026-09-03T12:21:15.000Z"
+          "notes": "D12：removeRole 是稳定 actionId 驱动的可恢复离职 saga，而非数组删除。顺序固定为 departing CAS→目标 Worker 当前 step/end drain→从已提交 State 确定性生成 HandoffPacket 并提交责任结果→departed CAS。普通工作只允许 enabled，departing 仅允许离职服务完成受限 drain；Phase 7 不抢跑全局 Preemptor/terminate/fork/resume。存在未完成责任且无 enabled 接任者时，subtask 标 blocked、写 humanGate 并保持 awaiting_replacement，绝不先 departed 或静默丢责；完成后保留最小身份、离职阶段与 handoffRef 供历史恢复/审计。\n[2026-09-03 /agora-do-task] Leader 批准启动 7.2；依赖 7.1=done、Phase 6 出口 6.5=done、current_phase=7，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划确认前不写测试或生产代码。\n[2026-09-03 /agora-read-spec→agora-sync-docs] Leader 确认先评审而非机械执行旧规格。复评发现 Phase 7 直接调用 Phase 9 Preemptor、departing 与 enabled-only 执行、暂停后交接主体、空缺即 departed、跨存储恢复及 HandoffPacket 描述六处不一致；已批准按蓝图→详细设计→架构/选型→开发计划→task-status/AGENTS 修订为目标角色 drain + 确定性交接 + 可恢复 saga。\n[2026-09-03 implementation] 已按确认计划完成 RoleDeparture 领域状态机、目标 Worker step/end drain、确定性 HandoffPacket/稳定 handoff Message、责任转移或 awaiting_replacement 阻断、D9 /role remove Web 接入及跨存储重试恢复。实现中发现 departing 后 main participants 已移除目标角色会阻断当前在途 Step 提交，已同步规格并收敛为仅绑定活动 handle/role 的 commitWorkerStepMutations 例外；新 Step、普通发言、其他角色与额外 Channel 副作用仍拒绝。G5：tests/integration/phase7/phase7-role-departure.test.ts 使用真实 HarnessExecutor、WorkerRuntime、HTTP、JSON stores、MessageService 与 collaboration CAS，验证在途 CODER Step 先持久化并保存安全点，再转移给 TESTER 并进入 departed；仅外部计费 LLM stream 使用脚本适配器。故障注入验证最终 CAS 失败后同 actionId 从 draining 继续，drain/message/packet 均不重复且沿用首次 requestedTs。\n[2026-09-03 /agora-commit] 已创建功能提交 40f7963（Implement recoverable role departure）并推送 feat/role-departure-saga；PR https://github.com/logan-suu/Agora/pull/54，base=dev-1.0.0。交付门禁：typecheck 通过、lint 通过、全量 test 76 files/643 tests 通过、7.2 专属 G5 通过、敏感信息模式扫描通过、git diff --check 通过。任务按合并流保持 in_progress，待人类合并 PR 后由 $agora-pr-merge 标 done。\n[2026-09-03 /agora-pr-review·规格复评与修复] 先复评 D9/D12：保留可恢复 saga、目标 drain 与完成前责任校验的总体设计，补齐派生 handoff id 冲突 fail-closed、已有 Leader Message 不得短路未完成 saga、saga 启动后中断不得写伪终态 rejected 三项明确不变式，已按蓝图→详细设计→架构/选型→开发计划→standing decisions 同步，同时修正 Markdown MD038/MD028。TDD 红灯复现内部 handoff msgId 碰撞伪 applied、已有 Leader Message 短路恢复与接任者失效后重放问题；修复为完整验证规范 handoff Message+packet+责任后置条件、从持久 departure 参数续办、启动后失败 fail-fast，并收紧 Worker 完成态/active drain 边界。采纳 CodeRabbit 三条 inline 及两条测试 nit；补充 remove_role 六个拒绝分支、生产 context 接线、ID 冲突、断点续办、中断重试和终态重放回归。门禁：typecheck 0 错；Biome 218 files 0 违规；定向 6 files/75 tests 全绿；除既有非确定 Phase 0 live LRU 用例外的全量 75 files/646 tests 全绿，包含真实 DeepSeek、DockerSandbox 15/15、Web Docker/Harness/MCP 与 7.2 真实 Harness/JSON/HTTP 链。原样 `pnpm test` 两次均只失败既有 live LRU：首次模型返回非法 HandoffPacket，次次模型未产生 TS 文件；领域校验与断言均未放宽，本次改动不触及该模型输出路径。任务保持 in_progress，PR 禁止自动合并。",
+          "last_updated": "2026-09-03T13:19:45.000Z"
         },
         {
           "id": "7.3",

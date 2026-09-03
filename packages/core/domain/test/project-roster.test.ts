@@ -138,6 +138,8 @@ describe('project roster transitions', () => {
       departure: { ...DEPARTURE, stage: 'draining' },
     });
     expect(beginRoleDeparture(begun.roster, 'CODER', DEPARTURE).changed).toBe(false);
+    const successorDisabledAfterBegin = disableRole(begun.roster, 'TESTER').roster;
+    expect(beginRoleDeparture(successorDisabledAfterBegin, 'CODER', DEPARTURE).changed).toBe(false);
 
     const disabled = disableRole(withTester, 'CODER').roster;
     expect(

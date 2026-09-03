@@ -145,13 +145,6 @@ export function beginRoleDeparture(
   const successorRole =
     input.successorRole === undefined ? undefined : normalizeRoleId(input.successorRole);
   if (successorRole === normalized) throw new Error('departure successor must differ from target');
-  if (successorRole !== undefined) {
-    const successor = roster.find((entry) => entry.spec.role === successorRole);
-    if (successor?.status !== 'enabled') {
-      throw new Error(`departure successor "${successorRole}" must be enabled`);
-    }
-  }
-
   const index = roster.findIndex((entry) => entry.spec.role === normalized);
   if (index < 0) throw new Error(`unknown role: ${normalized}`);
   const current = roster[index];
@@ -166,6 +159,12 @@ export function beginRoleDeparture(
   if (current.status === 'departing' || current.status === 'departed') {
     if (sameDepartureRequest(current.departure, requested)) return unchanged(roster);
     throw new Error(`role "${normalized}" departure conflicts with an existing action`);
+  }
+  if (successorRole !== undefined) {
+    const successor = roster.find((entry) => entry.spec.role === successorRole);
+    if (successor?.status !== 'enabled') {
+      throw new Error(`departure successor "${successorRole}" must be enabled`);
+    }
   }
   if (current.status !== 'enabled' && current.status !== 'disabled') {
     throw new Error(`role "${normalized}" cannot begin departure from ${current.status}`);

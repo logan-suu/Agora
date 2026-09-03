@@ -95,7 +95,9 @@ export class WorkerRuntime {
   }
 
   async awaitRoleSafePoint(role: string): Promise<RoleDrainResult> {
-    const handles = [...this.active.values()].filter((handle) => handle.role === role);
+    const handles = [...this.active.values()].filter(
+      (handle) => handle.role === role && !handle.done,
+    );
     const safePointRefs = await Promise.all(handles.map((handle) => this.requestDrain(handle)));
     return { role, activeWorkers: handles.length, safePointRefs };
   }
@@ -149,10 +151,14 @@ export class WorkerRuntime {
         await this.deps.handleOutput(current, handle.role, result.output);
       }
       current = await this.transitionStep(current, handle.role, result.mutations);
-      if (result.kind === 'done') handle.done = true;
       if (handle.drainRequested || !roleStillEnabled) {
         await this.saveDrainSafePoint(handle);
+        handle.done = result.kind === 'done';
         return current;
+      }
+      if (result.kind === 'done') {
+        handle.done = true;
+        this.active.delete(handle.id);
       }
     }
     return current;
