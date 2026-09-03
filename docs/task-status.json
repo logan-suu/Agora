@@ -2,8 +2,8 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-03T20:31:58.000Z",
-  "current_phase": 7,
+  "last_updated": "2026-09-03T21:51:58.000Z",
+  "current_phase": 8,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
     {
@@ -179,7 +179,7 @@
       "id": "M7",
       "deliverable": "Phase 7 完成：角色热插拔 + Eval 增量",
       "target": "Week 9.5",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "M8",
@@ -928,7 +928,7 @@
     {
       "id": 7,
       "name": "角色热插拔（招募/离职/交接，1 周）",
-      "status": "in_progress",
+      "status": "done",
       "integration_test": "7.5",
       "exit_criteria": "可增删成员的活组织：离职强制交接、新人入职读交接接手",
       "tasks": [
@@ -1011,7 +1011,7 @@
           "id": "7.5",
           "title": "Phase 7 出口集成测试",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/开发计划安排.md §10",
             "docs/详细设计方案.md §11"
@@ -1020,15 +1020,15 @@
             "7.4"
           ],
           "test_file": "tests/integration/phase7/phase7-exit.test.ts",
-          "notes": "招/辞/接手全流程回归 + 护栏负向用例（尝试删 Coordinator 应被拒）；离职链必须验证稳定 actionId 重试、departing 先阻断、目标当前 Step 完整提交+safePoint、确定性交接、责任转移先于 departed，以及无接任者保持 awaiting_replacement。向固定 Eval 集追加角色加入、离职强制交接、接手、孤儿职责升级与 Coordinator 不可删除场景，同时验证产物与 handoff/roster 过程不变量，以及 Leader 经 D9 发起离职/入职、Coordinator 恒 enabled、孤儿职责升级 humanGate 这些 Phase 7 权威边界；项目级 addRole Eval 从受信任单用户项目管理服务边界开始，不虚构 /role add 或账号鉴权；完整 authority 覆盖与异议裁决仍归 Phase 8。Eval 增量不替代出口测试/G5。\n[2026-09-03 /agora-pr-merge] 依赖 7.4 已由人工合并并标 done，级联翻转 pending→ready。\n[2026-09-03 /agora-do-task] Leader 批准启动 7.5；依赖 7.4=done、Phase 6 出口 6.5=done、current_phase=7，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划再次确认前不写测试或生产代码。\n[2026-09-03 Code+Check+Verify] 完成 Phase 7 出口与 Eval 增量且无需修改生产代码：新增 5 个版本化 deterministic 场景（角色加入、强制交接、重启接手、孤儿职责升级、Coordinator 不可删除），与 Phase 6 的 10 个任务组成 15 项累积目录；Eval runner 对真实 HTTP/JSON stores/collaboration CAS/roster/WorkerRuntime/HarnessExecutor/D1 投影生成 fail-closed 检查与哈希 evidence，外部付费 LLM stream 是文件头按 R11 声明的唯一脚本适配器。新增 phase7-exit.test.ts 串联登记→在途 Step→departing→完整 mutation 提交→safePoint→确定性交接/责任转移→departed→稳定 actionId 幂等重放→重启 onboardingContext 接手，并验证 Coordinator 拒绝删除及无接任者保持 awaiting_replacement。门禁：Phase 7 定向 6 files/16 tests；deterministic Eval 15/15（含真实 Docker）和独立 model profile 1/1；typecheck 0 错；Biome 229 files 0 违规；原样 pnpm test 82 files/678 tests 全绿，包含 live DeepSeek、Web Docker/Harness/MCP、DockerSandbox 15/15 与 Phase 0–7 累积回归。baseline summary 已绑定全部 fingerprint，JSON/diff 检查通过，无新增延期项；DEF-016 保持 Phase 10 open。任务保持 in_progress，待 $agora-commit 交付。\n[2026-09-03 /agora-commit·门禁] 分支 test/phase7-exit-eval（base=dev-1.0.0）；typecheck 0 错；Biome 229 files 0 违规；7.5 任务真实链与 Eval 契约 3 files/11 tests；Phase 7 deterministic Eval 15/15（含真实 Docker）、独立 model profile 1/1；原样 pnpm test 82 files/678 tests 全绿，包含实时 DeepSeek、Web Docker/Harness/MCP、DockerSandbox 15/15 与 Phase 0–7 累积回归。精确暂存 11 个任务文件，gitleaks staged 扫描约 45.24 KB 无泄漏；功能提交 731f065 已推送。PR #57：https://github.com/logan-suu/Agora/pull/57（test/phase7-exit-eval → dev-1.0.0）。任务保持 in_progress，等待人类审阅与合并；Agent 不自动合并。\n[2026-09-03 /agora-pr-review·规格复评与修复] 复评确认 D12 的离职提交时序与 R2 原始 display 隔离合理；将原含混的 Phase 7 authority 验收范围澄清为成员生命周期权威边界，完整权威覆盖与异议裁决仍归 Phase 8，并同步《详细设计方案》§11.4 与《开发计划安排》任务 7.5。针对 PR #57 两项发现新增红测后修复：Eval 与出口测试通过旁路观测真实 TaskStateStore commit、safePoint 和 collaboration CAS，要求 step commit→safePoint→handoff commit→departed commit，且 departed 时重读 State 确认职责已转移；投影检查改为排除本次持久化的全部原始 display。任务继续 in_progress。修复验证：typecheck 0 错；Biome 229 files 0 违规；Phase 7 聚焦 4 files/18 tests；deterministic Eval 15/15（含真实 Docker）；model profile 1/1；剔除 3 个实时模型文件后的完整确定性与 Docker 回归 79 files/679 tests exit 0；另两条短实时 DeepSeek 链 2/2 通过。既有 Phase 0 LRU 实时基线两次非确定性失败，分别为模型未在工作树根生成 .ts 文件、模型生成不合法 handoff packet；未修改或弱化断言，作为本次 PR 更新的已知门禁限制。修复提交 f1aa568 已推送到 PR #57；任务保持 in_progress，等待人类审阅与合并。\n[2026-09-03 /agora-pr-review·CodeRabbit] 复核 3 条 inline comment：角色注册缺少来源边界说明有效，已在 Eval task、fixture 与两份规格中明确 addRole 从 D10 受信任项目管理服务边界开始，只验 roster+main 原子性；蓝图同步建议不采纳，因为蓝图 §10 D9/D13 与 §14 已明确 Phase 8 边界，本次无新架构决策；/api/messages 账号鉴权建议不采纳，因为蓝图明确排除账号级多租户/权限并规定 D10 受信任单用户组合根，已在 handler 注释固定该信任边界。",
-          "last_updated": "2026-09-03T20:31:58.000Z"
+          "notes": "招/辞/接手全流程回归 + 护栏负向用例（尝试删 Coordinator 应被拒）；离职链必须验证稳定 actionId 重试、departing 先阻断、目标当前 Step 完整提交+safePoint、确定性交接、责任转移先于 departed，以及无接任者保持 awaiting_replacement。向固定 Eval 集追加角色加入、离职强制交接、接手、孤儿职责升级与 Coordinator 不可删除场景，同时验证产物与 handoff/roster 过程不变量，以及 Leader 经 D9 发起离职/入职、Coordinator 恒 enabled、孤儿职责升级 humanGate 这些 Phase 7 权威边界；项目级 addRole Eval 从受信任单用户项目管理服务边界开始，不虚构 /role add 或账号鉴权；完整 authority 覆盖与异议裁决仍归 Phase 8。Eval 增量不替代出口测试/G5。\n[2026-09-03 /agora-pr-merge] 依赖 7.4 已由人工合并并标 done，级联翻转 pending→ready。\n[2026-09-03 /agora-do-task] Leader 批准启动 7.5；依赖 7.4=done、Phase 6 出口 6.5=done、current_phase=7，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；计划再次确认前不写测试或生产代码。\n[2026-09-03 Code+Check+Verify] 完成 Phase 7 出口与 Eval 增量且无需修改生产代码：新增 5 个版本化 deterministic 场景（角色加入、强制交接、重启接手、孤儿职责升级、Coordinator 不可删除），与 Phase 6 的 10 个任务组成 15 项累积目录；Eval runner 对真实 HTTP/JSON stores/collaboration CAS/roster/WorkerRuntime/HarnessExecutor/D1 投影生成 fail-closed 检查与哈希 evidence，外部付费 LLM stream 是文件头按 R11 声明的唯一脚本适配器。新增 phase7-exit.test.ts 串联登记→在途 Step→departing→完整 mutation 提交→safePoint→确定性交接/责任转移→departed→稳定 actionId 幂等重放→重启 onboardingContext 接手，并验证 Coordinator 拒绝删除及无接任者保持 awaiting_replacement。门禁：Phase 7 定向 6 files/16 tests；deterministic Eval 15/15（含真实 Docker）和独立 model profile 1/1；typecheck 0 错；Biome 229 files 0 违规；原样 pnpm test 82 files/678 tests 全绿，包含 live DeepSeek、Web Docker/Harness/MCP、DockerSandbox 15/15 与 Phase 0–7 累积回归。baseline summary 已绑定全部 fingerprint，JSON/diff 检查通过，无新增延期项；DEF-016 保持 Phase 10 open。任务保持 in_progress，待 $agora-commit 交付。\n[2026-09-03 /agora-commit·门禁] 分支 test/phase7-exit-eval（base=dev-1.0.0）；typecheck 0 错；Biome 229 files 0 违规；7.5 任务真实链与 Eval 契约 3 files/11 tests；Phase 7 deterministic Eval 15/15（含真实 Docker）、独立 model profile 1/1；原样 pnpm test 82 files/678 tests 全绿，包含实时 DeepSeek、Web Docker/Harness/MCP、DockerSandbox 15/15 与 Phase 0–7 累积回归。精确暂存 11 个任务文件，gitleaks staged 扫描约 45.24 KB 无泄漏；功能提交 731f065 已推送。PR #57：https://github.com/logan-suu/Agora/pull/57（test/phase7-exit-eval → dev-1.0.0）。任务保持 in_progress，等待人类审阅与合并；Agent 不自动合并。\n[2026-09-03 /agora-pr-review·规格复评与修复] 复评确认 D12 的离职提交时序与 R2 原始 display 隔离合理；将原含混的 Phase 7 authority 验收范围澄清为成员生命周期权威边界，完整权威覆盖与异议裁决仍归 Phase 8，并同步《详细设计方案》§11.4 与《开发计划安排》任务 7.5。针对 PR #57 两项发现新增红测后修复：Eval 与出口测试通过旁路观测真实 TaskStateStore commit、safePoint 和 collaboration CAS，要求 step commit→safePoint→handoff commit→departed commit，且 departed 时重读 State 确认职责已转移；投影检查改为排除本次持久化的全部原始 display。任务继续 in_progress。修复验证：typecheck 0 错；Biome 229 files 0 违规；Phase 7 聚焦 4 files/18 tests；deterministic Eval 15/15（含真实 Docker）；model profile 1/1；剔除 3 个实时模型文件后的完整确定性与 Docker 回归 79 files/679 tests exit 0；另两条短实时 DeepSeek 链 2/2 通过。既有 Phase 0 LRU 实时基线两次非确定性失败，分别为模型未在工作树根生成 .ts 文件、模型生成不合法 handoff packet；未修改或弱化断言，作为本次 PR 更新的已知门禁限制。修复提交 f1aa568 已推送到 PR #57；任务保持 in_progress，等待人类审阅与合并。\n[2026-09-03 /agora-pr-review·CodeRabbit] 复核 3 条 inline comment：角色注册缺少来源边界说明有效，已在 Eval task、fixture 与两份规格中明确 addRole 从 D10 受信任项目管理服务边界开始，只验 roster+main 原子性；蓝图同步建议不采纳，因为蓝图 §10 D9/D13 与 §14 已明确 Phase 8 边界，本次无新架构决策；/api/messages 账号鉴权建议不采纳，因为蓝图明确排除账号级多租户/权限并规定 D10 受信任单用户组合根，已在 handler 注释固定该信任边界。\n[2026-09-03 /agora-pr-merge 收尾] PR #57 已由人工合并至 dev-1.0.0（merge commit 1567bb07fa568f9a307a44dec87174137b4f6143）；任务标 done。G1–G7 证据复核：D9/D10/D12/D13 与 Phase 7/8 Eval 边界已先规格复评并同步详细设计、开发计划与 task-status，蓝图既有决策及冻结接口保持一致；typecheck 0 错；Biome 229 files 0 违规；初始原样 pnpm test 82 files/678 tests 全绿，包含实时 DeepSeek、Web Docker/Harness/MCP 与 DockerSandbox 15/15；复审修复后 Phase 7 聚焦 4 files/18 tests、deterministic Eval 15/15（含真实 Docker）、model profile 1/1、确定性与 Docker 回归 79 files/679 tests、短实时 DeepSeek 2/2 通过。既有 Phase 0 LRU 实时基线后续两次模型输出波动已如实保留，未弱化断言；不影响本任务已取得的完整全绿门禁与 Phase 7 专属真实链证据。gitleaks staged 扫描无泄漏；3 条 CodeRabbit inline 均逐条裁定、英文回复并 resolved；无新增延期项，DEF-016 保持 open 至 Phase 10。Phase 7 全部任务与出口标准完成，M7 标 done；current_phase 推进至 8，Phase 8 置 in_progress，级联翻转 8.1 pending→ready。合并后的 dev-1.0.0 再次通过 typecheck、lint 与 7.5 聚焦 3 files/15 tests。",
+          "last_updated": "2026-09-03T21:51:58.000Z"
         }
       ]
     },
     {
       "id": 8,
       "name": "人工卡点与冲突裁决（humanGate 终止并分叉 + 异议双轨 + trace，1 周）",
-      "status": "not_started",
+      "status": "in_progress",
       "integration_test": "8.5",
       "exit_criteria": "可控、可裁决、可观测：humanGate 落地决策 D4，异议双轨运转",
       "tasks": [
@@ -1036,7 +1036,7 @@
           "id": "8.1",
           "title": "humanGate：终止并分叉（Terminate & Fork）",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/详细设计方案.md §8",
             "docs/框架调研与借鉴决策.md 模式①"
@@ -1045,7 +1045,8 @@
             "7.5"
           ],
           "test_file": null,
-          "notes": "决策 D4 核心落地：置 humanGate 字段→销毁（Terminate）该项目 Harness 子进程释放资源（并发名额自动交还全局池）→Leader 裁决后基于存储的 safePoint 事件游标重新 Fork 新进程恢复（loadSafePoint + applyAndResume）。同时落地 TerminationCondition 语义（增量式+可组合+StopMessage，借鉴调研模式①）。"
+          "notes": "决策 D4 核心落地：置 humanGate 字段→销毁（Terminate）该项目 Harness 子进程释放资源（并发名额自动交还全局池）→Leader 裁决后基于存储的 safePoint 事件游标重新 Fork 新进程恢复（loadSafePoint + applyAndResume）。同时落地 TerminationCondition 语义（增量式+可组合+StopMessage，借鉴调研模式①）。\n[2026-09-03 /agora-pr-merge] Phase 7 出口任务 7.5 已由 PR #57 合并并标 done，跨阶段门禁解除，级联翻转 pending→ready。",
+          "last_updated": "2026-09-03T21:51:58.000Z"
         },
         {
           "id": "8.2",
