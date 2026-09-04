@@ -1,6 +1,7 @@
 import type {
   AppState,
   HandoffPacket,
+  HumanGateRequest,
   Message,
   Mutation,
   RoleId,
@@ -15,7 +16,7 @@ export const MAX_ITERATIONS = 8;
 
 export const TEST_FAILURE_REVIEW_THRESHOLD = 2;
 
-export const HUMAN_GATE_OPTIONS: readonly string[] = ['extend', 'take-over', 'abort'];
+export const HUMAN_GATE_OPTIONS: readonly string[] = ['continue'];
 
 export interface Assignment {
   role: RoleId;
@@ -25,7 +26,7 @@ export interface Assignment {
 export type Route =
   | { kind: 'worker'; batch: readonly [Assignment]; parallel: false }
   | { kind: 'integrate' }
-  | { kind: 'human_gate' }
+  | { kind: 'human_gate'; request: HumanGateRequest }
   | { kind: 'finalize' };
 
 export interface CoordinatorDecision {
@@ -94,24 +95,27 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
 }
 
 function unavailableRoleGate(state: AppState, clock: Clock, role: string): CoordinatorDecision {
+  const message: Message = {
+    msgId: clock.newId(),
+    channelId: 'main',
+    fromRole: 'COORDINATOR',
+    type: 'escalation',
+    payload: { reason: 'required_role_unavailable', role },
+    display: `Required role ${role} is disabled or unavailable; Leader action is required`,
+    ts: clock.now(),
+  };
   return {
-    route: { kind: 'human_gate' },
-    mutations: [
-      setMutation('humanGate', {
+    route: {
+      kind: 'human_gate',
+      request: {
+        triggerMsgId: message.msgId,
+        triggerTs: message.ts,
         reason: `required_role_unavailable:${role}`,
-        options: ['enable-role', 'reassign', 'abort'],
+        options: ['retry'],
         phase: state.phase,
-      }),
-      appendMutation('messages', {
-        msgId: clock.newId(),
-        channelId: 'main',
-        fromRole: 'COORDINATOR',
-        type: 'escalation',
-        payload: { reason: 'required_role_unavailable', role },
-        display: `Required role ${role} is disabled or unavailable; Leader action is required`,
-        ts: clock.now(),
-      }),
-    ],
+      },
+    },
+    mutations: [appendMutation('messages', message)],
   };
 }
 
@@ -530,16 +534,19 @@ function escalationMessage(state: AppState, clock: Clock): Message {
 
 function ifIterationLimit(state: AppState, clock: Clock): CoordinatorDecision | undefined {
   if (state.iterationCount < MAX_ITERATIONS) return undefined;
+  const message = escalationMessage(state, clock);
   return {
-    route: { kind: 'human_gate' },
-    mutations: [
-      setMutation('humanGate', {
+    route: {
+      kind: 'human_gate',
+      request: {
+        triggerMsgId: message.msgId,
+        triggerTs: message.ts,
         reason: 'iteration_limit',
         options: [...HUMAN_GATE_OPTIONS],
         phase: state.phase,
-      }),
-      appendMutation('messages', escalationMessage(state, clock)),
-    ],
+      },
+    },
+    mutations: [appendMutation('messages', message)],
   };
 }
 

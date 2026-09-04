@@ -1,11 +1,13 @@
-// Mock reason (R11): this test injects only the SandboxManager port to force a
-// deterministic setup failure before any Docker container or Harness is created.
+// Mock reason (R11): the first test injects only the SandboxManager port to force
+// deterministic setup failure. Recovery cleanup uses the real LocalTempSandbox.
+import { applyMutations, createInitialAppState, mergeByIdMutation } from '@agora/core-domain';
 import type {
   IntegrationResult,
   RunResult,
   SandboxManager,
   Worktree,
 } from '@agora/runtime-sandbox';
+import { LocalTempSandbox } from '@agora/runtime-sandbox';
 import { describe, expect, it } from 'vitest';
 
 import { createWebTaskCompositionFactory } from '../src/server/task-composition';
@@ -38,6 +40,15 @@ class MissingWorktreeSandbox implements SandboxManager {
   }
 }
 
+class RecordingLocalSandbox extends LocalTempSandbox {
+  suspendCalls = 0;
+
+  override async suspend(taskId: string): Promise<void> {
+    this.suspendCalls += 1;
+    await super.suspend(taskId);
+  }
+}
+
 describe('createWebTaskCompositionFactory', () => {
   it('tears down an allocated sandbox worktree when setup fails', async () => {
     const sandbox = new MissingWorktreeSandbox();
@@ -53,5 +64,46 @@ describe('createWebTaskCompositionFactory', () => {
       }),
     ).rejects.toThrow();
     expect(sandbox.teardownCalls).toBe(1);
+  });
+
+  it('releases a resumed sandbox when safe-point restoration fails', async () => {
+    const sandbox = new RecordingLocalSandbox();
+    const scope = { projectId: 'project-a', taskId: 'task-resume-cleanup' };
+    const worktree = await sandbox.createWorktree(scope.taskId, 'shared');
+    const state = applyMutations(
+      createInitialAppState(scope.taskId, 'Resume safely', scope.projectId),
+      [
+        mergeByIdMutation('subtasks', 'resume-subtask', {
+          title: 'Resume safely',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+          worktree: worktree.path,
+        }),
+      ],
+    );
+    const createComposition = createWebTaskCompositionFactory({ sandbox });
+
+    await expect(
+      createComposition({
+        scope,
+        goal: state.goal,
+        transition: async (current) => current,
+        handleOutput: async () => {},
+        buildChannelContext: async () => [],
+        resume: {
+          state,
+          actionId: 'restore-failure',
+          receipt: {
+            gateId: 'human-gate:restore-failure',
+            option: 'retry',
+            safePointRefs: ['not-a-safe-point'],
+            resumeSessionId: 'human-gate-resume:restore-failure',
+          },
+        },
+      }),
+    ).rejects.toThrow(/safe point/i);
+    expect(sandbox.suspendCalls).toBe(1);
+    await sandbox.teardown(scope.taskId);
   });
 });

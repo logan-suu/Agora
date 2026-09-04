@@ -39,6 +39,26 @@ not ok 2 - fails
 # duration_ms 54.896875
 `;
 
+/** Real Node 24 default `spec` reporter output for one failed test. */
+const NODE_24_SPEC_FAILING_SAMPLE = `✖ boom (0.998792ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 39.37075
+
+✖ failing tests:
+
+test at fail.test.mjs:3:1
+✖ boom (0.998792ms)
+  AssertionError [ERR_ASSERTION]: nope
+
+  1 !== 2
+`;
+
 describe('parseTap', () => {
   it('aggregates counts and extracts failure details from a real node --test sample', () => {
     const summary = parseTap(REAL_FAILING_SAMPLE);
@@ -70,6 +90,37 @@ ok 1 - passes
     expect(summary.total).toBe(1);
     expect(summary.failed).toBe(0);
     expect(summary.failures).toEqual([]);
+  });
+
+  it('aggregates Node 24 spec reporter counts', () => {
+    const output = `✔ one (0.4ms)
+✔ two (0.1ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ duration_ms 63.5
+`;
+    const summary = parseTap(output);
+    expect(summary.total).toBe(2);
+    expect(summary.passed).toBe(2);
+    expect(summary.failed).toBe(0);
+    expect(summary.failures).toEqual([]);
+  });
+
+  it('extracts Node 24 spec reporter failure details', () => {
+    const summary = parseTap(NODE_24_SPEC_FAILING_SAMPLE);
+    expect(summary.total).toBe(1);
+    expect(summary.passed).toBe(0);
+    expect(summary.failed).toBe(1);
+    expect(summary.failures).toEqual([
+      {
+        test: 'boom',
+        message: 'AssertionError [ERR_ASSERTION]: nope',
+        file: 'fail.test.mjs',
+        line: 3,
+      },
+    ]);
   });
 
   it('uses the preceding Subtest name when the not ok line has no name', () => {

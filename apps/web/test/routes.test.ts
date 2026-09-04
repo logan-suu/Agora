@@ -265,7 +265,7 @@ describe('POST /api/messages', () => {
     });
     await expect(deferred.json()).resolves.toMatchObject({
       accepted: true,
-      action: { status: 'deferred', targetPhase: 8 },
+      action: { status: 'rejected', reason: expect.stringContaining('unknown') },
     });
     const persisted = await runtime.store.load(address);
     expect(persisted).not.toHaveProperty('nextRole');

@@ -41,8 +41,6 @@ describe('parseLeaderIntent', () => {
     ['/requirement add TTL', 'requirement_change', 9],
     ['/decision use an LRU list', 'decision_change', 9],
     ['/priority raise cache tests', 'priority_change', 9],
-    ['/approve gate-1', 'human_gate_resolution', 8],
-    ['/reject gate-1', 'human_gate_resolution', 8],
     ['/resolve-objection obj-1', 'objection_resolution', 8],
   ] as const)('maps %s to an explicit deferred phase', (display, requestedKind, targetPhase) => {
     expect(parseLeaderIntent(display)).toMatchObject({
@@ -91,6 +89,24 @@ describe('parseLeaderIntent', () => {
       targetRole: 'TESTER',
       entrustedHandoffMsgIds: ['role-departure:remove-coder', 'role-departure:remove-reviewer'],
     });
+  });
+
+  it('parses only gate-bound Phase 8 resolution commands', () => {
+    expect(parseLeaderIntent('/resolve-gate human-gate:limit-1 continue')).toEqual({
+      kind: 'resolve_human_gate',
+      gateId: 'human-gate:limit-1',
+      option: 'continue',
+    });
+    expect(
+      parseLeaderIntent('/resolve-gate human-gate:departure-1 assign_enabled_successor TESTER'),
+    ).toEqual({
+      kind: 'resolve_human_gate',
+      gateId: 'human-gate:departure-1',
+      option: 'assign_enabled_successor',
+      argument: 'TESTER',
+    });
+    expect(parseLeaderIntent('/approve')).toMatchObject({ kind: 'invalid' });
+    expect(parseLeaderIntent('/reject')).toMatchObject({ kind: 'invalid' });
   });
 
   it.each([
@@ -168,7 +184,14 @@ describe('planLeaderIntent', () => {
     const done = { ...createInitialAppState('task-a', 'Build a cache'), phase: 'done' as const };
     const gated = {
       ...createInitialAppState('task-a', 'Build a cache'),
-      humanGate: { reason: 'review', options: ['approve', 'reject'], phase: 'review' as const },
+      humanGate: {
+        gateId: 'human-gate:review-1',
+        reason: 'review',
+        options: ['approve'],
+        phase: 'review' as const,
+        openedTs: 1,
+        safePointRefs: ['ref-1'],
+      },
     };
 
     expect(planLeaderIntent(parseLeaderIntent('@CODER work'), done, roster)).toMatchObject({
@@ -242,7 +265,14 @@ describe('planLeaderIntent', () => {
         parseLeaderIntent('/role remove CODER'),
         {
           ...state,
-          humanGate: { reason: 'review_required', options: ['approve'], phase: state.phase },
+          humanGate: {
+            gateId: 'human-gate:review-2',
+            reason: 'review_required',
+            options: ['approve'],
+            phase: state.phase,
+            openedTs: 2,
+            safePointRefs: ['ref-2'],
+          },
         },
         roster,
         ['CODER'],

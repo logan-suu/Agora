@@ -1,3 +1,6 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   type AppState,
   createInitialAppState,
@@ -286,19 +289,94 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
     }
   });
 
-  it('saveSafePoint returns the live session id and loadSafePoint is a Phase 0 no-op', async () => {
-    const fake = new FakeLlmAdapter();
-    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+  it('flushes a durable safe point and restores a lineage child in a fresh context', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-harness-safe-point-'));
+    const cwd = process.cwd();
+    const sourceFake = new FakeLlmAdapter('source reply');
+    const source = new HarnessExecutor(CODER_SPEC, {
+      adapter: sourceFake,
+      provider: 'agora',
+      sessionPersistence: { root, cwd, projectId: 'project-1', taskId: 'task-1' },
+    });
     try {
       const view = project(codingState(), 'CODER', PHASE0_ROSTER);
-      await executor.step({ sessionId: 'ses-safe', view });
+      await source.step({ sessionId: 'ses-safe', view });
+      const cursor = await source.saveSafePoint();
+      expect(cursor).toMatch(/^agora-safe-point:v1:/);
+      await source.dispose();
 
-      const cursor = await executor.saveSafePoint();
-      expect(cursor).toBe('ses-safe');
+      const resumedFake = new FakeLlmAdapter('resumed reply');
+      const resumed = new HarnessExecutor(CODER_SPEC, {
+        adapter: resumedFake,
+        provider: 'agora',
+        sessionPersistence: {
+          root,
+          cwd,
+          projectId: 'project-1',
+          taskId: 'task-1',
+          resumeSessionId: 'human-gate-resume:resolve-1',
+        },
+      });
+      try {
+        await resumed.loadSafePoint(cursor);
+        const resumedState = {
+          ...codingState(),
+          subtasks: [
+            {
+              id: 'latest-subtask',
+              title: 'latest projected task',
+              ownerRole: 'CODER',
+              dependsOn: [],
+              status: 'in_progress' as const,
+            },
+          ],
+        };
+        resumed.injectInbox(project(resumedState, 'CODER', PHASE0_ROSTER));
+        await resumed.step({
+          sessionId: 'human-gate-resume:resolve-1',
+          view: project(codingState(), 'CODER', PHASE0_ROSTER),
+        });
+        expect(resumedFake.calls).toHaveLength(1);
+        expect(resumedFake.calls[0]?.messagesText).toContain('latest projected task');
+      } finally {
+        await resumed.dispose();
+      }
 
-      await expect(executor.loadSafePoint(cursor)).resolves.toBeUndefined();
+      const replay = new HarnessExecutor(CODER_SPEC, {
+        adapter: new FakeLlmAdapter('replayed child'),
+        provider: 'agora',
+        sessionPersistence: {
+          root,
+          cwd,
+          projectId: 'project-1',
+          taskId: 'task-1',
+          resumeSessionId: 'human-gate-resume:resolve-1',
+        },
+      });
+      try {
+        await expect(replay.loadSafePoint(cursor)).resolves.toBeUndefined();
+      } finally {
+        await replay.dispose();
+      }
     } finally {
-      await executor.dispose();
+      await source.dispose().catch(() => undefined);
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when persistence is absent or a checkpoint scope is wrong', async () => {
+    const withoutPersistence = new HarnessExecutor(CODER_SPEC, {
+      adapter: new FakeLlmAdapter(),
+      provider: 'agora',
+    });
+    try {
+      await withoutPersistence.step({
+        sessionId: 'ses-no-store',
+        view: project(codingState(), 'CODER', PHASE0_ROSTER),
+      });
+      await expect(withoutPersistence.saveSafePoint()).rejects.toThrow('persistence');
+    } finally {
+      await withoutPersistence.dispose();
     }
   });
 });

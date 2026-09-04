@@ -14,6 +14,7 @@ export type LeaderIntent =
   | { kind: 'remove_role'; targetRole: string; successorRole?: string }
   | { kind: 'open_sub_channel'; requestedRoles: string[]; topic: string }
   | { kind: 'close_sub_channel'; channelId: string }
+  | { kind: 'resolve_human_gate'; gateId: string; option: string; argument?: string }
   | { kind: 'chat'; text: string }
   | {
       kind: 'deferred';
@@ -53,16 +54,6 @@ const DEFERRED_COMMANDS: Readonly<
     requestedKind: 'priority_change',
     targetPhase: 9,
     reason: 'priority changes require Phase 9 safe-point preemption and rerouting',
-  },
-  '/approve': {
-    requestedKind: 'human_gate_resolution',
-    targetPhase: 8,
-    reason: 'humanGate resolution is implemented in Phase 8',
-  },
-  '/reject': {
-    requestedKind: 'human_gate_resolution',
-    targetPhase: 8,
-    reason: 'humanGate resolution is implemented in Phase 8',
   },
   '/resolve-objection': {
     requestedKind: 'objection_resolution',
@@ -106,6 +97,7 @@ export function parseLeaderIntent(display: string): LeaderIntent {
   if (firstToken.startsWith('/')) {
     if (firstToken.toLowerCase() === '/channel') return parseChannelIntent(remainder);
     if (firstToken.toLowerCase() === '/role') return parseRoleIntent(remainder);
+    if (firstToken.toLowerCase() === '/resolve-gate') return parseHumanGateIntent(remainder);
     const deferred = DEFERRED_COMMANDS[firstToken.toLowerCase()];
     if (deferred === undefined) {
       return { kind: 'invalid', reason: `unknown leader command "${firstToken}"` };
@@ -143,6 +135,7 @@ export function planLeaderIntent(
       };
     case 'open_sub_channel':
     case 'close_sub_channel':
+    case 'resolve_human_gate':
       return { intent, action: { status: 'applied' }, mutations: [] };
     case 'remove_role': {
       if (!knownRoles.some((entry) => entry.toUpperCase() === intent.targetRole)) {
@@ -200,6 +193,26 @@ export function planLeaderIntent(
       };
     }
   }
+}
+
+function parseHumanGateIntent(remainder: string): LeaderIntent {
+  const tokens = remainder.split(/\s+/).filter((token) => token.length > 0);
+  if (
+    (tokens.length !== 2 && tokens.length !== 3) ||
+    !tokens.every((token) => SAFE_MSG_ID.test(token))
+  ) {
+    return {
+      kind: 'invalid',
+      reason: 'humanGate syntax is /resolve-gate <gateId> <option> [argument]',
+    };
+  }
+  const [gateId, option, argument] = tokens as [string, string, string?];
+  return {
+    kind: 'resolve_human_gate',
+    gateId,
+    option,
+    ...(argument === undefined ? {} : { argument }),
+  };
 }
 
 function parseRoleIntent(remainder: string): LeaderIntent {

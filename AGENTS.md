@@ -43,11 +43,11 @@
 | MCP 工具 server | 详细设计 §6 + 选型 §6 | fs/test/git/lint/sandbox 五类接口签名 |
 | 沙箱（LocalTemp/Docker/worktree） | 详细设计 §6 + 选型 §7/§8 + 架构 §7.3 | SandboxManager 接口 + 决策 D5 |
 | 投影/压缩/三铁律/sliceKB | 详细设计 §7 + 蓝图 §8 | 三条投影铁律 + 存储与上下文分离 |
-| Project/KB/Librarian/GlobalScheduler/收件箱 | 详细设计 §8 + 蓝图 §20 | 独立世界隔离 + 终止并分叉（决策 D4） |
-| humanGate/异议双轨/权威级别 | 详细设计 §8 + 蓝图 §14 | blocking/advisory + leader 最高权威 |
+| Project/KB/Librarian/GlobalScheduler/收件箱 | 详细设计 §8 + 蓝图 §20 | 独立世界隔离 + D4 持久 suspend/resume + Phase 9 全局槽位 |
+| humanGate/异议双轨/权威级别 | 详细设计 §1/§6/§8 + 蓝图 §14/§21 + 架构 §4.2/§9 + 选型 §4.1/§10 | D4 持久 suspend/Leader resolve/真 Fork resume + blocking/advisory + leader 最高权威 |
 | 热插拔/招募离职交接 | 蓝图 §12 + 详细设计 §2/§5/§7 | D12 项目成员生命周期 + D13 任务入职接手；Coordinator 不可删 + 先 drain 再交接 |
 | 前端群聊 UI/SSE | 选型 §9 + 蓝图 §10 | display/payload 分离 + 展示层与 context 层解耦 |
-| 状态持久化（.data/JSONL） | 选型 §10 + 架构 §9 | Phase 5 TaskStateStore JSON 原子快照；SQLite 可选 |
+| 状态持久化（.data/JSONL） | 选型 §10 + 架构 §9 | Phase 5 TaskStateStore JSON 原子快照；Phase 8 Harness session JSONL；SQLite 可选 |
 | 部署/韧性/错误恢复 | 架构 §6/§9 | 韧性表逐项落地 |
 | 阶段目标/里程碑/时间线 | 开发计划安排 对应节 + task-status `exit_criteria` | 出口标准逐条核对 |
 | Spike/执行链路验证 | 详细设计 §9 + 架构 §4 | 最小闭环链路 |
@@ -109,7 +109,7 @@ deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数
 R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），op 必须可交换、幂等；禁止直接赋值共享 State。项目级 roster/Channel 按 D12 只经 ProjectCollaborationStore revision CAS 原子提交，不复制进 AppState
 R2  上下文只经投影切片喂给 agent，永不投原始群聊 log；display（给人看）与 payload（给 agent 用）严格分离
 R3  leader 是唯一裁决者：不做 agent 间自动共识/投票；blocking 异议必须升级 humanGate 由人拍板
-R4  配合式抢占只能在安全点（step/end）打断，绝不硬杀 LLM token 流；humanGate 按 D4 终止并分叉，不做动态挂起
+R4  配合式抢占只能在安全点（step/end）打断，绝不硬杀 LLM token 流；humanGate 按 D4 执行持久 suspend→Leader resolve→全新 context 真 Fork resume，checkpoint 未 flush/未闭合时 fail-closed，不做内存动态挂起
 R5  阶段 0–9 所有 Worker 强制薄执行器（Harness）；RoleSpec.external 仅预留，不实现切换逻辑；厚 Agent 到阶段 10
 R6  阶段 0–N KnowledgeBase 只读（Write-Block），Librarian 仅空桩，不引入向量检索依赖；sliceKB 阶段 0 返回空对象
 R7  阶段 0 沙箱只用 LocalTempSandbox；文件操作限定沙箱目录内；run 默认超时 30s；dockerode/simple-git 为 optionalDependencies
@@ -126,7 +126,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 ## 3. 技术栈（固定，不得随意替换）
 
 ```
-语言/运行时   TypeScript 5.9+ / Node.js 20 LTS
+语言/运行时   TypeScript 5.9+ / Node.js 24 LTS（宿主；Docker 用户代码沙箱仍为 node:20-slim）
 包管理        pnpm 9 workspaces（catalog 统一版本）
 单 Agent 内核 DeepSeek Harness v0.1（loop 可替换/事件溯源/Turn-Step 两层/inbox steering/ctx.subagents/ctx.compaction）
 编排          自研轻量层（4 通用节点 + coordinator 条件路由，~500-800 行）
@@ -135,7 +135,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 版本控制      simple-git 3.36.x（worktree/merge，Phase 1+ 实际启用）
 前端          Next.js 15 + React 19（Phase 5 起）
 实时通信      SSE（收）+ HTTP POST（发），禁用 WebSocket
-持久化        文件系统 JSON/JSONL（.data/）为默认；Phase 5 TaskStateStore 原子快照；Phase 7 D12 roster+Channel 原子 collaboration 快照；SQLite 仅复杂查询时可选
+持久化        文件系统 JSON/JSONL（.data/）为默认；Phase 5 TaskStateStore 原子快照；Phase 7 D12 roster+Channel 原子 collaboration 快照；Phase 8 Harness 官方 JSONL session persistence + Agent factory seed/lineage 分叉；SQLite 仅复杂查询时可选
 部署          Phase 5–9 为单实例自托管后端；Vercel 仅前端；完整 Serverless/水平扩展须外部耐久 TaskStateStore + ProjectCollaborationStore（含 ProjectChannelStore 视图）+ 跨实例事件传输（D8/D12）
 测试          Vitest 3.x
 工程评测      渐进式 Agora Eval（Outcome/Process/Efficiency/Safety）；Phase 10 外部适配成熟 Coding Agent Benchmark
@@ -146,11 +146,11 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 复用与自研边界：
 
 ```
-直接采用     Harness / MCP TS SDK / dockerode(P1+) / simple-git(P1+) / Next.js / React / Vitest / Biome / Zod(MCP 内置校验)
+直接采用     Harness（含 Phase 8 同版本 dsh-session-persistence-jsonl）/ MCP TS SDK / dockerode(P1+) / simple-git(P1+) / Next.js / React / Vitest / Biome / Zod(MCP 内置校验)
 借鉴不依赖   AutoGen: TerminationCondition 语义、CodeExecutor 接口形态、MagenticOne Ledger 双循环、Handoff-as-tool
              AgentScope: reply/observe/print 语义、写所有权不变量、interrupt()/handle_interrupt、存储与上下文分离
 必须自研     4 通用节点编排 + coordinator 路由、角色投影 project()、配合式抢占 preemption、单一 Channel 通信、
-             两层 KB 与 Write-Block 门控、GlobalScheduler(终止并分叉)、GlobalInbox 聚合、LocalTempSandbox、Leader 意图映射
+             两层 KB 与 Write-Block 门控、D4 gate 持久生命周期编排、GlobalScheduler(槽位/成本)、GlobalInbox 聚合、LocalTempSandbox、Leader 意图映射
 ```
 
 > 引入任何未列入的新依赖前，先核对《技术选型文档》§12，未列入的先讨论。
@@ -270,7 +270,7 @@ agora/
 ├── .opencode/commands/             # OpenCode 兼容副本（迁移验证后再退役）
 ├── AGENTS.md
 └── pnpm-workspace.yaml
-.data/                              # 运行时状态（gitignored）：projects/{projectId}/tasks/{taskId}/{state.json,events.jsonl}
+.data/                              # 运行时状态（gitignored）：projects/{projectId}/tasks/{taskId}/{state.json,harness-sessions/,artifacts/}
 ```
 
 测试文件存放约定：
@@ -290,8 +290,9 @@ agora/
 投影        三铁律：①永不投原始群聊 log（只投结构化切片+所属 channel localContext）②代码传引用不传全文（fileRefs 路径+行号）
             ③理由随决策走（rationale 防下游推翻上游）
 安全点      一个 Harness Step（一次模型请求+其工具调用）的 step/end；绝不在 assistant token 流中途打断
-humanGate   决策 D4：置字段→销毁(Terminate)该 Harness 子进程释放资源→Leader 裁决→按 safePoint 事件游标重新 Fork 恢复；
-            阶段 0 简化为"任务即进程，结束即销毁"
+humanGate   决策 D4：已提交 step/end 边界→flush session 后一次持久稳定 gateId + opaque safePointRefs（禁半成品 gate）→销毁进程内 executable composition（保留 TaskState/worktree/Harness JSONL session，不归档终态 artifact；SandboxManager.teardown 仅终态，暂停/重建经 RecoverableSandboxManager companion capability）→Leader 经 D9 单入口幂等裁决，canonical resolution receipt 复制 refs + 确定性 child id 并清 gate→全新 context 经 Agent factory 创建/接管 lineage child→D1 投影 + 稳定 resumed 事实后恢复；
+            gate 可见不代表 suspend 已收尾：resolve 可耐久提交，resume 必须等待旧 run 收敛并重读 State；gate 提交后的释放失败保持 needs_attention 且禁归档。既有 child 必须校验 header+完整 seed 前缀，worktree 必须属于当前 task 规范 root，跨 task fail-closed
+            Phase 8 只落回合制单任务与本地容量释放，Phase 9 再接 GlobalScheduler/多 worker 抢占
 KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简硬编码默认值，不依赖向量检索；
             启用写入需双重门控：①相关任务测试全绿 ②Leader 显式 /approve-kb——否则蒸馏结果直接丢弃
 写所有权    结构化切片只读投影，agent 只写自己私有区——消除写-写冲突靠构造（WO）
@@ -302,7 +303,7 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
 意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；浏览器 msgId 统一满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在副作用前校验；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
-            Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga 与 /role onboard 单 Task State 接手；Phase 8/9 再解锁裁决与完整抢占，
+            Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga 与 /role onboard 单 Task State 接手；Phase 8 解锁绑定 gateId 的 /resolve-gate，并以 resolution receipt 支撑清 gate 后恢复；Phase 9 解锁完整抢占，
             其余能力显式 rejected/deferred，不走临时 command 旁路
 Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
             全实例最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，

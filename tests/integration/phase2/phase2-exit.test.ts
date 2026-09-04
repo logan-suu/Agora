@@ -900,11 +900,13 @@ describe('Phase 2 exit: iteration limit escalation (超限升级, task 2.3 seman
     // One more CODER round + one TESTER round after the seed, then the cap.
     expect(final.iterationCount).toBe(8);
     expect(final.phase).toBe('testing');
-    expect(final.humanGate).toEqual({
+    expect(final.humanGate).toMatchObject({
       reason: 'iteration_limit',
-      options: ['extend', 'take-over', 'abort'],
+      options: ['continue'],
       phase: 'testing',
+      safePointRefs: [],
     });
+    expect(final.humanGate?.gateId).toMatch(/^human-gate:/);
     const escalation = final.messages.find((message) => message.type === 'escalation');
     expect(escalation).toBeDefined();
     expect(escalation?.payload).toMatchObject({ reason: 'iteration_limit', limit: 8 });

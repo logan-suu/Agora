@@ -21,7 +21,7 @@ interface DeterministicClock {
 }
 
 function expectedGate(phase: AppState['phase']): Record<string, unknown> {
-  return { reason: 'iteration_limit', options: ['extend', 'take-over', 'abort'], phase };
+  return { reason: 'iteration_limit', options: ['continue'], phase };
 }
 
 function clock(): DeterministicClock {
@@ -220,7 +220,12 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     const next = applyMutations(state, decision.mutations);
 
     expect(decision.route.kind).toBe('human_gate');
-    expect(next.humanGate).toMatchObject({ reason: 'required_role_unavailable:REVIEWER' });
+    if (decision.route.kind !== 'human_gate') throw new Error('unreachable guard for narrowing');
+    expect(decision.route.request).toMatchObject({
+      reason: 'required_role_unavailable:REVIEWER',
+      options: ['retry'],
+    });
+    expect(next.humanGate).toBeUndefined();
     expect(next.messages.some((message) => message.payload.role === 'REVIEWER')).toBe(true);
   });
 
@@ -356,8 +361,10 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     const decision = decide(capped);
 
     expect(decision.route.kind).toBe('human_gate');
+    if (decision.route.kind !== 'human_gate') throw new Error('unreachable guard for narrowing');
     const next = applyMutations(capped, decision.mutations);
-    expect(next.humanGate).toEqual(expectedGate('review'));
+    expect(decision.route.request).toMatchObject(expectedGate('review'));
+    expect(next.humanGate).toBeUndefined();
     expect(next.iterationCount).toBe(MAX_ITERATIONS);
     expect(next.phase).toBe('review');
     const escalations = next.messages.filter((m) => m.type === 'escalation');
@@ -470,8 +477,10 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     const capped = testingState(false, MAX_ITERATIONS);
     const decision = decide(capped);
     expect(decision.route.kind).toBe('human_gate');
+    if (decision.route.kind !== 'human_gate') throw new Error('unreachable guard for narrowing');
     const next = applyMutations(capped, decision.mutations);
-    expect(next.humanGate).toEqual(expectedGate('testing'));
+    expect(decision.route.request).toMatchObject(expectedGate('testing'));
+    expect(next.humanGate).toBeUndefined();
     expect(next.iterationCount).toBe(MAX_ITERATIONS);
     expect(next.phase).toBe('testing');
     const escalations = next.messages.filter((m) => m.type === 'escalation');
@@ -649,8 +658,13 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
       roster: pmOnlyRoster,
     });
     expect(decision.route.kind).toBe('human_gate');
+    if (decision.route.kind !== 'human_gate') throw new Error('unreachable guard for narrowing');
     const next = applyMutations(requirementsReadyState(), decision.mutations);
-    expect(next.humanGate).toMatchObject({ reason: 'required_role_unavailable:CODER' });
+    expect(decision.route.request).toMatchObject({
+      reason: 'required_role_unavailable:CODER',
+      options: ['retry'],
+    });
+    expect(next.humanGate).toBeUndefined();
     expect(next.messages.some((message) => message.payload.role === 'CODER')).toBe(true);
   });
 
@@ -676,8 +690,10 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
     const decision = decide(capped, clock());
 
     expect(decision.route.kind).toBe('human_gate');
+    if (decision.route.kind !== 'human_gate') throw new Error('unreachable guard for narrowing');
     const next = applyMutations(capped, decision.mutations);
-    expect(next.humanGate).toEqual(expectedGate('clarifying'));
+    expect(decision.route.request).toMatchObject(expectedGate('clarifying'));
+    expect(next.humanGate).toBeUndefined();
     expect(next.iterationCount).toBe(MAX_ITERATIONS);
     expect(next.phase).toBe('clarifying');
     expect(next.messages.filter((m) => m.type === 'escalation')).toHaveLength(1);

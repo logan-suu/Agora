@@ -101,6 +101,18 @@ export interface RosterEntry {
 }
 
 export interface HumanGate {
+  gateId: string;
+  reason: string;
+  options: string[];
+  phase: Phase;
+  openedTs: number;
+  safePointRefs: string[];
+}
+
+/** Transient L2 request. It must never be persisted as an incomplete HumanGate. */
+export interface HumanGateRequest {
+  triggerMsgId: string;
+  triggerTs: number;
   reason: string;
   options: string[];
   phase: Phase;

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 
 import {
   appendMutation,
@@ -16,6 +17,7 @@ import LlmRuntime, { type LlmAdapter } from '@deepseek-ai/dsh-llm';
 import { createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm/message';
 import * as LlmDeepseek from '@deepseek-ai/dsh-llm-deepseek';
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session';
+import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl';
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt';
 import TokenMeter from '@deepseek-ai/dsh-token-meter';
 import {
@@ -96,6 +98,45 @@ export interface HarnessExecutorOptions {
    * the file protocol (CODER/TESTER) or with no writes (COORDINATOR).
    */
   readTurnMutations?: (turn: { text: string | null }) => Mutation[] | Promise<Mutation[]>;
+  /** D4 durable session namespace and optional deterministic lineage-child id. */
+  sessionPersistence?: {
+    root: string;
+    cwd: string;
+    projectId: string;
+    taskId: string;
+    resumeSessionId?: string;
+  };
+}
+
+interface SafePointPayload {
+  version: 1;
+  projectId: string;
+  taskId: string;
+  role: string;
+  sourceSessionId: string;
+  boundary: number;
+  cwd: string;
+  agentPreset: string;
+}
+
+export interface HarnessSafePointIdentity {
+  projectId: string;
+  taskId: string;
+  role: string;
+  cwd: string;
+}
+
+const SAFE_POINT_PREFIX = 'agora-safe-point:v1:';
+
+/** Adapter-internal routing metadata; callers must still pass the opaque ref back unchanged. */
+export function inspectHarnessSafePoint(cursor: string): HarnessSafePointIdentity {
+  const checkpoint = decodeSafePoint(cursor);
+  return {
+    projectId: checkpoint.projectId,
+    taskId: checkpoint.taskId,
+    role: checkpoint.role,
+    cwd: checkpoint.cwd,
+  };
 }
 
 /**
@@ -126,6 +167,7 @@ export class HarnessExecutor implements Executor {
     | (() => Promise<{ id: string; status: string } | undefined>)
     | undefined;
   private readonly readTurnMutations: HarnessExecutorOptions['readTurnMutations'];
+  private readonly sessionPersistence: HarnessExecutorOptions['sessionPersistence'];
   private readonly pluginFibers: Fiber[] = [];
   private ready: Promise<void>;
   private readonly handles = new Map<string, AgentHandle>();
@@ -145,6 +187,11 @@ export class HarnessExecutor implements Executor {
     // Minimal plugin set; load order respects each plugin's `inject` deps.
     this.pluginFibers.push(this.ctx.plugin(AgentRegistry)); // ctx.agents
     this.pluginFibers.push(this.ctx.plugin(SessionStore)); // ctx.sessions
+    if (options.sessionPersistence !== undefined) {
+      this.pluginFibers.push(
+        this.ctx.plugin(JsonlSessionPersistence, { root: options.sessionPersistence.root }),
+      );
+    }
     this.pluginFibers.push(this.ctx.plugin(LlmRuntime)); // ctx.llm
     this.pluginFibers.push(this.ctx.plugin(SystemPrompt, { persona: this.spec.systemPrompt })); // ctx.systemPrompt
     this.pluginFibers.push(this.ctx.plugin(ToolRuntime)); // ctx.tools (injects systemPrompt)
@@ -176,6 +223,7 @@ export class HarnessExecutor implements Executor {
     this.readTestResults = options.readTestResults;
     this.readSubtaskStatus = options.readSubtaskStatus;
     this.readTurnMutations = options.readTurnMutations;
+    this.sessionPersistence = options.sessionPersistence;
     this.ready = this.awaitPlugins();
   }
 
@@ -278,16 +326,82 @@ export class HarnessExecutor implements Executor {
     };
   }
 
-  /** Phase 0 safe-point cursor: the most recently active session id (decision D4 recovery seam). */
+  /** D4 durability barrier followed by an opaque, scope-bound completed-turn reference. */
   async saveSafePoint(): Promise<string> {
     await this.ready;
-    return this.activeSessionId ?? 'no-session';
+    const persistence = this.requireSessionPersistence();
+    const activeSessionId = this.activeSessionId;
+    if (activeSessionId === null)
+      throw new Error('cannot save a safe point without an active session');
+    const session = this.ctx.sessions.get(SessionId(activeSessionId));
+    if (session === undefined)
+      throw new Error(`active session "${activeSessionId}" is unavailable`);
+    const participated = await this.ctx.sessions.flush(session);
+    if (!participated) throw new Error('session persistence listener did not participate in flush');
+    const stored = await this.ctx.sessionPersistence.load(SessionId(activeSessionId));
+    const boundary = lastCompletedTurnBoundary(stored.events);
+    if (boundary === undefined) throw new Error('persisted session has no completed turn boundary');
+    return encodeSafePoint({
+      version: 1,
+      projectId: persistence.projectId,
+      taskId: persistence.taskId,
+      role: this.spec.role,
+      sourceSessionId: activeSessionId,
+      boundary,
+      cwd: persistence.cwd,
+      agentPreset: this.agentPreset(),
+    });
   }
 
-  /** Phase 0 no-op; real fork-recovery landing is task 8.1 (humanGate Terminate & Fork). */
-  async loadSafePoint(_cursor: string): Promise<void> {
-    // Interface-compliant placeholder (decision D4). Reconstructing a live agent
-    // from the cursor lands in task 8.1.
+  /** Load a durable source prefix and atomically create or resume its lineage child Agent. */
+  async loadSafePoint(cursor: string): Promise<void> {
+    await this.ready;
+    const persistence = this.requireSessionPersistence();
+    const resumeSessionId = persistence.resumeSessionId;
+    if (resumeSessionId === undefined) {
+      throw new Error('loadSafePoint requires a deterministic resumeSessionId');
+    }
+    const checkpoint = decodeSafePoint(cursor);
+    assertCheckpointScope(checkpoint, persistence, this.spec.role, this.agentPreset());
+    const source = await this.ctx.sessionPersistence.load(SessionId(checkpoint.sourceSessionId));
+    if (source.meta.cwd !== checkpoint.cwd || source.meta.agentPreset !== checkpoint.agentPreset) {
+      throw new Error('safe point source session metadata does not match the checkpoint');
+    }
+    const seed = source.events.slice(0, checkpoint.boundary + 1);
+    if (
+      seed.length !== checkpoint.boundary + 1 ||
+      seed.some((event, index) => event.seq !== index) ||
+      seed.at(-1)?.type !== 'turn/end'
+    ) {
+      throw new Error('safe point does not identify a contiguous completed-turn prefix');
+    }
+
+    const childId = SessionId(resumeSessionId);
+    const existing = (await this.ctx.sessionPersistence.list()).find(
+      (header) => header.id === childId,
+    );
+    const handle =
+      existing === undefined
+        ? await this.ctx.agents.create({
+            sessionId: childId,
+            seed,
+            meta: {
+              cwd: checkpoint.cwd,
+              parentSession: SessionId(checkpoint.sourceSessionId),
+              seedLength: seed.length,
+              delegationDepth: 0,
+              agentPreset: checkpoint.agentPreset,
+            },
+            agentOptions: { provider: this.provider, model: this.resolveModel() },
+            setup: this.agentSetup(resumeSessionId),
+          })
+        : await this.resumeExistingChild(existing, checkpoint, seed, resumeSessionId);
+    this.handles.set(resumeSessionId, handle);
+    this.activeSessionId = resumeSessionId;
+    const child = this.ctx.sessions.get(childId);
+    if (child === undefined || !(await this.ctx.sessions.flush(child))) {
+      throw new Error('lineage child session was not durably persisted');
+    }
   }
 
   /** Store the projection for the next `step`; the next `agent/pre-step` re-projects from it. */
@@ -317,36 +431,94 @@ export class HarnessExecutor implements Executor {
     if (existing !== undefined) return existing.agent;
     const handle = await this.ctx.agents.create({
       sessionId: SessionId(sessionId),
+      ...(this.sessionPersistence === undefined
+        ? {}
+        : {
+            meta: {
+              cwd: this.sessionPersistence.cwd,
+              delegationDepth: 0,
+              agentPreset: this.agentPreset(),
+            },
+          }),
       agentOptions: { provider: this.provider, model: this.resolveModel() },
-      setup: (agentCtx) => {
-        // Decision D1: overwrite the messages fed to the LLM with the projection,
-        // but PRESERVE the mid-turn tool exchange (tool-call/tool-result) from the
-        // claimed inbox messages. Without this the model would never see its own
-        // tool outcomes and could not iterate (write code → run tests → fix).
-        agentCtx.on('agent/pre-step', async (payload) => ({
-          kind: 'enter',
-          messages: [this.projectionMessage(), ...toolExchangeOf(payload.messages)],
-        }));
-        // Model routing: fix the provider/model from RoleSpec or env.
-        agentCtx.on('agent/request', async (_payload, next) => {
-          const config = await next();
-          return { ...config, provider: this.provider, model: this.resolveModel() };
-        });
-        // The self-driving loop swallows turn failures internally (kick() catch);
-        // surface them so a broken turn is never mistaken for an empty success.
-        agentCtx.on('agent/error', (payload) => {
-          this.agentErrors.set(sessionId, payload.error);
-        });
-        // Task 1.5 scoping (Phase 1 toolFilter equivalent): an empty allow array
-        // hides every global tool, which is the correct state for tool-less roles.
-        if (this.allowTools !== undefined) {
-          const disposer = agentCtx.tools.restrict({ allow: [...this.allowTools] });
-          this.restrictDisposers.set(sessionId, disposer);
-        }
-      },
+      setup: this.agentSetup(sessionId),
     });
     this.handles.set(sessionId, handle);
     return handle.agent;
+  }
+
+  private agentSetup(sessionId: string) {
+    return (agentCtx: Context) => {
+      // Decision D1: overwrite the messages fed to the LLM with the projection,
+      // but PRESERVE the mid-turn tool exchange (tool-call/tool-result) from the
+      // claimed inbox messages. Without this the model would never see its own
+      // tool outcomes and could not iterate (write code → run tests → fix).
+      agentCtx.on('agent/pre-step', async (payload) => ({
+        kind: 'enter',
+        messages: [this.projectionMessage(), ...toolExchangeOf(payload.messages)],
+      }));
+      // Model routing: fix the provider/model from RoleSpec or env.
+      agentCtx.on('agent/request', async (_payload, next) => {
+        const config = await next();
+        return { ...config, provider: this.provider, model: this.resolveModel() };
+      });
+      // The self-driving loop swallows turn failures internally (kick() catch);
+      // surface them so a broken turn is never mistaken for an empty success.
+      agentCtx.on('agent/error', (payload) => {
+        this.agentErrors.set(sessionId, payload.error);
+      });
+      // Task 1.5 scoping (Phase 1 toolFilter equivalent): an empty allow array
+      // hides every global tool, which is the correct state for tool-less roles.
+      if (this.allowTools !== undefined) {
+        const disposer = agentCtx.tools.restrict({ allow: [...this.allowTools] });
+        this.restrictDisposers.set(sessionId, disposer);
+      }
+    };
+  }
+
+  private async resumeExistingChild(
+    existing: {
+      id: string;
+      cwd?: string;
+      parentSession?: string;
+      seedLength?: number;
+      agentPreset?: string;
+    },
+    checkpoint: SafePointPayload,
+    seed: readonly unknown[],
+    resumeSessionId: string,
+  ): Promise<AgentHandle> {
+    if (
+      existing.cwd !== checkpoint.cwd ||
+      existing.parentSession !== checkpoint.sourceSessionId ||
+      existing.seedLength !== seed.length ||
+      existing.agentPreset !== checkpoint.agentPreset
+    ) {
+      throw new Error(`persisted child session "${resumeSessionId}" has conflicting lineage`);
+    }
+    const child = await this.ctx.sessionPersistence.load(SessionId(resumeSessionId));
+    if (
+      child.events.length < seed.length ||
+      seed.some((event, index) => !isDeepStrictEqual(child.events[index], event))
+    ) {
+      throw new Error(`persisted child session "${resumeSessionId}" has a conflicting seed prefix`);
+    }
+    return this.ctx.agents.resume({
+      resumeSessionId: SessionId(resumeSessionId),
+      agentOptions: { provider: this.provider, model: this.resolveModel() },
+      setup: this.agentSetup(resumeSessionId),
+    });
+  }
+
+  private requireSessionPersistence(): NonNullable<HarnessExecutorOptions['sessionPersistence']> {
+    if (this.sessionPersistence === undefined) {
+      throw new Error('Harness session persistence is required for D4 safe points');
+    }
+    return this.sessionPersistence;
+  }
+
+  private agentPreset(): string {
+    return `agora-role:${this.spec.role}`;
   }
 
   private resolveModel(): string {
@@ -372,6 +544,87 @@ export class HarnessExecutor implements Executor {
         text.length > 0 || channelAction === undefined ? text : channelActionDisplay(channelAction),
       ts: Date.now(),
     };
+  }
+}
+
+function lastCompletedTurnBoundary(
+  events: readonly { seq: number; type: string }[],
+): number | undefined {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+    if (event?.type === 'turn/end') return event.seq;
+  }
+  return undefined;
+}
+
+function encodeSafePoint(payload: SafePointPayload): string {
+  return `${SAFE_POINT_PREFIX}${Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url')}`;
+}
+
+function decodeSafePoint(cursor: string): SafePointPayload {
+  if (!cursor.startsWith(SAFE_POINT_PREFIX)) throw new Error('invalid safe point reference prefix');
+  let value: unknown;
+  try {
+    value = JSON.parse(
+      Buffer.from(cursor.slice(SAFE_POINT_PREFIX.length), 'base64url').toString('utf8'),
+    );
+  } catch (error) {
+    throw new Error('invalid safe point reference encoding', { cause: error });
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('invalid safe point reference payload');
+  }
+  const record = value as Record<string, unknown>;
+  const expected = [
+    'agentPreset',
+    'boundary',
+    'cwd',
+    'projectId',
+    'role',
+    'sourceSessionId',
+    'taskId',
+    'version',
+  ];
+  if (Object.keys(record).sort().join('\0') !== expected.sort().join('\0')) {
+    throw new Error('invalid safe point reference fields');
+  }
+  if (
+    record.version !== 1 ||
+    typeof record.projectId !== 'string' ||
+    record.projectId.length === 0 ||
+    typeof record.taskId !== 'string' ||
+    record.taskId.length === 0 ||
+    typeof record.role !== 'string' ||
+    record.role.length === 0 ||
+    typeof record.sourceSessionId !== 'string' ||
+    record.sourceSessionId.length === 0 ||
+    typeof record.boundary !== 'number' ||
+    !Number.isInteger(record.boundary) ||
+    record.boundary < 0 ||
+    typeof record.cwd !== 'string' ||
+    record.cwd.length === 0 ||
+    typeof record.agentPreset !== 'string' ||
+    record.agentPreset.length === 0
+  ) {
+    throw new Error('invalid safe point reference payload');
+  }
+  return record as unknown as SafePointPayload;
+}
+
+function assertCheckpointScope(
+  checkpoint: SafePointPayload,
+  persistence: NonNullable<HarnessExecutorOptions['sessionPersistence']>,
+  role: string,
+  agentPreset: string,
+): void {
+  if (
+    checkpoint.projectId !== persistence.projectId ||
+    checkpoint.taskId !== persistence.taskId ||
+    checkpoint.role !== role ||
+    checkpoint.cwd !== persistence.cwd ||
+    checkpoint.agentPreset !== agentPreset
+  ) {
+    throw new Error('safe point scope does not match the executor composition');
   }
 }
 

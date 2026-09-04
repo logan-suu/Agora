@@ -1,8 +1,18 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { assertInside } from './path-guard';
+import type { RecoverableWorktreeBinding } from './recoverable-sandbox-manager';
 import type { SandboxManager } from './sandbox-manager';
 import type { IntegrationResult, RunResult, Worktree } from './types';
 
@@ -26,7 +36,7 @@ export class LocalTempSandbox implements SandboxManager {
   private readonly roots = new Map<string, string>();
 
   createWorktree(taskId: string, role: string): Promise<Worktree> {
-    const prefix = `agora-${taskId}-${role}-`;
+    const prefix = localWorktreePrefix(taskId, role);
     const path = mkdtempSync(join(tmpdir(), prefix));
     this.roots.set(taskId, path);
     // Phase 0 has no real Git branches (decision D5); branch is a placeholder.
@@ -70,6 +80,47 @@ export class LocalTempSandbox implements SandboxManager {
     renameSync(root, destination);
     return Promise.resolve();
   }
+
+  /** Local mode has no container; keep the directory registered and untouched. */
+  suspend(_taskId: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** Re-register a persisted local worktree after composition/process reconstruction. */
+  resume(taskId: string, bindings: readonly RecoverableWorktreeBinding[]): Promise<void> {
+    if (bindings.length !== 1) {
+      return Promise.reject(new Error('LocalTempSandbox resume requires exactly one worktree'));
+    }
+    const binding = bindings[0];
+    const path = binding?.worktree.path;
+    if (path === undefined || !statSync(path).isDirectory()) {
+      return Promise.reject(new Error('persisted local worktree is not an existing directory'));
+    }
+    const canonical = realpathSync(path);
+    if (
+      binding === undefined ||
+      !basename(canonical).startsWith(localWorktreePrefix(taskId, binding.role))
+    ) {
+      return Promise.reject(
+        new Error(`persisted local worktree does not belong to task "${taskId}"`),
+      );
+    }
+    this.roots.set(taskId, canonical);
+    return Promise.resolve();
+  }
+}
+
+function localWorktreePrefix(taskId: string, role: string): string {
+  return `agora-${safeSegment(taskId)}-${identityHash(taskId)}-${safeSegment(role)}-`;
+}
+
+function safeSegment(value: string): string {
+  const safe = value.replace(/[^a-zA-Z0-9._-]/g, '_');
+  return safe.length === 0 ? 'worktree' : safe;
+}
+
+function identityHash(value: string): string {
+  return createHash('sha256').update(value).digest('hex').slice(0, 16);
 }
 
 /** Run a command in a directory with spawn, capturing output and enforcing timeout. */

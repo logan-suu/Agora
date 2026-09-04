@@ -1,5 +1,13 @@
-import { type AppState, mergeByIdMutation, type RoleSpec } from '@agora/core-domain';
 import {
+  type AppState,
+  type HumanGateRequest,
+  mergeByIdMutation,
+  type RoleSpec,
+  setMutation,
+} from '@agora/core-domain';
+import {
+  type HumanGateResolutionReceipt,
+  materializeHumanGate,
   runOrchestration,
   type StateTransition,
   type StepOutputHandler,
@@ -47,6 +55,8 @@ export interface TaskComposition {
   roster: readonly RoleSpec[];
   loadRoster?: () => Promise<readonly RoleSpec[]>;
   artifactPath: string;
+  saveSafePoints(): Promise<readonly string[]>;
+  suspend(): Promise<void>;
   archiveArtifact(): Promise<string>;
   dispose(): Promise<void>;
 }
@@ -59,6 +69,11 @@ export type TaskCompositionFactory = (input: {
   handleOutput: StepOutputHandler;
   buildChannelContext: (state: AppState, role: string) => Promise<readonly unknown[]>;
   loadRoster?: () => Promise<readonly RoleSpec[]>;
+  resume?: {
+    state: AppState;
+    actionId: string;
+    receipt: HumanGateResolutionReceipt;
+  };
 }) => Promise<TaskComposition>;
 
 interface ActiveRun {
@@ -99,6 +114,10 @@ export class TaskOrchestrationRuntime {
     messages.bindRoleDrainPort({
       awaitSafePoint: (scope, role) => this.#awaitRoleSafePoint(scope, role),
     });
+    messages.bindHumanGateLifecyclePort({
+      suspend: (scope, request) => this.#suspendAtHumanGate(scope, request),
+      resume: (scope, actionId, receipt) => this.#resumeHumanGate(scope, actionId, receipt),
+    });
   }
 
   async start(input: TaskStartInput): Promise<TaskStartResult> {
@@ -126,8 +145,12 @@ export class TaskOrchestrationRuntime {
         if (reconciled === undefined) {
           throw new Error('task state disappeared after channel reconciliation');
         }
-        const startOutcome: 'completed' | 'interrupted' =
-          reconciled.phase === 'done' ? 'completed' : 'interrupted';
+        const startOutcome: 'completed' | 'needs_attention' | 'interrupted' =
+          reconciled.phase === 'done'
+            ? 'completed'
+            : !requiresHumanGateAttention(reconciled)
+              ? 'interrupted'
+              : 'needs_attention';
         const summary = summaryFrom(reconciled, startOutcome);
         return {
           ...summary,
@@ -182,7 +205,14 @@ export class TaskOrchestrationRuntime {
     if (state === undefined) return undefined;
     const run = this.#runs.get(scopeKey(scope));
     if (run === undefined) {
-      return summaryFrom(state, state.phase === 'done' ? 'completed' : 'interrupted');
+      return summaryFrom(
+        state,
+        state.phase === 'done'
+          ? 'completed'
+          : !requiresHumanGateAttention(state)
+            ? 'interrupted'
+            : 'needs_attention',
+      );
     }
     return summaryFrom(state, run.status, run.error);
   }
@@ -205,6 +235,101 @@ export class TaskOrchestrationRuntime {
     return composition.workerRuntime.awaitRoleSafePoint(role);
   }
 
+  async #suspendAtHumanGate(scope: TaskScope, request: HumanGateRequest): Promise<AppState> {
+    const run = this.#runs.get(scopeKey(scope));
+    const refs = run?.composition === undefined ? [] : await run.composition.saveSafePoints();
+    const committed = await this.messages.commitMutations(scope, [
+      setMutation('humanGate', materializeHumanGate(request, refs)),
+    ]);
+    if (run?.composition !== undefined) {
+      try {
+        await run.composition.suspend();
+      } finally {
+        run.composition = undefined;
+      }
+    }
+    return committed.state;
+  }
+
+  async #resumeHumanGate(
+    scope: TaskScope,
+    actionId: string,
+    receipt: HumanGateResolutionReceipt,
+  ): Promise<void> {
+    await this.#enqueueLifecycle(async () => {
+      let state = await this.messages.store.load(scope);
+      if (state === undefined) throw new Error('cannot resume a missing task state');
+      let existing = this.#runs.get(scopeKey(scope));
+      const markerId = `human-gate-resumed:${actionId}`;
+      if (
+        existing?.status === 'running' &&
+        !state.messages.some((message) => message.msgId === markerId)
+      ) {
+        await existing.promise;
+        state = await this.messages.store.load(scope);
+        if (state === undefined) throw new Error('cannot resume a missing task state');
+        existing = this.#runs.get(scopeKey(scope));
+      }
+      if (state.phase === 'done' || existing?.status === 'completed') return;
+      if (state.humanGate !== undefined) {
+        throw new Error('cannot resume while humanGate remains active');
+      }
+      if (existing?.status === 'running') return;
+      const activeEntry = [...this.#runs.entries()].find(
+        ([key, run]) => key !== scopeKey(scope) && run.status === 'running',
+      );
+      if (activeEntry !== undefined)
+        throw new TaskCapacityConflictError(scopeFromKey(activeEntry[0]));
+
+      const transition: StateTransition = async (_state, mutations) =>
+        (await this.messages.commitMutations(scope, mutations)).state;
+      const composition = await this.createComposition({
+        scope,
+        goal: state.goal,
+        transition,
+        transitionStep: (_state, role, mutations) =>
+          this.messages
+            .commitWorkerStepMutations(scope, role, mutations)
+            .then((commit) => commit.state),
+        handleOutput: (current, role, output) =>
+          this.messages.handleWorkerOutput(current, role, output),
+        buildChannelContext: (current, role) =>
+          this.messages.workerStepChannelContextFor(current, role),
+        loadRoster: () => this.messages.enabledRoleSpecs(scope.projectId),
+        resume: { state, actionId, receipt },
+      });
+      try {
+        const marker = await this.messages.commitMessage(scope, {
+          msgId: markerId,
+          channelId: 'main',
+          fromRole: 'COORDINATOR',
+          type: 'announce',
+          payload: {
+            kind: 'human_gate_resumed',
+            actionId,
+            gateId: receipt.gateId,
+            resumeSessionId: receipt.resumeSessionId,
+          },
+          display: `Human gate ${receipt.gateId} resumed.`,
+          ts: Date.now(),
+        });
+        assertResumedMarker(marker.message, actionId, receipt);
+      } catch (error) {
+        await composition.suspend().catch(() => undefined);
+        throw error;
+      }
+      const run: ActiveRun = {
+        goal: state.goal,
+        status: 'running',
+        composition,
+        promise: Promise.resolve(),
+        error: undefined,
+      };
+      this.#runs.set(scopeKey(scope), run);
+      run.promise = this.#executeRun(scope, run, composition.initialState, transition);
+    });
+  }
+
   async #executeRun(
     scope: TaskScope,
     run: ActiveRun,
@@ -221,10 +346,21 @@ export class TaskOrchestrationRuntime {
         roster: composition.roster,
         ...(composition.loadRoster === undefined ? {} : { loadRoster: composition.loadRoster }),
         transition,
+        suspendAtHumanGate: (_state, request) => this.#suspendAtHumanGate(scope, request),
       });
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
     } catch (error) {
       terminalError = errorMessage(error);
+      const persisted = await this.messages.store.load(scope).catch(() => undefined);
+      if (persisted !== undefined && requiresHumanGateAttention(persisted)) {
+        terminalStatus = 'needs_attention';
+      }
+    }
+
+    if (terminalStatus === 'needs_attention') {
+      run.status = terminalStatus;
+      run.error = terminalError;
+      return;
     }
 
     try {
@@ -304,4 +440,35 @@ function summaryFrom(state: AppState, runStatus: TaskRunStatus, error?: string):
     messageCount: state.messages.length,
     ...(error === undefined ? {} : { error }),
   };
+}
+
+function requiresHumanGateAttention(state: AppState): boolean {
+  if (state.humanGate !== undefined) return true;
+  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+    const message = state.messages[index];
+    if (message?.fromRole !== 'leader' || message.payload.resolution === undefined) continue;
+    return !state.messages.some(
+      (candidate) => candidate.msgId === `human-gate-resumed:${message.msgId}`,
+    );
+  }
+  return false;
+}
+
+function assertResumedMarker(
+  message: AppState['messages'][number],
+  actionId: string,
+  receipt: HumanGateResolutionReceipt,
+): void {
+  if (
+    message.msgId !== `human-gate-resumed:${actionId}` ||
+    message.channelId !== 'main' ||
+    message.fromRole !== 'COORDINATOR' ||
+    message.type !== 'announce' ||
+    message.payload.kind !== 'human_gate_resumed' ||
+    message.payload.actionId !== actionId ||
+    message.payload.gateId !== receipt.gateId ||
+    message.payload.resumeSessionId !== receipt.resumeSessionId
+  ) {
+    throw new Error(`humanGate resumed marker for "${actionId}" conflicts with its first write`);
+  }
 }

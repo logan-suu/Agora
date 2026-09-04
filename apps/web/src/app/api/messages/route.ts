@@ -1,6 +1,6 @@
 import { createPostMessage } from '../../../server/message-handlers';
-import { messageRuntime } from '../../../server/message-runtime';
+import { taskRuntime } from '../../../server/task-runtime';
 
 export const runtime = 'nodejs';
 
-export const POST = createPostMessage(messageRuntime);
+export const POST = createPostMessage(taskRuntime.messages);

@@ -148,13 +148,13 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
       messageRequest({ ...address, msgId: 'deferred-1', display: '/approve gate-1' }),
     );
     await expect(deferred.json()).resolves.toMatchObject({
-      action: { status: 'deferred', targetPhase: 8 },
+      action: { status: 'rejected', reason: expect.stringContaining('unknown') },
     });
     const phase8Deferred = await post(
       messageRequest({ ...address, msgId: 'deferred-8', display: '/approve gate-1' }),
     );
     await expect(phase8Deferred.json()).resolves.toMatchObject({
-      action: { status: 'deferred', targetPhase: 8 },
+      action: { status: 'rejected', reason: expect.stringContaining('unknown') },
     });
     const phase9Deferred = await post(
       messageRequest({ ...address, msgId: 'deferred-9', display: '/requirement add TTL' }),
@@ -212,9 +212,12 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
       gatedScope,
       applyMutations(createInitialAppState('gated-task', 'Await Leader', 'project-a'), [
         setMutation('humanGate', {
+          gateId: 'human-gate:phase5-fixture',
           reason: 'Leader decision required',
           options: ['approve', 'reject'],
           phase: 'review',
+          openedTs: 1,
+          safePointRefs: [],
         }),
       ]),
     );

@@ -242,6 +242,48 @@ export function completeRoleDeparture(
   return changed(next);
 }
 
+export function assignRoleDepartureSuccessor(
+  roster: readonly RosterEntry[],
+  role: string,
+  actionId: string,
+  successorRole: string,
+): RosterTransition {
+  assertValidRoster(roster);
+  const { index, entry } = departureEntry(roster, role, actionId);
+  const successor = normalizeRoleId(successorRole);
+  if (successor === entry.spec.role) throw new Error('departure successor must differ from target');
+  const departure = entry.departure;
+  if (departure === undefined) throw new Error('departing role requires departure metadata');
+  if (
+    (entry.status === 'departed' || departure.stage === 'handoff_committed') &&
+    departure.successorRole === successor
+  ) {
+    return unchanged(roster);
+  }
+  const enabled = roster.find((candidate) => candidate.spec.role === successor);
+  if (enabled?.status !== 'enabled') {
+    throw new Error(`departure successor "${successor}" must be enabled`);
+  }
+  if (entry.status !== 'departing' || departure.stage !== 'awaiting_replacement') {
+    throw new Error(`role "${entry.spec.role}" cannot assign a successor from ${departure.stage}`);
+  }
+  if (departure.successorRole !== undefined && departure.successorRole !== successor) {
+    throw new Error(`role "${entry.spec.role}" departure successor conflicts with first write`);
+  }
+  const next = cloneRoster(roster);
+  next[index] = {
+    spec: structuredClone(entry.spec),
+    status: 'departing',
+    departure: {
+      ...structuredClone(departure),
+      successorRole: successor,
+      stage: 'handoff_committed',
+    },
+  };
+  assertValidRoster(next);
+  return changed(next);
+}
+
 function changeStatus(
   roster: readonly RosterEntry[],
   role: string,
