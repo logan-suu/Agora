@@ -41,7 +41,6 @@ describe('parseLeaderIntent', () => {
     ['/requirement add TTL', 'requirement_change', 9],
     ['/decision use an LRU list', 'decision_change', 9],
     ['/priority raise cache tests', 'priority_change', 9],
-    ['/resolve-objection obj-1', 'objection_resolution', 8],
   ] as const)('maps %s to an explicit deferred phase', (display, requestedKind, targetPhase) => {
     expect(parseLeaderIntent(display)).toMatchObject({
       kind: 'deferred',
@@ -107,6 +106,30 @@ describe('parseLeaderIntent', () => {
     });
     expect(parseLeaderIntent('/approve')).toMatchObject({ kind: 'invalid' });
     expect(parseLeaderIntent('/reject')).toMatchObject({ kind: 'invalid' });
+  });
+
+  it('parses objection rulings with a free-text Leader rationale', () => {
+    expect(
+      parseLeaderIntent(
+        '/resolve-gate human-gate:obj-1 accept_objection The revised scope is controlling.',
+      ),
+    ).toEqual({
+      kind: 'resolve_human_gate',
+      gateId: 'human-gate:obj-1',
+      option: 'accept_objection',
+      argument: 'The revised scope is controlling.',
+    });
+    expect(
+      parseLeaderIntent('/resolve-objection obj-2 reject_objection The existing design is safer.'),
+    ).toEqual({
+      kind: 'resolve_objection',
+      objectionId: 'obj-2',
+      option: 'reject_objection',
+      rationale: 'The existing design is safer.',
+    });
+    expect(parseLeaderIntent('/resolve-objection obj-2 accept_objection')).toMatchObject({
+      kind: 'invalid',
+    });
   });
 
   it.each([

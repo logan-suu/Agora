@@ -1,4 +1,5 @@
 import {
+  appendMutation,
   applyMutations,
   createInitialAppState,
   mergeByIdMutation,
@@ -32,6 +33,77 @@ describe('evaluateRouteWhen (task 2.2 conditional-routing predicates)', () => {
       mergeByIdMutation('requirements', 'req-1', { story: 's', acceptance: ['a'], nonGoals: [] }),
     ]);
     expect(evaluateRouteWhen(clarified, 'requirementsReady')).toBe(true);
+  });
+
+  it('treats a requirement withdrawn by a canonical Leader ruling as no longer ready', () => {
+    const active = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('requirements', 'req-1', {
+        story: 's',
+        acceptance: ['a'],
+        nonGoals: [],
+      }),
+      appendMutation('objections', {
+        id: 'obj-1',
+        threadId: 'obj-1',
+        fromRole: 'PM',
+        claim: 'contradiction',
+        target: { kind: 'requirement', id: 'req-1' },
+        argument: 'The requirement conflicts with scope.',
+        track: 'blocking',
+        ts: 1,
+      }),
+    ]);
+    const state = applyMutations(active, [
+      mergeByIdMutation('requirements', 'req-1', {
+        withdrawnByDecisionId: 'objection-resolution:resolve-1',
+      }),
+      appendMutation('decisionLedger', {
+        id: 'objection-resolution:resolve-1',
+        topic: 'requirement:req-1',
+        decision: 'accept_objection',
+        rationale: 'The requirement conflicts with the revised scope.',
+        authority: 'leader',
+        by: 'leader',
+        objectionResolution: {
+          objectionId: 'obj-1',
+          outcome: 'accepted',
+          target: { kind: 'requirement', id: 'req-1' },
+        },
+        ts: 2,
+      }),
+      appendMutation('messages', {
+        msgId: 'resolve-1',
+        channelId: 'main',
+        fromRole: 'leader',
+        type: 'chat',
+        payload: {
+          kind: 'leader_intent',
+          intent: {
+            kind: 'resolve_human_gate',
+            gateId: 'human-gate:obj-1',
+            option: 'accept_objection',
+            argument: 'The requirement conflicts with the revised scope.',
+          },
+          action: { status: 'applied' },
+          resolution: {
+            gateId: 'human-gate:obj-1',
+            option: 'accept_objection',
+            argument: 'The requirement conflicts with the revised scope.',
+            safePointRefs: ['ref-1'],
+            resumeSessionId: 'human-gate-resume:resolve-1',
+          },
+          objectionResolution: {
+            objectionId: 'obj-1',
+            option: 'accept_objection',
+            resolutionDecisionId: 'objection-resolution:resolve-1',
+          },
+        },
+        display: '/resolve-gate human-gate:obj-1 accept_objection rationale',
+        ts: 2,
+      }),
+    ]);
+    expect(evaluateRouteWhen(state, 'requirementsReady')).toBe(false);
+    expect(evaluateRouteWhen(state, 'goalAmbiguous')).toBe(true);
   });
 
   it('designReady holds only after ARCHITECT has written the architecture slice', () => {

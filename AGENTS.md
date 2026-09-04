@@ -296,7 +296,7 @@ humanGate   决策 D4：已提交 step/end 边界→flush session 后一次持�
 KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简硬编码默认值，不依赖向量检索；
             启用写入需双重门控：①相关任务测试全绿 ②Leader 显式 /approve-kb——否则蒸馏结果直接丢弃
 写所有权    结构化切片只读投影，agent 只写自己私有区——消除写-写冲突靠构造（WO）
-裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；明确 contradiction=blocking 并经 D4 humanGate，concern/advisory 记录可见继续干；语义拿不准由上游声明 concern
+裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；contradiction=blocking 经绑定 gate 的 D4 裁决，concern/advisory 继续并可直接裁决；每次裁决原子写规范 Leader 消息+最高权威 resolution Decision，accept blocking 必须撤回目标，未决视图与重放交叉验证全部后置事实；所有角色通过结构化 objectionResolutions 系统切片取得已验证裁决，不读原始 Leader 消息；语义拿不准由上游声明 concern
 并行度      上限 3 worker 同时跑；subtask.dependsOn 拓扑排序，依赖未满足不激活
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）

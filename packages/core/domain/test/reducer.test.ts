@@ -546,6 +546,18 @@ describe('applyMutations · Phase 3 unlocked field (task 3.1)', () => {
     expect(() => applyMutations(base, [mutation])).toThrow('unknown decision id');
   });
 
+  it('append(decisionLedger): keeps an identical replay idempotent after its target is superseded', () => {
+    const first = makeDecisionEntry('dec-1');
+    const second = makeDecisionEntry('dec-2', { supersedes: 'dec-1', ts: 2 });
+    const state = applyMutations(createInitialAppState('t-1', 'goal'), [
+      appendMutation('decisionLedger', first),
+      appendMutation('decisionLedger', second),
+    ]);
+    expect(
+      applyMutations(state, [appendMutation('decisionLedger', second)]).decisionLedger,
+    ).toEqual(state.decisionLedger);
+  });
+
   it('createInitialAppState: decisionLedger starts empty so the ledger is append-only from a clean slate', () => {
     expect(createInitialAppState('t-1', 'goal').decisionLedger).toEqual([]);
   });

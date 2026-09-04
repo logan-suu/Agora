@@ -1,5 +1,7 @@
 import {
   type AppState,
+  appendMutation,
+  buildObjectionResolution,
   type HumanGate,
   type HumanGateRequest,
   type Mutation,
@@ -11,6 +13,7 @@ import type { TaskScope } from '@agora/runtime-state';
 const SAFE_TOKEN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 const ROLE_REASON = /^required_role_unavailable:([A-Za-z][A-Za-z0-9_-]*)$/;
 const DEPARTURE_REASON = /^role_departure_requires_replacement:([A-Za-z][A-Za-z0-9_-]*)$/;
+const OBJECTION_REASON = /^blocking_objection:([A-Za-z0-9][A-Za-z0-9._:-]*)$/;
 
 export interface HumanGateResolutionInput {
   actionId: string;
@@ -18,6 +21,7 @@ export interface HumanGateResolutionInput {
   option: string;
   argument?: string;
   enabledRoles: readonly string[];
+  ts?: number;
 }
 
 export interface HumanGateResolutionReceipt {
@@ -30,6 +34,26 @@ export interface HumanGateResolutionReceipt {
 
 export interface HumanGateResolutionPlan {
   receipt: HumanGateResolutionReceipt;
+  mutations: readonly Mutation[];
+  objectionResolution?: ObjectionResolutionAction;
+}
+
+export interface ObjectionResolutionAction {
+  objectionId: string;
+  option: 'accept_objection' | 'reject_objection';
+  resolutionDecisionId: string;
+}
+
+export interface AdvisoryObjectionResolutionInput {
+  actionId: string;
+  objectionId: string;
+  option: 'accept_objection' | 'reject_objection';
+  rationale: string;
+  ts: number;
+}
+
+export interface AdvisoryObjectionResolutionPlan {
+  action: ObjectionResolutionAction;
   mutations: readonly Mutation[];
 }
 
@@ -89,12 +113,14 @@ export function planHumanGateResolution(
   }
 
   const mutations: Mutation[] = [];
+  let objectionResolution: ObjectionResolutionAction | undefined;
   if (gate.reason === 'iteration_limit') {
     requireOption(input, 'continue', false);
     mutations.push(setMutation('iterationCount', 0));
   } else {
     const unavailable = ROLE_REASON.exec(gate.reason);
     const departure = DEPARTURE_REASON.exec(gate.reason);
+    const objection = OBJECTION_REASON.exec(gate.reason);
     if (unavailable !== null) {
       requireOption(input, 'retry', false);
       const role = normalizeRole(unavailable[1] as string);
@@ -120,6 +146,30 @@ export function planHumanGateResolution(
           mergeByIdMutation('subtasks', subtask.id, { ownerRole: successor, status: 'todo' }),
         ),
       );
+    } else if (objection !== null) {
+      const rationale = requireRationale(input);
+      if (input.option !== 'accept_objection' && input.option !== 'reject_objection') {
+        throw new Error(`option "${input.option}" is not valid for this humanGate reason`);
+      }
+      const built = buildObjectionResolution(state, {
+        actionId: input.actionId,
+        objectionId: objection[1] as string,
+        option: input.option,
+        rationale,
+        ts: input.ts ?? gate.openedTs,
+        mode: 'blocking_gate',
+      });
+      mutations.push(appendMutation('decisionLedger', built.decision));
+      objectionResolution = {
+        objectionId: objection[1] as string,
+        option: input.option,
+        resolutionDecisionId: built.decision.id,
+      };
+      if (built.requirementPatch !== undefined) {
+        mutations.push(
+          mergeByIdMutation('requirements', built.requirementPatch.id, built.requirementPatch),
+        );
+      }
     } else {
       throw new Error(`humanGate reason "${gate.reason}" has no Phase 8 resolver`);
     }
@@ -134,7 +184,40 @@ export function planHumanGateResolution(
       resumeSessionId: `human-gate-resume:${input.actionId}`,
     },
     mutations,
+    ...(objectionResolution === undefined ? {} : { objectionResolution }),
   };
+}
+
+export function planAdvisoryObjectionResolution(
+  state: AppState,
+  input: AdvisoryObjectionResolutionInput,
+): AdvisoryObjectionResolutionPlan {
+  const built = buildObjectionResolution(state, {
+    actionId: input.actionId,
+    objectionId: input.objectionId,
+    option: input.option,
+    rationale: input.rationale,
+    ts: input.ts,
+    mode: 'advisory_direct',
+  });
+  return {
+    action: {
+      objectionId: input.objectionId,
+      option: input.option,
+      resolutionDecisionId: built.decision.id,
+    },
+    mutations: [appendMutation('decisionLedger', built.decision)],
+  };
+}
+
+function requireRationale(input: HumanGateResolutionInput): string {
+  if (input.argument === undefined || input.argument.trim().length === 0) {
+    throw new Error(`option "${input.option}" requires a Leader rationale`);
+  }
+  if (input.argument.length > 2000) {
+    throw new Error('humanGate rationale must not exceed 2000 characters');
+  }
+  return input.argument;
 }
 
 function requireOption(

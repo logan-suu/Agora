@@ -36,6 +36,7 @@ export interface Requirement {
   story: string;
   acceptance: string[];
   nonGoals: string[];
+  withdrawnByDecisionId?: string;
 }
 
 export interface Subtask {

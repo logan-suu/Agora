@@ -1,4 +1,5 @@
 import {
+  appendMutation,
   applyMutations,
   createInitialAppState,
   mergeByIdMutation,
@@ -174,5 +175,57 @@ describe('humanGate durable lifecycle planning (task 8.1)', () => {
         enabledRoles: [],
       }),
     ).toThrow('does not accept an argument');
+  });
+
+  it('resolves a blocking requirement objection with a Leader ruling and target withdrawal', () => {
+    const objection = {
+      id: 'obj-1',
+      threadId: 'obj-1',
+      fromRole: 'PM',
+      claim: 'contradiction' as const,
+      target: { kind: 'requirement' as const, id: 'req-1' },
+      argument: 'The requirement contradicts the revised scope.',
+      track: 'blocking' as const,
+      ts: 2,
+    };
+    const state = applyMutations(createInitialAppState('task-1', 'goal'), [
+      mergeByIdMutation('requirements', 'req-1', {
+        story: 'Persist tasks',
+        acceptance: ['survives restart'],
+        nonGoals: [],
+      }),
+      appendMutation('objections', objection),
+      setMutation(
+        'humanGate',
+        materializeHumanGate(
+          {
+            triggerMsgId: objection.id,
+            triggerTs: objection.ts,
+            reason: `blocking_objection:${objection.id}`,
+            options: ['accept_objection', 'reject_objection'],
+            phase: 'clarifying',
+          },
+          ['ref-1'],
+        ),
+      ),
+    ]);
+    const plan = planHumanGateResolution(state, {
+      actionId: 'resolve-obj-1',
+      gateId: 'human-gate:obj-1',
+      option: 'accept_objection',
+      argument: 'The revised scope is controlling.',
+      enabledRoles: [],
+      ts: 3,
+    });
+    const resolved = applyMutations(state, plan.mutations);
+    expect(resolved.decisionLedger.at(-1)).toMatchObject({
+      id: 'objection-resolution:resolve-obj-1',
+      authority: 'leader',
+      objectionResolution: { objectionId: 'obj-1', outcome: 'accepted' },
+    });
+    expect(resolved.requirements[0]?.withdrawnByDecisionId).toBe(
+      'objection-resolution:resolve-obj-1',
+    );
+    expect(resolved.humanGate).toBeUndefined();
   });
 });
