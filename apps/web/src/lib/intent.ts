@@ -5,7 +5,6 @@ export type DeferredLeaderIntent =
   | 'decision_change'
   | 'human_gate_resolution'
   | 'priority_change'
-  | 'objection_resolution'
   | 'open_sub_channel';
 
 export type LeaderIntent =
@@ -15,6 +14,12 @@ export type LeaderIntent =
   | { kind: 'open_sub_channel'; requestedRoles: string[]; topic: string }
   | { kind: 'close_sub_channel'; channelId: string }
   | { kind: 'resolve_human_gate'; gateId: string; option: string; argument?: string }
+  | {
+      kind: 'resolve_objection';
+      objectionId: string;
+      option: 'accept_objection' | 'reject_objection';
+      rationale: string;
+    }
   | { kind: 'chat'; text: string }
   | {
       kind: 'deferred';
@@ -55,11 +60,6 @@ const DEFERRED_COMMANDS: Readonly<
     targetPhase: 9,
     reason: 'priority changes require Phase 9 safe-point preemption and rerouting',
   },
-  '/resolve-objection': {
-    requestedKind: 'objection_resolution',
-    targetPhase: 8,
-    reason: 'objection resolution is implemented in Phase 8',
-  },
 };
 
 const ROLE_MENTION = /^@[A-Za-z][A-Za-z0-9_-]*$/;
@@ -98,6 +98,7 @@ export function parseLeaderIntent(display: string): LeaderIntent {
     if (firstToken.toLowerCase() === '/channel') return parseChannelIntent(remainder);
     if (firstToken.toLowerCase() === '/role') return parseRoleIntent(remainder);
     if (firstToken.toLowerCase() === '/resolve-gate') return parseHumanGateIntent(remainder);
+    if (firstToken.toLowerCase() === '/resolve-objection') return parseObjectionIntent(remainder);
     const deferred = DEFERRED_COMMANDS[firstToken.toLowerCase()];
     if (deferred === undefined) {
       return { kind: 'invalid', reason: `unknown leader command "${firstToken}"` };
@@ -136,6 +137,7 @@ export function planLeaderIntent(
     case 'open_sub_channel':
     case 'close_sub_channel':
     case 'resolve_human_gate':
+    case 'resolve_objection':
       return { intent, action: { status: 'applied' }, mutations: [] };
     case 'remove_role': {
       if (!knownRoles.some((entry) => entry.toUpperCase() === intent.targetRole)) {
@@ -197,22 +199,58 @@ export function planLeaderIntent(
 
 function parseHumanGateIntent(remainder: string): LeaderIntent {
   const tokens = remainder.split(/\s+/).filter((token) => token.length > 0);
+  const gateId = tokens[0];
+  const option = tokens[1];
+  const objectionOption = option === 'accept_objection' || option === 'reject_objection';
   if (
-    (tokens.length !== 2 && tokens.length !== 3) ||
-    !tokens.every((token) => SAFE_MSG_ID.test(token))
+    gateId === undefined ||
+    option === undefined ||
+    !SAFE_MSG_ID.test(gateId) ||
+    !SAFE_MSG_ID.test(option)
   ) {
     return {
       kind: 'invalid',
       reason: 'humanGate syntax is /resolve-gate <gateId> <option> [argument]',
     };
   }
-  const [gateId, option, argument] = tokens as [string, string, string?];
+  const argument = tokens.slice(2).join(' ');
+  if (
+    (objectionOption && (argument.length === 0 || argument.length > 2000)) ||
+    (!objectionOption &&
+      (tokens.length > 3 || (argument.length > 0 && !SAFE_MSG_ID.test(argument))))
+  ) {
+    return {
+      kind: 'invalid',
+      reason: 'humanGate syntax is /resolve-gate <gateId> <option> [argument]',
+    };
+  }
   return {
     kind: 'resolve_human_gate',
     gateId,
     option,
-    ...(argument === undefined ? {} : { argument }),
+    ...(argument.length === 0 ? {} : { argument }),
   };
+}
+
+function parseObjectionIntent(remainder: string): LeaderIntent {
+  const tokens = remainder.split(/\s+/).filter((token) => token.length > 0);
+  const objectionId = tokens[0];
+  const option = tokens[1];
+  const rationale = tokens.slice(2).join(' ');
+  if (
+    objectionId === undefined ||
+    !SAFE_MSG_ID.test(objectionId) ||
+    (option !== 'accept_objection' && option !== 'reject_objection') ||
+    rationale.length === 0 ||
+    rationale.length > 2000
+  ) {
+    return {
+      kind: 'invalid',
+      reason:
+        'objection syntax is /resolve-objection <objectionId> <accept_objection|reject_objection> <rationale...>',
+    };
+  }
+  return { kind: 'resolve_objection', objectionId, option, rationale };
 }
 
 function parseRoleIntent(remainder: string): LeaderIntent {

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  appendMutation,
   applyMutations,
   beginRoleDeparture,
   createInitialAppState,
@@ -45,6 +46,164 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('atomically resolves an advisory objection and validates its full replay facts', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    const objection = {
+      id: 'obj-advisory-1',
+      threadId: 'obj-advisory-1',
+      fromRole: 'ARCHITECT',
+      claim: 'concern' as const,
+      argument: 'Prefer a clearer interface name.',
+      track: 'advisory' as const,
+      ts: 10,
+    };
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        appendMutation('objections', objection),
+      ]),
+    );
+    const post = createPostMessage(runtime);
+    const request = () =>
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'resolve-advisory-1',
+          display:
+            '/resolve-objection obj-advisory-1 accept_objection The clearer name improves reviewability.',
+          ts: 11,
+        }),
+      );
+    const first = await request();
+    await expect(first.json()).resolves.toMatchObject({
+      accepted: true,
+      published: true,
+      action: { status: 'applied' },
+    });
+    const state = await runtime.store.load(scope);
+    expect(state?.decisionLedger).toContainEqual(
+      expect.objectContaining({
+        id: 'objection-resolution:resolve-advisory-1',
+        authority: 'leader',
+        decision: 'accept_objection',
+        objectionResolution: {
+          objectionId: 'obj-advisory-1',
+          outcome: 'accepted',
+        },
+      }),
+    );
+    expect(state?.messages).toContainEqual(
+      expect.objectContaining({
+        msgId: 'resolve-advisory-1',
+        payload: expect.objectContaining({
+          objectionResolution: {
+            objectionId: 'obj-advisory-1',
+            option: 'accept_objection',
+            resolutionDecisionId: 'objection-resolution:resolve-advisory-1',
+          },
+        }),
+      }),
+    );
+    const replay = await request();
+    await expect(replay.json()).resolves.toMatchObject({ published: false });
+  });
+
+  it('atomically accepts a blocking decision objection before resuming from its receipt', async () => {
+    const root = await temporaryRoot();
+    const runtime = createMessageRuntime(root, new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    const resumed: string[] = [];
+    runtime.bindHumanGateLifecyclePort({
+      suspend: async () => {
+        throw new Error('unexpected suspend');
+      },
+      resume: async (_scope, actionId) => {
+        resumed.push(actionId);
+      },
+    });
+    const objection = {
+      id: 'obj-blocking-1',
+      threadId: 'obj-blocking-1',
+      fromRole: 'PM',
+      claim: 'contradiction' as const,
+      target: { kind: 'decision' as const, id: 'dec-agent-1' },
+      argument: 'The runtime conflicts with the deployment baseline.',
+      track: 'blocking' as const,
+      ts: 10,
+    };
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        appendMutation('decisionLedger', {
+          id: 'dec-agent-1',
+          topic: 'runtime',
+          decision: 'Use runtime A',
+          rationale: 'Initial choice',
+          authority: 'agent',
+          by: 'ARCHITECT',
+          ts: 9,
+        }),
+        appendMutation('objections', objection),
+        setMutation('humanGate', {
+          gateId: 'human-gate:obj-blocking-1',
+          reason: 'blocking_objection:obj-blocking-1',
+          options: ['accept_objection', 'reject_objection'],
+          phase: 'planning',
+          openedTs: 10,
+          safePointRefs: ['opaque-safe-point-1'],
+        }),
+      ]),
+    );
+    const post = createPostMessage(runtime);
+    const request = () =>
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'resolve-blocking-1',
+          display:
+            '/resolve-gate human-gate:obj-blocking-1 accept_objection The deployment baseline is controlling.',
+          ts: 11,
+        }),
+      );
+    const first = await request();
+    await expect(first.json()).resolves.toMatchObject({ action: { status: 'applied' } });
+    const state = await runtime.store.load(scope);
+    expect(state).not.toHaveProperty('humanGate');
+    expect(state?.decisionLedger).toContainEqual(
+      expect.objectContaining({
+        id: 'objection-resolution:resolve-blocking-1',
+        authority: 'leader',
+        supersedes: 'dec-agent-1',
+      }),
+    );
+    expect(resumed).toEqual(['resolve-blocking-1']);
+    const replay = await request();
+    await expect(replay.json()).resolves.toMatchObject({ published: false });
+    expect(resumed).toEqual(['resolve-blocking-1', 'resolve-blocking-1']);
+
+    const snapshotPath = join(
+      root,
+      'projects',
+      scope.projectId,
+      'tasks',
+      scope.taskId,
+      'state.json',
+    );
+    const corrupted = JSON.parse(await readFile(snapshotPath, 'utf8')) as {
+      messages: Array<{ msgId: string; payload: Record<string, unknown> }>;
+    };
+    const resolutionMessage = corrupted.messages.find(
+      (message) => message.msgId === 'resolve-blocking-1',
+    );
+    expect(resolutionMessage).toBeDefined();
+    delete resolutionMessage?.payload.objectionResolution;
+    await writeFile(snapshotPath, `${JSON.stringify(corrupted, null, 2)}\n`, 'utf8');
+    await expect(request()).rejects.toThrow(/incomplete effects/i);
+  });
+
   it('atomically resolves a durable humanGate and retries resume from the canonical receipt', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };

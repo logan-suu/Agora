@@ -100,6 +100,14 @@ describe('addDecision · authority levels (blueprint §14)', () => {
       'unknown decision id',
     );
   });
+
+  it('rejects superseding a decision that is no longer current', () => {
+    const first = makeDecision({ id: 'dec-1' });
+    const second = makeDecision({ id: 'dec-2', supersedes: first.id, ts: 2 });
+    expect(() =>
+      addDecision([first, second], makeDecision({ id: 'dec-3', supersedes: first.id, ts: 3 })),
+    ).toThrow('is no longer current');
+  });
 });
 
 describe('addDecision · conflict detection (raw signal, classification deferred to Phase 8)', () => {

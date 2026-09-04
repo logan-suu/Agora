@@ -116,8 +116,12 @@ function assertCurrentTarget(
   requirements: readonly Requirement[],
 ): void {
   if (target.kind === 'requirement') {
-    if (!requirements.some((requirement) => requirement.id === target.id)) {
+    const requirement = requirements.find((candidate) => candidate.id === target.id);
+    if (requirement === undefined) {
       throw new Error(`invalid objection: unknown requirement "${target.id}"`);
+    }
+    if (requirement.withdrawnByDecisionId !== undefined) {
+      throw new Error(`invalid objection: requirement "${target.id}" is no longer current`);
     }
     return;
   }

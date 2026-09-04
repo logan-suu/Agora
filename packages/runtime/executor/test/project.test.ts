@@ -252,6 +252,125 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     expect(view.conventions).toEqual({ style: 'biome' });
   });
 
+  it('does not project a requirement withdrawn by a canonical Leader ruling', () => {
+    const ruling: Decision = {
+      id: 'objection-resolution:resolve-1',
+      topic: 'requirement:req-1',
+      decision: 'accept_objection',
+      rationale: 'The requirement conflicts with the revised scope.',
+      authority: 'leader',
+      by: 'leader',
+      objectionResolution: {
+        objectionId: 'obj-1',
+        outcome: 'accepted',
+        target: { kind: 'requirement', id: 'req-1' },
+      },
+      ts: 2,
+    };
+    const withdrawn = { ...REQ, withdrawnByDecisionId: ruling.id };
+    const objection = {
+      id: 'obj-1',
+      threadId: 'obj-1',
+      fromRole: 'PM',
+      claim: 'contradiction' as const,
+      target: { kind: 'requirement' as const, id: 'req-1' },
+      argument: 'The requirement conflicts with scope.',
+      track: 'blocking' as const,
+      ts: 1,
+    };
+    const message = {
+      msgId: 'resolve-1',
+      channelId: 'main',
+      fromRole: 'leader',
+      type: 'chat' as const,
+      payload: {
+        kind: 'leader_intent',
+        intent: {
+          kind: 'resolve_human_gate',
+          gateId: 'human-gate:obj-1',
+          option: 'accept_objection',
+          argument: ruling.rationale,
+        },
+        action: { status: 'applied' },
+        resolution: {
+          gateId: 'human-gate:obj-1',
+          option: 'accept_objection',
+          argument: ruling.rationale,
+          safePointRefs: ['ref-1'],
+          resumeSessionId: 'human-gate-resume:resolve-1',
+        },
+        objectionResolution: {
+          objectionId: 'obj-1',
+          option: 'accept_objection',
+          resolutionDecisionId: ruling.id,
+        },
+      },
+      display: '/resolve-gate human-gate:obj-1 accept_objection rationale',
+      ts: 2,
+    };
+    const state = makeState({
+      requirements: [withdrawn],
+      objections: [objection],
+      decisionLedger: [ruling],
+      messages: [message],
+    });
+    expect(slicesOf(state, 'ARCHITECT').requirements).toEqual([]);
+    expect(slicesOf(state, 'TESTER').acceptance).toEqual({ requirements: [] });
+  });
+
+  it('injects a validated objection resolution into every role as a system slice', () => {
+    const objection = {
+      id: 'obj-1',
+      threadId: 'obj-1',
+      fromRole: 'PM',
+      claim: 'concern' as const,
+      argument: 'Prefer a clearer name.',
+      track: 'advisory' as const,
+      ts: 1,
+    };
+    const ruling: Decision = {
+      id: 'objection-resolution:resolve-1',
+      topic: 'objection:obj-1',
+      decision: 'accept_objection',
+      rationale: 'The clearer name improves reviewability.',
+      authority: 'leader',
+      by: 'leader',
+      objectionResolution: { objectionId: 'obj-1', outcome: 'accepted' },
+      ts: 2,
+    };
+    const message = {
+      msgId: 'resolve-1',
+      channelId: 'main',
+      fromRole: 'leader',
+      type: 'chat' as const,
+      payload: {
+        kind: 'leader_intent',
+        intent: {
+          kind: 'resolve_objection',
+          objectionId: 'obj-1',
+          option: 'accept_objection',
+          rationale: ruling.rationale,
+        },
+        action: { status: 'applied' },
+        objectionResolution: {
+          objectionId: 'obj-1',
+          option: 'accept_objection',
+          resolutionDecisionId: ruling.id,
+        },
+      },
+      display: '/resolve-objection obj-1 accept_objection The clearer name improves reviewability.',
+      ts: 2,
+    };
+    const state = makeState({
+      objections: [objection],
+      decisionLedger: [ruling],
+      messages: [message],
+    });
+    for (const role of ['COORDINATOR', 'CODER', 'TESTER']) {
+      expect(slicesOf(state, role).objectionResolutions).toEqual([ruling]);
+    }
+  });
+
   it('CODER assignedSubtask lists only own non-done subtasks with worktree refs', () => {
     const view = slicesOf(
       makeState({

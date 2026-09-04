@@ -1,4 +1,12 @@
+import type { ObjectionTarget } from './objection';
+
 export type Authority = 'leader' | 'agent';
+
+export interface ObjectionResolutionRecord {
+  objectionId: string;
+  outcome: 'accepted' | 'rejected';
+  target?: ObjectionTarget;
+}
 
 export interface Decision {
   id: string;
@@ -8,6 +16,7 @@ export interface Decision {
   authority: Authority;
   by: string;
   supersedes?: string;
+  objectionResolution?: ObjectionResolutionRecord;
   ts: number;
 }
 
@@ -18,6 +27,7 @@ export interface DecisionConflict {
 }
 
 const AUTHORITIES: readonly Authority[] = ['leader', 'agent'];
+const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0;
@@ -41,6 +51,53 @@ function assertValidDecision(decision: Decision): void {
       'invalid decision: non-empty {id, topic, decision, rationale, by}, a finite ts, and authority in ("leader" | "agent") are required',
     );
   }
+  if (decision.objectionResolution !== undefined) {
+    assertValidObjectionResolution(decision);
+  }
+}
+
+function assertValidObjectionResolution(decision: Decision): void {
+  const resolution = decision.objectionResolution;
+  if (
+    resolution === undefined ||
+    typeof resolution !== 'object' ||
+    resolution === null ||
+    Array.isArray(resolution) ||
+    !isNonEmptyString(resolution.objectionId) ||
+    !SAFE_ID.test(resolution.objectionId) ||
+    (resolution.outcome !== 'accepted' && resolution.outcome !== 'rejected') ||
+    decision.authority !== 'leader' ||
+    decision.by !== 'leader' ||
+    (decision.decision !== 'accept_objection' && decision.decision !== 'reject_objection') ||
+    (resolution.outcome === 'accepted') !== (decision.decision === 'accept_objection') ||
+    !hasExactKeys(resolution, [
+      'objectionId',
+      'outcome',
+      ...(resolution.target === undefined ? [] : ['target']),
+    ])
+  ) {
+    throw new Error('invalid decision: objection resolution must be a canonical leader ruling');
+  }
+  if (resolution.target !== undefined) {
+    if (
+      typeof resolution.target !== 'object' ||
+      resolution.target === null ||
+      (resolution.target.kind !== 'decision' && resolution.target.kind !== 'requirement') ||
+      !isNonEmptyString(resolution.target.id) ||
+      !SAFE_ID.test(resolution.target.id) ||
+      !hasExactKeys(resolution.target, ['id', 'kind'])
+    ) {
+      throw new Error('invalid decision: objection resolution target is malformed');
+    }
+  }
+}
+
+function hasExactKeys(value: object, expected: readonly string[]): boolean {
+  const actual = Object.keys(value).sort();
+  const canonical = [...expected].sort();
+  return (
+    actual.length === canonical.length && actual.every((key, index) => key === canonical[index])
+  );
 }
 
 function sameContent(left: Decision, right: Decision): boolean {
@@ -51,7 +108,21 @@ function sameContent(left: Decision, right: Decision): boolean {
     left.authority === right.authority &&
     left.by === right.by &&
     left.supersedes === right.supersedes &&
+    sameObjectionResolution(left.objectionResolution, right.objectionResolution) &&
     left.ts === right.ts
+  );
+}
+
+function sameObjectionResolution(
+  left: ObjectionResolutionRecord | undefined,
+  right: ObjectionResolutionRecord | undefined,
+): boolean {
+  if (left === undefined || right === undefined) return left === right;
+  return (
+    left.objectionId === right.objectionId &&
+    left.outcome === right.outcome &&
+    left.target?.kind === right.target?.kind &&
+    left.target?.id === right.target?.id
   );
 }
 
@@ -63,6 +134,11 @@ function assertSupersedesIsLegal(ledger: readonly Decision[], decision: Decision
       `decision "${decision.id}" supersedes unknown decision id "${decision.supersedes}"`,
     );
   }
+  if (ledger.some((entry) => entry.supersedes === superseded.id)) {
+    throw new Error(
+      `decision "${decision.id}" cannot supersede decision "${superseded.id}": target is no longer current`,
+    );
+  }
   if (superseded.authority === 'leader' && decision.authority === 'agent') {
     throw new Error(
       `decision "${decision.id}" (authority=agent) cannot supersede leader-level decision "${superseded.id}": only the leader may override a leader-level decision (blueprint §14)`,
@@ -72,6 +148,7 @@ function assertSupersedesIsLegal(ledger: readonly Decision[], decision: Decision
 
 export function assertAppendableDecision(ledger: readonly Decision[], decision: Decision): void {
   assertValidDecision(decision);
+  if (ledger.some((entry) => entry.id === decision.id)) return;
   assertSupersedesIsLegal(ledger, decision);
 }
 

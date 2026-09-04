@@ -6,11 +6,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import type { AppState } from '@agora/core-domain';
+import { DEFAULT_ROSTER } from '@agora/roles-definitions';
+import { project } from '@agora/runtime-executor';
 import { LocalTempSandbox } from '@agora/runtime-sandbox';
 import { type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../../../apps/web/src/server/channel-stream';
+import { createPostMessage } from '../../../apps/web/src/server/message-handlers';
 import { createMessageRuntime } from '../../../apps/web/src/server/message-runtime';
 import { createWebTaskCompositionFactory } from '../../../apps/web/src/server/task-composition';
 import { TaskOrchestrationRuntime } from '../../../apps/web/src/server/task-orchestration-runtime';
@@ -141,6 +144,49 @@ describe('Phase 8 objection dual track', () => {
       expect(stateAtDelivery?.messages.some((message) => message.msgId === objection?.id)).toBe(
         true,
       );
+
+      messages.bindHumanGateLifecyclePort({
+        suspend: async () => {
+          throw new Error('unexpected second suspend');
+        },
+        resume: async () => undefined,
+      });
+      const resolution = await createPostMessage(messages)(
+        new Request('http://localhost/api/messages', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...scope,
+            channelId: 'main',
+            msgId: 'phase8-objection-resolution',
+            display: `/resolve-gate ${state?.humanGate?.gateId} reject_objection The durability requirement remains controlling.`,
+            ts: (objection?.ts ?? 0) + 1,
+          }),
+        }),
+      );
+      await expect(resolution.json()).resolves.toMatchObject({
+        action: { status: 'applied' },
+      });
+      const resolved = await messages.store.load(scope);
+      expect(resolved).not.toHaveProperty('humanGate');
+      expect(resolved?.decisionLedger).toContainEqual(
+        expect.objectContaining({
+          id: 'objection-resolution:phase8-objection-resolution',
+          authority: 'leader',
+          decision: 'reject_objection',
+          objectionResolution: {
+            objectionId: objection?.id,
+            outcome: 'rejected',
+            target: { kind: 'requirement', id: 'req-1' },
+          },
+        }),
+      );
+      const coderProjection = project(resolved as AppState, 'CODER', DEFAULT_ROSTER);
+      expect(coderProjection.slices.objectionResolutions).toEqual([
+        expect.objectContaining({
+          id: 'objection-resolution:phase8-objection-resolution',
+          rationale: 'The durability requirement remains controlling.',
+        }),
+      ]);
     } finally {
       unsubscribe();
       await runtime.disposeAll();

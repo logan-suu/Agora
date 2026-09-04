@@ -1,6 +1,8 @@
 import {
   type AppState,
+  activeRequirements,
   type CoordinationLedgerPayload,
+  deriveObjectionResolutions,
   deriveOnboardingContext,
   latestCoordinationLedger,
   type RoleId,
@@ -43,10 +45,24 @@ export function project(
   }
   slices.channels = structuredClone([...channelContext]);
   slices.onboardingContext = deriveOnboardingContext(state, role);
+  slices.objectionResolutions = deriveObjectionResolutions(state)
+    .filter((entry) => entry.status === 'resolved')
+    .map((entry) => {
+      const decision = state.decisionLedger.find(
+        (candidate) => candidate.id === entry.resolutionDecisionId,
+      );
+      if (decision === undefined) {
+        throw new Error(
+          `missing verified objection resolution "${String(entry.resolutionDecisionId)}"`,
+        );
+      }
+      return structuredClone(decision);
+    });
   return { role: String(role), slices };
 }
 
 function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
+  const requirements = activeRequirements(state);
   switch (slice) {
     case 'global.summary':
       return {
@@ -73,7 +89,7 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
     case 'goal':
       return { goal: state.goal };
     case 'requirements':
-      return state.requirements.map((requirement) => ({ ...requirement }));
+      return requirements;
     case 'leaderDecisions': {
       // Iron rule 3: rationale travels with the decision (spec §7). Task 3.3
       // plan ruling: leader-authority entries only — the slice name and the §2
@@ -131,7 +147,7 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
     }
     case 'acceptance':
       return {
-        requirements: state.requirements.map((requirement) => ({
+        requirements: requirements.map((requirement) => ({
           id: requirement.id,
           acceptance: [...requirement.acceptance],
         })),

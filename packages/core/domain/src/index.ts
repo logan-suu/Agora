@@ -4,6 +4,7 @@ export * from './coordination-ledger';
 export * from './handoff';
 export * from './ledger';
 export * from './objection';
+export * from './objection-resolution';
 export * from './onboarding';
 export * from './reducer';
 export * from './roster';

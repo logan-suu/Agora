@@ -1,5 +1,6 @@
 import {
   type AppState,
+  activeRequirements,
   COORDINATION_LEDGER_KIND,
   type CoordinationLedgerPayload,
   type LedgerFact,
@@ -29,11 +30,12 @@ export interface ProgressObservation {
 const FULL_MACHINE_ROLES: readonly RoleId[] = ['PM', 'ARCHITECT', 'CODER', 'TESTER', 'REVIEWER'];
 
 function factsOf(state: AppState): LedgerFact[] {
+  const requirements = activeRequirements(state);
   return [
     { key: 'goal', value: state.goal },
     { key: 'phase', value: state.phase },
     { key: 'complexityTier', value: state.complexity?.tier ?? null },
-    { key: 'requirementsCount', value: state.requirements.length },
+    { key: 'requirementsCount', value: requirements.length },
     { key: 'architectureReady', value: state.architecture !== undefined },
     {
       key: 'completedSubtasks',
@@ -55,7 +57,7 @@ function roleIsAvailable(role: RoleId, availableRoles: readonly string[] | undef
 function roleIsDone(state: AppState, role: RoleId): boolean {
   switch (role) {
     case 'PM':
-      return state.requirements.length > 0;
+      return activeRequirements(state).length > 0;
     case 'ARCHITECT':
       return state.architecture !== undefined;
     case 'CODER':
@@ -99,10 +101,11 @@ function planOf(
 }
 
 function markerOf(state: AppState): string {
+  const requirements = activeRequirements(state);
   return JSON.stringify({
     phase: state.phase,
     complexityTier: state.complexity?.tier ?? null,
-    requirementIds: state.requirements.map((requirement) => requirement.id),
+    requirementIds: requirements.map((requirement) => requirement.id),
     architectureReady: state.architecture !== undefined,
     subtasks: state.subtasks.map((subtask) => ({ id: subtask.id, status: subtask.status })),
     testOutcome:

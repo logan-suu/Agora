@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-04T13:18:13.000Z",
+  "last_updated": "2026-09-04T16:18:29.000Z",
   "current_phase": 8,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -73,7 +73,7 @@
     },
     {
       "id": "D14",
-      "rule": "objections 是以稳定消息 id 为身份键的 append-only 不可变事实，未决视图由异议事实与规范 Leader 裁决消息派生。目标引用必须区分 decision/requirement；Coordinator 仅在有明确矛盾证据时声明 contradiction，L1 校验目标存在且仍为当前控制事实后分为 blocking，concern/不确定项为 advisory，未知或失效引用 fail-fast。blocking 先原子提交异议+同 id 可见消息，再以 blocking_objection:<id> 进入 D4；8.2 不设临时清 gate 旁路，8.3 负责裁决与最高权威台账闭合，Phase 9 才广播多 worker 抢占",
+      "rule": "objections 是稳定消息 id 标识的 append-only 不可变事实；目标区分 decision/requirement，contradiction=blocking、concern/不确定项=advisory，未知或失效引用 fail-fast。blocking 经绑定 gate 的 /resolve-gate 裁决，advisory 可经 /resolve-objection 直接裁决；两者原子追加规范 Leader 消息与确定性最高权威 resolution Decision，rationale 必填。accept blocking 必须撤回目标：Decision 用 supersedes，Requirement 用 withdrawnByDecisionId；reject 与 advisory 裁决不自动改目标。未决视图和同 actionId 重放交叉验证消息、Decision、receipt 与 target effect，缺失/冲突/漂移 fail-closed；Decision 禁止 supersede 已失效项，旧 Requirement 缺撤回字段视为 active；所有角色从已验证的结构化 objectionResolutions 系统切片读取裁决，不读原始 Leader 消息。普通目标变更与多 worker 抢占仍属 Phase 9",
       "source": "docs/项目蓝图.md §14/§21；docs/详细设计方案.md §1/§5；docs/系统架构设计文档.md §5；docs/开发计划安排.md §11"
     },
     {
@@ -1078,16 +1078,19 @@
           "id": "8.3",
           "title": "决策权威级别校验",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
-            "docs/项目蓝图.md §14"
+            "docs/项目蓝图.md §14/§21 D14",
+            "docs/详细设计方案.md §1/§5",
+            "docs/系统架构设计文档.md §5",
+            "docs/开发计划安排.md §11"
           ],
           "dependencies": [
             "8.2"
           ],
-          "test_file": null,
-          "notes": "leader 决策最高权威可覆盖此前任何约定；agent 只能推翻同级或更低；碰 leader 级决策只能走异议由 leader 自己改。裁决结果以最高权威写回台账→全员按新台账 resume。\n[2026-09-04 /agora-pr-merge] 依赖 8.2 已完成，级联 pending→ready。",
-          "last_updated": "2026-09-04T13:18:13.000Z"
+          "test_file": "packages/core/domain/test/objection-resolution.test.ts + packages/core/orchestration/test/human-gate.test.ts + apps/web/test/intent.test.ts + apps/web/test/message-flow.test.ts + packages/runtime/executor/test/project.test.ts + tests/integration/phase8/objection-dual-track.test.ts + tests/integration/phase8/human-gate-lifecycle.test.ts",
+          "notes": "leader 决策最高权威可覆盖此前任何约定；agent 只能推翻同级或更低；碰 leader 级决策只能走异议由 leader 自己改。裁决结果以最高权威写回台账→全员按新台账 resume。\n[2026-09-04 /agora-pr-merge] 依赖 8.2 已完成，级联 pending→ready。\n[2026-09-04 /agora-do-task] Leader 授权启动 8.3，并要求先评审现有规格合理性；若发现问题，先提出并确认文档修订计划，再修改规格或实现。任务进入 in_progress，当前仅执行 Explore/Plan。\n[2026-09-04 /agora-sync-docs·规格评审] Leader 确认修订方案。确认旧规格五处缺口：accept 未定义 decision/requirement 后置状态；单 token argument 无法承载 rationale；未决视图无规范派生/损坏规则；重放未校验 decisionLedger/target effect；Phase 8 /resolve-objection 仍 deferred。已按蓝图 §14/§21→详细设计 §1/§5→系统架构 §5→开发计划 §11→task-status/AGENTS 同步 D14 裁决闭合规则，随后按四单元 TDD 实现。\n[2026-09-04 Code+Check] 已实现 Leader 异议裁决闭合：L1 确定性 resolution Decision/Requirement withdrawal/完整未决视图，D9 `/resolve-gate` 自由文本 rationale 与 `/resolve-objection`，MessageRuntime 原子提交和完整重放校验，路由/进度只消费 active requirements，所有角色获得已验证的结构化 objectionResolutions 系统切片。补强 fail-closed：Requirement 撤回必须具备 Objection→Leader 消息→Decision→target effect 完整证据；阻断异议重放缺裁决载荷即拒绝。聚焦 9 files / 121 tests 全绿，新增损坏快照重放回归；typecheck 0 错，Biome 240 files 0 违规，git diff --check 与新增行敏感模式扫描无真实命中。全量沙箱内运行 716 passed / 2 skipped；其余 20 failures 仅为 Docker socket EPERM 与 DeepSeek 外部请求受限。宿主权限全量重跑被 auto-review 拒绝，需 Leader 明确授权访问 `/var/run/docker.sock` 并向 DeepSeek 发送既有测试任务内容、接受可能费用后补验。任务保持 in_progress。\n[2026-09-04 完整门禁补验] Leader 明确授权访问本机 Docker socket，并向 DeepSeek API 发送仓库既有测试任务内容且接受可能费用。宿主权限完整 Vitest：88 files / 738 tests 全绿；DockerSandbox 16/16，Phase 5 Docker/Harness/MCP 累计链、两条 live DeepSeek Harness 与 256.57s live LRU E2E 全部通过。结合 typecheck 0 错、Biome 240 files 0 违规、任务专属真实 Harness/LocalTemp/D4 集成链通过，G1-G7 无缺项。任务按 PR 流程保持 in_progress，等待显式交付指令。\n[2026-09-04 /agora-commit·交付门禁] 分支 feat/decision-authority-resolution（base=dev-1.0.0），Node 24.19 + pnpm 9.15.9。pnpm typecheck 0 错；pnpm lint 240 files 0 违规；任务专属 7 files / 100 tests 全绿，真实 Harness/LocalTemp/HTTP/JSON/D4 链通过；完整 pnpm test 88 files / 738 tests 全绿，DockerSandbox 16/16、Phase 5 Docker/Harness/MCP、两条 live DeepSeek Harness 与 158.59s live LRU E2E 均通过。git diff --check、task-status JSON 与新增行敏感数据扫描通过；任务保持 in_progress。\n[2026-09-04 /agora-commit] 功能提交 `9bd3cc5` 已推送至 `feat/decision-authority-resolution`；PR #60：https://github.com/logan-suu/Agora/pull/60（base=`dev-1.0.0`）。最终门禁：Node 24.19 + pnpm 9.15.9，typecheck 0 错、Biome 240 files 0 违规、任务专属 7 files / 100 tests、完整 Vitest 88 files / 738 tests 全绿；DockerSandbox 16/16、Phase 5 Docker/Harness/MCP、两条 live DeepSeek Harness 与 live LRU E2E 均通过；git diff --check、task-status JSON 与敏感数据扫描通过。任务保持 in_progress，PR 等待人工审阅合并，Agent 不自动合并。\n[2026-09-04 /agora-pr-review·评论修复] CodeRabbit 唯一代码评论验证成立：evaluateAtom 入口无条件派生 activeRequirements，使 always/designReady/codingDone/tests* 等无关 atom 被损坏 withdrawal 阻断，并让复合条件重复交叉验证。按蓝图 §14“投影与路由只消费 active requirements”修复为仅 goalAmbiguous/requirementsReady 派生，补回归证明无关 atom 独立、需求 atom 继续 fail-closed。typecheck 0 错；Biome 240 files 0 违规；聚焦 8 files / 110 tests 全绿；完整回归 87/88 files、738 tests 通过，DockerSandbox 16/16、两条 live Harness 与 Phase 5 Docker/Harness/MCP 均通过。唯一 live LRU E2E 首次因 DeepSeek 生成畸形 objection JSON fail-closed，后两次因模型未产出 TypeScript 文件被 G5 正确拒绝；该用例在本会话修复前曾两次全绿，路由修复不触及 Harness parser/文件生成路径。未弱化解析、断言或测试。Docstring coverage 为外部通用警告，无 Agora G1-G7/R1-R13 对应门禁，不添加无语义注释。Leader 随后明确要求提交本次已验证的最小评论修复；任务保持 in_progress，PR 不自动合并。\n[2026-09-04 /agora-pr-review·live LRU 修复] Leader 确认直接在 PR #60 修复。复核 LocalTempSandbox teardown 保留的失败 worktree 后纠正此前判断：两次所谓“无 TypeScript 产物”实际分别生成 `src/lru-cache.ts` + TypeScript 测试，以及 `lru-cache.js` + JavaScript 测试；旧 G5 仅统计 worktree 根目录 `.ts`，对未限定语言的任务产生假阴性。现改为递归检查 worktree，且同时要求 JavaScript/TypeScript 实现文件与 test/spec 文件。另修正全局 objection prompt 中会诱导模型照抄的 `decision|requirement` 联合占位符，明确无具体异议时省略控制块、存在异议时只用实际 target.kind 与合法紧凑 JSON；adapter 对畸形/混合控制块仍严格 fail-closed。同步《详细设计方案》§5/§9。验证：HarnessExecutor 21/21；Node 24.19 + pnpm 9.15.9 typecheck 0 错；Biome 240 files 0 违规；live LRU 连续两次通过（220.02s、166.42s）；完整 Vitest 88 files / 739 tests 全绿，含 DockerSandbox 16/16、真实 Harness/Docker/MCP 链。",
+          "last_updated": "2026-09-04T16:18:29.000Z"
         },
         {
           "id": "8.4",

@@ -1,4 +1,4 @@
-import type { AppState } from '@agora/core-domain';
+import { type AppState, activeRequirements } from '@agora/core-domain';
 
 export const ROUTE_WHEN_KEYS = [
   'always',
@@ -16,9 +16,9 @@ function evaluateAtom(state: AppState, atom: string): boolean {
     case 'always':
       return true;
     case 'goalAmbiguous':
-      return state.requirements.length === 0;
+      return activeRequirements(state).length === 0;
     case 'requirementsReady':
-      return state.requirements.length > 0;
+      return activeRequirements(state).length > 0;
     case 'designReady':
       return state.architecture !== undefined;
     case 'codingDone':

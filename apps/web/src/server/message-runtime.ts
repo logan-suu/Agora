@@ -9,6 +9,7 @@ import {
 import {
   type AppState,
   createMainChannel,
+  deriveObjectionResolutions,
   type Message,
   type Mutation,
   planRoleOnboarding,
@@ -28,6 +29,7 @@ import {
   type MutationCommitResult,
   materializeHumanGate,
   ProjectRosterService,
+  planAdvisoryObjectionResolution,
   planHumanGateResolution,
   RoleDepartureRejectedError,
   RoleDepartureService,
@@ -267,9 +269,28 @@ export class MessageRuntime {
             `humanGate resolution action "${input.msgId}" conflicts with its first write`,
           );
         }
-        const receipt = assertHumanGateResolutionReplay(existing, input.channelId, incomingIntent);
+        const receipt = assertHumanGateResolutionReplay(
+          current,
+          existing,
+          input.channelId,
+          incomingIntent,
+        );
         await this.#completeDepartureResolution(scope, input.msgId, incomingIntent);
         await this.#humanGate.resume(scope, input.msgId, receipt);
+      }
+      const existingIsObjectionResolution =
+        typeof persistedIntent === 'object' &&
+        persistedIntent !== null &&
+        !Array.isArray(persistedIntent) &&
+        'kind' in persistedIntent &&
+        persistedIntent.kind === 'resolve_objection';
+      if (incomingIntent.kind === 'resolve_objection' || existingIsObjectionResolution) {
+        if (incomingIntent.kind !== 'resolve_objection') {
+          throw new Error(
+            `objection resolution action "${input.msgId}" conflicts with its first write`,
+          );
+        }
+        assertObjectionResolutionReplay(current, existing, input.channelId, incomingIntent);
       }
       const collaboration = await this.collaboration.load(scope.projectId);
       if (collaboration === undefined) {
@@ -334,6 +355,7 @@ export class MessageRuntime {
           option: intent.option,
           ...(intent.argument === undefined ? {} : { argument: intent.argument }),
           enabledRoles: enabledRoster.map((entry) => entry.role),
+          ts: input.ts,
         });
         return {
           message: {
@@ -346,6 +368,9 @@ export class MessageRuntime {
               intent,
               action: { status: 'applied' },
               resolution: plan.receipt,
+              ...(plan.objectionResolution === undefined
+                ? {}
+                : { objectionResolution: plan.objectionResolution }),
             },
             display: input.display,
             ts: input.ts,
@@ -353,9 +378,52 @@ export class MessageRuntime {
           mutations: plan.mutations,
         };
       });
-      const receipt = assertHumanGateResolutionReplay(resolution.message, input.channelId, intent);
+      const receipt = assertHumanGateResolutionReplay(
+        resolution.state,
+        resolution.message,
+        input.channelId,
+        intent,
+      );
       await this.#completeDepartureResolution(scope, input.msgId, intent);
       await this.#humanGate.resume(scope, input.msgId, receipt);
+      return { ...resolution, action: { status: 'applied' } };
+    }
+    if (intent.kind === 'resolve_objection') {
+      if (input.channelId !== 'main') {
+        throw new Error('objection resolution commands must use main');
+      }
+      const resolution = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
+        const plan = planAdvisoryObjectionResolution(state, {
+          actionId: input.msgId,
+          objectionId: intent.objectionId,
+          option: intent.option,
+          rationale: intent.rationale,
+          ts: input.ts,
+        });
+        return {
+          message: {
+            msgId: input.msgId,
+            channelId: input.channelId,
+            fromRole: 'leader',
+            type: 'chat',
+            payload: {
+              kind: 'leader_intent',
+              intent,
+              action: { status: 'applied' },
+              objectionResolution: plan.action,
+            },
+            display: input.display,
+            ts: input.ts,
+          },
+          mutations: plan.mutations,
+        };
+      });
+      assertObjectionResolutionReplay(
+        resolution.state,
+        resolution.message,
+        input.channelId,
+        intent,
+      );
       return { ...resolution, action: { status: 'applied' } };
     }
     let lifecycleRejection: LeaderActionStatus | undefined;
@@ -639,6 +707,7 @@ function assertOnboardingReplay(
 }
 
 function assertHumanGateResolutionReplay(
+  state: AppState,
   existing: Message,
   channelId: string,
   incoming: Extract<ReturnType<typeof parseLeaderIntent>, { kind: 'resolve_human_gate' }>,
@@ -684,6 +753,19 @@ function assertHumanGateResolutionReplay(
       `humanGate resolution action "${existing.msgId}" conflicts with its first write`,
     );
   }
+  const blockingObjection = state.objections.find(
+    (objection) =>
+      objection.track === 'blocking' && `human-gate:${objection.id}` === incoming.gateId,
+  );
+  if (blockingObjection !== undefined && existing.payload.objectionResolution === undefined) {
+    throw new Error(`humanGate resolution action "${existing.msgId}" has incomplete effects`);
+  }
+  if (existing.payload.objectionResolution !== undefined) {
+    const views = deriveObjectionResolutions(state);
+    if (!views.some((view) => view.actionId === existing.msgId && view.status === 'resolved')) {
+      throw new Error(`humanGate resolution action "${existing.msgId}" has incomplete effects`);
+    }
+  }
   return {
     gateId: incoming.gateId,
     option: incoming.option,
@@ -691,6 +773,38 @@ function assertHumanGateResolutionReplay(
     safePointRefs: [...(safePointRefs as string[])],
     resumeSessionId: receipt.resumeSessionId as string,
   };
+}
+
+function assertObjectionResolutionReplay(
+  state: AppState,
+  existing: Message,
+  channelId: string,
+  incoming: Extract<ReturnType<typeof parseLeaderIntent>, { kind: 'resolve_objection' }>,
+): void {
+  const persisted = existing.payload.intent;
+  const intent =
+    typeof persisted === 'object' && persisted !== null && !Array.isArray(persisted)
+      ? (persisted as Record<string, unknown>)
+      : undefined;
+  const same =
+    existing.fromRole === 'leader' &&
+    existing.channelId === channelId &&
+    existing.type === 'chat' &&
+    existing.payload.kind === 'leader_intent' &&
+    intent?.kind === 'resolve_objection' &&
+    intent.objectionId === incoming.objectionId &&
+    intent.option === incoming.option &&
+    intent.rationale === incoming.rationale;
+  if (!same) {
+    throw new Error(
+      `objection resolution action "${existing.msgId}" conflicts with its first write`,
+    );
+  }
+  const views = deriveObjectionResolutions(state);
+  const view = views.find((candidate) => candidate.objectionId === incoming.objectionId);
+  if (view?.status !== 'resolved' || view.actionId !== existing.msgId) {
+    throw new Error(`objection resolution action "${existing.msgId}" has incomplete effects`);
+  }
 }
 
 const workingDirectory = process.cwd();

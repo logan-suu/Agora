@@ -173,6 +173,8 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
       });
       expect(message.display).not.toContain('agora-objection');
       expect(fake.calls[0]?.system).toContain('<agora-objection>');
+      expect(fake.calls[0]?.system).toContain('If there is no concrete objection, omit the block');
+      expect(fake.calls[0]?.system).not.toContain('decision|requirement');
     } finally {
       await executor.dispose();
     }
