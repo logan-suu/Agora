@@ -12,14 +12,13 @@ export const ROUTE_WHEN_KEYS = [
 export type RouteWhenKey = (typeof ROUTE_WHEN_KEYS)[number];
 
 function evaluateAtom(state: AppState, atom: string): boolean {
-  const requirements = activeRequirements(state);
   switch (atom) {
     case 'always':
       return true;
     case 'goalAmbiguous':
-      return requirements.length === 0;
+      return activeRequirements(state).length === 0;
     case 'requirementsReady':
-      return requirements.length > 0;
+      return activeRequirements(state).length > 0;
     case 'designReady':
       return state.architecture !== undefined;
     case 'codingDone':

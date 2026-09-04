@@ -35,6 +35,23 @@ describe('evaluateRouteWhen (task 2.2 conditional-routing predicates)', () => {
     expect(evaluateRouteWhen(clarified, 'requirementsReady')).toBe(true);
   });
 
+  it('validates withdrawals only for route atoms that consume requirements', () => {
+    const corrupted = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('requirements', 'req-1', {
+        story: 's',
+        acceptance: ['a'],
+        nonGoals: [],
+        withdrawnByDecisionId: 'missing-ruling',
+      }),
+    ]);
+
+    expect(evaluateRouteWhen(corrupted, 'always')).toBe(true);
+    expect(evaluateRouteWhen(corrupted, 'designReady')).toBe(false);
+    expect(() => evaluateRouteWhen(corrupted, 'requirementsReady')).toThrow(
+      'invalid requirement withdrawal',
+    );
+  });
+
   it('treats a requirement withdrawn by a canonical Leader ruling as no longer ready', () => {
     const active = applyMutations(createInitialAppState('t-1', 'g'), [
       mergeByIdMutation('requirements', 'req-1', {
