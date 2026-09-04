@@ -127,6 +127,8 @@ export interface HarnessSafePointIdentity {
 }
 
 const SAFE_POINT_PREFIX = 'agora-safe-point:v1:';
+const OBJECTION_PROTOCOL_PROMPT =
+  'When you identify an objection, keep the human-readable explanation in the response and append exactly one final <agora-objection> JSON block. Use {"claim":"contradiction","target":{"kind":"decision|requirement","id":"..."},"argument":"..."} only for a proven conflict with a projected current fact. Use {"claim":"concern","argument":"..."} for advice or uncertainty. Never include id, role, threadId, track, or status. The objection block is mutually exclusive with agora-channel-action.';
 
 /** Adapter-internal routing metadata; callers must still pass the opaque ref back unchanged. */
 export function inspectHarnessSafePoint(cursor: string): HarnessSafePointIdentity {
@@ -193,7 +195,11 @@ export class HarnessExecutor implements Executor {
       );
     }
     this.pluginFibers.push(this.ctx.plugin(LlmRuntime)); // ctx.llm
-    this.pluginFibers.push(this.ctx.plugin(SystemPrompt, { persona: this.spec.systemPrompt })); // ctx.systemPrompt
+    this.pluginFibers.push(
+      this.ctx.plugin(SystemPrompt, {
+        persona: `${this.spec.systemPrompt}\n\n${OBJECTION_PROTOCOL_PROMPT}`,
+      }),
+    ); // ctx.systemPrompt
     this.pluginFibers.push(this.ctx.plugin(ToolRuntime)); // ctx.tools (injects systemPrompt)
     this.pluginFibers.push(
       this.ctx.plugin({
@@ -293,10 +299,12 @@ export class HarnessExecutor implements Executor {
     }
 
     const turn = lastAssistantTurn(agent, context.sessionId);
-    const parsed = turn === null ? null : parseChannelAction(turn.text, turn.msgId);
+    const parsed = turn === null ? null : parseAssistantControls(turn.text, turn.msgId);
     const text = parsed?.text ?? turn?.text ?? null;
     const message =
-      turn === null ? null : this.toAgoraMessage(turn.msgId, text as string, parsed?.channelAction);
+      turn === null
+        ? null
+        : this.toAgoraMessage(turn.msgId, text as string, parsed?.channelAction, parsed?.objection);
     const mutations: Mutation[] = message === null ? [] : [appendMutation('messages', message)];
     if (this.readTestResults !== undefined) {
       const testResults = await this.readTestResults();
@@ -318,9 +326,18 @@ export class HarnessExecutor implements Executor {
       output:
         text === null
           ? {}
-          : parsed?.channelAction === undefined
-            ? { text }
-            : { text, channelAction: parsed.channelAction },
+          : parsed?.channelAction !== undefined
+            ? { text, channelAction: parsed.channelAction }
+            : parsed?.objection !== undefined
+              ? {
+                  text,
+                  objection: {
+                    id: turn?.msgId,
+                    threadId: turn?.msgId,
+                    ...parsed.objection,
+                  },
+                }
+              : { text },
       reachedSafeBoundary: true,
       mutations,
     };
@@ -533,15 +550,32 @@ export class HarnessExecutor implements Executor {
     });
   }
 
-  private toAgoraMessage(msgId: string, text: string, channelAction?: ParsedChannelAction) {
+  private toAgoraMessage(
+    msgId: string,
+    text: string,
+    channelAction?: ParsedChannelAction,
+    objection?: ParsedObjection,
+  ) {
     return {
       msgId,
+      ...(objection === undefined ? {} : { threadId: msgId }),
       channelId: 'main',
       fromRole: this.spec.role,
-      type: 'chat' as const,
-      payload: channelAction === undefined ? {} : { channelAction },
+      type: objection === undefined ? ('chat' as const) : ('objection' as const),
+      payload:
+        channelAction !== undefined
+          ? { channelAction }
+          : objection !== undefined
+            ? { objection }
+            : {},
       display:
-        text.length > 0 || channelAction === undefined ? text : channelActionDisplay(channelAction),
+        text.length > 0
+          ? text
+          : channelAction !== undefined
+            ? channelActionDisplay(channelAction)
+            : objection !== undefined
+              ? `Raised an objection: ${objection.argument}`
+              : text,
       ts: Date.now(),
     };
   }
@@ -662,11 +696,34 @@ type ParsedChannelAction =
 interface ParsedAssistantText {
   text: string;
   channelAction?: ParsedChannelAction;
+  objection?: ParsedObjection;
+}
+
+interface ParsedObjection {
+  claim: 'contradiction' | 'concern';
+  target?: { kind: 'decision' | 'requirement'; id: string };
+  argument: string;
 }
 
 const CHANNEL_ACTION_OPEN = '<agora-channel-action>';
 const CHANNEL_ACTION_CLOSE = '</agora-channel-action>';
 const CHANNEL_ACTION_PATTERN = /<agora-channel-action>([\s\S]*?)<\/agora-channel-action>/g;
+const OBJECTION_OPEN = '<agora-objection>';
+const OBJECTION_CLOSE = '</agora-objection>';
+const OBJECTION_PATTERN = /<agora-objection>([\s\S]*?)<\/agora-objection>/g;
+
+function parseAssistantControls(text: string, actionId: string): ParsedAssistantText {
+  const hasChannel = text.includes(CHANNEL_ACTION_OPEN) || text.includes(CHANNEL_ACTION_CLOSE);
+  const hasObjection = text.includes(OBJECTION_OPEN) || text.includes(OBJECTION_CLOSE);
+  if (hasChannel && hasObjection) {
+    throw new Error(
+      'invalid agora assistant control: channel action and objection are mutually exclusive',
+    );
+  }
+  if (hasChannel) return parseChannelAction(text, actionId);
+  if (hasObjection) return parseObjection(text);
+  return { text };
+}
 
 function parseChannelAction(text: string, actionId: string): ParsedAssistantText {
   if (!text.includes(CHANNEL_ACTION_OPEN) && !text.includes(CHANNEL_ACTION_CLOSE)) return { text };
@@ -740,7 +797,76 @@ function validateChannelAction(value: unknown, actionId: string): ParsedChannelA
   throw new Error('invalid agora channel action: unknown kind');
 }
 
+function parseObjection(text: string): ParsedAssistantText {
+  const trimmed = text.trimEnd();
+  const matches = [...trimmed.matchAll(OBJECTION_PATTERN)];
+  const match = matches[0];
+  if (
+    matches.length !== 1 ||
+    match === undefined ||
+    match.index === undefined ||
+    match.index + match[0].length !== trimmed.length ||
+    occurrences(trimmed, OBJECTION_OPEN) !== 1 ||
+    occurrences(trimmed, OBJECTION_CLOSE) !== 1
+  ) {
+    throw new Error('invalid agora objection: expected one final control block');
+  }
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1] ?? '');
+  } catch (error) {
+    throw new Error('invalid agora objection: malformed JSON', { cause: error });
+  }
+  const objection = validateObjection(value);
+  return { text: trimmed.slice(0, match.index).trimEnd(), objection };
+}
+
+function validateObjection(value: unknown): ParsedObjection {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('invalid agora objection: payload must be an object');
+  }
+  const record = value as Record<string, unknown>;
+  assertObjectionKeys(
+    record,
+    record.target === undefined ? ['argument', 'claim'] : ['argument', 'claim', 'target'],
+  );
+  if (record.claim !== 'contradiction' && record.claim !== 'concern') {
+    throw new Error('invalid agora objection: claim must be contradiction or concern');
+  }
+  if (typeof record.argument !== 'string' || record.argument.length === 0) {
+    throw new Error('invalid agora objection: argument must be a non-empty string');
+  }
+  if (record.claim === 'contradiction' && record.target === undefined) {
+    throw new Error('invalid agora objection: contradiction requires a target');
+  }
+  let target: ParsedObjection['target'];
+  if (record.target !== undefined) {
+    if (
+      typeof record.target !== 'object' ||
+      record.target === null ||
+      Array.isArray(record.target)
+    ) {
+      throw new Error('invalid agora objection: target must be an object');
+    }
+    const targetRecord = record.target as Record<string, unknown>;
+    assertObjectionKeys(targetRecord, ['id', 'kind']);
+    if (targetRecord.kind !== 'decision' && targetRecord.kind !== 'requirement') {
+      throw new Error('invalid agora objection: target kind must be decision or requirement');
+    }
+    if (typeof targetRecord.id !== 'string' || !SAFE_OBJECTION_ID.test(targetRecord.id)) {
+      throw new Error('invalid agora objection: target id must be a safe non-empty token');
+    }
+    target = { kind: targetRecord.kind, id: targetRecord.id };
+  }
+  return {
+    claim: record.claim,
+    ...(target === undefined ? {} : { target }),
+    argument: record.argument,
+  };
+}
+
 const SAFE_CHANNEL_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const SAFE_OBJECTION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
 function channelActionDisplay(action: ParsedChannelAction): string {
   return action.kind === 'open_sub_channel'
@@ -756,6 +882,17 @@ function assertExactKeys(record: Record<string, unknown>, expected: readonly str
     keys.some((key, index) => key !== canonicalExpected[index])
   ) {
     throw new Error('invalid agora channel action: unexpected fields');
+  }
+}
+
+function assertObjectionKeys(record: Record<string, unknown>, expected: readonly string[]): void {
+  const keys = Object.keys(record).sort();
+  const canonicalExpected = [...expected].sort();
+  if (
+    keys.length !== canonicalExpected.length ||
+    keys.some((key, index) => key !== canonicalExpected[index])
+  ) {
+    throw new Error('invalid agora objection: unexpected fields');
   }
 }
 

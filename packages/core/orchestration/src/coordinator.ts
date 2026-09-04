@@ -17,6 +17,7 @@ export const MAX_ITERATIONS = 8;
 export const TEST_FAILURE_REVIEW_THRESHOLD = 2;
 
 export const HUMAN_GATE_OPTIONS: readonly string[] = ['continue'];
+export const OBJECTION_GATE_OPTIONS: readonly string[] = ['accept_objection', 'reject_objection'];
 
 export interface Assignment {
   role: RoleId;
@@ -56,9 +57,12 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     newId: options?.newId ?? (() => crypto.randomUUID()),
     now: options?.now ?? (() => Date.now()),
   };
+  const blockingObjection = pendingBlockingObjectionGate(state);
   const leaderOverride = consumeLeaderAssignment(state, clock, options?.roster);
   let decision: CoordinatorDecision;
-  if (leaderOverride !== undefined) {
+  if (blockingObjection !== undefined) {
+    decision = blockingObjection;
+  } else if (leaderOverride !== undefined) {
     decision = leaderOverride;
   } else {
     switch (state.phase) {
@@ -92,6 +96,26 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     decision = unavailableRoleGate(state, clock, decision.route.batch[0].role);
   }
   return attachCoordinationArtifacts(state, decision, clock, options?.roster);
+}
+
+function pendingBlockingObjectionGate(state: AppState): CoordinatorDecision | undefined {
+  const objection = [...state.objections]
+    .filter((entry) => entry.track === 'blocking')
+    .sort((left, right) => left.ts - right.ts || left.id.localeCompare(right.id))[0];
+  if (objection === undefined) return undefined;
+  return {
+    route: {
+      kind: 'human_gate',
+      request: {
+        triggerMsgId: objection.id,
+        triggerTs: objection.ts,
+        reason: `blocking_objection:${objection.id}`,
+        options: [...OBJECTION_GATE_OPTIONS],
+        phase: state.phase,
+      },
+    },
+    mutations: [],
+  };
 }
 
 function unavailableRoleGate(state: AppState, clock: Clock, role: string): CoordinatorDecision {
@@ -241,6 +265,9 @@ function instructionFor(decision: CoordinatorDecision): string {
   const messages = appendedMessages(decision.mutations);
   const latest = messages[messages.length - 1];
   if (latest !== undefined) return latest.display;
+  if (decision.route.kind === 'human_gate') {
+    return `Await Leader resolution for ${decision.route.request.reason}`;
+  }
   const speaker = nextSpeakerFor(decision.route);
   if (speaker !== null) return `Continue with ${speaker}`;
   return decision.route.kind === 'finalize' ? 'Finalize the task result' : 'Integrate task outputs';

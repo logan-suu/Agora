@@ -362,9 +362,11 @@ describe('mutation builders', () => {
     // Task 3.1 Phase 3 unlock: decisionLedger records decisions with authority levels (spec §1 / blueprint §14).
     // Task 3.2 Phase 3 unlock: handoffPackets carry structured role-switch handoffs (spec §1 / pattern ④).
     // Task 4.1 Phase 4 unlock: complexity.tier feeds adaptive orchestration (spec §3).
+    // Task 8.2 Phase 8 unlock: objections records immutable D14 dual-track facts.
     expect([...ENABLED_APPEND_FIELDS]).toEqual([
       'messages',
       'decisionLedger',
+      'objections',
       'handoffPackets',
       'reviewComments',
     ]);
@@ -546,6 +548,92 @@ describe('applyMutations · Phase 3 unlocked field (task 3.1)', () => {
 
   it('createInitialAppState: decisionLedger starts empty so the ledger is append-only from a clean slate', () => {
     expect(createInitialAppState('t-1', 'goal').decisionLedger).toEqual([]);
+  });
+});
+
+describe('applyMutations · Phase 8 objection facts (task 8.2, D14)', () => {
+  const objection = {
+    id: 'obj-1',
+    threadId: 'obj-1',
+    fromRole: 'PM',
+    target: { kind: 'requirement' as const, id: 'req-1' },
+    claim: 'contradiction' as const,
+    argument: 'The proposal conflicts with restart durability.',
+    track: 'blocking' as const,
+    ts: 2,
+  };
+
+  function stateWithRequirement() {
+    return applyMutations(createInitialAppState('t-1', 'goal'), [
+      mergeByIdMutation('requirements', 'req-1', {
+        story: 'Persist tasks',
+        acceptance: ['survives restart'],
+        nonGoals: [],
+      }),
+    ]);
+  }
+
+  it('appends an objection idempotently and starts from an empty fact set', () => {
+    const base = stateWithRequirement();
+    expect(base.objections).toEqual([]);
+    const mutation = appendMutation('objections', objection);
+    const once = applyMutations(base, [mutation]);
+    const twice = applyMutations(once, [mutation]);
+    expect(twice.objections).toEqual([objection]);
+  });
+
+  it('rejects a mismatched computed track and same-id different content', () => {
+    const base = stateWithRequirement();
+    expect(() =>
+      applyMutations(base, [appendMutation('objections', { ...objection, track: 'advisory' })]),
+    ).toThrow('track does not match');
+    const once = applyMutations(base, [appendMutation('objections', objection)]);
+    expect(() =>
+      applyMutations(once, [
+        appendMutation('objections', { ...objection, argument: 'Different content' }),
+      ]),
+    ).toThrow('already exists with different content');
+  });
+
+  it('keeps an identical replay idempotent after its decision target is superseded', () => {
+    const decision = {
+      id: 'dec-1',
+      topic: 'persistence order',
+      decision: 'persist before publish',
+      rationale: 'survive restart',
+      authority: 'leader' as const,
+      by: 'leader',
+      ts: 1,
+    };
+    const decisionObjection = {
+      ...objection,
+      target: { kind: 'decision' as const, id: decision.id },
+    };
+    const initial = applyMutations(createInitialAppState('t-1', 'goal'), [
+      appendMutation('decisionLedger', decision),
+      appendMutation('objections', decisionObjection),
+    ]);
+    const superseded = applyMutations(initial, [
+      appendMutation('decisionLedger', {
+        ...decision,
+        id: 'dec-2',
+        decision: 'publish after durable commit',
+        supersedes: decision.id,
+        ts: 3,
+      }),
+    ]);
+
+    const replayed = applyMutations(superseded, [appendMutation('objections', decisionObjection)]);
+
+    expect(replayed.objections).toEqual([decisionObjection]);
+    expect(() =>
+      applyMutations(superseded, [
+        appendMutation('objections', {
+          ...decisionObjection,
+          argument: 'Conflicting same-id retry',
+        }),
+      ]),
+    ).toThrow('already exists with different content');
   });
 });
 

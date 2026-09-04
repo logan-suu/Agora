@@ -16,7 +16,12 @@ import { project } from '../src/project';
 // 仅验证 HarnessExecutor 的编排逻辑（pre-step 覆写 / 模型路由 / mutations 聚合 /
 // done 收敛）。真实执行链路（真实 provider）的 G5 实测留待任务 0.6/0.7。
 class FakeLlmAdapter extends LlmAdapter {
-  public readonly calls: { provider: string; model: string; messagesText: string }[] = [];
+  public readonly calls: {
+    provider: string;
+    model: string;
+    messagesText: string;
+    system?: string;
+  }[] = [];
 
   constructor(private readonly reply = 'fake reply') {
     super();
@@ -30,6 +35,7 @@ class FakeLlmAdapter extends LlmAdapter {
       provider: options.provider,
       model: options.model,
       messagesText,
+      ...(options.system === undefined ? {} : { system: options.system }),
     });
     yield { type: 'block-start', index: 0, blockType: 'text' };
     yield { type: 'text-delta', index: 0, text: this.reply };
@@ -122,6 +128,119 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
       expect(message.display).toBe('Requested closing sub-channel sub-cache.');
       expect(message.display).not.toContain('agora-channel-action');
       expect(message.payload).toEqual({ channelAction: result.output.channelAction });
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('extracts a strict final objection, binds the assistant identity, and marks its message', async () => {
+    const fake = new FakeLlmAdapter(
+      'This would break restart recovery.\n<agora-objection>{"claim":"contradiction","target":{"kind":"requirement","id":"req-1"},"argument":"An in-memory store cannot survive restart."}</agora-objection>',
+    );
+    const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+    try {
+      const result = await executor.step({
+        sessionId: 'ses-objection',
+        view: project(codingState(), 'CODER', PHASE0_ROSTER),
+      });
+      const mutation = result.mutations[0];
+      if (mutation?.op !== 'append' || mutation.field !== 'messages') {
+        throw new Error('expected assistant message mutation');
+      }
+      const message = mutation.value as Message;
+
+      expect(result.output).toEqual({
+        text: 'This would break restart recovery.',
+        objection: {
+          id: message.msgId,
+          threadId: message.msgId,
+          claim: 'contradiction',
+          target: { kind: 'requirement', id: 'req-1' },
+          argument: 'An in-memory store cannot survive restart.',
+        },
+      });
+      expect(message).toMatchObject({
+        threadId: message.msgId,
+        type: 'objection',
+        display: 'This would break restart recovery.',
+        payload: {
+          objection: {
+            claim: 'contradiction',
+            target: { kind: 'requirement', id: 'req-1' },
+            argument: 'An in-memory store cannot survive restart.',
+          },
+        },
+      });
+      expect(message.display).not.toContain('agora-objection');
+      expect(fake.calls[0]?.system).toContain('<agora-objection>');
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('keeps a control-only objection visible without trusting model identity or track fields', async () => {
+    const executor = new HarnessExecutor(CODER_SPEC, {
+      adapter: new FakeLlmAdapter(
+        '<agora-objection>{"claim":"concern","argument":"Prefer a clearer interface name."}</agora-objection>',
+      ),
+      provider: 'agora',
+    });
+    try {
+      const result = await executor.step({
+        sessionId: 'ses-objection-only',
+        view: project(codingState(), 'CODER', PHASE0_ROSTER),
+      });
+      const mutation = result.mutations[0];
+      if (mutation?.op !== 'append' || mutation.field !== 'messages') {
+        throw new Error('expected assistant message mutation');
+      }
+      const message = mutation.value as Message;
+      expect(message.display).toBe('Raised an objection: Prefer a clearer interface name.');
+      expect(message.fromRole).toBe('CODER');
+      expect(result.output.objection).not.toHaveProperty('fromRole');
+      expect(result.output.objection).not.toHaveProperty('track');
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it.each([
+    '<agora-objection>{broken}</agora-objection>',
+    '<agora-objection>{"claim":"blocking","argument":"bad claim"}</agora-objection>',
+    '<agora-objection>{"claim":"concern","argument":"x","track":"blocking"}</agora-objection>',
+    '<agora-objection>{"claim":"contradiction","argument":"missing target"}</agora-objection>',
+    '<agora-objection>{"claim":"concern","argument":"x"}</agora-objection> trailing',
+  ])('rejects malformed objection control output: %s', async (reply) => {
+    const executor = new HarnessExecutor(CODER_SPEC, {
+      adapter: new FakeLlmAdapter(reply),
+      provider: 'agora',
+    });
+    try {
+      await expect(
+        executor.step({
+          sessionId: 'ses-invalid-objection',
+          view: project(codingState(), 'CODER', PHASE0_ROSTER),
+        }),
+      ).rejects.toThrow('invalid agora objection');
+    } finally {
+      await executor.dispose();
+    }
+  });
+
+  it('rejects mixed channel and objection control blocks', async () => {
+    const executor = new HarnessExecutor(CODER_SPEC, {
+      adapter: new FakeLlmAdapter(
+        '<agora-channel-action>{"kind":"close_sub_channel","channelId":"sub-a"}</agora-channel-action>\n<agora-objection>{"claim":"concern","argument":"Do not close it."}</agora-objection>',
+      ),
+      provider: 'agora',
+    });
+    try {
+      await expect(
+        executor.step({
+          sessionId: 'ses-mixed-control',
+          view: project(codingState(), 'CODER', PHASE0_ROSTER),
+        }),
+      ).rejects.toThrow('mutually exclusive');
     } finally {
       await executor.dispose();
     }

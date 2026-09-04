@@ -103,4 +103,20 @@ describe('JsonTaskStateStore', () => {
 
     await expect(store.load(scope())).rejects.toThrow('invalid task state JSON');
   });
+
+  it('normalizes a pre-D14 snapshot without objections at the persistence boundary', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const legacy = createInitialAppState('task-a', 'legacy goal', 'project-a');
+    const snapshot = { ...legacy } as Partial<typeof legacy>;
+    delete snapshot.objections;
+    const path = join(root, 'projects/project-a/tasks/task-a/state.json');
+    await store.initialize(scope(), legacy);
+    await writeFile(path, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
+
+    await expect(store.load(scope())).resolves.toEqual({ ...legacy, objections: [] });
+
+    await writeFile(path, `${JSON.stringify({ ...legacy, objections: null }, null, 2)}\n`, 'utf8');
+    await expect(store.load(scope())).rejects.toThrow('objections must be an array');
+  });
 });

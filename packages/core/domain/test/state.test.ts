@@ -29,6 +29,7 @@ describe('createInitialAppState', () => {
         { id: 'st-1', title: 'lru', ownerRole: 'CODER', dependsOn: [], status: 'in_progress' },
       ],
       messages: [],
+      objections: [],
       requirements: [],
       reviewComments: [],
       handoffPackets: [],

@@ -86,6 +86,21 @@ function codingState(): AppState {
   ]);
 }
 
+function withObjection(state: AppState, track: 'blocking' | 'advisory'): AppState {
+  return applyMutations(state, [
+    appendMutation('objections', {
+      id: `obj-${track}`,
+      threadId: `obj-${track}`,
+      fromRole: 'PM',
+      target: { kind: 'requirement', id: 'req-1' },
+      claim: track === 'blocking' ? 'contradiction' : 'concern',
+      argument: 'The proposed implementation conflicts with restart durability.',
+      track,
+      ts: 900,
+    }),
+  ]);
+}
+
 function testingState(passed: boolean, iterationCount = 0): AppState {
   return applyMutations(codingState(), [
     setMutation('phase', 'testing'),
@@ -127,6 +142,39 @@ const FULL_ROSTER: RoleSpec[] = (
   projection: [],
   routeWhen: 'always',
 }));
+
+describe('decide · D14 objection routing', () => {
+  it('routes a persisted blocking objection to a stable D4 request before normal phase work', () => {
+    const state = withObjection(codingState(), 'blocking');
+    const first = decide(state, { newId: () => 'ledger-1', now: () => 1000, roster: FULL_ROSTER });
+    const second = decide(state, { newId: () => 'ledger-2', now: () => 2000, roster: FULL_ROSTER });
+
+    expect(first.route).toEqual({
+      kind: 'human_gate',
+      request: {
+        triggerMsgId: 'obj-blocking',
+        triggerTs: 900,
+        reason: 'blocking_objection:obj-blocking',
+        options: ['accept_objection', 'reject_objection'],
+        phase: 'coding',
+      },
+    });
+    expect(second.route).toEqual(first.route);
+    expect(
+      latestCoordinationLedger(applyMutations(state, first.mutations))?.progress
+        .instructionOrQuestion.answer,
+    ).toBe('Await Leader resolution for blocking_objection:obj-blocking');
+  });
+
+  it('keeps advisory objections visible without interrupting normal routing', () => {
+    const decision = decide(withObjection(codingState(), 'advisory'), {
+      newId: () => 'ledger-advisory',
+      now: () => 1000,
+      roster: FULL_ROSTER,
+    });
+    expect(decision.route.kind).not.toBe('human_gate');
+  });
+});
 
 function nextFailedTestRound(state: AppState): AppState {
   return applyMutations(state, [

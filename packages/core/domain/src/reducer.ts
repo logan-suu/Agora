@@ -2,6 +2,8 @@ import type { HandoffPacket } from './handoff';
 import { assertAppendableHandoff } from './handoff';
 import type { Decision } from './ledger';
 import { assertAppendableDecision } from './ledger';
+import type { Objection } from './objection';
+import { assertAppendableObjection } from './objection';
 import type {
   AppState,
   Complexity,
@@ -42,6 +44,7 @@ export type SetField = (typeof SET_FIELDS)[number];
 export const ENABLED_APPEND_FIELDS: readonly AppendField[] = [
   'messages',
   'decisionLedger',
+  'objections',
   'handoffPackets',
   'reviewComments',
 ];
@@ -181,6 +184,13 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
       return {
         ...state,
         decisionLedger: deduplicatedAppend(state.decisionLedger, value) as Decision[],
+      };
+    }
+    case 'objections': {
+      assertAppendableObjection(state.objections, state.decisionLedger, state.requirements, value);
+      return {
+        ...state,
+        objections: deduplicatedAppend(state.objections, value) as Objection[],
       };
     }
     case 'handoffPackets': {
