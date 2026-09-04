@@ -265,11 +265,11 @@ function instructionFor(decision: CoordinatorDecision): string {
   const messages = appendedMessages(decision.mutations);
   const latest = messages[messages.length - 1];
   if (latest !== undefined) return latest.display;
-  const speaker = nextSpeakerFor(decision.route);
-  if (speaker !== null) return `Continue with ${speaker}`;
   if (decision.route.kind === 'human_gate') {
     return `Await Leader resolution for ${decision.route.request.reason}`;
   }
+  const speaker = nextSpeakerFor(decision.route);
+  if (speaker !== null) return `Continue with ${speaker}`;
   return decision.route.kind === 'finalize' ? 'Finalize the task result' : 'Integrate task outputs';
 }
 

@@ -594,6 +594,47 @@ describe('applyMutations · Phase 8 objection facts (task 8.2, D14)', () => {
       ]),
     ).toThrow('already exists with different content');
   });
+
+  it('keeps an identical replay idempotent after its decision target is superseded', () => {
+    const decision = {
+      id: 'dec-1',
+      topic: 'persistence order',
+      decision: 'persist before publish',
+      rationale: 'survive restart',
+      authority: 'leader' as const,
+      by: 'leader',
+      ts: 1,
+    };
+    const decisionObjection = {
+      ...objection,
+      target: { kind: 'decision' as const, id: decision.id },
+    };
+    const initial = applyMutations(createInitialAppState('t-1', 'goal'), [
+      appendMutation('decisionLedger', decision),
+      appendMutation('objections', decisionObjection),
+    ]);
+    const superseded = applyMutations(initial, [
+      appendMutation('decisionLedger', {
+        ...decision,
+        id: 'dec-2',
+        decision: 'publish after durable commit',
+        supersedes: decision.id,
+        ts: 3,
+      }),
+    ]);
+
+    const replayed = applyMutations(superseded, [appendMutation('objections', decisionObjection)]);
+
+    expect(replayed.objections).toEqual([decisionObjection]);
+    expect(() =>
+      applyMutations(superseded, [
+        appendMutation('objections', {
+          ...decisionObjection,
+          argument: 'Conflicting same-id retry',
+        }),
+      ]),
+    ).toThrow('already exists with different content');
+  });
 });
 
 describe('applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④)', () => {

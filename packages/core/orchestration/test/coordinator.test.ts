@@ -160,6 +160,10 @@ describe('decide · D14 objection routing', () => {
       },
     });
     expect(second.route).toEqual(first.route);
+    expect(
+      latestCoordinationLedger(applyMutations(state, first.mutations))?.progress
+        .instructionOrQuestion.answer,
+    ).toBe('Await Leader resolution for blocking_objection:obj-blocking');
   });
 
   it('keeps advisory objections visible without interrupting normal routing', () => {

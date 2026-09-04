@@ -58,16 +58,18 @@ export function assertAppendableObjection(
     ...(value.target === undefined ? [] : ['target']),
   ]);
   const { track, ...draft } = value as unknown as Objection;
+  assertDraft(draft);
+  const prior = existing.find((entry) => entry.id === draft.id);
+  if (prior !== undefined) {
+    if (sameObjection(prior, value as unknown as Objection)) return;
+    throw new Error(
+      `objection id "${draft.id}" already exists with different content (producer contract violation, D14 first write stays)`,
+    );
+  }
   const classified = classifyObjection(draft, ledger, requirements);
   if (track !== classified.track) {
     throw new Error(
       `invalid objection: track does not match deterministic classification (expected ${classified.track})`,
-    );
-  }
-  const prior = existing.find((entry) => entry.id === classified.id);
-  if (prior !== undefined && !sameObjection(prior, classified)) {
-    throw new Error(
-      `objection id "${classified.id}" already exists with different content (producer contract violation, D14 first write stays)`,
     );
   }
 }

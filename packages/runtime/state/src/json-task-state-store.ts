@@ -80,16 +80,22 @@ export class JsonTaskStateStore implements TaskStateStore {
       throw error;
     }
 
-    let state: AppState;
+    let parsed: unknown;
     try {
-      state = JSON.parse(contents) as AppState;
+      parsed = JSON.parse(contents) as unknown;
     } catch (error) {
       throw new Error(`invalid task state JSON at "${path}"`, { cause: error });
     }
 
-    if (typeof state !== 'object' || state === null || Array.isArray(state)) {
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       throw new Error(`invalid task state JSON at "${path}": expected an object`);
     }
+    const record = parsed as Record<string, unknown>;
+    const hasObjections = Object.hasOwn(record, 'objections');
+    if (hasObjections && !Array.isArray(record.objections)) {
+      throw new Error(`invalid task state JSON at "${path}": objections must be an array`);
+    }
+    const state = (hasObjections ? record : { ...record, objections: [] }) as unknown as AppState;
     this.#assertStateMatchesScope(scope, state);
     return state;
   }
