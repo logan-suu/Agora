@@ -153,7 +153,7 @@ export function projectTraceInspections(
     validateEventSequence(inspection);
     byId.set(id, inspection);
   }
-  for (const inspection of inspections) validateLineage(inspection, byId);
+  validateLineages(byId);
 
   const projected = inspections
     .map(projectSession)
@@ -210,9 +210,7 @@ export function projectTraceInspections(
 function projectSession(inspection: TraceInspection): ProjectedSession {
   const role = roleFrom(inspection.meta);
   const start = inspection.meta.seedLength ?? 0;
-  const nativeEvents = inspection.events
-    .slice(start)
-    .filter((event) => TRACE_EVENT_TYPES.has(event.type));
+  const nativeEvents = inspection.events.slice(start).filter(isCanonicalTraceEvent);
   const turns = new Map<number, ProjectedTurn>();
 
   for (const event of nativeEvents) {
@@ -275,7 +273,10 @@ function projectSession(inspection: TraceInspection): ProjectedSession {
     }
     const result = toolResult(data, event.type);
     const tool = step.tools.find((candidate) => candidate.callId === result.callId);
-    if (tool === undefined) throw new Error(`tool/result "${result.callId}" has no tool/call`);
+    if (tool === undefined) {
+      if (result.syntheticNotStarted) continue;
+      throw new Error(`tool/result "${result.callId}" has no tool/call`);
+    }
     tool.endedAt = event.time;
     tool.status = result.failed ? 'failed' : 'succeeded';
     if (result.errorCode !== undefined) tool.errorCode = result.errorCode;
@@ -284,40 +285,145 @@ function projectSession(inspection: TraceInspection): ProjectedSession {
   return { header: inspection.meta, role, turns: [...turns.values()] };
 }
 
-function validateLineage(
-  inspection: TraceInspection,
-  byId: ReadonlyMap<string, TraceInspection>,
-): void {
-  const parentId = inspection.meta.parentSession;
-  const seedLength = inspection.meta.seedLength;
-  if ((parentId === undefined) !== (seedLength === undefined)) {
-    throw new Error(`Harness session "${inspection.meta.id}" has incomplete lineage`);
-  }
-  if (parentId === undefined || seedLength === undefined) return;
-  const parent = byId.get(String(parentId));
-  if (parent === undefined)
-    throw new Error(`Harness session "${inspection.meta.id}" has no parent`);
-  if (
-    seedLength <= 0 ||
-    seedLength > parent.events.length ||
-    seedLength > inspection.events.length
-  ) {
-    throw new Error(`Harness session "${inspection.meta.id}" has invalid seedLength`);
-  }
-  for (let index = 0; index < seedLength; index += 1) {
-    if (!isDeepStrictEqual(inspection.events[index], parent.events[index])) {
-      throw new Error(`Harness session "${inspection.meta.id}" seed prefix differs from parent`);
+function validateLineages(byId: ReadonlyMap<string, TraceInspection>): void {
+  const states = new Map<string, 'visiting' | 'validated'>();
+
+  const visit = (id: string): void => {
+    const state = states.get(id);
+    if (state === 'validated') return;
+    if (state === 'visiting') throw new Error(`Harness session "${id}" has cyclic lineage`);
+    const inspection = byId.get(id);
+    if (inspection === undefined) throw new Error(`Harness session "${id}" is missing`);
+    states.set(id, 'visiting');
+
+    const parentId = inspection.meta.parentSession;
+    const seedLength = inspection.meta.seedLength;
+    if ((parentId === undefined) !== (seedLength === undefined)) {
+      throw new Error(`Harness session "${id}" has incomplete lineage`);
     }
-  }
+    if (parentId !== undefined && seedLength !== undefined) {
+      const parentKey = String(parentId);
+      const parent = byId.get(parentKey);
+      if (parent === undefined) throw new Error(`Harness session "${id}" has no parent`);
+      visit(parentKey);
+      if (
+        seedLength <= 0 ||
+        seedLength > parent.events.length ||
+        seedLength > inspection.events.length
+      ) {
+        throw new Error(`Harness session "${id}" has invalid seedLength`);
+      }
+      for (let index = 0; index < seedLength; index += 1) {
+        if (!isDeepStrictEqual(inspection.events[index], parent.events[index])) {
+          throw new Error(`Harness session "${id}" seed prefix differs from parent`);
+        }
+      }
+    }
+    states.set(id, 'validated');
+  };
+
+  for (const id of byId.keys()) visit(id);
 }
 
 function validateEventSequence(inspection: TraceInspection): void {
+  let openTurn: number | undefined;
+  let openStep: number | undefined;
+  let nextTurn = 1;
+  let nextStep = 1;
+  const pendingCalls = new Set<string>();
+  const settledCalls = new Set<string>();
+  const fail = (detail: string): never => {
+    throw new Error(`invalid Harness lifecycle in session "${inspection.meta.id}": ${detail}`);
+  };
+
   for (let index = 0; index < inspection.events.length; index += 1) {
     const event = inspection.events[index];
     if (event?.seq !== index || !Number.isSafeInteger(event.time) || event.time < 0) {
       throw new Error(`Harness session "${inspection.meta.id}" has invalid event sequence`);
     }
+    const data = event.data as Record<string, unknown>;
+    switch (event.type) {
+      case 'turn/start': {
+        const turn = integerField(data, 'turn', event.type);
+        if (openTurn !== undefined) fail(`turn/start ${turn} while turn ${openTurn} is open`);
+        if (turn !== nextTurn) fail(`turn/start expected turn ${nextTurn}, got ${turn}`);
+        openTurn = turn;
+        nextStep = 1;
+        break;
+      }
+      case 'turn/end': {
+        const turn = integerField(data, 'turn', event.type);
+        if (openTurn !== turn) fail(`turn/end ${turn} does not match open turn ${openTurn}`);
+        if (openStep !== undefined) fail(`turn/end ${turn} while step ${openStep} is open`);
+        turnStatus(data.reason);
+        openTurn = undefined;
+        nextTurn += 1;
+        break;
+      }
+      case 'step/start': {
+        const turn = integerField(data, 'turn', event.type);
+        const step = integerField(data, 'step', event.type);
+        if (openTurn !== turn) fail(`step/start belongs to turn ${turn}, open turn is ${openTurn}`);
+        if (openStep !== undefined) fail(`step/start ${step} while step ${openStep} is open`);
+        if (step !== nextStep) fail(`step/start expected step ${nextStep}, got ${step}`);
+        openStep = step;
+        settledCalls.clear();
+        break;
+      }
+      case 'step/end': {
+        const turn = integerField(data, 'turn', event.type);
+        const step = integerField(data, 'step', event.type);
+        if (openTurn !== turn || openStep !== step) {
+          fail(`step/end ${turn}/${step} does not match open ${openTurn}/${openStep}`);
+        }
+        if (pendingCalls.size > 0) fail(`step/end ${turn}/${step} has unresolved tool calls`);
+        openStep = undefined;
+        settledCalls.clear();
+        nextStep += 1;
+        break;
+      }
+      case 'tool/call': {
+        const turn = integerField(data, 'turn', event.type);
+        const step = integerField(data, 'step', event.type);
+        if (openTurn !== turn || openStep !== step) {
+          fail(`tool/call does not belong to open step ${openTurn}/${openStep}`);
+        }
+        const callId = stringField(data, 'callId', event.type);
+        if (pendingCalls.has(callId) || settledCalls.has(callId)) {
+          fail(`duplicate tool/call "${callId}"`);
+        }
+        stringField(data, 'name', event.type);
+        pendingCalls.add(callId);
+        break;
+      }
+      case 'tool/result': {
+        if (event.surfaceOp !== undefined && event.surfaceOp !== 'append') break;
+        const turn = integerField(data, 'turn', event.type);
+        const step = integerField(data, 'step', event.type);
+        if (openTurn !== turn || openStep !== step) {
+          fail(`tool/result does not belong to open step ${openTurn}/${openStep}`);
+        }
+        const result = toolResult(data, event.type);
+        if (pendingCalls.delete(result.callId)) {
+          settledCalls.add(result.callId);
+        } else if (result.syntheticNotStarted && !settledCalls.has(result.callId)) {
+          settledCalls.add(result.callId);
+        } else {
+          fail(`tool/result "${result.callId}" has no unresolved tool/call`);
+        }
+        break;
+      }
+      default:
+        break;
+    }
   }
+}
+
+function isCanonicalTraceEvent(event: SessionEvent): boolean {
+  return (
+    TRACE_EVENT_TYPES.has(event.type) &&
+    (event.type !== 'tool/result' || event.surfaceOp === undefined || event.surfaceOp === 'append')
+  );
 }
 
 function roleFrom(header: SessionHeader): string {
@@ -333,7 +439,7 @@ function roleFrom(header: SessionHeader): string {
 function toolResult(
   data: Record<string, unknown>,
   eventType: string,
-): { callId: string; failed: boolean; errorCode?: string } {
+): { callId: string; failed: boolean; syntheticNotStarted: boolean; errorCode?: string } {
   const message = data.message;
   if (typeof message !== 'object' || message === null || Array.isArray(message)) {
     throw new Error(`${eventType}.message must be an object`);
@@ -359,6 +465,7 @@ function toolResult(
   return {
     callId,
     failed: record.isError === true || errorCode !== undefined,
+    syntheticNotStarted: record.isError === true && errorCode === 'TOOL_NOT_STARTED',
     ...(errorCode === undefined ? {} : { errorCode }),
   };
 }

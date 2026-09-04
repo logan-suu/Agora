@@ -178,6 +178,9 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
       expect(fake.calls[0]?.system).toContain(
         'Never mention, quote, or explain the control tags in prose',
       );
+      expect(fake.calls[0]?.system).toContain(
+        'replace the example argument with the actual, specific objection',
+      );
       expect(fake.calls[0]?.system).toContain('If there is no concrete objection, omit the block');
       expect(fake.calls[0]?.system).not.toContain('decision|requirement');
     } finally {
@@ -217,6 +220,7 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
     '<agora-objection>{"claim":"concern","argument":"x","track":"blocking"}</agora-objection>',
     '<agora-objection>{"claim":"contradiction","argument":"missing target"}</agora-objection>',
     '<agora-objection>{"claim":"concern","argument":"x"}</agora-objection> trailing',
+    '<agora-objection>{"claim":"concern","argument":"one"}</agora-objection><agora-objection>{"claim":"concern","argument":"two"}</agora-objection>',
   ])('rejects malformed objection control output: %s', async (reply) => {
     const executor = new HarnessExecutor(CODER_SPEC, {
       adapter: new FakeLlmAdapter(reply),
