@@ -13,7 +13,7 @@ import {
   sortMessagesByTimestamp,
   type WorkspaceViewModel,
 } from '../src/app/chat-model';
-import { ChatWorkspace } from '../src/app/chat-workspace';
+import { ChatWorkspace, TracePanel } from '../src/app/chat-workspace';
 
 describe('chat UI model', () => {
   it('sorts messages chronologically without mutating the source array', () => {
@@ -200,5 +200,62 @@ describe('ChatWorkspace', () => {
     expect(visibleText).toContain('Idle');
     expect(visibleText).not.toContain('Live');
     expect(visibleText).not.toContain('Collapse');
+  });
+
+  it('renders the sanitized trace hierarchy, status, and truncation notice', () => {
+    const html = renderToStaticMarkup(
+      createElement(TracePanel, {
+        trace: {
+          projectId: 'project-a',
+          taskId: 'task-a',
+          omittedEventCount: 7,
+          sessions: [
+            {
+              sessionId: 'session-1',
+              role: 'CODER',
+              createdAt: 1,
+              parentSessionId: 'session-0',
+              seedLength: 9,
+              turns: [
+                {
+                  turn: 2,
+                  startedAt: 2,
+                  endedAt: 8,
+                  status: 'error',
+                  steps: [
+                    {
+                      step: 0,
+                      startedAt: 3,
+                      endedAt: 7,
+                      status: 'error',
+                      tools: [
+                        {
+                          callId: 'call-1',
+                          name: 'sandbox_run',
+                          startedAt: 4,
+                          endedAt: 6,
+                          status: 'failed',
+                          errorCode: 'TOOL_FAILED',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    const visibleText = html.replace(/<[^>]+>/g, ' ');
+
+    expect(visibleText).toContain('Trace');
+    expect(visibleText).toContain('CODER');
+    expect(visibleText).toContain('Turn 2');
+    expect(visibleText).toContain('Step 0');
+    expect(visibleText).toContain('sandbox_run');
+    expect(visibleText).toContain('TOOL_FAILED');
+    expect(visibleText).toContain('7 older trace events omitted');
+    expect(html).not.toContain('prompt');
   });
 });

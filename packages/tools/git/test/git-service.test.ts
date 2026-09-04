@@ -89,6 +89,22 @@ describe('WorktreeGitService', () => {
     expect(branches.branches['feature-x']).toBeDefined();
   });
 
+  it('isolates worktree directories for sibling main repositories', async () => {
+    const parent = mkdtempSync(join(tmpdir(), 'agora-git-sibling-mains-'));
+    roots.push(parent);
+    const first = new WorktreeGitService(new WorktreeRegistry(), join(parent, 'project-a'));
+    const second = new WorktreeGitService(new WorktreeRegistry(), join(parent, 'project-b'));
+
+    const [firstWorktree, secondWorktree] = await Promise.all([
+      first.createWorktree('t1', 'feature-merge'),
+      second.createWorktree('t1', 'feature-merge'),
+    ]);
+
+    expect(firstWorktree.path).not.toBe(secondWorktree.path);
+    expect(existsSync(join(firstWorktree.path, '.git'))).toBe(true);
+    expect(existsSync(join(secondWorktree.path, '.git'))).toBe(true);
+  });
+
   it('rejects branch names that are not git-ref-safe', async () => {
     const registry = new WorktreeRegistry();
     const service = new WorktreeGitService(registry);

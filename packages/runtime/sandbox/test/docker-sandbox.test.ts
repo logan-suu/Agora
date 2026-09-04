@@ -71,7 +71,7 @@ describeDocker('DockerSandbox (G5 real Docker execution)', () => {
     ).rejects.toThrow(/does not belong to task/i);
     await restarted.resume('docker-task-owner', [{ role: 'CODER', worktree }]);
     await restarted.teardown('docker-task-owner');
-  });
+  }, 30_000);
 
   it('write then read round-trips content including nested paths', async () => {
     const wt = await makeWorktree('docker-task-c', 'CODER');
