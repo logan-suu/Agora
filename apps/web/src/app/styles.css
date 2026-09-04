@@ -13,6 +13,7 @@
   --accent-soft: #162e53;
   --green: #4ac26b;
   --amber: #d8a72d;
+  --red: #ff8b8b;
   --offline: #6d7788;
   --sidebar-left: 260px;
   --sidebar-right: 358px;
@@ -821,6 +822,122 @@ textarea:focus-visible {
 
 .active-workers {
   padding-bottom: 28px;
+}
+
+.trace-panel {
+  padding: 26px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.trace-heading,
+.trace-row,
+.trace-session summary,
+.trace-tools li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.trace-heading h2 {
+  margin: 0;
+}
+
+.trace-heading small,
+.trace-empty,
+.trace-lineage,
+.trace-row small,
+.trace-tools small,
+.trace-omitted {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.67rem;
+}
+
+.trace-sessions {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.trace-session {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.trace-session summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.trace-role {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.trace-session summary code,
+.trace-lineage code {
+  color: var(--text-muted);
+  font-size: 0.63rem;
+}
+
+.trace-lineage {
+  margin: 8px 0 0;
+}
+
+.trace-turns,
+.trace-steps,
+.trace-tools {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trace-turn {
+  padding-left: 9px;
+  border-left: 2px solid var(--accent);
+}
+
+.trace-turn.trace-error,
+.trace-turn.trace-aborted,
+.trace-turn.trace-interrupted {
+  border-left-color: var(--red);
+}
+
+.trace-row {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.trace-steps > li {
+  padding: 8px;
+  border-radius: 5px;
+  background: var(--surface);
+}
+
+.trace-tools li {
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.trace-tools code {
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+}
+
+.trace-tools li[data-status="failed"] small,
+.trace-error {
+  color: var(--red);
+}
+
+.trace-omitted {
+  margin: 12px 0 0;
 }
 
 .active-workers ul {

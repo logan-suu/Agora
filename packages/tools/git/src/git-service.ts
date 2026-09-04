@@ -162,7 +162,9 @@ export class WorktreeGitService implements GitService {
     this.registry = registry;
     if (mainRepoPath !== undefined) {
       this.mainRepoPath = mainRepoPath;
-      this.worktreesDir = join(dirname(mainRepoPath), 'worktrees');
+      // Namespace caller-owned worktrees by repository so sibling repositories
+      // cannot race on the same task/branch directory.
+      this.worktreesDir = join(dirname(mainRepoPath), `${basename(mainRepoPath)}-worktrees`);
     } else {
       // Lazily-created temp main repo: a base temp dir holds `main/` and `worktrees/`.
       const base = mkdtempSync(join(tmpdir(), 'agora-git-'));

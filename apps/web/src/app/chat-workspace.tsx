@@ -18,6 +18,7 @@ import {
   DEFAULT_WORKSPACE,
   fetchChannelRegistry,
   fetchTaskRuntime,
+  fetchTraceSnapshot,
   filterMentionOptions,
   getMentionQuery,
   type LeaderActionNotice,
@@ -29,6 +30,7 @@ import {
   sortMessagesByTimestamp,
   type TaskRuntimeView,
   type TeamMemberView,
+  type TraceSnapshotView,
   type WorkspaceViewModel,
 } from './chat-model';
 
@@ -260,14 +262,104 @@ function MessageList({ messages, team }: { messages: ChatMessageView[]; team: Te
   );
 }
 
+function elapsed(startedAt: number, endedAt: number | undefined): string {
+  if (endedAt === undefined) return 'running';
+  const milliseconds = Math.max(0, endedAt - startedAt);
+  return milliseconds < 1000 ? `${milliseconds}ms` : `${(milliseconds / 1000).toFixed(1)}s`;
+}
+
+export function TracePanel({
+  trace,
+  error,
+}: {
+  trace?: TraceSnapshotView | undefined;
+  error?: string | undefined;
+}) {
+  return (
+    <section className="trace-panel" aria-label="Trace">
+      <div className="trace-heading">
+        <h2>Trace</h2>
+        {trace ? <small>{trace.sessions.length} sessions</small> : null}
+      </div>
+      {error ? (
+        <p className="trace-error" role="alert">
+          {error}
+        </p>
+      ) : trace === undefined ? (
+        <p className="trace-empty">Trace has not loaded yet.</p>
+      ) : trace.sessions.length === 0 ? (
+        <p className="trace-empty">No persisted steps yet.</p>
+      ) : (
+        <div className="trace-sessions">
+          {trace.sessions.map((session) => (
+            <details className="trace-session" key={session.sessionId} open>
+              <summary>
+                <span className="trace-role">{session.role}</span>
+                <code>{session.sessionId.slice(0, 8)}</code>
+              </summary>
+              {session.parentSessionId ? (
+                <p className="trace-lineage">
+                  resumed from <code>{session.parentSessionId.slice(0, 8)}</code>
+                </p>
+              ) : null}
+              <ol className="trace-turns">
+                {session.turns.map((turn) => (
+                  <li key={turn.turn} className={`trace-turn trace-${turn.status}`}>
+                    <div className="trace-row">
+                      <strong>Turn {turn.turn}</strong>
+                      <span>{turn.status.replace('_', ' ')}</span>
+                    </div>
+                    <ol className="trace-steps">
+                      {turn.steps.map((step) => (
+                        <li key={step.step}>
+                          <div className="trace-row">
+                            <span>Step {step.step}</span>
+                            <small>
+                              {step.status} · {elapsed(step.startedAt, step.endedAt)}
+                            </small>
+                          </div>
+                          {step.tools.length > 0 ? (
+                            <ul className="trace-tools">
+                              {step.tools.map((tool) => (
+                                <li key={tool.callId} data-status={tool.status}>
+                                  <code>{tool.name}</code>
+                                  <small>
+                                    {tool.status}
+                                    {tool.errorCode ? ` · ${tool.errorCode}` : ''}
+                                  </small>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ol>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          ))}
+        </div>
+      )}
+      {trace && trace.omittedEventCount > 0 ? (
+        <p className="trace-omitted">{trace.omittedEventCount} older trace events omitted</p>
+      ) : null}
+    </section>
+  );
+}
+
 function RightSidebar({
   model,
   open,
   task,
+  trace,
+  traceError,
 }: {
   model: WorkspaceViewModel;
   open: boolean;
   task?: TaskRuntimeView | undefined;
+  trace?: TraceSnapshotView | undefined;
+  traceError?: string | undefined;
 }) {
   return (
     <aside className="right-sidebar" data-open={open} aria-label="Task status">
@@ -311,6 +403,7 @@ function RightSidebar({
           <code>{task.artifactPath}</code>
         </section>
       ) : null}
+      <TracePanel trace={trace} error={traceError} />
     </aside>
   );
 }
@@ -459,6 +552,8 @@ export function ChatWorkspace({
   const [taskId, setTaskId] = useState(model.task.id);
   const [goal, setGoal] = useState(model.task.title);
   const [task, setTask] = useState<TaskRuntimeView>();
+  const [trace, setTrace] = useState<TraceSnapshotView>();
+  const [traceError, setTraceError] = useState<string>();
   const [taskError, setTaskError] = useState<string>();
   const [taskPending, startTaskTransition] = useTransition();
   const [draft, setDraft] = useState('');
@@ -619,9 +714,47 @@ export function ChatWorkspace({
     };
   }, [projectId, task?.runStatus, taskId]);
 
+  useEffect(() => {
+    if (task === undefined) return;
+    let active = true;
+    let refreshing = false;
+    const controller = new AbortController();
+    const refresh = async () => {
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        const search = new URLSearchParams({ projectId, taskId });
+        const refreshed = await fetchTraceSnapshot(
+          `/api/traces?${search.toString()}`,
+          (input, init) => fetch(input, { ...init, signal: controller.signal }),
+        );
+        if (active) {
+          setTrace(refreshed);
+          setTraceError(undefined);
+        }
+      } catch (error) {
+        if (active) {
+          setTraceError(error instanceof Error ? error.message : 'Trace refresh failed');
+        }
+      } finally {
+        refreshing = false;
+      }
+    };
+    void refresh();
+    const timer =
+      task.runStatus === 'running' ? setInterval(() => void refresh(), 1000) : undefined;
+    return () => {
+      active = false;
+      controller.abort();
+      if (timer !== undefined) clearInterval(timer);
+    };
+  }, [projectId, task?.runStatus, taskId]);
+
   function changeTaskId(value: string) {
     setTaskId(value);
     setTask(undefined);
+    setTrace(undefined);
+    setTraceError(undefined);
     setTaskError(undefined);
     setMessages([]);
     setChannels([{ id: 'main', name: 'main', kind: 'main', closed: false }]);
@@ -805,7 +938,13 @@ export function ChatWorkspace({
           </p>
         ) : null}
       </section>
-      <RightSidebar model={runtimeModel} open={rightOpen} task={task} />
+      <RightSidebar
+        model={runtimeModel}
+        open={rightOpen}
+        task={task}
+        trace={trace}
+        traceError={traceError}
+      />
 
       {leftOpen || rightOpen ? (
         <button

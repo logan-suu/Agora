@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-04T16:26:31.000Z",
+  "last_updated": "2026-09-04T20:00:49.000Z",
   "current_phase": 8,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -75,6 +75,11 @@
       "id": "D14",
       "rule": "objections 是稳定消息 id 标识的 append-only 不可变事实；目标区分 decision/requirement，contradiction=blocking、concern/不确定项=advisory，未知或失效引用 fail-fast。blocking 经绑定 gate 的 /resolve-gate 裁决，advisory 可经 /resolve-objection 直接裁决；两者原子追加规范 Leader 消息与确定性最高权威 resolution Decision，rationale 必填。accept blocking 必须撤回目标：Decision 用 supersedes，Requirement 用 withdrawnByDecisionId；reject 与 advisory 裁决不自动改目标。未决视图和同 actionId 重放交叉验证消息、Decision、receipt 与 target effect，缺失/冲突/漂移 fail-closed；Decision 禁止 supersede 已失效项，旧 Requirement 缺撤回字段视为 active；所有角色从已验证的结构化 objectionResolutions 系统切片读取裁决，不读原始 Leader 消息。普通目标变更与多 worker 抢占仍属 Phase 9",
       "source": "docs/项目蓝图.md §14/§21；docs/详细设计方案.md §1/§5；docs/系统架构设计文档.md §5；docs/开发计划安排.md §11"
+    },
+    {
+      "id": "D15",
+      "rule": "Trace 只从当前任务锁定版本官方 Harness JSONL 读时派生，不复制进 AppState/Message/MessageBus/第二份日志。DTO 严格白名单 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 projection/prompt/assistant/reasoning/工具 arguments/results/环境变量/文件正文。child 只投 seedLength 后 native 事件并保留 parent 引用，parent 图无环；官方格式读取后仍校验 turn/step/tool 跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；独立有界 GET 快照显式报告 omittedEventCount；Phase 8 短轮询顺序时间线，Phase 9 再加并行泳道",
+      "source": "docs/项目蓝图.md §16/§21；docs/详细设计方案.md §6；docs/系统架构设计文档.md §4.4/§9；docs/开发计划安排.md §11"
     },
     {
       "id": "C4",
@@ -1096,17 +1101,19 @@
           "id": "8.4",
           "title": "结构化 trace 面板（事件流可视化）",
           "story": null,
-          "status": "ready",
-          "last_updated": "2026-09-04T01:14:01.000Z",
+          "status": "in_progress",
+          "last_updated": "2026-09-04T20:00:49.000Z",
           "documents_required": [
             "docs/系统架构设计文档.md",
-            "docs/项目蓝图.md §16"
+            "docs/项目蓝图.md §16/§21 D15",
+            "docs/详细设计方案.md §6",
+            "docs/开发计划安排.md §11"
           ],
           "dependencies": [
             "8.1"
           ],
-          "test_file": null,
-          "notes": "复用 Harness 事件溯源日志派生 trace：时间线、各 Agent Step 记录、工具调用。前端展示于群聊侧栏扩展区。"
+          "test_file": "packages/runtime/executor/test/trace.test.ts + apps/web/test/trace-flow.test.ts + apps/web/test/chat-ui.test.ts + tests/integration/phase8/trace-panel.test.ts",
+          "notes": "复用 Harness 事件溯源日志派生 trace：时间线、各 Agent Step 记录、工具调用。前端展示于群聊侧栏扩展区。\n[2026-09-04 /agora-do-task] Leader 授权启动 8.4，并要求先评审现有规格合理性，不以现有文档为不可质疑前提；若发现问题，先提出并确认文档修订计划，再修改规格或实现。任务进入 in_progress，当前仅执行 Explore/Plan。\n[2026-09-04 /agora-sync-docs·规格评审] Leader 确认修订方案。确认旧规格方向正确但缺少安全裁剪、fork lineage 去重、事件闭合/损坏语义、API/刷新策略、响应上限与可执行验收。已按蓝图 §16/§21→详细设计 §6→系统架构 §4.4/§9→开发计划 §11→task-status/AGENTS 同步 D15 Trace 单一来源、安全白名单、有界快照与 fail-closed 规则，随后按四单元 TDD 实现。\n[2026-09-04 实现与验证] 已实现 L3 TraceReader/L4 HarnessTraceReader、官方 JSONL list/inspect 安全投影、lineage seed 去重、整 turn 有界截断、GET /api/traces、严格客户端 DTO 校验、运行中防重入短轮询与右侧栏层级 UI。任务专属真实链路仅替换付费 LLM 响应和工具业务桩，实际跑通 Harness AgentLoop/ToolRuntime→官方 JSONL→TaskStateStore scope 校验→HTTP→前端 DTO；projection、工具 arguments/results 三类秘密均未泄漏。Node 24.19 下 typecheck 与 Biome 全绿，4 files / 25 tests 全绿。全量 pnpm test 为 84 files / 731 tests 通过、20 tests 失败、2 skipped；失败仅来自受限环境的 Docker socket EPERM 与 3 条 live DeepSeek 网络请求，沙箱外重跑因尚无本轮明确 Docker/计费授权被安全审查拒绝，未绕过或弱化。浏览器复验 localhost 桌面与 390x844 响应式侧栏：页面/空 Trace/打开关闭交互正常、无框架覆盖层或 console warning/error，并据视觉发现补齐 Trace 24px 内边距；Browser plugin 与仓库 Playwright CLI 均不可用，使用现有统一浏览器控制完成等价 QA。任务按 PR 流程保持 in_progress，尚未 commit/push。\n[2026-09-04 /agora-commit·门禁修复] Leader 明确授权 Docker 与可能计费的 live DeepSeek 全量测试。首次宿主权限全量回归中 90 files / 752 tests 通过，仅既有 git-service merge 用例因与 git-server 用例并行创建同一全局 `<tmp>/worktrees/t1-feature-merge` 而失败；根因是 caller-owned main repo 的 worktree 根仅取 `dirname(mainRepoPath)/worktrees`，不同 sibling main repo 未分区。按既有“一 worker 一隔离目录、互不踩踏”规格新增双 main repo 并发回归并修复为 `<main-basename>-worktrees` 命名空间；Git 专项 18/18 已通过，未改变 GitService 接口。后续复跑暴露两个独立既有门禁抖动：真实 Docker suspend/resume 用例偶发 5.01s 越过 Vitest 默认 5s，已保持全部断言并按项目 30s 运行约束设置单测预算；live DeepSeek LRU 两次返回残缺 objection 控制块，根因是 Harness prompt 只展示开始标签。按 D14 严格协议新增红测，改为唯一完整成对 concern 示例并禁止正文复述标签，解析器继续对残缺/重复/非末尾/混合输出 fail-closed。目标回归 Harness 21/21、真实 Docker 16/16 全绿。\n[2026-09-04 /agora-commit·交付门禁] Node 24.19 + pnpm 9.15.9 最终复跑：typecheck 0 错、Biome 246 files 0 违规、Vitest 91 files / 754 tests 全绿；真实 DockerSandbox 16/16、Git 18/18、Phase 8 Trace G5、live DeepSeek 基础链路与 298.8s live LRU 端到端均通过。D14 objection 严格解析保持 fail-closed，完整成对协议提示在 live 全量链路中通过。浏览器桌面/移动视觉复验与敏感投影断言沿用本轮已记录证据；任务按 PR 流程保持 in_progress。\n[2026-09-04 /agora-commit] 功能提交 `cc61631` 已推送至 `feat/structured-trace-panel`；PR #61：https://github.com/logan-suu/Agora/pull/61（base=`dev-1.0.0`）。最终门禁：Node 24.19 + pnpm 9.15.9，typecheck 0 错、Biome 246 files 0 违规、Vitest 91 files / 754 tests 全绿；真实 DockerSandbox 16/16、Git 18/18、Phase 8 Trace G5、live DeepSeek 基础链路与 live LRU 均通过；git diff --check、task-status JSON 与敏感数据扫描通过。任务保持 in_progress，PR 等待人工审阅合并，Agent 不自动合并。\n[2026-09-04 /agora-pr-review·规格复评] Leader 要求不盲从既有规格，先审规格再重审 PR 并修复。复评确认 D15 单一来源/白名单/fail-closed 方向合理，但旧文档把官方 inspect 的格式/结构校验与 Agora 所需跨事件生命周期校验混写，且“按 invariant 配对”未定义合法开放尾部、闭合父子顺序、连续序号与 lineage 环；D14 prompt 校准也未要求替换示例 argument。已按蓝图→详细设计→系统架构→开发计划→standing_decisions/AGENTS 明确：官方读取后仍验证完整生命周期，合法开放尾部可见，闭合父节点不得含未闭合子项或后续后代，turn/step 连续、tool canonical append 一一配对、parent 图无环；objection 模板 argument 必须替换为本次真实异议。无延期项。\n[2026-09-04 /agora-pr-review·修复复验] 逐条验证并修复 PR #61 的 3 条 CodeRabbit 实质评论：Trace 新增锁定 Harness 语义的单遍生命周期校验，拒绝重复结束、关闭后代、未闭合已启动工具、父子闭合错误及 turn/step 序号漂移；lineage 以 visiting/validated DFS 拒绝自环和多节点环；objection prompt 明确示例 argument 必须替换，并补多控制块测试。二次规格审查另识别官方 crash-repair 的 `TOOL_NOT_STARTED` synthetic result 是无 tool/call 的合法例外，已先同步规格再实现为不投影的未启动事实；tool/result surface replacement 同样不重复计入生命周期。最终 fail-closed 复核进一步要求 synthetic result 同时满足 `isError=true`，只伪造 error code 明确拒绝。Node 24.19 + pnpm 9.15.9：typecheck 0 错、Biome 246 files 0 违规、目标 5 files / 59 tests 与全量 91 files / 767 tests 全绿；真实 DockerSandbox 16/16、Git、Phase 8 Trace G5、live DeepSeek 与 149.9s live LRU 均通过。无新增延期项，任务保持 in_progress 等待人工合并。"
         },
         {
           "id": "8.5",

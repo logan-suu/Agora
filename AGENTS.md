@@ -47,6 +47,7 @@
 | humanGate/异议双轨/权威级别 | 详细设计 §1/§5/§6/§8 + 蓝图 §14/§21 + 架构 §4.2/§5/§9 + 选型 §4.1/§10 | D4 持久 suspend/Leader resolve/真 Fork resume + D14 不可变异议事实/确定性分轨 + leader 最高权威 |
 | 热插拔/招募离职交接 | 蓝图 §12 + 详细设计 §2/§5/§7 | D12 项目成员生命周期 + D13 任务入职接手；Coordinator 不可删 + 先 drain 再交接 |
 | 前端群聊 UI/SSE | 选型 §9 + 蓝图 §10 | display/payload 分离 + 展示层与 context 层解耦 |
+| Trace/可观测面板 | 详细设计 §6 + 架构 §4.4/§9 + 蓝图 §16/§21 | D15 官方 Harness JSONL 单一来源 + 白名单安全投影 + lineage 去重 + 有界只读快照 |
 | 状态持久化（.data/JSONL） | 选型 §10 + 架构 §9 | Phase 5 TaskStateStore JSON 原子快照；Phase 8 Harness session JSONL；SQLite 可选 |
 | 部署/韧性/错误恢复 | 架构 §6/§9 | 韧性表逐项落地 |
 | 阶段目标/里程碑/时间线 | 开发计划安排 对应节 + task-status `exit_criteria` | 出口标准逐条核对 |
@@ -297,6 +298,7 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
             启用写入需双重门控：①相关任务测试全绿 ②Leader 显式 /approve-kb——否则蒸馏结果直接丢弃
 写所有权    结构化切片只读投影，agent 只写自己私有区——消除写-写冲突靠构造（WO）
 裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；contradiction=blocking 经绑定 gate 的 D4 裁决，concern/advisory 继续并可直接裁决；每次裁决原子写规范 Leader 消息+最高权威 resolution Decision，accept blocking 必须撤回目标，未决视图与重放交叉验证全部后置事实；所有角色通过结构化 objectionResolutions 系统切片取得已验证裁决，不读原始 Leader 消息；语义拿不准由上游声明 concern
+Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复制进 State/Message/MessageBus；对人 DTO 仅含 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 prompt/projection/reasoning/arguments/results；child 只投 seed 后 native 事件且 parent 图无环；官方格式读取后仍校验跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；响应有界、截断显式
 并行度      上限 3 worker 同时跑；subtask.dependsOn 拓扑排序，依赖未满足不激活
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
@@ -492,7 +494,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D14/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D15/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 

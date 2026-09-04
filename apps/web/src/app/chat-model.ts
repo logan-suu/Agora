@@ -1,3 +1,11 @@
+import type {
+  TraceSessionView,
+  TraceSnapshot,
+  TraceStepStatus,
+  TraceToolStatus,
+  TraceTurnStatus,
+} from '@agora/runtime-executor';
+
 export type PresenceStatus = 'online' | 'active' | 'away' | 'offline';
 
 export interface ChatMessageView {
@@ -67,6 +75,8 @@ export interface TaskRuntimeView {
   error?: string;
 }
 
+export type TraceSnapshotView = TraceSnapshot;
+
 export async function fetchTaskRuntime(
   url: string,
   fetcher: typeof fetch = fetch,
@@ -77,6 +87,176 @@ export async function fetchTaskRuntime(
     throw new Error(body.error ?? `Task refresh failed (${response.status})`);
   }
   return body;
+}
+
+export async function fetchTraceSnapshot(
+  url: string,
+  fetcher: typeof fetch = fetch,
+): Promise<TraceSnapshotView> {
+  const response = await fetcher(url);
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (error) {
+    throw new Error(
+      response.ok ? 'invalid trace response' : `Trace refresh failed (${response.status})`,
+      { cause: error },
+    );
+  }
+  if (!response.ok) {
+    const message = isRecord(body) && typeof body.error === 'string' ? body.error : undefined;
+    throw new Error(message ?? `Trace refresh failed (${response.status})`);
+  }
+  return parseTraceSnapshot(body);
+}
+
+function parseTraceSnapshot(value: unknown): TraceSnapshotView {
+  const record = exactRecord(value, ['projectId', 'taskId', 'sessions', 'omittedEventCount']);
+  const sessions = arrayField(record, 'sessions').map(parseTraceSession);
+  return {
+    projectId: stringField(record, 'projectId'),
+    taskId: stringField(record, 'taskId'),
+    sessions,
+    omittedEventCount: integerField(record, 'omittedEventCount'),
+  };
+}
+
+function parseTraceSession(value: unknown): TraceSessionView {
+  const record = exactRecord(value, [
+    'sessionId',
+    'role',
+    'createdAt',
+    'parentSessionId?',
+    'seedLength?',
+    'turns',
+  ]);
+  return {
+    sessionId: stringField(record, 'sessionId'),
+    role: stringField(record, 'role'),
+    createdAt: integerField(record, 'createdAt'),
+    ...(record.parentSessionId === undefined
+      ? {}
+      : { parentSessionId: stringField(record, 'parentSessionId') }),
+    ...(record.seedLength === undefined ? {} : { seedLength: integerField(record, 'seedLength') }),
+    turns: arrayField(record, 'turns').map((turn) => {
+      const item = exactRecord(turn, ['turn', 'startedAt', 'endedAt?', 'status', 'steps']);
+      return {
+        turn: integerField(item, 'turn'),
+        startedAt: integerField(item, 'startedAt'),
+        ...(item.endedAt === undefined ? {} : { endedAt: integerField(item, 'endedAt') }),
+        status: statusField<TraceTurnStatus>(item, 'status', [
+          'running',
+          'completed',
+          'blocked',
+          'aborted',
+          'error',
+          'max_tokens',
+          'interrupted',
+        ]),
+        steps: arrayField(item, 'steps').map((step) => {
+          const stepRecord = exactRecord(step, [
+            'step',
+            'startedAt',
+            'endedAt?',
+            'status',
+            'tools',
+          ]);
+          return {
+            step: integerField(stepRecord, 'step'),
+            startedAt: integerField(stepRecord, 'startedAt'),
+            ...(stepRecord.endedAt === undefined
+              ? {}
+              : { endedAt: integerField(stepRecord, 'endedAt') }),
+            status: statusField<TraceStepStatus>(stepRecord, 'status', [
+              'running',
+              'completed',
+              'aborted',
+              'error',
+              'interrupted',
+            ]),
+            tools: arrayField(stepRecord, 'tools').map((tool) => {
+              const toolRecord = exactRecord(tool, [
+                'callId',
+                'name',
+                'startedAt',
+                'endedAt?',
+                'status',
+                'errorCode?',
+              ]);
+              return {
+                callId: stringField(toolRecord, 'callId'),
+                name: stringField(toolRecord, 'name'),
+                startedAt: integerField(toolRecord, 'startedAt'),
+                ...(toolRecord.endedAt === undefined
+                  ? {}
+                  : { endedAt: integerField(toolRecord, 'endedAt') }),
+                status: statusField<TraceToolStatus>(toolRecord, 'status', [
+                  'running',
+                  'succeeded',
+                  'failed',
+                ]),
+                ...(toolRecord.errorCode === undefined
+                  ? {}
+                  : { errorCode: stringField(toolRecord, 'errorCode') }),
+              };
+            }),
+          };
+        }),
+      };
+    }),
+  };
+}
+
+function exactRecord(value: unknown, allowed: readonly string[]): Record<string, unknown> {
+  if (!isRecord(value)) throw new Error('invalid trace response');
+  const optional = new Set(
+    allowed.filter((key) => key.endsWith('?')).map((key) => key.slice(0, -1)),
+  );
+  const required = allowed.filter((key) => !key.endsWith('?'));
+  const permitted = new Set([...required, ...optional]);
+  if (
+    required.some((key) => !Object.hasOwn(value, key)) ||
+    Object.keys(value).some((key) => !permitted.has(key))
+  ) {
+    throw new Error('invalid trace response');
+  }
+  return value;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function stringField(record: Record<string, unknown>, field: string): string {
+  const value = record[field];
+  if (typeof value !== 'string' || value.length === 0) throw new Error('invalid trace response');
+  return value;
+}
+
+function integerField(record: Record<string, unknown>, field: string): number {
+  const value = record[field];
+  if (!Number.isSafeInteger(value) || (value as number) < 0) {
+    throw new Error('invalid trace response');
+  }
+  return value as number;
+}
+
+function arrayField(record: Record<string, unknown>, field: string): unknown[] {
+  const value = record[field];
+  if (!Array.isArray(value)) throw new Error('invalid trace response');
+  return value;
+}
+
+function statusField<T extends string>(
+  record: Record<string, unknown>,
+  field: string,
+  allowed: readonly T[],
+): T {
+  const value = record[field];
+  if (typeof value !== 'string' || !allowed.includes(value as T)) {
+    throw new Error('invalid trace response');
+  }
+  return value as T;
 }
 
 export async function fetchChannelRegistry(
