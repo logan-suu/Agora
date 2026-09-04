@@ -2,6 +2,7 @@ import type { AppState, Mutation, RoleSpec } from '@agora/core-domain';
 import { applyMutations } from '@agora/core-domain';
 import { type Executor, project, type StepResult } from '@agora/runtime-executor';
 import type { Assignment } from './coordinator';
+import { planObjectionMutations } from './objection';
 
 export interface WorkerRuntimeDeps {
   roster: readonly RoleSpec[];
@@ -12,6 +13,7 @@ export interface WorkerRuntimeDeps {
     role: string,
   ) => readonly unknown[] | Promise<readonly unknown[]>;
   handleOutput?: StepOutputHandler;
+  planOutput?: StepOutputPlanner;
   transition?: StateTransition;
   transitionStep?: WorkerStepTransition;
 }
@@ -21,6 +23,12 @@ export type StepOutputHandler = (
   role: string,
   output: StepResult['output'],
 ) => Promise<void>;
+
+export type StepOutputPlanner = (
+  state: AppState,
+  role: string,
+  result: StepResult,
+) => readonly Mutation[] | Promise<readonly Mutation[]>;
 
 export type StateTransition = (
   state: AppState,
@@ -150,7 +158,12 @@ export class WorkerRuntime {
       if (this.deps.handleOutput !== undefined && !handle.drainRequested && roleStillEnabled) {
         await this.deps.handleOutput(current, handle.role, result.output);
       }
-      current = await this.transitionStep(current, handle.role, result.mutations);
+      const planned = await (this.deps.planOutput ?? planObjectionMutations)(
+        current,
+        handle.role,
+        result,
+      );
+      current = await this.transitionStep(current, handle.role, [...result.mutations, ...planned]);
       if (handle.drainRequested || !roleStillEnabled) {
         await this.saveDrainSafePoint(handle);
         handle.done = result.kind === 'done';

@@ -4,6 +4,7 @@ export * from './complexity';
 export * from './coordinator';
 export * from './human-gate';
 export * from './message-service';
+export * from './objection';
 export * from './orchestrator';
 export * from './progress-ledger';
 export * from './project-roster-service';

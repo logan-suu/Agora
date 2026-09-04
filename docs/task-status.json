@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-04T01:14:01.000Z",
+  "last_updated": "2026-09-04T12:40:56.000Z",
   "current_phase": 8,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -70,6 +70,11 @@
       "id": "D13",
       "rule": "项目 addRole 与任务 onboard 分离：前者只改 D12 collaboration；后者要求目标 role enabled，并经 POST /api/messages 的 D9 安全稳定 msgId 在一次 Task State commit 中提交 Leader 主消息、nextRole 与既有 leader_intent payload 内的 onboarding receipt/handoff refs。只允许同任务未认领的规范 role-departure handoff Message：toRole=目标角色自动选择，toRole=leader 仅接受 Leader 显式 from 引用；Message/packet/handoffPackets/actionId 交叉校验，跨任务/冲突/重复认领 fail-closed；同 ID applied 重放返回前必须复核既存 canonical 消息、完整 receipt 与当前引用事实。project() 从最新 applied onboarding 事实派生系统级 onboardingContext，不投原始群聊且可重启恢复；消费前角色失效进入既有 unavailable-role humanGate。Phase 7 不实现模板目录/任意 RoleSpec 编辑 UI，也不猜测无稳定 Message 的普通 handoff packet",
       "source": "docs/项目蓝图.md §12/§21；docs/详细设计方案.md §1/§2/§5/§7；docs/系统架构设计文档.md §5.4；docs/技术选型文档.md §9.2；docs/开发计划安排.md §10"
+    },
+    {
+      "id": "D14",
+      "rule": "objections 是以稳定消息 id 为身份键的 append-only 不可变事实，未决视图由异议事实与规范 Leader 裁决消息派生。目标引用必须区分 decision/requirement；Coordinator 仅在有明确矛盾证据时声明 contradiction，L1 校验目标存在且仍为当前控制事实后分为 blocking，concern/不确定项为 advisory，未知或失效引用 fail-fast。blocking 先原子提交异议+同 id 可见消息，再以 blocking_objection:<id> 进入 D4；8.2 不设临时清 gate 旁路，8.3 负责裁决与最高权威台账闭合，Phase 9 才广播多 worker 抢占",
+      "source": "docs/项目蓝图.md §14/§21；docs/详细设计方案.md §1/§5；docs/系统架构设计文档.md §5；docs/开发计划安排.md §11"
     },
     {
       "id": "C4",
@@ -1055,17 +1060,19 @@
           "id": "8.2",
           "title": "异议双轨（classifyObjection：blocking/advisory）",
           "story": null,
-          "status": "ready",
-          "last_updated": "2026-09-04T01:14:01.000Z",
+          "status": "in_progress",
+          "last_updated": "2026-09-04T12:40:56.000Z",
           "documents_required": [
-            "docs/详细设计方案.md §5",
-            "docs/项目蓝图.md §14"
+            "docs/项目蓝图.md §14/§21 D4/D14",
+            "docs/详细设计方案.md §1/§5/§6",
+            "docs/系统架构设计文档.md §4.2/§5/§9",
+            "docs/开发计划安排.md §11"
           ],
           "dependencies": [
             "8.1"
           ],
-          "test_file": null,
-          "notes": "core/domain/objection.ts。判定：与 decisionLedger 已定决策/需求矛盾→blocking（暂停相关工作+置 humanGate 等 leader）；否则 advisory（记录进 objections+群里可见，工作照常）。拿不准从宽按 advisory。"
+          "test_file": "tests/integration/phase8/objection-dual-track.test.ts",
+          "notes": "packages/core/domain/src/objection.ts。规格复评后：ObjectionDraft 以带 kind 的 target 区分 decision/requirement，claim='contradiction'|'concern' 承载 Coordinator 的显式语义判断；classifyObjection(draft,decisionLedger,requirements) 只做确定性 shape/引用/当前性校验并计算 track。未知、错种类或已 supersede 引用 fail-fast；拿不准用 concern→advisory。同一稳定 id 的不可变 Objection 与 type='objection' Message 在一次 Task State commit 中追加并在持久化后投递；advisory 继续，blocking 先落事实再以 blocking_objection:<id> 交 D4 suspend，部分提交可恢复重试。8.2 不实现临时 gate resolver；8.3 负责 Leader accept/reject、最高权威 decisionLedger 写回与未决视图闭合；Phase 9 才做多 worker 广播抢占。薄 Worker 线协议为 assistant 正文末尾唯一且与 Channel action 互斥的 <agora-objection> 严格 JSON；模型只提供 claim/target?/argument，Harness 绑定持久 assistant msgId，WorkerRuntime 绑定当前角色，L2 以完整 State 分类并将 objection+Message mutations 合入同一次 worker-step commit。畸形、混合或模型自报身份/track 明确拒绝。\n[2026-09-04 /agora-sync-docs·规格评审] Leader 要求不机械遵循旧规格、先评审合理性。确认旧规格存在五个不可实现/不一致点：against:string 混淆 decision/requirement 命名空间；仅传 ledger 无法校验 requirement；未定义 conflictsWithConfirmed 试图让 L1 猜语义；append-only objections 却内嵌可变 resolution status；blocking 写 gate 但 D4 无该 reason resolver。已按蓝图 §14/§21→详细设计 §1/§5→系统架构 §5→开发计划 §11→task-status/AGENTS 同步 D14。任务保持 ready；8.2 实现计划仍需 Leader 确认后才进入 in_progress。\n[2026-09-04 /agora-do-task] Leader 已批准 D14 修订规格及四单元 TDD 计划；依赖 8.1=done、Phase 7 出口 7.5=done、current_phase=8，跨阶段门禁满足。任务置 in_progress，分支 feat/objection-dual-track；按领域模型/reducer→Harness 控制块→Worker 原子提交→Coordinator D4 路由与恢复顺序实施。\n[2026-09-04 实现与验证] 已完成不可变 Objection schema/reducer、严格 Harness 控制块与身份绑定、WorkerRuntime 默认原子规划、blocking 确定性 D4 路由与advisory 继续语义。Phase 8 G5 以确定性 LLM adapter 替代付费响应，真实跑通 HarnessExecutor→LocalTempSandbox→Web composition→TaskStateStore/MessageService→SSE→D4 suspend；投递时已能同时读到 objection Message 与 Objection，SSE 无 payload，gate 含持久 safePointRefs。Node 24.19 + pnpm 9.15.9：typecheck 0 错，Biome 238 files 0 违规，聚焦 7 files / 157 tests 全绿；全仓其余 86 files 全绿，含 DockerSandbox 16/16、Phase 5 Docker/Harness/MCP 与两条 live DeepSeek。最后一条 live LRU E2E 运行 84s 后因 DeepSeek API request failed 终止；重试因会将任务上下文发往外部 API 且可能产生费用，被自动审批拒绝。本次异议功能无外部环境失败，任务按 PR 流程保持 in_progress。\n[2026-09-04 完整门禁补验] Leader 明确授权向 DeepSeek API 发送 live LRU E2E 任务上下文并接受重试费用；单独重跑 packages/core/__tests__/e2e/lru-cache.test.ts，1 file / 1 test 于 172.21s 通过。结合此前全仓其余 86 files 全绿，完整 87 files 门禁已全部取得成功证据。任务按 PR 流程保持 in_progress，等待显式交付指令。\n[2026-09-04 /agora-commit·最终门禁] 使用 Node 24.19 + pnpm 9.15.9 正式复跑：typecheck 0 错，Biome 238 files 0 违规，任务专属 Phase 8 G5 1/1 通过；完整 pnpm test 87 files / 723 tests 全绿，含 DockerSandbox 16/16、Phase 5 Docker/Harness/MCP、两条 live DeepSeek 与 220.93s live LRU E2E。git diff --check、task-status JSON 与新增行敏感数据扫描通过；任务保持 in_progress。"
         },
         {
           "id": "8.3",

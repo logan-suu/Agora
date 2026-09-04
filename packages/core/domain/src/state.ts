@@ -1,5 +1,6 @@
 import type { HandoffPacket } from './handoff';
 import type { Decision } from './ledger';
+import type { Objection } from './objection';
 
 export type Phase =
   | 'clarifying'
@@ -135,6 +136,7 @@ export interface AppState {
   reviewComments: Record<string, unknown>[];
   handoffPackets: HandoffPacket[];
   decisionLedger: Decision[];
+  objections: Objection[];
   architecture?: Record<string, unknown>;
   conventions?: Record<string, unknown>;
   pendingPatch?: Record<string, unknown>;
@@ -161,5 +163,6 @@ export function createInitialAppState(
     reviewComments: [],
     handoffPackets: [],
     decisionLedger: [],
+    objections: [],
   };
 }

@@ -1,8 +1,14 @@
 import type { Message, Mutation } from '@agora/core-domain';
-import { applyMutations, createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
+import {
+  appendMutation,
+  applyMutations,
+  createInitialAppState,
+  mergeByIdMutation,
+  PHASE0_ROSTER,
+} from '@agora/core-domain';
 import type { Executor, ProjectionView, StepResult } from '@agora/runtime-executor';
 import { describe, expect, it } from 'vitest';
-import { WorkerRuntime } from '../src/index';
+import { planObjectionMutations, WorkerRuntime } from '../src/index';
 
 // Mock 原因（R11）：本文件用 FakeExecutor 隔离 Harness 执行器（0.5 才交付实现），
 // 仅验证 WorkerRuntime 的步进归并/终止/角色装载等单元行为；
@@ -250,6 +256,60 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     await runtime.runOne(createInitialAppState('t-1', 'g'), { role: 'CODER' });
 
     expect(order).toEqual(['output:CODER:true', 'transition']);
+  });
+
+  it('atomically combines a planned objection with its assistant message mutation', async () => {
+    const message = {
+      ...chatMessage('obj-1'),
+      threadId: 'obj-1',
+      fromRole: 'CODER',
+      type: 'objection' as const,
+      payload: {
+        objection: {
+          claim: 'contradiction',
+          target: { kind: 'requirement', id: 'req-1' },
+          argument: 'The implementation drops restart durability.',
+        },
+      },
+    };
+    const fake = new FakeExecutor([
+      {
+        ...stepOf('done', [appendMutation('messages', message)]),
+        output: {
+          objection: {
+            id: 'obj-1',
+            threadId: 'obj-1',
+            claim: 'contradiction',
+            target: { kind: 'requirement', id: 'req-1' },
+            argument: 'The implementation drops restart durability.',
+          },
+        },
+      },
+    ]);
+    const initial = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('requirements', 'req-1', {
+        story: 'Persist tasks',
+        acceptance: ['survives restart'],
+        nonGoals: [],
+      }),
+    ]);
+    const batches: string[][] = [];
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => fake,
+      planOutput: planObjectionMutations,
+      transition: async (state, mutations) => {
+        batches.push(mutations.map((mutation) => mutation.field));
+        return applyMutations(state, mutations);
+      },
+    });
+
+    const result = await runtime.runOne(initial, { role: 'CODER' });
+
+    expect(batches).toEqual([['messages', 'objections']]);
+    expect(result.messages).toContainEqual(message);
+    expect(result.objections).toHaveLength(1);
+    expect(result.objections[0]).toMatchObject({ id: 'obj-1', track: 'blocking' });
   });
 
   it('stops the loop exactly on a kind="done" step result', async () => {
