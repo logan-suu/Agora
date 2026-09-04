@@ -341,6 +341,23 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
       } finally {
         await resumed.dispose();
       }
+
+      const replay = new HarnessExecutor(CODER_SPEC, {
+        adapter: new FakeLlmAdapter('replayed child'),
+        provider: 'agora',
+        sessionPersistence: {
+          root,
+          cwd,
+          projectId: 'project-1',
+          taskId: 'task-1',
+          resumeSessionId: 'human-gate-resume:resolve-1',
+        },
+      });
+      try {
+        await expect(replay.loadSafePoint(cursor)).resolves.toBeUndefined();
+      } finally {
+        await replay.dispose();
+      }
     } finally {
       await source.dispose().catch(() => undefined);
       await rm(root, { recursive: true, force: true });

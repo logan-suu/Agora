@@ -270,7 +270,7 @@ agora/
 ├── .opencode/commands/             # OpenCode 兼容副本（迁移验证后再退役）
 ├── AGENTS.md
 └── pnpm-workspace.yaml
-.data/                              # 运行时状态（gitignored）：projects/{projectId}/tasks/{taskId}/{state.json,harness/,artifacts/}
+.data/                              # 运行时状态（gitignored）：projects/{projectId}/tasks/{taskId}/{state.json,harness-sessions/,artifacts/}
 ```
 
 测试文件存放约定：
@@ -291,6 +291,7 @@ agora/
             ③理由随决策走（rationale 防下游推翻上游）
 安全点      一个 Harness Step（一次模型请求+其工具调用）的 step/end；绝不在 assistant token 流中途打断
 humanGate   决策 D4：已提交 step/end 边界→flush session 后一次持久稳定 gateId + opaque safePointRefs（禁半成品 gate）→销毁进程内 executable composition（保留 TaskState/worktree/Harness JSONL session，不归档终态 artifact；SandboxManager.teardown 仅终态，暂停/重建经 RecoverableSandboxManager companion capability）→Leader 经 D9 单入口幂等裁决，canonical resolution receipt 复制 refs + 确定性 child id 并清 gate→全新 context 经 Agent factory 创建/接管 lineage child→D1 投影 + 稳定 resumed 事实后恢复；
+            gate 可见不代表 suspend 已收尾：resolve 可耐久提交，resume 必须等待旧 run 收敛并重读 State；gate 提交后的释放失败保持 needs_attention 且禁归档。既有 child 必须校验 header+完整 seed 前缀，worktree 必须属于当前 task 规范 root，跨 task fail-closed
             Phase 8 只落回合制单任务与本地容量释放，Phase 9 再接 GlobalScheduler/多 worker 抢占
 KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简硬编码默认值，不依赖向量检索；
             启用写入需双重门控：①相关任务测试全绿 ②Leader 显式 /approve-kb——否则蒸馏结果直接丢弃

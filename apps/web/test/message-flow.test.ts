@@ -129,6 +129,26 @@ describe('persisted HTTP + SSE message flow', () => {
         postRequest({
           ...scope,
           channelId: 'main',
+          msgId: 'resolve-iteration-1',
+          display: 'reuse the resolution id as chat',
+        }),
+      ),
+    ).rejects.toThrow(/conflicts with its first write/i);
+    await expect(
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'resolve-iteration-1',
+          display: '/resolve-gate',
+        }),
+      ),
+    ).rejects.toThrow(/conflicts with its first write/i);
+    await expect(
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
           msgId: 'resolve-stale-gate',
           display: '/resolve-gate human-gate:stale continue',
         }),
@@ -434,6 +454,12 @@ describe('persisted HTTP + SSE message flow', () => {
     });
     const gateId = (await runtime.store.load(scope))?.humanGate?.gateId;
     if (gateId === undefined) throw new Error('expected role-departure humanGate');
+    runtime.bindHumanGateLifecyclePort({
+      suspend: async () => {
+        throw new Error('unexpected additional suspend');
+      },
+      resume: async () => undefined,
+    });
 
     const resolution = await post(
       postRequest({

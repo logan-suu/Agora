@@ -112,7 +112,9 @@ export class MessageRuntime {
             },
           ])
         ).state,
-      resume: async () => undefined,
+      resume: async () => {
+        throw new Error('humanGate lifecycle resume port is not bound');
+      },
     };
     this.#lifecycle = new ChannelLifecycleService(this.channels, this.#service, this.collaboration);
     this.#departure = new RoleDepartureService({
@@ -252,7 +254,19 @@ export class MessageRuntime {
     const existing = current.messages.find((message) => message.msgId === input.msgId);
     if (existing !== undefined) {
       assertOnboardingReplay(current, existing, input.channelId, incomingIntent);
-      if (incomingIntent.kind === 'resolve_human_gate') {
+      const persistedIntent = existing.payload.intent;
+      const existingIsResolution =
+        typeof persistedIntent === 'object' &&
+        persistedIntent !== null &&
+        !Array.isArray(persistedIntent) &&
+        'kind' in persistedIntent &&
+        persistedIntent.kind === 'resolve_human_gate';
+      if (incomingIntent.kind === 'resolve_human_gate' || existingIsResolution) {
+        if (incomingIntent.kind !== 'resolve_human_gate') {
+          throw new Error(
+            `humanGate resolution action "${input.msgId}" conflicts with its first write`,
+          );
+        }
         const receipt = assertHumanGateResolutionReplay(existing, input.channelId, incomingIntent);
         await this.#completeDepartureResolution(scope, input.msgId, incomingIntent);
         await this.#humanGate.resume(scope, input.msgId, receipt);

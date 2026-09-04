@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   mkdirSync,
   mkdtempSync,
@@ -35,7 +36,7 @@ export class LocalTempSandbox implements SandboxManager {
   private readonly roots = new Map<string, string>();
 
   createWorktree(taskId: string, role: string): Promise<Worktree> {
-    const prefix = `agora-${taskId}-${role}-`;
+    const prefix = localWorktreePrefix(taskId, role);
     const path = mkdtempSync(join(tmpdir(), prefix));
     this.roots.set(taskId, path);
     // Phase 0 has no real Git branches (decision D5); branch is a placeholder.
@@ -90,13 +91,36 @@ export class LocalTempSandbox implements SandboxManager {
     if (bindings.length !== 1) {
       return Promise.reject(new Error('LocalTempSandbox resume requires exactly one worktree'));
     }
-    const path = bindings[0]?.worktree.path;
+    const binding = bindings[0];
+    const path = binding?.worktree.path;
     if (path === undefined || !statSync(path).isDirectory()) {
       return Promise.reject(new Error('persisted local worktree is not an existing directory'));
     }
-    this.roots.set(taskId, realpathSync(path));
+    const canonical = realpathSync(path);
+    if (
+      binding === undefined ||
+      !basename(canonical).startsWith(localWorktreePrefix(taskId, binding.role))
+    ) {
+      return Promise.reject(
+        new Error(`persisted local worktree does not belong to task "${taskId}"`),
+      );
+    }
+    this.roots.set(taskId, canonical);
     return Promise.resolve();
   }
+}
+
+function localWorktreePrefix(taskId: string, role: string): string {
+  return `agora-${safeSegment(taskId)}-${identityHash(taskId)}-${safeSegment(role)}-`;
+}
+
+function safeSegment(value: string): string {
+  const safe = value.replace(/[^a-zA-Z0-9._-]/g, '_');
+  return safe.length === 0 ? 'worktree' : safe;
+}
+
+function identityHash(value: string): string {
+  return createHash('sha256').update(value).digest('hex').slice(0, 16);
 }
 
 /** Run a command in a directory with spawn, capturing output and enforcing timeout. */

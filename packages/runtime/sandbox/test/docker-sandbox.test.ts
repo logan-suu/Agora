@@ -62,6 +62,17 @@ describeDocker('DockerSandbox (G5 real Docker execution)', () => {
     expect(a.path.startsWith(join(tmpdir(), 'agora-docker-docker-task-b'))).toBe(true);
   });
 
+  it('rejects a persisted worktree that belongs to another task', async () => {
+    const worktree = await makeWorktree('docker-task-owner', 'CODER');
+    await sandbox.suspend('docker-task-owner');
+    const restarted = new DockerSandbox(docker === null ? {} : { docker });
+    await expect(
+      restarted.resume('docker-task-other', [{ role: 'CODER', worktree }]),
+    ).rejects.toThrow(/does not belong to task/i);
+    await restarted.resume('docker-task-owner', [{ role: 'CODER', worktree }]);
+    await restarted.teardown('docker-task-owner');
+  });
+
   it('write then read round-trips content including nested paths', async () => {
     const wt = await makeWorktree('docker-task-c', 'CODER');
     await sandbox.write(wt, 'src/lru.ts', 'export const cache = 1;');

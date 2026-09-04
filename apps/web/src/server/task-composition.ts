@@ -167,34 +167,61 @@ export function createWebTaskCompositionFactory(
       latestRole = spec.role;
       return executor;
     };
+    const releaseRuntimeResources = async (terminal: boolean): Promise<void> => {
+      if (resourcesReleased) return;
+      resourcesReleased = true;
+      const errors: unknown[] = [];
+      for (const executor of executors) {
+        await executor.dispose().catch((error: unknown) => errors.push(error));
+      }
+      await activeCatalog.dispose().catch((error: unknown) => errors.push(error));
+      await activeGitService.dispose().catch((error: unknown) => errors.push(error));
+      const release = terminal
+        ? sandbox.teardown(scope.taskId)
+        : isRecoverableSandboxManager(sandbox)
+          ? sandbox.suspend(scope.taskId)
+          : Promise.reject(new Error('configured SandboxManager does not support D4 suspend'));
+      await release.catch((error: unknown) => errors.push(error));
+      if (errors.length > 0) {
+        throw new Error(
+          `task composition ${terminal ? 'dispose' : 'suspend'} failed: ${errors.map(String).join('; ')}`,
+        );
+      }
+    };
     let restored: { role: string; executor: HarnessExecutor } | undefined;
-    if (resume !== undefined && resume.receipt.safePointRefs.length > 0) {
-      if (resume.receipt.safePointRefs.length !== 1) {
-        throw new Error('Phase 8 sequential resume expects exactly one Harness safe point');
+    try {
+      if (resume !== undefined && resume.receipt.safePointRefs.length > 0) {
+        if (resume.receipt.safePointRefs.length !== 1) {
+          throw new Error('Phase 8 sequential resume expects exactly one Harness safe point');
+        }
+        const ref = resume.receipt.safePointRefs[0] as string;
+        const identity = inspectHarnessSafePoint(ref);
+        if (
+          identity.projectId !== scope.projectId ||
+          identity.taskId !== scope.taskId ||
+          identity.cwd !== worktree.path
+        ) {
+          throw new Error('persisted humanGate safe point does not match the task composition');
+        }
+        const roster = (await loadRoster?.()) ?? DEFAULT_ROSTER;
+        const spec = roster.find((entry) => entry.role === identity.role);
+        if (spec === undefined)
+          throw new Error(`safe point role "${identity.role}" is not enabled`);
+        const executor = createExecutor(spec, resume.receipt.resumeSessionId);
+        await executor.loadSafePoint(ref);
+        executor.injectInbox(
+          project(
+            resume.state,
+            spec.role,
+            roster,
+            await buildChannelContext(resume.state, spec.role),
+          ),
+        );
+        restored = { role: spec.role, executor };
       }
-      const ref = resume.receipt.safePointRefs[0] as string;
-      const identity = inspectHarnessSafePoint(ref);
-      if (
-        identity.projectId !== scope.projectId ||
-        identity.taskId !== scope.taskId ||
-        identity.cwd !== worktree.path
-      ) {
-        throw new Error('persisted humanGate safe point does not match the task composition');
-      }
-      const roster = (await loadRoster?.()) ?? DEFAULT_ROSTER;
-      const spec = roster.find((entry) => entry.role === identity.role);
-      if (spec === undefined) throw new Error(`safe point role "${identity.role}" is not enabled`);
-      const executor = createExecutor(spec, resume.receipt.resumeSessionId);
-      await executor.loadSafePoint(ref);
-      executor.injectInbox(
-        project(
-          resume.state,
-          spec.role,
-          roster,
-          await buildChannelContext(resume.state, spec.role),
-        ),
-      );
-      restored = { role: spec.role, executor };
+    } catch (error) {
+      await releaseRuntimeResources(false).catch(() => undefined);
+      throw error;
     }
     const workerRuntime = new WorkerRuntime({
       roster: DEFAULT_ROSTER,
@@ -226,27 +253,6 @@ export function createWebTaskCompositionFactory(
           worktree: worktree.path,
         }),
       ]);
-    const releaseRuntimeResources = async (terminal: boolean): Promise<void> => {
-      if (resourcesReleased) return;
-      resourcesReleased = true;
-      const errors: unknown[] = [];
-      for (const executor of executors) {
-        await executor.dispose().catch((error: unknown) => errors.push(error));
-      }
-      await activeCatalog.dispose().catch((error: unknown) => errors.push(error));
-      await activeGitService.dispose().catch((error: unknown) => errors.push(error));
-      const release = terminal
-        ? sandbox.teardown(scope.taskId)
-        : isRecoverableSandboxManager(sandbox)
-          ? sandbox.suspend(scope.taskId)
-          : Promise.reject(new Error('configured SandboxManager does not support D4 suspend'));
-      await release.catch((error: unknown) => errors.push(error));
-      if (errors.length > 0) {
-        throw new Error(
-          `task composition ${terminal ? 'dispose' : 'suspend'} failed: ${errors.map(String).join('; ')}`,
-        );
-      }
-    };
     return {
       initialState,
       workerRuntime,

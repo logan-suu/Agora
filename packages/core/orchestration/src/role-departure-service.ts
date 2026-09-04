@@ -175,6 +175,19 @@ export class RoleDepartureService {
         throw new Error(`departure successor "${departure.successorRole}" is no longer enabled`);
       }
       state = (await this.#commitHandoff(input.scope, state, role, departure, messageId)).state;
+    } else if (
+      departure.successorRole === undefined &&
+      state.humanGate === undefined &&
+      state.subtasks.some((subtask) => subtask.ownerRole === role && subtask.status === 'blocked')
+    ) {
+      assertCanonicalDepartureHandoff(state, role, departure, messageId, false);
+      state = await this.#gate.suspend(input.scope, {
+        triggerMsgId: messageId,
+        triggerTs: departure.requestedTs,
+        reason: `role_departure_requires_replacement:${role}`,
+        options: ['assign_enabled_successor'],
+        phase: state.phase,
+      });
     }
 
     assertCanonicalDepartureHandoff(state, role, departure, messageId);
@@ -362,6 +375,7 @@ function assertCanonicalDepartureHandoff(
   role: string,
   departure: RoleDeparture,
   messageId: string,
+  requireGate = true,
 ): void {
   const message = state.messages.find((candidate) => candidate.msgId === messageId);
   const payload = message?.payload;
@@ -390,6 +404,7 @@ function assertCanonicalDepartureHandoff(
     departure.successorRole === undefined
       ? unfinished.every((subtask) => subtask.status === 'blocked') &&
         (unfinished.length === 0 ||
+          !requireGate ||
           state.humanGate?.reason === `role_departure_requires_replacement:${role}`)
       : unfinished.length === 0;
   if (!canonicalMessage || !responsibilitiesCommitted) {

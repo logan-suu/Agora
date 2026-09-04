@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 
 import {
   appendMutation,
@@ -394,7 +395,7 @@ export class HarnessExecutor implements Executor {
             agentOptions: { provider: this.provider, model: this.resolveModel() },
             setup: this.agentSetup(resumeSessionId),
           })
-        : await this.resumeExistingChild(existing, checkpoint, seed.length, resumeSessionId);
+        : await this.resumeExistingChild(existing, checkpoint, seed, resumeSessionId);
     this.handles.set(resumeSessionId, handle);
     this.activeSessionId = resumeSessionId;
     const child = this.ctx.sessions.get(childId);
@@ -484,16 +485,23 @@ export class HarnessExecutor implements Executor {
       agentPreset?: string;
     },
     checkpoint: SafePointPayload,
-    seedLength: number,
+    seed: readonly unknown[],
     resumeSessionId: string,
   ): Promise<AgentHandle> {
     if (
       existing.cwd !== checkpoint.cwd ||
       existing.parentSession !== checkpoint.sourceSessionId ||
-      existing.seedLength !== seedLength ||
+      existing.seedLength !== seed.length ||
       existing.agentPreset !== checkpoint.agentPreset
     ) {
       throw new Error(`persisted child session "${resumeSessionId}" has conflicting lineage`);
+    }
+    const child = await this.ctx.sessionPersistence.load(SessionId(resumeSessionId));
+    if (
+      child.events.length < seed.length ||
+      seed.some((event, index) => !isDeepStrictEqual(child.events[index], event))
+    ) {
+      throw new Error(`persisted child session "${resumeSessionId}" has a conflicting seed prefix`);
     }
     return this.ctx.agents.resume({
       resumeSessionId: SessionId(resumeSessionId),

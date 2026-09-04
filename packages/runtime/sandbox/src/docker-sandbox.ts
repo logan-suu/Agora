@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   mkdirSync,
   mkdtempSync,
@@ -256,6 +257,9 @@ export class DockerSandbox implements SandboxManager {
       if (relativeRoot.startsWith('..') || relativeRoot === '') {
         throw new Error('persisted Docker task root is outside the configured base directory');
       }
+      if (!basename(parent).startsWith(dockerTaskRootPrefix(taskId))) {
+        throw new Error(`persisted Docker worktree does not belong to task "${taskId}"`);
+      }
       if (hostRoot !== undefined && hostRoot !== parent) {
         throw new Error('persisted Docker worktrees do not share one task root');
       }
@@ -300,8 +304,7 @@ export class DockerSandbox implements SandboxManager {
   ): Promise<ContainerRecord> {
     await this.ensureImage();
     const hostRoot =
-      existingHostRoot ??
-      mkdtempSync(join(this.baseDir, `agora-docker-${sanitizeSegment(taskId)}-`));
+      existingHostRoot ?? mkdtempSync(join(this.baseDir, dockerTaskRootPrefix(taskId)));
     const container = await this.docker.createContainer({
       Image: this.image,
       Cmd: ['sleep', 'infinity'],
@@ -371,6 +374,11 @@ export class DockerSandbox implements SandboxManager {
 function sanitizeSegment(segment: string): string {
   const safe = segment.replace(/[^a-zA-Z0-9._-]/g, '_');
   return safe.length === 0 ? 'worktree' : safe;
+}
+
+function dockerTaskRootPrefix(taskId: string): string {
+  const identity = createHash('sha256').update(taskId).digest('hex').slice(0, 16);
+  return `agora-docker-${sanitizeSegment(taskId)}-${identity}-`;
 }
 
 function sameRolePaths(

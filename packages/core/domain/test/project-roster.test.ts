@@ -240,6 +240,15 @@ describe('project roster transitions', () => {
       assignRoleDepartureSuccessor(assigned.roster, 'CODER', 'remove-coder-orphan', 'TESTER')
         .changed,
     ).toBe(false);
+    const successorDisabledAfterAssignment = disableRole(assigned.roster, 'TESTER').roster;
+    expect(
+      assignRoleDepartureSuccessor(
+        successorDisabledAfterAssignment,
+        'CODER',
+        'remove-coder-orphan',
+        'TESTER',
+      ).changed,
+    ).toBe(false);
     expect(
       completeRoleDeparture(assigned.roster, 'CODER', 'remove-coder-orphan').roster[1],
     ).toMatchObject({ status: 'departed', departure: { stage: 'completed' } });

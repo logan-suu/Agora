@@ -252,10 +252,6 @@ export function assignRoleDepartureSuccessor(
   const { index, entry } = departureEntry(roster, role, actionId);
   const successor = normalizeRoleId(successorRole);
   if (successor === entry.spec.role) throw new Error('departure successor must differ from target');
-  const enabled = roster.find((candidate) => candidate.spec.role === successor);
-  if (enabled?.status !== 'enabled') {
-    throw new Error(`departure successor "${successor}" must be enabled`);
-  }
   const departure = entry.departure;
   if (departure === undefined) throw new Error('departing role requires departure metadata');
   if (
@@ -263,6 +259,10 @@ export function assignRoleDepartureSuccessor(
     departure.successorRole === successor
   ) {
     return unchanged(roster);
+  }
+  const enabled = roster.find((candidate) => candidate.spec.role === successor);
+  if (enabled?.status !== 'enabled') {
+    throw new Error(`departure successor "${successor}" must be enabled`);
   }
   if (entry.status !== 'departing' || departure.stage !== 'awaiting_replacement') {
     throw new Error(`role "${entry.spec.role}" cannot assign a successor from ${departure.stage}`);

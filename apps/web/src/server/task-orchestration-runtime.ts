@@ -242,8 +242,11 @@ export class TaskOrchestrationRuntime {
       setMutation('humanGate', materializeHumanGate(request, refs)),
     ]);
     if (run?.composition !== undefined) {
-      await run.composition.suspend();
-      run.composition = undefined;
+      try {
+        await run.composition.suspend();
+      } finally {
+        run.composition = undefined;
+      }
     }
     return committed.state;
   }
@@ -254,9 +257,19 @@ export class TaskOrchestrationRuntime {
     receipt: HumanGateResolutionReceipt,
   ): Promise<void> {
     await this.#enqueueLifecycle(async () => {
-      const state = await this.messages.store.load(scope);
+      let state = await this.messages.store.load(scope);
       if (state === undefined) throw new Error('cannot resume a missing task state');
-      const existing = this.#runs.get(scopeKey(scope));
+      let existing = this.#runs.get(scopeKey(scope));
+      const markerId = `human-gate-resumed:${actionId}`;
+      if (
+        existing?.status === 'running' &&
+        !state.messages.some((message) => message.msgId === markerId)
+      ) {
+        await existing.promise;
+        state = await this.messages.store.load(scope);
+        if (state === undefined) throw new Error('cannot resume a missing task state');
+        existing = this.#runs.get(scopeKey(scope));
+      }
       if (state.phase === 'done' || existing?.status === 'completed') return;
       if (state.humanGate !== undefined) {
         throw new Error('cannot resume while humanGate remains active');
@@ -285,7 +298,6 @@ export class TaskOrchestrationRuntime {
         loadRoster: () => this.messages.enabledRoleSpecs(scope.projectId),
         resume: { state, actionId, receipt },
       });
-      const markerId = `human-gate-resumed:${actionId}`;
       try {
         const marker = await this.messages.commitMessage(scope, {
           msgId: markerId,
@@ -339,6 +351,10 @@ export class TaskOrchestrationRuntime {
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
     } catch (error) {
       terminalError = errorMessage(error);
+      const persisted = await this.messages.store.load(scope).catch(() => undefined);
+      if (persisted !== undefined && requiresHumanGateAttention(persisted)) {
+        terminalStatus = 'needs_attention';
+      }
     }
 
     if (terminalStatus === 'needs_attention') {

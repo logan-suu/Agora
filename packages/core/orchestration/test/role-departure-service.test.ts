@@ -13,11 +13,12 @@ import {
   createMainChannel,
   type RoleSpec,
   type RosterEntry,
+  setMutation,
 } from '@agora/core-domain';
 import { JsonTaskStateStore, type TaskScope } from '@agora/runtime-state';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { MessageService, RoleDepartureService } from '../src/index';
+import { MessageService, materializeHumanGate, RoleDepartureService } from '../src/index';
 
 // Mock 原因（R11）：离职服务单测仅以 RecordingDrain 隔离 WorkerRuntime 的并发时序；
 // WorkerRuntime 当前 Step 提交后再保存安全点由 worker-runtime.test.ts 独立覆盖。
@@ -193,6 +194,51 @@ describe('RoleDepartureService', () => {
         (entry) => entry.spec.role === 'CODER',
       ),
     ).toMatchObject({ status: 'departing', departure: { stage: 'awaiting_replacement' } });
+  });
+
+  it('re-drives gate suspension when the handoff commit succeeded before suspension failed', async () => {
+    const { collaboration, drain, messages, state } = await fixture();
+    let gateCalls = 0;
+    const service = new RoleDepartureService({
+      collaboration,
+      state,
+      messages,
+      drain,
+      gate: {
+        suspend: async (gateScope, request) => {
+          gateCalls += 1;
+          if (gateCalls === 1) throw new Error('injected gate suspension failure');
+          return (
+            await messages.commitMutations(gateScope, [
+              setMutation('humanGate', materializeHumanGate(request, [])),
+            ])
+          ).state;
+        },
+      },
+    });
+    const input = {
+      scope,
+      actor: 'leader' as const,
+      actionId: 'recoverable-orphan',
+      role: 'CODER',
+      requestedTs: 2_500,
+    };
+
+    await expect(service.depart(input)).rejects.toThrow('injected gate suspension failure');
+    await expect(state.load(scope)).resolves.toMatchObject({
+      messages: [expect.objectContaining({ msgId: 'role-departure:recoverable-orphan' })],
+      subtasks: expect.arrayContaining([
+        expect.objectContaining({ id: 'open-a', status: 'blocked' }),
+      ]),
+    });
+    await expect(service.depart(input)).resolves.toMatchObject({ status: 'blocked' });
+    expect(gateCalls).toBe(2);
+    await expect(state.load(scope)).resolves.toMatchObject({
+      humanGate: {
+        gateId: 'human-gate:role-departure:recoverable-orphan',
+        reason: 'role_departure_requires_replacement:CODER',
+      },
+    });
   });
 
   it('resumes after a final collaboration CAS failure without repeating drain or Task State facts', async () => {

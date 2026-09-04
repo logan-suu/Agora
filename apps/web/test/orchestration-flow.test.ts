@@ -240,6 +240,101 @@ describe('TaskOrchestrationRuntime', () => {
     expect(lifecycle).toEqual({ archived: 1, disposed: 1, suspended: 1 });
   });
 
+  it('waits for suspension to settle when Leader resolution arrives as soon as the gate is visible', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const base = successfulFactory(Promise.resolve());
+    let releaseSuspend = () => {};
+    const suspendGate = new Promise<void>((resolve) => {
+      releaseSuspend = resolve;
+    });
+    let resumed = false;
+    const factory: TaskCompositionFactory = async (input) => {
+      const composition = await base(input);
+      if (input.resume !== undefined) {
+        resumed = true;
+        return composition;
+      }
+      return {
+        ...composition,
+        roster: composition.roster.filter((entry) => entry.role !== 'CODER'),
+        loadRoster: async () => composition.roster.filter((entry) => entry.role !== 'CODER'),
+        saveSafePoints: async () => ['race-checkpoint'],
+        suspend: async () => suspendGate,
+      };
+    };
+    const runtime = new TaskOrchestrationRuntime(messages, factory);
+    const scope = { projectId: 'project-a', taskId: 'task-gate-race' };
+
+    await runtime.start({ ...scope, requestId: 'start-gate-race', goal: 'Build TTL LRU' });
+    let gateId: string | undefined;
+    for (let attempt = 0; attempt < 20 && gateId === undefined; attempt += 1) {
+      gateId = (await messages.store.load(scope))?.humanGate?.gateId;
+      if (gateId === undefined) await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+    if (gateId === undefined) throw new Error('expected visible humanGate');
+    const responsePromise = createPostMessage(messages)(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...scope,
+          channelId: 'main',
+          msgId: 'resolve-gate-race',
+          display: `/resolve-gate ${gateId} retry`,
+        }),
+      }),
+    );
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(resumed).toBe(false);
+
+    releaseSuspend();
+    const response = await responsePromise;
+    await expect(response.json()).resolves.toMatchObject({ action: { status: 'applied' } });
+    await runtime.waitForIdle(scope);
+    expect(resumed).toBe(true);
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'completed',
+      phase: 'done',
+    });
+  });
+
+  it('keeps a durable gate in needs_attention when suspension cleanup fails', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const lifecycle = { archived: 0, disposed: 0 };
+    const base = successfulFactory(Promise.resolve(), lifecycle);
+    const factory: TaskCompositionFactory = async (input) => {
+      const composition = await base(input);
+      return {
+        ...composition,
+        roster: composition.roster.filter((entry) => entry.role !== 'CODER'),
+        loadRoster: async () => composition.roster.filter((entry) => entry.role !== 'CODER'),
+        saveSafePoints: async () => ['cleanup-checkpoint'],
+        suspend: async () => {
+          throw new Error('injected suspension cleanup failure');
+        },
+      };
+    };
+    const runtime = new TaskOrchestrationRuntime(messages, factory);
+    const scope = { projectId: 'project-a', taskId: 'task-gate-cleanup' };
+
+    await runtime.start({ ...scope, requestId: 'start-gate-cleanup', goal: 'Build TTL LRU' });
+    await runtime.waitForIdle(scope);
+
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'needs_attention',
+      error: expect.stringContaining('injected suspension cleanup failure'),
+    });
+    expect(lifecycle.archived).toBe(0);
+    await expect(messages.store.load(scope)).resolves.toMatchObject({
+      humanGate: {
+        safePointRefs: ['cleanup-checkpoint'],
+      },
+    });
+  });
+
   it('starts one persisted run, rejects a different goal, and recovers the completed summary', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
     roots.push(root);
