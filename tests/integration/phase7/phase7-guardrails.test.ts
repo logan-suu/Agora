@@ -156,6 +156,8 @@ describe('Phase 7 D12 guardrails', () => {
       roster: DEFAULT_ROSTER,
       loadRoster: () => runtime.enabledRoleSpecs(scope.projectId),
       buildChannelContext: (state, role) => runtime.workerStepChannelContextFor(state, role),
+      transition: async (_state, mutations) =>
+        (await runtime.commitMutations(scope, mutations)).state,
       transitionStep: async (_state, role, mutations) =>
         (await runtime.commitWorkerStepMutations(scope, role, mutations)).state,
       buildExecutor: (spec) => {
@@ -183,7 +185,11 @@ describe('Phase 7 D12 guardrails', () => {
     });
 
     try {
-      const running = worker.runOne(initial, { role: 'CODER', subtaskId: 'coding-work' });
+      const running = worker.runOne(initial, {
+        workerId: 'worker:phase7-guardrail:coder',
+        role: 'CODER',
+        subtaskId: 'coding-work',
+      });
       await adapter.started;
       const removal = createPostMessage(runtime)(
         postRequest({
@@ -245,7 +251,11 @@ describe('Phase 7 D12 guardrails', () => {
       ).rejects.toThrow(/not enabled/);
       await expect(runtime.store.load(scope)).resolves.toEqual(whileDeparting);
       await expect(
-        worker.runOne(whileDeparting, { role: 'CODER', subtaskId: 'new-coding-work' }),
+        worker.runOne(whileDeparting, {
+          workerId: 'worker:phase7-guardrail:departing-coder',
+          role: 'CODER',
+          subtaskId: 'new-coding-work',
+        }),
       ).rejects.toBeInstanceOf(UnknownRoleError);
       expect(executors).toHaveLength(1);
 

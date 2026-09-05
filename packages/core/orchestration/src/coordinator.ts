@@ -29,15 +29,35 @@ export const OBJECTION_GATE_OPTIONS: readonly string[] = ['accept_objection', 'r
 export const COMPLETION_GATE_OPTIONS: readonly string[] = ['approve_completion', 'request_changes'];
 
 export interface Assignment {
+  workerId: string;
   role: RoleId;
   subtaskId?: string;
 }
 
+type AssignmentDraft = Omit<Assignment, 'workerId'>;
+type NonEmptyReadonlyArray<T> = readonly [T, ...T[]];
+
 export type Route =
   | { kind: 'worker'; batch: readonly [Assignment]; parallel: false }
+  | {
+      kind: 'worker';
+      batch: readonly [Assignment, Assignment, ...Assignment[]];
+      parallel: true;
+    }
   | { kind: 'integrate' }
   | { kind: 'human_gate'; request: HumanGateRequest }
   | { kind: 'finalize' };
+
+type DraftRoute =
+  | { kind: 'worker'; batch: NonEmptyReadonlyArray<AssignmentDraft>; parallel: boolean }
+  | Exclude<Route, { kind: 'worker' }>;
+
+interface DraftCoordinatorDecision {
+  route: DraftRoute;
+  mutations: Mutation[];
+  completionCandidate?: boolean;
+  requestSatisfied?: boolean;
+}
 
 export interface CoordinatorDecision {
   route: Route;
@@ -69,10 +89,13 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     now: options?.now ?? (() => Date.now()),
   };
   const blockingObjection = pendingBlockingObjectionGate(state);
+  const pendingDispatch = recoverPendingDispatch(state);
   const leaderOverride = consumeLeaderAssignment(state, clock, options?.roster);
-  let decision: CoordinatorDecision;
+  let decision: DraftCoordinatorDecision;
   if (blockingObjection !== undefined) {
     decision = blockingObjection;
+  } else if (pendingDispatch !== undefined) {
+    return pendingDispatch;
   } else if (leaderOverride !== undefined) {
     decision = leaderOverride;
   } else {
@@ -102,14 +125,43 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
   if (
     decision.route.kind === 'worker' &&
     options?.roster !== undefined &&
-    !hasRole(options.roster, decision.route.batch[0].role)
+    decision.route.batch.some((assignment) => !hasRole(options.roster, assignment.role))
   ) {
-    decision = unavailableRoleGate(state, clock, decision.route.batch[0].role);
+    const unavailable = decision.route.batch.find(
+      (assignment) => !hasRole(options.roster, assignment.role),
+    );
+    if (unavailable === undefined) throw new Error('unreachable unavailable-role dispatch');
+    decision = unavailableRoleGate(state, clock, unavailable.role);
   }
   return attachCoordinationArtifacts(state, decision, clock, options?.roster);
 }
 
-function pendingBlockingObjectionGate(state: AppState): CoordinatorDecision | undefined {
+function recoverPendingDispatch(state: AppState): CoordinatorDecision | undefined {
+  const pending = state.workers.filter((worker) => worker.status === 'pending');
+  if (pending.length === 0) return undefined;
+  const ids = new Set(pending.map((worker) => worker.workerId));
+  if (ids.size !== pending.length) throw new Error('pending worker identities must be unique');
+  const assignments = pending.map(
+    (worker): Assignment => ({
+      workerId: worker.workerId,
+      role: worker.role,
+      ...(worker.subtaskId === undefined ? {} : { subtaskId: worker.subtaskId }),
+    }),
+  );
+  const first = assignments[0];
+  if (first === undefined) return undefined;
+  const route: Route =
+    assignments.length === 1
+      ? { kind: 'worker', batch: [first], parallel: false }
+      : {
+          kind: 'worker',
+          batch: [first, assignments[1] as Assignment, ...assignments.slice(2)],
+          parallel: true,
+        };
+  return { route, mutations: [] };
+}
+
+function pendingBlockingObjectionGate(state: AppState): DraftCoordinatorDecision | undefined {
   const resolved = new Set(
     deriveObjectionResolutions(state)
       .filter((entry) => entry.status === 'resolved')
@@ -134,7 +186,11 @@ function pendingBlockingObjectionGate(state: AppState): CoordinatorDecision | un
   };
 }
 
-function unavailableRoleGate(state: AppState, clock: Clock, role: string): CoordinatorDecision {
+function unavailableRoleGate(
+  state: AppState,
+  clock: Clock,
+  role: string,
+): DraftCoordinatorDecision {
   const message: Message = {
     msgId: clock.newId(),
     channelId: 'main',
@@ -212,7 +268,7 @@ function consumeLeaderAssignment(
   state: AppState,
   clock: Clock,
   roster: readonly RoleSpec[] | undefined,
-): CoordinatorDecision | undefined {
+): DraftCoordinatorDecision | undefined {
   if (state.phase === 'done' || state.humanGate !== undefined) return undefined;
   const assignment = latestAppliedLeaderAssignment(state);
   if (
@@ -253,7 +309,7 @@ function consumeLeaderAssignment(
   };
 }
 
-function nextSpeakerFor(route: Route): string | null {
+function nextSpeakerFor(route: DraftRoute): string | null {
   switch (route.kind) {
     case 'worker':
       return route.batch[0].role;
@@ -277,7 +333,7 @@ function appendedMessages(mutations: readonly Mutation[]): Message[] {
   });
 }
 
-function instructionFor(decision: CoordinatorDecision): string {
+function instructionFor(decision: DraftCoordinatorDecision): string {
   const messages = appendedMessages(decision.mutations);
   const latest = messages[messages.length - 1];
   if (latest !== undefined) return latest.display;
@@ -296,7 +352,7 @@ const LOOP_REASONS = new Set([
   'reviewer_architecture_issue',
 ]);
 
-function loopReasonFor(decision: CoordinatorDecision): string | undefined {
+function loopReasonFor(decision: DraftCoordinatorDecision): string | undefined {
   for (const message of appendedMessages(decision.mutations)) {
     const reason = message.payload.reason;
     if (typeof reason === 'string' && LOOP_REASONS.has(reason)) return reason;
@@ -306,7 +362,7 @@ function loopReasonFor(decision: CoordinatorDecision): string | undefined {
 
 function handoffForRoleSwitch(
   state: AppState,
-  route: Route,
+  route: DraftRoute,
   clock: Clock,
 ): HandoffPacket | undefined {
   if (route.kind !== 'worker') return undefined;
@@ -337,7 +393,7 @@ function handoffForRoleSwitch(
 
 function attachCoordinationArtifacts(
   state: AppState,
-  decision: CoordinatorDecision,
+  decision: DraftCoordinatorDecision,
   clock: Clock,
   roster: readonly RoleSpec[] | undefined,
 ): CoordinatorDecision {
@@ -365,9 +421,58 @@ function attachCoordinationArtifacts(
     display: `Coordinator Ledger r${ledger.revision}: stall=${ledger.stallCount}/${MAX_STALLS}`,
     ts: clock.now(),
   };
+  const route = materializeRoute(decision.route, ledgerMessage.msgId);
+  const dispatchTs = clock.now();
+  const workerMutations =
+    route.kind === 'worker'
+      ? route.batch.map((assignment) => {
+          const executor = roster?.find((spec) => spec.role === assignment.role)?.executor;
+          if (executor === 'external') {
+            throw new Error(
+              `external executor is not enabled for Phase 9 role "${assignment.role}"`,
+            );
+          }
+          return mergeByIdMutation('workers', assignment.workerId, {
+            workerId: assignment.workerId,
+            role: assignment.role,
+            executor: 'harness',
+            status: 'pending',
+            ...(assignment.subtaskId === undefined ? {} : { subtaskId: assignment.subtaskId }),
+            sessionId: `session:${assignment.workerId}`,
+            startedTs: dispatchTs,
+          });
+        })
+      : [];
   return {
-    ...decision,
-    mutations: [...mutations, appendMutation('messages', ledgerMessage)],
+    route,
+    mutations: [...mutations, appendMutation('messages', ledgerMessage), ...workerMutations],
+    ...(decision.completionCandidate === undefined
+      ? {}
+      : { completionCandidate: decision.completionCandidate }),
+    ...(decision.requestSatisfied === undefined
+      ? {}
+      : { requestSatisfied: decision.requestSatisfied }),
+  };
+}
+
+function materializeRoute(route: DraftRoute, dispatchId: string): Route {
+  if (route.kind !== 'worker') return route;
+  const assignments = route.batch.map(
+    (assignment, index): Assignment => ({
+      workerId: `worker:${dispatchId}:${index}`,
+      role: assignment.role,
+      ...(assignment.subtaskId === undefined ? {} : { subtaskId: assignment.subtaskId }),
+    }),
+  );
+  const first = assignments[0];
+  if (first === undefined) throw new Error('worker route batch must be non-empty');
+  if (assignments.length === 1) return { kind: 'worker', batch: [first], parallel: false };
+  const second = assignments[1];
+  if (second === undefined) throw new Error('parallel worker route requires at least two workers');
+  return {
+    kind: 'worker',
+    batch: [first, second, ...assignments.slice(2)],
+    parallel: true,
   };
 }
 
@@ -381,7 +486,7 @@ function dispatchFromClarifying(
   state: AppState,
   clock: Clock,
   roster: readonly RoleSpec[] | undefined,
-): CoordinatorDecision {
+): DraftCoordinatorDecision {
   // Spec §3 Tier 0: 直接 CODER→TESTER 小环，跳过 PM/ARCH — even when rostered;
   // REVIEWER stays roster-gated downstream (task 4.2 ruling ①).
   if (tierOf(state) === 0) {
@@ -409,7 +514,7 @@ function announce(clock: Clock, payload: Record<string, unknown>, display: strin
   };
 }
 
-function dispatchPM(state: AppState, clock: Clock): CoordinatorDecision {
+function dispatchPM(state: AppState, clock: Clock): DraftCoordinatorDecision {
   const escalation = ifIterationLimit(state, clock);
   if (escalation !== undefined) return escalation;
   return {
@@ -425,7 +530,7 @@ function dispatchPM(state: AppState, clock: Clock): CoordinatorDecision {
   };
 }
 
-function dispatchArchitect(state: AppState, clock: Clock): CoordinatorDecision {
+function dispatchArchitect(state: AppState, clock: Clock): DraftCoordinatorDecision {
   return {
     route: { kind: 'worker', batch: [{ role: 'ARCHITECT' }], parallel: false },
     mutations: [
@@ -448,7 +553,7 @@ function dispatchCoder(
   clock: Clock,
   display: string,
   announceExtra: Record<string, unknown> = {},
-): CoordinatorDecision {
+): DraftCoordinatorDecision {
   const subtaskId = subtaskIdAt(state, 0);
   const subtask: Subtask = {
     id: subtaskId,
@@ -487,7 +592,7 @@ function modulesOf(state: AppState): string[] {
   );
 }
 
-function dispatchTier2Coder(state: AppState, clock: Clock): CoordinatorDecision {
+function dispatchTier2Coder(state: AppState, clock: Clock): DraftCoordinatorDecision {
   const modules = modulesOf(state);
   if (modules.length < 2) {
     return dispatchCoder(state, clock, `Tier 2 无多模块拆分依据，退化为单 subtask：${state.goal}`, {
@@ -531,7 +636,7 @@ function dispatchTier2Coder(state: AppState, clock: Clock): CoordinatorDecision 
   };
 }
 
-function dispatchAfterPlanning(state: AppState, clock: Clock): CoordinatorDecision {
+function dispatchAfterPlanning(state: AppState, clock: Clock): DraftCoordinatorDecision {
   if (!evaluateRouteWhen(state, 'designReady')) {
     throw new Error('phase "planning" requires architecture written by ARCHITECT via mutations');
   }
@@ -552,7 +657,7 @@ function activeCoderSubtaskId(state: AppState): string {
   return subtask.id;
 }
 
-function advanceToTesting(state: AppState): CoordinatorDecision {
+function advanceToTesting(state: AppState): DraftCoordinatorDecision {
   const subtaskId = activeCoderSubtaskId(state);
   return {
     route: { kind: 'worker', batch: [{ role: 'TESTER', subtaskId }], parallel: false },
@@ -576,7 +681,7 @@ function escalationMessage(state: AppState, clock: Clock): Message {
   };
 }
 
-function ifIterationLimit(state: AppState, clock: Clock): CoordinatorDecision | undefined {
+function ifIterationLimit(state: AppState, clock: Clock): DraftCoordinatorDecision | undefined {
   if (state.iterationCount < MAX_ITERATIONS) return undefined;
   const message = escalationMessage(state, clock);
   return {
@@ -623,7 +728,7 @@ function evaluateTestResults(
   state: AppState,
   clock: Clock,
   roster: readonly RoleSpec[] | undefined,
-): CoordinatorDecision {
+): DraftCoordinatorDecision {
   if (state.testResults === undefined) {
     throw new Error('phase "testing" requires testResults written by TESTER via mutations');
   }
@@ -809,7 +914,7 @@ function evaluateReview(
   state: AppState,
   clock: Clock,
   roster: readonly RoleSpec[] | undefined,
-): CoordinatorDecision {
+): DraftCoordinatorDecision {
   const reviewEntries = currentReviewEntries(state);
   const verdictEntries = reviewEntries.filter((entry) => entry.kind === 'verdict');
   if (verdictEntries.length !== 1) {

@@ -47,7 +47,9 @@ export async function runOrchestration(
     const route = decision.route;
     switch (route.kind) {
       case 'worker':
-        state = await deps.workerRuntime.runOne(state, route.batch[0]);
+        state = route.parallel
+          ? await deps.workerRuntime.runParallel(state, route.batch)
+          : await deps.workerRuntime.runOne(state, route.batch[0]);
         break;
       case 'finalize':
         state = await transition(state, [setMutation('phase', 'done')]);

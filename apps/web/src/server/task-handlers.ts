@@ -1,9 +1,5 @@
 import { jsonError, readJsonObject, requiredString } from './http';
-import {
-  TaskCapacityConflictError,
-  TaskGoalConflictError,
-  type TaskOrchestrationRuntime,
-} from './task-orchestration-runtime';
+import { TaskGoalConflictError, type TaskOrchestrationRuntime } from './task-orchestration-runtime';
 
 export function createPostTask(runtime: TaskOrchestrationRuntime) {
   return async function postTask(request: Request): Promise<Response> {
@@ -19,7 +15,7 @@ export function createPostTask(runtime: TaskOrchestrationRuntime) {
       const result = await runtime.start({ projectId, taskId, requestId, goal });
       return Response.json(result, { status: result.startOutcome === 'started' ? 202 : 200 });
     } catch (error) {
-      if (error instanceof TaskGoalConflictError || error instanceof TaskCapacityConflictError) {
+      if (error instanceof TaskGoalConflictError) {
         return jsonError(error.message, 409);
       }
       throw error;

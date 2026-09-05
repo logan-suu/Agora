@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-05T18:00:29.000Z",
+  "last_updated": "2026-09-05T21:07:03.000Z",
   "current_phase": 9,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -53,7 +53,7 @@
     },
     {
       "id": "D10",
-      "rule": "Phase 5 新任务创建/启动是生命周期操作；单实例组合根复用既有 runOrchestration/Harness/沙箱且全实例最多一个活动 run，GlobalScheduler/多任务并行不抢跑 Phase 9。Coordinator/Worker 进展先持久化 State 再经 MessageBus→SSE；终态产物归档到任务 .data/artifacts 并持久化引用后释放 Harness/MCP/Git/Docker，刷新不依赖活容器；活动 run 重启自动恢复延期，静态消息不得充当 Web 真实闭环证据",
+      "rule": "Phase 5 新任务创建/启动是生命周期操作；单实例组合根复用既有 runOrchestration/Harness/沙箱。Phase 5–8 全实例最多一个活动 run；D17/Phase 9 起不同 task 可同时 running，但所有生产组合共享唯一 GlobalScheduler lease，相同 scope 幂等且不同 goal 冲突。Coordinator/Worker 进展先持久化 State 再经 MessageBus→SSE；终态产物归档到任务 .data/artifacts 并持久化引用后释放 Harness/MCP/Git/Docker，刷新不依赖活容器；活动 run 重启自动恢复延期，静态消息不得充当 Web 真实闭环证据",
       "source": "docs/项目蓝图.md §10/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§9；docs/开发计划安排.md §8/§17"
     },
     {
@@ -85,6 +85,11 @@
       "id": "D16",
       "rule": "TESTER pass 与 REVIEWER approved 只形成 completionCandidate；Coordinator 只接受当前 REVIEWER dispatch 后恰一个、满足 [A-Za-z0-9][A-Za-z0-9._:-]* 且未跨轮复用的 verdict id，并打开 D4 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion 或 request_changes，并原子写 canonical Leader Message、最高权威 task-completion-resolution:<actionId> Decision、D4 receipt 与清 gate。真 Fork resume 后重读并交叉验证 Message/Decision/receipt/current review：approve 才置 isRequestSatisfied=true 并 finalize；request_changes 保持 false、保守重开工作并回 CODER；任何漂移或冲突 fail-closed。正常阶段推进不逐段审批，被动 gate 只用于确定性阻塞与最终完成终审",
       "source": "docs/项目蓝图.md §9/§14/§21；docs/详细设计方案.md §3/§5/§11；docs/系统架构设计文档.md §4.2/§5/§9；docs/开发计划安排.md §11"
+    },
+    {
+      "id": "D17",
+      "rule": "Phase 9 真并行使用 GlobalScheduler 稳定 lease 作为跨项目唯一并行额度（默认 cap=3、按项目轮转排队）；runParallel 处理全部合法 assignment，不 slice 丢尾部。assignment 以稳定 workerId 标识，同 role 可并行多个独立薄 HarnessExecutor/Context/Agent/session；锁定版本 one-shot ctx.subagents.start 不作为顶层 worker，worktree 由 9.3 按 workerId 绑定。模型/工具调用并行，但 step 输出处理与 TaskStateStore 写入进入 per-task canonical commit queue：重读最新 State、校验 roster/依赖/assignment/写所有权后原子提交。并行 worker 只可 append 稳定身份事实或 merge 自己的 worker/subtask 分区，禁止全局 set/他人分区/collaboration 写入。join 等全部已启动 worker settled 和提交队列排空后 reload canonical State；失败不硬杀同批 LLM、不回滚成功事实，聚合后 fail-closed；禁止 mergeStates(AppState[]) 与 Promise.all fail-fast 猜最终状态",
+      "source": "docs/项目蓝图.md §13/§21；docs/详细设计方案.md §1/§3/§4/§6/§8；docs/系统架构设计文档.md §4.1/§5/§9；docs/开发计划安排.md §12"
     },
     {
       "id": "C4",
@@ -1148,74 +1153,90 @@
       "name": "真并行升级（异步 worker 池 + 抢占 + worktree 集成，1.5 周）",
       "status": "in_progress",
       "integration_test": "9.5",
-      "exit_criteria": "真正并行的团队协作：多人同时干活且状态一致",
+      "exit_criteria": "真正并行且可控的团队协作：全局 cap/fair lease、完整 batch、canonical State join、同 role 独立 worktree、全局安全点抢占与集成冲突升级均有真实证据",
       "tasks": [
         {
           "id": "9.1",
-          "title": "WorkerRuntime.runParallel 有界并行池",
+          "title": "GlobalScheduler lease + WorkerRuntime.runParallel 有界并行池",
           "story": null,
-          "status": "ready",
-          "last_updated": "2026-09-05T18:00:29.000Z",
+          "status": "in_progress",
+          "last_updated": "2026-09-05T21:07:03.000Z",
           "documents_required": [
-            "docs/详细设计方案.md §4"
+            "docs/项目蓝图.md §13/§21（D17）",
+            "docs/详细设计方案.md §1/§3/§4/§8",
+            "docs/系统架构设计文档.md §4.1/§5/§9",
+            "docs/开发计划安排.md §12"
           ],
           "dependencies": [
             "8.5"
           ],
-          "test_file": null,
-          "notes": "core/orchestration/worker-runtime.ts。Promise.all 并发上限默认 3（maxParallel）；batch.slice(0, maxParallel)；结果经合并函数归并各 worker mutations。各 worker 独立进程内 Harness context/session + 独立隔离目录/worktree。"
+          "test_file": "packages/core/orchestration/test/global-scheduler.test.ts + packages/core/orchestration/test/worker-runtime.test.ts + tests/integration/phase9/phase9-worker-pool.test.ts",
+          "notes": "[2026-09-05 规格评审·Leader 授权] 旧规格不合理：batch.slice 会静默丢任务，mergeStates 无契约，Promise.all fail-fast 会在其他 LLM 仍运行时提前返回，GlobalScheduler 与本地 maxParallel 双重控额，且未限制并行 set/同实体多写者。D17 改为：GlobalScheduler 稳定 lease 是跨项目唯一额度、按项目轮转；runParallel 处理完整 batch；稳定 workerId + 独立薄 Harness Executor/session；模型/工具并行、step 输出与 State commit 经 per-task canonical queue 串行；只允许稳定 append/自身 worker/subtask merge；all-settled 后 reload canonical State。9.1 不做文件写真并行，workerId worktree 留 9.3。\n[2026-09-05 /agora-do-task] Leader 确认 D17 并授权启动 9.1；依赖 8.5=done、Phase 8 出口完成、current_phase=9，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；实现计划再次确认前不写测试或生产代码。\n[2026-09-05 Explore] 代码接缝确认：现有 runParallel 是顺序 fold；Assignment 无 workerId、Route 固定单元素；AppState 尚无 workers，reducer 的 workers 写入仍禁用；Web TaskStateStore 已按 task 串行 commit，但 WorkerRuntime 尚无 canonical load/join；TaskOrchestrationRuntime 仍有 Phase 5 全实例单 run 容量闸。规格范围校准：Route 形状和稳定身份归 9.1，9.4 只消费该接口生成拓扑波次。未发现需新增依赖或修改冻结 L3 签名的阻塞项。\n[2026-09-05 Code+Check+Verify] 按 Leader 确认的 D17 完成 TDD 落码：新增跨项目按项目轮转的 GlobalScheduler 稳定 lease（默认全局 cap=3）；WorkerRuntime 以完整有界队列执行 batch，每个 worker 独立薄 Harness Executor/session，并经 per-task canonical commit queue reload/join State。AppState/reducer/JSON store 落地 WorkerState 及旧快照迁移；Coordinator 持久化稳定 workerId 并恢复同一 dispatch；Web 组合根共享唯一 scheduler，D17 自 Phase 9 取代 D10 的全实例单 run 闸。所有并行 set、越区 merge、同 ID 异内容和依赖漂移均 fail-closed；fail-fast 仍等已启动 siblings 收敛，未启动尾部显式标记。D17/D10 已按蓝图→详细设计→系统架构/技术选型→开发计划/task-status→AGENTS 同步，无新增依赖或延期项。G5 tests/integration/phase9/phase9-worker-pool.test.ts 使用真实 JsonTaskStateStore 与真实 HarnessExecutor/Context/Agent loop，5 个 assignment 在本地 cap=2/全局 cap=3 下全部执行，实测峰值=2，5 个独立 executor/session 与最终 canonical State 均持久化；唯一 test double 是文件头声明的外部计费 LLM 文本适配器。门禁：typecheck 0 错；Biome 258 files 0 违规；原样 pnpm test 97 files/813 tests 全绿，包含 DockerSandbox 16/16、Web Docker/Harness/MCP 真实链及 live DeepSeek LRU 端到端；tracking JSON/git diff 检查通过。G7 gitleaks 对当前 diff 与新增文件扫描无泄漏；全仓扫描的 18 条既有候选均位于已忽略的 apps/web/.next 生成缓存。任务保持 in_progress，待 $agora-commit 交付。\n[2026-09-05 /agora-commit·门禁] 分支 feat/phase9-worker-pool（base=dev-1.0.0，开工时 0 ahead/0 behind）；typecheck 0 错；Biome 258 files 0 违规；9.1 专属真实 worker-pool 链 1/1；原样 pnpm test 97 files/813 tests 全绿，包含 live DeepSeek LRU、Web Docker/Harness/MCP 和 DockerSandbox 16/16；tracking JSON、git diff 及当前 diff/新增文件 gitleaks 检查通过。任务保持 in_progress，禁止 Agent 自动合并。"
         },
         {
           "id": "9.2",
           "title": "配合式抢占完整实现",
           "story": null,
           "status": "pending",
+          "last_updated": "2026-09-05T19:51:18.000Z",
           "documents_required": [
-            "docs/详细设计方案.md §4",
+            "docs/项目蓝图.md §13/§14/§21（D4/D17）",
+            "docs/详细设计方案.md §4/§8",
+            "docs/系统架构设计文档.md §4.2/§9",
             "docs/框架调研与借鉴决策.md 模式⑦"
           ],
           "dependencies": [
             "9.1"
           ],
-          "test_file": null,
-          "notes": "requestPause 广播暂停标志→各薄 worker 在 agent/turn-stopping 通过 steering 反对关轮、跑到 step 边界（安全点=step/end）停下并存事件游标→协调层改写 State→inbox.inject 新投影→resume。绝不硬杀 LLM 造成半截状态；代价秒级延迟换一致性。"
+          "test_file": "packages/core/preemption/test/preemptor.test.ts + tests/integration/phase9/phase9-preemption.test.ts",
+          "notes": "D4+D17：requestPause 广播后，各薄 worker 跑到 step/end、先经 canonical queue 提交当前 Step，再 flush checkpoint；所有目标 composition suspend 收尾后才幂等释放 scheduler lease。协调层串行改写 State，resume 重新排队取得新 lease、inject 最新投影，旧 lease 不跨 Fork 复用。失败不得硬杀 token/tool 流。"
         },
         {
           "id": "9.3",
           "title": "worktree 隔离 + 集成检查点",
           "story": null,
           "status": "pending",
+          "last_updated": "2026-09-05T19:51:18.000Z",
           "documents_required": [
-            "docs/详细设计方案.md §4/§6"
+            "docs/项目蓝图.md §13/§21（D17）",
+            "docs/详细设计方案.md §4/§6",
+            "docs/系统架构设计文档.md §5.2",
+            "docs/技术选型文档.md §8",
+            "docs/deferred-items.json（DEF-004/010）"
           ],
           "dependencies": [
             "9.1"
           ],
-          "test_file": null,
-          "notes": "createWorktree(taskId, role) 分支隔离；coordinator 派并行批前按 subtask.dependsOn 拓扑排序只并行无未满足依赖者；integrate 节点按 pendingBranches 顺序合并（simple-git merge），冲突→integration.conflicts→默认升级 leader。"
+          "test_file": "packages/tools/git/test/git-service.test.ts + tests/integration/phase9/phase9-worktree-integration.test.ts",
+          "notes": "R9 保持 createWorktree(taskId,string) 签名，Phase 9 第二参数传稳定 workerId，不以 role 命名，保证同 role 多 worker 独立目录/分支。integrate 按拓扑波次与 workerId 稳定顺序 merge，冲突→integration.conflicts→Leader。评估 DEF-004 并发隔离条件；以 worktree 引用为真相，9.3 应移除无消费者 pendingPatch 或给出新的明确处置，禁止继续悬空。"
         },
         {
           "id": "9.4",
           "title": "端到端并行任务验证",
           "story": null,
           "status": "pending",
+          "last_updated": "2026-09-05T19:51:18.000Z",
           "documents_required": [
+            "docs/项目蓝图.md §9/§13/§21（D16/D17）",
+            "docs/详细设计方案.md §3/§4/§11",
             "docs/开发计划安排.md §12",
-            "docs/详细设计方案.md §11"
+            "docs/deferred-items.json（DEF-013）"
           ],
           "dependencies": [
             "9.2",
             "9.3"
           ],
-          "test_file": null,
-          "notes": "多 Coder 并行子任务 + Tester 并行准备 + 集成合并全流程；前端呈现「多人同时干活」。"
+          "test_file": "tests/integration/phase9/phase9-parallel-flow.test.ts",
+          "notes": "接入 Coordinator 拓扑波次：只激活 dependsOn 已满足的全部就绪 subtask；多 CODER + 可选 TESTER preparation 并行，preparation 不写全局 testResults；集成成功后由单一 TESTER 在集成 worktree 写权威 testResults，通过才闭合该波次并激活下一波。完成多 Coder→集成→Tester→Reviewer→D16 Leader 终审真实链，前端呈现并行泳道；按 subtask review refs 处置 DEF-013。"
         },
         {
           "id": "9.5",
           "title": "Phase 9 出口集成测试",
           "story": null,
           "status": "pending",
+          "last_updated": "2026-09-05T19:51:18.000Z",
           "documents_required": [
+            "docs/项目蓝图.md §13/§21（D17）",
             "docs/开发计划安排.md §12",
             "docs/详细设计方案.md §11"
           ],
@@ -1223,7 +1244,7 @@
             "9.4"
           ],
           "test_file": "tests/integration/phase9/phase9-exit.test.ts",
-          "notes": "并行一致性（reducer 交换幂等实测）+ 抢占安全点无撕裂 + 合并冲突升级路径回归。固定任务/模型/预算比较串行、并发 2、并发 3，记录成功率、时延、token/费用、冲突、返工与资源峰值；追加未满足依赖不得激活、worktree 冲突升级与 mutation 幂等 Eval。"
+          "notes": "D17 出口矩阵：完整 batch 不丢任务；全局 cap=3 与跨项目轮转公平；稳定 lease 完成/失败/suspend 幂等释放；all-settled 不提前返回；canonical State join；并行 mutation 所有权拒绝 set/越区写；未满足依赖不得激活；同 role worktree 隔离；抢占安全点无撕裂；合并冲突升级。固定任务/模型/预算比较串行、并发 2、并发 3，记录成功率、时延、token/费用、冲突、返工与资源峰值；阶段出口逐条处置 DEF-004/010/013。"
         }
       ]
     },

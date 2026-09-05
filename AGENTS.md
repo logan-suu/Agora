@@ -1,6 +1,6 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.1
+**版本**：v2.2
 **生效日期**：2026-09-05
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
@@ -33,17 +33,17 @@
 | 任务类型 | 应读取的文档 | 重点章节 |
 |---|---|---|
 | 初次启动/建立全局认知 | 本文件 + `task-status.json` + 蓝图 §21 | 全文阅读，建立决策与进度地图 |
-| State/reducer/schema/合并函数 | 详细设计 §1 + 架构 §5 | Mutation 三 op 交换律幂等性 |
+| State/reducer/schema/合并函数 | 详细设计 §1 + 架构 §5 | D17 并行 mutation 身份分区；set 仅串行控制面 |
 | 角色 prompt/RoleSpec/权限矩阵 | 详细设计 §2 | 六角色规格 + 工具白名单矩阵 |
 | 编排主循环/coordinator 路由 | 详细设计 §3 + 蓝图 §9 | 4 通用节点 + 条件路由 + 反馈升级 |
 | 复杂度 Tier/进度台账 | 详细设计 §3 + 框架调研 模式③ | Tier 0/1/2 + Ledger 双循环改造版 |
-| worker 生命周期/配合式抢占 | 详细设计 §4 + 架构 §4.2 + 框架调研 模式⑦ | 安全点 = step/end；interrupt 语义 |
+| worker 生命周期/配合式抢占 | 详细设计 §4 + 架构 §4.2 + 框架调研 模式⑦ | D17 lease/canonical join；安全点 = step/end |
 | Channel/消息总线/threadId/intent | 详细设计 §5 + 蓝图 §11 | 单一 Channel 原语 + leader 恒在不变量 |
 | Executor/HarnessExecutor 接入 | 详细设计 §0/§6 + 选型 §4 + 框架调研 §1 | 四扩展点映射 + pre-step 覆写（决策 D1） |
 | MCP 工具 server | 详细设计 §6 + 选型 §6 | fs/test/git/lint/sandbox 五类接口签名 |
 | 沙箱（LocalTemp/Docker/worktree） | 详细设计 §6 + 选型 §7/§8 + 架构 §7.3 | SandboxManager 接口 + 决策 D5 |
 | 投影/压缩/三铁律/sliceKB | 详细设计 §7 + 蓝图 §8 | 三条投影铁律 + 存储与上下文分离 |
-| Project/KB/Librarian/GlobalScheduler/收件箱 | 详细设计 §8 + 蓝图 §20 | 独立世界隔离 + D4 持久 suspend/resume + Phase 9 全局槽位 |
+| Project/KB/Librarian/GlobalScheduler/收件箱 | 详细设计 §8 + 蓝图 §20 | D17 全局 lease 公平队列 + D4 suspend/resume |
 | humanGate/异议双轨/权威级别 | 详细设计 §1/§3/§5/§6/§8/§11 + 蓝图 §9/§14/§21 + 架构 §4.2/§5/§9 + 选型 §4.1/§10 | D4 持久 suspend/Leader resolve/真 Fork resume + D14 不可变异议事实/确定性分轨 + D16 REVIEWER 候选→Leader 完成终审 |
 | 热插拔/招募离职交接 | 蓝图 §12 + 详细设计 §2/§5/§7 | D12 项目成员生命周期 + D13 任务入职接手；Coordinator 不可删 + 先 drain 再交接 |
 | 前端群聊 UI/SSE | 选型 §9 + 蓝图 §10 | display/payload 分离 + 展示层与 context 层解耦 |
@@ -107,7 +107,7 @@ deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数
 ## 2. 硬红线（NEVER，违反必被拒绝）
 
 ```
-R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），op 必须可交换、幂等；禁止直接赋值共享 State。项目级 roster/Channel 按 D12 只经 ProjectCollaborationStore revision CAS 原子提交，不复制进 AppState
+R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），禁止直接赋值共享 State。D17 下并行 worker 只可提交具稳定身份的 append 或 merge 自己 workerId/subtaskId 分区；这些合法并行 op 必须可交换、幂等。set、他人分区与 collaboration 写入禁止由并行 worker 提交，只能走任务串行控制面或 D12 ProjectCollaborationStore revision CAS；禁止合并多个完整 AppState 快照
 R2  上下文只经投影切片喂给 agent，永不投原始群聊 log；display（给人看）与 payload（给 agent 用）严格分离
 R3  leader 是唯一裁决者：不做 agent 间自动共识/投票；blocking 异议必须升级 humanGate 由人拍板；[2026-09-05 架构决策更新] TESTER pass/REVIEWER approved 只形成 completionCandidate，必须经 D16 completion_confirmation gate 的 Leader 终审后才允许 isRequestSatisfied=true/finalize
 R4  配合式抢占只能在安全点（step/end）打断，绝不硬杀 LLM token 流；humanGate 按 D4 执行持久 suspend→Leader resolve→全新 context 真 Fork resume，checkpoint 未 flush/未闭合时 fail-closed，不做内存动态挂起
@@ -129,7 +129,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 ```
 语言/运行时   TypeScript 5.9+ / Node.js 24 LTS（宿主；Docker 用户代码沙箱仍为 node:20-slim）
 包管理        pnpm 9 workspaces（catalog 统一版本）
-单 Agent 内核 DeepSeek Harness v0.1（loop 可替换/事件溯源/Turn-Step 两层/inbox steering/ctx.subagents/ctx.compaction）
+单 Agent 内核 DeepSeek Harness v0.1（loop 可替换/事件溯源/Turn-Step 两层/inbox steering/ctx.agents/ctx.compaction；one-shot ctx.subagents 不作顶层 worker）
 编排          自研轻量层（4 通用节点 + coordinator 条件路由，~500-800 行）
 工具协议      MCP TS SDK v1（@modelcontextprotocol/sdk 1.30.0，锁定）
 沙箱          Phase 0: LocalTempSandbox(fs.mkdtempSync + child_process.spawn)；Phase 1+: Docker(dockerode ^4)
@@ -228,13 +228,13 @@ L4 基础设施层   runtime/executor/harness-executor.ts   薄执行器（P0-P9
 Harness 边界（薄执行器职责，详见详细设计 §0/§6）：
 
 ```
-- 构建与作用域骑 ctx.subagents.start（inheritsParentContext=false + toolFilter/persona/outputSchema/depthLimit 映射 RoleSpec）
-- 逐步驱动自行回 runStep（subagent.start 是 one-shot 取向，不合 per-step 安全点）
+- D17 顶层 worker：每个稳定 workerId 由既有 HarnessExecutor 工厂创建独立 Context/Agent/session；复用 ctx.agents.create + followup/whenIdle，不自研 loop
+- ctx.subagents.start 的锁定 spawn provider 是 one-shot，只可作 worker 内一次性委派；禁止冒充可逐 turn、可 D4 suspend/Fork 的顶层 worker
 - agent/pre-step：直接覆写 messages 数组为 project(state, role) 返回值（决策 D1）
 - agent/request：按 RoleSpec.model 路由模型
 - agent/turn-stopping：配合式抢占落点（steering 反对关轮 → step 边界停）
 - ctx.compaction：单 agent 历史压缩委托 Harness，不自研；压缩伪历史属预期行为
-- 隔离两层互补：subagent 进程内上下文隔离 ≠ 文件隔离（后者归沙箱）
+- 隔离两层互补：独立 Harness Context/session 是进程内隔离，workerId worktree 是文件隔离；二者都受 GlobalScheduler lease 约束
 ```
 
 命名约定：
@@ -296,11 +296,11 @@ humanGate   决策 D4：已提交 step/end 边界→flush session 后一次持�
             Phase 8 只落回合制单任务与本地容量释放，Phase 9 再接 GlobalScheduler/多 worker 抢占
 KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简硬编码默认值，不依赖向量检索；
             启用写入需双重门控：①相关任务测试全绿 ②Leader 显式 /approve-kb——否则蒸馏结果直接丢弃
-写所有权    结构化切片只读投影，agent 只写自己私有区——消除写-写冲突靠构造（WO）
+写所有权    结构化切片只读投影；D17 并行 worker 只写稳定 append + 自己 worker/subtask 分区，set 归串行控制面（WO）
 裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；contradiction=blocking 经绑定 gate 的 D4 裁决，concern/advisory 继续并可直接裁决；每次裁决原子写规范 Leader 消息+最高权威 resolution Decision，accept blocking 必须撤回目标；Decision.supersedes 只允许同 topic 的 current Decision；未决视图与重放交叉验证全部后置事实；所有角色通过结构化 objectionResolutions 系统切片取得已验证裁决，不读原始 Leader 消息；语义拿不准由上游声明 concern
 完成终审    D16：TESTER pass + REVIEWER approved 仅形成 completionCandidate；Coordinator 只接受当前 REVIEWER dispatch 后恰一个、满足 `[A-Za-z0-9][A-Za-z0-9._:-]*` 且未跨轮复用的 verdict id，并打开 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion/request_changes；真 Fork resume 后交叉验证 canonical Message/Decision/receipt/current review，approve 才置 isRequestSatisfied=true 并 finalize，request_changes 保持 false、保守回 CODER；正常阶段不逐段审批
 Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复制进 State/Message/MessageBus；对人 DTO 仅含 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 prompt/projection/reasoning/arguments/results；child 只投 seed 后 native 事件且 parent 图无环；官方格式读取后仍校验跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；响应有界、截断显式
-并行度      上限 3 worker 同时跑；subtask.dependsOn 拓扑排序，依赖未满足不激活
+并行度      D17：GlobalScheduler lease 是跨项目唯一额度，默认全局 cap=3、按项目轮转；runParallel 处理完整 batch，all-settled 后 reload canonical State；subtask.dependsOn 未满足不激活
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
@@ -309,7 +309,7 @@ Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复�
             Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga 与 /role onboard 单 Task State 接手；Phase 8 解锁绑定 gateId 的 /resolve-gate，并以 resolution receipt 支撑清 gate 后恢复；Phase 9 解锁完整抢占，
             其余能力显式 rejected/deferred，不走临时 command 旁路
 Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
-            全实例最多一个活动 run；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
+            Phase 5–8 全实例最多一个活动 run；D17/Phase 9 起不同 task 可并发登记，但所有 WorkerRuntime 共享唯一 GlobalScheduler lease；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
             刷新不依赖活容器，静态消息不得充当真实闭环证据
 工程评测    D11：Phase 6 起渐进式 Eval；复用成熟 Coding Agent Benchmark 的任务/环境/Outcome Grader，自建 Agora 的
             Process/Efficiency/Safety Grader；核心 check fail-closed，pass 只来自实际证据；结果 provisional→cleanup→final，
@@ -495,7 +495,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D16/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D17/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 

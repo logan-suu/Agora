@@ -74,7 +74,10 @@ describe('D12 G5 collaboration-to-Harness chain', () => {
       },
     });
     try {
-      const final = await worker.runOne(assigned.state, { role: 'RELEASE_MANAGER' });
+      const final = await worker.runOne(assigned.state, {
+        workerId: 'worker:project-roster:release-manager',
+        role: 'RELEASE_MANAGER',
+      });
       expect(final.messages.at(-1)).toMatchObject({
         fromRole: 'RELEASE_MANAGER',
         display: 'Release plan ready.',

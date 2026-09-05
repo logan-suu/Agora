@@ -13,6 +13,7 @@ import type {
   Requirement,
   Subtask,
   TestResults,
+  WorkerState,
 } from './state';
 
 export const APPEND_FIELDS = [
@@ -48,7 +49,11 @@ export const ENABLED_APPEND_FIELDS: readonly AppendField[] = [
   'handoffPackets',
   'reviewComments',
 ];
-export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = ['subtasks', 'requirements'];
+export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = [
+  'workers',
+  'subtasks',
+  'requirements',
+];
 export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'testResults',
   'phase',
@@ -208,6 +213,25 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
 function applyMergeById(state: AppState, field: MergeByIdField, value: { id: string }): AppState {
   if (isNotEnabled(field, ENABLED_MERGE_BY_ID_FIELDS)) throw disabledFieldError(field);
   switch (field) {
+    case 'workers': {
+      const index = state.workers.findIndex((item) => item.workerId === value.id);
+      const patch = value as Record<string, unknown>;
+      if (patch.workerId !== undefined && patch.workerId !== value.id) {
+        throw new Error(`worker identity must match merge id "${value.id}"`);
+      }
+      if (index < 0) {
+        const worker = workerStateOf({ ...patch, workerId: value.id });
+        return { ...state, workers: [...state.workers, worker] };
+      }
+      const existing = state.workers[index];
+      if (existing === undefined) {
+        throw new Error(`worker "${value.id}" disappeared during merge`);
+      }
+      const worker = workerStateOf({ ...existing, ...patch, workerId: value.id });
+      const workers = state.workers.slice();
+      workers[index] = worker;
+      return { ...state, workers };
+    }
     case 'subtasks': {
       const index = state.subtasks.findIndex((item) => item.id === value.id);
       if (index < 0) return { ...state, subtasks: [...state.subtasks, value as Subtask] };
@@ -237,6 +261,36 @@ function applyMergeById(state: AppState, field: MergeByIdField, value: { id: str
     default:
       throw new Error(`no writer registered for mergeById field "${field}"`);
   }
+}
+
+function workerStateOf(value: Record<string, unknown>): WorkerState {
+  const statuses: readonly WorkerState['status'][] = [
+    'pending',
+    'running',
+    'paused',
+    'done',
+    'failed',
+  ];
+  if (
+    typeof value.workerId !== 'string' ||
+    value.workerId.length === 0 ||
+    typeof value.role !== 'string' ||
+    value.role.length === 0 ||
+    (value.executor !== 'harness' && value.executor !== 'external') ||
+    typeof value.status !== 'string' ||
+    !statuses.includes(value.status as WorkerState['status']) ||
+    typeof value.startedTs !== 'number' ||
+    !Number.isInteger(value.startedTs) ||
+    value.startedTs < 0 ||
+    (value.subtaskId !== undefined && typeof value.subtaskId !== 'string') ||
+    (value.worktree !== undefined && typeof value.worktree !== 'string') ||
+    (value.sessionId !== undefined && typeof value.sessionId !== 'string') ||
+    (value.safePoint !== undefined && typeof value.safePoint !== 'string')
+  ) {
+    throw new Error('worker must be a complete valid WorkerState');
+  }
+  const { id: _id, ...worker } = value;
+  return worker as unknown as WorkerState;
 }
 
 function applySet(state: AppState, field: SetField, value: unknown): AppState {

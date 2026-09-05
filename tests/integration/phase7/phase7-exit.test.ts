@@ -175,9 +175,15 @@ describe('Phase 7 role-lifecycle exit chain', () => {
       roster: DEFAULT_ROSTER,
       loadRoster: () => runtime.enabledRoleSpecs(scope.projectId),
       buildChannelContext: (state, role) => runtime.workerStepChannelContextFor(state, role),
+      transition: async (_state, mutations) =>
+        (await runtime.commitMutations(scope, mutations)).state,
       transitionStep: async (_state, role, mutations) => {
         const committed = await runtime.commitWorkerStepMutations(scope, role, mutations);
-        commitEvents.push('step-commit');
+        commitEvents.push(
+          mutations.every((mutation) => mutation.field === 'workers')
+            ? 'worker-state-commit'
+            : 'step-commit',
+        );
         return committed.state;
       },
       buildExecutor: (spec) => {
@@ -206,7 +212,11 @@ describe('Phase 7 role-lifecycle exit chain', () => {
     });
 
     try {
-      const running = coderWorker.runOne(initial, { role: 'CODER', subtaskId: 'coding-work' });
+      const running = coderWorker.runOne(initial, {
+        workerId: 'worker:phase7-exit:coder',
+        role: 'CODER',
+        subtaskId: 'coding-work',
+      });
       await coderAdapter.started;
       const post = createPostMessage(runtime);
       const removal = post(
@@ -225,8 +235,10 @@ describe('Phase 7 role-lifecycle exit chain', () => {
       await expect(removed.json()).resolves.toMatchObject({ action: { status: 'applied' } });
       expect(safePointSpy).toHaveBeenCalledTimes(1);
       expect(commitEvents).toEqual([
+        'worker-state-commit',
         'step-commit',
         'safe-point',
+        'worker-state-commit',
         'handoff-commit',
         'departed-commit',
       ]);
@@ -284,6 +296,8 @@ describe('Phase 7 role-lifecycle exit chain', () => {
         roster: [],
         loadRoster: () => restarted.enabledRoleSpecs(scope.projectId),
         buildChannelContext: (state, role) => restarted.channelContextFor(state, role),
+        transition: async (_state, mutations) =>
+          (await restarted.commitMutations(scope, mutations)).state,
         transitionStep: async (_state, role, mutations) =>
           (await restarted.commitWorkerStepMutations(scope, role, mutations)).state,
         buildExecutor: (spec) => {
@@ -293,7 +307,11 @@ describe('Phase 7 role-lifecycle exit chain', () => {
         },
       });
       try {
-        await testerWorker.runOne(persisted, { role: 'TESTER', subtaskId: 'coding-work' });
+        await testerWorker.runOne(persisted, {
+          workerId: 'worker:phase7-exit:tester',
+          role: 'TESTER',
+          subtaskId: 'coding-work',
+        });
       } finally {
         await Promise.all(testerExecutors.map((executor) => executor.dispose()));
       }

@@ -241,6 +241,8 @@ async function forcedHandoffScenario(context: EvalExecutionContext): Promise<Eva
     roster: DEFAULT_ROSTER,
     loadRoster: () => runtime.enabledRoleSpecs(scope.projectId),
     buildChannelContext: (state, role) => runtime.workerStepChannelContextFor(state, role),
+    transition: async (_state, mutations) =>
+      (await runtime.commitMutations(scope, mutations)).state,
     transitionStep: async (_state, role, mutations) => {
       const committed = await runtime.commitWorkerStepMutations(scope, role, mutations);
       events.push('step-commit');
@@ -261,7 +263,11 @@ async function forcedHandoffScenario(context: EvalExecutionContext): Promise<Eva
   });
 
   try {
-    const running = worker.runOne(initial, { role: 'CODER', subtaskId: 'coding-work' });
+    const running = worker.runOne(initial, {
+      workerId: 'worker:phase7-eval:coder',
+      role: 'CODER',
+      subtaskId: 'coding-work',
+    });
     await adapter.started;
     const post = createPostMessage(runtime);
     const removal = postMessage(post, scope, 'remove-coder-eval', '/role remove CODER to TESTER');

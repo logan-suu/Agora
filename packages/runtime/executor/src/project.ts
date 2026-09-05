@@ -76,7 +76,13 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
           state.complexity === undefined
             ? null
             : { tier: state.complexity.tier, signals: { ...state.complexity.signals } },
-        workers: [], // Phase 9 worker registry
+        workers: state.workers.map((worker) => ({
+          workerId: worker.workerId,
+          role: worker.role,
+          status: worker.status,
+          ...(worker.subtaskId === undefined ? {} : { subtaskId: worker.subtaskId }),
+          startedTs: worker.startedTs,
+        })),
         testSummary:
           state.testResults === undefined
             ? null

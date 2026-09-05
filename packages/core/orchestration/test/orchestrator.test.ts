@@ -11,7 +11,7 @@ import {
   setMutation,
 } from '@agora/core-domain';
 import type { Executor, StepResult } from '@agora/runtime-executor';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MAX_ITERATIONS } from '../src/coordinator';
 import type { OrchestrationDeps } from '../src/index';
 import { entry, runOrchestration, WorkerRuntime } from '../src/index';
@@ -135,6 +135,46 @@ function orchestrationWith(coders: FakeExecutor[], testers: FakeExecutor[]): Orc
 }
 
 describe('runOrchestration (Phase 0 fixed loop)', () => {
+  it('dispatches a recovered multi-worker route through runParallel', async () => {
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => new FakeExecutor([]),
+    });
+    const runParallel = vi.spyOn(runtime, 'runParallel').mockImplementation(async (state) => ({
+      ...state,
+      phase: 'done',
+    }));
+    const runOne = vi.spyOn(runtime, 'runOne');
+    const state = applyMutations(createInitialAppState('parallel-route', 'g'), [
+      mergeByIdMutation('workers', 'worker:dispatch:0', {
+        workerId: 'worker:dispatch:0',
+        role: 'CODER',
+        executor: 'harness',
+        status: 'pending',
+        sessionId: 'session:worker:dispatch:0',
+        startedTs: 1,
+      }),
+      mergeByIdMutation('workers', 'worker:dispatch:1', {
+        workerId: 'worker:dispatch:1',
+        role: 'TESTER',
+        executor: 'harness',
+        status: 'pending',
+        sessionId: 'session:worker:dispatch:1',
+        startedTs: 1,
+      }),
+    ]);
+
+    await expect(runOrchestration(state, { workerRuntime: runtime })).resolves.toMatchObject({
+      phase: 'done',
+    });
+    expect(runParallel).toHaveBeenCalledOnce();
+    expect(runParallel.mock.calls[0]?.[1].map((entry) => entry.workerId)).toEqual([
+      'worker:dispatch:0',
+      'worker:dispatch:1',
+    ]);
+    expect(runOne).not.toHaveBeenCalled();
+  });
+
   it('runs the full CODER→TESTER loop, retries once on failure, and finalizes on pass', async () => {
     const deps = orchestrationWith(
       [coderRound(1), coderRound(2)],

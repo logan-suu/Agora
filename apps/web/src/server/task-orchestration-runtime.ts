@@ -64,6 +64,7 @@ export interface TaskComposition {
 export type TaskCompositionFactory = (input: {
   scope: TaskScope;
   goal: string;
+  loadState: () => Promise<AppState | undefined>;
   transition: StateTransition;
   transitionStep?: WorkerStepTransition;
   handleOutput: StepOutputHandler;
@@ -93,16 +94,7 @@ export class TaskGoalConflictError extends Error {
   }
 }
 
-export class TaskCapacityConflictError extends Error {
-  constructor(activeScope: TaskScope) {
-    super(
-      `Phase 5 backend already has an active run for ${activeScope.projectId}/${activeScope.taskId}`,
-    );
-    this.name = 'TaskCapacityConflictError';
-  }
-}
-
-/** Single-instance Phase 5 lifecycle registry required by decision D10. */
+/** Single-instance task lifecycle registry; D17 concurrency is owned by the shared scheduler. */
 export class TaskOrchestrationRuntime {
   readonly #runs = new Map<string, ActiveRun>();
   #lifecycleQueue: Promise<void> = Promise.resolve();
@@ -159,16 +151,12 @@ export class TaskOrchestrationRuntime {
         };
       }
 
-      const activeEntry = [...this.#runs.entries()].find(([, run]) => run.status === 'running');
-      if (activeEntry !== undefined) {
-        throw new TaskCapacityConflictError(scopeFromKey(activeEntry[0]));
-      }
-
       const transition: StateTransition = async (_state, mutations) =>
         (await this.messages.commitMutations(input, mutations)).state;
       const composition = await this.createComposition({
         scope: input,
         goal: input.goal,
+        loadState: () => this.messages.store.load(input),
         transition,
         transitionStep: (_state, role, mutations) =>
           this.messages
@@ -275,17 +263,12 @@ export class TaskOrchestrationRuntime {
         throw new Error('cannot resume while humanGate remains active');
       }
       if (existing?.status === 'running') return;
-      const activeEntry = [...this.#runs.entries()].find(
-        ([key, run]) => key !== scopeKey(scope) && run.status === 'running',
-      );
-      if (activeEntry !== undefined)
-        throw new TaskCapacityConflictError(scopeFromKey(activeEntry[0]));
-
       const transition: StateTransition = async (_state, mutations) =>
         (await this.messages.commitMutations(scope, mutations)).state;
       const composition = await this.createComposition({
         scope,
         goal: state.goal,
+        loadState: () => this.messages.store.load(scope),
         transition,
         transitionStep: (_state, role, mutations) =>
           this.messages
@@ -412,12 +395,6 @@ export class TaskOrchestrationRuntime {
 
 function scopeKey(scope: TaskScope): string {
   return `${scope.projectId}\u0000${scope.taskId}`;
-}
-
-function scopeFromKey(key: string): TaskScope {
-  const [projectId, taskId] = key.split('\u0000');
-  if (projectId === undefined || taskId === undefined) throw new Error('invalid task scope key');
-  return { projectId, taskId };
 }
 
 function errorMessage(error: unknown): string {
