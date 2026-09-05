@@ -308,8 +308,7 @@ function decisionOf(spec: SeedDecisionSpec, index: number, filler: string): Deci
  * - api-shape: d-long-1 superseded by head d-long-2
  * - storage:   d-long-3 → d-long-4 → head d-long-5 (chain of three)
  * - test-runner: head d-long-6 (never superseded)
- * - observability: head d-long-7 whose supersedes points CROSS-topic at
- *   d-long-2 (api-shape) — collapse is topic-scoped, so d-long-2 stays a head.
+ * - observability: independent head d-long-7; D16 forbids cross-topic supersession.
  * - d-agent-1: agent authority — projected leader slice excludes it (3.3).
  */
 const LONG_DECISION_SPECS: readonly SeedDecisionSpec[] = [
@@ -319,7 +318,7 @@ const LONG_DECISION_SPECS: readonly SeedDecisionSpec[] = [
   { id: 'd-long-4', topic: 'storage', supersedes: 'd-long-3' },
   { id: 'd-long-5', topic: 'storage', supersedes: 'd-long-4' },
   { id: 'd-long-6', topic: 'test-runner' },
-  { id: 'd-long-7', topic: 'observability', supersedes: 'd-long-2' },
+  { id: 'd-long-7', topic: 'observability' },
   { id: 'd-agent-1', topic: 'api-shape', authority: 'agent' },
 ];
 
@@ -402,7 +401,7 @@ describe('Phase 3 exit: long conversation (ledger+handoff seeded, scripted LLM, 
 
   it('chain 1: PM projection stays bounded past the threshold — heads keep rationale, superseded entries collapse to tombstones', () => {
     // The loop itself is unaffected by the seeded context weight.
-    expect(final.phase).toBe('done');
+    expect(final.phase).toBe('review');
     expect(final.iterationCount).toBe(1);
 
     const view = firstProjectionOf(adapter, 'PM');
@@ -441,8 +440,8 @@ describe('Phase 3 exit: long conversation (ledger+handoff seeded, scripted LLM, 
         `ruling ${headId} on ${LONG_DECISION_SPECS.find((s) => s.id === headId)?.topic}`,
       );
     }
-    // Topic-scoped collapse: d-long-7's cross-topic supersedes pointer did not
-    // tombstone the api-shape head d-long-2.
+    // Independent topics retain independent heads; producers cannot create a
+    // cross-topic supersession edge under D16.
     expect(slice.find((entry) => entry.id === 'd-long-2')).not.toHaveProperty('supersededBy');
 
     // Leader slice only (task 3.3 ruling): the agent entry is filtered out.
@@ -538,7 +537,7 @@ describe('Phase 3 exit: short conversation control (below threshold stays verbat
   });
 
   it('the PM leaderDecisions slice is a verbatim defensive copy with no tombstones', () => {
-    expect(final.phase).toBe('done');
+    expect(final.phase).toBe('review');
     const view = firstProjectionOf(adapter, 'PM');
     const slice = view.slices.leaderDecisions as Decision[];
     expect(slice).toEqual(SHORT_DECISIONS);

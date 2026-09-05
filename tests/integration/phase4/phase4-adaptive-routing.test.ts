@@ -192,7 +192,8 @@ describe('Phase 4 adaptive routing deterministic real-chain validation', () => {
         roster: runtime.roster,
       });
 
-      expect(final.phase).toBe('done');
+      expect(final.phase).toBe('review');
+      expect(final.humanGate?.reason).toMatch(/^completion_confirmation:/);
       expect(final.complexity).toMatchObject({ tier: 0, signals: { rule: 'tier0.single_entity' } });
       expect(adapter.dispatches).toEqual(['CODER', 'TESTER', 'REVIEWER']);
       expect(final.subtasks).toHaveLength(1);
@@ -226,7 +227,8 @@ describe('Phase 4 adaptive routing deterministic real-chain validation', () => {
         roster: runtime.roster,
       });
 
-      expect(final.phase).toBe('done');
+      expect(final.phase).toBe('review');
+      expect(final.humanGate?.reason).toMatch(/^completion_confirmation:/);
       expect(final.complexity).toMatchObject({ tier: 2, signals: { rule: 'tier2.multi_module' } });
       expect(adapter.dispatches).toEqual([
         'PM',

@@ -562,8 +562,10 @@ describe('Phase 2 exit: six-role happy path (scripted LLM, real MCP fs/git + Loc
     await runtime.dispose();
   });
 
-  it('chain 1: full loop 需求→设计→编码→测试→评审→finalize with all structured state landed', () => {
-    expect(final.phase).toBe('done');
+  it('chain 1: full loop 需求→设计→编码→测试→评审→completion candidate with all structured state landed', () => {
+    // D16 intentionally replaces the historical Phase 2 direct-finalize simplification.
+    expect(final.phase).toBe('review');
+    expect(final.humanGate?.reason).toBe('completion_confirmation:rv-approved');
     // PM requirements (mergeById upsert through the final-text seam).
     expect(final.requirements).toHaveLength(1);
     expect(final.requirements[0]?.id).toBe('req-1');
@@ -590,8 +592,8 @@ describe('Phase 2 exit: six-role happy path (scripted LLM, real MCP fs/git + Loc
     // DEF-010: pendingPatch stayed unset for the whole run — the patch flow
     // travels via worktree refs (branchOrPatch) + git_diff, no State metadata.
     expect(final.pendingPatch).toBeUndefined();
-    // DEF-007: REVIEWER pass → finalize directly (no leader confirmation gate).
-    expect(final.humanGate).toBeUndefined();
+    // D16 replaces the old DEF-007 direct-finalize simplification.
+    expect(final.humanGate?.reason).toBe('completion_confirmation:rv-approved');
   });
 
   it('chain 2: every role ran on the Harness loop; workers quiesced with tool work', () => {
@@ -750,8 +752,9 @@ describe('Phase 2 exit: test-failure loop (coding↔testing 回环)', () => {
     await runtime.dispose();
   });
 
-  it('failed tests feed back to CODER, the fix passes, and the run finalizes at iteration 2', () => {
-    expect(final.phase).toBe('done');
+  it('failed tests feed back to CODER, the fix passes, and the run reaches completion confirmation at iteration 2', () => {
+    expect(final.phase).toBe('review');
+    expect(final.humanGate?.reason).toMatch(/^completion_confirmation:/);
     // PM 提炼一轮 + 测试回环一轮.
     expect(final.iterationCount).toBe(2);
     expect(final.testResults?.passed).toBe(true);
@@ -769,7 +772,7 @@ describe('Phase 2 exit: test-failure loop (coding↔testing 回环)', () => {
   });
 });
 
-describe('Phase 2 exit: review loop (review↔coding 回环, DEF-007 simplification asserted)', () => {
+describe('Phase 2 exit: review loop (review↔coding 回环, D16 candidate asserted)', () => {
   let runtime: Phase2Runtime;
   let final: AppState;
 
@@ -781,8 +784,8 @@ describe('Phase 2 exit: review loop (review↔coding 回环, DEF-007 simplificat
     await runtime.dispose();
   });
 
-  it('changes_requested feeds back to CODER with comments, then approval finalizes at iteration 2', () => {
-    expect(final.phase).toBe('done');
+  it('changes_requested feeds back to CODER with comments, then approval requests Leader confirmation at iteration 2', () => {
+    expect(final.phase).toBe('review');
     // PM 提炼一轮 + 评审回环一轮.
     expect(final.iterationCount).toBe(2);
     // Round 1: one comment + the changes_requested verdict; round 2: approval.
@@ -800,8 +803,8 @@ describe('Phase 2 exit: review loop (review↔coding 回环, DEF-007 simplificat
     expect(feedback).toBeDefined();
     // The revised source actually landed (review round trip is real).
     expect(readFileSync(`${runtime.worktree.path}/math.js`, 'utf8')).toBe(MATH_SOURCE_V2);
-    // DEF-007: approval converges without a leader gate in Phase 2.
-    expect(final.humanGate).toBeUndefined();
+    // D16 closes DEF-007: approval is only a completion candidate.
+    expect(final.humanGate?.reason).toMatch(/^completion_confirmation:/);
   });
 });
 
@@ -821,8 +824,9 @@ describe('Phase 2 exit: feedback escalation reaches informed REVIEWER and ARCHIT
     await runtime.dispose();
   });
 
-  it('runs two failures through root-cause review and architecture redesign to done', () => {
-    expect(final.phase).toBe('done');
+  it('runs two failures through root-cause review and architecture redesign to completion confirmation', () => {
+    expect(final.phase).toBe('review');
+    expect(final.humanGate?.reason).toMatch(/^completion_confirmation:/);
     expect(final.testResults?.passed).toBe(true);
     expect(final.complexity?.signals.escalation).toMatchObject({
       reason: 'reviewer_architecture_issue',

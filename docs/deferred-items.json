@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-09-02T22:24:34.000Z",
+  "last_updated": "2026-09-05T17:05:58.000Z",
   "items": [
     {
       "id": "DEF-001",
@@ -123,10 +123,11 @@
       "item": "Review-pass convergence lacks leader confirmation in Phase 2 (humanGate lands in Phase 8)",
       "detail": "详细设计 §3 convergence rule reads 'test 全过 + review 通过(经 leader 确认)', but humanGate (leader arbitration surface) is a Phase 8 deliverable. User ruled during task 2.2 planning ([2026-08-28]): Phase 2 simplifies convergence to 'REVIEWER pass → finalize' with no leader confirmation step; R3 (leader sole authority) is not violated because no agent auto-consensus replaces a leader ruling — the confirmation semantics simply do not exist yet.",
       "target_phase": 8,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "Codex (task 8.5)",
       "created_at": "2026-08-28T13:31:37.000Z",
-      "notes": "Resolution condition: when humanGate lands in Phase 8, wire REVIEWER-pass convergence through a leader confirmation gate (blocking humanGate per D4 terminate-and-fork) instead of finalizing directly. [2026-08-28 task 2.5] Phase 2 exit tests assert the ruled simplification end-to-end: REVIEWER-approved verdicts finalize directly with humanGate unset (phase2-exit chains 1-3, DEF-007 noted in the review-loop block). Check this entry at the Phase 8 exit gate."
+      "notes": "Resolution condition: when humanGate lands in Phase 8, wire REVIEWER-pass convergence through a leader confirmation gate (blocking humanGate per D4 terminate-and-fork) instead of finalizing directly. [2026-08-28 task 2.5] Phase 2 exit tests assert the ruled simplification end-to-end: REVIEWER-approved verdicts finalize directly with humanGate unset (phase2-exit chains 1-3, DEF-007 noted in the review-loop block). Check this entry at the Phase 8 exit gate. [2026-09-05 Leader approved spec disposition] D16 now defines the closure: REVIEWER approved only creates a completion candidate; task 8.5 must implement a review-bound completion_confirmation D4 gate, canonical Leader completion Decision, approve→finalize and request_changes→CODER resume paths. [2026-09-05 task 8.5 resolved] Coordinator now opens the review-bound completion gate; the D9 resolver atomically records the canonical Leader Message, Decision and receipt; true Fork resume cross-validates those facts before approve→finalize or request_changes→CODER. Evidence: phase8-exit real chain plus completion domain/coordinator/message-flow regressions and cumulative Phase 5 Docker chains.",
+      "resolved_at": "2026-09-05T17:05:58.000Z"
     },
     {
       "id": "DEF-008",
@@ -158,10 +159,11 @@
       "item": "Idempotent re-escalation guard for resumed capped states (no duplicate escalation messages)",
       "detail": "CodeRabbit's merge-risk note: re-running a capped state (e.g. after a leader ruling that clears humanGate but not iterationCount) appends a second escalation message, because escalationMessage() mints a fresh msgId and deduplicatedAppend only dedups identical msgIds. Verified in /pr-review-agora: within a single runOrchestration the human_gate route halts immediately (exactly one escalation per run), and no current call site re-runs a capped state, so nothing duplicates today. The real exposure arrives in Phase 8, where humanGate switches to D4 terminate-and-fork and resumed states become routine.",
       "target_phase": 8,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "Codex (task 8.5)",
       "created_at": "2026-08-28T16:20:00.000Z",
-      "notes": "Resolution condition: when the Phase 8 humanGate body (terminate-and-fork per D4) lands, ensure state re-entry is idempotent end-to-end — either guard ifIterationLimit on 'humanGate already set with the same reason' or rebuild the escalation from the safePoint event cursor instead of re-appending. Check this entry when task 8.x humanGate implementation starts."
+      "notes": "Resolution condition: when the Phase 8 humanGate body (terminate-and-fork per D4) lands, ensure state re-entry is idempotent end-to-end — either guard ifIterationLimit on 'humanGate already set with the same reason' or rebuild the escalation from the safePoint event cursor instead of re-appending. Check this entry when task 8.x humanGate implementation starts. [2026-09-05 spec review] Static inspection indicates the iteration_limit resolver now atomically resets iterationCount to 0 and persisted gate/receipt facts prevent capped-state re-entry, so the original exposure is likely removed. [2026-09-05 task 8.5 resolved] The iteration_limit resolver resets iterationCount to 0 in the same commit that records its receipt and clears the gate. Same-action replay reuses the canonical receipt and does not append another escalation or gate. Evidence: phase8-exit replay case and phase8/iteration-limit-replay deterministic Eval.",
+      "resolved_at": "2026-09-05T17:05:58.000Z"
     },
     {
       "id": "DEF-010",
@@ -192,10 +194,11 @@
       "item": "Write-side legality of cross-topic supersedes (assertSupersedesIsLegal does not check topic equality)",
       "detail": "CodeRabbit flagged that a decision on topic Y may legally supersede a decision on topic X: assertSupersedesIsLegal (core/domain/ledger.ts:58-71) only validates target existence + agent-cannot-supersede-leader, and addDecision's conflict signal filters same-topic entries, so a cross-topic supersedes is constructible through the public API. Read-side impact is already fixed in PR #31 (collapseSupersededDecisions now collapses only in-topic pointers; cross-topic targets keep full fidelity, so projections never hide a topic's only decision text). The write-side question — should cross-topic supersedes be rejected at the ledger boundary — is a new L1 domain rule not defined by spec §1 (which only mandates target-existence + authority checks and explicitly parks conflict-classification logic in Phase 8), so adding it requires a spec ruling per R12, not a silent code change.",
       "target_phase": 8,
-      "status": "open",
-      "resolved_by": null,
+      "status": "resolved",
+      "resolved_by": "Codex (task 8.5)",
       "created_at": "2026-08-29T12:45:00.000Z",
-      "notes": "Resolution condition: when Phase 8 conflict classification lands (spec §1 '同 topic 冲突以原始信号返回，分类逻辑留 Phase 8'), rule whether supersedes must be same-topic and, if so, extend assertSupersedesIsLegal with a topic-equality check + ledger regression tests + an R12 实装记录 in 详细设计方案 §1. Until then the read-side collapse is topic-scoped, which bounds the blast radius to reduced compression (never information loss)."
+      "notes": "Resolution condition: when Phase 8 conflict classification lands (spec §1 '同 topic 冲突以原始信号返回，分类逻辑留 Phase 8'), rule whether supersedes must be same-topic and, if so, extend assertSupersedesIsLegal with a topic-equality check + ledger regression tests + an R12 实装记录 in 详细设计方案 §1. Until then the read-side collapse is topic-scoped, which bounds the blast radius to reduced compression (never information loss). [2026-09-05 Leader approved ruling] supersedes must reference a current Decision with the same topic; cross-topic writes fail-fast. D14 decision-target resolutions already inherit the target topic. [2026-09-05 task 8.5 resolved] assertSupersedesIsLegal now rejects both non-current and cross-topic targets at the L1/reducer boundary; legacy Phase 3 fixtures no longer construct an illegal edge. Ledger and reducer regressions cover both failures.",
+      "resolved_at": "2026-09-05T17:05:58.000Z"
     },
     {
       "id": "DEF-012",

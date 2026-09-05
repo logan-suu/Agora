@@ -298,6 +298,7 @@ export class TaskOrchestrationRuntime {
         loadRoster: () => this.messages.enabledRoleSpecs(scope.projectId),
         resume: { state, actionId, receipt },
       });
+      let resumedState: AppState;
       try {
         const marker = await this.messages.commitMessage(scope, {
           msgId: markerId,
@@ -314,6 +315,7 @@ export class TaskOrchestrationRuntime {
           ts: Date.now(),
         });
         assertResumedMarker(marker.message, actionId, receipt);
+        resumedState = marker.state;
       } catch (error) {
         await composition.suspend().catch(() => undefined);
         throw error;
@@ -326,7 +328,7 @@ export class TaskOrchestrationRuntime {
         error: undefined,
       };
       this.#runs.set(scopeKey(scope), run);
-      run.promise = this.#executeRun(scope, run, composition.initialState, transition);
+      run.promise = this.#executeRun(scope, run, resumedState, transition);
     });
   }
 

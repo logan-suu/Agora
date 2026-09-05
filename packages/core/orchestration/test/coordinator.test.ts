@@ -2,6 +2,7 @@ import type { AppState, RoleSpec } from '@agora/core-domain';
 import {
   appendMutation,
   applyMutations,
+  buildCompletionResolution,
   createInitialAppState,
   mergeByIdMutation,
   PHASE0_ROSTER,
@@ -128,6 +129,63 @@ function reviewState(
       kind: 'verdict',
       verdict,
       ...verdictExtra,
+    }),
+  ]);
+}
+
+function resolvedCompletionState(option: 'approve_completion' | 'request_changes'): AppState {
+  const state = reviewState('approved');
+  const actionId = option === 'approve_completion' ? 'leader-approve' : 'leader-rework';
+  const rationale =
+    option === 'approve_completion' ? undefined : 'Cover the restart recovery path.';
+  const built = buildCompletionResolution(state, {
+    actionId,
+    reviewId: 'rc-verdict-1',
+    option,
+    ...(rationale === undefined ? {} : { rationale }),
+    ts: 1100,
+  });
+  return applyMutations(state, [
+    appendMutation('decisionLedger', built.decision),
+    appendMutation('messages', {
+      msgId: actionId,
+      channelId: 'main',
+      fromRole: 'leader',
+      type: 'chat',
+      payload: {
+        kind: 'leader_intent',
+        intent: {
+          kind: 'resolve_human_gate',
+          gateId: 'human-gate:rc-verdict-1',
+          option,
+          ...(rationale === undefined ? {} : { argument: rationale }),
+        },
+        action: { status: 'applied' },
+        resolution: {
+          gateId: 'human-gate:rc-verdict-1',
+          option,
+          ...(rationale === undefined ? {} : { argument: rationale }),
+          safePointRefs: ['safe-1'],
+          resumeSessionId: `human-gate-resume:${actionId}`,
+        },
+        completionResolution: built.action,
+      },
+      display: option,
+      ts: 1100,
+    }),
+    appendMutation('messages', {
+      msgId: `human-gate-resumed:${actionId}`,
+      channelId: 'main',
+      fromRole: 'COORDINATOR',
+      type: 'announce',
+      payload: {
+        kind: 'human_gate_resumed',
+        actionId,
+        gateId: 'human-gate:rc-verdict-1',
+        resumeSessionId: `human-gate-resume:${actionId}`,
+      },
+      display: 'resumed',
+      ts: 1200,
     }),
   ]);
 }
@@ -376,9 +434,18 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     expect(next.nextRole).toBe('REVIEWER');
   });
 
-  it('finalizes when the REVIEWER verdict is approved (评审通过, DEF-007 Phase 2 simplification)', () => {
-    const decision = decide(reviewState('approved'));
-    expect(decision.route.kind).toBe('finalize');
+  it('opens a review-bound completion confirmation gate when REVIEWER approves', () => {
+    const decision = decide(reviewState('approved'), clock());
+    expect(decision.route).toEqual({
+      kind: 'human_gate',
+      request: {
+        triggerMsgId: 'rc-verdict-1',
+        triggerTs: 1000,
+        reason: 'completion_confirmation:rc-verdict-1',
+        options: ['approve_completion', 'request_changes'],
+        phase: 'review',
+      },
+    });
     expect(decision.mutations).toHaveLength(1);
     expect(decision.mutations[0]).toMatchObject({
       field: 'messages',
@@ -402,6 +469,34 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     const feedback = next.messages.filter((m) => m.type === 'feedback');
     expect(feedback).toHaveLength(1);
     expect(feedback[0]?.payload.reason).toBe('review_changes_requested');
+  });
+
+  it('finalizes only after a canonical Leader approval and resumed marker', () => {
+    const state = resolvedCompletionState('approve_completion');
+    const decision = decide(state, clock());
+    const next = applyMutations(state, decision.mutations);
+
+    expect(decision.route.kind).toBe('finalize');
+    expect(latestCoordinationLedger(next)?.progress.isRequestSatisfied).toEqual({
+      reason: 'leader_completion_approved',
+      answer: true,
+      authority: 'leader',
+    });
+  });
+
+  it('reopens all CODER work after a canonical Leader request_changes resolution', () => {
+    const state = resolvedCompletionState('request_changes');
+    const decision = decide(state, clock());
+    const next = applyMutations(state, decision.mutations);
+
+    expect(decision.route).toMatchObject({
+      kind: 'worker',
+      batch: [{ role: 'CODER', subtaskId: 't-1-sub-0' }],
+    });
+    expect(next.phase).toBe('coding');
+    expect(next.nextRole).toBe('CODER');
+    expect(next.subtasks[0]?.status).toBe('in_progress');
+    expect(latestCoordinationLedger(next)?.progress.isRequestSatisfied.answer).toBe(false);
   });
 
   it('escalates to human_gate when the review loop reaches the iteration cap (评审回环超限升级)', () => {
@@ -546,7 +641,7 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     expect(() => decide(stateAtPhase('integrating'))).toThrow(/not routable/);
   });
 
-  it('never returns integrate/human_gate routes below the iteration cap, and never parallel batches', () => {
+  it('never returns integrate below the iteration cap and only gates approved completion candidates', () => {
     const decisions = [
       decide(createInitialAppState('t-1', 'g'), clock()),
       decide(requirementsReadyState(), clock()),
@@ -559,9 +654,10 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     ];
 
     for (const decision of decisions) {
-      expect(['worker', 'finalize']).toContain(decision.route.kind);
       expect(decision.route.kind).not.toBe('integrate');
-      expect(decision.route.kind).not.toBe('human_gate');
+      if (decision.route.kind === 'human_gate') {
+        expect(decision.route.request.reason).toBe('completion_confirmation:rc-verdict-1');
+      }
       if (decision.route.kind === 'worker') {
         expect(decision.route.parallel).toBe(false);
         expect(decision.route.batch).toHaveLength(1);
@@ -646,20 +742,20 @@ describe('coordinator.decide · structured coordination artifacts (task 4.4 + DE
     expect(next.handoffPackets).toEqual([]);
   });
 
-  it('records finalize as a completion candidate but never self-approves the request', () => {
+  it('records the completion gate as a candidate but never self-approves the request', () => {
     const state = reviewState('approved');
     const decision = decide(state, { ...clock(), roster: FULL_ROSTER });
     const next = applyMutations(state, decision.mutations);
     const ledger = latestCoordinationLedger(next);
 
-    expect(decision.route.kind).toBe('finalize');
+    expect(decision.route.kind).toBe('human_gate');
     expect(ledger?.completionCandidate).toBe(true);
     expect(ledger?.progress.isRequestSatisfied).toEqual({
       reason: 'awaiting_leader_confirmation',
       answer: false,
       authority: 'leader',
     });
-    expect(ledger?.progress.nextSpeaker.answer).toBeNull();
+    expect(ledger?.progress.nextSpeaker.answer).toBe('LEADER');
   });
 
   it('records human_gate with LEADER as the next speaker', () => {

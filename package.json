@@ -14,7 +14,9 @@
     "eval:phase6:deterministic": "vitest run --config vitest.eval.config.ts -t 'phase6 deterministic baseline'",
     "eval:phase6:model": "vitest run --config vitest.eval.config.ts -t 'phase6 model baseline'",
     "eval:phase7:deterministic": "vitest run --config vitest.eval.config.ts -t 'phase7 deterministic baseline'",
-    "eval:phase7:model": "vitest run --config vitest.eval.config.ts -t 'phase7 model baseline'"
+    "eval:phase7:model": "vitest run --config vitest.eval.config.ts -t 'phase7 model baseline'",
+    "eval:phase8:deterministic": "vitest run --config vitest.eval.config.ts -t 'phase8 deterministic baseline'",
+    "eval:phase8:model": "vitest run --config vitest.eval.config.ts -t 'phase8 model baseline'"
   },
   "devDependencies": {
     "@agora/core-domain": "workspace:*",

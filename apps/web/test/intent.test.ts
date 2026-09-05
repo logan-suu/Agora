@@ -132,6 +132,27 @@ describe('parseLeaderIntent', () => {
     });
   });
 
+  it('parses completion approval with optional rationale and requires rework rationale', () => {
+    expect(parseLeaderIntent('/resolve-gate human-gate:review-1 approve_completion')).toEqual({
+      kind: 'resolve_human_gate',
+      gateId: 'human-gate:review-1',
+      option: 'approve_completion',
+    });
+    expect(
+      parseLeaderIntent(
+        '/resolve-gate human-gate:review-1 request_changes Cover the restart case.',
+      ),
+    ).toEqual({
+      kind: 'resolve_human_gate',
+      gateId: 'human-gate:review-1',
+      option: 'request_changes',
+      argument: 'Cover the restart case.',
+    });
+    expect(parseLeaderIntent('/resolve-gate human-gate:review-1 request_changes')).toMatchObject({
+      kind: 'invalid',
+    });
+  });
+
   it.each([
     '/role',
     '/role remove',

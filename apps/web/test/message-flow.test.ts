@@ -46,6 +46,90 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('atomically commits and replays a review-bound completion approval', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    const resumed: string[] = [];
+    runtime.bindHumanGateLifecyclePort({
+      suspend: async () => {
+        throw new Error('unexpected suspend');
+      },
+      resume: async (_scope, actionId) => {
+        resumed.push(actionId);
+      },
+    });
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        setMutation('phase', 'review'),
+        appendMutation('messages', {
+          msgId: 'review-dispatch',
+          channelId: 'main',
+          fromRole: 'COORDINATOR',
+          type: 'announce',
+          payload: { nextRole: 'REVIEWER', reviewCommentCursor: 0 },
+          display: 'Review',
+          ts: 1,
+        }),
+        appendMutation('reviewComments', {
+          id: 'review-verdict-1',
+          kind: 'verdict',
+          verdict: 'approved',
+        }),
+        setMutation('humanGate', {
+          gateId: 'human-gate:review-verdict-1',
+          reason: 'completion_confirmation:review-verdict-1',
+          options: ['approve_completion', 'request_changes'],
+          phase: 'review',
+          openedTs: 2,
+          safePointRefs: ['safe-1'],
+        }),
+      ]),
+    );
+    const post = createPostMessage(runtime);
+    const request = () =>
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'approve-completion-1',
+          display: '/resolve-gate human-gate:review-verdict-1 approve_completion',
+          ts: 3,
+        }),
+      );
+
+    await expect((await request()).json()).resolves.toMatchObject({
+      action: { status: 'applied' },
+      published: true,
+    });
+    const state = await runtime.store.load(scope);
+    expect(state).not.toHaveProperty('humanGate');
+    expect(state?.decisionLedger).toContainEqual(
+      expect.objectContaining({
+        id: 'task-completion-resolution:approve-completion-1',
+        topic: 'task-completion:task-a',
+        decision: 'approve_completion',
+        authority: 'leader',
+      }),
+    );
+    expect(state?.messages).toContainEqual(
+      expect.objectContaining({
+        msgId: 'approve-completion-1',
+        payload: expect.objectContaining({
+          completionResolution: {
+            reviewId: 'review-verdict-1',
+            option: 'approve_completion',
+            resolutionDecisionId: 'task-completion-resolution:approve-completion-1',
+          },
+        }),
+      }),
+    );
+    expect(resumed).toEqual(['approve-completion-1']);
+
+    await expect((await request()).json()).resolves.toMatchObject({ published: false });
+    expect(resumed).toEqual(['approve-completion-1', 'approve-completion-1']);
+  });
+
   it('atomically resolves an advisory objection and validates its full replay facts', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };

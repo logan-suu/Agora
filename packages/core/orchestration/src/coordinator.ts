@@ -8,7 +8,15 @@ import type {
   RoleSpec,
   Subtask,
 } from '@agora/core-domain';
-import { appendMutation, applyMutations, mergeByIdMutation, setMutation } from '@agora/core-domain';
+import {
+  appendMutation,
+  applyMutations,
+  currentApprovedReviewId,
+  deriveCompletionResolution,
+  deriveObjectionResolutions,
+  mergeByIdMutation,
+  setMutation,
+} from '@agora/core-domain';
 import { buildCoordinationLedger, MAX_STALLS } from './progress-ledger';
 import { evaluateRouteWhen } from './route-conditions';
 
@@ -18,6 +26,7 @@ export const TEST_FAILURE_REVIEW_THRESHOLD = 2;
 
 export const HUMAN_GATE_OPTIONS: readonly string[] = ['continue'];
 export const OBJECTION_GATE_OPTIONS: readonly string[] = ['accept_objection', 'reject_objection'];
+export const COMPLETION_GATE_OPTIONS: readonly string[] = ['approve_completion', 'request_changes'];
 
 export interface Assignment {
   role: RoleId;
@@ -33,6 +42,8 @@ export type Route =
 export interface CoordinatorDecision {
   route: Route;
   mutations: Mutation[];
+  completionCandidate?: boolean;
+  requestSatisfied?: boolean;
 }
 
 export interface DecideOptions {
@@ -99,8 +110,13 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
 }
 
 function pendingBlockingObjectionGate(state: AppState): CoordinatorDecision | undefined {
+  const resolved = new Set(
+    deriveObjectionResolutions(state)
+      .filter((entry) => entry.status === 'resolved')
+      .map((entry) => entry.objectionId),
+  );
   const objection = [...state.objections]
-    .filter((entry) => entry.track === 'blocking')
+    .filter((entry) => entry.track === 'blocking' && !resolved.has(entry.id))
     .sort((left, right) => left.ts - right.ts || left.id.localeCompare(right.id))[0];
   if (objection === undefined) return undefined;
   return {
@@ -335,7 +351,8 @@ function attachCoordinationArtifacts(
   const ledger = buildCoordinationLedger(projectedNext, {
     nextSpeaker: nextSpeakerFor(decision.route),
     instruction: instructionFor(decision),
-    completionCandidate: decision.route.kind === 'finalize',
+    completionCandidate: decision.completionCandidate ?? decision.route.kind === 'finalize',
+    requestSatisfied: decision.requestSatisfied ?? false,
     ...(roster === undefined ? {} : { availableRoles: roster.map((spec) => spec.role) }),
     ...(loopReason === undefined ? {} : { loopReason }),
   });
@@ -349,7 +366,7 @@ function attachCoordinationArtifacts(
     ts: clock.now(),
   };
   return {
-    route: decision.route,
+    ...decision,
     mutations: [...mutations, appendMutation('messages', ledgerMessage)],
   };
 }
@@ -809,7 +826,65 @@ function evaluateReview(
         'repeated-test-failure root-cause review requires a changes_requested verdict',
       );
     }
-    return { route: { kind: 'finalize' }, mutations: [] };
+    const reviewId = currentApprovedReviewId(state);
+    const resolution = deriveCompletionResolution(state, reviewId);
+    if (resolution === undefined) {
+      return {
+        route: {
+          kind: 'human_gate',
+          request: {
+            triggerMsgId: reviewId,
+            triggerTs: clock.now(),
+            reason: `completion_confirmation:${reviewId}`,
+            options: [...COMPLETION_GATE_OPTIONS],
+            phase: state.phase,
+          },
+        },
+        mutations: [],
+        completionCandidate: true,
+      };
+    }
+    if (!resolution.resumed) {
+      throw new Error(
+        `completion resolution "${resolution.actionId}" cannot route before its resumed marker`,
+      );
+    }
+    if (resolution.option === 'approve_completion') {
+      return {
+        route: { kind: 'finalize' },
+        mutations: [],
+        completionCandidate: true,
+        requestSatisfied: true,
+      };
+    }
+    const reopen = reopenForRework(state);
+    return {
+      route: {
+        kind: 'worker',
+        batch: [{ role: 'CODER', subtaskId: reopen.subtaskId }],
+        parallel: false,
+      },
+      mutations: [
+        ...reopen.mutations,
+        setMutation('iterationCount', state.iterationCount + 1),
+        setMutation('nextRole', 'CODER'),
+        setMutation('phase', 'coding'),
+        appendMutation(
+          'messages',
+          announce(
+            clock,
+            {
+              reason: 'leader_completion_changes_requested',
+              reviewId,
+              resolutionDecisionId: resolution.resolutionDecisionId,
+            },
+            `Leader requested changes for completion candidate ${reviewId}: ${resolution.rationale}`,
+          ),
+        ),
+      ],
+      completionCandidate: false,
+      requestSatisfied: false,
+    };
   }
   if (verdict === 'changes_requested') {
     const escalation = ifIterationLimit(state, clock);

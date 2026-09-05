@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.0
-**生效日期**：2026-08-25
+**版本**：v2.1
+**生效日期**：2026-09-05
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
@@ -44,7 +44,7 @@
 | 沙箱（LocalTemp/Docker/worktree） | 详细设计 §6 + 选型 §7/§8 + 架构 §7.3 | SandboxManager 接口 + 决策 D5 |
 | 投影/压缩/三铁律/sliceKB | 详细设计 §7 + 蓝图 §8 | 三条投影铁律 + 存储与上下文分离 |
 | Project/KB/Librarian/GlobalScheduler/收件箱 | 详细设计 §8 + 蓝图 §20 | 独立世界隔离 + D4 持久 suspend/resume + Phase 9 全局槽位 |
-| humanGate/异议双轨/权威级别 | 详细设计 §1/§5/§6/§8 + 蓝图 §14/§21 + 架构 §4.2/§5/§9 + 选型 §4.1/§10 | D4 持久 suspend/Leader resolve/真 Fork resume + D14 不可变异议事实/确定性分轨 + leader 最高权威 |
+| humanGate/异议双轨/权威级别 | 详细设计 §1/§3/§5/§6/§8/§11 + 蓝图 §9/§14/§21 + 架构 §4.2/§5/§9 + 选型 §4.1/§10 | D4 持久 suspend/Leader resolve/真 Fork resume + D14 不可变异议事实/确定性分轨 + D16 REVIEWER 候选→Leader 完成终审 |
 | 热插拔/招募离职交接 | 蓝图 §12 + 详细设计 §2/§5/§7 | D12 项目成员生命周期 + D13 任务入职接手；Coordinator 不可删 + 先 drain 再交接 |
 | 前端群聊 UI/SSE | 选型 §9 + 蓝图 §10 | display/payload 分离 + 展示层与 context 层解耦 |
 | Trace/可观测面板 | 详细设计 §6 + 架构 §4.4/§9 + 蓝图 §16/§21 | D15 官方 Harness JSONL 单一来源 + 白名单安全投影 + lineage 去重 + 有界只读快照 |
@@ -109,7 +109,7 @@ deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数
 ```
 R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），op 必须可交换、幂等；禁止直接赋值共享 State。项目级 roster/Channel 按 D12 只经 ProjectCollaborationStore revision CAS 原子提交，不复制进 AppState
 R2  上下文只经投影切片喂给 agent，永不投原始群聊 log；display（给人看）与 payload（给 agent 用）严格分离
-R3  leader 是唯一裁决者：不做 agent 间自动共识/投票；blocking 异议必须升级 humanGate 由人拍板
+R3  leader 是唯一裁决者：不做 agent 间自动共识/投票；blocking 异议必须升级 humanGate 由人拍板；[2026-09-05 架构决策更新] TESTER pass/REVIEWER approved 只形成 completionCandidate，必须经 D16 completion_confirmation gate 的 Leader 终审后才允许 isRequestSatisfied=true/finalize
 R4  配合式抢占只能在安全点（step/end）打断，绝不硬杀 LLM token 流；humanGate 按 D4 执行持久 suspend→Leader resolve→全新 context 真 Fork resume，checkpoint 未 flush/未闭合时 fail-closed，不做内存动态挂起
 R5  阶段 0–9 所有 Worker 强制薄执行器（Harness）；RoleSpec.external 仅预留，不实现切换逻辑；厚 Agent 到阶段 10
 R6  阶段 0–N KnowledgeBase 只读（Write-Block），Librarian 仅空桩，不引入向量检索依赖；sliceKB 阶段 0 返回空对象
@@ -297,7 +297,8 @@ humanGate   决策 D4：已提交 step/end 边界→flush session 后一次持�
 KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简硬编码默认值，不依赖向量检索；
             启用写入需双重门控：①相关任务测试全绿 ②Leader 显式 /approve-kb——否则蒸馏结果直接丢弃
 写所有权    结构化切片只读投影，agent 只写自己私有区——消除写-写冲突靠构造（WO）
-裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；contradiction=blocking 经绑定 gate 的 D4 裁决，concern/advisory 继续并可直接裁决；每次裁决原子写规范 Leader 消息+最高权威 resolution Decision，accept blocking 必须撤回目标，未决视图与重放交叉验证全部后置事实；所有角色通过结构化 objectionResolutions 系统切片取得已验证裁决，不读原始 Leader 消息；语义拿不准由上游声明 concern
+裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；contradiction=blocking 经绑定 gate 的 D4 裁决，concern/advisory 继续并可直接裁决；每次裁决原子写规范 Leader 消息+最高权威 resolution Decision，accept blocking 必须撤回目标；Decision.supersedes 只允许同 topic 的 current Decision；未决视图与重放交叉验证全部后置事实；所有角色通过结构化 objectionResolutions 系统切片取得已验证裁决，不读原始 Leader 消息；语义拿不准由上游声明 concern
+完成终审    D16：TESTER pass + REVIEWER approved 仅形成 completionCandidate；Coordinator 打开绑定稳定 review verdict 的 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion/request_changes；真 Fork resume 后交叉验证 canonical Message/Decision/receipt/current review，approve 才置 isRequestSatisfied=true 并 finalize，request_changes 保持 false、保守回 CODER，旧 review 裁决不得复用；正常阶段不逐段审批
 Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复制进 State/Message/MessageBus；对人 DTO 仅含 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 prompt/projection/reasoning/arguments/results；child 只投 seed 后 native 事件且 parent 图无环；官方格式读取后仍校验跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；响应有界、截断显式
 并行度      上限 3 worker 同时跑；subtask.dependsOn 拓扑排序，依赖未满足不激活
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
@@ -494,7 +495,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D15/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D16/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 

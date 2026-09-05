@@ -139,6 +139,11 @@ function assertSupersedesIsLegal(ledger: readonly Decision[], decision: Decision
       `decision "${decision.id}" cannot supersede decision "${superseded.id}": target is no longer current`,
     );
   }
+  if (superseded.topic !== decision.topic) {
+    throw new Error(
+      `decision "${decision.id}" cannot supersede decision "${superseded.id}": both decisions must use the same topic`,
+    );
+  }
   if (superseded.authority === 'leader' && decision.authority === 'agent') {
     throw new Error(
       `decision "${decision.id}" (authority=agent) cannot supersede leader-level decision "${superseded.id}": only the leader may override a leader-level decision (blueprint §14)`,
