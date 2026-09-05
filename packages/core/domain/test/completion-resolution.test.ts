@@ -60,6 +60,15 @@ describe('D16 completion resolution', () => {
     const state = approvedReviewState();
     expect(() =>
       buildCompletionResolution(state, {
+        actionId: 'invalid-option-1',
+        reviewId: 'review-verdict-1',
+        option: 'invalid' as never,
+        rationale: 'Do not persist an unknown completion action.',
+        ts: 2,
+      }),
+    ).toThrow('option must be "approve_completion" or "request_changes"');
+    expect(() =>
+      buildCompletionResolution(state, {
         actionId: 'rework-1',
         reviewId: 'review-verdict-1',
         option: 'request_changes',

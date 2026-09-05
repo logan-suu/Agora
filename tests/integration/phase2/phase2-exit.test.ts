@@ -94,7 +94,7 @@ describe('REVIEWER structured verdict scope (task 4.3)', () => {
     ).toHaveLength(1);
   });
 
-  it('requires exactly one verdict with a stable non-empty id per turn', () => {
+  it('requires exactly one verdict with a safe stable id per turn', () => {
     expect(() => reviewerTurnMutations('[{"id":"c-1","kind":"comment"}]')).toThrow(
       /exactly one verdict/,
     );
@@ -107,7 +107,7 @@ describe('REVIEWER structured verdict scope (task 4.3)', () => {
       reviewerTurnMutations(
         '[{"kind":"verdict","verdict":"changes_requested","summary":"missing id"}]',
       ),
-    ).toThrow(/non-empty string id/);
+    ).toThrow(/safe id/);
   });
 });
 

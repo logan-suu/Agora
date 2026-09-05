@@ -79,6 +79,11 @@ export function buildCompletionResolution(
   state: AppState,
   input: BuildCompletionResolutionInput,
 ): BuiltCompletionResolution {
+  if (input.option !== 'approve_completion' && input.option !== 'request_changes') {
+    throw new Error(
+      'invalid completion resolution: option must be "approve_completion" or "request_changes"',
+    );
+  }
   if (!SAFE_ID.test(input.actionId) || !SAFE_ID.test(input.reviewId)) {
     throw new Error('invalid completion resolution: actionId and reviewId must be safe ids');
   }

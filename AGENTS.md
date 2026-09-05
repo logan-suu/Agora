@@ -298,7 +298,7 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
             启用写入需双重门控：①相关任务测试全绿 ②Leader 显式 /approve-kb——否则蒸馏结果直接丢弃
 写所有权    结构化切片只读投影，agent 只写自己私有区——消除写-写冲突靠构造（WO）
 裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；contradiction=blocking 经绑定 gate 的 D4 裁决，concern/advisory 继续并可直接裁决；每次裁决原子写规范 Leader 消息+最高权威 resolution Decision，accept blocking 必须撤回目标；Decision.supersedes 只允许同 topic 的 current Decision；未决视图与重放交叉验证全部后置事实；所有角色通过结构化 objectionResolutions 系统切片取得已验证裁决，不读原始 Leader 消息；语义拿不准由上游声明 concern
-完成终审    D16：TESTER pass + REVIEWER approved 仅形成 completionCandidate；Coordinator 打开绑定稳定 review verdict 的 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion/request_changes；真 Fork resume 后交叉验证 canonical Message/Decision/receipt/current review，approve 才置 isRequestSatisfied=true 并 finalize，request_changes 保持 false、保守回 CODER，旧 review 裁决不得复用；正常阶段不逐段审批
+完成终审    D16：TESTER pass + REVIEWER approved 仅形成 completionCandidate；Coordinator 只接受当前 REVIEWER dispatch 后恰一个、满足 `[A-Za-z0-9][A-Za-z0-9._:-]*` 且未跨轮复用的 verdict id，并打开 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion/request_changes；真 Fork resume 后交叉验证 canonical Message/Decision/receipt/current review，approve 才置 isRequestSatisfied=true 并 finalize，request_changes 保持 false、保守回 CODER；正常阶段不逐段审批
 Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复制进 State/Message/MessageBus；对人 DTO 仅含 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 prompt/projection/reasoning/arguments/results；child 只投 seed 后 native 事件且 parent 图无环；官方格式读取后仍校验跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；响应有界、截断显式
 并行度      上限 3 worker 同时跑；subtask.dependsOn 拓扑排序，依赖未满足不激活
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
