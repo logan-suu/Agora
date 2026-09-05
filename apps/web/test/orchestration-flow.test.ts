@@ -163,6 +163,31 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
+async function approveCompletionGate(
+  runtime: TaskOrchestrationRuntime,
+  messages: ReturnType<typeof createMessageRuntime>,
+  scope: { projectId: string; taskId: string },
+  actionId: string,
+): Promise<void> {
+  const gate = (await messages.store.load(scope))?.humanGate;
+  if (gate?.reason.startsWith('completion_confirmation:') !== true) {
+    throw new Error('expected completion confirmation gate');
+  }
+  const response = await createPostMessage(messages)(
+    new Request('http://localhost/api/messages', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...scope,
+        channelId: 'main',
+        msgId: actionId,
+        display: `/resolve-gate ${gate.gateId} approve_completion`,
+      }),
+    }),
+  );
+  await expect(response.json()).resolves.toMatchObject({ action: { status: 'applied' } });
+  await runtime.waitForIdle(scope);
+}
+
 describe('TaskOrchestrationRuntime', () => {
   it('suspends without terminal archive and resumes from the persisted Leader receipt', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
@@ -222,6 +247,7 @@ describe('TaskOrchestrationRuntime', () => {
       resumeSessionId: 'human-gate-resume:continue-gated',
     });
     await runtime.waitForIdle(scope);
+    await approveCompletionGate(runtime, messages, scope, 'approve-gated');
     const completed = await runtime.summary(scope);
     expect(completed?.error).toBeUndefined();
     expect(completed).toMatchObject({
@@ -293,6 +319,7 @@ describe('TaskOrchestrationRuntime', () => {
     await expect(response.json()).resolves.toMatchObject({ action: { status: 'applied' } });
     await runtime.waitForIdle(scope);
     expect(resumed).toBe(true);
+    await approveCompletionGate(runtime, messages, scope, 'approve-gate-race');
     await expect(runtime.summary(scope)).resolves.toMatchObject({
       runStatus: 'completed',
       phase: 'done',
@@ -385,7 +412,9 @@ describe('TaskOrchestrationRuntime', () => {
     ).rejects.toBeInstanceOf(TaskGoalConflictError);
 
     release();
-    await runtime.waitForIdle({ projectId: 'project-a', taskId: 'task-a' });
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.waitForIdle(scope);
+    await approveCompletionGate(runtime, messages, scope, 'approve-task-a');
     await expect(
       runtime.summary({ projectId: 'project-a', taskId: 'task-a' }),
     ).resolves.toMatchObject({
@@ -514,7 +543,8 @@ describe('TaskOrchestrationRuntime', () => {
     });
 
     release();
-    await runtime.waitForIdle({ projectId: 'project-a', taskId: 'task-a' });
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.waitForIdle(scope);
   });
 
   it('archives available output and disposes resources when a run fails', async () => {
@@ -578,7 +608,9 @@ describe('TaskOrchestrationRuntime', () => {
     expect(conflict.status).toBe(409);
 
     release();
-    await runtime.waitForIdle({ projectId: 'project-a', taskId: 'task-a' });
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.waitForIdle(scope);
+    await approveCompletionGate(runtime, messages, scope, 'approve-http-task-a');
     const recovered = await get(
       new Request('http://localhost/api/tasks?projectId=project-a&taskId=task-a'),
     );

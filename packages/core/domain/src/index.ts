@@ -1,5 +1,6 @@
 export * from './channel';
 export * from './channel-summary';
+export * from './completion-resolution';
 export * from './coordination-ledger';
 export * from './handoff';
 export * from './ledger';

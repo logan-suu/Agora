@@ -10,6 +10,7 @@ import { CallId, type GenerateOptions, LlmAdapter, type StreamChunk } from '@dee
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { ChannelStream } from '../src/server/channel-stream';
+import { createPostMessage } from '../src/server/message-handlers';
 import { createMessageRuntime } from '../src/server/message-runtime';
 import { createWebTaskCompositionFactory } from '../src/server/task-composition';
 import { TaskOrchestrationRuntime } from '../src/server/task-orchestration-runtime';
@@ -227,6 +228,23 @@ describeDocker('Web orchestration bridge (G5 real Docker/Harness/MCP chain)', ()
       goal: '实现 TTL LRU 缓存',
     });
     expect(started.startOutcome).toBe('started');
+    await runtime.waitForIdle({ projectId: 'demo', taskId: 'ttl-lru-g5' });
+    const gate = (await messages.store.load({ projectId: 'demo', taskId: 'ttl-lru-g5' }))
+      ?.humanGate;
+    expect(gate?.reason).toMatch(/^completion_confirmation:/);
+    const approval = await createPostMessage(messages)(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          projectId: 'demo',
+          taskId: 'ttl-lru-g5',
+          channelId: 'main',
+          msgId: 'approve-ttl-lru-g5',
+          display: `/resolve-gate ${gate?.gateId} approve_completion`,
+        }),
+      }),
+    );
+    await expect(approval.json()).resolves.toMatchObject({ action: { status: 'applied' } });
     await runtime.waitForIdle({ projectId: 'demo', taskId: 'ttl-lru-g5' });
     const summary = await runtime.summary({ projectId: 'demo', taskId: 'ttl-lru-g5' });
 

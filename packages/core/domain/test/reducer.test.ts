@@ -529,7 +529,11 @@ describe('applyMutations · Phase 3 unlocked field (task 3.1)', () => {
     );
     const agentOverride = appendMutation(
       'decisionLedger',
-      makeDecisionEntry('dec-2', { authority: 'agent', supersedes: 'dec-1' }),
+      makeDecisionEntry('dec-2', {
+        topic: 'topic-dec-1',
+        authority: 'agent',
+        supersedes: 'dec-1',
+      }),
     );
     const afterLeader = applyMutations(base, [leader]);
     expect(() => applyMutations(afterLeader, [agentOverride])).toThrow(
@@ -548,7 +552,11 @@ describe('applyMutations · Phase 3 unlocked field (task 3.1)', () => {
 
   it('append(decisionLedger): keeps an identical replay idempotent after its target is superseded', () => {
     const first = makeDecisionEntry('dec-1');
-    const second = makeDecisionEntry('dec-2', { supersedes: 'dec-1', ts: 2 });
+    const second = makeDecisionEntry('dec-2', {
+      topic: 'topic-dec-1',
+      supersedes: 'dec-1',
+      ts: 2,
+    });
     const state = applyMutations(createInitialAppState('t-1', 'goal'), [
       appendMutation('decisionLedger', first),
       appendMutation('decisionLedger', second),

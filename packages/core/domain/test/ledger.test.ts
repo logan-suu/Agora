@@ -108,6 +108,17 @@ describe('addDecision · authority levels (blueprint §14)', () => {
       addDecision([first, second], makeDecision({ id: 'dec-3', supersedes: first.id, ts: 3 })),
     ).toThrow('is no longer current');
   });
+
+  it('rejects superseding a current decision from another topic', () => {
+    const first = makeDecision({ id: 'dec-auth', topic: 'auth' });
+    const crossTopic = makeDecision({
+      id: 'dec-cache',
+      topic: 'cache',
+      supersedes: first.id,
+      ts: 2,
+    });
+    expect(() => addDecision([first], crossTopic)).toThrow('same topic');
+  });
 });
 
 describe('addDecision · conflict detection (raw signal, classification deferred to Phase 8)', () => {

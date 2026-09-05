@@ -25,4 +25,12 @@ describe('reviewerTurnMutations structured transport', () => {
       reviewerTurnMutations('[{"id":"rv-live","kind":"verdict","verdict":"approved"}]'),
     ).toThrow(/summary/);
   });
+
+  it('requires a verdict id that can safely bind the D16 completion gate', () => {
+    expect(() =>
+      reviewerTurnMutations(
+        '[{"id":"review verdict/1","kind":"verdict","verdict":"approved","summary":"looks good"}]',
+      ),
+    ).toThrow(/safe id/);
+  });
 });

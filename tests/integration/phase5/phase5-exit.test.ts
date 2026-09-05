@@ -687,6 +687,20 @@ describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
     releaseFirstRequest();
 
     await runtime.waitForIdle({ projectId: 'demo', taskId: 'phase5-exit' });
+    const gate = (await messages.store.load({ projectId: 'demo', taskId: 'phase5-exit' }))
+      ?.humanGate;
+    expect(gate?.reason).toMatch(/^completion_confirmation:/);
+    const approval = await createPostMessage(messages)(
+      messageRequest({
+        projectId: 'demo',
+        taskId: 'phase5-exit',
+        channelId: 'main',
+        msgId: 'approve-phase5-exit',
+        display: `/resolve-gate ${gate?.gateId} approve_completion`,
+      }),
+    );
+    await expect(approval.json()).resolves.toMatchObject({ action: { status: 'applied' } });
+    await runtime.waitForIdle({ projectId: 'demo', taskId: 'phase5-exit' });
     const summary = await runtime.summary({ projectId: 'demo', taskId: 'phase5-exit' });
     expect(summary).toMatchObject({
       runStatus: 'completed',
@@ -773,6 +787,20 @@ describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
       }),
     );
     expect(next.status).toBe(202);
+    await runtime.waitForIdle({ projectId: 'demo', taskId: 'slot-reuse' });
+    const nextGate = (await messages.store.load({ projectId: 'demo', taskId: 'slot-reuse' }))
+      ?.humanGate;
+    expect(nextGate?.reason).toMatch(/^completion_confirmation:/);
+    const nextApproval = await createPostMessage(messages)(
+      messageRequest({
+        projectId: 'demo',
+        taskId: 'slot-reuse',
+        channelId: 'main',
+        msgId: 'approve-slot-reuse',
+        display: `/resolve-gate ${nextGate?.gateId} approve_completion`,
+      }),
+    );
+    await expect(nextApproval.json()).resolves.toMatchObject({ action: { status: 'applied' } });
     await runtime.waitForIdle({ projectId: 'demo', taskId: 'slot-reuse' });
     await expect(
       runtime.summary({ projectId: 'demo', taskId: 'slot-reuse' }),

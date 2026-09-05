@@ -22,8 +22,10 @@ export const SIX_ROLE_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   TESTER:
     '\n\n[Working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
   REVIEWER:
-    '\n\n[Working rules]\n- Your grant is read-only: fs_read to inspect files, git_diff with ref `HEAD~1` to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array containing exactly one verdict entry shaped {"id":"rv-...","kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."}; other entries are optional comments. The verdict id must be a stable non-empty string. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested. A test_failure_root_cause review must return changes_requested.\n- FINAL OUTPUT CONTRACT: return the raw JSON array only. Do not output prose or markdown before or after it（最终回复只能是原始 JSON 数组，前后不得附加解释或 Markdown）.',
+    '\n\n[Working rules]\n- Your grant is read-only: fs_read to inspect files, git_diff with ref `HEAD~1` to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array containing exactly one verdict entry shaped {"id":"rv-...","kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."}; other entries are optional comments. The verdict id must be unique for this review dispatch and match `[A-Za-z0-9][A-Za-z0-9._:-]*` so it can safely bind a D16 completion gate. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested. A test_failure_root_cause review must return changes_requested.\n- FINAL OUTPUT CONTRACT: return the raw JSON array only. Do not output prose or markdown before or after it（最终回复只能是原始 JSON 数组，前后不得附加解释或 Markdown）.',
 };
+
+const SAFE_VERDICT_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -86,8 +88,8 @@ export function reviewerTurnMutations(text: string | null): Mutation[] {
       throw new Error('REVIEWER review entries need a string "kind"');
     }
     if (entry.kind === 'verdict') {
-      if (typeof entry.id !== 'string' || entry.id.length === 0) {
-        throw new Error('REVIEWER verdict needs a non-empty string id');
+      if (typeof entry.id !== 'string' || !SAFE_VERDICT_ID.test(entry.id)) {
+        throw new Error('REVIEWER verdict needs a safe id matching [A-Za-z0-9][A-Za-z0-9._:-]*');
       }
       if (entry.verdict !== 'approved' && entry.verdict !== 'changes_requested') {
         throw new Error('REVIEWER verdict must be "approved" or "changes_requested"');

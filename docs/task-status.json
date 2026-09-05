@@ -2,7 +2,7 @@
   "version": "1.1",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-04T20:08:00.000Z",
+  "last_updated": "2026-09-05T17:50:26.000Z",
   "current_phase": 8,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -48,7 +48,7 @@
     },
     {
       "id": "D9",
-      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；浏览器 msgId 必须满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在任何副作用前校验。planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动离职 saga；/role onboard 复用 msgId=actionId，在单个 Task State commit 中原子提交入职主消息、nextRole 与规范 handoff refs。Phase 8 /resolve-gate 必须绑定 gateId，复用 msgId=actionId，在单个 Task State commit 中写 canonical resolution receipt、原因特定 mutations 并清 gate；旧 /approve、/reject 拒绝。Phase 9 再解锁完整抢占，不走临时 command 旁路",
+      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；浏览器 msgId 必须满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在任何副作用前校验。planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel 以稳定 actionId 执行 Channel-first、D6 message-second saga。Phase 7 /role remove 复用 msgId=actionId，以 collaboration 持久阶段驱动离职 saga；/role onboard 复用 msgId=actionId，在单个 Task State commit 中原子提交入职主消息、nextRole 与规范 handoff refs。Phase 8 /resolve-gate 必须绑定 gateId，复用 msgId=actionId，在单个 Task State commit 中写 canonical resolution receipt、原因特定 mutations 并清 gate；D16 完成终审复用此入口，approve_completion 可由服务端补规范默认 rationale，request_changes 必须给非空 rationale；旧 /approve、/reject 拒绝。Phase 9 再解锁完整抢占，不走临时 command 旁路",
       "source": "docs/项目蓝图.md §10/§11/§17/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§4.3；docs/技术选型文档.md §9.2"
     },
     {
@@ -73,13 +73,18 @@
     },
     {
       "id": "D14",
-      "rule": "objections 是稳定消息 id 标识的 append-only 不可变事实；目标区分 decision/requirement，contradiction=blocking、concern/不确定项=advisory，未知或失效引用 fail-fast。blocking 经绑定 gate 的 /resolve-gate 裁决，advisory 可经 /resolve-objection 直接裁决；两者原子追加规范 Leader 消息与确定性最高权威 resolution Decision，rationale 必填。accept blocking 必须撤回目标：Decision 用 supersedes，Requirement 用 withdrawnByDecisionId；reject 与 advisory 裁决不自动改目标。未决视图和同 actionId 重放交叉验证消息、Decision、receipt 与 target effect，缺失/冲突/漂移 fail-closed；Decision 禁止 supersede 已失效项，旧 Requirement 缺撤回字段视为 active；所有角色从已验证的结构化 objectionResolutions 系统切片读取裁决，不读原始 Leader 消息。普通目标变更与多 worker 抢占仍属 Phase 9",
+      "rule": "objections 是稳定消息 id 标识的 append-only 不可变事实；目标区分 decision/requirement，contradiction=blocking、concern/不确定项=advisory，未知或失效引用 fail-fast。blocking 经绑定 gate 的 /resolve-gate 裁决，advisory 可经 /resolve-objection 直接裁决；两者原子追加规范 Leader 消息与确定性最高权威 resolution Decision，rationale 必填。accept blocking 必须撤回目标：Decision 用 supersedes，Requirement 用 withdrawnByDecisionId；resolution Decision 继承目标 topic，且任何 supersedes 只允许指向同 topic 的 current Decision，跨 topic、未知或已失效引用一律 fail-fast。reject 与 advisory 裁决不自动改目标。未决视图和同 actionId 重放交叉验证消息、Decision、receipt 与 target effect，缺失/冲突/漂移 fail-closed；旧 Requirement 缺撤回字段视为 active；所有角色从已验证的结构化 objectionResolutions 系统切片读取裁决，不读原始 Leader 消息。普通目标变更与多 worker 抢占仍属 Phase 9",
       "source": "docs/项目蓝图.md §14/§21；docs/详细设计方案.md §1/§5；docs/系统架构设计文档.md §5；docs/开发计划安排.md §11"
     },
     {
       "id": "D15",
       "rule": "Trace 只从当前任务锁定版本官方 Harness JSONL 读时派生，不复制进 AppState/Message/MessageBus/第二份日志。DTO 严格白名单 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 projection/prompt/assistant/reasoning/工具 arguments/results/环境变量/文件正文。child 只投 seedLength 后 native 事件并保留 parent 引用，parent 图无环；官方格式读取后仍校验 turn/step/tool 跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；独立有界 GET 快照显式报告 omittedEventCount；Phase 8 短轮询顺序时间线，Phase 9 再加并行泳道",
       "source": "docs/项目蓝图.md §16/§21；docs/详细设计方案.md §6；docs/系统架构设计文档.md §4.4/§9；docs/开发计划安排.md §11"
+    },
+    {
+      "id": "D16",
+      "rule": "TESTER pass 与 REVIEWER approved 只形成 completionCandidate；Coordinator 只接受当前 REVIEWER dispatch 后恰一个、满足 [A-Za-z0-9][A-Za-z0-9._:-]* 且未跨轮复用的 verdict id，并打开 D4 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion 或 request_changes，并原子写 canonical Leader Message、最高权威 task-completion-resolution:<actionId> Decision、D4 receipt 与清 gate。真 Fork resume 后重读并交叉验证 Message/Decision/receipt/current review：approve 才置 isRequestSatisfied=true 并 finalize；request_changes 保持 false、保守重开工作并回 CODER；任何漂移或冲突 fail-closed。正常阶段推进不逐段审批，被动 gate 只用于确定性阻塞与最终完成终审",
+      "source": "docs/项目蓝图.md §9/§14/§21；docs/详细设计方案.md §3/§5/§11；docs/系统架构设计文档.md §4.2/§5/§9；docs/开发计划安排.md §11"
     },
     {
       "id": "C4",
@@ -1040,7 +1045,7 @@
       "name": "人工卡点与冲突裁决（humanGate 持久 suspend/真 Fork resume + 异议双轨 + trace，1 周）",
       "status": "in_progress",
       "integration_test": "8.5",
-      "exit_criteria": "可控、可裁决、可观测：humanGate 落地决策 D4，异议双轨运转",
+      "exit_criteria": "可控、可裁决、可观测且完成权威闭合：D4 持久 gate、D14 异议双轨、D15 安全 Trace 与 D16 REVIEWER 候选→Leader 终审均经真实链路和累计 Eval 证据验证；DEF-007/009/011 已完成处置",
       "tasks": [
         {
           "id": "8.1",
@@ -1119,19 +1124,22 @@
           "id": "8.5",
           "title": "Phase 8 出口集成测试",
           "story": null,
-          "status": "ready",
-          "last_updated": "2026-09-04T20:08:00.000Z",
+          "status": "in_progress",
+          "last_updated": "2026-09-05T17:21:01.000Z",
           "documents_required": [
+            "docs/项目蓝图.md §9/§14/§21（D4/D9/D11/D14/D15/D16）",
+            "docs/详细设计方案.md §1/§3/§5/§6/§11",
+            "docs/系统架构设计文档.md §4.2/§5/§9",
             "docs/开发计划安排.md §11",
-            "docs/详细设计方案.md §11"
+            "docs/deferred-items.json（DEF-007/009/011）"
           ],
           "dependencies": [
             "8.2",
             "8.3",
             "8.4"
           ],
-          "test_file": "tests/integration/phase8/phase8-exit.test.ts",
-          "notes": "humanGate 持久 suspend→资源释放→Leader resolve→真 Fork resume 全链路；blocking/advisory 分类准确性；权威级别覆盖规则回归。向固定 Eval 集追加脚本化 Leader 事件、resolution receipt、跨重启恢复、资源释放与 trace 完整性场景，禁止 LLM 自行扮演最终裁决者。"
+          "test_file": "tests/integration/phase8/phase8-exit.test.ts + tests/evals/phase8/tasks.test.ts + tests/evals/phase8/scenarios.test.ts + tests/evals/phase8/run-phase8-baseline.eval.ts",
+          "notes": "humanGate 持久 suspend→资源释放→Leader resolve→真 Fork resume 全链路；blocking/advisory 分类准确性；权威级别覆盖规则回归。向固定 Eval 集追加脚本化 Leader 事件、resolution receipt、跨重启恢复、资源释放与 trace 完整性场景，禁止 LLM 自行扮演最终裁决者。\n[2026-09-05 /agora-sync-docs·规格评审] 评审确认 D4/D14/D15 总体方向合理，但现规格存在三处出口缺口：① REVIEWER approved 仍可直接 finalize，与 leader 唯一完成裁决权冲突；② 8.5 把出口测试与 Eval 增量混写，缺少固定产物和验收矩阵；③ DEF-007/009/011 未纳入出口处置。Leader 批准 D16：TESTER/REVIEWER 仅形成 completionCandidate，Coordinator 打开绑定当前 review verdict 的 completion_confirmation gate；Leader 经 /resolve-gate 选择 approve_completion/request_changes，真 Fork resume 后交叉验证 canonical Message/Decision/receipt/current review，只有 approve 才置 isRequestSatisfied=true 并 finalize，request_changes 保守回 CODER，旧 review 裁决不得复用。同步收紧 Decision.supersedes 为同 topic current-only；DEF-009 需以 iterationCount 重置回归证据关闭。8.5 锁定独立 phase8-exit 与 phase8 Eval tasks/scenarios/runner/baseline-summary 产物，必须在 Node 24 环境验证。任务保持 ready；本次仅修规格，不进入 Code。\n[2026-09-05 /agora-do-task·启动] Leader 授权启动 8.5。依赖 8.2/8.3/8.4 均为 done，Phase 7 出口 7.5=done，current_phase=8，跨阶段门禁满足；Node 24.20.0、Corepack pnpm 9.15.9 已就绪。任务置 in_progress，进入 Explore/Plan；计划再次确认前不写生产代码或测试。\n[2026-09-05 Code+Verify] 已落地 D16 完成权威闭环与同 topic current-only supersedes：REVIEWER approved 只开 review-bound completion gate；D9 同次提交 canonical Leader Message、最高权威 completion Decision、receipt 与 clear gate；真 Fork resumed marker 后 Coordinator 交叉验证并执行 approve→finalize 或 request_changes→CODER。恢复 run 改用 marker 提交后的最新 State，旧 review、缺/漂移事实与冲突重放均 fail-closed。独立 phase8-exit 3/3、Phase 8 Eval 场景 8/8、catalog/fingerprint 4/4；Node 24.20.0 下 deterministic 23/23、独立 model profile 1/1。真实 Docker 定向链 6/6，DockerSandbox 16/16；完整门禁首次 791/793，仅暴露两条历史累积夹具未提交 D16 Leader 批准，修正后定向全绿。DEF-007/009/011 已据回归证据关闭。\n[2026-09-05 最终门禁] Node 24.20.0 + pnpm 9.15.9：typecheck 0 错、Biome 255 files 0 违规、完整 Vitest 95 files / 793 tests 全绿；含独立 Phase 8 出口 3/3、DockerSandbox 16/16、Phase 5 Docker/Harness/MCP、两条 live DeepSeek Harness 与 92.66s live LRU E2E。Phase 8 deterministic Eval 23/23、独立 model profile 1/1；git diff --check 与 JSON 校验通过。\n[2026-09-05 /agora-commit] 交付复跑：typecheck 0 错、Biome 255 files 0 违规、任务专属 phase8-exit 3/3、完整 Vitest 95 files / 793 tests 全绿；真实 DockerSandbox 16/16、Phase 5 Docker/Harness/MCP、两条 live DeepSeek Harness 与 173.32s live LRU E2E 均通过，敏感数据扫描、JSON 与 staged diff 校验通过。功能提交 `169f9ac` 已推送至 `feat/phase8-completion-authority`；PR #62：https://github.com/logan-suu/Agora/pull/62（base=`dev-1.0.0`）。任务保持 in_progress，等待人工审阅合并，Agent 不自动合并。\n[2026-09-05 /agora-pr-review·规格复核与修复] 重新评审确认 D16 的 Leader 最终完成权与“普通阶段不逐段审批”设计合理；修正规格漂移与角色输出契约：REVIEWER verdict id 必须为本轮 dispatch 唯一且满足安全 token 正则，L1 completion builder 必须独立校验 option。TDD 先得到 2 failed / 7 passed 红灯，修复后定向 9/9 通过；同步蓝图、详细设计、系统架构、开发计划、standing decision 与 AGENTS，并清理两处 MD028。首轮全量仅有历史错误文案断言漂移与一次 live DeepSeek handoff 输出违约；前者按新契约修正，后者串行复跑通过且未弱化校验。最终门禁：typecheck 0 错、Biome 255 files 0 违规、Phase 8 出口 3/3、完整 Vitest 95 files / 794 tests 全绿、deterministic Eval 23/23、model profile 1/1；DockerSandbox 16/16 与 live Harness/LRU 链均真实通过，git diff --check/JSON 校验通过。任务保持 in_progress，待修复提交推送到 PR #62 后人工复审合并。"
         }
       ]
     },

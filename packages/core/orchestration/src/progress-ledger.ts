@@ -23,6 +23,7 @@ export interface ProgressObservation {
   nextSpeaker: string | null;
   instruction: string;
   completionCandidate: boolean;
+  requestSatisfied?: boolean;
   availableRoles?: readonly string[];
   loopReason?: string;
 }
@@ -149,10 +150,12 @@ export function buildCoordinationLedger(
     },
     progress: {
       isRequestSatisfied: {
-        reason: observation.completionCandidate
-          ? 'awaiting_leader_confirmation'
-          : 'task_incomplete',
-        answer: false,
+        reason: observation.requestSatisfied
+          ? 'leader_completion_approved'
+          : observation.completionCandidate
+            ? 'awaiting_leader_confirmation'
+            : 'task_incomplete',
+        answer: observation.requestSatisfied ?? false,
         authority: 'leader',
       },
       isInLoop: {

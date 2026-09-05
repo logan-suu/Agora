@@ -1,7 +1,9 @@
 import {
   type AppState,
   appendMutation,
+  buildCompletionResolution,
   buildObjectionResolution,
+  type CompletionResolutionAction,
   type HumanGate,
   type HumanGateRequest,
   type Mutation,
@@ -14,6 +16,7 @@ const SAFE_TOKEN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 const ROLE_REASON = /^required_role_unavailable:([A-Za-z][A-Za-z0-9_-]*)$/;
 const DEPARTURE_REASON = /^role_departure_requires_replacement:([A-Za-z][A-Za-z0-9_-]*)$/;
 const OBJECTION_REASON = /^blocking_objection:([A-Za-z0-9][A-Za-z0-9._:-]*)$/;
+const COMPLETION_REASON = /^completion_confirmation:([A-Za-z0-9][A-Za-z0-9._:-]*)$/;
 
 export interface HumanGateResolutionInput {
   actionId: string;
@@ -36,6 +39,7 @@ export interface HumanGateResolutionPlan {
   receipt: HumanGateResolutionReceipt;
   mutations: readonly Mutation[];
   objectionResolution?: ObjectionResolutionAction;
+  completionResolution?: CompletionResolutionAction;
 }
 
 export interface ObjectionResolutionAction {
@@ -114,6 +118,7 @@ export function planHumanGateResolution(
 
   const mutations: Mutation[] = [];
   let objectionResolution: ObjectionResolutionAction | undefined;
+  let completionResolution: CompletionResolutionAction | undefined;
   if (gate.reason === 'iteration_limit') {
     requireOption(input, 'continue', false);
     mutations.push(setMutation('iterationCount', 0));
@@ -121,6 +126,7 @@ export function planHumanGateResolution(
     const unavailable = ROLE_REASON.exec(gate.reason);
     const departure = DEPARTURE_REASON.exec(gate.reason);
     const objection = OBJECTION_REASON.exec(gate.reason);
+    const completion = COMPLETION_REASON.exec(gate.reason);
     if (unavailable !== null) {
       requireOption(input, 'retry', false);
       const role = normalizeRole(unavailable[1] as string);
@@ -170,6 +176,19 @@ export function planHumanGateResolution(
           mergeByIdMutation('requirements', built.requirementPatch.id, built.requirementPatch),
         );
       }
+    } else if (completion !== null) {
+      if (input.option !== 'approve_completion' && input.option !== 'request_changes') {
+        throw new Error(`option "${input.option}" is not valid for this humanGate reason`);
+      }
+      const built = buildCompletionResolution(state, {
+        actionId: input.actionId,
+        reviewId: completion[1] as string,
+        option: input.option,
+        ...(input.argument === undefined ? {} : { rationale: input.argument }),
+        ts: input.ts ?? gate.openedTs,
+      });
+      mutations.push(appendMutation('decisionLedger', built.decision));
+      completionResolution = built.action;
     } else {
       throw new Error(`humanGate reason "${gate.reason}" has no Phase 8 resolver`);
     }
@@ -185,6 +204,7 @@ export function planHumanGateResolution(
     },
     mutations,
     ...(objectionResolution === undefined ? {} : { objectionResolution }),
+    ...(completionResolution === undefined ? {} : { completionResolution }),
   };
 }
 

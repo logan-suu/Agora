@@ -228,4 +228,94 @@ describe('humanGate durable lifecycle planning (task 8.1)', () => {
     );
     expect(resolved.humanGate).toBeUndefined();
   });
+
+  it('resolves a review-bound completion gate with a canonical Leader decision', () => {
+    const state = applyMutations(createInitialAppState('task-1', 'goal'), [
+      setMutation('phase', 'review'),
+      appendMutation('messages', {
+        msgId: 'review-dispatch',
+        channelId: 'main',
+        fromRole: 'COORDINATOR',
+        type: 'announce',
+        payload: { nextRole: 'REVIEWER', reviewCommentCursor: 0 },
+        display: 'Review',
+        ts: 1,
+      }),
+      appendMutation('reviewComments', {
+        id: 'review-1',
+        kind: 'verdict',
+        verdict: 'approved',
+      }),
+      setMutation(
+        'humanGate',
+        materializeHumanGate(
+          {
+            triggerMsgId: 'review-1',
+            triggerTs: 2,
+            reason: 'completion_confirmation:review-1',
+            options: ['approve_completion', 'request_changes'],
+            phase: 'review',
+          },
+          ['safe-1'],
+        ),
+      ),
+    ]);
+    const plan = planHumanGateResolution(state, {
+      actionId: 'approve-1',
+      gateId: 'human-gate:review-1',
+      option: 'approve_completion',
+      enabledRoles: [],
+      ts: 3,
+    });
+    const resolved = applyMutations(state, plan.mutations);
+
+    expect(plan.completionResolution).toEqual({
+      reviewId: 'review-1',
+      option: 'approve_completion',
+      resolutionDecisionId: 'task-completion-resolution:approve-1',
+    });
+    expect(resolved.decisionLedger.at(-1)).toMatchObject({
+      id: 'task-completion-resolution:approve-1',
+      topic: 'task-completion:task-1',
+      authority: 'leader',
+    });
+    expect(resolved.humanGate).toBeUndefined();
+  });
+
+  it('requires a rationale when the Leader requests completion changes', () => {
+    const state = applyMutations(createInitialAppState('task-1', 'goal'), [
+      setMutation('phase', 'review'),
+      appendMutation('messages', {
+        msgId: 'review-dispatch',
+        channelId: 'main',
+        fromRole: 'COORDINATOR',
+        type: 'announce',
+        payload: { nextRole: 'REVIEWER', reviewCommentCursor: 0 },
+        display: 'Review',
+        ts: 1,
+      }),
+      appendMutation('reviewComments', {
+        id: 'review-1',
+        kind: 'verdict',
+        verdict: 'approved',
+      }),
+      setMutation('humanGate', {
+        gateId: 'human-gate:review-1',
+        reason: 'completion_confirmation:review-1',
+        options: ['approve_completion', 'request_changes'],
+        phase: 'review',
+        openedTs: 2,
+        safePointRefs: [],
+      }),
+    ]);
+    expect(() =>
+      planHumanGateResolution(state, {
+        actionId: 'rework-1',
+        gateId: 'human-gate:review-1',
+        option: 'request_changes',
+        enabledRoles: [],
+        ts: 3,
+      }),
+    ).toThrow('requires a Leader rationale');
+  });
 });

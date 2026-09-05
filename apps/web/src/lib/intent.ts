@@ -202,6 +202,7 @@ function parseHumanGateIntent(remainder: string): LeaderIntent {
   const gateId = tokens[0];
   const option = tokens[1];
   const objectionOption = option === 'accept_objection' || option === 'reject_objection';
+  const completionOption = option === 'approve_completion' || option === 'request_changes';
   if (
     gateId === undefined ||
     option === undefined ||
@@ -216,7 +217,10 @@ function parseHumanGateIntent(remainder: string): LeaderIntent {
   const argument = tokens.slice(2).join(' ');
   if (
     (objectionOption && (argument.length === 0 || argument.length > 2000)) ||
+    (completionOption &&
+      ((option === 'request_changes' && argument.length === 0) || argument.length > 2000)) ||
     (!objectionOption &&
+      !completionOption &&
       (tokens.length > 3 || (argument.length > 0 && !SAFE_MSG_ID.test(argument))))
   ) {
     return {

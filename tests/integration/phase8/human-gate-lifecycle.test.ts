@@ -131,6 +131,22 @@ describe('Phase 8 humanGate lifecycle', () => {
     await expect(response.json()).resolves.toMatchObject({ action: { status: 'applied' } });
     await runtime.waitForIdle(scope);
 
+    const completionGate = (await messages.store.load(scope))?.humanGate;
+    expect(completionGate?.reason).toBe('completion_confirmation:phase8-approved');
+    const approval = await createPostMessage(messages)(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...scope,
+          channelId: 'main',
+          msgId: 'phase8-approve-completion',
+          display: `/resolve-gate ${completionGate?.gateId} approve_completion`,
+        }),
+      }),
+    );
+    await expect(approval.json()).resolves.toMatchObject({ action: { status: 'applied' } });
+    await runtime.waitForIdle(scope);
+
     await expect(runtime.summary(scope)).resolves.toMatchObject({
       runStatus: 'completed',
       phase: 'done',
@@ -149,6 +165,7 @@ describe('Phase 8 humanGate lifecycle', () => {
     const ids = finalState?.messages.map((message) => message.msgId) ?? [];
     expect(ids).toContain('phase8-continue');
     expect(ids).toContain('human-gate-resumed:phase8-continue');
+    expect(ids).toContain('human-gate-resumed:phase8-approve-completion');
     expect(ids.indexOf('human-gate-resumed:phase8-continue')).toBeLessThan(
       ids.findIndex(
         (id) => id !== 'phase8-continue' && id !== 'human-gate-resumed:phase8-continue',

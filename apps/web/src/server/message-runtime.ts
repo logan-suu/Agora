@@ -9,6 +9,7 @@ import {
 import {
   type AppState,
   createMainChannel,
+  deriveCompletionResolution,
   deriveObjectionResolutions,
   type Message,
   type Mutation,
@@ -371,6 +372,9 @@ export class MessageRuntime {
               ...(plan.objectionResolution === undefined
                 ? {}
                 : { objectionResolution: plan.objectionResolution }),
+              ...(plan.completionResolution === undefined
+                ? {}
+                : { completionResolution: plan.completionResolution }),
             },
             display: input.display,
             ts: input.ts,
@@ -763,6 +767,26 @@ function assertHumanGateResolutionReplay(
   if (existing.payload.objectionResolution !== undefined) {
     const views = deriveObjectionResolutions(state);
     if (!views.some((view) => view.actionId === existing.msgId && view.status === 'resolved')) {
+      throw new Error(`humanGate resolution action "${existing.msgId}" has incomplete effects`);
+    }
+  }
+  const completion = existing.payload.completionResolution;
+  const completionRecord =
+    typeof completion === 'object' && completion !== null && !Array.isArray(completion)
+      ? (completion as Record<string, unknown>)
+      : undefined;
+  const completionOption =
+    incoming.option === 'approve_completion' || incoming.option === 'request_changes';
+  if (completionOption && completionRecord === undefined) {
+    throw new Error(`humanGate resolution action "${existing.msgId}" has incomplete effects`);
+  }
+  if (completionRecord !== undefined) {
+    const reviewId = completionRecord.reviewId;
+    if (typeof reviewId !== 'string') {
+      throw new Error(`humanGate resolution action "${existing.msgId}" has incomplete effects`);
+    }
+    const view = deriveCompletionResolution(state, reviewId);
+    if (view?.actionId !== existing.msgId || view.option !== incoming.option) {
       throw new Error(`humanGate resolution action "${existing.msgId}" has incomplete effects`);
     }
   }
