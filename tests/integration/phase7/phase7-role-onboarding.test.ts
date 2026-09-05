@@ -88,6 +88,8 @@ describe('Phase 7 role onboarding real execution chain', () => {
       roster: [],
       loadRoster: () => restarted.enabledRoleSpecs(scope.projectId),
       buildChannelContext: (state, role) => restarted.channelContextFor(state, role),
+      transition: async (_state, mutations) =>
+        (await restarted.commitMutations(scope, mutations)).state,
       transitionStep: async (_state, role, mutations) =>
         (await restarted.commitWorkerStepMutations(scope, role, mutations)).state,
       buildExecutor: (spec) => {
@@ -98,7 +100,10 @@ describe('Phase 7 role onboarding real execution chain', () => {
     });
 
     try {
-      const final = await worker.runOne(persisted, { role: 'TESTER' });
+      const final = await worker.runOne(persisted, {
+        workerId: 'worker:phase7-onboarding:tester',
+        role: 'TESTER',
+      });
       expect(adapter.inputs).toHaveLength(1);
       expect(adapter.inputs[0]).toContain('"onboardingContext"');
       expect(adapter.inputs[0]).toContain('"actionId":"onboard-tester-g5"');

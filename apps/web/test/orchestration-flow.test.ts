@@ -508,7 +508,7 @@ describe('TaskOrchestrationRuntime', () => {
     });
   });
 
-  it('rejects a second active run anywhere in the Phase 5 backend instance', async () => {
+  it('allows distinct task runs to share the Phase 9 backend instance', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
     roots.push(root);
     const messages = createMessageRuntime(root, new ChannelStream());
@@ -537,14 +537,17 @@ describe('TaskOrchestrationRuntime', () => {
         }),
       }),
     );
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(202);
     await expect(response.json()).resolves.toMatchObject({
-      error: expect.stringContaining('active'),
+      startOutcome: 'started',
+      runStatus: 'running',
     });
 
     release();
-    const scope = { projectId: 'project-a', taskId: 'task-a' };
-    await runtime.waitForIdle(scope);
+    await Promise.all([
+      runtime.waitForIdle({ projectId: 'project-a', taskId: 'task-a' }),
+      runtime.waitForIdle({ projectId: 'project-b', taskId: 'task-b' }),
+    ]);
   });
 
   it('archives available output and disposes resources when a run fails', async () => {

@@ -163,15 +163,41 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     expect(channelContext[0]?.entries).toEqual([{ ref: { msgId: 'm1' } }]);
   });
 
-  it('COORDINATOR global.summary carries phase/test summary with explicit Phase 4/9 empties', () => {
-    const view = slicesOf(makeState({ testResults: TEST_RESULTS }), 'COORDINATOR');
+  it('COORDINATOR global.summary carries phase/test and safe worker status summaries', () => {
+    const view = slicesOf(
+      makeState({
+        testResults: TEST_RESULTS,
+        workers: [
+          {
+            workerId: 'worker:dispatch-1:0',
+            role: 'CODER',
+            executor: 'harness',
+            status: 'running',
+            subtaskId: 'subtask-1',
+            worktree: '/secret/worktree',
+            sessionId: 'secret-session',
+            safePoint: 'secret-safe-point',
+            startedTs: 42,
+          },
+        ],
+      }),
+      'COORDINATOR',
+    );
     expect(view['global.summary']).toEqual({
       taskId: 't-1',
       goal: 'build an LRU cache',
       phase: 'clarifying',
       iterationCount: 0,
       complexity: null,
-      workers: [],
+      workers: [
+        {
+          workerId: 'worker:dispatch-1:0',
+          role: 'CODER',
+          status: 'running',
+          subtaskId: 'subtask-1',
+          startedTs: 42,
+        },
+      ],
       testSummary: { passed: false, total: 5, failed: 2 },
     });
   });

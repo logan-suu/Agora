@@ -9,7 +9,7 @@ import {
   type RoleSpec,
   type TestResults,
 } from '@agora/core-domain';
-import { WorkerRuntime } from '@agora/core-orchestration';
+import { GlobalScheduler, WorkerRuntime } from '@agora/core-orchestration';
 import {
   DEFAULT_ROSTER,
   SIX_ROLE_HANDOFF,
@@ -43,15 +43,18 @@ export interface WebTaskCompositionOptions {
   sandbox?: SandboxManager;
   dataRoot?: string;
   executorOptions?: Pick<HarnessExecutorOptions, 'adapter' | 'provider' | 'deepseek'>;
+  scheduler?: GlobalScheduler;
 }
 
 /** Production D10 composition: Docker + MCP tools + Harness + six-role roster. */
 export function createWebTaskCompositionFactory(
   options: WebTaskCompositionOptions = {},
 ): TaskCompositionFactory {
+  const scheduler = options.scheduler ?? new GlobalScheduler();
   return async ({
     scope,
     goal,
+    loadState,
     transition,
     transitionStep,
     handleOutput,
@@ -223,24 +226,28 @@ export function createWebTaskCompositionFactory(
       await releaseRuntimeResources(false).catch(() => undefined);
       throw error;
     }
-    const workerRuntime = new WorkerRuntime({
-      roster: DEFAULT_ROSTER,
-      ...(loadRoster === undefined ? {} : { loadRoster }),
-      transition,
-      ...(transitionStep === undefined ? {} : { transitionStep }),
-      handleOutput,
-      buildChannelContext,
-      buildExecutor: (spec): Executor => {
-        if (restored?.role === spec.role) {
-          const executor = restored.executor;
-          restored = undefined;
-          latestExecutor = executor;
-          latestRole = spec.role;
-          return executor;
-        }
-        return createExecutor(spec);
+    const workerRuntime = new WorkerRuntime(
+      {
+        roster: DEFAULT_ROSTER,
+        ...(loadRoster === undefined ? {} : { loadRoster }),
+        loadState,
+        transition,
+        ...(transitionStep === undefined ? {} : { transitionStep }),
+        handleOutput,
+        buildChannelContext,
+        buildExecutor: (spec): Executor => {
+          if (restored?.role === spec.role) {
+            const executor = restored.executor;
+            restored = undefined;
+            latestExecutor = executor;
+            latestRole = spec.role;
+            return executor;
+          }
+          return createExecutor(spec);
+        },
       },
-    });
+      scheduler,
+    );
     const subtaskId = `${scope.taskId}-sub-0`;
     const initialState =
       resume?.state ??

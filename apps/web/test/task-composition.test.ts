@@ -58,6 +58,7 @@ describe('createWebTaskCompositionFactory', () => {
       createComposition({
         scope: { projectId: 'project-a', taskId: 'task-a' },
         goal: 'Build safely',
+        loadState: async () => undefined,
         transition: async (state) => state,
         handleOutput: async () => {},
         buildChannelContext: async () => [],
@@ -88,6 +89,7 @@ describe('createWebTaskCompositionFactory', () => {
       createComposition({
         scope,
         goal: state.goal,
+        loadState: async () => state,
         transition: async (current) => current,
         handleOutput: async () => {},
         buildChannelContext: async () => [],

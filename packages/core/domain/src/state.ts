@@ -22,6 +22,8 @@ export type RoleId =
 
 export type ExecutorType = 'harness' | 'external';
 
+export type WorkerStatus = 'pending' | 'running' | 'paused' | 'done' | 'failed';
+
 export type MsgType =
   | 'handoff'
   | 'feedback'
@@ -46,6 +48,18 @@ export interface Subtask {
   dependsOn: string[];
   status: 'todo' | 'in_progress' | 'blocked' | 'done';
   worktree?: string;
+}
+
+export interface WorkerState {
+  workerId: string;
+  role: RoleId;
+  executor: ExecutorType;
+  status: WorkerStatus;
+  subtaskId?: string;
+  worktree?: string;
+  sessionId?: string;
+  safePoint?: string;
+  startedTs: number;
 }
 
 export interface Message {
@@ -131,6 +145,7 @@ export interface AppState {
   goal: string;
   phase: Phase;
   iterationCount: number;
+  workers: WorkerState[];
   subtasks: Subtask[];
   messages: Message[];
   requirements: Requirement[];
@@ -158,6 +173,7 @@ export function createInitialAppState(
     goal,
     phase: 'clarifying',
     iterationCount: 0,
+    workers: [],
     subtasks: [],
     messages: [],
     requirements: [],

@@ -119,4 +119,20 @@ describe('JsonTaskStateStore', () => {
     await writeFile(path, `${JSON.stringify({ ...legacy, objections: null }, null, 2)}\n`, 'utf8');
     await expect(store.load(scope())).rejects.toThrow('objections must be an array');
   });
+
+  it('normalizes a pre-D17 snapshot without workers and rejects a malformed workers slice', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const current = createInitialAppState('task-a', 'legacy goal', 'project-a');
+    const snapshot = { ...current } as Partial<typeof current>;
+    delete snapshot.workers;
+    const path = join(root, 'projects/project-a/tasks/task-a/state.json');
+    await store.initialize(scope(), current);
+    await writeFile(path, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
+
+    await expect(store.load(scope())).resolves.toEqual({ ...current, workers: [] });
+
+    await writeFile(path, `${JSON.stringify({ ...current, workers: null }, null, 2)}\n`, 'utf8');
+    await expect(store.load(scope())).rejects.toThrow('workers must be an array');
+  });
 });
