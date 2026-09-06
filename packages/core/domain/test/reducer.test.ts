@@ -120,6 +120,46 @@ describe('applyMutations · mergeById', () => {
     expect(next.subtasks[0]?.status).toBe('in_progress');
   });
 
+  it('upserts stable Phase 9 worker identities without conflating workers of the same role', () => {
+    const base = createInitialAppState('t-1', 'goal');
+    const dispatched = applyMutations(base, [
+      mergeByIdMutation('workers', 'worker:dispatch-1:0', {
+        workerId: 'worker:dispatch-1:0',
+        role: 'CODER',
+        executor: 'harness',
+        status: 'pending',
+        subtaskId: 'st-1',
+        sessionId: 'session:worker:dispatch-1:0',
+        startedTs: 1,
+      }),
+      mergeByIdMutation('workers', 'worker:dispatch-1:1', {
+        workerId: 'worker:dispatch-1:1',
+        role: 'CODER',
+        executor: 'harness',
+        status: 'pending',
+        subtaskId: 'st-2',
+        sessionId: 'session:worker:dispatch-1:1',
+        startedTs: 1,
+      }),
+    ]);
+
+    const running = applyMutations(dispatched, [
+      mergeByIdMutation('workers', 'worker:dispatch-1:0', { status: 'running' }),
+    ]);
+
+    expect(running.workers).toHaveLength(2);
+    expect(running.workers[0]).toMatchObject({
+      workerId: 'worker:dispatch-1:0',
+      role: 'CODER',
+      status: 'running',
+    });
+    expect(running.workers[1]).toMatchObject({
+      workerId: 'worker:dispatch-1:1',
+      role: 'CODER',
+      status: 'pending',
+    });
+  });
+
   it('appends a copy when the identity is not found yet', () => {
     const base = createInitialAppState('t-1', 'goal');
     const next = applyMutations(base, [
@@ -207,17 +247,11 @@ describe('applyMutations · stage gating (spec §1 vs Phase 0 slice)', () => {
     }
   });
 
-  it('throws the stage-gate error for every mergeById field outside the Phase 0 slice', () => {
+  it('has unlocked every specified mergeById field by Phase 9', () => {
     const disabled = MERGE_BY_ID_FIELDS.filter(
       (field) => !ENABLED_MERGE_BY_ID_FIELDS.includes(field),
     );
-    expect(disabled.length).toBeGreaterThan(0);
-    for (const field of disabled) {
-      const mutation = mergeByIdMutation(field, 'x', {});
-      expect(() => applyMutations(createInitialAppState('t-1', 'goal'), [mutation])).toThrowError(
-        `mutation field "${field}" is defined by spec §1 but not enabled in Phase 0`,
-      );
-    }
+    expect(disabled).toEqual([]);
   });
 
   it('throws the stage-gate error for every set field outside the Phase 0 slice', () => {
@@ -370,7 +404,7 @@ describe('mutation builders', () => {
       'handoffPackets',
       'reviewComments',
     ]);
-    expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['subtasks', 'requirements']);
+    expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['workers', 'subtasks', 'requirements']);
     expect([...ENABLED_SET_FIELDS]).toEqual([
       'testResults',
       'phase',

@@ -11,6 +11,7 @@ describe('createInitialAppState', () => {
     expect(state.phase).toBe('clarifying');
     expect(state.iterationCount).toBe(0);
     expect(state.subtasks).toEqual([]);
+    expect(state.workers).toEqual([]);
     expect(state.messages).toEqual([]);
     expect('pendingPatch' in state).toBe(false);
     expect('conventions' in state).toBe(false);
@@ -25,6 +26,7 @@ describe('createInitialAppState', () => {
       goal: 'goal',
       phase: 'coding',
       iterationCount: 1,
+      workers: [],
       subtasks: [
         { id: 'st-1', title: 'lru', ownerRole: 'CODER', dependsOn: [], status: 'in_progress' },
       ],

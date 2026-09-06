@@ -57,16 +57,23 @@ function firstFailureState(): AppState {
   ]);
 }
 
+function completePendingWorkers(state: AppState): AppState {
+  return applyMutations(
+    state,
+    state.workers
+      .filter((worker) => worker.status === 'pending')
+      .map((worker) => mergeByIdMutation('workers', worker.workerId, { status: 'done' })),
+  );
+}
+
 function secondFailureScenario(): { state: AppState; scenarioClock: ReturnType<typeof clock> } {
   const scenarioClock = clock();
   const first = firstFailureState();
-  const repair = applyMutations(
-    first,
-    decide(first, { ...scenarioClock, roster: DEFAULT_ROSTER }).mutations,
+  const repair = completePendingWorkers(
+    applyMutations(first, decide(first, { ...scenarioClock, roster: DEFAULT_ROSTER }).mutations),
   );
-  const retest = applyMutations(
-    repair,
-    decide(repair, { ...scenarioClock, roster: DEFAULT_ROSTER }).mutations,
+  const retest = completePendingWorkers(
+    applyMutations(repair, decide(repair, { ...scenarioClock, roster: DEFAULT_ROSTER }).mutations),
   );
   return {
     state: applyMutations(retest, [setMutation('testResults', failedResults())]),
@@ -141,7 +148,9 @@ describe('Phase 4 cumulative exit gate', () => {
     });
     expect(workerRole(rootCauseReview)).toBe('REVIEWER');
 
-    const reviewState = applyMutations(secondFailure, rootCauseReview.mutations);
+    const reviewState = completePendingWorkers(
+      applyMutations(secondFailure, rootCauseReview.mutations),
+    );
     const architectureVerdict = applyMutations(reviewState, [
       appendMutation('reviewComments', {
         id: 'phase4-architecture-verdict',
@@ -151,6 +160,8 @@ describe('Phase 4 cumulative exit gate', () => {
         summary: 'The module boundary is wrong',
       }),
     ]);
+    expect(architectureVerdict.workers.filter((worker) => worker.status === 'pending')).toEqual([]);
+    expect(architectureVerdict.phase).toBe('review');
     const architectureEscalation = decide(architectureVerdict, {
       ...scenarioClock,
       roster: DEFAULT_ROSTER,

@@ -251,7 +251,7 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
     });
     expect(firstDecision.route).toEqual({
       kind: 'worker',
-      batch: [{ role: 'REVIEWER' }],
+      batch: [{ workerId: 'worker:phase5-coordinator-2:0', role: 'REVIEWER' }],
       parallel: false,
     });
     const dispatched = applyMutations(persisted, firstDecision.mutations);
@@ -625,7 +625,7 @@ describe('Phase 5 G5 evidence guards', () => {
 });
 
 describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
-  it('runs one browser-shaped task to durable completion and releases the single-run slot', async () => {
+  it('runs one browser-shaped task to durable completion under the shared scheduler', async () => {
     const docker = connectDocker();
     expect(docker, 'Phase 5 G5 requires a reachable Docker daemon').not.toBeNull();
     if (docker === null) throw new Error('Phase 5 G5 requires a reachable Docker daemon');
@@ -675,15 +675,6 @@ describe('Phase 5 real Docker/Harness/MCP cumulative exit chain', () => {
     const retry = await postTask(taskRequest(startBody));
     expect(retry.status).toBe(200);
     await expect(retry.json()).resolves.toMatchObject({ startOutcome: 'already_running' });
-    const capacityConflict = await postTask(
-      taskRequest({
-        projectId: 'other-project',
-        taskId: 'other-task',
-        requestId: 'other-request',
-        goal: 'This must wait for the Phase 9 scheduler',
-      }),
-    );
-    expect(capacityConflict.status).toBe(409);
     releaseFirstRequest();
 
     await runtime.waitForIdle({ projectId: 'demo', taskId: 'phase5-exit' });

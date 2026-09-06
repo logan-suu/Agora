@@ -2,6 +2,7 @@ export * from './channel-lifecycle';
 export * from './channel-summary-reconciler';
 export * from './complexity';
 export * from './coordinator';
+export * from './global-scheduler';
 export * from './human-gate';
 export * from './message-service';
 export * from './objection';

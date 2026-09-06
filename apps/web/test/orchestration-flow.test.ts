@@ -332,7 +332,9 @@ describe('TaskOrchestrationRuntime', () => {
     const messages = createMessageRuntime(root, new ChannelStream());
     const lifecycle = { archived: 0, disposed: 0 };
     const base = successfulFactory(Promise.resolve(), lifecycle);
+    let factoryCalls = 0;
     const factory: TaskCompositionFactory = async (input) => {
+      factoryCalls += 1;
       const composition = await base(input);
       return {
         ...composition,
@@ -344,7 +346,9 @@ describe('TaskOrchestrationRuntime', () => {
         },
       };
     };
-    const runtime = new TaskOrchestrationRuntime(messages, factory);
+    const runtime = new TaskOrchestrationRuntime(messages, factory, {
+      maxActiveCompositions: 1,
+    });
     const scope = { projectId: 'project-a', taskId: 'task-gate-cleanup' };
 
     await runtime.start({ ...scope, requestId: 'start-gate-cleanup', goal: 'Build TTL LRU' });
@@ -360,6 +364,19 @@ describe('TaskOrchestrationRuntime', () => {
         safePointRefs: ['cleanup-checkpoint'],
       },
     });
+    const capacity = await createPostTask(runtime)(
+      new Request('http://localhost/api/tasks', {
+        method: 'POST',
+        body: JSON.stringify({
+          projectId: 'project-b',
+          taskId: 'blocked-by-cleanup',
+          requestId: 'blocked-by-cleanup',
+          goal: 'Must not allocate',
+        }),
+      }),
+    );
+    expect(capacity.status).toBe(429);
+    expect(factoryCalls).toBe(1);
   });
 
   it('starts one persisted run, rejects a different goal, and recovers the completed summary', async () => {
@@ -508,7 +525,7 @@ describe('TaskOrchestrationRuntime', () => {
     });
   });
 
-  it('rejects a second active run anywhere in the Phase 5 backend instance', async () => {
+  it('allows distinct task runs to share the Phase 9 backend instance', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
     roots.push(root);
     const messages = createMessageRuntime(root, new ChannelStream());
@@ -537,14 +554,63 @@ describe('TaskOrchestrationRuntime', () => {
         }),
       }),
     );
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(202);
     await expect(response.json()).resolves.toMatchObject({
-      error: expect.stringContaining('active'),
+      startOutcome: 'started',
+      runStatus: 'running',
     });
 
     release();
-    const scope = { projectId: 'project-a', taskId: 'task-a' };
-    await runtime.waitForIdle(scope);
+    await Promise.all([
+      runtime.waitForIdle({ projectId: 'project-a', taskId: 'task-a' }),
+      runtime.waitForIdle({ projectId: 'project-b', taskId: 'task-b' }),
+    ]);
+  });
+
+  it('rejects composition admission before allocating a second heavy task root', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let factoryCalls = 0;
+    const base = successfulFactory(gate);
+    const factory: TaskCompositionFactory = async (input) => {
+      factoryCalls += 1;
+      return base(input);
+    };
+    const runtime = new TaskOrchestrationRuntime(messages, factory, {
+      maxActiveCompositions: 1,
+    });
+
+    await runtime.start({
+      projectId: 'project-a',
+      taskId: 'task-a',
+      requestId: 'request-a',
+      goal: 'First goal',
+    });
+    const response = await createPostTask(runtime)(
+      new Request('http://localhost/api/tasks', {
+        method: 'POST',
+        body: JSON.stringify({
+          projectId: 'project-b',
+          taskId: 'task-b',
+          requestId: 'request-b',
+          goal: 'Second goal',
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(factoryCalls).toBe(1);
+    await expect(messages.store.load({ projectId: 'project-b', taskId: 'task-b' })).resolves.toBe(
+      undefined,
+    );
+
+    release();
+    await runtime.waitForIdle({ projectId: 'project-a', taskId: 'task-a' });
   });
 
   it('archives available output and disposes resources when a run fails', async () => {

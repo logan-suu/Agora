@@ -80,6 +80,8 @@ describe('Phase 7 role departure real execution chain', () => {
       roster: DEFAULT_ROSTER,
       loadRoster: () => messages.enabledRoleSpecs(scope.projectId),
       buildChannelContext: (state, role) => messages.workerStepChannelContextFor(state, role),
+      transition: async (_state, mutations) =>
+        (await messages.commitMutations(scope, mutations)).state,
       transitionStep: async (_state, role, mutations) =>
         (await messages.commitWorkerStepMutations(scope, role, mutations)).state,
       buildExecutor: (spec) => {
@@ -102,7 +104,11 @@ describe('Phase 7 role departure real execution chain', () => {
     });
 
     try {
-      const running = worker.runOne(initial, { role: 'CODER', subtaskId: 'coding-work' });
+      const running = worker.runOne(initial, {
+        workerId: 'worker:phase7-departure:coder',
+        role: 'CODER',
+        subtaskId: 'coding-work',
+      });
       await adapter.started;
       const responsePromise = createPostMessage(messages)(
         new Request('http://localhost/api/messages', {

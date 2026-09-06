@@ -1119,7 +1119,7 @@ describe('persisted HTTP + SSE message flow', () => {
 
     expect(decision.route).toEqual({
       kind: 'worker',
-      batch: [{ role: 'REVIEWER' }],
+      batch: [{ workerId: 'worker:coordinator-2:0', role: 'REVIEWER' }],
       parallel: false,
     });
     const dispatched = applyMutations(state, decision.mutations);

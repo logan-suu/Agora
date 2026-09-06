@@ -13,7 +13,9 @@ import type {
   Requirement,
   Subtask,
   TestResults,
+  WorkerState,
 } from './state';
+import { isWorkerState } from './state';
 
 export const APPEND_FIELDS = [
   'messages',
@@ -48,7 +50,11 @@ export const ENABLED_APPEND_FIELDS: readonly AppendField[] = [
   'handoffPackets',
   'reviewComments',
 ];
-export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = ['subtasks', 'requirements'];
+export const ENABLED_MERGE_BY_ID_FIELDS: readonly MergeByIdField[] = [
+  'workers',
+  'subtasks',
+  'requirements',
+];
 export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'testResults',
   'phase',
@@ -208,6 +214,25 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
 function applyMergeById(state: AppState, field: MergeByIdField, value: { id: string }): AppState {
   if (isNotEnabled(field, ENABLED_MERGE_BY_ID_FIELDS)) throw disabledFieldError(field);
   switch (field) {
+    case 'workers': {
+      const index = state.workers.findIndex((item) => item.workerId === value.id);
+      const patch = value as Record<string, unknown>;
+      if (patch.workerId !== undefined && patch.workerId !== value.id) {
+        throw new Error(`worker identity must match merge id "${value.id}"`);
+      }
+      if (index < 0) {
+        const worker = workerStateOf({ ...patch, workerId: value.id });
+        return { ...state, workers: [...state.workers, worker] };
+      }
+      const existing = state.workers[index];
+      if (existing === undefined) {
+        throw new Error(`worker "${value.id}" disappeared during merge`);
+      }
+      const worker = workerStateOf({ ...existing, ...patch, workerId: value.id });
+      const workers = state.workers.slice();
+      workers[index] = worker;
+      return { ...state, workers };
+    }
     case 'subtasks': {
       const index = state.subtasks.findIndex((item) => item.id === value.id);
       if (index < 0) return { ...state, subtasks: [...state.subtasks, value as Subtask] };
@@ -237,6 +262,14 @@ function applyMergeById(state: AppState, field: MergeByIdField, value: { id: str
     default:
       throw new Error(`no writer registered for mergeById field "${field}"`);
   }
+}
+
+function workerStateOf(value: Record<string, unknown>): WorkerState {
+  if (!isWorkerState(value)) {
+    throw new Error('worker must be a complete valid WorkerState');
+  }
+  const { id: _id, ...worker } = value;
+  return worker as unknown as WorkerState;
 }
 
 function applySet(state: AppState, field: SetField, value: unknown): AppState {

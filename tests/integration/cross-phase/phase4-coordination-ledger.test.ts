@@ -1,4 +1,5 @@
 import {
+  type AppState,
   applyMutations,
   createInitialAppState,
   mergeByIdMutation,
@@ -18,6 +19,15 @@ function clock() {
   return { newId: () => `phase4-${++id}`, now: () => 44 };
 }
 
+function completePendingWorkers(state: AppState): AppState {
+  return applyMutations(
+    state,
+    state.workers
+      .filter((worker) => worker.status === 'pending')
+      .map((worker) => mergeByIdMutation('workers', worker.workerId, { status: 'done' })),
+  );
+}
+
 describe('Phase 4 cross-phase coordination Ledger + handoff generation', () => {
   it('carries structured progress and role handoffs across PM→ARCHITECT→CODER', () => {
     const chainClock = clock();
@@ -25,9 +35,8 @@ describe('Phase 4 cross-phase coordination Ledger + handoff generation', () => {
       setMutation('complexity', { tier: 1, signals: { rule: 'tier1.default' } }),
     ]);
 
-    state = applyMutations(
-      state,
-      decide(state, { ...chainClock, roster: DEFAULT_ROSTER }).mutations,
+    state = completePendingWorkers(
+      applyMutations(state, decide(state, { ...chainClock, roster: DEFAULT_ROSTER }).mutations),
     );
     expect(state.nextRole).toBe('PM');
     expect(state.handoffPackets).toEqual([]);
@@ -39,9 +48,8 @@ describe('Phase 4 cross-phase coordination Ledger + handoff generation', () => {
         nonGoals: [],
       }),
     ]);
-    state = applyMutations(
-      state,
-      decide(state, { ...chainClock, roster: DEFAULT_ROSTER }).mutations,
+    state = completePendingWorkers(
+      applyMutations(state, decide(state, { ...chainClock, roster: DEFAULT_ROSTER }).mutations),
     );
     expect(state.nextRole).toBe('ARCHITECT');
     expect(state.handoffPackets.map((packet) => `${packet.fromRole}->${packet.toRole}`)).toEqual([
@@ -52,9 +60,8 @@ describe('Phase 4 cross-phase coordination Ledger + handoff generation', () => {
       setMutation('architecture', { modules: ['cache'] }),
       setMutation('phase', 'planning'),
     ]);
-    state = applyMutations(
-      state,
-      decide(state, { ...chainClock, roster: DEFAULT_ROSTER }).mutations,
+    state = completePendingWorkers(
+      applyMutations(state, decide(state, { ...chainClock, roster: DEFAULT_ROSTER }).mutations),
     );
     expect(state.nextRole).toBe('CODER');
     expect(state.handoffPackets.map((packet) => `${packet.fromRole}->${packet.toRole}`)).toEqual([

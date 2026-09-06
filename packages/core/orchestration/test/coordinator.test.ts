@@ -30,6 +30,20 @@ function clock(): DeterministicClock {
   return { newId: () => `id-${++counter}`, now: () => 1000 };
 }
 
+function applyCompletedWorkerDecision(
+  state: AppState,
+  decision: ReturnType<typeof decide>,
+): AppState {
+  const dispatched = applyMutations(state, decision.mutations);
+  if (decision.route.kind !== 'worker') return dispatched;
+  return applyMutations(
+    dispatched,
+    decision.route.batch.map((assignment) =>
+      mergeByIdMutation('workers', assignment.workerId, { status: 'done' }),
+    ),
+  );
+}
+
 function latestCoordinatorControlPayload(state: AppState): Record<string, unknown> | undefined {
   for (let index = state.messages.length - 1; index >= 0; index -= 1) {
     const message = state.messages[index];
@@ -122,7 +136,7 @@ function reviewState(
     now: () => 1000,
     roster: FULL_ROSTER,
   });
-  return applyMutations(applyMutations(tested, dispatch.mutations), [
+  return applyMutations(applyCompletedWorkerDecision(tested, dispatch), [
     appendMutation('reviewComments', { id: 'rc-note-1', kind: 'comment', summary: 'naming' }),
     appendMutation('reviewComments', {
       id: 'rc-verdict-1',
@@ -201,6 +215,39 @@ const FULL_ROSTER: RoleSpec[] = (
   routeWhen: 'always',
 }));
 
+describe('coordinator.decide · D17 stable worker dispatch', () => {
+  it('persists a stable pending worker before execution and replays that assignment unchanged', () => {
+    const state = createInitialAppState('t-1', '实现带 TTL 的 LRU 缓存');
+    const first = decide(state, { ...clock(), roster: PHASE0_ROSTER });
+
+    expect(first.route.kind).toBe('worker');
+    if (first.route.kind !== 'worker') throw new Error('expected a worker route');
+    expect(first.route.parallel).toBe(false);
+    expect(first.route.batch).toHaveLength(1);
+    expect(first.route.batch[0]?.workerId).toMatch(/^worker:[A-Za-z0-9._:-]+:0$/);
+
+    const persisted = applyMutations(state, first.mutations);
+    expect(persisted.workers).toEqual([
+      expect.objectContaining({
+        workerId: first.route.batch[0]?.workerId,
+        role: 'CODER',
+        executor: 'harness',
+        status: 'pending',
+      }),
+    ]);
+
+    const replay = decide(persisted, {
+      newId: () => {
+        throw new Error('replay must not allocate a new dispatch identity');
+      },
+      now: () => 2000,
+      roster: PHASE0_ROSTER,
+    });
+    expect(replay.route).toEqual(first.route);
+    expect(replay.mutations).toEqual([]);
+  });
+});
+
 describe('decide · D14 objection routing', () => {
   it('routes a persisted blocking objection to a stable D4 request before normal phase work', () => {
     const state = withObjection(codingState(), 'blocking');
@@ -266,7 +313,7 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     ]);
 
     const override = decide(state, { ...clock(), roster: FULL_ROSTER });
-    expect(override.route).toEqual({
+    expect(override.route).toMatchObject({
       kind: 'worker',
       batch: [{ role: 'REVIEWER' }],
       parallel: false,
@@ -290,9 +337,9 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
         .instructionOrQuestion.answer,
     ).toBe('inspect the cache contract');
 
-    const afterOverride = applyMutations(state, override.mutations);
+    const afterOverride = applyCompletedWorkerDecision(state, override);
     const normal = decide(afterOverride, { ...clock(), roster: FULL_ROSTER });
-    expect(normal.route).toEqual({
+    expect(normal.route).toMatchObject({
       kind: 'worker',
       batch: [{ role: 'ARCHITECT' }],
       parallel: false,
@@ -357,14 +404,14 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
     ]);
 
     const latest = decide(state, { ...clock(), roster: FULL_ROSTER });
-    expect(latest.route).toEqual({
+    expect(latest.route).toMatchObject({
       kind: 'worker',
       batch: [{ role: 'TESTER' }],
       parallel: false,
     });
-    const afterLatest = applyMutations(state, latest.mutations);
+    const afterLatest = applyCompletedWorkerDecision(state, latest);
     const normal = decide(afterLatest, { ...clock(), roster: FULL_ROSTER });
-    expect(normal.route).toEqual({
+    expect(normal.route).toMatchObject({
       kind: 'worker',
       batch: [{ role: 'ARCHITECT' }],
       parallel: false,
@@ -522,9 +569,9 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
 
   it('throws when review finishes without a verdict entry (producer contract)', () => {
     const tested = testingState(true);
-    const state = applyMutations(
+    const state = applyCompletedWorkerDecision(
       tested,
-      decide(tested, { ...clock(), roster: FULL_ROSTER }).mutations,
+      decide(tested, { ...clock(), roster: FULL_ROSTER }),
     );
     expect(() => decide(state)).toThrow(/current review turn.*verdict/);
   });
@@ -532,7 +579,7 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
   it('throws on an unknown verdict value instead of guessing a route', () => {
     const tested = testingState(true);
     const state = applyMutations(
-      applyMutations(tested, decide(tested, { ...clock(), roster: FULL_ROSTER }).mutations),
+      applyCompletedWorkerDecision(tested, decide(tested, { ...clock(), roster: FULL_ROSTER })),
       [appendMutation('reviewComments', { id: 'rc-1', kind: 'verdict', verdict: 'kinda-fine' })],
     );
     expect(() => decide(state)).toThrow(/verdict/);
@@ -546,9 +593,9 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
         verdict: 'approved',
       }),
     ]);
-    const review = applyMutations(
+    const review = applyCompletedWorkerDecision(
       tested,
-      decide(tested, { ...clock(), roster: FULL_ROSTER }).mutations,
+      decide(tested, { ...clock(), roster: FULL_ROSTER }),
     );
 
     expect(() => decide(review, { ...clock(), roster: FULL_ROSTER })).toThrow(
@@ -564,9 +611,9 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
         verdict: 'changes_requested',
       }),
     ]);
-    const review = applyMutations(
+    const review = applyCompletedWorkerDecision(
       tested,
-      decide(tested, { ...clock(), roster: FULL_ROSTER }).mutations,
+      decide(tested, { ...clock(), roster: FULL_ROSTER }),
     );
     const duplicate = applyMutations(review, [
       appendMutation('reviewComments', {
@@ -857,13 +904,13 @@ describe('coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semanti
 describe('coordinator.decide · feedback escalation (task 4.3, spec §3)', () => {
   function afterFirstTestFailure(): AppState {
     const first = testingState(false, 0);
-    return applyMutations(
+    return applyCompletedWorkerDecision(
       first,
       decide(first, {
         newId: () => 'first-failure-feedback',
         now: () => 900,
         roster: FULL_ROSTER,
-      }).mutations,
+      }),
     );
   }
 
@@ -984,9 +1031,9 @@ describe('coordinator.decide · feedback escalation (task 4.3, spec §3)', () =>
 
   it('rejects approved verdicts during a repeated-test-failure root-cause review', () => {
     const secondFailure = nextFailedTestRound(afterFirstTestFailure());
-    const review = applyMutations(
+    const review = applyCompletedWorkerDecision(
       secondFailure,
-      decide(secondFailure, { ...clock(), roster: FULL_ROSTER }).mutations,
+      decide(secondFailure, { ...clock(), roster: FULL_ROSTER }),
     );
     const withVerdict = applyMutations(review, [
       appendMutation('reviewComments', {
@@ -1020,7 +1067,7 @@ describe('coordinator.decide · tier-aware topology routing (task 4.2, spec §3)
   function tier2SplitState(modules: string[] = ['cache', 'store', 'api']): AppState {
     const base = tiered(2, designedStateWithModules(modules));
     const decision = decide(base, clock());
-    return applyMutations(base, decision.mutations);
+    return applyCompletedWorkerDecision(base, decision);
   }
 
   function testingResults(passed: boolean): AppState['testResults'] {

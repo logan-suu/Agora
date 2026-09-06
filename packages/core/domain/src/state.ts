@@ -22,6 +22,8 @@ export type RoleId =
 
 export type ExecutorType = 'harness' | 'external';
 
+export type WorkerStatus = 'pending' | 'running' | 'paused' | 'done' | 'failed';
+
 export type MsgType =
   | 'handoff'
   | 'feedback'
@@ -46,6 +48,40 @@ export interface Subtask {
   dependsOn: string[];
   status: 'todo' | 'in_progress' | 'blocked' | 'done';
   worktree?: string;
+}
+
+export interface WorkerState {
+  workerId: string;
+  role: RoleId;
+  executor: ExecutorType;
+  status: WorkerStatus;
+  subtaskId?: string;
+  worktree?: string;
+  sessionId?: string;
+  safePoint?: string;
+  startedTs: number;
+}
+
+export function isWorkerState(value: unknown): value is WorkerState {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  const statuses: readonly WorkerStatus[] = ['pending', 'running', 'paused', 'done', 'failed'];
+  return (
+    typeof record.workerId === 'string' &&
+    record.workerId.length > 0 &&
+    typeof record.role === 'string' &&
+    record.role.length > 0 &&
+    (record.executor === 'harness' || record.executor === 'external') &&
+    typeof record.status === 'string' &&
+    statuses.includes(record.status as WorkerStatus) &&
+    typeof record.startedTs === 'number' &&
+    Number.isInteger(record.startedTs) &&
+    record.startedTs >= 0 &&
+    (record.subtaskId === undefined || typeof record.subtaskId === 'string') &&
+    (record.worktree === undefined || typeof record.worktree === 'string') &&
+    (record.sessionId === undefined || typeof record.sessionId === 'string') &&
+    (record.safePoint === undefined || typeof record.safePoint === 'string')
+  );
 }
 
 export interface Message {
@@ -131,6 +167,7 @@ export interface AppState {
   goal: string;
   phase: Phase;
   iterationCount: number;
+  workers: WorkerState[];
   subtasks: Subtask[];
   messages: Message[];
   requirements: Requirement[];
@@ -158,6 +195,7 @@ export function createInitialAppState(
     goal,
     phase: 'clarifying',
     iterationCount: 0,
+    workers: [],
     subtasks: [],
     messages: [],
     requirements: [],
