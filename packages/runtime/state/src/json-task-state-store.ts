@@ -1,7 +1,13 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { type AppState, applyMutations, isWorkerState, type Mutation } from '@agora/core-domain';
+import {
+  type AppState,
+  applyMutations,
+  isSubtaskPriority,
+  isWorkerState,
+  type Mutation,
+} from '@agora/core-domain';
 
 import type { TaskScope, TaskStateCommit, TaskStateStore } from './base';
 
@@ -18,7 +24,7 @@ export class JsonTaskStateStore implements TaskStateStore {
 
   async initialize(scope: TaskScope, initial: AppState): Promise<AppState> {
     this.#validateScope(scope);
-    this.#assertStateMatchesScope(scope, initial);
+    this.#assertValidState(scope, initial);
 
     return this.#enqueue(scope, async () => {
       const existing = await this.#loadSnapshot(scope);
@@ -93,28 +99,17 @@ export class JsonTaskStateStore implements TaskStateStore {
     const record = parsed as Record<string, unknown>;
     const hasObjections = Object.hasOwn(record, 'objections');
     const hasWorkers = Object.hasOwn(record, 'workers');
-    if (hasObjections && !Array.isArray(record.objections)) {
-      throw new Error(`invalid task state JSON at "${path}": objections must be an array`);
-    }
-    if (hasWorkers && !Array.isArray(record.workers)) {
-      throw new Error(`invalid task state JSON at "${path}": workers must be an array`);
-    }
-    if (Array.isArray(record.workers) && !record.workers.every(isWorkerState)) {
-      throw new Error(
-        `invalid task state JSON at "${path}": workers must contain valid WorkerState`,
-      );
-    }
     const state = {
       ...record,
       ...(hasObjections ? {} : { objections: [] }),
       ...(hasWorkers ? {} : { workers: [] }),
     } as unknown as AppState;
-    this.#assertStateMatchesScope(scope, state);
+    this.#assertValidState(scope, state, `invalid task state JSON at "${path}"`);
     return state;
   }
 
   async #writeSnapshot(scope: TaskScope, state: AppState): Promise<void> {
-    this.#assertStateMatchesScope(scope, state);
+    this.#assertValidState(scope, state);
     const path = this.#snapshotPath(scope);
     await mkdir(dirname(path), { recursive: true });
     this.#temporaryFileSequence += 1;
@@ -147,6 +142,31 @@ export class JsonTaskStateStore implements TaskStateStore {
       throw new Error(
         `task state identity does not match scope: expected ${scope.projectId}/${scope.taskId}, received ${state.projectId}/${state.taskId}`,
       );
+    }
+  }
+
+  #assertValidState(scope: TaskScope, state: AppState, prefix = 'invalid task state'): void {
+    this.#assertStateMatchesScope(scope, state);
+    if (!Array.isArray(state.objections)) {
+      throw new Error(`${prefix}: objections must be an array`);
+    }
+    if (!Array.isArray(state.workers)) {
+      throw new Error(`${prefix}: workers must be an array`);
+    }
+    if (!state.workers.every(isWorkerState)) {
+      throw new Error(`${prefix}: workers must contain valid WorkerState`);
+    }
+    if (
+      !Array.isArray(state.subtasks) ||
+      !state.subtasks.every(
+        (subtask) =>
+          typeof subtask === 'object' &&
+          subtask !== null &&
+          !Array.isArray(subtask) &&
+          isSubtaskPriority((subtask as unknown as Record<string, unknown>).priority),
+      )
+    ) {
+      throw new Error(`${prefix}: subtasks must contain valid priority`);
     }
   }
 }

@@ -9,7 +9,11 @@ import {
   type RoleSpec,
   type TestResults,
 } from '@agora/core-domain';
-import { GlobalScheduler, WorkerRuntime } from '@agora/core-orchestration';
+import {
+  GlobalScheduler,
+  validateHumanGateWorkerResumes,
+  WorkerRuntime,
+} from '@agora/core-orchestration';
 import {
   DEFAULT_ROSTER,
   SIX_ROLE_HANDOFF,
@@ -191,36 +195,76 @@ export function createWebTaskCompositionFactory(
       }
       resourcesReleased = true;
     };
-    let restored: { role: string; executor: HarnessExecutor } | undefined;
+    const restoredExecutors = new Map<string, { role: string; executor: HarnessExecutor }>();
+    let legacyResumeRole: string | undefined;
+    let legacyResumeWorkerId: string | undefined;
     try {
-      if (resume !== undefined && resume.receipt.safePointRefs.length > 0) {
-        if (resume.receipt.safePointRefs.length !== 1) {
-          throw new Error('Phase 8 sequential resume expects exactly one Harness safe point');
-        }
-        const ref = resume.receipt.safePointRefs[0] as string;
-        const identity = inspectHarnessSafePoint(ref);
-        if (
-          identity.projectId !== scope.projectId ||
-          identity.taskId !== scope.taskId ||
-          identity.cwd !== worktree.path
-        ) {
-          throw new Error('persisted humanGate safe point does not match the task composition');
-        }
+      if (
+        resume !== undefined &&
+        (resume.receipt.safePointRefs.length > 0 || resume.receipt.workerResumes !== undefined)
+      ) {
         const roster = (await loadRoster?.()) ?? DEFAULT_ROSTER;
-        const spec = roster.find((entry) => entry.role === identity.role);
-        if (spec === undefined)
-          throw new Error(`safe point role "${identity.role}" is not enabled`);
-        const executor = createExecutor(spec, resume.receipt.resumeSessionId);
-        await executor.loadSafePoint(ref);
-        executor.injectInbox(
-          project(
+        const workerResumes = resume.receipt.workerResumes;
+        if (workerResumes === undefined) {
+          if (resume.receipt.safePointRefs.length !== 1) {
+            throw new Error('Phase 8 sequential resume expects exactly one Harness safe point');
+          }
+          const ref = resume.receipt.safePointRefs[0] as string;
+          const identity = assertSafePointComposition(ref, scope, worktree.path);
+          const spec = roster.find((entry) => entry.role === identity.role);
+          if (spec === undefined)
+            throw new Error(`safe point role "${identity.role}" is not enabled`);
+          const executor = createExecutor(spec, resume.receipt.resumeSessionId);
+          await executor.loadSafePoint(ref);
+          executor.injectInbox(
+            project(
+              resume.state,
+              spec.role,
+              roster,
+              await buildChannelContext(resume.state, spec.role),
+            ),
+          );
+          legacyResumeRole = spec.role;
+          restoredExecutors.set(`legacy-role:${spec.role}`, { role: spec.role, executor });
+        } else {
+          validateHumanGateWorkerResumes(
             resume.state,
-            spec.role,
-            roster,
-            await buildChannelContext(resume.state, spec.role),
-          ),
-        );
-        restored = { role: spec.role, executor };
+            resume.actionId,
+            resume.receipt.safePointRefs,
+            workerResumes,
+          );
+          for (const plan of workerResumes) {
+            const worker = resume.state.workers.find((entry) => entry.workerId === plan.workerId);
+            if (worker === undefined) {
+              throw new Error(`resume worker "${plan.workerId}" is missing from task state`);
+            }
+            const identity = assertSafePointComposition(
+              plan.sourceSafePointRef,
+              scope,
+              worktree.path,
+            );
+            if (identity.role !== worker.role) {
+              throw new Error(
+                `resume worker "${plan.workerId}" role conflicts with its safe point`,
+              );
+            }
+            const spec = roster.find((entry) => entry.role === worker.role);
+            if (spec === undefined) {
+              throw new Error(`safe point role "${identity.role}" is not enabled`);
+            }
+            const executor = createExecutor(spec, plan.resumeSessionId);
+            await executor.loadSafePoint(plan.sourceSafePointRef);
+            executor.injectInbox(
+              project(
+                resume.state,
+                spec.role,
+                roster,
+                await buildChannelContext(resume.state, spec.role),
+              ),
+            );
+            restoredExecutors.set(plan.workerId, { role: spec.role, executor });
+          }
+        }
       }
     } catch (error) {
       await releaseRuntimeResources(false).catch(() => undefined);
@@ -229,16 +273,48 @@ export function createWebTaskCompositionFactory(
     const workerRuntime = new WorkerRuntime(
       {
         roster: DEFAULT_ROSTER,
+        ...(resume?.receipt.workerResumes === undefined
+          ? {}
+          : {
+              resumingWorkers: resume.receipt.workerResumes.map((entry) => ({
+                workerId: entry.workerId,
+                resumeSessionId: entry.resumeSessionId,
+              })),
+            }),
         ...(loadRoster === undefined ? {} : { loadRoster }),
         loadState,
+        ...(resume === undefined
+          ? {}
+          : {
+              sessionIdForAssignment: (assignment: { workerId: string; role: string }) => {
+                const planned = resume.receipt.workerResumes?.find(
+                  (entry) => entry.workerId === assignment.workerId,
+                );
+                if (planned !== undefined) return planned.resumeSessionId;
+                if (legacyResumeRole !== assignment.role) return undefined;
+                if (legacyResumeWorkerId === undefined) legacyResumeWorkerId = assignment.workerId;
+                return legacyResumeWorkerId === assignment.workerId
+                  ? resume.receipt.resumeSessionId
+                  : undefined;
+              },
+            }),
         transition,
         ...(transitionStep === undefined ? {} : { transitionStep }),
         handleOutput,
         buildChannelContext,
-        buildExecutor: (spec): Executor => {
-          if (restored?.role === spec.role) {
+        buildExecutor: (spec, assignment): Executor => {
+          const restored =
+            restoredExecutors.get(assignment.workerId) ??
+            restoredExecutors.get(`legacy-role:${spec.role}`);
+          if (restored !== undefined) {
+            if (restored.role !== spec.role) {
+              throw new Error(
+                `restored worker "${assignment.workerId}" role conflicts with its assignment`,
+              );
+            }
             const executor = restored.executor;
-            restored = undefined;
+            restoredExecutors.delete(assignment.workerId);
+            restoredExecutors.delete(`legacy-role:${spec.role}`);
             latestExecutor = executor;
             latestRole = spec.role;
             return executor;
@@ -271,7 +347,6 @@ export function createWebTaskCompositionFactory(
         return [await latestExecutor.saveSafePoint()];
       },
       suspend: async () => {
-        workerRuntime.paused = true;
         await releaseRuntimeResources(false);
       },
       archiveArtifact: async () => {
@@ -304,4 +379,20 @@ export function createWebTaskCompositionFactory(
       dispose: () => releaseRuntimeResources(true),
     };
   };
+}
+
+function assertSafePointComposition(
+  ref: string,
+  scope: { projectId: string; taskId: string },
+  worktreePath: string,
+): ReturnType<typeof inspectHarnessSafePoint> {
+  const identity = inspectHarnessSafePoint(ref);
+  if (
+    identity.projectId !== scope.projectId ||
+    identity.taskId !== scope.taskId ||
+    identity.cwd !== worktreePath
+  ) {
+    throw new Error('persisted humanGate safe point does not match the task composition');
+  }
+  return identity;
 }

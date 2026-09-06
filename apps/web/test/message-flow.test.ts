@@ -46,6 +46,151 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it('pauses before atomically applying and reprojecting a Phase 9 priority command', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    const events: string[] = [];
+    runtime.bindLeaderPreemptionPort({
+      pause: async (request) => {
+        const persisted = await runtime.store.load(scope);
+        if (events.length === 0) {
+          expect(persisted?.messages).toHaveLength(0);
+        } else {
+          expect(persisted?.messages.at(-1)?.msgId).toBe(request.actionId);
+        }
+        events.push(`pause:${request.actionId}`);
+        return { ...request, cohort: [], workers: [] };
+      },
+      complete: async (receipt) => {
+        const state = await runtime.store.load(scope);
+        expect(state?.subtasks[0]?.priority).toBe(90);
+        expect(state?.messages.at(-1)?.msgId).toBe(receipt.actionId);
+        events.push(`complete:${receipt.actionId}`);
+      },
+      abort: async (receipt) => {
+        events.push(`abort:${receipt.actionId}`);
+      },
+    });
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        mergeByIdMutation('subtasks', 'sub-1', {
+          title: 'Implement cache',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'todo',
+        }),
+      ]),
+    );
+    const post = createPostMessage(runtime);
+    const request = () =>
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'priority-1',
+          display: '/priority sub-1 90',
+          ts: 10,
+        }),
+      );
+
+    await expect((await request()).json()).resolves.toMatchObject({
+      published: true,
+      action: { status: 'applied' },
+    });
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      messages: [
+        expect.objectContaining({
+          msgId: 'priority-1',
+          payload: {
+            kind: 'leader_intent',
+            intent: { kind: 'priority_change', subtaskId: 'sub-1', priority: 90 },
+            action: { status: 'applied' },
+          },
+        }),
+      ],
+    });
+    expect(events).toEqual(['pause:priority-1', 'complete:priority-1']);
+    await expect((await request()).json()).resolves.toMatchObject({ published: false });
+    expect(events).toEqual([
+      'pause:priority-1',
+      'complete:priority-1',
+      'pause:priority-1',
+      'complete:priority-1',
+    ]);
+    await expect(
+      runtime.commitLeaderMessage(scope, {
+        msgId: 'priority-1',
+        channelId: 'sub-other',
+        display: '/priority sub-1 90',
+        ts: 10,
+      }),
+    ).rejects.toThrow('must use main');
+    await expect(
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'priority-1',
+          display: '/priority sub-1 80',
+          ts: 10,
+        }),
+      ),
+    ).rejects.toThrow(/conflicts/);
+  });
+
+  it('retries Phase 9 reproject completion after the canonical action was committed', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    let pauseCalls = 0;
+    let completeCalls = 0;
+    runtime.bindLeaderPreemptionPort({
+      pause: async (request) => {
+        pauseCalls += 1;
+        return { ...request, cohort: [], workers: [] };
+      },
+      complete: async () => {
+        completeCalls += 1;
+        if (completeCalls === 1) throw new Error('transient reproject completion failure');
+      },
+      abort: async () => {
+        throw new Error('committed action must not abort');
+      },
+    });
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        mergeByIdMutation('subtasks', 'sub-1', {
+          title: 'Implement cache',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'todo',
+        }),
+      ]),
+    );
+    const input = {
+      msgId: 'priority-retry',
+      channelId: 'main',
+      display: '/priority sub-1 75',
+      ts: 10,
+    };
+
+    await expect(runtime.commitLeaderMessage(scope, input)).rejects.toThrow(
+      'transient reproject completion failure',
+    );
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      subtasks: [expect.objectContaining({ id: 'sub-1', priority: 75 })],
+      messages: [expect.objectContaining({ msgId: 'priority-retry' })],
+    });
+
+    await expect(runtime.commitLeaderMessage(scope, input)).resolves.toMatchObject({
+      published: false,
+      action: { status: 'applied' },
+    });
+    expect(pauseCalls).toBe(2);
+    expect(completeCalls).toBe(2);
+  });
+
   it('atomically commits and replays a review-bound completion approval', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };
@@ -398,6 +543,100 @@ describe('persisted HTTP + SSE message flow', () => {
       ),
     ).rejects.toThrow(/no active humanGate/i);
     expect((await runtime.store.load(scope))?.messages).toHaveLength(1);
+  });
+
+  it('persists and revalidates canonical per-worker humanGate resume plans', async () => {
+    const root = await temporaryRoot();
+    const runtime = createMessageRuntime(root, new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-workers' };
+    const resumed: unknown[] = [];
+    runtime.bindHumanGateLifecyclePort({
+      suspend: async () => {
+        throw new Error('unexpected suspend');
+      },
+      resume: async (_scope, _actionId, receipt) => {
+        resumed.push(receipt.workerResumes);
+      },
+    });
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task workers', scope.projectId), [
+        setMutation('iterationCount', 8),
+        mergeByIdMutation('workers', 'worker-b', {
+          workerId: 'worker-b',
+          role: 'TESTER',
+          executor: 'harness',
+          status: 'paused',
+          safePoint: 'safe-b',
+          startedTs: 2,
+        }),
+        mergeByIdMutation('workers', 'worker-a', {
+          workerId: 'worker-a',
+          role: 'CODER',
+          executor: 'harness',
+          status: 'paused',
+          safePoint: 'safe-a',
+          startedTs: 1,
+        }),
+        setMutation('humanGate', {
+          gateId: 'human-gate:workers',
+          reason: 'iteration_limit',
+          options: ['continue'],
+          phase: 'coding',
+          openedTs: 100,
+          safePointRefs: ['safe-b', 'safe-a'],
+        }),
+      ]),
+    );
+    const post = createPostMessage(runtime);
+    const request = () =>
+      post(
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'resolve-workers',
+          display: '/resolve-gate human-gate:workers continue',
+        }),
+      );
+
+    await expect((await request()).json()).resolves.toMatchObject({
+      action: { status: 'applied' },
+    });
+    expect(resumed).toEqual([
+      [
+        {
+          workerId: 'worker-a',
+          sourceSafePointRef: 'safe-a',
+          resumeSessionId: 'human-gate-resume:resolve-workers:worker-a',
+        },
+        {
+          workerId: 'worker-b',
+          sourceSafePointRef: 'safe-b',
+          resumeSessionId: 'human-gate-resume:resolve-workers:worker-b',
+        },
+      ],
+    ]);
+
+    const snapshotPath = join(
+      root,
+      'projects',
+      scope.projectId,
+      'tasks',
+      scope.taskId,
+      'state.json',
+    );
+    const corrupted = JSON.parse(await readFile(snapshotPath, 'utf8')) as {
+      messages: Array<{ msgId: string; payload: Record<string, unknown> }>;
+    };
+    const resolution = corrupted.messages.find((message) => message.msgId === 'resolve-workers');
+    const receipt = resolution?.payload.resolution as {
+      workerResumes: Array<{ resumeSessionId: string }>;
+    };
+    const firstWorkerResume = receipt.workerResumes[0];
+    if (firstWorkerResume === undefined) throw new Error('expected a worker resume entry');
+    firstWorkerResume.resumeSessionId = 'wrong-child';
+    await writeFile(snapshotPath, `${JSON.stringify(corrupted, null, 2)}\n`, 'utf8');
+    await expect(request()).rejects.toThrow(/conflicts with its first write/i);
   });
 
   it('atomically persists role onboarding with direct handoff refs and keeps replay selection stable', async () => {

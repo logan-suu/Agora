@@ -16,7 +16,7 @@ import {
 } from '@agora/core-domain';
 import { WorkerRuntime } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
-import type { Executor, StepResult } from '@agora/runtime-executor';
+import type { Executor, ProjectionView, StepResult } from '@agora/runtime-executor';
 import { JsonTaskStateStore } from '@agora/runtime-state';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -76,6 +76,54 @@ class FailingExecutor implements Executor {
   async loadSafePoint(): Promise<void> {}
 
   injectInbox(): void {}
+}
+
+class PausableTwoStepExecutor implements Executor {
+  readonly started: Promise<void>;
+  readonly stepSessions: string[] = [];
+  readonly injected: ProjectionView[] = [];
+  private markStarted = () => {};
+  private releaseFirst = () => {};
+  private readonly firstGate = new Promise<void>((resolve) => {
+    this.releaseFirst = resolve;
+  });
+  private calls = 0;
+
+  constructor() {
+    this.started = new Promise<void>((resolve) => {
+      this.markStarted = resolve;
+    });
+  }
+
+  async step(context: { sessionId: string }): Promise<StepResult> {
+    this.stepSessions.push(context.sessionId);
+    this.calls += 1;
+    if (this.calls === 1) {
+      this.markStarted();
+      await this.firstGate;
+      return {
+        kind: 'llm',
+        output: {},
+        reachedSafeBoundary: true,
+        mutations: [appendMutation('messages', agentMessage('CODER', 'before-directive'))],
+      };
+    }
+    return { kind: 'done', output: {}, reachedSafeBoundary: true, mutations: [] };
+  }
+
+  release(): void {
+    this.releaseFirst();
+  }
+
+  async saveSafePoint(): Promise<string> {
+    return 'safe:leader-directive';
+  }
+
+  async loadSafePoint(): Promise<void> {}
+
+  injectInbox(view: ProjectionView): void {
+    this.injected.push(view);
+  }
 }
 
 function successfulFactory(
@@ -189,6 +237,136 @@ async function approveCompletionGate(
 }
 
 describe('TaskOrchestrationRuntime', () => {
+  it('binds Leader commands to the active WorkerRuntime pause barrier and reprojects in place', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const coder = new PausableTwoStepExecutor();
+    let activeWorkerRuntime: WorkerRuntime | undefined;
+    let markPauseRequested = () => {};
+    const pauseRequested = new Promise<void>((resolve) => {
+      markPauseRequested = resolve;
+    });
+    const factory: TaskCompositionFactory = async (input) => {
+      const initialState = applyMutations(
+        createInitialAppState(input.scope.taskId, input.goal, input.scope.projectId),
+        [
+          mergeByIdMutation('subtasks', `${input.scope.taskId}-sub-0`, {
+            title: input.goal,
+            ownerRole: 'CODER',
+            dependsOn: [],
+            status: 'todo',
+            worktree: '/tmp/agora-directive-artifact',
+          }),
+        ],
+      );
+      const workerRuntime = new WorkerRuntime({
+        roster: DEFAULT_ROSTER,
+        loadState: input.loadState,
+        transition: input.transition,
+        ...(input.transitionStep === undefined ? {} : { transitionStep: input.transitionStep }),
+        handleOutput: input.handleOutput,
+        buildChannelContext: input.buildChannelContext,
+        buildExecutor: (spec) => {
+          if (spec.role === 'CODER') return coder;
+          if (spec.role === 'TESTER') {
+            return new OneStepExecutor({
+              kind: 'done',
+              output: {},
+              reachedSafeBoundary: true,
+              mutations: [
+                setMutation('testResults', {
+                  passed: true,
+                  total: 1,
+                  failed: 0,
+                  failures: [],
+                }),
+              ],
+            });
+          }
+          if (spec.role === 'REVIEWER') {
+            return new OneStepExecutor({
+              kind: 'done',
+              output: {},
+              reachedSafeBoundary: true,
+              mutations: [
+                appendMutation('reviewComments', {
+                  id: 'directive-approved',
+                  kind: 'verdict',
+                  verdict: 'approved',
+                }),
+              ],
+            });
+          }
+          throw new Error(`unexpected role ${spec.role}`);
+        },
+      });
+      const requestPause = workerRuntime.requestPause.bind(workerRuntime);
+      workerRuntime.requestPause = (request) => {
+        markPauseRequested();
+        return requestPause(request);
+      };
+      activeWorkerRuntime = workerRuntime;
+      return {
+        initialState,
+        workerRuntime,
+        roster: DEFAULT_ROSTER,
+        artifactPath: '/tmp/agora-directive-artifact',
+        saveSafePoints: async () => [],
+        suspend: async () => {},
+        archiveArtifact: async () => '/tmp/agora-directive-artifact',
+        dispose: async () => {},
+      };
+    };
+    const runtime = new TaskOrchestrationRuntime(messages, factory);
+    const scope = { projectId: 'project-a', taskId: 'task-directive' };
+    await runtime.start({ ...scope, requestId: 'start-directive', goal: 'Build TTL LRU' });
+    await coder.started;
+    const responsePromise = createPostMessage(messages)(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...scope,
+          channelId: 'main',
+          msgId: 'priority-live',
+          display: '/priority task-directive-sub-0 90',
+        }),
+      }),
+    );
+    await pauseRequested;
+    expect(activeWorkerRuntime?.hasActivePause).toBe(true);
+    expect((await messages.store.load(scope))?.subtasks[0]?.priority).toBeUndefined();
+
+    coder.release();
+    const response = await Promise.race([
+      responsePromise,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Leader priority response timed out')), 1000),
+      ),
+    ]);
+    await expect(response.json()).resolves.toMatchObject({
+      action: { status: 'applied' },
+    });
+    await Promise.race([
+      runtime.waitForIdle(scope),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('reprojected run did not reach idle')), 1000),
+      ),
+    ]);
+
+    expect(coder.stepSessions).toHaveLength(2);
+    expect(new Set(coder.stepSessions).size).toBe(1);
+    expect(coder.injected).toHaveLength(1);
+    expect(coder.injected[0]?.slices.leaderDirective).toMatchObject({
+      actionId: 'priority-live',
+      kind: 'priority_change',
+      data: { subtaskId: 'task-directive-sub-0', priority: 90 },
+    });
+    await expect(messages.store.load(scope)).resolves.toMatchObject({
+      subtasks: [expect.objectContaining({ priority: 90 })],
+    });
+  });
+
   it('suspends without terminal archive and resumes from the persisted Leader receipt', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
     roots.push(root);
@@ -361,7 +539,7 @@ describe('TaskOrchestrationRuntime', () => {
     expect(lifecycle.archived).toBe(0);
     await expect(messages.store.load(scope)).resolves.toMatchObject({
       humanGate: {
-        safePointRefs: ['cleanup-checkpoint'],
+        safePointRefs: [],
       },
     });
     const capacity = await createPostTask(runtime)(

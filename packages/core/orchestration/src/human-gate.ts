@@ -33,6 +33,13 @@ export interface HumanGateResolutionReceipt {
   argument?: string;
   safePointRefs: string[];
   resumeSessionId: string;
+  workerResumes?: WorkerResumePlan[];
+}
+
+export interface WorkerResumePlan {
+  workerId: string;
+  sourceSafePointRef: string;
+  resumeSessionId: string;
 }
 
 export interface HumanGateResolutionPlan {
@@ -194,6 +201,7 @@ export function planHumanGateResolution(
     }
   }
   mutations.push(setMutation('humanGate', undefined));
+  const workerResumes = deriveHumanGateWorkerResumes(state, gate, input.actionId);
   return {
     receipt: {
       gateId: gate.gateId,
@@ -201,11 +209,112 @@ export function planHumanGateResolution(
       ...(input.argument === undefined ? {} : { argument: input.argument }),
       safePointRefs: [...gate.safePointRefs],
       resumeSessionId: `human-gate-resume:${input.actionId}`,
+      ...(workerResumes === undefined ? {} : { workerResumes }),
     },
     mutations,
     ...(objectionResolution === undefined ? {} : { objectionResolution }),
     ...(completionResolution === undefined ? {} : { completionResolution }),
   };
+}
+
+export function deriveHumanGateWorkerResumes(
+  state: AppState,
+  gate: HumanGate,
+  actionId: string,
+): WorkerResumePlan[] | undefined {
+  assertSafeToken(actionId, 'humanGate actionId');
+  const paused = state.workers
+    .filter((worker) => worker.status === 'paused')
+    .sort((left, right) => left.workerId.localeCompare(right.workerId));
+  if (paused.length === 0) return undefined;
+  const pausedRefs = paused.map((worker) => worker.safePoint);
+  const gateRefs = new Set(gate.safePointRefs);
+  if (
+    pausedRefs.some((ref) => ref === undefined || ref.length === 0) ||
+    new Set(pausedRefs).size !== paused.length ||
+    gateRefs.size !== gate.safePointRefs.length ||
+    gateRefs.size !== paused.length ||
+    pausedRefs.some((ref) => !gateRefs.has(ref as string))
+  ) {
+    throw new Error('humanGate safePointRefs must match paused workers one-to-one');
+  }
+  return paused.map((worker) => {
+    assertSafeToken(worker.workerId, 'paused workerId');
+    return {
+      workerId: worker.workerId,
+      sourceSafePointRef: worker.safePoint as string,
+      resumeSessionId: `human-gate-resume:${actionId}:${worker.workerId}`,
+    };
+  });
+}
+
+export function validateHumanGateWorkerResumes(
+  state: AppState,
+  actionId: string,
+  safePointRefs: readonly string[],
+  value: unknown,
+): WorkerResumePlan[] | undefined {
+  assertSafeToken(actionId, 'humanGate actionId');
+  const paused = state.workers
+    .filter((worker) => worker.status === 'paused')
+    .sort((left, right) => left.workerId.localeCompare(right.workerId));
+  if (value === undefined) {
+    if (paused.length > 0) {
+      throw new Error('humanGate worker resume receipt is missing for paused workers');
+    }
+    return undefined;
+  }
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error('humanGate worker resume receipt must be a non-empty array');
+  }
+  const plans = value.map((entry) => {
+    if (
+      typeof entry !== 'object' ||
+      entry === null ||
+      Array.isArray(entry) ||
+      Object.keys(entry).sort().join(',') !== 'resumeSessionId,sourceSafePointRef,workerId'
+    ) {
+      throw new Error('humanGate worker resume entry has an invalid shape');
+    }
+    const record = entry as Record<string, unknown>;
+    if (
+      typeof record.workerId !== 'string' ||
+      typeof record.sourceSafePointRef !== 'string' ||
+      typeof record.resumeSessionId !== 'string'
+    ) {
+      throw new Error('humanGate worker resume entry requires string fields');
+    }
+    assertSafeToken(record.workerId, 'humanGate resume workerId');
+    return {
+      workerId: record.workerId,
+      sourceSafePointRef: record.sourceSafePointRef,
+      resumeSessionId: record.resumeSessionId,
+    };
+  });
+  const workerIds = plans.map((plan) => plan.workerId);
+  const planRefs = plans.map((plan) => plan.sourceSafePointRef);
+  if (
+    new Set(workerIds).size !== plans.length ||
+    new Set(planRefs).size !== plans.length ||
+    new Set(safePointRefs).size !== safePointRefs.length ||
+    safePointRefs.length !== plans.length ||
+    paused.length !== plans.length ||
+    plans.some(
+      (plan, index) => index > 0 && (workerIds[index - 1]?.localeCompare(plan.workerId) ?? 0) >= 0,
+    ) ||
+    plans.some(
+      (plan) =>
+        plan.resumeSessionId !== `human-gate-resume:${actionId}:${plan.workerId}` ||
+        !safePointRefs.includes(plan.sourceSafePointRef) ||
+        !paused.some(
+          (worker) =>
+            worker.workerId === plan.workerId && worker.safePoint === plan.sourceSafePointRef,
+        ),
+    )
+  ) {
+    throw new Error('humanGate worker resume receipt conflicts with canonical paused workers');
+  }
+  return plans;
 }
 
 export function planAdvisoryObjectionResolution(

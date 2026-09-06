@@ -37,16 +37,52 @@ describe('parseLeaderIntent', () => {
     expect(parseLeaderIntent('@ split the work')).toMatchObject({ kind: 'invalid' });
   });
 
-  it.each([
-    ['/requirement add TTL', 'requirement_change', 9],
-    ['/decision use an LRU list', 'decision_change', 9],
-    ['/priority raise cache tests', 'priority_change', 9],
-  ] as const)('maps %s to an explicit deferred phase', (display, requestedKind, targetPhase) => {
-    expect(parseLeaderIntent(display)).toMatchObject({
-      kind: 'deferred',
-      requestedKind,
-      targetPhase,
+  it('parses strict Phase 9 requirement, decision, and priority commands', () => {
+    expect(
+      parseLeaderIntent(
+        '/requirement req-1 {"story":" Cache entries expire ","acceptance":[" TTL works "],"nonGoals":[]}',
+      ),
+    ).toEqual({
+      kind: 'requirement_change',
+      requirementId: 'req-1',
+      requirement: {
+        story: 'Cache entries expire',
+        acceptance: ['TTL works'],
+        nonGoals: [],
+      },
     });
+    expect(
+      parseLeaderIntent(
+        '/decision cache-policy {"decision":"Use LRU","rationale":"Bounded memory","supersedes":"decision-1"}',
+      ),
+    ).toEqual({
+      kind: 'decision_change',
+      topic: 'cache-policy',
+      decision: 'Use LRU',
+      rationale: 'Bounded memory',
+      supersedes: 'decision-1',
+    });
+    expect(parseLeaderIntent('/priority sub-1 100')).toEqual({
+      kind: 'priority_change',
+      subtaskId: 'sub-1',
+      priority: 100,
+    });
+  });
+
+  it.each([
+    '/requirement req-1',
+    '/requirement bad/id {"story":"x","acceptance":["y"],"nonGoals":[]}',
+    '/requirement req-1 {"story":"x","acceptance":[],"nonGoals":[]}',
+    '/requirement req-1 {"story":"x","acceptance":["y"],"nonGoals":[],"extra":true}',
+    '/decision cache-policy {"decision":"Use LRU","rationale":""}',
+    '/decision bad/topic {"decision":"Use LRU","rationale":"why"}',
+    '/decision cache-policy {"topic":"other","decision":"Use LRU","rationale":"why"}',
+    '/priority sub-1 -1',
+    '/priority sub-1 101',
+    '/priority sub-1 1.5',
+    '/priority sub-1 10 trailing',
+  ])('rejects malformed Phase 9 command %s', (display) => {
+    expect(parseLeaderIntent(display)).toMatchObject({ kind: 'invalid' });
   });
 
   it('parses strict Phase 6 channel open and close commands', () => {

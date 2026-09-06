@@ -65,6 +65,97 @@ describe('humanGate durable lifecycle planning (task 8.1)', () => {
     });
   });
 
+  it('plans deterministic per-worker resume children from the paused gate cohort', () => {
+    const state = applyMutations(createInitialAppState('task-1', 'goal', 'project-1'), [
+      mergeByIdMutation('workers', 'worker-b', {
+        workerId: 'worker-b',
+        role: 'TESTER',
+        executor: 'harness',
+        status: 'paused',
+        sessionId: 'session:worker-b',
+        safePoint: 'safe-b',
+        startedTs: 2,
+      }),
+      mergeByIdMutation('workers', 'worker-a', {
+        workerId: 'worker-a',
+        role: 'CODER',
+        executor: 'harness',
+        status: 'paused',
+        sessionId: 'session:worker-a',
+        safePoint: 'safe-a',
+        startedTs: 1,
+      }),
+      setMutation(
+        'humanGate',
+        materializeHumanGate(
+          {
+            triggerMsgId: 'limit-workers',
+            triggerTs: 123,
+            reason: 'iteration_limit',
+            options: ['continue'],
+            phase: 'testing',
+          },
+          ['safe-b', 'safe-a'],
+        ),
+      ),
+    ]);
+
+    const plan = planHumanGateResolution(state, {
+      actionId: 'resolve-workers',
+      gateId: 'human-gate:limit-workers',
+      option: 'continue',
+      enabledRoles: [],
+    });
+
+    expect(plan.receipt.workerResumes).toEqual([
+      {
+        workerId: 'worker-a',
+        sourceSafePointRef: 'safe-a',
+        resumeSessionId: 'human-gate-resume:resolve-workers:worker-a',
+      },
+      {
+        workerId: 'worker-b',
+        sourceSafePointRef: 'safe-b',
+        resumeSessionId: 'human-gate-resume:resolve-workers:worker-b',
+      },
+    ]);
+  });
+
+  it('fails closed when paused workers and gate safe points are not one-to-one', () => {
+    const state = applyMutations(createInitialAppState('task-1', 'goal', 'project-1'), [
+      mergeByIdMutation('workers', 'worker-a', {
+        workerId: 'worker-a',
+        role: 'CODER',
+        executor: 'harness',
+        status: 'paused',
+        safePoint: 'safe-a',
+        startedTs: 1,
+      }),
+      setMutation(
+        'humanGate',
+        materializeHumanGate(
+          {
+            triggerMsgId: 'limit-workers',
+            triggerTs: 123,
+            reason: 'iteration_limit',
+            options: ['continue'],
+            phase: 'testing',
+          },
+          ['different-safe-point'],
+        ),
+      ),
+    ]);
+
+    expect(() =>
+      planHumanGateResolution(state, {
+        actionId: 'resolve-workers',
+        gateId: 'human-gate:limit-workers',
+        option: 'continue',
+        enabledRoles: [],
+      }),
+    ).toThrow('must match paused workers one-to-one');
+  });
+
   it('requires the unavailable role to be enabled before retry', () => {
     const base = createInitialAppState('task-1', 'goal');
     const state = applyMutations(base, [

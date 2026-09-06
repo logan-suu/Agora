@@ -81,6 +81,57 @@ class GatedExecutor implements Executor {
   injectInbox(): void {}
 }
 
+class ReprojectingExecutor implements Executor {
+  readonly stepStarted: Promise<void>;
+  readonly injected: ProjectionView[] = [];
+  readonly safePointCalls: string[] = [];
+  private markStepStarted = () => {};
+  private releaseStep = () => {};
+  private readonly stepGate = new Promise<void>((resolve) => {
+    this.releaseStep = resolve;
+  });
+  private calls = 0;
+
+  constructor() {
+    this.stepStarted = new Promise<void>((resolve) => {
+      this.markStepStarted = resolve;
+    });
+  }
+
+  async step(): Promise<StepResult> {
+    this.calls += 1;
+    if (this.calls === 1) {
+      this.markStepStarted();
+      await this.stepGate;
+      return stepOf('llm', [
+        { field: 'messages', op: 'append', value: chatMessage('step-before-pause') },
+      ]);
+    }
+    return stepOf('done', []);
+  }
+
+  release(): void {
+    this.releaseStep();
+  }
+
+  async saveSafePoint(): Promise<string> {
+    this.safePointCalls.push('safe:reproject');
+    return 'safe:reproject';
+  }
+
+  async loadSafePoint(): Promise<void> {}
+
+  injectInbox(view: ProjectionView): void {
+    this.injected.push(view);
+  }
+}
+
+class FailingSafePointExecutor extends ReprojectingExecutor {
+  override async saveSafePoint(): Promise<string> {
+    throw new Error('injected safe-point failure');
+  }
+}
+
 interface StepContextLog {
   sessionId: string;
   view: ProjectionView;
@@ -141,28 +192,218 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
   });
 
   it('honors a pause requested while asynchronous ChannelContext construction is pending', async () => {
-    const fake = new FakeExecutor([]);
+    const fake = new FakeExecutor([stepOf('done', [])]);
     let releaseContext = () => {};
+    let markContextStarted = () => {};
     const contextGate = new Promise<void>((resolve) => {
       releaseContext = resolve;
+    });
+    const contextStarted = new Promise<void>((resolve) => {
+      markContextStarted = resolve;
     });
     const runtime = new WorkerRuntime({
       roster: PHASE0_ROSTER,
       buildExecutor: () => fake,
       buildChannelContext: async () => {
+        markContextStarted();
         await contextGate;
         return [];
       },
     });
 
     const running = runtime.runOne(createInitialAppState('t-1', 'g'), assignment('CODER'));
-    await Promise.resolve();
-    runtime.paused = true;
+    await contextStarted;
+    const paused = runtime.requestPause({
+      scope: { projectId: 'default', taskId: 't-1' },
+      actionId: 'change-context',
+      reason: 'requirement_change',
+      mode: 'reproject',
+    });
     releaseContext();
 
-    await expect(running).resolves.toMatchObject({ taskId: 't-1' });
+    const receipt = await paused;
     expect(fake.stepCalls).toHaveLength(0);
     expect(fake.safePointCalls).toEqual(['cursor']);
+    await runtime.completePause(receipt);
+    await expect(running).resolves.toMatchObject({ taskId: 't-1' });
+  });
+
+  it('commits the current Step before checkpoint and keeps its lease across reproject', async () => {
+    const executor = new ReprojectingExecutor();
+    const scheduler = new GlobalScheduler({ cap: 1 });
+    let canonical = createInitialAppState('t-1', 'g');
+    const runtime = new WorkerRuntime(
+      {
+        roster: PHASE0_ROSTER,
+        loadState: async () => canonical,
+        transition: async (_state, mutations) => {
+          canonical = applyMutations(canonical, mutations);
+          return canonical;
+        },
+        buildExecutor: () => executor,
+      },
+      scheduler,
+    );
+    const running = runtime.runOne(canonical, assignment('CODER'));
+    await executor.stepStarted;
+    const paused = runtime.requestPause({
+      scope: { projectId: canonical.projectId, taskId: canonical.taskId },
+      actionId: 'change-1',
+      reason: 'priority_change',
+      mode: 'reproject',
+    });
+    executor.release();
+
+    const receipt = await paused;
+    expect(canonical.messages.map((message) => message.msgId)).toContain('step-before-pause');
+    expect(canonical.workers[0]).toMatchObject({ status: 'paused', safePoint: 'safe:reproject' });
+    expect(scheduler.activeCount).toBe(1);
+
+    await runtime.completePause(receipt);
+    await running;
+    expect(executor.injected).toHaveLength(1);
+    expect(canonical.workers[0]?.status).toBe('done');
+    expect(scheduler.activeCount).toBe(0);
+  });
+
+  it('releases active leases and leaves undispatched workers pending for a human gate', async () => {
+    const assignments = [
+      { workerId: 'worker:gate:0', role: 'CODER' as const, subtaskId: 's-0' },
+      { workerId: 'worker:gate:1', role: 'CODER' as const, subtaskId: 's-1' },
+    ] as const;
+    let canonical = applyMutations(
+      createInitialAppState('t-gate', 'g'),
+      assignments.map((entry) =>
+        mergeByIdMutation('subtasks', entry.subtaskId, {
+          title: entry.subtaskId,
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+        }),
+      ),
+    );
+    const executor = new GatedExecutor();
+    const scheduler = new GlobalScheduler({ cap: 1 });
+    let builds = 0;
+    const runtime = new WorkerRuntime(
+      {
+        roster: PHASE0_ROSTER,
+        loadState: async () => canonical,
+        transition: async (_state, mutations) => {
+          canonical = applyMutations(canonical, mutations);
+          return canonical;
+        },
+        buildExecutor: () => {
+          builds += 1;
+          return builds === 1 ? executor : new FakeExecutor([stepOf('done', [])]);
+        },
+      },
+      scheduler,
+    );
+    const running = runtime.runParallel(canonical, assignments);
+    await executor.stepStarted;
+    const paused = runtime.requestPause({
+      scope: { projectId: canonical.projectId, taskId: canonical.taskId },
+      actionId: 'gate-1',
+      reason: 'iteration_limit',
+      mode: 'human_gate',
+    });
+    executor.release();
+
+    const receipt = await paused;
+    expect(receipt.cohort).toEqual(['worker:gate:0']);
+    expect(canonical.messages.map((message) => message.msgId)).toContain('committed-before-drain');
+    expect(canonical.workers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ workerId: 'worker:gate:0', status: 'paused' }),
+        expect.objectContaining({ workerId: 'worker:gate:1', status: 'pending' }),
+      ]),
+    );
+    expect(scheduler.activeCount).toBe(1);
+
+    await runtime.completePause(receipt);
+    await expect(running).resolves.toMatchObject({ taskId: 't-gate' });
+    expect(scheduler.activeCount).toBe(0);
+    expect(builds).toBe(1);
+  });
+
+  it('does not install a pause epoch when its scope mismatches an active worker', async () => {
+    const executor = new GatedExecutor('done');
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => executor,
+    });
+    const running = runtime.runOne(createInitialAppState('t-scope', 'g'), assignment('CODER'));
+    await executor.stepStarted;
+
+    await expect(
+      runtime.requestPause({
+        scope: { projectId: 'other-project', taskId: 't-scope' },
+        actionId: 'wrong-scope',
+        reason: 'requirement_change',
+        mode: 'reproject',
+      }),
+    ).rejects.toThrow('pause scope does not match');
+    expect(runtime.hasActivePause).toBe(false);
+
+    executor.release();
+    await expect(running).resolves.toMatchObject({ taskId: 't-scope' });
+  });
+
+  it('cleans up remaining paused workers when one cohort checkpoint fails', async () => {
+    const failing = new FailingSafePointExecutor();
+    const survivor = new ReprojectingExecutor();
+    const assignments = [
+      { workerId: 'worker:barrier:0', role: 'CODER' as const, subtaskId: 's-0' },
+      { workerId: 'worker:barrier:1', role: 'CODER' as const, subtaskId: 's-1' },
+    ];
+    let canonical = applyMutations(
+      createInitialAppState('t-barrier', 'g'),
+      assignments.map((entry) =>
+        mergeByIdMutation('subtasks', entry.subtaskId, {
+          title: entry.subtaskId,
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+        }),
+      ),
+    );
+    const runtime = new WorkerRuntime(
+      {
+        roster: PHASE0_ROSTER,
+        loadState: async () => canonical,
+        transition: async (_state, mutations) => {
+          canonical = applyMutations(canonical, mutations);
+          return canonical;
+        },
+        buildExecutor: (_spec, assign) =>
+          assign.workerId === 'worker:barrier:0' ? failing : survivor,
+      },
+      new GlobalScheduler({ cap: 2 }),
+      2,
+    );
+    const running = runtime.runParallel(canonical, assignments);
+    await Promise.all([failing.stepStarted, survivor.stepStarted]);
+    const barrier = runtime.requestPause({
+      scope: { projectId: canonical.projectId, taskId: canonical.taskId },
+      actionId: 'failing-barrier',
+      reason: 'requirement_change',
+      mode: 'reproject',
+    });
+    failing.release();
+    survivor.release();
+
+    await expect(barrier).rejects.toThrow('injected safe-point failure');
+    await expect(
+      Promise.race([
+        running.then(
+          () => 'settled',
+          () => 'settled',
+        ),
+        new Promise<string>((resolve) => setTimeout(() => resolve('timed-out'), 100)),
+      ]),
+    ).resolves.toBe('settled');
+    expect(runtime.hasActivePause).toBe(false);
   });
 
   it('honors a target drain requested while asynchronous ChannelContext construction is pending', async () => {
@@ -750,6 +991,60 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     expect(builds).toBe(0);
   });
 
+  it('restarts a paused worker only when its workerId is declared by the resume receipt', async () => {
+    const entry = {
+      workerId: 'worker:resume:0',
+      role: 'CODER' as const,
+      subtaskId: 's-0',
+    };
+    const paused = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('subtasks', entry.subtaskId, {
+        title: 's-0',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'in_progress',
+      }),
+      mergeByIdMutation('workers', entry.workerId, {
+        workerId: entry.workerId,
+        role: entry.role,
+        executor: 'harness',
+        status: 'paused',
+        subtaskId: entry.subtaskId,
+        safePoint: 'safe:resume',
+        startedTs: 1,
+      }),
+    ]);
+    const denied = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => new FakeExecutor([stepOf('done', [])]),
+    });
+    await expect(denied.runOne(paused, entry)).rejects.toThrow('cannot start from status "paused"');
+
+    const resumedExecutor = new FakeExecutor([stepOf('done', [])]);
+    const allowed = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      resumingWorkers: [
+        {
+          workerId: entry.workerId,
+          resumeSessionId: 'human-gate-resume:resolve-1:worker:resume:0',
+        },
+      ],
+      buildExecutor: () => resumedExecutor,
+    });
+    await expect(allowed.runOne(paused, entry)).resolves.toMatchObject({
+      workers: [
+        expect.objectContaining({
+          workerId: entry.workerId,
+          status: 'done',
+          sessionId: 'human-gate-resume:resolve-1:worker:resume:0',
+        }),
+      ],
+    });
+    expect(resumedExecutor.stepCalls[0]?.sessionId).toBe(
+      'human-gate-resume:resolve-1:worker:resume:0',
+    );
+  });
+
   it('revalidates the canonical worker handle before executing a model step', async () => {
     const assignment = {
       workerId: 'worker:stale-before-step',
@@ -920,14 +1215,12 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     ]);
   });
 
-  it('keeps paused false through the whole Phase 0 lifecycle and never saves safe points preemptively', async () => {
+  it('never saves safe points preemptively during an uninterrupted lifecycle', async () => {
     const fake = new FakeExecutor([stepOf('llm', []), stepOf('done', [])]);
     const runtime = runtimeWith([fake]);
 
-    expect(runtime.paused).toBe(false);
     await runtime.runOne(createInitialAppState('t-1', 'g'), assignment('CODER'));
 
-    expect(runtime.paused).toBe(false);
     expect(fake.safePointCalls).toHaveLength(0);
   });
 });

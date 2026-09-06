@@ -8,11 +8,14 @@ import {
 } from '@agora/comm-channels';
 import {
   type AppState,
+  assertPhase9LeaderActionReplay,
   createMainChannel,
   deriveCompletionResolution,
   deriveObjectionResolutions,
   type Message,
   type Mutation,
+  type Phase9LeaderIntent,
+  planPhase9LeaderAction,
   planRoleOnboarding,
   type RoleOnboardingReceipt,
   type RoleSpec,
@@ -35,7 +38,9 @@ import {
   RoleDepartureRejectedError,
   RoleDepartureService,
   type RoleDrainPort,
+  validateHumanGateWorkerResumes,
 } from '@agora/core-orchestration';
+import type { PauseReceipt, PauseRequest } from '@agora/core-preemption';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import {
   type ChannelSummaryGenerator,
@@ -66,6 +71,12 @@ class SseMessageBus implements MessageBus {
   }
 }
 
+export interface LeaderPreemptionPort {
+  pause(request: PauseRequest): Promise<PauseReceipt>;
+  complete(receipt: PauseReceipt): Promise<void>;
+  abort(receipt: PauseReceipt): Promise<void>;
+}
+
 export class MessageRuntime {
   readonly root: string;
   readonly store: JsonTaskStateStore;
@@ -78,6 +89,11 @@ export class MessageRuntime {
   readonly #summaryReconciler: ChannelSummaryReconciler;
   readonly #departure: RoleDepartureService;
   #humanGate: HumanGateLifecyclePort;
+  #leaderPreemption: LeaderPreemptionPort = {
+    pause: async (request) => ({ ...request, cohort: [], workers: [] }),
+    complete: async () => {},
+    abort: async () => {},
+  };
   #roleDrain: RoleDrainPort = {
     awaitSafePoint: async (_scope, role) => ({ role, activeWorkers: 0, safePointRefs: [] }),
   };
@@ -178,6 +194,10 @@ export class MessageRuntime {
     this.#humanGate = port;
   }
 
+  bindLeaderPreemptionPort(port: LeaderPreemptionPort): void {
+    this.#leaderPreemption = port;
+  }
+
   ensureProjectChannels(projectId: string) {
     return this.channels.initialize(projectId, [
       createMainChannel(this.#initialRoster.map((entry) => entry.spec.role)),
@@ -257,6 +277,23 @@ export class MessageRuntime {
     const existing = current.messages.find((message) => message.msgId === input.msgId);
     if (existing !== undefined) {
       assertOnboardingReplay(current, existing, input.channelId, incomingIntent);
+      const persistedPhase9 = phase9IntentFrom(existing);
+      if (isPhase9LeaderIntent(incomingIntent) || persistedPhase9 !== undefined) {
+        if (!isPhase9LeaderIntent(incomingIntent)) {
+          throw new Error(`Phase 9 Leader action "${input.msgId}" conflicts with its first write`);
+        }
+        if (input.channelId !== 'main') {
+          throw new Error('Phase 9 Leader commands must use main');
+        }
+        assertPhase9LeaderActionReplay(current, existing, incomingIntent);
+        const receipt = await this.#leaderPreemption.pause({
+          scope,
+          actionId: input.msgId,
+          reason: incomingIntent.kind,
+          mode: 'reproject',
+        });
+        await this.#leaderPreemption.complete(receipt);
+      }
       const persistedIntent = existing.payload.intent;
       const existingIsResolution =
         typeof persistedIntent === 'object' &&
@@ -345,6 +382,69 @@ export class MessageRuntime {
     const knownRoles = collaboration.roster.map((entry) => entry.spec.role);
 
     const intent = incomingIntent;
+    if (isPhase9LeaderIntent(intent)) {
+      if (input.channelId !== 'main') {
+        throw new Error('Phase 9 Leader commands must use main');
+      }
+      planPhase9LeaderAction(current, {
+        actionId: input.msgId,
+        intent,
+        ts: input.ts,
+      });
+      const receipt = await this.#leaderPreemption.pause({
+        scope,
+        actionId: input.msgId,
+        reason: intent.kind,
+        mode: 'reproject',
+      });
+      let stateCommitted = false;
+      let completionStarted = false;
+      try {
+        const result = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
+          const plan = planPhase9LeaderAction(state, {
+            actionId: input.msgId,
+            intent,
+            ts: input.ts,
+          });
+          return {
+            message: {
+              msgId: input.msgId,
+              channelId: 'main',
+              fromRole: 'leader',
+              type: 'chat',
+              payload: {
+                kind: 'leader_intent',
+                intent: plan.intent,
+                action: { status: 'applied' },
+              },
+              display: input.display,
+              ts: input.ts,
+            },
+            mutations: plan.mutations,
+          };
+        });
+        stateCommitted = true;
+        assertPhase9LeaderActionReplay(result.state, result.message, intent);
+        completionStarted = true;
+        await this.#leaderPreemption.complete(receipt);
+        return { ...result, action: { status: 'applied' } };
+      } catch (error) {
+        if (!stateCommitted) {
+          const latest = await this.store.load(scope).catch(() => undefined);
+          const persisted = latest?.messages.find((message) => message.msgId === input.msgId);
+          if (latest !== undefined && persisted !== undefined) {
+            assertPhase9LeaderActionReplay(latest, persisted, intent);
+            stateCommitted = true;
+          }
+        }
+        if (stateCommitted) {
+          if (!completionStarted) await this.#leaderPreemption.complete(receipt);
+        } else {
+          await this.#leaderPreemption.abort(receipt);
+        }
+        throw error;
+      }
+    }
     if (intent.kind === 'resolve_human_gate') {
       if (input.channelId !== 'main') {
         throw new Error('humanGate resolution commands must use main');
@@ -650,6 +750,25 @@ export function getOrCreateMessageRuntime(
   return runtime;
 }
 
+function isPhase9LeaderIntent(
+  intent: ReturnType<typeof parseLeaderIntent>,
+): intent is Phase9LeaderIntent {
+  return (
+    intent.kind === 'requirement_change' ||
+    intent.kind === 'decision_change' ||
+    intent.kind === 'priority_change'
+  );
+}
+
+function phase9IntentFrom(message: Message): Phase9LeaderIntent | undefined {
+  const intent = message.payload.intent;
+  if (typeof intent !== 'object' || intent === null || Array.isArray(intent)) return undefined;
+  const kind = (intent as Record<string, unknown>).kind;
+  return kind === 'requirement_change' || kind === 'decision_change' || kind === 'priority_change'
+    ? (intent as Phase9LeaderIntent)
+    : undefined;
+}
+
 function actionFrom(message: Message): LeaderActionStatus {
   const action = message.payload.action;
   if (typeof action !== 'object' || action === null || Array.isArray(action)) {
@@ -757,6 +876,19 @@ function assertHumanGateResolutionReplay(
       `humanGate resolution action "${existing.msgId}" conflicts with its first write`,
     );
   }
+  let workerResumes: HumanGateResolutionReceipt['workerResumes'];
+  try {
+    workerResumes = validateHumanGateWorkerResumes(
+      state,
+      existing.msgId,
+      safePointRefs as string[],
+      receipt.workerResumes,
+    );
+  } catch {
+    throw new Error(
+      `humanGate resolution action "${existing.msgId}" conflicts with its first write`,
+    );
+  }
   const blockingObjection = state.objections.find(
     (objection) =>
       objection.track === 'blocking' && `human-gate:${objection.id}` === incoming.gateId,
@@ -796,6 +928,7 @@ function assertHumanGateResolutionReplay(
     ...(incoming.argument === undefined ? {} : { argument: incoming.argument }),
     safePointRefs: [...(safePointRefs as string[])],
     resumeSessionId: receipt.resumeSessionId as string,
+    ...(workerResumes === undefined ? {} : { workerResumes }),
   };
 }
 

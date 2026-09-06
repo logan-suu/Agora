@@ -120,6 +120,25 @@ describe('applyMutations · mergeById', () => {
     expect(next.subtasks[0]?.status).toBe('in_progress');
   });
 
+  it('accepts only integer subtask priorities from 0 through 100', () => {
+    const base = applyMutations(createInitialAppState('t-1', 'goal'), [
+      mergeByIdMutation('subtasks', 'st-1', makeSubtaskPatch('st-1')),
+    ]);
+    expect(
+      applyMutations(base, [mergeByIdMutation('subtasks', 'st-1', { priority: 0 })]).subtasks[0]
+        ?.priority,
+    ).toBe(0);
+    expect(
+      applyMutations(base, [mergeByIdMutation('subtasks', 'st-1', { priority: 100 })]).subtasks[0]
+        ?.priority,
+    ).toBe(100);
+    for (const priority of [-1, 101, 1.5, Number.NaN]) {
+      expect(() =>
+        applyMutations(base, [mergeByIdMutation('subtasks', 'st-1', { priority })]),
+      ).toThrow(/priority/);
+    }
+  });
+
   it('upserts stable Phase 9 worker identities without conflating workers of the same role', () => {
     const base = createInitialAppState('t-1', 'goal');
     const dispatched = applyMutations(base, [

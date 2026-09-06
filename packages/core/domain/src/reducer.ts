@@ -15,7 +15,7 @@ import type {
   TestResults,
   WorkerState,
 } from './state';
-import { isWorkerState } from './state';
+import { isSubtaskPriority, isWorkerState } from './state';
 
 export const APPEND_FIELDS = [
   'messages',
@@ -234,6 +234,10 @@ function applyMergeById(state: AppState, field: MergeByIdField, value: { id: str
       return { ...state, workers };
     }
     case 'subtasks': {
+      const patch = value as Record<string, unknown>;
+      if (Object.hasOwn(patch, 'priority') && !isSubtaskPriority(patch.priority)) {
+        throw new Error('subtask priority must be an integer from 0 through 100');
+      }
       const index = state.subtasks.findIndex((item) => item.id === value.id);
       if (index < 0) return { ...state, subtasks: [...state.subtasks, value as Subtask] };
       const existing = state.subtasks[index];

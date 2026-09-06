@@ -76,6 +76,8 @@ export interface DecideOptions {
    * machine (spec §5.3 routing table verbatim).
    */
   roster?: readonly RoleSpec[];
+  /** Paused workers authorized by a canonical D4 per-worker resume plan. */
+  resumingWorkerIds?: readonly string[];
 }
 
 interface Clock {
@@ -89,7 +91,7 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     now: options?.now ?? (() => Date.now()),
   };
   const blockingObjection = pendingBlockingObjectionGate(state);
-  const pendingDispatch = recoverPendingDispatch(state);
+  const pendingDispatch = recoverPendingDispatch(state, options?.resumingWorkerIds ?? []);
   const leaderOverride = consumeLeaderAssignment(state, clock, options?.roster);
   let decision: DraftCoordinatorDecision;
   if (blockingObjection !== undefined) {
@@ -136,8 +138,15 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
   return attachCoordinationArtifacts(state, decision, clock, options?.roster);
 }
 
-function recoverPendingDispatch(state: AppState): CoordinatorDecision | undefined {
-  const pending = state.workers.filter((worker) => worker.status === 'pending');
+function recoverPendingDispatch(
+  state: AppState,
+  resumingWorkerIds: readonly string[],
+): CoordinatorDecision | undefined {
+  const resumable = new Set(resumingWorkerIds);
+  const pending = state.workers.filter(
+    (worker) =>
+      worker.status === 'pending' || (worker.status === 'paused' && resumable.has(worker.workerId)),
+  );
   if (pending.length === 0) return undefined;
   const ids = new Set(pending.map((worker) => worker.workerId));
   if (ids.size !== pending.length) throw new Error('pending worker identities must be unique');

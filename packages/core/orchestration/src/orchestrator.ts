@@ -40,7 +40,11 @@ export async function runOrchestration(
   }
   while (state.phase !== 'done') {
     const roster = (await deps.loadRoster?.()) ?? deps.roster;
-    const decision = decide(state, roster === undefined ? undefined : { roster });
+    const resumingWorkerIds = deps.workerRuntime.resumableWorkerIds;
+    const decision = decide(state, {
+      ...(roster === undefined ? {} : { roster }),
+      ...(resumingWorkerIds.length === 0 ? {} : { resumingWorkerIds }),
+    });
     if (decision.mutations.length > 0) {
       state = await transition(state, decision.mutations);
     }

@@ -119,6 +119,9 @@ importers:
       '@agora/core-orchestration':
         specifier: workspace:*
         version: link:../../packages/core/orchestration
+      '@agora/core-preemption':
+        specifier: workspace:*
+        version: link:../../packages/core/preemption
       '@agora/roles-definitions':
         specifier: workspace:*
         version: link:../../packages/roles/definitions
@@ -188,6 +191,9 @@ importers:
       '@agora/core-domain':
         specifier: workspace:*
         version: link:../domain
+      '@agora/core-preemption':
+        specifier: workspace:*
+        version: link:../preemption
       '@agora/runtime-executor':
         specifier: workspace:*
         version: link:../../runtime/executor

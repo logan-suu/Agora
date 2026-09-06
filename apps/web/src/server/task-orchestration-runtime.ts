@@ -14,6 +14,7 @@ import {
   type WorkerRuntime,
   type WorkerStepTransition,
 } from '@agora/core-orchestration';
+import type { PauseReceipt, PauseRequest } from '@agora/core-preemption';
 import type { TaskScope } from '@agora/runtime-state';
 
 import type { MessageRuntime } from './message-runtime';
@@ -127,6 +128,11 @@ export class TaskOrchestrationRuntime {
     messages.bindHumanGateLifecyclePort({
       suspend: (scope, request) => this.#suspendAtHumanGate(scope, request),
       resume: (scope, actionId, receipt) => this.#resumeHumanGate(scope, actionId, receipt),
+    });
+    messages.bindLeaderPreemptionPort({
+      pause: (request) => this.#pauseLeaderDirective(request),
+      complete: (receipt) => this.#completeLeaderDirective(receipt),
+      abort: (receipt) => this.#abortLeaderDirective(receipt),
     });
   }
 
@@ -250,16 +256,61 @@ export class TaskOrchestrationRuntime {
 
   async #suspendAtHumanGate(scope: TaskScope, request: HumanGateRequest): Promise<AppState> {
     const run = this.#runs.get(scopeKey(scope));
-    const refs = run?.composition === undefined ? [] : await run.composition.saveSafePoints();
-    const committed = await this.messages.commitMutations(scope, [
-      setMutation('humanGate', materializeHumanGate(request, refs)),
-    ]);
-    if (run?.composition !== undefined) {
-      const composition = run.composition;
+    const composition = run?.composition;
+    const receipt =
+      composition === undefined
+        ? emptyPauseReceipt(scope, request.triggerMsgId, request.reason, 'human_gate')
+        : await composition.workerRuntime.requestPause({
+            scope,
+            actionId: request.triggerMsgId,
+            reason: request.reason,
+            mode: 'human_gate',
+          });
+    const refs = receipt.workers.flatMap((worker) =>
+      worker.status === 'paused' && worker.safePointRef !== undefined ? [worker.safePointRef] : [],
+    );
+    let committed: Awaited<ReturnType<MessageRuntime['commitMutations']>>;
+    try {
+      committed = await this.messages.commitMutations(scope, [
+        setMutation('humanGate', materializeHumanGate(request, refs)),
+      ]);
+    } catch (error) {
+      if (composition !== undefined) {
+        await composition.workerRuntime.abortPause(receipt).catch(() => undefined);
+      }
+      throw error;
+    }
+    if (composition !== undefined) {
+      await composition.workerRuntime.completePause(receipt);
       await composition.suspend();
-      if (run.composition === composition) run.composition = undefined;
+      if (run?.composition === composition) run.composition = undefined;
     }
     return committed.state;
+  }
+
+  async #pauseLeaderDirective(request: PauseRequest): Promise<PauseReceipt> {
+    const composition = this.#runs.get(scopeKey(request.scope))?.composition;
+    return composition === undefined
+      ? emptyPauseReceipt(request.scope, request.actionId, request.reason, request.mode)
+      : composition.workerRuntime.requestPause(request);
+  }
+
+  async #completeLeaderDirective(receipt: PauseReceipt): Promise<void> {
+    const composition = this.#runs.get(scopeKey(receipt.scope))?.composition;
+    if (composition === undefined) {
+      if (!receipt.workers.some((worker) => worker.status === 'paused')) return;
+      throw new Error(`pause action "${receipt.actionId}" lost its active task composition`);
+    }
+    await composition.workerRuntime.completePause(receipt);
+  }
+
+  async #abortLeaderDirective(receipt: PauseReceipt): Promise<void> {
+    const composition = this.#runs.get(scopeKey(receipt.scope))?.composition;
+    if (composition === undefined) {
+      if (!receipt.workers.some((worker) => worker.status === 'paused')) return;
+      throw new Error(`pause action "${receipt.actionId}" lost its active task composition`);
+    }
+    await composition.workerRuntime.abortPause(receipt);
   }
 
   async #resumeHumanGate(
@@ -322,6 +373,9 @@ export class TaskOrchestrationRuntime {
             actionId,
             gateId: receipt.gateId,
             resumeSessionId: receipt.resumeSessionId,
+            ...(receipt.workerResumes === undefined
+              ? {}
+              : { workerResumes: receipt.workerResumes }),
           },
           display: `Human gate ${receipt.gateId} resumed.`,
           ts: Date.now(),
@@ -436,6 +490,15 @@ function scopeKey(scope: TaskScope): string {
   return `${scope.projectId}\u0000${scope.taskId}`;
 }
 
+function emptyPauseReceipt(
+  scope: TaskScope,
+  actionId: string,
+  reason: string,
+  mode: PauseRequest['mode'],
+): PauseReceipt {
+  return { scope: { ...scope }, actionId, reason, mode, cohort: [], workers: [] };
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -485,8 +548,28 @@ function assertResumedMarker(
     message.payload.kind !== 'human_gate_resumed' ||
     message.payload.actionId !== actionId ||
     message.payload.gateId !== receipt.gateId ||
-    message.payload.resumeSessionId !== receipt.resumeSessionId
+    message.payload.resumeSessionId !== receipt.resumeSessionId ||
+    !sameWorkerResumePlans(message.payload.workerResumes, receipt.workerResumes)
   ) {
     throw new Error(`humanGate resumed marker for "${actionId}" conflicts with its first write`);
   }
+}
+
+function sameWorkerResumePlans(
+  actual: unknown,
+  expected: HumanGateResolutionReceipt['workerResumes'],
+): boolean {
+  if (expected === undefined) return actual === undefined;
+  if (!Array.isArray(actual) || actual.length !== expected.length) return false;
+  return expected.every((plan, index) => {
+    const entry = actual[index];
+    return (
+      typeof entry === 'object' &&
+      entry !== null &&
+      !Array.isArray(entry) &&
+      (entry as Record<string, unknown>).workerId === plan.workerId &&
+      (entry as Record<string, unknown>).sourceSafePointRef === plan.sourceSafePointRef &&
+      (entry as Record<string, unknown>).resumeSessionId === plan.resumeSessionId
+    );
+  });
 }

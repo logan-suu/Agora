@@ -47,7 +47,15 @@ export interface Subtask {
   ownerRole: RoleId;
   dependsOn: string[];
   status: 'todo' | 'in_progress' | 'blocked' | 'done';
+  priority?: number;
   worktree?: string;
+}
+
+export function isSubtaskPriority(value: unknown): value is number | undefined {
+  return (
+    value === undefined ||
+    (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 100)
+  );
 }
 
 export interface WorkerState {

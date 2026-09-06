@@ -295,7 +295,7 @@ describe('Phase 7 D12 guardrails', () => {
       ]);
       expect(adapter.streamCalls).toBe(1);
       expect(saveSafePointSpy).toHaveBeenCalledTimes(1);
-      expect(worker.paused).toBe(false);
+      expect(worker.hasActivePause).toBe(false);
       await expect(runtime.collaboration.load(scope.projectId)).resolves.toMatchObject({
         roster: expect.arrayContaining([
           expect.objectContaining({

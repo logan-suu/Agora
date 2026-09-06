@@ -2,6 +2,7 @@ import {
   type AppState,
   activeRequirements,
   type CoordinationLedgerPayload,
+  deriveLeaderDirective,
   deriveObjectionResolutions,
   deriveOnboardingContext,
   latestCoordinationLedger,
@@ -45,6 +46,7 @@ export function project(
   }
   slices.channels = structuredClone([...channelContext]);
   slices.onboardingContext = deriveOnboardingContext(state, role);
+  slices.leaderDirective = deriveLeaderDirective(state);
   slices.objectionResolutions = deriveObjectionResolutions(state)
     .filter((entry) => entry.status === 'resolved')
     .map((entry) => {
@@ -125,6 +127,7 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
           title: s.title,
           ownerRole: s.ownerRole,
           status: s.status,
+          priority: s.priority ?? 0,
           worktree: s.worktree,
         }));
     case 'architecture':
