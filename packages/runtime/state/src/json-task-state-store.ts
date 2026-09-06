@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { type AppState, applyMutations, type Mutation } from '@agora/core-domain';
+import { type AppState, applyMutations, isWorkerState, type Mutation } from '@agora/core-domain';
 
 import type { TaskScope, TaskStateCommit, TaskStateStore } from './base';
 
@@ -98,6 +98,11 @@ export class JsonTaskStateStore implements TaskStateStore {
     }
     if (hasWorkers && !Array.isArray(record.workers)) {
       throw new Error(`invalid task state JSON at "${path}": workers must be an array`);
+    }
+    if (Array.isArray(record.workers) && !record.workers.every(isWorkerState)) {
+      throw new Error(
+        `invalid task state JSON at "${path}": workers must contain valid WorkerState`,
+      );
     }
     const state = {
       ...record,

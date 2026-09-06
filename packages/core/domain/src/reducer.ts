@@ -15,6 +15,7 @@ import type {
   TestResults,
   WorkerState,
 } from './state';
+import { isWorkerState } from './state';
 
 export const APPEND_FIELDS = [
   'messages',
@@ -264,29 +265,7 @@ function applyMergeById(state: AppState, field: MergeByIdField, value: { id: str
 }
 
 function workerStateOf(value: Record<string, unknown>): WorkerState {
-  const statuses: readonly WorkerState['status'][] = [
-    'pending',
-    'running',
-    'paused',
-    'done',
-    'failed',
-  ];
-  if (
-    typeof value.workerId !== 'string' ||
-    value.workerId.length === 0 ||
-    typeof value.role !== 'string' ||
-    value.role.length === 0 ||
-    (value.executor !== 'harness' && value.executor !== 'external') ||
-    typeof value.status !== 'string' ||
-    !statuses.includes(value.status as WorkerState['status']) ||
-    typeof value.startedTs !== 'number' ||
-    !Number.isInteger(value.startedTs) ||
-    value.startedTs < 0 ||
-    (value.subtaskId !== undefined && typeof value.subtaskId !== 'string') ||
-    (value.worktree !== undefined && typeof value.worktree !== 'string') ||
-    (value.sessionId !== undefined && typeof value.sessionId !== 'string') ||
-    (value.safePoint !== undefined && typeof value.safePoint !== 'string')
-  ) {
+  if (!isWorkerState(value)) {
     throw new Error('worker must be a complete valid WorkerState');
   }
   const { id: _id, ...worker } = value;

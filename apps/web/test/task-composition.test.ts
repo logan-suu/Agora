@@ -49,6 +49,16 @@ class RecordingLocalSandbox extends LocalTempSandbox {
   }
 }
 
+class RetryableSuspendSandbox extends LocalTempSandbox {
+  suspendCalls = 0;
+
+  override async suspend(taskId: string): Promise<void> {
+    this.suspendCalls += 1;
+    if (this.suspendCalls === 1) throw new Error('injected first suspend failure');
+    await super.suspend(taskId);
+  }
+}
+
 describe('createWebTaskCompositionFactory', () => {
   it('tears down an allocated sandbox worktree when setup fails', async () => {
     const sandbox = new MissingWorktreeSandbox();
@@ -106,6 +116,24 @@ describe('createWebTaskCompositionFactory', () => {
       }),
     ).rejects.toThrow(/safe point/i);
     expect(sandbox.suspendCalls).toBe(1);
+    await sandbox.teardown(scope.taskId);
+  });
+
+  it('retries composition resource release after a transient suspend failure', async () => {
+    const sandbox = new RetryableSuspendSandbox();
+    const scope = { projectId: 'project-a', taskId: 'task-retry-suspend' };
+    const composition = await createWebTaskCompositionFactory({ sandbox })({
+      scope,
+      goal: 'Retry cleanup',
+      loadState: async () => undefined,
+      transition: async (state) => state,
+      handleOutput: async () => {},
+      buildChannelContext: async () => [],
+    });
+
+    await expect(composition.suspend()).rejects.toThrow('injected first suspend failure');
+    await expect(composition.suspend()).resolves.toBeUndefined();
+    expect(sandbox.suspendCalls).toBe(2);
     await sandbox.teardown(scope.taskId);
   });
 });

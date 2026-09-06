@@ -1,5 +1,9 @@
 import { jsonError, readJsonObject, requiredString } from './http';
-import { TaskGoalConflictError, type TaskOrchestrationRuntime } from './task-orchestration-runtime';
+import {
+  TaskCompositionCapacityError,
+  TaskGoalConflictError,
+  type TaskOrchestrationRuntime,
+} from './task-orchestration-runtime';
 
 export function createPostTask(runtime: TaskOrchestrationRuntime) {
   return async function postTask(request: Request): Promise<Response> {
@@ -17,6 +21,9 @@ export function createPostTask(runtime: TaskOrchestrationRuntime) {
     } catch (error) {
       if (error instanceof TaskGoalConflictError) {
         return jsonError(error.message, 409);
+      }
+      if (error instanceof TaskCompositionCapacityError) {
+        return jsonError(error.message, 429);
       }
       throw error;
     }

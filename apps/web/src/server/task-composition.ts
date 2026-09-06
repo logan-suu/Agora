@@ -172,7 +172,6 @@ export function createWebTaskCompositionFactory(
     };
     const releaseRuntimeResources = async (terminal: boolean): Promise<void> => {
       if (resourcesReleased) return;
-      resourcesReleased = true;
       const errors: unknown[] = [];
       for (const executor of executors) {
         await executor.dispose().catch((error: unknown) => errors.push(error));
@@ -190,6 +189,7 @@ export function createWebTaskCompositionFactory(
           `task composition ${terminal ? 'dispose' : 'suspend'} failed: ${errors.map(String).join('; ')}`,
         );
       }
+      resourcesReleased = true;
     };
     let restored: { role: string; executor: HarnessExecutor } | undefined;
     try {

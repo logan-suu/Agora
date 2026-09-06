@@ -1,6 +1,7 @@
 export interface SlotLease {
   readonly leaseId: string;
   readonly projectId: string;
+  readonly taskId: string;
   readonly workerId: string;
   readonly grantedTs: number;
 }
@@ -14,17 +15,13 @@ export interface GlobalSchedulerOptions {
 interface QueuedAcquire {
   readonly key: string;
   readonly projectId: string;
+  readonly taskId: string;
   readonly workerId: string;
   readonly promise: Promise<SlotLease>;
   readonly signal?: AbortSignal;
   readonly onAbort?: () => void;
   resolve(lease: SlotLease): void;
   reject(error: unknown): void;
-}
-
-interface LeaseIdentity {
-  readonly projectId: string;
-  readonly workerId: string;
 }
 
 const DEFAULT_GLOBAL_CAP = 3;
@@ -36,11 +33,12 @@ export class GlobalScheduler {
   readonly #now: () => number;
   readonly #activeByWorker = new Map<string, SlotLease>();
   readonly #activeByLease = new Map<string, SlotLease>();
-  readonly #released = new Map<string, LeaseIdentity>();
+  readonly #released = new WeakSet<SlotLease>();
   readonly #queuedByWorker = new Map<string, QueuedAcquire>();
   readonly #queues = new Map<string, QueuedAcquire[]>();
   readonly #projectOrder: string[] = [];
   #lastGrantedProject: string | undefined;
+  #nextProjectHint: string | undefined;
 
   constructor(options: GlobalSchedulerOptions = {}) {
     const cap = options.cap ?? DEFAULT_GLOBAL_CAP;
@@ -56,10 +54,16 @@ export class GlobalScheduler {
     return this.#activeByLease.size;
   }
 
-  acquire(projectId: string, workerId: string, signal?: AbortSignal): Promise<SlotLease> {
+  acquire(
+    projectId: string,
+    taskId: string,
+    workerId: string,
+    signal?: AbortSignal,
+  ): Promise<SlotLease> {
     assertIdentity('projectId', projectId);
+    assertIdentity('taskId', taskId);
     assertIdentity('workerId', workerId);
-    const key = workerKey(projectId, workerId);
+    const key = workerKey(projectId, taskId, workerId);
     const active = this.#activeByWorker.get(key);
     if (active !== undefined) return Promise.resolve(active);
     const queued = this.#queuedByWorker.get(key);
@@ -67,7 +71,7 @@ export class GlobalScheduler {
     if (signal?.aborted === true) return Promise.reject(abortError(signal.reason));
 
     if (this.activeCount < this.cap && this.#queuedByWorker.size === 0) {
-      return Promise.resolve(this.#grant(projectId, workerId));
+      return Promise.resolve(this.#grant(projectId, taskId, workerId));
     }
 
     let resolveAcquire = (_lease: SlotLease): void => {};
@@ -89,6 +93,7 @@ export class GlobalScheduler {
     const request: QueuedAcquire = {
       key,
       projectId,
+      taskId,
       workerId,
       promise,
       ...(signal === undefined ? {} : { signal }),
@@ -101,6 +106,13 @@ export class GlobalScheduler {
     if (projectQueue === undefined) {
       this.#queues.set(projectId, [request]);
       this.#projectOrder.push(projectId);
+      if (
+        this.#nextProjectHint === undefined &&
+        this.#lastGrantedProject !== undefined &&
+        projectId !== this.#lastGrantedProject
+      ) {
+        this.#nextProjectHint = projectId;
+      }
     } else {
       projectQueue.push(request);
     }
@@ -110,41 +122,32 @@ export class GlobalScheduler {
   }
 
   async release(lease: SlotLease): Promise<void> {
+    if (this.#released.has(lease)) return;
     const active = this.#activeByLease.get(lease.leaseId);
     if (active !== undefined) {
-      if (!sameLease(active, lease)) throw leaseMismatch(lease);
+      if (active !== lease) throw leaseMismatch(lease);
       this.#activeByLease.delete(lease.leaseId);
-      this.#activeByWorker.delete(workerKey(lease.projectId, lease.workerId));
-      this.#released.set(lease.leaseId, {
-        projectId: lease.projectId,
-        workerId: lease.workerId,
-      });
+      this.#activeByWorker.delete(workerKey(lease.projectId, lease.taskId, lease.workerId));
+      this.#released.add(lease);
       this.#drain();
-      return;
-    }
-
-    const released = this.#released.get(lease.leaseId);
-    if (
-      released !== undefined &&
-      released.projectId === lease.projectId &&
-      released.workerId === lease.workerId
-    ) {
       return;
     }
     throw leaseMismatch(lease);
   }
 
-  #grant(projectId: string, workerId: string): SlotLease {
+  #grant(projectId: string, taskId: string, workerId: string): SlotLease {
+    if (this.#projectOrder.length === 0) this.#nextProjectHint = undefined;
     const lease: SlotLease = {
       leaseId: this.#newId(),
       projectId,
+      taskId,
       workerId,
       grantedTs: this.#now(),
     };
-    if (this.#activeByLease.has(lease.leaseId) || this.#released.has(lease.leaseId)) {
+    if (this.#activeByLease.has(lease.leaseId)) {
       throw new Error(`GlobalScheduler leaseId "${lease.leaseId}" is not unique`);
     }
-    this.#activeByWorker.set(workerKey(projectId, workerId), lease);
+    this.#activeByWorker.set(workerKey(projectId, taskId, workerId), lease);
     this.#activeByLease.set(lease.leaseId, lease);
     this.#lastGrantedProject = projectId;
     return lease;
@@ -154,6 +157,7 @@ export class GlobalScheduler {
     while (this.activeCount < this.cap && this.#projectOrder.length > 0) {
       const projectId = this.#nextProject();
       if (projectId === undefined) return;
+      this.#advanceProjectHint(projectId);
       const queue = this.#queues.get(projectId);
       const request = queue?.shift();
       if (queue === undefined || request === undefined) {
@@ -170,7 +174,7 @@ export class GlobalScheduler {
         continue;
       }
       try {
-        request.resolve(this.#grant(request.projectId, request.workerId));
+        request.resolve(this.#grant(request.projectId, request.taskId, request.workerId));
       } catch (error) {
         request.reject(error);
       }
@@ -179,10 +183,22 @@ export class GlobalScheduler {
 
   #nextProject(): string | undefined {
     if (this.#projectOrder.length === 0) return undefined;
+    if (this.#nextProjectHint !== undefined && this.#projectOrder.includes(this.#nextProjectHint)) {
+      return this.#nextProjectHint;
+    }
     if (this.#lastGrantedProject === undefined) return this.#projectOrder[0];
     const previous = this.#projectOrder.indexOf(this.#lastGrantedProject);
     if (previous < 0) return this.#projectOrder[0];
     return this.#projectOrder[(previous + 1) % this.#projectOrder.length];
+  }
+
+  #advanceProjectHint(projectId: string): void {
+    const index = this.#projectOrder.indexOf(projectId);
+    if (index < 0 || this.#projectOrder.length < 2) {
+      this.#nextProjectHint = undefined;
+      return;
+    }
+    this.#nextProjectHint = this.#projectOrder[(index + 1) % this.#projectOrder.length];
   }
 
   #removeQueued(request: QueuedAcquire): void {
@@ -199,24 +215,16 @@ export class GlobalScheduler {
     this.#queues.delete(projectId);
     const index = this.#projectOrder.indexOf(projectId);
     if (index >= 0) this.#projectOrder.splice(index, 1);
+    if (this.#projectOrder.length === 0) this.#nextProjectHint = undefined;
   }
 }
 
-function workerKey(projectId: string, workerId: string): string {
-  return `${projectId}\u0000${workerId}`;
+function workerKey(projectId: string, taskId: string, workerId: string): string {
+  return `${projectId}\u0000${taskId}\u0000${workerId}`;
 }
 
 function assertIdentity(field: string, value: string): void {
   if (value.length === 0) throw new Error(`${field} must be non-empty`);
-}
-
-function sameLease(left: SlotLease, right: SlotLease): boolean {
-  return (
-    left.leaseId === right.leaseId &&
-    left.projectId === right.projectId &&
-    left.workerId === right.workerId &&
-    left.grantedTs === right.grantedTs
-  );
 }
 
 function leaseMismatch(lease: SlotLease): Error {

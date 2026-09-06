@@ -106,6 +106,10 @@ class CanonicalTaskJoin {
     return this.#current.projectId;
   }
 
+  get taskId(): string {
+    return this.#current.taskId;
+  }
+
   get hasFailure(): boolean {
     return this.failures.some((failure) => failure.status === 'failed');
   }
@@ -190,7 +194,11 @@ export class WorkerRuntime {
   async runOne(state: AppState, assign: Assignment): Promise<AppState> {
     const prepared = await this.prepareAssignments(await this.loadStartState(state), [assign]);
     const join = new CanonicalTaskJoin(prepared, this.deps.loadState);
-    const lease = await this.scheduler.acquire(prepared.projectId, assign.workerId);
+    const lease = await this.scheduler.acquire(
+      prepared.projectId,
+      prepared.taskId,
+      assign.workerId,
+    );
     try {
       await this.runAssignment(join, assign, false);
     } catch (error) {
@@ -235,7 +243,7 @@ export class WorkerRuntime {
       if (assign === undefined) return;
       let lease: SlotLease | undefined;
       try {
-        lease = await this.scheduler.acquire(join.projectId, assign.workerId);
+        lease = await this.scheduler.acquire(join.projectId, join.taskId, assign.workerId);
         if (join.hasFailure) {
           join.recordNotStarted(assign.workerId);
           return;
@@ -328,6 +336,9 @@ export class WorkerRuntime {
   private assertReadySubtask(state: AppState, subtaskId: string): void {
     const subtask = state.subtasks.find((entry) => entry.id === subtaskId);
     if (subtask === undefined) throw new Error(`subtask "${subtaskId}" does not exist`);
+    if (subtask.status === 'blocked' || subtask.status === 'done') {
+      throw new Error(`subtask "${subtaskId}" is not executable from status "${subtask.status}"`);
+    }
     const done = new Set(
       state.subtasks.filter((entry) => entry.status === 'done').map((entry) => entry.id),
     );
@@ -341,6 +352,11 @@ export class WorkerRuntime {
     if (worker.role !== assignment.role || worker.subtaskId !== assignment.subtaskId) {
       throw new Error(`worker "${assignment.workerId}" assignment conflicts with persisted state`);
     }
+    if (worker.executor !== 'harness') {
+      throw new Error(
+        `worker "${assignment.workerId}" executor conflicts with Phase 9 thin runtime`,
+      );
+    }
   }
 
   private async runAssignment(
@@ -349,10 +365,26 @@ export class WorkerRuntime {
     parallel: boolean,
   ): Promise<void> {
     const spec = this.specOf(assign.role, await this.currentRoster());
+    const running = await join.commit(async (current) => {
+      const worker = current.workers.find((entry) => entry.workerId === assign.workerId);
+      if (worker === undefined) throw new Error(`worker "${assign.workerId}" was not registered`);
+      this.assertAssignmentMatches(worker, assign);
+      if (worker.status !== 'pending') {
+        throw new Error(
+          `worker "${assign.workerId}" cannot start from canonical status "${worker.status}"`,
+        );
+      }
+      if (assign.subtaskId !== undefined) {
+        this.assertReadySubtask(current, assign.subtaskId);
+      }
+      return this.transitionStep(current, assign.role, [
+        mergeByIdMutation('workers', assign.workerId, { status: 'running' }),
+      ]);
+    });
+    const worker = running.workers.find((entry) => entry.workerId === assign.workerId);
+    if (worker === undefined)
+      throw new Error(`worker "${assign.workerId}" disappeared after start`);
     const executor = this.deps.buildExecutor(spec, assign);
-    const state = await join.latest();
-    const worker = state.workers.find((entry) => entry.workerId === assign.workerId);
-    if (worker === undefined) throw new Error(`worker "${assign.workerId}" was not registered`);
     const handle: WorkerHandle = {
       id: assign.workerId,
       role: assign.role,
@@ -364,11 +396,6 @@ export class WorkerRuntime {
     };
     this.active.set(handle.id, handle);
     try {
-      await join.commit((current) =>
-        this.transitionStep(current, handle.role, [
-          mergeByIdMutation('workers', handle.id, { status: 'running' }),
-        ]),
-      );
       await this.loop(join, handle, parallel);
     } catch (error) {
       handle.rejectDrain?.(error);
@@ -394,7 +421,8 @@ export class WorkerRuntime {
         await this.pauseAtSafePoint(join, handle);
         return;
       }
-      const current = await join.latest();
+      let current = await join.latest();
+      this.assertCanonicalHandle(current, handle);
       const roster = await this.currentRoster();
       if (!roster.some((entry) => entry.role === handle.role)) {
         await this.pauseAtSafePoint(join, handle);
@@ -412,6 +440,8 @@ export class WorkerRuntime {
         await this.pauseAtSafePoint(join, handle);
         return;
       }
+      current = await join.latest();
+      this.assertCanonicalHandle(current, handle);
       const result = await handle.executor.step({
         sessionId: handle.sessionId,
         view: project(current, handle.role, roster, channelContext),
@@ -491,7 +521,9 @@ export class WorkerRuntime {
     ) {
       throw new Error(`worker "${handle.id}" is no longer a valid running assignment`);
     }
-    if (handle.subtaskId !== undefined) this.assertReadySubtask(state, handle.subtaskId);
+    if (handle.subtaskId !== undefined) {
+      this.assertReadySubtask(state, handle.subtaskId);
+    }
   }
 
   private currentRoster(): Promise<readonly RoleSpec[]> {
@@ -532,11 +564,6 @@ function validateParallelMutations(
       throw new Error(`parallel worker "${handle.id}" cannot submit set(${mutation.field})`);
     }
     if (mutation.op === 'mergeById') {
-      if (mutation.field === 'workers' && mutation.value.id === handle.id) continue;
-      if (mutation.field === 'subtasks' && mutation.value.id === handle.subtaskId) {
-        const keys = Object.keys(mutation.value).filter((key) => key !== 'id');
-        if (keys.length === 0) continue;
-      }
       throw new Error(
         `parallel worker "${handle.id}" cannot merge ${mutation.field}/${mutation.value.id}`,
       );

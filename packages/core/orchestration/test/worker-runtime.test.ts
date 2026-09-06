@@ -473,6 +473,40 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     expect(executorBuilds).toBe(0);
   });
 
+  it.each([
+    { status: 'blocked' as const, ownerRole: 'CODER' },
+    { status: 'done' as const, ownerRole: 'CODER' },
+  ])(
+    'rejects a $status subtask owned by $ownerRole before constructing an executor',
+    async ({ status, ownerRole }) => {
+      const state = applyMutations(createInitialAppState('t-1', 'g'), [
+        mergeByIdMutation('subtasks', 'target', {
+          title: 'target',
+          ownerRole,
+          dependsOn: [],
+          status,
+        }),
+      ]);
+      let builds = 0;
+      const runtime = new WorkerRuntime({
+        roster: PHASE0_ROSTER,
+        buildExecutor: () => {
+          builds += 1;
+          return new FakeExecutor([stepOf('done', [])]);
+        },
+      });
+
+      await expect(
+        runtime.runOne(state, {
+          workerId: `worker:invalid-subtask:${status}:${ownerRole}`,
+          role: 'CODER',
+          subtaskId: 'target',
+        }),
+      ).rejects.toThrow('is not executable');
+      expect(builds).toBe(0);
+    },
+  );
+
   it('runs the complete batch concurrently up to maxParallel without dropping the tail', async () => {
     const stats = { active: 0, max: 0, started: [] as string[] };
     const assignments = Array.from({ length: 5 }, (_, index) => ({
@@ -662,6 +696,75 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     expect(builds).toBe(0);
   });
 
+  it('rejects a persisted external executor assignment in Phase 9', async () => {
+    const assignment = {
+      workerId: 'worker:external-assignment',
+      role: 'CODER' as const,
+      subtaskId: 's-0',
+    };
+    const state = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('subtasks', assignment.subtaskId, {
+        title: 's-0',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'in_progress',
+      }),
+      mergeByIdMutation('workers', assignment.workerId, {
+        workerId: assignment.workerId,
+        role: assignment.role,
+        executor: 'external',
+        status: 'pending',
+        subtaskId: assignment.subtaskId,
+        startedTs: 1,
+      }),
+    ]);
+    let builds = 0;
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => {
+        builds += 1;
+        return new FakeExecutor([stepOf('done', [])]);
+      },
+    });
+
+    await expect(runtime.runOne(state, assignment)).rejects.toThrow(/executor conflicts/);
+    expect(builds).toBe(0);
+  });
+
+  it('revalidates the canonical worker handle before executing a model step', async () => {
+    const assignment = {
+      workerId: 'worker:stale-before-step',
+      role: 'CODER' as const,
+      subtaskId: 's-0',
+    };
+    let canonical = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('subtasks', assignment.subtaskId, {
+        title: 's-0',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'in_progress',
+      }),
+    ]);
+    const executor = new FakeExecutor([stepOf('done', [])]);
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      loadState: async () => canonical,
+      transition: async (_state, mutations) => {
+        canonical = applyMutations(canonical, mutations);
+        return canonical;
+      },
+      buildExecutor: () => {
+        canonical = applyMutations(canonical, [
+          mergeByIdMutation('workers', assignment.workerId, { status: 'failed' }),
+        ]);
+        return executor;
+      },
+    });
+
+    await expect(runtime.runOne(canonical, assignment)).rejects.toThrow(/no longer a valid/);
+    expect(executor.stepCalls).toHaveLength(0);
+  });
+
   it('rejects invalid local parallel limits before work can start', () => {
     const deps = { roster: PHASE0_ROSTER, buildExecutor: () => new FakeExecutor([]) };
     const scheduler = new GlobalScheduler({ cap: 2 });
@@ -729,6 +832,16 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
         value: { passed: true, total: 1, failed: 0, failures: [] },
       } satisfies Mutation,
       message: 'cannot submit set(testResults)',
+    },
+    {
+      name: 'model-authored worker assignment partition',
+      mutation: mergeByIdMutation('workers', 'worker:boundary:0', { role: 'REVIEWER' }),
+      message: 'cannot merge workers/worker:boundary:0',
+    },
+    {
+      name: 'own subtask control-plane partition',
+      mutation: mergeByIdMutation('subtasks', 's-0', { status: 'done' }),
+      message: 'cannot merge subtasks/s-0',
     },
     {
       name: 'another subtask partition',

@@ -134,5 +134,10 @@ describe('JsonTaskStateStore', () => {
 
     await writeFile(path, `${JSON.stringify({ ...current, workers: null }, null, 2)}\n`, 'utf8');
     await expect(store.load(scope())).rejects.toThrow('workers must be an array');
+
+    for (const workers of [[null], [{}], [{ workerId: 'partial' }]]) {
+      await writeFile(path, `${JSON.stringify({ ...current, workers }, null, 2)}\n`, 'utf8');
+      await expect(store.load(scope())).rejects.toThrow('workers must contain valid WorkerState');
+    }
   });
 });

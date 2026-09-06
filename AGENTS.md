@@ -107,7 +107,7 @@ deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数
 ## 2. 硬红线（NEVER，违反必被拒绝）
 
 ```
-R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），禁止直接赋值共享 State。D17 下并行 worker 只可提交具稳定身份的 append 或 merge 自己 workerId/subtaskId 分区；这些合法并行 op 必须可交换、幂等。set、他人分区与 collaboration 写入禁止由并行 worker 提交，只能走任务串行控制面或 D12 ProjectCollaborationStore revision CAS；禁止合并多个完整 AppState 快照
+R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），禁止直接赋值共享 State。D17 下并行 agent step 只可提交具稳定身份的 append；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区生成，这些合法并行 op 必须可交换、幂等。当前 Subtask 全字段均属串行控制面；并行模型输出的 workers merge、set、subtask、他人 worker 分区与 collaboration 写入均禁止，只能走任务串行控制面或 D12 ProjectCollaborationStore revision CAS；禁止合并多个完整 AppState 快照
 R2  上下文只经投影切片喂给 agent，永不投原始群聊 log；display（给人看）与 payload（给 agent 用）严格分离
 R3  leader 是唯一裁决者：不做 agent 间自动共识/投票；blocking 异议必须升级 humanGate 由人拍板；[2026-09-05 架构决策更新] TESTER pass/REVIEWER approved 只形成 completionCandidate，必须经 D16 completion_confirmation gate 的 Leader 终审后才允许 isRequestSatisfied=true/finalize
 R4  配合式抢占只能在安全点（step/end）打断，绝不硬杀 LLM token 流；humanGate 按 D4 执行持久 suspend→Leader resolve→全新 context 真 Fork resume，checkpoint 未 flush/未闭合时 fail-closed，不做内存动态挂起
@@ -234,7 +234,7 @@ Harness 边界（薄执行器职责，详见详细设计 §0/§6）：
 - agent/request：按 RoleSpec.model 路由模型
 - agent/turn-stopping：配合式抢占落点（steering 反对关轮 → step 边界停）
 - ctx.compaction：单 agent 历史压缩委托 Harness，不自研；压缩伪历史属预期行为
-- 隔离两层互补：独立 Harness Context/session 是进程内隔离，workerId worktree 是文件隔离；二者都受 GlobalScheduler lease 约束
+- 隔离两层互补：独立 Harness Context/session 是进程内隔离，workerId worktree 是文件隔离；实际 worker 执行受 GlobalScheduler lease 约束，active executable composition 另受生命周期 admission cap 约束但不由此获得 worker 额度
 ```
 
 命名约定：
@@ -296,11 +296,11 @@ humanGate   决策 D4：已提交 step/end 边界→flush session 后一次持�
             Phase 8 只落回合制单任务与本地容量释放，Phase 9 再接 GlobalScheduler/多 worker 抢占
 KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简硬编码默认值，不依赖向量检索；
             启用写入需双重门控：①相关任务测试全绿 ②Leader 显式 /approve-kb——否则蒸馏结果直接丢弃
-写所有权    结构化切片只读投影；D17 并行 worker 只写稳定 append + 自己 worker/subtask 分区，set 归串行控制面（WO）
+写所有权    结构化切片只读投影；D17 并行 agent step 只写稳定 append，WorkerState 生命周期只由 WorkerRuntime 内部按自身分区提交，当前 Subtask 全字段与并行 set 均归串行控制面（WO）
 裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；contradiction=blocking 经绑定 gate 的 D4 裁决，concern/advisory 继续并可直接裁决；每次裁决原子写规范 Leader 消息+最高权威 resolution Decision，accept blocking 必须撤回目标；Decision.supersedes 只允许同 topic 的 current Decision；未决视图与重放交叉验证全部后置事实；所有角色通过结构化 objectionResolutions 系统切片取得已验证裁决，不读原始 Leader 消息；语义拿不准由上游声明 concern
 完成终审    D16：TESTER pass + REVIEWER approved 仅形成 completionCandidate；Coordinator 只接受当前 REVIEWER dispatch 后恰一个、满足 `[A-Za-z0-9][A-Za-z0-9._:-]*` 且未跨轮复用的 verdict id，并打开 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion/request_changes；真 Fork resume 后交叉验证 canonical Message/Decision/receipt/current review，approve 才置 isRequestSatisfied=true 并 finalize，request_changes 保持 false、保守回 CODER；正常阶段不逐段审批
 Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复制进 State/Message/MessageBus；对人 DTO 仅含 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 prompt/projection/reasoning/arguments/results；child 只投 seed 后 native 事件且 parent 图无环；官方格式读取后仍校验跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；响应有界、截断显式
-并行度      D17：GlobalScheduler lease 是跨项目唯一额度，默认全局 cap=3、按项目轮转；runParallel 处理完整 batch，all-settled 后 reload canonical State；subtask.dependsOn 未满足不激活
+并行度      D17：GlobalScheduler lease 是跨项目唯一 worker 执行额度，身份={projectId,taskId,workerId}，默认全局 cap=3、按项目轮转；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone；runParallel 处理完整 batch，all-settled 后 reload canonical State；subtask 必须状态可执行、dependsOn 已满足且 persisted WorkerState assignment 匹配才可激活，ownerRole 是实现责任归属而非 TESTER/REVIEWER 的独占执行门禁；active executable composition 另受默认 3 个的生命周期 admission cap，满载在重资源初始化前返回可重试 429
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
