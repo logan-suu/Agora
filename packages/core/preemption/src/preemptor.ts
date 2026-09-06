@@ -93,12 +93,18 @@ export class Preemptor {
     const pausedWorkerIds = receipt.workers
       .filter((worker) => worker.status === 'paused')
       .map((worker) => worker.workerId);
-    record.completion = (
+    const completion = (
       receipt.mode === 'reproject'
         ? this.lifecycle.resumeReprojected(receipt.scope, pausedWorkerIds, receipt.actionId)
         : this.lifecycle.suspendPaused(receipt.scope, pausedWorkerIds, receipt.actionId)
     ).then(() => this.#close(receipt));
-    return record.completion;
+    record.completion = completion;
+    try {
+      await completion;
+    } catch (error) {
+      if (record.completion === completion) delete record.completion;
+      throw error;
+    }
   }
 
   async abort(receipt: PauseReceipt): Promise<void> {
@@ -110,10 +116,16 @@ export class Preemptor {
     const workerIds = receipt.workers
       .filter((worker) => worker.status === 'paused')
       .map((worker) => worker.workerId);
-    record.aborted = this.lifecycle
+    const aborted = this.lifecycle
       .abortPause(receipt.scope, workerIds, receipt.actionId)
       .then(() => this.#close(receipt));
-    return record.aborted;
+    record.aborted = aborted;
+    try {
+      await aborted;
+    } catch (error) {
+      if (record.aborted === aborted) delete record.aborted;
+      throw error;
+    }
   }
 
   async #reachBarrier(request: PauseRequest, cohort: readonly string[]): Promise<PauseReceipt> {

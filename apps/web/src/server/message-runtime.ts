@@ -282,7 +282,17 @@ export class MessageRuntime {
         if (!isPhase9LeaderIntent(incomingIntent)) {
           throw new Error(`Phase 9 Leader action "${input.msgId}" conflicts with its first write`);
         }
+        if (input.channelId !== 'main') {
+          throw new Error('Phase 9 Leader commands must use main');
+        }
         assertPhase9LeaderActionReplay(current, existing, incomingIntent);
+        const receipt = await this.#leaderPreemption.pause({
+          scope,
+          actionId: input.msgId,
+          reason: incomingIntent.kind,
+          mode: 'reproject',
+        });
+        await this.#leaderPreemption.complete(receipt);
       }
       const persistedIntent = existing.payload.intent;
       const existingIsResolution =

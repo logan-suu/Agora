@@ -126,6 +126,12 @@ class ReprojectingExecutor implements Executor {
   }
 }
 
+class FailingSafePointExecutor extends ReprojectingExecutor {
+  override async saveSafePoint(): Promise<string> {
+    throw new Error('injected safe-point failure');
+  }
+}
+
 interface StepContextLog {
   sessionId: string;
   view: ProjectionView;
@@ -319,6 +325,85 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     await expect(running).resolves.toMatchObject({ taskId: 't-gate' });
     expect(scheduler.activeCount).toBe(0);
     expect(builds).toBe(1);
+  });
+
+  it('does not install a pause epoch when its scope mismatches an active worker', async () => {
+    const executor = new GatedExecutor('done');
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => executor,
+    });
+    const running = runtime.runOne(createInitialAppState('t-scope', 'g'), assignment('CODER'));
+    await executor.stepStarted;
+
+    await expect(
+      runtime.requestPause({
+        scope: { projectId: 'other-project', taskId: 't-scope' },
+        actionId: 'wrong-scope',
+        reason: 'requirement_change',
+        mode: 'reproject',
+      }),
+    ).rejects.toThrow('pause scope does not match');
+    expect(runtime.hasActivePause).toBe(false);
+
+    executor.release();
+    await expect(running).resolves.toMatchObject({ taskId: 't-scope' });
+  });
+
+  it('cleans up remaining paused workers when one cohort checkpoint fails', async () => {
+    const failing = new FailingSafePointExecutor();
+    const survivor = new ReprojectingExecutor();
+    const assignments = [
+      { workerId: 'worker:barrier:0', role: 'CODER' as const, subtaskId: 's-0' },
+      { workerId: 'worker:barrier:1', role: 'CODER' as const, subtaskId: 's-1' },
+    ];
+    let canonical = applyMutations(
+      createInitialAppState('t-barrier', 'g'),
+      assignments.map((entry) =>
+        mergeByIdMutation('subtasks', entry.subtaskId, {
+          title: entry.subtaskId,
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+        }),
+      ),
+    );
+    const runtime = new WorkerRuntime(
+      {
+        roster: PHASE0_ROSTER,
+        loadState: async () => canonical,
+        transition: async (_state, mutations) => {
+          canonical = applyMutations(canonical, mutations);
+          return canonical;
+        },
+        buildExecutor: (_spec, assign) =>
+          assign.workerId === 'worker:barrier:0' ? failing : survivor,
+      },
+      new GlobalScheduler({ cap: 2 }),
+      2,
+    );
+    const running = runtime.runParallel(canonical, assignments);
+    await Promise.all([failing.stepStarted, survivor.stepStarted]);
+    const barrier = runtime.requestPause({
+      scope: { projectId: canonical.projectId, taskId: canonical.taskId },
+      actionId: 'failing-barrier',
+      reason: 'requirement_change',
+      mode: 'reproject',
+    });
+    failing.release();
+    survivor.release();
+
+    await expect(barrier).rejects.toThrow('injected safe-point failure');
+    await expect(
+      Promise.race([
+        running.then(
+          () => 'settled',
+          () => 'settled',
+        ),
+        new Promise<string>((resolve) => setTimeout(() => resolve('timed-out'), 100)),
+      ]),
+    ).resolves.toBe('settled');
+    expect(runtime.hasActivePause).toBe(false);
   });
 
   it('honors a target drain requested while asynchronous ChannelContext construction is pending', async () => {

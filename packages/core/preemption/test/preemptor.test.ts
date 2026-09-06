@@ -138,4 +138,32 @@ describe('Preemptor', () => {
     await preemptor.complete(receipt);
     expect(lifecycle.events).toContain('reproject:change-1:worker-a');
   });
+
+  it('keeps failed complete and abort terminal operations retryable', async () => {
+    const lifecycle = port(['worker-a']);
+    let completeAttempts = 0;
+    lifecycle.resumeReprojected = async (_scope, workerIds, actionId) => {
+      lifecycle.events.push(`reproject:${actionId}:${workerIds.join(',')}`);
+      completeAttempts += 1;
+      if (completeAttempts === 1) throw new Error('transient reproject failure');
+    };
+    let abortAttempts = 0;
+    lifecycle.abortPause = async (_scope, workerIds, actionId) => {
+      lifecycle.events.push(`abort:${actionId}:${workerIds.join(',')}`);
+      abortAttempts += 1;
+      if (abortAttempts === 1) throw new Error('transient abort failure');
+    };
+    const preemptor = new Preemptor(lifecycle);
+
+    const completing = await preemptor.requestPause(request());
+    await expect(preemptor.complete(completing)).rejects.toThrow('transient reproject failure');
+    await expect(preemptor.complete(completing)).resolves.toBeUndefined();
+
+    const aborting = await preemptor.requestPause(request({ actionId: 'change-2' }));
+    await expect(preemptor.abort(aborting)).rejects.toThrow('transient abort failure');
+    await expect(preemptor.abort(aborting)).resolves.toBeUndefined();
+
+    expect(completeAttempts).toBe(2);
+    expect(abortAttempts).toBe(2);
+  });
 });

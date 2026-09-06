@@ -268,7 +268,10 @@ describe('coordinator.decide · D17 stable worker dispatch', () => {
       }),
     ]);
 
-    const resumed = decide(state, { roster: FULL_ROSTER });
+    const resumed = decide(state, {
+      roster: FULL_ROSTER,
+      resumingWorkerIds: ['worker:resume:0'],
+    });
 
     expect(resumed.route).toEqual({
       kind: 'worker',
@@ -378,6 +381,37 @@ describe('coordinator.decide · conditional routing (task 2.2, spec §5.3)', () 
       batch: [{ role: 'ARCHITECT' }],
       parallel: false,
     });
+  });
+
+  it('does not recover a drain-paused worker without a human-gate resume plan', () => {
+    const state = applyMutations(stateAtPhase('coding'), [
+      mergeByIdMutation('subtasks', 's-0', {
+        title: 'active work',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'in_progress',
+      }),
+      mergeByIdMutation('workers', 'worker:drain:0', {
+        workerId: 'worker:drain:0',
+        role: 'CODER',
+        executor: 'harness',
+        status: 'paused',
+        subtaskId: 's-0',
+        safePoint: 'safe:drain',
+        startedTs: 1,
+      }),
+    ]);
+
+    const routed = decide(state, { ...clock(), roster: PHASE0_ROSTER });
+
+    expect(routed.route.kind).toBe('worker');
+    if (routed.route.kind !== 'worker') throw new Error('expected TESTER dispatch');
+    expect(routed.route.batch).toEqual([
+      expect.objectContaining({ role: 'TESTER', subtaskId: 's-0' }),
+    ]);
+    expect(routed.route.batch).not.toContainEqual(
+      expect.objectContaining({ workerId: 'worker:drain:0' }),
+    );
   });
 
   it('escalates when an applied Leader assignment becomes unavailable before consumption', () => {

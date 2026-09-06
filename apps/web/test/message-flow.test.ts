@@ -52,7 +52,12 @@ describe('persisted HTTP + SSE message flow', () => {
     const events: string[] = [];
     runtime.bindLeaderPreemptionPort({
       pause: async (request) => {
-        expect((await runtime.store.load(scope))?.messages).toHaveLength(0);
+        const persisted = await runtime.store.load(scope);
+        if (events.length === 0) {
+          expect(persisted?.messages).toHaveLength(0);
+        } else {
+          expect(persisted?.messages.at(-1)?.msgId).toBe(request.actionId);
+        }
         events.push(`pause:${request.actionId}`);
         return { ...request, cohort: [], workers: [] };
       },
@@ -107,7 +112,20 @@ describe('persisted HTTP + SSE message flow', () => {
     });
     expect(events).toEqual(['pause:priority-1', 'complete:priority-1']);
     await expect((await request()).json()).resolves.toMatchObject({ published: false });
-    expect(events).toEqual(['pause:priority-1', 'complete:priority-1']);
+    expect(events).toEqual([
+      'pause:priority-1',
+      'complete:priority-1',
+      'pause:priority-1',
+      'complete:priority-1',
+    ]);
+    await expect(
+      runtime.commitLeaderMessage(scope, {
+        msgId: 'priority-1',
+        channelId: 'sub-other',
+        display: '/priority sub-1 90',
+        ts: 10,
+      }),
+    ).rejects.toThrow('must use main');
     await expect(
       post(
         postRequest({
@@ -119,6 +137,58 @@ describe('persisted HTTP + SSE message flow', () => {
         }),
       ),
     ).rejects.toThrow(/conflicts/);
+  });
+
+  it('retries Phase 9 reproject completion after the canonical action was committed', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    let pauseCalls = 0;
+    let completeCalls = 0;
+    runtime.bindLeaderPreemptionPort({
+      pause: async (request) => {
+        pauseCalls += 1;
+        return { ...request, cohort: [], workers: [] };
+      },
+      complete: async () => {
+        completeCalls += 1;
+        if (completeCalls === 1) throw new Error('transient reproject completion failure');
+      },
+      abort: async () => {
+        throw new Error('committed action must not abort');
+      },
+    });
+    await runtime.initializeState(
+      scope,
+      applyMutations(createInitialAppState(scope.taskId, 'Task task-a', scope.projectId), [
+        mergeByIdMutation('subtasks', 'sub-1', {
+          title: 'Implement cache',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'todo',
+        }),
+      ]),
+    );
+    const input = {
+      msgId: 'priority-retry',
+      channelId: 'main',
+      display: '/priority sub-1 75',
+      ts: 10,
+    };
+
+    await expect(runtime.commitLeaderMessage(scope, input)).rejects.toThrow(
+      'transient reproject completion failure',
+    );
+    await expect(runtime.store.load(scope)).resolves.toMatchObject({
+      subtasks: [expect.objectContaining({ id: 'sub-1', priority: 75 })],
+      messages: [expect.objectContaining({ msgId: 'priority-retry' })],
+    });
+
+    await expect(runtime.commitLeaderMessage(scope, input)).resolves.toMatchObject({
+      published: false,
+      action: { status: 'applied' },
+    });
+    expect(pauseCalls).toBe(2);
+    expect(completeCalls).toBe(2);
   });
 
   it('atomically commits and replays a review-bound completion approval', async () => {

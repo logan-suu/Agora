@@ -265,6 +265,10 @@ export class WorkerRuntime {
     return this.taskPause !== undefined;
   }
 
+  get resumableWorkerIds(): readonly string[] {
+    return [...this.resumingWorkerSessions.keys()].sort();
+  }
+
   requestPause(request: PauseRequest): Promise<PauseReceipt> {
     return this.preemptor.requestPause(request);
   }
@@ -662,6 +666,11 @@ export class WorkerRuntime {
       if (existing.actionId === actionId && existing.mode === mode) return;
       throw new Error(`worker runtime already has pause epoch "${existing.actionId}"`);
     }
+    for (const handle of this.active.values()) {
+      if (handle.join.projectId !== scope.projectId || handle.join.taskId !== scope.taskId) {
+        throw new Error('pause scope does not match the active WorkerRuntime task');
+      }
+    }
     let resolvePause = (_outcome: 'reproject' | 'suspend' | 'abort'): void => {};
     const closed = new Promise<'reproject' | 'suspend' | 'abort'>((resolve) => {
       resolvePause = resolve;
@@ -669,11 +678,6 @@ export class WorkerRuntime {
     this.taskPause = { actionId, mode, closed, resolve: resolvePause };
     for (const controller of this.queuedAcquires.values()) {
       controller.abort(new Error(`task pause epoch "${actionId}" cancelled queued acquire`));
-    }
-    for (const handle of this.active.values()) {
-      if (handle.join.projectId !== scope.projectId || handle.join.taskId !== scope.taskId) {
-        throw new Error('pause scope does not match the active WorkerRuntime task');
-      }
     }
   }
 
@@ -775,7 +779,15 @@ export class WorkerRuntime {
     actionId: string,
   ): Promise<void> {
     const taskPause = this.requiredTaskPause(scope, actionId);
-    const handles = workerIds.map((workerId) => this.requiredPausedHandle(workerId, actionId));
+    const handles: WorkerHandle[] = [];
+    for (const workerId of workerIds) {
+      const handle = this.active.get(workerId);
+      if (handle === undefined) continue;
+      if (handle.pause?.actionId !== actionId) {
+        throw new Error(`worker "${workerId}" is not paused by action "${actionId}"`);
+      }
+      handles.push(handle);
+    }
     if (handles.length > 0) {
       const join = handles[0]?.join;
       if (join === undefined) throw new Error('paused worker join is unavailable');

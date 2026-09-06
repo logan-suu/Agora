@@ -171,4 +171,27 @@ describe('JsonTaskStateStore', () => {
       await expect(store.load(scope())).rejects.toThrow('subtasks must contain valid priority');
     }
   });
+
+  it('rejects an invalid initial subtask priority before persistence', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const invalid = {
+      ...createInitialAppState('task-a', 'priority goal', 'project-a'),
+      subtasks: [
+        {
+          id: 'sub-1',
+          title: 'invalid priority',
+          ownerRole: 'CODER' as const,
+          dependsOn: [],
+          status: 'todo' as const,
+          priority: 101,
+        },
+      ],
+    };
+
+    await expect(store.initialize(scope(), invalid)).rejects.toThrow(
+      'subtasks must contain valid priority',
+    );
+    await expect(store.load(scope())).resolves.toBeUndefined();
+  });
 });
