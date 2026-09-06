@@ -238,7 +238,6 @@ describe('Phase 7 role-lifecycle exit chain', () => {
         'worker-state-commit',
         'step-commit',
         'safe-point',
-        'worker-state-commit',
         'handoff-commit',
         'departed-commit',
       ]);
@@ -260,6 +259,14 @@ describe('Phase 7 role-lifecycle exit chain', () => {
       expect(stateAfterDeparture.subtasks).toEqual([
         expect.objectContaining({ id: 'coding-work', ownerRole: 'TESTER' }),
       ]);
+      expect(stateAfterDeparture.workers).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            workerId: 'worker:phase7-exit:coder',
+            status: 'done',
+          }),
+        ]),
+      );
       expect(collaborationAfterDeparture.roster).toEqual(
         expect.arrayContaining([
           expect.objectContaining({

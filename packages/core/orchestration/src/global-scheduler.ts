@@ -220,7 +220,7 @@ export class GlobalScheduler {
 }
 
 function workerKey(projectId: string, taskId: string, workerId: string): string {
-  return `${projectId}\u0000${taskId}\u0000${workerId}`;
+  return JSON.stringify([projectId, taskId, workerId]);
 }
 
 function assertIdentity(field: string, value: string): void {

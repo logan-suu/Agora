@@ -123,6 +123,22 @@ describe('GlobalScheduler (D17)', () => {
     await scheduler.release(second);
   });
 
+  it('keeps delimiter-containing worker identities distinct', async () => {
+    const scheduler = deterministicScheduler(2);
+
+    const first = await scheduler.acquire('project\u0000task', 'worker', 'leaf');
+    const second = await scheduler.acquire('project', 'task', 'worker\u0000leaf');
+
+    expect(first).not.toBe(second);
+    expect(first.leaseId).toBe('lease-1');
+    expect(second.leaseId).toBe('lease-2');
+    expect(scheduler.activeCount).toBe(2);
+    await scheduler.release(first);
+    expect(scheduler.activeCount).toBe(1);
+    await scheduler.release(second);
+    expect(scheduler.activeCount).toBe(0);
+  });
+
   it('makes duplicate release a no-op but rejects a forged or mismatched lease', async () => {
     const scheduler = deterministicScheduler(1);
     const lease = await scheduler.acquire('project-a', 'task-a', 'worker-a');

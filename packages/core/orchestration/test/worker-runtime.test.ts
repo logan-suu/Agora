@@ -53,7 +53,7 @@ class GatedExecutor implements Executor {
     this.releaseStep = resolve;
   });
 
-  constructor() {
+  constructor(private readonly resultKind: StepResult['kind'] = 'llm') {
     this.stepStarted = new Promise<void>((resolve) => {
       this.markStepStarted = resolve;
     });
@@ -62,7 +62,7 @@ class GatedExecutor implements Executor {
   async step(): Promise<StepResult> {
     this.markStepStarted();
     await this.stepGate;
-    return stepOf('llm', [
+    return stepOf(this.resultKind, [
       { field: 'messages', op: 'append', value: chatMessage('committed-before-drain') },
     ]);
   }
@@ -385,6 +385,25 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     expect(fake.safePointCalls).toEqual(['safe-cursor']);
     expect(order.at(-1)).toBe('drained');
     expect(order.slice(0, -1)).toEqual(['transition', 'transition', 'transition', 'transition']);
+  });
+
+  it('preserves done when a drain is requested during a completing step', async () => {
+    const fake = new GatedExecutor('done');
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      buildExecutor: () => fake,
+    });
+
+    const running = runtime.runOne(createInitialAppState('t-1', 'g'), assignment('CODER'));
+    await fake.stepStarted;
+    const draining = runtime.awaitRoleSafePoint('CODER');
+    fake.release();
+
+    const [result, drain] = await Promise.all([running, draining]);
+    expect(result.workers).toHaveLength(1);
+    expect(result.workers[0]?.status).toBe('done');
+    expect(drain).toEqual({ role: 'CODER', activeWorkers: 1, safePointRefs: ['safe-cursor'] });
+    expect(fake.safePointCalls).toEqual(['safe-cursor']);
   });
 
   it('reports an immediate no-op drain when the target role has no active worker', async () => {

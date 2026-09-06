@@ -470,8 +470,13 @@ export class WorkerRuntime {
         ]);
       });
       if (handle.drainRequested) {
+        if (result.kind === 'done') {
+          const safePointRef = await handle.executor.saveSafePoint();
+          handle.resolveDrain?.(safePointRef);
+          handle.done = true;
+          return;
+        }
         await this.pauseAtSafePoint(join, handle);
-        handle.done = result.kind === 'done';
         return;
       }
       if (result.kind === 'done') handle.done = true;
