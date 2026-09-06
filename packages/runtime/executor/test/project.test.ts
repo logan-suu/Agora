@@ -4,6 +4,7 @@ import {
   type CoordinationLedgerPayload,
   createInitialAppState,
   type Decision,
+  type Phase9LeaderIntent,
   type Requirement,
   type TestResults,
 } from '@agora/core-domain';
@@ -397,6 +398,48 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     }
   });
 
+  it('injects the latest validated Phase 9 Leader directive without raw display', () => {
+    const intent: Phase9LeaderIntent = {
+      kind: 'priority_change',
+      subtaskId: 'st-1',
+      priority: 90,
+    };
+    const state = makeState({
+      projectId: 'project-a',
+      subtasks: [
+        {
+          id: 'st-1',
+          title: 'write LRU',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'todo',
+          priority: 90,
+        },
+      ],
+      messages: [
+        {
+          msgId: 'priority-1',
+          channelId: 'main',
+          fromRole: 'leader',
+          type: 'chat',
+          payload: { kind: 'leader_intent', intent, action: { status: 'applied' } },
+          display: 'SENTINEL-RAW-LEADER-DISPLAY',
+          ts: 10,
+        },
+      ],
+    });
+    for (const role of ['COORDINATOR', 'CODER', 'TESTER']) {
+      const directive = slicesOf(state, role).leaderDirective;
+      expect(directive).toEqual({
+        actionId: 'priority-1',
+        kind: 'priority_change',
+        data: { subtaskId: 'st-1', priority: 90 },
+        messageRef: { projectId: 'project-a', taskId: 't-1', msgId: 'priority-1' },
+      });
+      expect(JSON.stringify(directive)).not.toContain('SENTINEL-RAW-LEADER-DISPLAY');
+    }
+  });
+
   it('CODER assignedSubtask lists only own non-done subtasks with worktree refs', () => {
     const view = slicesOf(
       makeState({
@@ -427,6 +470,7 @@ describe('project (task 2.4, spec §7 slice table)', () => {
         title: 'write LRU',
         ownerRole: 'CODER',
         status: 'in_progress',
+        priority: 0,
         worktree: '/wt/a',
       },
     ]);

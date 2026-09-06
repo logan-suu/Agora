@@ -1,7 +1,13 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { type AppState, applyMutations, isWorkerState, type Mutation } from '@agora/core-domain';
+import {
+  type AppState,
+  applyMutations,
+  isSubtaskPriority,
+  isWorkerState,
+  type Mutation,
+} from '@agora/core-domain';
 
 import type { TaskScope, TaskStateCommit, TaskStateStore } from './base';
 
@@ -103,6 +109,18 @@ export class JsonTaskStateStore implements TaskStateStore {
       throw new Error(
         `invalid task state JSON at "${path}": workers must contain valid WorkerState`,
       );
+    }
+    if (
+      !Array.isArray(record.subtasks) ||
+      !record.subtasks.every(
+        (subtask) =>
+          typeof subtask === 'object' &&
+          subtask !== null &&
+          !Array.isArray(subtask) &&
+          isSubtaskPriority((subtask as Record<string, unknown>).priority),
+      )
+    ) {
+      throw new Error(`invalid task state JSON at "${path}": subtasks must contain valid priority`);
     }
     const state = {
       ...record,

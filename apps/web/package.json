@@ -13,6 +13,7 @@
     "@agora/comm-channels": "workspace:*",
     "@agora/core-domain": "workspace:*",
     "@agora/core-orchestration": "workspace:*",
+    "@agora/core-preemption": "workspace:*",
     "@agora/roles-definitions": "workspace:*",
     "@agora/runtime-executor": "workspace:*",
     "@agora/runtime-sandbox": "workspace:*",

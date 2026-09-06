@@ -1,5 +1,12 @@
 import type { AppState, Mutation, RoleSpec, WorkerState } from '@agora/core-domain';
 import { applyMutations, mergeByIdMutation } from '@agora/core-domain';
+import {
+  type PauseMode,
+  type PauseReceipt,
+  type PauseRequest,
+  Preemptor,
+  type WorkerPauseReceipt,
+} from '@agora/core-preemption';
 import { type Executor, project, type StepResult } from '@agora/runtime-executor';
 import type { Assignment } from './coordinator';
 import { GlobalScheduler, type SlotLease } from './global-scheduler';
@@ -7,8 +14,10 @@ import { planObjectionMutations } from './objection';
 
 export interface WorkerRuntimeDeps {
   roster: readonly RoleSpec[];
+  resumingWorkers?: readonly { workerId: string; resumeSessionId: string }[];
   loadRoster?: () => Promise<readonly RoleSpec[]>;
   loadState?: () => Promise<AppState | undefined>;
+  sessionIdForAssignment?: (assignment: Assignment) => string | undefined;
   buildExecutor(spec: RoleSpec, assign: Assignment): Executor;
   buildChannelContext?: (
     state: AppState,
@@ -50,11 +59,36 @@ interface WorkerHandle {
   subtaskId?: string;
   sessionId: string;
   executor: Executor;
+  join: CanonicalTaskJoin;
   done: boolean;
   drainRequested: boolean;
   drainPromise?: Promise<string>;
   resolveDrain?: (safePointRef: string) => void;
   rejectDrain?: (error: unknown) => void;
+  pause?: WorkerPauseControl;
+}
+
+interface WorkerPauseControl {
+  actionId: string;
+  mode: PauseMode;
+  receipt: Promise<WorkerPauseReceipt>;
+  resolveReceipt(receipt: WorkerPauseReceipt): void;
+  rejectReceipt(error: unknown): void;
+  outcome: Promise<'reproject' | 'suspend' | 'abort'>;
+  resolveOutcome(outcome: 'reproject' | 'suspend' | 'abort'): void;
+}
+
+interface TaskPauseControl {
+  actionId: string;
+  mode: PauseMode;
+  closed: Promise<'reproject' | 'suspend' | 'abort'>;
+  resolve(outcome: 'reproject' | 'suspend' | 'abort'): void;
+}
+
+interface LeaseReleaseControl {
+  promise: Promise<void>;
+  resolve(): void;
+  reject(error: unknown): void;
 }
 
 export interface RoleDrainResult {
@@ -168,10 +202,14 @@ class CanonicalTaskJoin {
 }
 
 export class WorkerRuntime {
-  paused = false;
-
   private readonly active = new Map<string, WorkerHandle>();
+  private readonly queuedAcquires = new Map<string, AbortController>();
+  private readonly leaseReleases = new Map<string, LeaseReleaseControl>();
+  private readonly preemptor: Preemptor;
+  private taskPause: TaskPauseControl | undefined;
+  private suspended = false;
   private readonly maxParallel: number;
+  private readonly resumingWorkerSessions: ReadonlyMap<string, string>;
 
   constructor(
     private readonly deps: WorkerRuntimeDeps,
@@ -185,27 +223,73 @@ export class WorkerRuntime {
       throw new Error('WorkerRuntime maxParallel cannot exceed GlobalScheduler cap');
     }
     this.maxParallel = maxParallel;
+    this.resumingWorkerSessions = new Map(
+      (deps.resumingWorkers ?? []).map((entry) => [entry.workerId, entry.resumeSessionId]),
+    );
+    if (this.resumingWorkerSessions.size !== (deps.resumingWorkers ?? []).length) {
+      throw new Error('resuming workerIds must be unique');
+    }
+    for (const [workerId, sessionId] of this.resumingWorkerSessions) {
+      assertWorkerId(workerId);
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(sessionId)) {
+        throw new Error('resumeSessionId must match [A-Za-z0-9][A-Za-z0-9._:-]*');
+      }
+    }
+    this.preemptor = new Preemptor({
+      activeWorkerIds: (scope) =>
+        [...this.active.values()]
+          .filter(
+            (handle) =>
+              !handle.done &&
+              handle.join.projectId === scope.projectId &&
+              handle.join.taskId === scope.taskId,
+          )
+          .map((handle) => handle.id),
+      cancelQueued: async (scope, actionId, mode) => this.cancelQueued(scope, actionId, mode),
+      pauseWorker: async (scope, workerId, actionId, mode) =>
+        this.requestWorkerPause(scope, workerId, actionId, mode),
+      resumeReprojected: async (scope, workerIds, actionId) =>
+        this.resumeReprojected(scope, workerIds, actionId),
+      suspendPaused: async (scope, workerIds, actionId) =>
+        this.suspendPaused(scope, workerIds, actionId),
+      abortPause: async (scope, workerIds, actionId) =>
+        this.abortPaused(scope, workerIds, actionId),
+    });
   }
 
   get roster(): readonly RoleSpec[] {
     return this.deps.roster;
   }
 
+  get hasActivePause(): boolean {
+    return this.taskPause !== undefined;
+  }
+
+  requestPause(request: PauseRequest): Promise<PauseReceipt> {
+    return this.preemptor.requestPause(request);
+  }
+
+  completePause(receipt: PauseReceipt): Promise<void> {
+    return this.preemptor.complete(receipt);
+  }
+
+  abortPause(receipt: PauseReceipt): Promise<void> {
+    return this.preemptor.abort(receipt);
+  }
+
   async runOne(state: AppState, assign: Assignment): Promise<AppState> {
     const prepared = await this.prepareAssignments(await this.loadStartState(state), [assign]);
     const join = new CanonicalTaskJoin(prepared, this.deps.loadState);
-    const lease = await this.scheduler.acquire(
-      prepared.projectId,
-      prepared.taskId,
-      assign.workerId,
-    );
+    const lease = await this.acquireLease(prepared.projectId, prepared.taskId, assign.workerId);
+    if (lease === undefined) return join.drainAndLoad();
+    this.beginLeaseRelease(assign.workerId);
     try {
       await this.runAssignment(join, assign, false);
     } catch (error) {
       await this.markFailed(join, assign.workerId).catch(() => undefined);
       throw error;
     } finally {
-      await this.scheduler.release(lease);
+      await this.releaseLease(assign.workerId, lease);
     }
     return join.drainAndLoad();
   }
@@ -228,22 +312,26 @@ export class WorkerRuntime {
     for (const result of settled) {
       if (result.status === 'rejected') join.recordFailure('worker:pool', result.reason);
     }
-    for (const assignment of queue) join.recordNotStarted(assignment.workerId);
+    if (!this.suspended) {
+      for (const assignment of queue) join.recordNotStarted(assignment.workerId);
+    }
     const canonical = await join.drainAndLoad();
     const failures = [...join.failures].sort((left, right) =>
       left.workerId.localeCompare(right.workerId),
     );
-    if (failures.length > 0) throw new ParallelBatchError(canonical, failures);
+    if (failures.length > 0 && !this.suspended) throw new ParallelBatchError(canonical, failures);
     return canonical;
   }
 
   private async pump(queue: Assignment[], join: CanonicalTaskJoin): Promise<void> {
-    while (queue.length > 0 && !join.hasFailure) {
+    while (queue.length > 0 && !join.hasFailure && !this.suspended) {
       const assign = queue.shift();
       if (assign === undefined) return;
       let lease: SlotLease | undefined;
       try {
-        lease = await this.scheduler.acquire(join.projectId, join.taskId, assign.workerId);
+        lease = await this.acquireLease(join.projectId, join.taskId, assign.workerId);
+        if (lease === undefined) return;
+        this.beginLeaseRelease(assign.workerId);
         if (join.hasFailure) {
           join.recordNotStarted(assign.workerId);
           return;
@@ -255,7 +343,7 @@ export class WorkerRuntime {
       } finally {
         if (lease !== undefined) {
           try {
-            await this.scheduler.release(lease);
+            await this.releaseLease(assign.workerId, lease);
           } catch (error) {
             join.recordFailure(assign.workerId, error);
           }
@@ -311,7 +399,7 @@ export class WorkerRuntime {
         );
       } else {
         this.assertAssignmentMatches(existing, assignment);
-        if (existing.status !== 'pending') {
+        if (!this.canStartWorker(existing)) {
           throw new Error(
             `worker "${assignment.workerId}" cannot start from status "${existing.status}"`,
           );
@@ -359,6 +447,15 @@ export class WorkerRuntime {
     }
   }
 
+  private canStartWorker(worker: WorkerState): boolean {
+    return (
+      worker.status === 'pending' ||
+      (worker.status === 'paused' &&
+        worker.safePoint !== undefined &&
+        this.resumingWorkerSessions.has(worker.workerId))
+    );
+  }
+
   private async runAssignment(
     join: CanonicalTaskJoin,
     assign: Assignment,
@@ -369,7 +466,7 @@ export class WorkerRuntime {
       const worker = current.workers.find((entry) => entry.workerId === assign.workerId);
       if (worker === undefined) throw new Error(`worker "${assign.workerId}" was not registered`);
       this.assertAssignmentMatches(worker, assign);
-      if (worker.status !== 'pending') {
+      if (!this.canStartWorker(worker)) {
         throw new Error(
           `worker "${assign.workerId}" cannot start from canonical status "${worker.status}"`,
         );
@@ -377,8 +474,17 @@ export class WorkerRuntime {
       if (assign.subtaskId !== undefined) {
         this.assertReadySubtask(current, assign.subtaskId);
       }
+      const resumeSessionId =
+        this.resumingWorkerSessions.get(assign.workerId) ??
+        this.deps.sessionIdForAssignment?.(assign);
+      if (resumeSessionId !== undefined && !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(resumeSessionId)) {
+        throw new Error('assigned sessionId must match [A-Za-z0-9][A-Za-z0-9._:-]*');
+      }
       return this.transitionStep(current, assign.role, [
-        mergeByIdMutation('workers', assign.workerId, { status: 'running' }),
+        mergeByIdMutation('workers', assign.workerId, {
+          status: 'running',
+          ...(resumeSessionId === undefined ? {} : { sessionId: resumeSessionId }),
+        }),
       ]);
     });
     const worker = running.workers.find((entry) => entry.workerId === assign.workerId);
@@ -391,6 +497,7 @@ export class WorkerRuntime {
       ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
       sessionId: worker.sessionId ?? `session:${assign.workerId}`,
       executor,
+      join,
       done: false,
       drainRequested: false,
     };
@@ -417,15 +524,19 @@ export class WorkerRuntime {
     parallel: boolean,
   ): Promise<void> {
     while (!handle.done) {
-      if (this.paused || handle.drainRequested) {
-        await this.pauseAtSafePoint(join, handle);
+      if (handle.pause !== undefined) {
+        if (await this.pauseAtEpoch(join, handle)) continue;
+        return;
+      }
+      if (handle.drainRequested) {
+        await this.pauseForDrain(join, handle);
         return;
       }
       let current = await join.latest();
       this.assertCanonicalHandle(current, handle);
       const roster = await this.currentRoster();
       if (!roster.some((entry) => entry.role === handle.role)) {
-        await this.pauseAtSafePoint(join, handle);
+        await this.pauseForDrain(join, handle);
         return;
       }
       const channelContext =
@@ -433,11 +544,15 @@ export class WorkerRuntime {
           ? []
           : await this.deps.buildChannelContext(current, handle.role);
       if (
-        this.paused ||
+        handle.pause !== undefined ||
         handle.drainRequested ||
         !(await this.currentRoster()).some((entry) => entry.role === handle.role)
       ) {
-        await this.pauseAtSafePoint(join, handle);
+        if (handle.pause !== undefined) {
+          if (await this.pauseAtEpoch(join, handle)) continue;
+          return;
+        }
+        await this.pauseForDrain(join, handle);
         return;
       }
       current = await join.latest();
@@ -476,7 +591,12 @@ export class WorkerRuntime {
           handle.done = true;
           return;
         }
-        await this.pauseAtSafePoint(join, handle);
+        await this.pauseForDrain(join, handle);
+        return;
+      }
+      if (handle.pause !== undefined) {
+        if (result.kind === 'done') handle.done = true;
+        if (await this.pauseAtEpoch(join, handle)) continue;
         return;
       }
       if (result.kind === 'done') handle.done = true;
@@ -493,7 +613,7 @@ export class WorkerRuntime {
     return handle.drainPromise;
   }
 
-  private async pauseAtSafePoint(join: CanonicalTaskJoin, handle: WorkerHandle): Promise<string> {
+  private async pauseForDrain(join: CanonicalTaskJoin, handle: WorkerHandle): Promise<string> {
     const safePointRef = await handle.executor.saveSafePoint();
     await join.commit((current) =>
       this.transitionStep(current, handle.role, [
@@ -505,6 +625,256 @@ export class WorkerRuntime {
     );
     handle.resolveDrain?.(safePointRef);
     return safePointRef;
+  }
+
+  private async pauseAtEpoch(join: CanonicalTaskJoin, handle: WorkerHandle): Promise<boolean> {
+    const control = handle.pause;
+    if (control === undefined) return true;
+    try {
+      const safePointRef = await handle.executor.saveSafePoint();
+      let status: WorkerPauseReceipt['status'] = 'paused';
+      await join.commit(async (current) => {
+        const worker = current.workers.find((entry) => entry.workerId === handle.id);
+        if (worker === undefined) throw new Error(`worker "${handle.id}" disappeared at pause`);
+        status = worker.status === 'done' || worker.status === 'failed' ? worker.status : 'paused';
+        return this.transitionStep(current, handle.role, [
+          mergeByIdMutation('workers', handle.id, { status, safePoint: safePointRef }),
+        ]);
+      });
+      control.resolveReceipt({ workerId: handle.id, status, safePointRef });
+      if (status !== 'paused') return false;
+      const outcome = await control.outcome;
+      delete handle.pause;
+      return outcome !== 'suspend';
+    } catch (error) {
+      control.rejectReceipt(error);
+      throw error;
+    }
+  }
+
+  private async cancelQueued(
+    scope: { projectId: string; taskId: string },
+    actionId: string,
+    mode: PauseMode,
+  ): Promise<void> {
+    const existing = this.taskPause;
+    if (existing !== undefined) {
+      if (existing.actionId === actionId && existing.mode === mode) return;
+      throw new Error(`worker runtime already has pause epoch "${existing.actionId}"`);
+    }
+    let resolvePause = (_outcome: 'reproject' | 'suspend' | 'abort'): void => {};
+    const closed = new Promise<'reproject' | 'suspend' | 'abort'>((resolve) => {
+      resolvePause = resolve;
+    });
+    this.taskPause = { actionId, mode, closed, resolve: resolvePause };
+    for (const controller of this.queuedAcquires.values()) {
+      controller.abort(new Error(`task pause epoch "${actionId}" cancelled queued acquire`));
+    }
+    for (const handle of this.active.values()) {
+      if (handle.join.projectId !== scope.projectId || handle.join.taskId !== scope.taskId) {
+        throw new Error('pause scope does not match the active WorkerRuntime task');
+      }
+    }
+  }
+
+  private requestWorkerPause(
+    scope: { projectId: string; taskId: string },
+    workerId: string,
+    actionId: string,
+    mode: PauseMode,
+  ): Promise<WorkerPauseReceipt> {
+    const handle = this.active.get(workerId);
+    if (
+      handle === undefined ||
+      handle.join.projectId !== scope.projectId ||
+      handle.join.taskId !== scope.taskId
+    ) {
+      return Promise.reject(new Error(`pause cohort worker "${workerId}" is no longer active`));
+    }
+    if (handle.pause !== undefined) {
+      return handle.pause.actionId === actionId && handle.pause.mode === mode
+        ? handle.pause.receipt
+        : Promise.reject(new Error(`worker "${workerId}" has a conflicting pause request`));
+    }
+    let resolveReceipt = (_receipt: WorkerPauseReceipt): void => {};
+    let rejectReceipt = (_error: unknown): void => {};
+    const receipt = new Promise<WorkerPauseReceipt>((resolve, reject) => {
+      resolveReceipt = resolve;
+      rejectReceipt = reject;
+    });
+    let resolveOutcome = (_outcome: 'reproject' | 'suspend' | 'abort'): void => {};
+    const outcome = new Promise<'reproject' | 'suspend' | 'abort'>((resolve) => {
+      resolveOutcome = resolve;
+    });
+    handle.pause = {
+      actionId,
+      mode,
+      receipt,
+      resolveReceipt,
+      rejectReceipt,
+      outcome,
+      resolveOutcome,
+    };
+    return receipt;
+  }
+
+  private async resumeReprojected(
+    scope: { projectId: string; taskId: string },
+    workerIds: readonly string[],
+    actionId: string,
+  ): Promise<void> {
+    const taskPause = this.requiredTaskPause(scope, actionId, 'reproject');
+    const handles = workerIds.map((workerId) => this.requiredPausedHandle(workerId, actionId));
+    for (const handle of handles) {
+      const state = await handle.join.latest();
+      const roster = await this.currentRoster();
+      const channelContext =
+        this.deps.buildChannelContext === undefined
+          ? []
+          : await this.deps.buildChannelContext(state, handle.role);
+      handle.executor.injectInbox(project(state, handle.role, roster, channelContext));
+    }
+    if (handles.length > 0) {
+      const join = handles[0]?.join;
+      if (join === undefined) throw new Error('paused worker join is unavailable');
+      await join.commit((state) =>
+        this.transitionStep(
+          state,
+          'COORDINATOR',
+          handles.map((handle) => mergeByIdMutation('workers', handle.id, { status: 'running' })),
+        ),
+      );
+    }
+    for (const handle of handles) handle.pause?.resolveOutcome('reproject');
+    taskPause.resolve('reproject');
+    if (this.taskPause === taskPause) this.taskPause = undefined;
+  }
+
+  private async suspendPaused(
+    scope: { projectId: string; taskId: string },
+    workerIds: readonly string[],
+    actionId: string,
+  ): Promise<void> {
+    const taskPause = this.requiredTaskPause(scope, actionId, 'human_gate');
+    const handles = workerIds.map((workerId) => this.requiredPausedHandle(workerId, actionId));
+    const releases = handles.map((handle) => {
+      const release = this.leaseReleases.get(handle.id);
+      if (release === undefined) throw new Error(`worker "${handle.id}" has no active lease`);
+      return release.promise;
+    });
+    this.suspended = true;
+    for (const handle of handles) handle.pause?.resolveOutcome('suspend');
+    taskPause.resolve('suspend');
+    if (this.taskPause === taskPause) this.taskPause = undefined;
+    await Promise.all(releases);
+  }
+
+  private async abortPaused(
+    scope: { projectId: string; taskId: string },
+    workerIds: readonly string[],
+    actionId: string,
+  ): Promise<void> {
+    const taskPause = this.requiredTaskPause(scope, actionId);
+    const handles = workerIds.map((workerId) => this.requiredPausedHandle(workerId, actionId));
+    if (handles.length > 0) {
+      const join = handles[0]?.join;
+      if (join === undefined) throw new Error('paused worker join is unavailable');
+      await join.commit((state) =>
+        this.transitionStep(
+          state,
+          'COORDINATOR',
+          handles.map((handle) => mergeByIdMutation('workers', handle.id, { status: 'running' })),
+        ),
+      );
+    }
+    for (const handle of handles) handle.pause?.resolveOutcome('abort');
+    taskPause.resolve('abort');
+    if (this.taskPause === taskPause) this.taskPause = undefined;
+  }
+
+  private requiredTaskPause(
+    scope: { projectId: string; taskId: string },
+    actionId: string,
+    mode?: PauseMode,
+  ): TaskPauseControl {
+    const pause = this.taskPause;
+    if (
+      pause === undefined ||
+      pause.actionId !== actionId ||
+      (mode !== undefined && pause.mode !== mode)
+    ) {
+      throw new Error(`pause action "${actionId}" is not active for this WorkerRuntime`);
+    }
+    for (const handle of this.active.values()) {
+      if (handle.join.projectId !== scope.projectId || handle.join.taskId !== scope.taskId) {
+        throw new Error('pause scope does not match the active WorkerRuntime task');
+      }
+    }
+    return pause;
+  }
+
+  private requiredPausedHandle(workerId: string, actionId: string): WorkerHandle {
+    const handle = this.active.get(workerId);
+    if (handle?.pause?.actionId !== actionId) {
+      throw new Error(`worker "${workerId}" is not paused by action "${actionId}"`);
+    }
+    return handle;
+  }
+
+  private async acquireLease(
+    projectId: string,
+    taskId: string,
+    workerId: string,
+  ): Promise<SlotLease | undefined> {
+    while (true) {
+      const pause = this.taskPause;
+      if (pause !== undefined) {
+        const outcome = await pause.closed;
+        if (outcome === 'suspend') return undefined;
+        continue;
+      }
+      const controller = new AbortController();
+      this.queuedAcquires.set(workerId, controller);
+      try {
+        return await this.scheduler.acquire(projectId, taskId, workerId, controller.signal);
+      } catch (error) {
+        const interrupted = this.taskPause;
+        if (!isAbortError(error) || interrupted === undefined) throw error;
+        const outcome = await interrupted.closed;
+        if (outcome === 'suspend') return undefined;
+      } finally {
+        if (this.queuedAcquires.get(workerId) === controller) {
+          this.queuedAcquires.delete(workerId);
+        }
+      }
+    }
+  }
+
+  private beginLeaseRelease(workerId: string): void {
+    let resolveRelease = (): void => {};
+    let rejectRelease = (_error: unknown): void => {};
+    const promise = new Promise<void>((resolve, reject) => {
+      resolveRelease = resolve;
+      rejectRelease = reject;
+    });
+    this.leaseReleases.set(workerId, {
+      promise,
+      resolve: resolveRelease,
+      reject: rejectRelease,
+    });
+  }
+
+  private async releaseLease(workerId: string, lease: SlotLease): Promise<void> {
+    const release = this.leaseReleases.get(workerId);
+    try {
+      await this.scheduler.release(lease);
+      release?.resolve();
+    } catch (error) {
+      release?.reject(error);
+      throw error;
+    } finally {
+      if (this.leaseReleases.get(workerId) === release) this.leaseReleases.delete(workerId);
+    }
   }
 
   private async markFailed(join: CanonicalTaskJoin, workerId: string): Promise<void> {
@@ -660,4 +1030,8 @@ function assertWorkerId(workerId: string): void {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
 }

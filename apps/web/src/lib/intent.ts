@@ -1,13 +1,16 @@
-import { type AppState, type Mutation, type RoleSpec, setMutation } from '@agora/core-domain';
+import {
+  type AppState,
+  type Mutation,
+  normalizePhase9LeaderIntent,
+  type Phase9LeaderIntent,
+  type RoleSpec,
+  setMutation,
+} from '@agora/core-domain';
 
-export type DeferredLeaderIntent =
-  | 'requirement_change'
-  | 'decision_change'
-  | 'human_gate_resolution'
-  | 'priority_change'
-  | 'open_sub_channel';
+export type DeferredLeaderIntent = 'human_gate_resolution' | 'open_sub_channel';
 
 export type LeaderIntent =
+  | Phase9LeaderIntent
   | { kind: 'assign'; targetRole: string; instruction: string }
   | { kind: 'onboard_role'; targetRole: string; entrustedHandoffMsgIds: string[] }
   | { kind: 'remove_role'; targetRole: string; successorRole?: string }
@@ -41,26 +44,6 @@ export interface LeaderIntentPlan {
   action: LeaderActionStatus;
   mutations: readonly Mutation[];
 }
-
-const DEFERRED_COMMANDS: Readonly<
-  Record<string, { requestedKind: DeferredLeaderIntent; targetPhase: 6 | 8 | 9; reason: string }>
-> = {
-  '/requirement': {
-    requestedKind: 'requirement_change',
-    targetPhase: 9,
-    reason: 'requirement changes require Phase 9 safe-point preemption and rerouting',
-  },
-  '/decision': {
-    requestedKind: 'decision_change',
-    targetPhase: 9,
-    reason: 'decision changes require Phase 9 safe-point preemption and rerouting',
-  },
-  '/priority': {
-    requestedKind: 'priority_change',
-    targetPhase: 9,
-    reason: 'priority changes require Phase 9 safe-point preemption and rerouting',
-  },
-};
 
 const ROLE_MENTION = /^@[A-Za-z][A-Za-z0-9_-]*$/;
 const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
@@ -99,11 +82,10 @@ export function parseLeaderIntent(display: string): LeaderIntent {
     if (firstToken.toLowerCase() === '/role') return parseRoleIntent(remainder);
     if (firstToken.toLowerCase() === '/resolve-gate') return parseHumanGateIntent(remainder);
     if (firstToken.toLowerCase() === '/resolve-objection') return parseObjectionIntent(remainder);
-    const deferred = DEFERRED_COMMANDS[firstToken.toLowerCase()];
-    if (deferred === undefined) {
-      return { kind: 'invalid', reason: `unknown leader command "${firstToken}"` };
-    }
-    return { kind: 'deferred', ...deferred };
+    if (firstToken.toLowerCase() === '/requirement') return parseRequirementIntent(remainder);
+    if (firstToken.toLowerCase() === '/decision') return parseDecisionIntent(remainder);
+    if (firstToken.toLowerCase() === '/priority') return parsePriorityIntent(remainder);
+    return { kind: 'invalid', reason: `unknown leader command "${firstToken}"` };
   }
 
   return { kind: 'chat', text };
@@ -138,6 +120,9 @@ export function planLeaderIntent(
     case 'close_sub_channel':
     case 'resolve_human_gate':
     case 'resolve_objection':
+    case 'requirement_change':
+    case 'decision_change':
+    case 'priority_change':
       return { intent, action: { status: 'applied' }, mutations: [] };
     case 'remove_role': {
       if (!knownRoles.some((entry) => entry.toUpperCase() === intent.targetRole)) {
@@ -195,6 +180,102 @@ export function planLeaderIntent(
       };
     }
   }
+}
+
+function parseRequirementIntent(remainder: string): LeaderIntent {
+  const parsed = splitCommandArgument(remainder);
+  if (parsed === undefined || !SAFE_MSG_ID.test(parsed.id)) {
+    return invalidPhase9Syntax('/requirement <requirementId> <JSON>');
+  }
+  const payload = parseJsonObject(parsed.payload);
+  if (payload === undefined) return invalidPhase9Syntax('/requirement <requirementId> <JSON>');
+  try {
+    return normalizePhase9LeaderIntent({
+      kind: 'requirement_change',
+      requirementId: parsed.id,
+      requirement: payload as unknown as {
+        story: string;
+        acceptance: string[];
+        nonGoals: string[];
+      },
+    });
+  } catch {
+    return invalidPhase9Syntax('/requirement <requirementId> <JSON>');
+  }
+}
+
+function parseDecisionIntent(remainder: string): LeaderIntent {
+  const parsed = splitCommandArgument(remainder);
+  if (parsed === undefined || !SAFE_MSG_ID.test(parsed.id)) {
+    return invalidPhase9Syntax('/decision <topic> <JSON>');
+  }
+  const payload = parseJsonObject(parsed.payload);
+  if (payload === undefined) return invalidPhase9Syntax('/decision <topic> <JSON>');
+  const decisionKeys = Object.keys(payload);
+  if (
+    !decisionKeys.includes('decision') ||
+    !decisionKeys.includes('rationale') ||
+    decisionKeys.some((key) => key !== 'decision' && key !== 'rationale' && key !== 'supersedes')
+  ) {
+    return invalidPhase9Syntax('/decision <topic> <JSON>');
+  }
+  try {
+    return normalizePhase9LeaderIntent({
+      kind: 'decision_change',
+      topic: parsed.id,
+      decision: payload.decision as string,
+      rationale: payload.rationale as string,
+      ...(payload.supersedes === undefined ? {} : { supersedes: payload.supersedes as string }),
+    } as Phase9LeaderIntent);
+  } catch {
+    return invalidPhase9Syntax('/decision <topic> <JSON>');
+  }
+}
+
+function parsePriorityIntent(remainder: string): LeaderIntent {
+  const tokens = remainder.split(/\s+/).filter((token) => token.length > 0);
+  const [subtaskId, rawPriority] = tokens;
+  if (
+    tokens.length !== 2 ||
+    subtaskId === undefined ||
+    !SAFE_MSG_ID.test(subtaskId) ||
+    rawPriority === undefined ||
+    !/^(?:0|[1-9]\d*)$/.test(rawPriority)
+  ) {
+    return invalidPhase9Syntax('/priority <subtaskId> <0-100>');
+  }
+  try {
+    return normalizePhase9LeaderIntent({
+      kind: 'priority_change',
+      subtaskId,
+      priority: Number(rawPriority),
+    });
+  } catch {
+    return invalidPhase9Syntax('/priority <subtaskId> <0-100>');
+  }
+}
+
+function splitCommandArgument(remainder: string): { id: string; payload: string } | undefined {
+  const separator = remainder.search(/\s/);
+  if (separator < 1) return undefined;
+  const id = remainder.slice(0, separator);
+  const payload = remainder.slice(separator).trim();
+  return payload.length === 0 ? undefined : { id, payload };
+}
+
+function parseJsonObject(value: string): Record<string, unknown> | undefined {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function invalidPhase9Syntax(syntax: string): LeaderIntent {
+  return { kind: 'invalid', reason: `Phase 9 command syntax is ${syntax}` };
 }
 
 function parseHumanGateIntent(remainder: string): LeaderIntent {

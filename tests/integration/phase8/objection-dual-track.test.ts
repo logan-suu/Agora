@@ -127,7 +127,9 @@ describe('Phase 8 objection dual track', () => {
         options: ['accept_objection', 'reject_objection'],
         phase: 'coding',
       });
-      expect(state?.humanGate?.safePointRefs).toHaveLength(1);
+      // D17: the objection-producing Harness turn completed naturally before
+      // Coordinator opened the gate, so its done worker is not a resume target.
+      expect(state?.humanGate?.safePointRefs).toEqual([]);
 
       expect(delivered).toContainEqual({
         msgId: objection?.id,

@@ -137,7 +137,9 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
 }
 
 function recoverPendingDispatch(state: AppState): CoordinatorDecision | undefined {
-  const pending = state.workers.filter((worker) => worker.status === 'pending');
+  const pending = state.workers.filter(
+    (worker) => worker.status === 'pending' || worker.status === 'paused',
+  );
   if (pending.length === 0) return undefined;
   const ids = new Set(pending.map((worker) => worker.workerId));
   if (ids.size !== pending.length) throw new Error('pending worker identities must be unique');

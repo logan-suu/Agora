@@ -156,11 +156,11 @@ describe('Phase 5 committed message, SSE, and Leader Intent exit chain', () => {
     await expect(phase8Deferred.json()).resolves.toMatchObject({
       action: { status: 'rejected', reason: expect.stringContaining('unknown') },
     });
-    const phase9Deferred = await post(
+    const invalidPhase9Command = await post(
       messageRequest({ ...address, msgId: 'deferred-9', display: '/requirement add TTL' }),
     );
-    await expect(phase9Deferred.json()).resolves.toMatchObject({
-      action: { status: 'deferred', targetPhase: 9 },
+    await expect(invalidPhase9Command.json()).resolves.toMatchObject({
+      action: { status: 'rejected' },
     });
     const chat = await post(
       messageRequest({ ...address, msgId: 'chat-1', display: 'Team, keep going.' }),

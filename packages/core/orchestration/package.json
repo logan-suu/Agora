@@ -10,6 +10,7 @@
     "@agora/comm-bus": "workspace:*",
     "@agora/comm-channels": "workspace:*",
     "@agora/core-domain": "workspace:*",
+    "@agora/core-preemption": "workspace:*",
     "@agora/runtime-executor": "workspace:*",
     "@agora/runtime-state": "workspace:*"
   }

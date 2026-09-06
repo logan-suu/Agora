@@ -3,6 +3,7 @@ export * from './channel-summary';
 export * from './completion-resolution';
 export * from './coordination-ledger';
 export * from './handoff';
+export * from './leader-directive';
 export * from './ledger';
 export * from './objection';
 export * from './objection-resolution';

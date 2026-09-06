@@ -246,6 +246,40 @@ describe('coordinator.decide · D17 stable worker dispatch', () => {
     expect(replay.route).toEqual(first.route);
     expect(replay.mutations).toEqual([]);
   });
+
+  it('recovers paused and pending assignments together after a humanGate fork', () => {
+    const state = applyMutations(createInitialAppState('t-1', 'resume workers'), [
+      mergeByIdMutation('workers', 'worker:resume:0', {
+        workerId: 'worker:resume:0',
+        role: 'CODER',
+        executor: 'harness',
+        status: 'paused',
+        subtaskId: 's-0',
+        safePoint: 'safe-0',
+        startedTs: 1,
+      }),
+      mergeByIdMutation('workers', 'worker:resume:1', {
+        workerId: 'worker:resume:1',
+        role: 'TESTER',
+        executor: 'harness',
+        status: 'pending',
+        subtaskId: 's-1',
+        startedTs: 2,
+      }),
+    ]);
+
+    const resumed = decide(state, { roster: FULL_ROSTER });
+
+    expect(resumed.route).toEqual({
+      kind: 'worker',
+      parallel: true,
+      batch: [
+        { workerId: 'worker:resume:0', role: 'CODER', subtaskId: 's-0' },
+        { workerId: 'worker:resume:1', role: 'TESTER', subtaskId: 's-1' },
+      ],
+    });
+    expect(resumed.mutations).toEqual([]);
+  });
 });
 
 describe('decide · D14 objection routing', () => {

@@ -140,4 +140,35 @@ describe('JsonTaskStateStore', () => {
       await expect(store.load(scope())).rejects.toThrow('workers must contain valid WorkerState');
     }
   });
+
+  it('accepts legacy subtasks without priority and rejects invalid persisted priorities', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const current = {
+      ...createInitialAppState('task-a', 'priority goal', 'project-a'),
+      subtasks: [
+        {
+          id: 'sub-1',
+          title: 'work',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'todo',
+        },
+      ],
+    } as ReturnType<typeof createInitialAppState>;
+    const path = join(root, 'projects/project-a/tasks/task-a/state.json');
+    await store.initialize(scope(), current);
+    await expect(store.load(scope())).resolves.toMatchObject({
+      subtasks: [{ id: 'sub-1' }],
+    });
+
+    for (const priority of [-1, 101, 1.5, 'high']) {
+      await writeFile(
+        path,
+        `${JSON.stringify({ ...current, subtasks: [{ ...current.subtasks[0], priority }] }, null, 2)}\n`,
+        'utf8',
+      );
+      await expect(store.load(scope())).rejects.toThrow('subtasks must contain valid priority');
+    }
+  });
 });
