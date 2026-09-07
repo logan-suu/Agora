@@ -133,6 +133,7 @@ function successfulFactory(
   failCoder = false,
   failArchive = false,
 ): TaskCompositionFactory {
+  let remainingArchiveFailures = failArchive ? 1 : 0;
   return async ({ scope, goal, transition, resume }) => {
     const initialWorktree: WorktreeRef = {
       path: '/tmp/agora-demo-artifact',
@@ -217,7 +218,10 @@ function successfulFactory(
       suspend: async () => undefined,
       archiveArtifact: async () => {
         lifecycle.archived += 1;
-        if (failArchive) throw new Error('injected archive failure');
+        if (remainingArchiveFailures > 0) {
+          remainingArchiveFailures -= 1;
+          throw new Error('injected archive failure');
+        }
         return {
           path: `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`,
           worktrees: [
@@ -860,7 +864,7 @@ describe('TaskOrchestrationRuntime', () => {
       successfulFactory(Promise.resolve(), lifecycle, true, true),
     );
 
-    await runtime.start({ ...scope, requestId: 'request-archive-failed', goal: 'Preserve output' });
+    await runtime.start({ ...scope, requestId: 'request-archive-failed', goal: 'Build TTL LRU' });
     await runtime.waitForIdle(scope);
 
     await expect(runtime.summary(scope)).resolves.toMatchObject({
@@ -868,6 +872,15 @@ describe('TaskOrchestrationRuntime', () => {
       error: expect.stringContaining('artifact archive failed: injected archive failure'),
     });
     expect(lifecycle).toEqual({ archived: 1, disposed: 0 });
+
+    await runtime.start({ ...scope, requestId: 'retry-archive', goal: 'Build TTL LRU' });
+    await runtime.waitForIdle(scope);
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'failed',
+      artifactPath: '/durable/project-a/archive-failed-task/artifacts/worktree',
+      error: 'scripted worker failure',
+    });
+    expect(lifecycle).toEqual({ archived: 2, disposed: 1 });
   });
 
   it('exposes create/start and refresh recovery through the task HTTP handlers', async () => {

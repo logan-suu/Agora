@@ -96,6 +96,9 @@ interface ActiveRun {
   composition: TaskComposition | undefined;
   promise: Promise<void>;
   artifactPath: string | undefined;
+  pendingFinalization:
+    | { status: 'completed' | 'failed'; error: string | undefined; artifactArchived: boolean }
+    | undefined;
   error: string | undefined;
 }
 
@@ -151,6 +154,20 @@ export class TaskOrchestrationRuntime {
       if (existingRun !== undefined) {
         if (existingRun.goal !== input.goal) {
           throw new TaskGoalConflictError(input, existingRun.goal);
+        }
+        if (existingRun.pendingFinalization !== undefined) {
+          const pending = existingRun.pendingFinalization;
+          existingRun.status = 'running';
+          existingRun.error = undefined;
+          existingRun.promise = this.#finalizeRun(
+            input,
+            existingRun,
+            pending.status,
+            pending.error,
+            pending.artifactArchived,
+          );
+          const summary = await this.#requiredSummary(input);
+          return { ...summary, requestId: input.requestId, startOutcome: 'started' };
         }
         const summary = await this.#requiredSummary(input);
         return {
@@ -215,6 +232,7 @@ export class TaskOrchestrationRuntime {
         composition,
         promise: Promise.resolve(),
         artifactPath: undefined,
+        pendingFinalization: undefined,
         error: undefined,
       };
       this.#runs.set(scopeKey(input), run);
@@ -402,6 +420,7 @@ export class TaskOrchestrationRuntime {
         composition,
         promise: Promise.resolve(),
         artifactPath: undefined,
+        pendingFinalization: undefined,
         error: undefined,
       };
       this.#runs.set(scopeKey(scope), run);
@@ -443,78 +462,95 @@ export class TaskOrchestrationRuntime {
       return;
     }
 
+    await this.#finalizeRun(scope, run, terminalStatus, terminalError, false);
+  }
+
+  async #finalizeRun(
+    scope: TaskScope,
+    run: ActiveRun,
+    terminalStatus: 'completed' | 'failed',
+    terminalError: string | undefined,
+    artifactArchived: boolean,
+  ): Promise<void> {
+    const composition = run.composition;
+    if (composition === undefined) throw new Error('active task composition is unavailable');
+
     try {
-      const archived = await composition.archiveArtifact();
-      const state = await this.messages.store.load(scope);
-      if (state === undefined) throw new Error('task state disappeared before artifact archival');
-      const archivedBySource = new Map(
-        archived.worktrees.map((entry) => [entry.sourcePath, entry.archivedPath]),
-      );
-      const mutations: Mutation[] = [];
-      if (state.integration !== undefined) {
-        const integrationPath = archivedBySource.get(state.integration.integrationWorktree.path);
-        const pendingBranches = state.integration.pendingBranches.map((entry) => {
-          const path = archivedBySource.get(entry.worktree.path);
-          return path === undefined ? entry : { ...entry, worktree: { ...entry.worktree, path } };
-        });
-        if (
-          integrationPath !== undefined ||
-          pendingBranches.some(
-            (entry, index) => entry !== state.integration?.pendingBranches[index],
-          )
-        ) {
+      if (!artifactArchived) {
+        const archived = await composition.archiveArtifact();
+        const state = await this.messages.store.load(scope);
+        if (state === undefined) throw new Error('task state disappeared before artifact archival');
+        const archivedBySource = new Map(
+          archived.worktrees.map((entry) => [entry.sourcePath, entry.archivedPath]),
+        );
+        const mutations: Mutation[] = [];
+        if (state.integration !== undefined) {
+          const integrationPath = archivedBySource.get(state.integration.integrationWorktree.path);
+          const pendingBranches = state.integration.pendingBranches.map((entry) => {
+            const path = archivedBySource.get(entry.worktree.path);
+            return path === undefined ? entry : { ...entry, worktree: { ...entry.worktree, path } };
+          });
+          if (
+            integrationPath !== undefined ||
+            pendingBranches.some(
+              (entry, index) => entry !== state.integration?.pendingBranches[index],
+            )
+          ) {
+            mutations.push(
+              setMutation('integration', {
+                ...state.integration,
+                integrationWorktree: {
+                  ...state.integration.integrationWorktree,
+                  path: integrationPath ?? state.integration.integrationWorktree.path,
+                },
+                pendingBranches,
+              }),
+            );
+          }
+        }
+        for (const subtask of state.subtasks) {
+          const worktree = subtask.worktree;
+          const sourcePath = typeof worktree === 'string' ? worktree : worktree?.path;
+          const path = sourcePath === undefined ? undefined : archivedBySource.get(sourcePath);
+          if (path === undefined || worktree === undefined) continue;
           mutations.push(
-            setMutation('integration', {
-              ...state.integration,
-              integrationWorktree: {
-                ...state.integration.integrationWorktree,
-                path: integrationPath ?? state.integration.integrationWorktree.path,
-              },
-              pendingBranches,
+            mergeByIdMutation('subtasks', subtask.id, {
+              worktree: typeof worktree === 'string' ? path : { ...worktree, path },
             }),
           );
         }
+        for (const worker of state.workers) {
+          const worktree = worker.worktree;
+          const sourcePath = typeof worktree === 'string' ? worktree : worktree?.path;
+          const path = sourcePath === undefined ? undefined : archivedBySource.get(sourcePath);
+          if (path === undefined || worktree === undefined) continue;
+          mutations.push(
+            mergeByIdMutation('workers', worker.workerId, {
+              worktree: typeof worktree === 'string' ? path : { ...worktree, path },
+            }),
+          );
+        }
+        if (mutations.length > 0) await this.messages.commitMutations(scope, mutations);
+        run.artifactPath = archived.path;
+        artifactArchived = true;
       }
-      for (const subtask of state.subtasks) {
-        const worktree = subtask.worktree;
-        const sourcePath = typeof worktree === 'string' ? worktree : worktree?.path;
-        const path = sourcePath === undefined ? undefined : archivedBySource.get(sourcePath);
-        if (path === undefined || worktree === undefined) continue;
-        mutations.push(
-          mergeByIdMutation('subtasks', subtask.id, {
-            worktree: typeof worktree === 'string' ? path : { ...worktree, path },
-          }),
-        );
-      }
-      for (const worker of state.workers) {
-        const worktree = worker.worktree;
-        const sourcePath = typeof worktree === 'string' ? worktree : worktree?.path;
-        const path = sourcePath === undefined ? undefined : archivedBySource.get(sourcePath);
-        if (path === undefined || worktree === undefined) continue;
-        mutations.push(
-          mergeByIdMutation('workers', worker.workerId, {
-            worktree: typeof worktree === 'string' ? path : { ...worktree, path },
-          }),
-        );
-      }
-      if (mutations.length > 0) await this.messages.commitMutations(scope, mutations);
-      run.artifactPath = archived.path;
     } catch (error) {
-      terminalStatus = 'needs_attention';
-      terminalError = joinErrors(terminalError, `artifact archive failed: ${errorMessage(error)}`);
-      run.status = terminalStatus;
-      run.error = terminalError;
+      run.pendingFinalization = { status: terminalStatus, error: terminalError, artifactArchived };
+      run.status = 'needs_attention';
+      run.error = joinErrors(terminalError, `artifact archive failed: ${errorMessage(error)}`);
       return;
     }
 
     try {
       await composition.dispose();
     } catch (error) {
-      terminalStatus = 'failed';
-      terminalError = joinErrors(terminalError, `resource disposal failed: ${errorMessage(error)}`);
-    } finally {
-      run.composition = undefined;
+      run.pendingFinalization = { status: terminalStatus, error: terminalError, artifactArchived };
+      run.status = 'needs_attention';
+      run.error = joinErrors(terminalError, `resource disposal failed: ${errorMessage(error)}`);
+      return;
     }
+    run.composition = undefined;
+    run.pendingFinalization = undefined;
     run.status = terminalStatus;
     run.error = terminalError;
   }
