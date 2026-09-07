@@ -18,6 +18,7 @@ import {
   buildArtifactArchivePlan,
   createWebTaskCompositionFactory,
   materializeArtifactArchive,
+  readArtifactArchiveReceipt,
 } from '../src/server/task-composition';
 
 class MissingWorktreeSandbox implements SandboxManager {
@@ -255,7 +256,7 @@ describe('buildArtifactArchivePlan', () => {
         join(root, 'artifacts', 'worktree'),
       );
 
-      await materializeArtifactArchive(plan);
+      const archived = await materializeArtifactArchive(plan);
 
       const [entryA, entryB] = plan.entries;
       if (entryA === undefined || entryB === undefined) throw new Error('bundle entries missing');
@@ -264,8 +265,71 @@ describe('buildArtifactArchivePlan', () => {
       await expect(
         readFile(join(plan.destination, 'artifact-manifest.json'), 'utf8'),
       ).resolves.toContain('parallel-worktree-bundle');
+      await expect(readArtifactArchiveReceipt(plan.destination)).resolves.toEqual(archived);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  });
+
+  it('replays the immutable first archive mapping instead of rebuilding it from later State', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-artifact-receipt-'));
+    try {
+      const firstSource = join(root, 'first');
+      const laterSource = join(root, 'later');
+      await Promise.all([
+        mkdir(firstSource, { recursive: true }),
+        mkdir(laterSource, { recursive: true }),
+      ]);
+      await writeFile(join(firstSource, 'result.txt'), 'first', 'utf8');
+      const destination = join(root, 'artifacts', 'worktree');
+      const firstPlan = buildArtifactArchivePlan(undefined, firstSource, destination);
+      const first = await materializeArtifactArchive(firstPlan);
+      const laterPlan = buildArtifactArchivePlan(undefined, laterSource, destination);
+
+      expect(laterPlan.entries[0]?.sourcePath).toBe(laterSource);
+      await expect(readArtifactArchiveReceipt(destination)).resolves.toEqual(first);
+      await expect(readFile(join(destination, 'result.txt'), 'utf8')).resolves.toBe('first');
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when an existing archive has no valid receipt', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-artifact-missing-receipt-'));
+    try {
+      const destination = join(root, 'artifacts', 'worktree');
+      await mkdir(destination, { recursive: true });
+
+      await expect(readArtifactArchiveReceipt(destination)).rejects.toThrow('missing');
+      await writeFile(`${destination}.receipt.json`, '{broken', 'utf8');
+      await expect(readArtifactArchiveReceipt(destination)).rejects.toThrow('valid JSON');
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('orders archive candidates by direct code units without locale dependence', () => {
+    const state = applyMutations(createInitialAppState('task-a', 'Archive', 'project-a'), [
+      mergeByIdMutation('subtasks', 'Z', {
+        title: 'uppercase',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'done',
+        worktree: '/worktrees/uppercase',
+      }),
+      mergeByIdMutation('subtasks', 'a', {
+        title: 'lowercase',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'done',
+        worktree: '/worktrees/lowercase',
+      }),
+    ]);
+
+    expect(
+      buildArtifactArchivePlan(state, '/canonical', '/artifacts/worktree').entries.map(
+        (entry) => entry.sourcePath,
+      ),
+    ).toEqual(['/worktrees/uppercase', '/worktrees/lowercase']);
   });
 });

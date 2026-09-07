@@ -259,7 +259,7 @@ export class WorktreeGitService implements GitService {
     const branch = validateBranchName(name);
     const main = await this.getMainRepo();
     const baseRef = validateRefArg(baseCommit, 'base commit');
-    const path = join(this.worktreesDir, `${safeTaskId}-${branch}`);
+    const path = resolve(this.worktreesDir, `${safeTaskId}-${branch}`);
     signal?.throwIfAborted();
     // simple-git 3.x has no typed worktree task; drive `git worktree add` via raw.
     await main.raw(['worktree', 'add', path, '-b', branch, baseRef]);
@@ -313,19 +313,38 @@ export class WorktreeGitService implements GitService {
         );
       }
       validateBranchName(branch);
-      const [headCommit, canonicalCommonDir, candidateCommonDir] = await Promise.all([
+      const candidatePath = realpathSync(lexical);
+      const canonicalPath = realpathSync(resolve(this.mainRepoPath));
+      if (candidatePath === canonicalPath) {
+        throw new Error('persisted worktree cannot be the canonical main worktree');
+      }
+      const [headCommit, canonicalCommonDir, candidateCommonDir, worktreeList] = await Promise.all([
         candidate.revparse(['HEAD']).then((value) => value.trim()),
         main.revparse(['--git-common-dir']).then((value) => gitPath(this.mainRepoPath, value)),
         candidate.revparse(['--git-common-dir']).then((value) => gitPath(lexical, value)),
+        main.raw(['worktree', 'list', '--porcelain', '-z']),
       ]);
       if (candidateCommonDir !== canonicalCommonDir) {
         throw new Error(
           'persisted worktree does not belong to the configured canonical repository',
         );
       }
+      const matches = parseGitWorktreeList(worktreeList).filter(
+        (entry) => realpathSync(resolve(entry.path)) === candidatePath,
+      );
+      if (
+        matches.length !== 1 ||
+        matches[0]?.headCommit !== headCommit ||
+        matches[0]?.branchRef !== `refs/heads/${branch}`
+      ) {
+        throw new Error(
+          'persisted worktree does not exactly match canonical worktree path, branch, and HEAD metadata',
+        );
+      }
       this.registry.register(lexical);
       registered = true;
-      if (!this.createdWorktrees.has(lexical)) this.createdWorktrees.set(lexical, branch);
+      if (!this.createdWorktrees.has(candidatePath))
+        this.createdWorktrees.set(candidatePath, branch);
       return { path: realpathSync(lexical), branch, headCommit };
     } catch (error) {
       if (registered) this.registry.unregister(lexical);
@@ -349,8 +368,9 @@ export class WorktreeGitService implements GitService {
 
   async inspectLegacyWorktree(
     worktree: string,
+    expectedBranch: string,
   ): Promise<{ path: string; branch: string; baseCommit: string; headCommit: string }> {
-    const registered = await this.registerExistingWorktree(worktree);
+    const registered = await this.registerExistingWorktree(worktree, expectedBranch);
     const mainHead = await this.canonicalHead();
     const baseCommit = (
       await simpleGit(registered.path).raw(['merge-base', registered.headCommit, mainHead])
@@ -523,6 +543,41 @@ function conflictPaths(result: SimpleGitMergeResult): string[] {
 function gitPath(worktree: string, output: string): string {
   const path = output.trim();
   return realpathSync(isAbsolute(path) ? path : resolve(worktree, path));
+}
+
+interface GitWorktreeListEntry {
+  path: string;
+  headCommit: string;
+  branchRef?: string;
+}
+
+function parseGitWorktreeList(raw: string): GitWorktreeListEntry[] {
+  const entries: GitWorktreeListEntry[] = [];
+  for (const record of raw.split('\0\0')) {
+    if (record.length === 0) continue;
+    let path: string | undefined;
+    let headCommit: string | undefined;
+    let branchRef: string | undefined;
+    for (const field of record.split('\0')) {
+      if (field.startsWith('worktree ')) path = uniqueGitField(path, field.slice(9), 'worktree');
+      else if (field.startsWith('HEAD '))
+        headCommit = uniqueGitField(headCommit, field.slice(5), 'HEAD');
+      else if (field.startsWith('branch '))
+        branchRef = uniqueGitField(branchRef, field.slice(7), 'branch');
+    }
+    if (path === undefined || headCommit === undefined) {
+      throw new Error('canonical git worktree list contains an incomplete record');
+    }
+    entries.push({ path, headCommit, ...(branchRef === undefined ? {} : { branchRef }) });
+  }
+  return entries;
+}
+
+function uniqueGitField(existing: string | undefined, value: string, label: string): string {
+  if (existing !== undefined || value.length === 0) {
+    throw new Error(`canonical git worktree list contains an invalid ${label} field`);
+  }
+  return value;
 }
 
 async function hasLocalBranch(git: SimpleGit, branch: string): Promise<boolean> {

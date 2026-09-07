@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { access, cp, mkdir, rename, rm, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { access, cp, mkdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 import {
   type AppState,
@@ -63,6 +63,13 @@ export interface ArtifactArchivePlan {
   destination: string;
   bundled: boolean;
   entries: readonly ArtifactArchivePlanEntry[];
+}
+
+interface ArtifactArchiveReceipt {
+  version: 1;
+  kind: 'agora-artifact-archive';
+  path: string;
+  worktrees: readonly { sourcePath: string; archivedPath: string }[];
 }
 
 export interface WebTaskCompositionOptions {
@@ -601,23 +608,11 @@ export function createWebTaskCompositionFactory(
           'artifacts',
           'worktree',
         );
+        const existingReceipt = await readArtifactArchiveReceipt(destination);
+        if (existingReceipt !== undefined) return existingReceipt;
         const state = await loadState();
         const plan = buildArtifactArchivePlan(state, fallbackArtifactPath, destination);
-        const archived: ArchivedArtifact = {
-          path: destination,
-          worktrees: plan.entries.map((entry) => ({
-            sourcePath: entry.sourcePath,
-            archivedPath: entry.archivedPath,
-          })),
-        };
-        try {
-          await access(destination);
-          return archived;
-        } catch {
-          // The first terminalization creates the immutable Phase 5 artifact snapshot.
-        }
-        await materializeArtifactArchive(plan);
-        return archived;
+        return materializeArtifactArchive(plan);
       },
       dispose: () => releaseRuntimeResources(true),
     };
@@ -683,7 +678,7 @@ export function buildArtifactArchivePlan(
   if (candidates.length === 0) add('canonical', fallbackPath);
 
   const unique = [...candidates]
-    .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+    .sort((left, right) => compareCodeUnits(left.sortKey, right.sortKey))
     .filter(
       (candidate, index, all) =>
         all.findIndex((entry) => entry.sourcePath === candidate.sourcePath) === index,
@@ -712,9 +707,14 @@ export function buildArtifactArchivePlan(
   };
 }
 
-export async function materializeArtifactArchive(plan: ArtifactArchivePlan): Promise<void> {
+export async function materializeArtifactArchive(
+  plan: ArtifactArchivePlan,
+): Promise<ArchivedArtifact> {
   await mkdir(dirname(plan.destination), { recursive: true });
   const temporary = `${plan.destination}.${randomUUID()}.tmp`;
+  const receiptPath = artifactArchiveReceiptPath(plan.destination);
+  const receiptTemporary = `${receiptPath}.${randomUUID()}.tmp`;
+  const archived = archivedArtifactFromPlan(plan);
   try {
     if (plan.bundled) {
       await mkdir(join(temporary, 'worktrees'), { recursive: true });
@@ -752,10 +752,144 @@ export async function materializeArtifactArchive(plan: ArtifactArchivePlan): Pro
       await cp(entry.sourcePath, temporary, { recursive: true });
     }
     await rename(temporary, plan.destination);
+    await writeFile(
+      receiptTemporary,
+      `${JSON.stringify(
+        {
+          version: 1,
+          kind: 'agora-artifact-archive',
+          ...archived,
+        } satisfies ArtifactArchiveReceipt,
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+    await rename(receiptTemporary, receiptPath);
+    return archived;
   } catch (error) {
-    await rm(temporary, { recursive: true, force: true });
+    await Promise.all([
+      rm(temporary, { recursive: true, force: true }),
+      rm(receiptTemporary, { force: true }),
+    ]);
     throw error;
   }
+}
+
+export async function readArtifactArchiveReceipt(
+  destination: string,
+): Promise<ArchivedArtifact | undefined> {
+  let raw: string;
+  try {
+    raw = await readFile(artifactArchiveReceiptPath(destination), 'utf8');
+  } catch (error) {
+    if (isMissingPath(error)) {
+      if (await pathExists(destination)) {
+        throw new Error('existing artifact archive is missing its immutable receipt');
+      }
+      return undefined;
+    }
+    throw error;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('artifact archive receipt is not valid JSON');
+  }
+  if (
+    !hasExactKeys(parsed, ['version', 'kind', 'path', 'worktrees']) ||
+    parsed.version !== 1 ||
+    parsed.kind !== 'agora-artifact-archive' ||
+    parsed.path !== destination ||
+    !isAbsolute(parsed.path) ||
+    !Array.isArray(parsed.worktrees) ||
+    parsed.worktrees.length === 0
+  ) {
+    throw new Error('artifact archive receipt is invalid');
+  }
+  const worktrees: Array<{ sourcePath: string; archivedPath: string }> = [];
+  const sourcePaths = new Set<string>();
+  const archivedPaths = new Set<string>();
+  const canonicalDestination = await realpath(destination);
+  for (const value of parsed.worktrees) {
+    if (
+      !hasExactKeys(value, ['sourcePath', 'archivedPath']) ||
+      typeof value.sourcePath !== 'string' ||
+      typeof value.archivedPath !== 'string' ||
+      !isAbsolute(value.sourcePath) ||
+      !isPathWithin(destination, value.archivedPath) ||
+      sourcePaths.has(value.sourcePath) ||
+      archivedPaths.has(value.archivedPath)
+    ) {
+      throw new Error('artifact archive receipt contains an invalid worktree mapping');
+    }
+    const canonicalArchivedPath = await realpath(value.archivedPath);
+    if (!isPathWithin(canonicalDestination, canonicalArchivedPath)) {
+      throw new Error('artifact archive receipt contains an escaped worktree mapping');
+    }
+    sourcePaths.add(value.sourcePath);
+    archivedPaths.add(value.archivedPath);
+    worktrees.push({ sourcePath: value.sourcePath, archivedPath: value.archivedPath });
+  }
+  return { path: parsed.path, worktrees };
+}
+
+function archivedArtifactFromPlan(plan: ArtifactArchivePlan): ArchivedArtifact {
+  return {
+    path: plan.destination,
+    worktrees: plan.entries.map((entry) => ({
+      sourcePath: entry.sourcePath,
+      archivedPath: entry.archivedPath,
+    })),
+  };
+}
+
+function artifactArchiveReceiptPath(destination: string): string {
+  return `${destination}.receipt.json`;
+}
+
+function compareCodeUnits(left: string, right: string): number {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+function hasExactKeys(
+  value: unknown,
+  expected: readonly string[],
+): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort();
+  const canonical = [...expected].sort();
+  return (
+    actual.length === canonical.length && actual.every((key, index) => key === canonical[index])
+  );
+}
+
+function isPathWithin(parent: string, candidate: string): boolean {
+  if (!isAbsolute(candidate)) return false;
+  const offset = relative(parent, candidate);
+  return offset === '' || (!offset.startsWith('..') && !isAbsolute(offset));
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch (error) {
+    if (isMissingPath(error)) return false;
+    throw error;
+  }
+}
+
+function isMissingPath(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'ENOENT'
+  );
 }
 
 function assertSafePointComposition(

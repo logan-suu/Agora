@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { basename, join, relative, resolve } from 'node:path';
 import { WorktreeRegistry } from '@agora/tools-fs';
 import { simpleGit } from 'simple-git';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -164,12 +164,27 @@ describe('WorktreeGitService', () => {
 
     // Simulate a process restart where State still contains only the old path.
     const restarted = new WorktreeGitService(new WorktreeRegistry(), main, worktrees);
-    await expect(restarted.inspectLegacyWorktree(created.path)).resolves.toEqual({
+    await expect(restarted.inspectLegacyWorktree(created.path, 'wrong-worker')).rejects.toThrow(
+      'branch mismatch',
+    );
+    await expect(restarted.inspectLegacyWorktree(created.path, 'legacy-worker')).resolves.toEqual({
       path: realpathSync(created.path),
       branch: 'legacy-worker',
       baseCommit,
       headCommit,
     });
+  });
+
+  it('rejects the canonical main worktree even though it shares the same common directory', async () => {
+    const parent = mkdtempSync(join(tmpdir(), 'agora-git-main-recovery-'));
+    roots.push(parent);
+    const main = join(parent, 'repository');
+    const service = new WorktreeGitService(new WorktreeRegistry(), main, join(parent, 'worktrees'));
+    await service.canonicalHead();
+
+    await expect(
+      service.registerExistingWorktree(main, await service.canonicalBranch()),
+    ).rejects.toThrow('canonical main worktree');
   });
 
   it('rejects an existing repository that is not linked to the configured canonical repo', async () => {
@@ -213,6 +228,21 @@ describe('WorktreeGitService', () => {
       ),
     );
     expect(existsSync(retried.path)).toBe(true);
+  });
+
+  it('tracks service-owned worktrees by absolute paths when configured with relative roots', async () => {
+    const parent = mkdtempSync(join(tmpdir(), 'agora-git-relative-roots-'));
+    roots.push(parent);
+    const service = new WorktreeGitService(
+      new WorktreeRegistry(),
+      relative(process.cwd(), join(parent, 'repository')),
+      relative(process.cwd(), join(parent, 'worktrees')),
+    );
+    const created = await service.createWorktree('task-a', 'relative-worker');
+
+    expect(created.path).toBe(resolve(created.path));
+    await expect(service.dispose()).resolves.toBeUndefined();
+    expect(existsSync(created.path)).toBe(false);
   });
 
   it('rejects task ids that could escape the worktrees directory (R7)', async () => {
