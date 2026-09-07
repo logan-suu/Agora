@@ -1223,4 +1223,72 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
 
     expect(fake.safePointCalls).toHaveLength(0);
   });
+
+  it('binds a workerId worktree before execution and persists its submitted HEAD on completion', async () => {
+    const assigned = { workerId: 'worker:workspace:0', role: 'CODER' as const, subtaskId: 's-0' };
+    const seed = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('subtasks', 's-0', {
+        title: 'workspace',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'in_progress',
+      }),
+    ]);
+    const allocated = {
+      path: '/data/task/worktrees/worker-0',
+      branch: 'worker-0',
+      baseCommit: 'a'.repeat(40),
+    };
+    const submitted = { ...allocated, headCommit: 'b'.repeat(40) };
+    let executorWorktree: typeof allocated | undefined;
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      resolveWorktree: async () => allocated,
+      refreshWorktree: async () => submitted,
+      buildExecutor: (_spec, _assignment, worktree) => {
+        executorWorktree = worktree;
+        return new FakeExecutor([stepOf('done', [])]);
+      },
+    });
+
+    const result = await runtime.runOne(seed, assigned);
+
+    expect(executorWorktree).toEqual(allocated);
+    expect(result.workers[0]?.worktree).toEqual(submitted);
+    expect(result.subtasks[0]?.worktree).toEqual(submitted);
+  });
+
+  it('accepts an equivalent persisted worktree regardless of object key insertion order', async () => {
+    const assigned = {
+      workerId: 'worker:workspace:order',
+      role: 'CODER' as const,
+      subtaskId: 's-0',
+    };
+    const persisted = {
+      branch: 'worker-order',
+      path: '/data/task/worktrees/worker-order',
+      baseCommit: 'a'.repeat(40),
+    };
+    const resolved = {
+      path: persisted.path,
+      branch: persisted.branch,
+      baseCommit: persisted.baseCommit,
+    };
+    const seed = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('subtasks', 's-0', {
+        title: 'workspace',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'in_progress',
+        worktree: persisted,
+      }),
+    ]);
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      resolveWorktree: async () => resolved,
+      buildExecutor: () => new FakeExecutor([stepOf('done', [])]),
+    });
+
+    await expect(runtime.runOne(seed, assigned)).resolves.toBeDefined();
+  });
 });

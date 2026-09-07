@@ -8,6 +8,7 @@ import type {
   AppState,
   Complexity,
   HumanGate,
+  Integration,
   Message,
   Phase,
   Requirement,
@@ -15,7 +16,7 @@ import type {
   TestResults,
   WorkerState,
 } from './state';
-import { isSubtaskPriority, isWorkerState } from './state';
+import { isIntegration, isPersistedWorktreeRef, isSubtaskPriority, isWorkerState } from './state';
 
 export const APPEND_FIELDS = [
   'messages',
@@ -61,6 +62,7 @@ export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'nextRole',
   'iterationCount',
   'humanGate',
+  'integration',
   'architecture',
   'conventions',
   'complexity',
@@ -238,6 +240,13 @@ function applyMergeById(state: AppState, field: MergeByIdField, value: { id: str
       if (Object.hasOwn(patch, 'priority') && !isSubtaskPriority(patch.priority)) {
         throw new Error('subtask priority must be an integer from 0 through 100');
       }
+      if (
+        Object.hasOwn(patch, 'worktree') &&
+        patch.worktree !== undefined &&
+        !isPersistedWorktreeRef(patch.worktree)
+      ) {
+        throw new Error('subtask worktree must be a path string or valid WorktreeRef');
+      }
       const index = state.subtasks.findIndex((item) => item.id === value.id);
       if (index < 0) return { ...state, subtasks: [...state.subtasks, value as Subtask] };
       const existing = state.subtasks[index];
@@ -299,6 +308,15 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
         throw new Error('humanGate must be a complete durable gate');
       }
       return { ...state, humanGate: value };
+    case 'integration':
+      if (value === undefined) {
+        const { integration: _removed, ...withoutIntegration } = state;
+        return withoutIntegration;
+      }
+      if (!isIntegration(value)) {
+        throw new Error('integration must be a complete recoverable Integration');
+      }
+      return { ...state, integration: value as Integration };
     case 'architecture':
       if (typeof value !== 'object' || value === null || Array.isArray(value)) {
         throw new Error('architecture must be a non-array object');

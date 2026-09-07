@@ -6,3 +6,4 @@ export * from './phase0-tools';
 export * from './recoverable-sandbox-manager';
 export * from './sandbox-manager';
 export * from './types';
+export * from './workspace-adapter';

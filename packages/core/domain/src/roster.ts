@@ -34,7 +34,7 @@ export const PHASE0_ROSTER: readonly RoleSpec[] = [
     executor: 'harness',
     systemPrompt: '你是测试者，以验收标准为客观判据编写并运行测试，产出结构化结果，不修业务代码。',
     tools: ['fs.read', 'fs.write', 'sandbox.run', 'git'],
-    projection: ['acceptance', 'branchOrPatch', 'interfaceContracts', 'coordinationContext'],
+    projection: ['acceptance', 'branchOrIntegration', 'interfaceContracts', 'coordinationContext'],
     routeWhen: 'codingDone',
   },
 ];

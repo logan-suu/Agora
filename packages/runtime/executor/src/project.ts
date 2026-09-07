@@ -8,6 +8,7 @@ import {
   latestCoordinationLedger,
   type RoleId,
   type RoleSpec,
+  type WorktreeRef,
 } from '@agora/core-domain';
 import type { ProjectionView } from './base';
 import {
@@ -128,7 +129,7 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
           ownerRole: s.ownerRole,
           status: s.status,
           priority: s.priority ?? 0,
-          worktree: s.worktree,
+          ...(s.worktree === undefined ? {} : { worktree: structuredClone(s.worktree) }),
         }));
     case 'architecture':
       return state.architecture === undefined ? {} : { ...state.architecture };
@@ -161,21 +162,14 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
           acceptance: [...requirement.acceptance],
         })),
       };
-    case 'branchOrPatch':
-      return {
-        worktrees: state.subtasks
-          .filter((s) => s.status !== 'done' && s.worktree !== undefined)
-          .map((s) => s.worktree),
-        patch: state.pendingPatch === undefined ? null : { ...state.pendingPatch },
-      };
+    case 'branchOrIntegration':
+      return branchOrIntegration(state);
     case 'interfaceContracts': {
       const declared = state.architecture?.interfaces;
       if (Array.isArray(declared)) return [...declared];
       if (typeof declared === 'object' && declared !== null) return { ...declared };
       return {}; // ARCHITECT has not declared interfaces yet
     }
-    case 'pendingPatch':
-      return state.pendingPatch === undefined ? null : { ...state.pendingPatch };
     case 'reviewContext': {
       const control = latestCoordinatorControlMessage(state);
       const reason = typeof control?.payload.reason === 'string' ? control.payload.reason : null;
@@ -200,6 +194,118 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
       // project.test); an unknown name is roster/implementation drift.
       throw new Error(`unknown projection slice "${slice}" declared for role "${String(role)}"`);
   }
+}
+
+function branchOrIntegration(state: AppState): unknown {
+  const candidates =
+    state.integration === undefined
+      ? sequentialWorktreeCandidates(state)
+      : state.integration.pendingBranches.map((planned) => {
+          const worker = state.workers.find((entry) => entry.workerId === planned.workerId);
+          const subtask = state.subtasks.find((entry) => entry.id === planned.subtaskId);
+          if (
+            worker === undefined ||
+            worker.status !== 'done' ||
+            worker.subtaskId !== planned.subtaskId ||
+            worker.worktree === undefined ||
+            typeof worker.worktree === 'string' ||
+            subtask === undefined ||
+            subtask.worktree === undefined ||
+            typeof subtask.worktree === 'string' ||
+            !sameWorktreeRef(planned.worktree, worker.worktree) ||
+            !sameWorktreeRef(planned.worktree, subtask.worktree)
+          ) {
+            throw new Error(
+              `Integration branch "${planned.workerId}" conflicts with canonical WorkerState/Subtask`,
+            );
+          }
+          return {
+            workerId: worker.workerId,
+            subtaskId: subtask.id,
+            worktree: structuredClone(planned.worktree),
+            startedTs: worker.startedTs,
+          };
+        });
+  if (state.integration === undefined && candidates.length > 1) {
+    const first = candidates[0]?.worktree;
+    if (
+      first === undefined ||
+      candidates.some((entry) => !sameWorktreeRef(first, entry.worktree))
+    ) {
+      throw new Error('multiple review worktrees require canonical Integration');
+    }
+  }
+  const selected =
+    state.integration === undefined && candidates.length > 0
+      ? [
+          [...candidates].sort(
+            (left, right) =>
+              right.startedTs - left.startedTs || left.workerId.localeCompare(right.workerId),
+          )[0] as (typeof candidates)[number],
+        ]
+      : candidates;
+  const worktrees = selected
+    .map(({ startedTs: _startedTs, ...entry }) => entry)
+    .sort(
+      (left, right) =>
+        left.subtaskId.localeCompare(right.subtaskId) ||
+        left.workerId.localeCompare(right.workerId),
+    );
+  return {
+    worktrees,
+    integration: state.integration === undefined ? null : structuredClone(state.integration),
+  };
+}
+
+function sequentialWorktreeCandidates(state: AppState) {
+  return state.subtasks
+    .filter((subtask) => subtask.worktree !== undefined)
+    .map((subtask) => {
+      const subtaskWorktree = subtask.worktree;
+      if (subtaskWorktree === undefined) {
+        throw new Error(`subtask "${subtask.id}" worktree disappeared during projection`);
+      }
+      if (typeof subtaskWorktree === 'string') {
+        throw new Error(`subtask "${subtask.id}" has an unmigrated legacy worktree`);
+      }
+      const matches = state.workers.filter(
+        (worker) => worker.subtaskId === subtask.id && worker.worktree !== undefined,
+      );
+      const latestStartedTs = Math.max(...matches.map((worker) => worker.startedTs));
+      const currentMatches = matches.filter((worker) => worker.startedTs === latestStartedTs);
+      if (currentMatches.length !== 1) {
+        throw new Error(
+          `subtask "${subtask.id}" must match exactly one current WorkerState worktree`,
+        );
+      }
+      const worker = currentMatches[0];
+      const workerWorktree = worker?.worktree;
+      if (
+        worker === undefined ||
+        workerWorktree === undefined ||
+        typeof workerWorktree === 'string'
+      ) {
+        throw new Error(`subtask "${subtask.id}" has an unmigrated worker worktree`);
+      }
+      if (!sameWorktreeRef(subtaskWorktree, workerWorktree)) {
+        throw new Error(`subtask "${subtask.id}" worktree conflicts with WorkerState`);
+      }
+      return {
+        workerId: worker.workerId,
+        subtaskId: subtask.id,
+        worktree: structuredClone(subtaskWorktree),
+        startedTs: worker.startedTs,
+      };
+    });
+}
+
+function sameWorktreeRef(left: WorktreeRef, right: WorktreeRef): boolean {
+  return (
+    left.path === right.path &&
+    left.branch === right.branch &&
+    left.baseCommit === right.baseCommit &&
+    left.headCommit === right.headCommit
+  );
 }
 
 function copiedFact(

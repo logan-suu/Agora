@@ -75,7 +75,7 @@ describe('DEFAULT_ROSTER (task 2.1 six-role roster)', () => {
       'coordinationContext',
     ]);
     expect(spec(DEFAULT_ROSTER, 'REVIEWER').projection).toEqual([
-      'pendingPatch',
+      'branchOrIntegration',
       'conventions',
       'architecture',
       'reviewContext',

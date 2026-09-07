@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.2
-**生效日期**：2026-09-05
+**版本**：v2.5
+**生效日期**：2026-09-07
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
@@ -37,11 +37,11 @@
 | 角色 prompt/RoleSpec/权限矩阵 | 详细设计 §2 | 六角色规格 + 工具白名单矩阵 |
 | 编排主循环/coordinator 路由 | 详细设计 §3 + 蓝图 §9 | 4 通用节点 + 条件路由 + 反馈升级 |
 | 复杂度 Tier/进度台账 | 详细设计 §3 + 框架调研 模式③ | Tier 0/1/2 + Ledger 双循环改造版 |
-| worker 生命周期/配合式抢占 | 详细设计 §4 + 架构 §4.2 + 框架调研 模式⑦ | D17 lease/canonical join；安全点 = step/end |
+| worker 生命周期/配合式抢占 | 详细设计 §4 + 架构 §4.1/§4.2 + 框架调研 模式⑦ | D17 lease/canonical join；安全点 = step/end；workerId 只作逻辑身份 |
 | Channel/消息总线/threadId/intent | 详细设计 §5 + 蓝图 §11 | 单一 Channel 原语 + leader 恒在不变量 |
 | Executor/HarnessExecutor 接入 | 详细设计 §0/§6 + 选型 §4 + 框架调研 §1 | 四扩展点映射 + pre-step 覆写（决策 D1） |
 | MCP 工具 server | 详细设计 §6 + 选型 §6 | fs/test/git/lint/sandbox 五类接口签名 |
-| 沙箱（LocalTemp/Docker/worktree） | 详细设计 §6 + 选型 §7/§8 + 架构 §7.3 | SandboxManager 接口 + 决策 D5 |
+| 沙箱（LocalTemp/Docker/worktree） | 详细设计 §1/§4/§6 + 选型 §7/§8/§10 + 架构 §4.1/§5.2/§9 | SandboxManager 冻结接口 + D5/D17；Git/Docker 单一路径 + 专用集成 worktree |
 | 投影/压缩/三铁律/sliceKB | 详细设计 §7 + 蓝图 §8 | 三条投影铁律 + 存储与上下文分离 |
 | Project/KB/Librarian/GlobalScheduler/收件箱 | 详细设计 §8 + 蓝图 §20 | D17 全局 lease 公平队列 + D4 suspend/resume |
 | humanGate/异议双轨/权威级别 | 详细设计 §1/§3/§5/§6/§8/§11 + 蓝图 §9/§14/§21 + 架构 §4.2/§5/§9 + 选型 §4.1/§10 | D4 持久 suspend/Leader resolve/真 Fork resume + D14 不可变异议事实/确定性分轨 + D16 REVIEWER 候选→Leader 完成终审 |
@@ -303,6 +303,7 @@ Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复�
 并行度      D17：GlobalScheduler lease 是跨项目唯一 worker 执行额度，身份={projectId,taskId,workerId}，默认全局 cap=3、按项目轮转；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone；runParallel 处理完整 batch，all-settled 后 reload canonical State；subtask 必须状态可执行、dependsOn 已满足且 persisted WorkerState assignment 匹配才可激活，ownerRole 是实现责任归属而非 TESTER/REVIEWER 的独占执行门禁；可选 priority 只允许 0–100 整数、旧快照缺省 0，依赖满足优先，同一就绪集合按 priority 降序/稳定 id 破平局；task-scoped pause epoch 固定请求时 active cohort，同参数重放、异参数冲突，排队 acquire 取消并保持 pending，done/failed 不被 paused 覆盖；非阻塞 reproject 保留 lease/admission，humanGate 完整落盘后先释放已静止 worker lease；active executable composition 另受默认 3 个的生命周期 admission cap，满载在重资源初始化前返回可重试 429
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
+工作区/集成 D17：createWorktree 六个公开签名不变，第二参数是逻辑 workerId isolation key，复合 workspace adapter 内部做确定性 Git-safe 编码；task-owned canonical repo 位于任务 .data，真实 linked worktree 与 Docker 只用同一规范路径，恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止双工作区、用户 checkout 写入或自动 push。State 只存结构化 WorktreeRef/Integration 引用，不存 pendingPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只可补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收中途失败必须补偿 worktree metadata 与临时 branch；冲突必须确认 abort 成功且无 MERGE_HEAD 后才打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 只投当前 Integration 波次；无 Integration 的顺序兼容仅允许候选收敛到同一 WorktreeRef，并发归档不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失或损坏 fail-closed。Phase 9 仅接受 request_rework <workerId> 并从原 base 重建。DEF-004 保持 open，9.5 前修复或由 Leader 明确可测试的后续安全边界
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
 意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；浏览器 msgId 统一满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在副作用前校验；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；

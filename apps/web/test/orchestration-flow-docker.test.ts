@@ -231,6 +231,8 @@ describeDocker('Web orchestration bridge (G5 real Docker/Harness/MCP chain)', ()
     await runtime.waitForIdle({ projectId: 'demo', taskId: 'ttl-lru-g5' });
     const gate = (await messages.store.load({ projectId: 'demo', taskId: 'ttl-lru-g5' }))
       ?.humanGate;
+    const preApprovalSummary = await runtime.summary({ projectId: 'demo', taskId: 'ttl-lru-g5' });
+    expect(preApprovalSummary?.runStatus, preApprovalSummary?.error).toBe('needs_attention');
     expect(gate?.reason).toMatch(/^completion_confirmation:/);
     const approval = await createPostMessage(messages)(
       new Request('http://localhost/api/messages', {
@@ -248,7 +250,7 @@ describeDocker('Web orchestration bridge (G5 real Docker/Harness/MCP chain)', ()
     await runtime.waitForIdle({ projectId: 'demo', taskId: 'ttl-lru-g5' });
     const summary = await runtime.summary({ projectId: 'demo', taskId: 'ttl-lru-g5' });
 
-    expect(summary).toMatchObject({ runStatus: 'completed', phase: 'done' });
+    expect(summary, summary?.error).toMatchObject({ runStatus: 'completed', phase: 'done' });
     expect(summary?.testResults).toMatchObject({ passed: true, total: 3 });
     expect(summary?.artifactPath).toBeTruthy();
     expect(summary?.artifactPath).toContain(

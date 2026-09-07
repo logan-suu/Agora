@@ -6,6 +6,7 @@ import {
   PHASE0_ROSTER,
   type RoleSpec,
   type TestResults,
+  type WorktreeRef,
 } from '@agora/core-domain';
 import { WorkerRuntime } from '@agora/core-orchestration';
 import {
@@ -21,6 +22,7 @@ import {
 } from '@agora/runtime-sandbox';
 import { createToolCatalog, type ToolCatalog } from '@agora/tools-bridge';
 import { WorktreeRegistry } from '@agora/tools-fs';
+import { initializeRegisteredWorktree, WorktreeGitService } from '@agora/tools-git';
 import type { LlmAdapter } from '@deepseek-ai/dsh-llm';
 
 /** Phase 0 TESTER handoff file (written by the TESTER into the worktree root). */
@@ -121,11 +123,20 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
   const sandbox = createSandbox(options.sandboxConfig);
   const worktree = await sandbox.createWorktree(options.taskId, 'shared');
   const registry = new WorktreeRegistry();
-  registry.register(worktree.path);
+  await initializeRegisteredWorktree(registry, worktree.path);
+  const gitService = new WorktreeGitService(registry, worktree.path);
+  const initialHead = await gitService.headOf(worktree.path);
+  const worktreeRef: WorktreeRef = {
+    path: worktree.path,
+    branch: await gitService.branchOf(worktree.path),
+    baseCommit: initialHead,
+    headCommit: initialHead,
+  };
   let catalog: ToolCatalog;
   try {
     catalog = await createToolCatalog({
       registry,
+      gitService,
       sandbox,
       getWorktree: async () => worktree,
       ...(options.mainRepoPath === undefined ? {} : { mainRepoPath: options.mainRepoPath }),
@@ -156,6 +167,20 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
   const executors: HarnessExecutor[] = [];
   const workerRuntime = new WorkerRuntime({
     roster: PHASE0_ROSTER,
+    resolveWorktree: async (state, assignment) => {
+      const workerRef = state.workers.find(
+        (entry) => entry.workerId === assignment.workerId,
+      )?.worktree;
+      if (typeof workerRef === 'object') return workerRef;
+      const subtaskRef = state.subtasks.find(
+        (entry) => entry.id === assignment.subtaskId,
+      )?.worktree;
+      return typeof subtaskRef === 'object' ? subtaskRef : worktreeRef;
+    },
+    refreshWorktree: async (ref) => ({
+      ...ref,
+      headCommit: await gitService.headOf(ref.path),
+    }),
     buildExecutor: (spec, _assign): Executor => {
       // Task 1.5: RoleSpec.tools → catalog (spec §2 matrix) intersected with the
       // Phase 0 surface; register all catalog tools and let the agent-level
@@ -187,7 +212,7 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
       ownerRole: 'CODER',
       dependsOn: [],
       status: 'todo',
-      worktree: worktree.path,
+      worktree: worktreeRef,
     }),
   ]);
   return {
@@ -208,6 +233,11 @@ export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promis
       }
       try {
         await catalog.dispose();
+      } catch (err) {
+        errors.push(err);
+      }
+      try {
+        await gitService.dispose();
       } catch (err) {
         errors.push(err);
       }

@@ -57,7 +57,7 @@ export const REVIEWER_ROLE: RoleSpec = {
     '你是评审者，按结构化 reviewContext 审查质量/规范/安全或连续失败根因，结合 failingTests/fileRefs 产出可执行修改意见，通过结论需 leader 最终确认。',
   tools: ['fs.read', 'git.readonly', 'lint'],
   projection: [
-    'pendingPatch',
+    'branchOrIntegration',
     'conventions',
     'architecture',
     'reviewContext',

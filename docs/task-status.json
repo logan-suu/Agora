@@ -1,8 +1,8 @@
 {
-  "version": "1.1",
+  "version": "1.3",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-06T19:14:35.000Z",
+  "last_updated": "2026-09-07T20:26:50.000Z",
   "current_phase": 9,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
   "standing_decisions": [
@@ -88,8 +88,8 @@
     },
     {
       "id": "D17",
-      "rule": "Phase 9 真并行使用 GlobalScheduler 稳定 lease 作为跨项目唯一 worker 执行额度（默认 cap=3、按项目轮转排队），lease/assignment 逻辑身份为 {projectId,taskId,workerId}；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone。runParallel 处理全部合法 assignment，不 slice 丢尾部；同 role 可并行多个独立薄 HarnessExecutor/Context/Agent/session，锁定版本 one-shot ctx.subagents.start 不作为顶层 worker，worktree 由 9.3 按 workerId 绑定。模型/工具调用并行，但 step 输出处理与 TaskStateStore 写入进入 per-task canonical commit queue：重读最新 State、校验 enabled roster/subtask 可执行状态/依赖/persisted WorkerState assignment/写所有权后原子提交；ownerRole 是责任归属而非独占执行门禁。并行 agent step 只可 append 稳定身份事实；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区提交。task-scoped pause 以稳定 actionId 建立 epoch 并固定 active cohort，同参数重放、异参数冲突；排队 acquire 取消后保持 pending，已启动 Step 先提交再 flush，done/failed 不被 paused 覆盖。非阻塞 reproject 保留原 context/lease/admission；humanGate 在完整 gate 落盘后释放已静止 worker lease，composition 清理失败仅保留 admission/needs_attention，resume 用 per-worker lineage 计划并重新排队新 lease，旧 lease 不跨 Fork。join 等全部已启动 worker settled 和提交队列排空后 reload canonical State；失败不硬杀同批 LLM、不回滚成功事实。active executable composition 另受默认 3 个 admission cap，满载在重资源初始化前返回可重试 429；当前 Subtask 全字段（含可选 0–100 整数 priority）、并行全局 set/他人 worker/collaboration 写入属串行控制面。旧 priority 缺省为 0；依赖满足优先，同一就绪集合按 priority 降序、稳定 id 破平局。禁止 mergeStates(AppState[]) 与 Promise.all fail-fast 猜最终状态",
-      "source": "docs/项目蓝图.md §13/§21；docs/详细设计方案.md §1/§3/§4/§6/§8；docs/系统架构设计文档.md §4.1/§4.2/§5/§9；docs/开发计划安排.md §12"
+      "rule": "Phase 9 真并行使用 GlobalScheduler 稳定 lease 作为跨项目唯一 worker 执行额度（默认 cap=3、按项目轮转排队），lease/assignment 逻辑身份为 {projectId,taskId,workerId}；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone。runParallel 处理全部合法 assignment，不 slice 丢尾部；同 role 可并行多个独立薄 HarnessExecutor/Context/Agent/session，锁定版本 one-shot ctx.subagents.start 不作为顶层 worker。Phase 9 复合 workspace adapter 对逻辑 workerId 做确定性 Git-safe 编码，从 .data 内 task-owned canonical repo 创建真实 linked worktree，并把同一路径挂入 Docker；恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 的唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止 Git/Docker 双目录、用户 checkout 写入或自动 push。State 以结构化 WorktreeRef 和可恢复 Integration 保存 base/head/有序分支/进度/冲突/resultCommit，删除 pendingPatch/branchOrPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收失败必须补偿 worktree metadata 与临时 branch；冲突只有在 abort 成功且真实 Git metadata 无 MERGE_HEAD 后才可打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 有 Integration 时只投当前波次；无 Integration 的顺序兼容只允许候选收敛到同一 WorktreeRef，并发归档使用直接 code-unit 稳定排序且不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失/损坏或引用不存在 fail-closed。Phase 9 仅允许 request_rework <workerId> 并从原 base 重建。模型/工具调用并行，但 step 输出处理与 TaskStateStore 写入进入 per-task canonical commit queue：重读最新 State、校验 enabled roster/subtask 可执行状态/依赖/persisted WorkerState assignment/写所有权后原子提交；ownerRole 是责任归属而非独占执行门禁。并行 agent step 只可 append 稳定身份事实；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区提交。task-scoped pause 以稳定 actionId 建立 epoch 并固定 active cohort，同参数重放、异参数冲突；排队 acquire 取消后保持 pending，已启动 Step 先提交再 flush，done/failed 不被 paused 覆盖。非阻塞 reproject 保留原 context/lease/admission；humanGate 在完整 gate 落盘后释放已静止 worker lease，composition 清理失败仅保留 admission/needs_attention，resume 用 per-worker lineage 计划并重新排队新 lease，旧 lease 不跨 Fork。join 等全部已启动 worker settled 和提交队列排空后 reload canonical State；失败不硬杀同批 LLM、不回滚成功事实。active executable composition 另受默认 3 个 admission cap，满载在重资源初始化前返回可重试 429；当前 Subtask 全字段（含可选 0–100 整数 priority）、并行全局 set/他人 worker/collaboration 写入属串行控制面。旧 priority 缺省为 0；依赖满足优先，同一就绪集合按 priority 降序、稳定 id 破平局。禁止 mergeStates(AppState[]) 与 Promise.all fail-fast 猜最终状态；DEF-004 仍须在 9.5 前修复或明确安全边界",
+      "source": "docs/项目蓝图.md §6/§13/§21；docs/详细设计方案.md §1/§2/§3/§4/§5/§6/§7/§8；docs/系统架构设计文档.md §4.1/§4.2/§5/§9；docs/技术选型文档.md §7/§8/§10；docs/开发计划安排.md §12"
     },
     {
       "id": "C4",
@@ -1153,7 +1153,7 @@
       "name": "真并行升级（异步 worker 池 + 抢占 + worktree 集成，1.5 周）",
       "status": "in_progress",
       "integration_test": "9.5",
-      "exit_criteria": "真正并行且可控的团队协作：全局 cap/fair lease、完整 batch、canonical State join、同 role 独立 worktree、全局安全点抢占与集成冲突升级均有真实证据",
+      "exit_criteria": "真正并行且可控的团队协作：全局 cap/fair lease、完整 batch、canonical State join、同 role 独立且 Git/Docker 单一路径的 linked worktree、全局安全点抢占、专用 integration worktree 可恢复重放与 integration_conflict/request_rework 裁决均有真实证据；DEF-004/010/013 逐条处置",
       "tasks": [
         {
           "id": "9.1",
@@ -1195,20 +1195,22 @@
           "id": "9.3",
           "title": "worktree 隔离 + 集成检查点",
           "story": null,
-          "status": "ready",
-          "last_updated": "2026-09-06T16:04:32.000Z",
+          "status": "in_progress",
+          "last_updated": "2026-09-07T20:26:50.000Z",
           "documents_required": [
-            "docs/项目蓝图.md §13/§21（D17）",
-            "docs/详细设计方案.md §4/§6",
-            "docs/系统架构设计文档.md §5.2",
-            "docs/技术选型文档.md §8",
+            "docs/项目蓝图.md §6/§9/§13/§14/§21（D4/D9/D17）",
+            "docs/详细设计方案.md §1/§2/§4/§5/§6/§7",
+            "docs/系统架构设计文档.md §4.1/§4.2/§5.1/§5.2/§9",
+            "docs/技术选型文档.md §7/§8/§10",
+            "docs/开发计划安排.md §12",
             "docs/deferred-items.json（DEF-004/010）"
           ],
           "dependencies": [
-            "9.1"
+            "9.1",
+            "9.2"
           ],
-          "test_file": "packages/tools/git/test/git-service.test.ts + tests/integration/phase9/phase9-worktree-integration.test.ts",
-          "notes": "R9 保持 createWorktree(taskId,string) 签名，Phase 9 第二参数传稳定 workerId，不以 role 命名，保证同 role 多 worker 独立目录/分支。integrate 按拓扑波次与 workerId 稳定顺序 merge，冲突→integration.conflicts→Leader。评估 DEF-004 并发隔离条件；以 worktree 引用为真相，9.3 应移除无消费者 pendingPatch 或给出新的明确处置，禁止继续悬空。\n[2026-09-06 /agora-pr-merge] 依赖 9.1 已由 PR #63 合并并标 done（merge commit 414fa23），级联翻转 pending→ready。"
+          "test_file": "packages/runtime/sandbox/test/workspace-adapter.test.ts + packages/tools/git/test/git-service.test.ts + packages/runtime/executor/test/project.test.ts + tests/integration/phase9/phase9-worktree-integration.test.ts",
+          "notes": "R9 保持 createWorktree(taskId,string) 六个签名，第二参数是逻辑 workerId isolation key，由复合 workspace adapter 内部编码 Git-safe 名。task-owned canonical repo 位于任务 .data，真实 Git linked worktree 与 Docker bind mount 使用同一路径；禁止双工作区和用户 checkout 写入。State 使用结构化 WorktreeRef 与可恢复 Integration；专用 integration worktree 按稳定顺序合并，冲突 abort 后进入 integration_conflict:<integrationId> Leader gate，Phase 9 只允许 request_rework <workerId> 并从原 base 重建。DEF-004 保持 open 至 9.5 修复或明确安全边界；pendingPatch/branchOrPatch 按 DEF-010 从 schema/RoleSpec/投影移除，实际实现与迁移测试落地后再关闭延期项。\n[2026-09-06 /agora-pr-merge] 9.1 已由 PR #63 合并并标 done（merge commit 414fa23），级联翻转 pending→ready；9.2 随后由 PR #64 合并并标 done（merge commit 2b6f4da），本次新增的 D4/D9 gate 依赖也已满足。\n[2026-09-07 /agora-sync-docs·规格评审] Leader 批准先修规格。评审确认旧文档存在 workerId 含冒号却被直接当 Git ref、Docker 与 Git 分别创建目录、Integration 缺恢复身份、主 checkout 合并污染、冲突无确定性 gate 以及 pendingPatch 无消费者等缺口。已按蓝图→详细设计→架构/技术选型→开发计划→task-status/deferred/AGENTS 同步上述 D17 定稿；无新依赖、冻结 L3 签名不变，任务保持 ready，尚未开始代码实现。\n[2026-09-07 /agora-do-task·启动] Leader 授权开始 9.3；9.1/9.2 与 Phase 8 出口均为 done，跨阶段门禁满足。任务置 in_progress，进入 Explore/Plan；实现计划再次确认前不写测试或生产代码。\n[2026-09-07 Plan·Leader确认] Leader 批准按 `并行 CODER→integrate→单一集成态 TESTER→REVIEWER→D16终审` 的生命周期实施；9.3 落 workspace/integrate 服务与显式节点，9.4 再接 Coordinator 拓扑波次。进入 TDD Code。\n[2026-09-07 Code+Check+Verify] TDD 落地结构化 WorktreeRef/Integration schema 与 reducer 校验、WorkerRuntime 分配/提交 HEAD、Git-safe workerId 编码、task-owned canonical repo、复合 WorkspaceAdapter、专用 IntegrationService、逐步持久化/ancestry 重放、merge abort、integration_conflict/request_rework resolver、branchOrIntegration 投影、legacy JSON/Git 实查迁移及 Web 组合根显式 integrate hook；9.4 Coordinator 自动拓扑波次边界未抢跑。实现中修复两项真实缺陷：macOS /var→/private/var 导致 Docker cwd 错映射，以及终态归档把 task root 复制到自身 artifacts。DEF-010 按 schema/RoleSpec/投影/迁移证据标 resolved；DEF-004 以 path-guard 真实符号链接替换测试确定性复现 validate→fs syscall 竞态，证明跨 worker 隔离并未修复，保持 open 至 9.5。G1/R9：SandboxManager 六签名与既有 L3 端口不变，无新第三方依赖；R12 已同步蓝图/详细设计/系统架构/技术选型/开发计划/task-status/deferred/AGENTS。G3：typecheck 0 错，Biome 268 files 0 违规；G4/G5：原样 pnpm test 103 files / 876 tests 全绿，包含 DockerSandbox 16/16、Web Docker/Harness/MCP、Phase 9 两条真实 linked-worktree 合并/冲突链与 336.28s live DeepSeek LRU E2E。代码审阅后补充 idle 冲突计划以同 base 新 integrationId/worktree 接受新 workerId，base 漂移 fail-closed，并补 DEF-004 确定性复现；最终代码态禁用计费 live 模型的全量回归为 100 files passed / 3 skipped、875 passed / 3 skipped（总 103 files / 878 tests），三项 skip 均为 live 模型；补充项聚焦 16/16，前述 live 链证据仍有效。tracking JSON、git diff --check 通过。任务保持 in_progress，待 $agora-commit 交付；Agent 不自动合并。\n[2026-09-07 /agora-commit·门禁] 分支 feat/phase9-worktree-integration（base=dev-1.0.0）；typecheck 0 错；Biome 268 files 0 违规；原样 pnpm test 103 files/878 tests 全绿，包含 3 条 live DeepSeek、DockerSandbox 16/16、Web Docker/Harness/MCP 与 Phase 0–9 累积回归；9.3 专属真实 Git/Docker G5 2/2（受限沙箱首次因 Docker socket EPERM 未执行，获准访问真实 Docker 后同命令重跑全绿）；JSON、git diff 与敏感数据检查待提交前复核。任务保持 in_progress；Agent 不自动合并。\n[2026-09-07 /agora-commit·交付] tracking JSON、staged diff 与 gitleaks staged 扫描通过（约 137 KB，0 泄漏）；功能提交 9b0df47 已推送。PR #65：https://github.com/logan-suu/Agora/pull/65（feat/phase9-worktree-integration → dev-1.0.0）。任务保持 in_progress，等待人类审阅与合并；Agent 不自动合并。\n[2026-09-07 /agora-sync-docs·PR复评] Leader 要求先评审规格再修 PR。复评确认总体 D17 方向合理，但原文对 Integration 状态不变量、单步丢失回执证明、Git common-dir 身份、创建/回收补偿、无 Integration 投影退化与并发归档来源定义不足。已按蓝图→详细设计→系统架构/技术选型→开发计划→task-status/AGENTS 精化为可测试规则；DEF-010 顶层更新时间同步。随后以新规格重新评审并进入修复。\n[2026-09-07 /agora-pr-review·修复复检] 以修订后 D17 对 PR #65 重审并完成修复：Integration reducer 强制完整身份前缀及 conflict/done/head 状态机；丢失回执仅接受当前下一分支的精确 fast-forward 或双亲 merge，拒绝未来分支/额外提交；恢复按 Git common-dir 证明 canonical repo；worktree add、Docker bind/remember 与退役形成可重试补偿，merge abort 以真实 MERGE_HEAD 验证；TESTER/REVIEWER 投影只含当前波次，无 Integration 时仅允许同一 WorktreeRef 收敛；WorkerState worktree 改深比较；并行终态从 canonical State 生成稳定 bundle/manifest，在一次串行 commit 中改写所有已归档 Subtask/Worker/Integration 引用，归档失败保留源资源并进入 needs_attention。CodeRabbit 7 条 actionable 与 1 条 nitpick 全部验证为有效并已覆盖，另修复 Integration 广义 ancestry、foreign repo、bind 补偿及并行归档四项本地复审问题；docstring coverage 为外部建议且非项目门禁，未以批量注释制造噪音。最终门禁：typecheck 0 错；Biome 268 files 0 违规；Next production build 成功（首页 6.66 kB、First Load JS 109 kB）；原样 pnpm test 103 files / 891 tests 全绿，包含 live DeepSeek、DockerSandbox 16/16、Web Docker/Harness/MCP、Phase 9 真实 linked-worktree 合并/冲突链及 bundle 真实文件复制。tracking JSON 与 git diff --check 通过。任务保持 in_progress，待修复提交推送和人工合并；Agent 不自动合并。\n[2026-09-07 /agora-pr-review·第二轮评论修复] 复核 CodeRabbit 第二轮 5 条评论：归档既存目标重算映射、localeCompare 排序、Git common-dir 身份不足、相对 worktreesDir 所有权键四项成立；composition capacity 项已由 26f37db 的 pendingFinalization 显式重试路径解决。先按蓝图→详细设计→系统架构/技术选型→开发计划→task-status/AGENTS 精化规格，再以 TDD 落不可变 artifact receipt（既存目标只复用首次 source→archived 映射，缺失/损坏/越界 fail-closed）、直接 code-unit 排序、canonical `git worktree list --porcelain -z` 的唯一 path/branch/HEAD 成员校验、主工作区拒绝、legacy 预期 branch 与绝对所有权路径。聚焦 3 files / 47 tests 与类型检查通过；最终门禁 typecheck 0 错、Biome 268 files 0 违规、Next production build 成功、原样 pnpm test 103 files / 896 tests 全绿，含 live DeepSeek、DockerSandbox 16/16、Web Docker/Harness/MCP 与 Phase 9 真实 Git/Docker 链；tracking JSON、git diff --check 通过。任务保持 in_progress，待提交推送、英文回复及人工合并；Agent 不自动合并。\n[2026-09-07 /agora-pr-review·第三轮评论复核] CodeRabbit 新增 2 条：pendingFinalization 在随后 D4 humanGate 已 suspend/清除 composition 时普通 start 仍调用 finalize 的状态机缺口成立；MERGE_HEAD 评论为误报，现有 abortMerge 已在 merge --abort 成功后通过 git rev-parse --git-path MERGE_HEAD + existsSync 显式验证不存在，真实冲突测试亦断言 clean。TDD 红测复现 started/running + unhandled rejection，修复后普通 start 保留 pending/error 并返回 needs_attention，不创建 rejecting promise；补充详细设计与韧性表实装校准。聚焦 2 files/39 tests、typecheck、Biome 268 files、Next build 通过；原样 pnpm test 103 files/897 tests 全绿，含 live DeepSeek、DockerSandbox 16/16、Web Docker/Harness/MCP 与 Phase 9 真实 Git/Docker 链。任务保持 in_progress，待提交推送、英文回复及人工合并；Agent 不自动合并。"
         },
         {
           "id": "9.4",
@@ -1227,7 +1229,7 @@
             "9.3"
           ],
           "test_file": "tests/integration/phase9/phase9-parallel-flow.test.ts",
-          "notes": "接入 Coordinator 拓扑波次：只激活 dependsOn 已满足的全部就绪 subtask；多 CODER + 可选 TESTER preparation 并行，preparation 不写全局 testResults；集成成功后由单一 TESTER 在集成 worktree 写权威 testResults，通过才闭合该波次并激活下一波。完成多 Coder→集成→Tester→Reviewer→D16 Leader 终审真实链，前端呈现并行泳道；按 subtask review refs 处置 DEF-013。"
+          "notes": "接入 Coordinator 拓扑波次：只激活 dependsOn 已满足的全部就绪 subtask；多 CODER + 可选 TESTER preparation 并行，preparation 不写全局 testResults；集成成功后由单一 TESTER 在结构化 Integration 指向的专用 worktree 写权威 testResults，通过才闭合该波次并激活下一波。完成多 Coder→可恢复集成→Tester→Reviewer→D16 Leader 终审真实链，前端呈现并行泳道；冲突经 integration_conflict gate 的 request_rework 确定性返工，按 subtask review refs 处置 DEF-013。"
         },
         {
           "id": "9.5",
@@ -1244,7 +1246,7 @@
             "9.4"
           ],
           "test_file": "tests/integration/phase9/phase9-exit.test.ts",
-          "notes": "D17 出口矩阵：完整 batch 不丢任务；全局 cap=3 与跨项目轮转公平；稳定 lease 完成/失败/suspend 幂等释放；all-settled 不提前返回；canonical State join；并行 mutation 所有权拒绝 set/越区写；未满足依赖不得激活；同 role worktree 隔离；抢占安全点无撕裂；合并冲突升级。固定任务/模型/预算比较串行、并发 2、并发 3，记录成功率、时延、token/费用、冲突、返工与资源峰值；阶段出口逐条处置 DEF-004/010/013。"
+          "notes": "D17 出口矩阵：完整 batch 不丢任务；全局 cap=3 与跨项目轮转公平；稳定 lease 完成/失败/suspend 幂等释放；all-settled 不提前返回；canonical State join；并行 mutation 所有权拒绝 set/越区写；未满足依赖不得激活；同 role 的 Git/Docker 单一路径 worktree 隔离；legacy WorktreeRef 真实迁移；抢占安全点无撕裂；专用 integration worktree 确定性重放、merge abort 与 integration_conflict/request_rework 裁决。固定任务/模型/预算比较串行、并发 2、并发 3，记录成功率、时延、token/费用、冲突、返工与资源峰值；阶段出口逐条处置 DEF-004/010/013，DEF-004 不得只凭跨 worker 隔离关闭。"
         }
       ]
     },

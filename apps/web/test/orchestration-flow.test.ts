@@ -13,6 +13,7 @@ import {
   type Message,
   mergeByIdMutation,
   setMutation,
+  type WorktreeRef,
 } from '@agora/core-domain';
 import { WorkerRuntime } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
@@ -130,8 +131,16 @@ function successfulFactory(
   gate: Promise<void>,
   lifecycle: { archived: number; disposed: number } = { archived: 0, disposed: 0 },
   failCoder = false,
+  failArchive = false,
 ): TaskCompositionFactory {
+  let remainingArchiveFailures = failArchive ? 1 : 0;
   return async ({ scope, goal, transition, resume }) => {
+    const initialWorktree: WorktreeRef = {
+      path: '/tmp/agora-demo-artifact',
+      branch: 'test-shared',
+      baseCommit: 'a'.repeat(40),
+      headCommit: 'a'.repeat(40),
+    };
     const initialState =
       resume?.state ??
       applyMutations(createInitialAppState(scope.taskId, goal, scope.projectId), [
@@ -140,12 +149,23 @@ function successfulFactory(
           ownerRole: 'CODER',
           dependsOn: [],
           status: 'todo',
-          worktree: '/tmp/agora-demo-artifact',
+          worktree: initialWorktree,
         }),
       ]);
     const workerRuntime = new WorkerRuntime({
       roster: DEFAULT_ROSTER,
       transition,
+      resolveWorktree: async (state, assignment) => {
+        const workerRef = state.workers.find(
+          (entry) => entry.workerId === assignment.workerId,
+        )?.worktree;
+        if (typeof workerRef === 'object') return workerRef;
+        const subtaskRef = state.subtasks.find(
+          (entry) => entry.id === assignment.subtaskId,
+        )?.worktree;
+        return typeof subtaskRef === 'object' ? subtaskRef : initialWorktree;
+      },
+      refreshWorktree: async (ref) => ref,
       buildExecutor: (spec) => {
         if (spec.role === 'CODER') {
           if (failCoder) return new FailingExecutor();
@@ -198,7 +218,19 @@ function successfulFactory(
       suspend: async () => undefined,
       archiveArtifact: async () => {
         lifecycle.archived += 1;
-        return `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`;
+        if (remainingArchiveFailures > 0) {
+          remainingArchiveFailures -= 1;
+          throw new Error('injected archive failure');
+        }
+        return {
+          path: `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`,
+          worktrees: [
+            {
+              sourcePath: '/tmp/agora-demo-artifact',
+              archivedPath: `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`,
+            },
+          ],
+        };
       },
       dispose: async () => {
         lifecycle.disposed += 1;
@@ -314,7 +346,15 @@ describe('TaskOrchestrationRuntime', () => {
         artifactPath: '/tmp/agora-directive-artifact',
         saveSafePoints: async () => [],
         suspend: async () => {},
-        archiveArtifact: async () => '/tmp/agora-directive-artifact',
+        archiveArtifact: async () => ({
+          path: '/tmp/agora-directive-artifact',
+          worktrees: [
+            {
+              sourcePath: '/tmp/agora-directive-artifact',
+              archivedPath: '/tmp/agora-directive-artifact',
+            },
+          ],
+        }),
         dispose: async () => {},
       };
     };
@@ -811,6 +851,90 @@ describe('TaskOrchestrationRuntime', () => {
       error: 'scripted worker failure',
     });
     expect(lifecycle).toEqual({ archived: 1, disposed: 1 });
+  });
+
+  it('keeps source resources alive when artifact archival needs attention', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const lifecycle = { archived: 0, disposed: 0 };
+    const scope = { projectId: 'project-a', taskId: 'archive-failed-task' };
+    const runtime = new TaskOrchestrationRuntime(
+      messages,
+      successfulFactory(Promise.resolve(), lifecycle, true, true),
+    );
+
+    await runtime.start({ ...scope, requestId: 'request-archive-failed', goal: 'Build TTL LRU' });
+    await runtime.waitForIdle(scope);
+
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'needs_attention',
+      error: expect.stringContaining('artifact archive failed: injected archive failure'),
+    });
+    expect(lifecycle).toEqual({ archived: 1, disposed: 0 });
+
+    await runtime.start({ ...scope, requestId: 'retry-archive', goal: 'Build TTL LRU' });
+    await runtime.waitForIdle(scope);
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'failed',
+      artifactPath: '/durable/project-a/archive-failed-task/artifacts/worktree',
+      error: 'scripted worker failure',
+    });
+    expect(lifecycle).toEqual({ archived: 2, disposed: 1 });
+  });
+
+  it('keeps pending finalization in needs_attention when a later humanGate suspended its composition', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const lifecycle = { archived: 0, disposed: 0 };
+    const scope = { projectId: 'project-a', taskId: 'archive-suspended-task' };
+    let suspended = 0;
+    const baseFactory = successfulFactory(Promise.resolve(), lifecycle, true, true);
+    const runtime = new TaskOrchestrationRuntime(messages, async (input) => {
+      const composition = await baseFactory(input);
+      return {
+        ...composition,
+        suspend: async () => {
+          suspended += 1;
+          await composition.suspend();
+        },
+      };
+    });
+
+    await runtime.start({ ...scope, requestId: 'initial-failure', goal: 'Build TTL LRU' });
+    await runtime.waitForIdle(scope);
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'needs_attention',
+      error: expect.stringContaining('artifact archive failed: injected archive failure'),
+    });
+
+    const departure = await createPostMessage(messages)(
+      new Request('http://localhost/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...scope,
+          channelId: 'main',
+          msgId: 'remove-coder-after-archive-failure',
+          display: '/role remove CODER',
+        }),
+      }),
+    );
+    await expect(departure.json()).resolves.toMatchObject({
+      action: { status: 'blocked', reason: 'role_departure_requires_replacement:CODER' },
+    });
+    expect(suspended).toBe(1);
+
+    await expect(
+      runtime.start({ ...scope, requestId: 'retry-without-composition', goal: 'Build TTL LRU' }),
+    ).resolves.toMatchObject({
+      startOutcome: 'needs_attention',
+      runStatus: 'needs_attention',
+      error: expect.stringContaining('artifact archive failed: injected archive failure'),
+    });
+    await expect(runtime.waitForIdle(scope)).resolves.toBeUndefined();
+    await expect(runtime.disposeAll()).resolves.toBeUndefined();
+    expect(lifecycle).toEqual({ archived: 1, disposed: 0 });
   });
 
   it('exposes create/start and refresh recovery through the task HTTP handlers', async () => {

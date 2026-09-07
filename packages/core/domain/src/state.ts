@@ -48,7 +48,262 @@ export interface Subtask {
   dependsOn: string[];
   status: 'todo' | 'in_progress' | 'blocked' | 'done';
   priority?: number;
-  worktree?: string;
+  worktree?: PersistedWorktreeRef;
+}
+
+export interface WorktreeRef {
+  path: string;
+  branch: string;
+  baseCommit: string;
+  headCommit?: string;
+}
+
+/** Pre-Phase 9 snapshots may still contain a path string until Git-backed migration. */
+export type PersistedWorktreeRef = WorktreeRef | string;
+
+export interface IntegrationBranch {
+  workerId: string;
+  subtaskId: string;
+  worktree: WorktreeRef;
+  topologicalRank: number;
+}
+
+export interface MergedIntegrationBranch {
+  workerId: string;
+  subtaskId: string;
+  branch: string;
+  headCommit: string;
+  mergeCommit: string;
+}
+
+export interface IntegrationConflict {
+  workerId: string;
+  subtaskId: string;
+  branch: string;
+  headCommit: string;
+  files: string[];
+}
+
+export interface Integration {
+  integrationId: string;
+  waveId: string;
+  base: { branch: string; commit: string };
+  integrationWorktree: WorktreeRef;
+  pendingBranches: IntegrationBranch[];
+  mergedBranches: MergedIntegrationBranch[];
+  conflicts: IntegrationConflict[];
+  resultCommit?: string;
+  status: 'idle' | 'merging' | 'conflict' | 'done';
+}
+
+const GIT_OBJECT_ID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
+const GIT_UNSAFE_BRANCH_CHAR = /[~^:?*[\\/]/;
+
+function hasGitUnsafeControlChar(value: string): boolean {
+  return [...value].some((char) => {
+    const code = char.charCodeAt(0);
+    return code <= 0x20 || code === 0x7f;
+  });
+}
+
+function isGitSafeBranch(value: string): boolean {
+  return (
+    value.length > 0 &&
+    value !== '@' &&
+    !value.startsWith('.') &&
+    !value.startsWith('-') &&
+    !value.endsWith('.') &&
+    !value.endsWith('.lock') &&
+    !value.includes('..') &&
+    !value.includes('@{') &&
+    !hasGitUnsafeControlChar(value) &&
+    !GIT_UNSAFE_BRANCH_CHAR.test(value)
+  );
+}
+
+export function isGitObjectId(value: unknown): value is string {
+  return typeof value === 'string' && GIT_OBJECT_ID.test(value);
+}
+
+export function isWorktreeRef(value: unknown): value is WorktreeRef {
+  if (!isRecord(value)) return false;
+  if (!hasOnlyKeys(value, ['path', 'branch', 'baseCommit', 'headCommit'])) return false;
+  return (
+    typeof value.path === 'string' &&
+    value.path.startsWith('/') &&
+    typeof value.branch === 'string' &&
+    isGitSafeBranch(value.branch) &&
+    isGitObjectId(value.baseCommit) &&
+    (value.headCommit === undefined || isGitObjectId(value.headCommit))
+  );
+}
+
+export function isPersistedWorktreeRef(value: unknown): value is PersistedWorktreeRef {
+  return typeof value === 'string' ? value.length > 0 : isWorktreeRef(value);
+}
+
+export function isIntegration(value: unknown): value is Integration {
+  if (!isRecord(value)) return false;
+  if (
+    !hasOnlyKeys(value, [
+      'integrationId',
+      'waveId',
+      'base',
+      'integrationWorktree',
+      'pendingBranches',
+      'mergedBranches',
+      'conflicts',
+      'resultCommit',
+      'status',
+    ]) ||
+    typeof value.integrationId !== 'string' ||
+    value.integrationId.length === 0 ||
+    typeof value.waveId !== 'string' ||
+    value.waveId.length === 0 ||
+    !isRecord(value.base) ||
+    !hasOnlyKeys(value.base, ['branch', 'commit']) ||
+    typeof value.base.branch !== 'string' ||
+    !isGitSafeBranch(value.base.branch) ||
+    !isGitObjectId(value.base.commit) ||
+    !isWorktreeRef(value.integrationWorktree) ||
+    !Array.isArray(value.pendingBranches) ||
+    !Array.isArray(value.mergedBranches) ||
+    !Array.isArray(value.conflicts) ||
+    !['idle', 'merging', 'conflict', 'done'].includes(String(value.status)) ||
+    (value.resultCommit !== undefined && !isGitObjectId(value.resultCommit))
+  ) {
+    return false;
+  }
+  const pending = value.pendingBranches;
+  const merged = value.mergedBranches;
+  const conflicts = value.conflicts;
+  if (
+    !pending.every(isIntegrationBranch) ||
+    !merged.every(isMergedBranch) ||
+    !conflicts.every(isIntegrationConflict)
+  )
+    return false;
+  if (pending.length === 0 || value.integrationWorktree.baseCommit !== value.base.commit)
+    return false;
+  const pendingWorkerIds = pending.map((entry) => entry.workerId);
+  const pendingSubtaskIds = pending.map((entry) => entry.subtaskId);
+  if (
+    new Set(pendingWorkerIds).size !== pending.length ||
+    new Set(pendingSubtaskIds).size !== pending.length
+  )
+    return false;
+  if (
+    pending.some(
+      (entry, index) =>
+        index > 0 && compareIntegrationBranch(pending[index - 1] as IntegrationBranch, entry) >= 0,
+    )
+  )
+    return false;
+  if (merged.length > pending.length) return false;
+  for (const [index, entry] of merged.entries()) {
+    const planned = pending[index];
+    if (
+      planned === undefined ||
+      entry.workerId !== planned.workerId ||
+      entry.subtaskId !== planned.subtaskId ||
+      entry.branch !== planned.worktree.branch ||
+      entry.headCommit !== planned.worktree.headCommit
+    ) {
+      return false;
+    }
+  }
+  const progressHead = merged.at(-1)?.mergeCommit ?? value.base.commit;
+  if (value.status !== 'idle' && value.integrationWorktree.headCommit !== progressHead)
+    return false;
+  if (value.status === 'idle') {
+    return merged.length === 0 && conflicts.length === 0 && value.resultCommit === undefined;
+  }
+  if (value.status === 'conflict') {
+    const conflict = conflicts[0];
+    const planned = pending[merged.length];
+    return (
+      conflicts.length === 1 &&
+      conflict !== undefined &&
+      planned !== undefined &&
+      conflict.workerId === planned.workerId &&
+      conflict.subtaskId === planned.subtaskId &&
+      conflict.branch === planned.worktree.branch &&
+      conflict.headCommit === planned.worktree.headCommit &&
+      value.resultCommit === undefined
+    );
+  }
+  if (conflicts.length !== 0) return false;
+  if (value.status === 'done') {
+    return (
+      merged.length === pending.length &&
+      value.resultCommit !== undefined &&
+      value.resultCommit === progressHead
+    );
+  }
+  if (value.resultCommit !== undefined) return false;
+  return true;
+}
+
+function isIntegrationBranch(value: unknown): value is IntegrationBranch {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ['workerId', 'subtaskId', 'worktree', 'topologicalRank']) &&
+    typeof value.workerId === 'string' &&
+    value.workerId.length > 0 &&
+    typeof value.subtaskId === 'string' &&
+    value.subtaskId.length > 0 &&
+    isWorktreeRef(value.worktree) &&
+    value.worktree.headCommit !== undefined &&
+    typeof value.topologicalRank === 'number' &&
+    Number.isInteger(value.topologicalRank) &&
+    value.topologicalRank >= 0
+  );
+}
+
+function isMergedBranch(value: unknown): value is MergedIntegrationBranch {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ['workerId', 'subtaskId', 'branch', 'headCommit', 'mergeCommit']) &&
+    typeof value.workerId === 'string' &&
+    value.workerId.length > 0 &&
+    typeof value.subtaskId === 'string' &&
+    value.subtaskId.length > 0 &&
+    typeof value.branch === 'string' &&
+    isGitSafeBranch(value.branch) &&
+    isGitObjectId(value.headCommit) &&
+    isGitObjectId(value.mergeCommit)
+  );
+}
+
+function isIntegrationConflict(value: unknown): value is IntegrationConflict {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ['workerId', 'subtaskId', 'branch', 'headCommit', 'files']) &&
+    typeof value.workerId === 'string' &&
+    value.workerId.length > 0 &&
+    typeof value.subtaskId === 'string' &&
+    value.subtaskId.length > 0 &&
+    typeof value.branch === 'string' &&
+    isGitSafeBranch(value.branch) &&
+    isGitObjectId(value.headCommit) &&
+    Array.isArray(value.files) &&
+    value.files.length > 0 &&
+    value.files.every((file) => typeof file === 'string' && file.length > 0)
+  );
+}
+
+function compareIntegrationBranch(left: IntegrationBranch, right: IntegrationBranch): number {
+  return (
+    left.topologicalRank - right.topologicalRank || left.workerId.localeCompare(right.workerId)
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
+  return Object.keys(value).every((key) => allowed.includes(key));
 }
 
 export function isSubtaskPriority(value: unknown): value is number | undefined {
@@ -64,7 +319,7 @@ export interface WorkerState {
   executor: ExecutorType;
   status: WorkerStatus;
   subtaskId?: string;
-  worktree?: string;
+  worktree?: PersistedWorktreeRef;
   sessionId?: string;
   safePoint?: string;
   startedTs: number;
@@ -86,7 +341,7 @@ export function isWorkerState(value: unknown): value is WorkerState {
     Number.isInteger(record.startedTs) &&
     record.startedTs >= 0 &&
     (record.subtaskId === undefined || typeof record.subtaskId === 'string') &&
-    (record.worktree === undefined || typeof record.worktree === 'string') &&
+    (record.worktree === undefined || isPersistedWorktreeRef(record.worktree)) &&
     (record.sessionId === undefined || typeof record.sessionId === 'string') &&
     (record.safePoint === undefined || typeof record.safePoint === 'string')
   );
@@ -185,7 +440,7 @@ export interface AppState {
   objections: Objection[];
   architecture?: Record<string, unknown>;
   conventions?: Record<string, unknown>;
-  pendingPatch?: Record<string, unknown>;
+  integration?: Integration;
   testResults?: TestResults;
   nextRole?: string;
   humanGate?: HumanGate;

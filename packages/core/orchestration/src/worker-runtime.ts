@@ -1,4 +1,4 @@
-import type { AppState, Mutation, RoleSpec, WorkerState } from '@agora/core-domain';
+import type { AppState, Mutation, RoleSpec, WorkerState, WorktreeRef } from '@agora/core-domain';
 import { applyMutations, mergeByIdMutation } from '@agora/core-domain';
 import {
   type PauseMode,
@@ -18,7 +18,9 @@ export interface WorkerRuntimeDeps {
   loadRoster?: () => Promise<readonly RoleSpec[]>;
   loadState?: () => Promise<AppState | undefined>;
   sessionIdForAssignment?: (assignment: Assignment) => string | undefined;
-  buildExecutor(spec: RoleSpec, assign: Assignment): Executor;
+  buildExecutor(spec: RoleSpec, assign: Assignment, worktree?: WorktreeRef): Executor;
+  resolveWorktree?: (state: AppState, assignment: Assignment) => Promise<WorktreeRef>;
+  refreshWorktree?: (worktree: WorktreeRef) => Promise<WorktreeRef>;
   buildChannelContext?: (
     state: AppState,
     role: string,
@@ -66,6 +68,7 @@ interface WorkerHandle {
   resolveDrain?: (safePointRef: string) => void;
   rejectDrain?: (error: unknown) => void;
   pause?: WorkerPauseControl;
+  worktree?: WorktreeRef;
 }
 
 interface WorkerPauseControl {
@@ -466,6 +469,8 @@ export class WorkerRuntime {
     parallel: boolean,
   ): Promise<void> {
     const spec = this.specOf(assign.role, await this.currentRoster());
+    const beforeWorkspace = await join.latest();
+    const resolvedWorktree = await this.deps.resolveWorktree?.(beforeWorkspace, assign);
     const running = await join.commit(async (current) => {
       const worker = current.workers.find((entry) => entry.workerId === assign.workerId);
       if (worker === undefined) throw new Error(`worker "${assign.workerId}" was not registered`);
@@ -484,17 +489,24 @@ export class WorkerRuntime {
       if (resumeSessionId !== undefined && !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(resumeSessionId)) {
         throw new Error('assigned sessionId must match [A-Za-z0-9][A-Za-z0-9._:-]*');
       }
+      if (resolvedWorktree !== undefined) {
+        assertAssignmentWorktree(current, assign, resolvedWorktree);
+      }
       return this.transitionStep(current, assign.role, [
         mergeByIdMutation('workers', assign.workerId, {
           status: 'running',
+          ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
           ...(resumeSessionId === undefined ? {} : { sessionId: resumeSessionId }),
         }),
+        ...(resolvedWorktree === undefined || assign.subtaskId === undefined
+          ? []
+          : [mergeByIdMutation('subtasks', assign.subtaskId, { worktree: resolvedWorktree })]),
       ]);
     });
     const worker = running.workers.find((entry) => entry.workerId === assign.workerId);
     if (worker === undefined)
       throw new Error(`worker "${assign.workerId}" disappeared after start`);
-    const executor = this.deps.buildExecutor(spec, assign);
+    const executor = this.deps.buildExecutor(spec, assign, resolvedWorktree);
     const handle: WorkerHandle = {
       id: assign.workerId,
       role: assign.role,
@@ -504,6 +516,7 @@ export class WorkerRuntime {
       join,
       done: false,
       drainRequested: false,
+      ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
     };
     this.active.set(handle.id, handle);
     try {
@@ -565,6 +578,12 @@ export class WorkerRuntime {
         sessionId: handle.sessionId,
         view: project(current, handle.role, roster, channelContext),
       });
+      const completedWorktree =
+        result.kind === 'done' &&
+        handle.worktree !== undefined &&
+        this.deps.refreshWorktree !== undefined
+          ? await this.deps.refreshWorktree(handle.worktree)
+          : undefined;
       await join.commit(async (canonical) => {
         this.assertCanonicalHandle(canonical, handle);
         const roleStillEnabled = (await this.currentRoster()).some(
@@ -584,10 +603,23 @@ export class WorkerRuntime {
         return this.transitionStep(canonical, handle.role, [
           ...mutations,
           ...(result.kind === 'done'
-            ? [mergeByIdMutation('workers', handle.id, { status: 'done' })]
+            ? [
+                mergeByIdMutation('workers', handle.id, {
+                  status: 'done',
+                  ...(completedWorktree === undefined ? {} : { worktree: completedWorktree }),
+                }),
+                ...(completedWorktree === undefined || handle.subtaskId === undefined
+                  ? []
+                  : [
+                      mergeByIdMutation('subtasks', handle.subtaskId, {
+                        worktree: completedWorktree,
+                      }),
+                    ]),
+              ]
             : []),
         ]);
       });
+      if (completedWorktree !== undefined) handle.worktree = completedWorktree;
       if (handle.drainRequested) {
         if (result.kind === 'done') {
           const safePointRef = await handle.executor.saveSafePoint();
@@ -931,6 +963,26 @@ export class WorkerRuntime {
       return this.deps.transitionStep(state, role, mutations);
     }
     return this.transition(state, mutations);
+  }
+}
+
+function assertAssignmentWorktree(
+  state: AppState,
+  assignment: Assignment,
+  worktree: WorktreeRef,
+): void {
+  const worker = state.workers.find((entry) => entry.workerId === assignment.workerId);
+  if (worker === undefined) throw new Error(`worker "${assignment.workerId}" is missing`);
+  for (const persisted of [
+    worker.worktree,
+    assignment.subtaskId === undefined
+      ? undefined
+      : state.subtasks.find((entry) => entry.id === assignment.subtaskId)?.worktree,
+  ]) {
+    if (persisted === undefined || typeof persisted === 'string') continue;
+    if (!deepEqual(persisted, worktree)) {
+      throw new Error(`worker "${assignment.workerId}" worktree conflicts with persisted state`);
+    }
   }
 }
 
