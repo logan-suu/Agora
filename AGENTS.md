@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
 **版本**：v2.4
-**生效日期**：2026-09-05
+**生效日期**：2026-09-07
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
