@@ -156,6 +156,11 @@ export class TaskOrchestrationRuntime {
           throw new TaskGoalConflictError(input, existingRun.goal);
         }
         if (existingRun.pendingFinalization !== undefined) {
+          if (existingRun.composition === undefined) {
+            existingRun.status = 'needs_attention';
+            const summary = await this.#requiredSummary(input);
+            return { ...summary, requestId: input.requestId, startOutcome: 'needs_attention' };
+          }
           const pending = existingRun.pendingFinalization;
           existingRun.status = 'running';
           existingRun.error = undefined;
