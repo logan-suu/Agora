@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-09-07T12:58:58.000Z",
+  "last_updated": "2026-09-07T18:12:44.000Z",
   "items": [
     {
       "id": "DEF-001",

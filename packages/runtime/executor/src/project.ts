@@ -197,9 +197,68 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
 }
 
 function branchOrIntegration(state: AppState): unknown {
-  const worktrees = state.subtasks
-    // A completed CODER subtask is precisely what TESTER/REVIEWER must inspect
-    // and what the integration service later consumes.
+  const candidates =
+    state.integration === undefined
+      ? sequentialWorktreeCandidates(state)
+      : state.integration.pendingBranches.map((planned) => {
+          const worker = state.workers.find((entry) => entry.workerId === planned.workerId);
+          const subtask = state.subtasks.find((entry) => entry.id === planned.subtaskId);
+          if (
+            worker === undefined ||
+            worker.status !== 'done' ||
+            worker.subtaskId !== planned.subtaskId ||
+            worker.worktree === undefined ||
+            typeof worker.worktree === 'string' ||
+            subtask === undefined ||
+            subtask.worktree === undefined ||
+            typeof subtask.worktree === 'string' ||
+            !sameWorktreeRef(planned.worktree, worker.worktree) ||
+            !sameWorktreeRef(planned.worktree, subtask.worktree)
+          ) {
+            throw new Error(
+              `Integration branch "${planned.workerId}" conflicts with canonical WorkerState/Subtask`,
+            );
+          }
+          return {
+            workerId: worker.workerId,
+            subtaskId: subtask.id,
+            worktree: structuredClone(planned.worktree),
+            startedTs: worker.startedTs,
+          };
+        });
+  if (state.integration === undefined && candidates.length > 1) {
+    const first = candidates[0]?.worktree;
+    if (
+      first === undefined ||
+      candidates.some((entry) => !sameWorktreeRef(first, entry.worktree))
+    ) {
+      throw new Error('multiple review worktrees require canonical Integration');
+    }
+  }
+  const selected =
+    state.integration === undefined && candidates.length > 0
+      ? [
+          [...candidates].sort(
+            (left, right) =>
+              right.startedTs - left.startedTs || left.workerId.localeCompare(right.workerId),
+          )[0] as (typeof candidates)[number],
+        ]
+      : candidates;
+  const worktrees = selected
+    .map(({ startedTs: _startedTs, ...entry }) => entry)
+    .sort(
+      (left, right) =>
+        left.subtaskId.localeCompare(right.subtaskId) ||
+        left.workerId.localeCompare(right.workerId),
+    );
+  return {
+    worktrees,
+    integration: state.integration === undefined ? null : structuredClone(state.integration),
+  };
+}
+
+function sequentialWorktreeCandidates(state: AppState) {
+  return state.subtasks
     .filter((subtask) => subtask.worktree !== undefined)
     .map((subtask) => {
       const subtaskWorktree = subtask.worktree;
@@ -235,17 +294,9 @@ function branchOrIntegration(state: AppState): unknown {
         workerId: worker.workerId,
         subtaskId: subtask.id,
         worktree: structuredClone(subtaskWorktree),
+        startedTs: worker.startedTs,
       };
-    })
-    .sort(
-      (left, right) =>
-        left.subtaskId.localeCompare(right.subtaskId) ||
-        left.workerId.localeCompare(right.workerId),
-    );
-  return {
-    worktrees,
-    integration: state.integration === undefined ? null : structuredClone(state.integration),
-  };
+    });
 }
 
 function sameWorktreeRef(left: WorktreeRef, right: WorktreeRef): boolean {

@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import { access, cp, mkdir, rename, rm } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { access, cp, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
 import {
@@ -47,9 +47,23 @@ import {
   WorktreeGitService,
 } from '@agora/tools-git';
 
-import type { TaskCompositionFactory } from './task-orchestration-runtime';
+import type { ArchivedArtifact, TaskCompositionFactory } from './task-orchestration-runtime';
 
 const TEST_RESULTS_FILE = 'test-results.json';
+
+export interface ArtifactArchivePlanEntry {
+  id: string;
+  sourcePath: string;
+  archivedPath: string;
+  relativePath: string;
+  worktree?: WorktreeRef;
+}
+
+export interface ArtifactArchivePlan {
+  destination: string;
+  bundled: boolean;
+  entries: readonly ArtifactArchivePlanEntry[];
+}
 
 export interface WebTaskCompositionOptions {
   sandboxConfig?: SandboxConfig;
@@ -159,10 +173,11 @@ export function createWebTaskCompositionFactory(
       resume?.state.integration?.integrationWorktree.path ??
       [...(resume?.state.subtasks ?? [])].reverse().find((entry) => entry.worktree !== undefined)
         ?.worktree;
-    let artifactPath =
+    const fallbackArtifactPath =
       legacyWorktree?.path ??
       (typeof resumedArtifactPath === 'string' ? resumedArtifactPath : resumedArtifactPath?.path) ??
       join(taskRoot, 'repository');
+    let artifactPath = fallbackArtifactPath;
     const executors: HarnessExecutor[] = [];
     let latestExecutor: HarnessExecutor | undefined;
     let latestRole: string | undefined;
@@ -586,28 +601,161 @@ export function createWebTaskCompositionFactory(
           'artifacts',
           'worktree',
         );
+        const state = await loadState();
+        const plan = buildArtifactArchivePlan(state, fallbackArtifactPath, destination);
+        const archived: ArchivedArtifact = {
+          path: destination,
+          worktrees: plan.entries.map((entry) => ({
+            sourcePath: entry.sourcePath,
+            archivedPath: entry.archivedPath,
+          })),
+        };
         try {
           await access(destination);
-          return destination;
+          return archived;
         } catch {
           // The first terminalization creates the immutable Phase 5 artifact snapshot.
         }
-        await mkdir(dirname(destination), { recursive: true });
-        const temporary = `${destination}.${randomUUID()}.tmp`;
-        try {
-          const state = await loadState();
-          const source = state?.integration?.integrationWorktree.path ?? artifactPath;
-          await cp(source, temporary, { recursive: true });
-          await rename(temporary, destination);
-        } catch (error) {
-          await rm(temporary, { recursive: true, force: true });
-          throw error;
-        }
-        return destination;
+        await materializeArtifactArchive(plan);
+        return archived;
       },
       dispose: () => releaseRuntimeResources(true),
     };
   };
+}
+
+export function buildArtifactArchivePlan(
+  state: AppState | undefined,
+  fallbackPath: string,
+  destination: string,
+): ArtifactArchivePlan {
+  const candidates: Array<{
+    id: string;
+    sortKey: string;
+    sourcePath: string;
+    worktree?: WorktreeRef;
+  }> = [];
+  const add = (
+    id: string,
+    worktree: WorktreeRef | string | undefined,
+    subtaskId = '',
+    workerId = '',
+  ): void => {
+    if (worktree === undefined) return;
+    candidates.push({
+      id,
+      sortKey: `${subtaskId}\u0000${workerId}\u0000${id}`,
+      sourcePath: typeof worktree === 'string' ? worktree : worktree.path,
+      ...(typeof worktree === 'string' ? {} : { worktree }),
+    });
+  };
+
+  if (state?.integration?.status === 'done') {
+    add(`integration:${state.integration.integrationId}`, state.integration.integrationWorktree);
+  } else {
+    if (state?.integration !== undefined) {
+      add(`integration:${state.integration.integrationId}`, state.integration.integrationWorktree);
+      for (const branch of state.integration.pendingBranches) {
+        add(
+          `pending:${branch.workerId}:${branch.subtaskId}`,
+          branch.worktree,
+          branch.subtaskId,
+          branch.workerId,
+        );
+      }
+    }
+    for (const subtask of state?.subtasks ?? []) {
+      const workerId = state?.workers
+        .filter((worker) => worker.subtaskId === subtask.id)
+        .map((worker) => worker.workerId)
+        .sort()[0];
+      add(`subtask:${subtask.id}`, subtask.worktree, subtask.id, workerId ?? '');
+    }
+    for (const worker of state?.workers ?? []) {
+      add(
+        `worker:${worker.workerId}`,
+        worker.worktree,
+        worker.subtaskId ?? '\uffff',
+        worker.workerId,
+      );
+    }
+  }
+  if (candidates.length === 0) add('canonical', fallbackPath);
+
+  const unique = [...candidates]
+    .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+    .filter(
+      (candidate, index, all) =>
+        all.findIndex((entry) => entry.sourcePath === candidate.sourcePath) === index,
+    );
+  const bundled = unique.length > 1;
+  return {
+    destination,
+    bundled,
+    entries: unique.map((entry, index) => {
+      const relativePath = bundled
+        ? join(
+            'worktrees',
+            `${String(index).padStart(3, '0')}-${createHash('sha256')
+              .update(entry.id)
+              .digest('hex')
+              .slice(0, 12)}`,
+          )
+        : '';
+      const { sortKey: _sortKey, ...publicEntry } = entry;
+      return {
+        ...publicEntry,
+        relativePath,
+        archivedPath: relativePath.length === 0 ? destination : join(destination, relativePath),
+      };
+    }),
+  };
+}
+
+export async function materializeArtifactArchive(plan: ArtifactArchivePlan): Promise<void> {
+  await mkdir(dirname(plan.destination), { recursive: true });
+  const temporary = `${plan.destination}.${randomUUID()}.tmp`;
+  try {
+    if (plan.bundled) {
+      await mkdir(join(temporary, 'worktrees'), { recursive: true });
+      for (const entry of plan.entries) {
+        await cp(entry.sourcePath, join(temporary, entry.relativePath), { recursive: true });
+      }
+      await writeFile(
+        join(temporary, 'artifact-manifest.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            kind: 'parallel-worktree-bundle',
+            entries: plan.entries.map((entry) => ({
+              id: entry.id,
+              path: entry.relativePath,
+              ...(entry.worktree === undefined
+                ? {}
+                : {
+                    branch: entry.worktree.branch,
+                    baseCommit: entry.worktree.baseCommit,
+                    ...(entry.worktree.headCommit === undefined
+                      ? {}
+                      : { headCommit: entry.worktree.headCommit }),
+                  }),
+            })),
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
+    } else {
+      const entry = plan.entries[0];
+      if (entry === undefined) throw new Error('artifact archive plan is empty');
+      await cp(entry.sourcePath, temporary, { recursive: true });
+    }
+    await rename(temporary, plan.destination);
+  } catch (error) {
+    await rm(temporary, { recursive: true, force: true });
+    throw error;
+  }
 }
 
 function assertSafePointComposition(

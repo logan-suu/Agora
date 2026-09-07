@@ -38,6 +38,23 @@ class HostExecutionBackend implements WorkspaceExecutionBackend {
   async teardown() {}
 }
 
+class FailOnceExecutionBackend extends HostExecutionBackend {
+  #failed = false;
+
+  override async bindWorktree(
+    taskId: string,
+    key: string,
+    worktree: { path: string },
+    taskRoot: string,
+  ) {
+    if (!this.#failed) {
+      this.#failed = true;
+      throw new Error('injected bind failure');
+    }
+    await super.bindWorktree(taskId, key, worktree, taskRoot);
+  }
+}
+
 const roots: string[] = [];
 
 afterEach(async () => {
@@ -67,6 +84,27 @@ async function fixture() {
   return { adapter, execution, git, taskRoot };
 }
 
+async function fixtureWithExecution(execution: WorkspaceExecutionBackend) {
+  const dataRoot = await mkdtemp(join(tmpdir(), 'agora-workspace-adapter-'));
+  roots.push(dataRoot);
+  const taskRoot = join(dataRoot, 'projects/project-a/tasks/task-a');
+  await mkdir(taskRoot, { recursive: true });
+  const git = new WorktreeGitService(
+    new WorktreeRegistry(),
+    join(taskRoot, 'repository'),
+    join(taskRoot, 'worktrees'),
+  );
+  const adapter = new WorkspaceAdapter({
+    projectId: 'project-a',
+    taskId: 'task-a',
+    taskRoot,
+    git,
+    execution,
+    encodeIsolationKey: encodeGitIsolationKey,
+  });
+  return { adapter, git };
+}
+
 describe('WorkspaceAdapter', () => {
   it('creates distinct deterministic linked worktrees for same-role workers and binds those exact paths', async () => {
     const { adapter, execution, taskRoot } = await fixture();
@@ -81,6 +119,17 @@ describe('WorkspaceAdapter', () => {
     expect(execution.bindings.get('worker:dispatch:0')).toBe(first.path);
     await adapter.write(first, 'proof.txt', 'worker zero');
     await expect(adapter.read(first, 'proof.txt')).resolves.toBe('worker zero');
+  });
+
+  it('compensates a linked worktree when execution binding fails so the same worker can retry', async () => {
+    const execution = new FailOnceExecutionBackend();
+    const { adapter } = await fixtureWithExecution(execution);
+
+    await expect(adapter.createWorktree('task-a', 'worker:dispatch:0')).rejects.toThrow(
+      'injected bind failure',
+    );
+    const retried = await adapter.createWorktree('task-a', 'worker:dispatch:0');
+    expect(execution.bindings.get('worker:dispatch:0')).toBe(retried.path);
   });
 
   it('merges only in its dedicated integration worktree and aborts on the first conflict', async () => {

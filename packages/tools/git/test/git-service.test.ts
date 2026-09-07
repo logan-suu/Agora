@@ -1,5 +1,6 @@
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -9,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { WorktreeRegistry } from '@agora/tools-fs';
 import { simpleGit } from 'simple-git';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -127,6 +128,9 @@ describe('WorktreeGitService', () => {
       'a.',
       '.a',
       'a@{b',
+      'worker.lock',
+      '@',
+      `control-${String.fromCharCode(1)}`,
     ]) {
       expect(() => validateBranchName(bad), `name: ${bad}`).toThrow('invalid branch name');
       await expect(service.createWorktree('t1', bad)).rejects.toThrow('invalid branch name');
@@ -166,6 +170,49 @@ describe('WorktreeGitService', () => {
       baseCommit,
       headCommit,
     });
+  });
+
+  it('rejects an existing repository that is not linked to the configured canonical repo', async () => {
+    const parent = mkdtempSync(join(tmpdir(), 'agora-git-foreign-worktree-'));
+    roots.push(parent);
+    const main = join(parent, 'repository');
+    const worktrees = join(parent, 'worktrees');
+    const service = new WorktreeGitService(new WorktreeRegistry(), main, worktrees);
+    await service.canonicalHead();
+    const foreign = join(worktrees, 'foreign');
+    mkdirSync(foreign, { recursive: true });
+    await initializeRegisteredWorktree(new WorktreeRegistry(), foreign);
+
+    await expect(service.registerExistingWorktree(foreign)).rejects.toThrow('canonical repository');
+  });
+
+  it('compensates a worktree created immediately before cancellation so retry can reuse its identity', async () => {
+    const registry = new WorktreeRegistry();
+    const service = new WorktreeGitService(registry);
+    let checks = 0;
+    const signal = {
+      throwIfAborted() {
+        checks += 1;
+        if (checks === 2) throw new DOMException('This operation was aborted', 'AbortError');
+      },
+    } as AbortSignal;
+
+    await expect(
+      service.createWorktreeFrom(
+        't1',
+        'worker-cancel-after-add',
+        await service.canonicalHead(),
+        signal,
+      ),
+    ).rejects.toThrow('aborted');
+    const retried = track(
+      await service.createWorktreeFrom(
+        't1',
+        'worker-cancel-after-add',
+        await service.canonicalHead(),
+      ),
+    );
+    expect(existsSync(retried.path)).toBe(true);
   });
 
   it('rejects task ids that could escape the worktrees directory (R7)', async () => {
@@ -364,7 +411,10 @@ describe('WorktreeGitService', () => {
 
     const conflict = await service.mergeInWorktree(integration.path, workerB.branch);
     expect(conflict).toMatchObject({ ok: false, conflicts: ['conflict.txt'] });
-    expect(existsSync(join(integration.path, '.git', 'MERGE_HEAD'))).toBe(false);
+    const mergeHead = (
+      await simpleGit(integration.path).revparse(['--git-path', 'MERGE_HEAD'])
+    ).trim();
+    expect(existsSync(resolve(integration.path, mergeHead))).toBe(false);
     expect(await simpleGit(integration.path).raw(['status', '--porcelain'])).toBe('');
   });
 

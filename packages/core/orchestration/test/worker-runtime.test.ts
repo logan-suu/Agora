@@ -1257,4 +1257,38 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     expect(result.workers[0]?.worktree).toEqual(submitted);
     expect(result.subtasks[0]?.worktree).toEqual(submitted);
   });
+
+  it('accepts an equivalent persisted worktree regardless of object key insertion order', async () => {
+    const assigned = {
+      workerId: 'worker:workspace:order',
+      role: 'CODER' as const,
+      subtaskId: 's-0',
+    };
+    const persisted = {
+      branch: 'worker-order',
+      path: '/data/task/worktrees/worker-order',
+      baseCommit: 'a'.repeat(40),
+    };
+    const resolved = {
+      path: persisted.path,
+      branch: persisted.branch,
+      baseCommit: persisted.baseCommit,
+    };
+    const seed = applyMutations(createInitialAppState('t-1', 'g'), [
+      mergeByIdMutation('subtasks', 's-0', {
+        title: 'workspace',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'in_progress',
+        worktree: persisted,
+      }),
+    ]);
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      resolveWorktree: async () => resolved,
+      buildExecutor: () => new FakeExecutor([stepOf('done', [])]),
+    });
+
+    await expect(runtime.runOne(seed, assigned)).resolves.toBeDefined();
+  });
 });

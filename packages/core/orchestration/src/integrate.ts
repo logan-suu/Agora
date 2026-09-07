@@ -20,6 +20,7 @@ export interface IntegrationWorkspacePort {
   refreshWorktree(ref: WorktreeRef): Promise<WorktreeRef>;
   integrate(base: string, branches: string[]): Promise<{ merged: boolean; conflicts: string[] }>;
   isAncestor(ancestor: string, descendant: string): Promise<boolean>;
+  parentsOf(commit: string): Promise<readonly string[]>;
   resetIntegration(ref: WorktreeRef, baseCommit: string): Promise<WorktreeRef>;
 }
 
@@ -70,7 +71,7 @@ export class IntegrationService {
         integrationId,
         waveId: input.waveId,
         base: { branch: baseBranch, commit: baseCommit },
-        integrationWorktree,
+        integrationWorktree: { ...integrationWorktree, headCommit: baseCommit },
         pendingBranches: branches,
         mergedBranches: [],
         conflicts: [],
@@ -106,12 +107,23 @@ export class IntegrationService {
         throw new Error('integration worktree HEAD is unavailable');
       }
       if (target.headCommit !== expectedHead) {
-        const alreadyMerged =
-          (await this.workspace.isAncestor(expectedHead, target.headCommit)) &&
-          (await this.workspace.isAncestor(
-            branch.worktree.headCommit as string,
-            target.headCommit,
-          ));
+        const branchHead = branch.worktree.headCommit as string;
+        const laterBranches = integration.pendingBranches.slice(
+          integration.pendingBranches.indexOf(branch) + 1,
+        );
+        const containsLaterBranch = await someAsync(laterBranches, (later) =>
+          this.workspace.isAncestor(
+            later.worktree.headCommit as string,
+            target.headCommit as string,
+          ),
+        );
+        const parents = await this.workspace.parentsOf(target.headCommit);
+        const fastForward =
+          target.headCommit === branchHead &&
+          (await this.workspace.isAncestor(expectedHead, target.headCommit));
+        const exactMerge =
+          parents.length === 2 && parents[0] === expectedHead && parents[1] === branchHead;
+        const alreadyMerged = !containsLaterBranch && (fastForward || exactMerge);
         if (!alreadyMerged)
           throw new Error('integration worktree HEAD drifted from persisted progress');
         integration = appendMerged(integration, branch, target.headCommit);
@@ -125,6 +137,7 @@ export class IntegrationService {
       if (!merged.merged) {
         integration = {
           ...integration,
+          integrationWorktree: target,
           conflicts: [
             {
               workerId: branch.workerId,
@@ -158,6 +171,16 @@ export class IntegrationService {
     current = await this.transition(current, [setMutation('integration', integration)]);
     return { state: current };
   }
+}
+
+async function someAsync<T>(
+  values: readonly T[],
+  predicate: (value: T) => Promise<boolean>,
+): Promise<boolean> {
+  for (const value of values) {
+    if (await predicate(value)) return true;
+  }
+  return false;
 }
 
 function plannedBranches(state: AppState, workerIds: readonly string[]): IntegrationBranch[] {

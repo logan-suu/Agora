@@ -23,6 +23,8 @@ export interface WorkspaceGitCapability {
     branch: string,
   ): Promise<{ ok: boolean; conflicts?: string[]; headCommit?: string }>;
   isAncestor(ancestor: string, descendant: string): Promise<boolean>;
+  parentsOf(commit: string): Promise<readonly string[]>;
+  retireWorktree(path: string, branch: string): Promise<void>;
   resetWorktree(path: string, commit: string): Promise<void>;
   dispose(): Promise<void>;
 }
@@ -80,11 +82,18 @@ export class WorkspaceAdapter implements RecoverableSandboxManager {
       const baseCommit = await this.#git.canonicalHead();
       const branch = this.#encodeIsolationKey(this.#projectId, taskId, isolationKey);
       const worktree = await this.#git.createWorktreeFrom(taskId, branch, baseCommit);
-      this.#assertOwnedPath(worktree.path);
-      const ref: WorktreeRef = { ...worktree, baseCommit };
-      await this.#execution.bindWorktree(taskId, isolationKey, worktree, this.#taskRoot);
-      this.#remember(isolationKey, ref);
-      return worktree;
+      try {
+        this.#assertOwnedPath(worktree.path);
+        const ref: WorktreeRef = { ...worktree, baseCommit };
+        await this.#execution.bindWorktree(taskId, isolationKey, worktree, this.#taskRoot);
+        this.#remember(isolationKey, ref);
+        return worktree;
+      } catch (error) {
+        await this.#git.retireWorktree(worktree.path, worktree.branch).catch((cleanupError) => {
+          throw new AggregateError([error, cleanupError], 'worktree bind and compensation failed');
+        });
+        throw error;
+      }
     });
   }
 
@@ -103,11 +112,21 @@ export class WorkspaceAdapter implements RecoverableSandboxManager {
         .slice(0, 16);
       const branch = `integration-${digest}`;
       const worktree = await this.#git.createWorktreeFrom(this.#taskId, branch, baseCommit);
-      this.#assertOwnedPath(worktree.path);
-      const ref: WorktreeRef = { ...worktree, baseCommit };
-      await this.#execution.bindWorktree(this.#taskId, isolationKey, worktree, this.#taskRoot);
-      this.#remember(isolationKey, ref);
-      return structuredClone(ref);
+      try {
+        this.#assertOwnedPath(worktree.path);
+        const ref: WorktreeRef = { ...worktree, baseCommit, headCommit: baseCommit };
+        await this.#execution.bindWorktree(this.#taskId, isolationKey, worktree, this.#taskRoot);
+        this.#remember(isolationKey, ref);
+        return structuredClone(ref);
+      } catch (error) {
+        await this.#git.retireWorktree(worktree.path, worktree.branch).catch((cleanupError) => {
+          throw new AggregateError(
+            [error, cleanupError],
+            'integration worktree bind and compensation failed',
+          );
+        });
+        throw error;
+      }
     });
   }
 
@@ -119,6 +138,10 @@ export class WorkspaceAdapter implements RecoverableSandboxManager {
 
   async isAncestor(ancestor: string, descendant: string): Promise<boolean> {
     return this.#git.isAncestor(ancestor, descendant);
+  }
+
+  async parentsOf(commit: string): Promise<readonly string[]> {
+    return this.#git.parentsOf(commit);
   }
 
   async resetIntegration(ref: WorktreeRef, baseCommit: string): Promise<WorktreeRef> {

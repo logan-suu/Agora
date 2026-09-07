@@ -171,6 +171,7 @@ describe('humanGate durable lifecycle planning (task 8.1)', () => {
         ...worktree,
         path: '/data/task/worktrees/integration',
         branch: 'integration-a',
+        headCommit: 'a'.repeat(40),
       },
       pendingBranches: [{ workerId: 'worker-a', subtaskId: 'st-a', worktree, topologicalRank: 0 }],
       mergedBranches: [],

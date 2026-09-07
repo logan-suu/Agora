@@ -97,7 +97,29 @@ export interface Integration {
 }
 
 const GIT_OBJECT_ID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
-const GIT_SAFE_BRANCH = /^(?![.-])(?!.*(?:\.\.|@\{|[~^:?*[\\\s/]))(?!.*\.$).+$/;
+const GIT_UNSAFE_BRANCH_CHAR = /[~^:?*[\\/]/;
+
+function hasGitUnsafeControlChar(value: string): boolean {
+  return [...value].some((char) => {
+    const code = char.charCodeAt(0);
+    return code <= 0x20 || code === 0x7f;
+  });
+}
+
+function isGitSafeBranch(value: string): boolean {
+  return (
+    value.length > 0 &&
+    value !== '@' &&
+    !value.startsWith('.') &&
+    !value.startsWith('-') &&
+    !value.endsWith('.') &&
+    !value.endsWith('.lock') &&
+    !value.includes('..') &&
+    !value.includes('@{') &&
+    !hasGitUnsafeControlChar(value) &&
+    !GIT_UNSAFE_BRANCH_CHAR.test(value)
+  );
+}
 
 export function isGitObjectId(value: unknown): value is string {
   return typeof value === 'string' && GIT_OBJECT_ID.test(value);
@@ -110,7 +132,7 @@ export function isWorktreeRef(value: unknown): value is WorktreeRef {
     typeof value.path === 'string' &&
     value.path.startsWith('/') &&
     typeof value.branch === 'string' &&
-    GIT_SAFE_BRANCH.test(value.branch) &&
+    isGitSafeBranch(value.branch) &&
     isGitObjectId(value.baseCommit) &&
     (value.headCommit === undefined || isGitObjectId(value.headCommit))
   );
@@ -141,7 +163,7 @@ export function isIntegration(value: unknown): value is Integration {
     !isRecord(value.base) ||
     !hasOnlyKeys(value.base, ['branch', 'commit']) ||
     typeof value.base.branch !== 'string' ||
-    !GIT_SAFE_BRANCH.test(value.base.branch) ||
+    !isGitSafeBranch(value.base.branch) ||
     !isGitObjectId(value.base.commit) ||
     !isWorktreeRef(value.integrationWorktree) ||
     !Array.isArray(value.pendingBranches) ||
@@ -161,6 +183,8 @@ export function isIntegration(value: unknown): value is Integration {
     !conflicts.every(isIntegrationConflict)
   )
     return false;
+  if (pending.length === 0 || value.integrationWorktree.baseCommit !== value.base.commit)
+    return false;
   const pendingWorkerIds = pending.map((entry) => entry.workerId);
   const pendingSubtaskIds = pending.map((entry) => entry.subtaskId);
   if (
@@ -175,16 +199,48 @@ export function isIntegration(value: unknown): value is Integration {
     )
   )
     return false;
-  if (
-    merged.some(
-      (entry) =>
-        !pendingWorkerIds.includes(entry.workerId) || !pendingSubtaskIds.includes(entry.subtaskId),
-    )
-  )
+  if (merged.length > pending.length) return false;
+  for (const [index, entry] of merged.entries()) {
+    const planned = pending[index];
+    if (
+      planned === undefined ||
+      entry.workerId !== planned.workerId ||
+      entry.subtaskId !== planned.subtaskId ||
+      entry.branch !== planned.worktree.branch ||
+      entry.headCommit !== planned.worktree.headCommit
+    ) {
+      return false;
+    }
+  }
+  const progressHead = merged.at(-1)?.mergeCommit ?? value.base.commit;
+  if (value.status !== 'idle' && value.integrationWorktree.headCommit !== progressHead)
     return false;
-  if (value.status === 'conflict' ? conflicts.length === 0 : conflicts.length !== 0) return false;
-  if (value.status === 'done' ? value.resultCommit === undefined : value.resultCommit !== undefined)
-    return false;
+  if (value.status === 'idle') {
+    return merged.length === 0 && conflicts.length === 0 && value.resultCommit === undefined;
+  }
+  if (value.status === 'conflict') {
+    const conflict = conflicts[0];
+    const planned = pending[merged.length];
+    return (
+      conflicts.length === 1 &&
+      conflict !== undefined &&
+      planned !== undefined &&
+      conflict.workerId === planned.workerId &&
+      conflict.subtaskId === planned.subtaskId &&
+      conflict.branch === planned.worktree.branch &&
+      conflict.headCommit === planned.worktree.headCommit &&
+      value.resultCommit === undefined
+    );
+  }
+  if (conflicts.length !== 0) return false;
+  if (value.status === 'done') {
+    return (
+      merged.length === pending.length &&
+      value.resultCommit !== undefined &&
+      value.resultCommit === progressHead
+    );
+  }
+  if (value.resultCommit !== undefined) return false;
   return true;
 }
 
@@ -213,7 +269,7 @@ function isMergedBranch(value: unknown): value is MergedIntegrationBranch {
     typeof value.subtaskId === 'string' &&
     value.subtaskId.length > 0 &&
     typeof value.branch === 'string' &&
-    GIT_SAFE_BRANCH.test(value.branch) &&
+    isGitSafeBranch(value.branch) &&
     isGitObjectId(value.headCommit) &&
     isGitObjectId(value.mergeCommit)
   );
@@ -228,7 +284,7 @@ function isIntegrationConflict(value: unknown): value is IntegrationConflict {
     typeof value.subtaskId === 'string' &&
     value.subtaskId.length > 0 &&
     typeof value.branch === 'string' &&
-    GIT_SAFE_BRANCH.test(value.branch) &&
+    isGitSafeBranch(value.branch) &&
     isGitObjectId(value.headCommit) &&
     Array.isArray(value.files) &&
     value.files.length > 0 &&

@@ -1,6 +1,7 @@
 import {
   type AppState,
   type HumanGateRequest,
+  type Mutation,
   mergeByIdMutation,
   type RoleSpec,
   setMutation,
@@ -60,8 +61,13 @@ export interface TaskComposition {
   integrate?: (state: AppState) => Promise<IntegrateWaveResult>;
   saveSafePoints(): Promise<readonly string[]>;
   suspend(): Promise<void>;
-  archiveArtifact(): Promise<string>;
+  archiveArtifact(): Promise<ArchivedArtifact>;
   dispose(): Promise<void>;
+}
+
+export interface ArchivedArtifact {
+  path: string;
+  worktrees: readonly { sourcePath: string; archivedPath: string }[];
 }
 
 export type TaskCompositionFactory = (input: {
@@ -89,6 +95,7 @@ interface ActiveRun {
   status: Exclude<TaskRunStatus, 'interrupted'>;
   composition: TaskComposition | undefined;
   promise: Promise<void>;
+  artifactPath: string | undefined;
   error: string | undefined;
 }
 
@@ -207,6 +214,7 @@ export class TaskOrchestrationRuntime {
         status: 'running',
         composition,
         promise: Promise.resolve(),
+        artifactPath: undefined,
         error: undefined,
       };
       this.#runs.set(scopeKey(input), run);
@@ -235,7 +243,7 @@ export class TaskOrchestrationRuntime {
             : 'needs_attention',
       );
     }
-    return summaryFrom(state, run.status, run.error);
+    return summaryFrom(state, run.status, run.error, run.artifactPath);
   }
 
   async waitForIdle(scope: TaskScope): Promise<void> {
@@ -393,6 +401,7 @@ export class TaskOrchestrationRuntime {
         status: 'running',
         composition,
         promise: Promise.resolve(),
+        artifactPath: undefined,
         error: undefined,
       };
       this.#runs.set(scopeKey(scope), run);
@@ -435,37 +444,67 @@ export class TaskOrchestrationRuntime {
     }
 
     try {
-      const archivedPath = await composition.archiveArtifact();
+      const archived = await composition.archiveArtifact();
       const state = await this.messages.store.load(scope);
-      if (state?.integration !== undefined) {
-        await this.messages.commitMutations(scope, [
-          setMutation('integration', {
-            ...state.integration,
-            integrationWorktree: {
-              ...state.integration.integrationWorktree,
-              path: archivedPath,
-            },
-          }),
-        ]);
-      } else {
-        const subtask = state?.subtasks.find((entry) => {
-          const path = typeof entry.worktree === 'string' ? entry.worktree : entry.worktree?.path;
-          return path === composition.artifactPath;
+      if (state === undefined) throw new Error('task state disappeared before artifact archival');
+      const archivedBySource = new Map(
+        archived.worktrees.map((entry) => [entry.sourcePath, entry.archivedPath]),
+      );
+      const mutations: Mutation[] = [];
+      if (state.integration !== undefined) {
+        const integrationPath = archivedBySource.get(state.integration.integrationWorktree.path);
+        const pendingBranches = state.integration.pendingBranches.map((entry) => {
+          const path = archivedBySource.get(entry.worktree.path);
+          return path === undefined ? entry : { ...entry, worktree: { ...entry.worktree, path } };
         });
-        if (subtask === undefined) {
-          throw new Error('task artifact worktree is missing from persisted state');
+        if (
+          integrationPath !== undefined ||
+          pendingBranches.some(
+            (entry, index) => entry !== state.integration?.pendingBranches[index],
+          )
+        ) {
+          mutations.push(
+            setMutation('integration', {
+              ...state.integration,
+              integrationWorktree: {
+                ...state.integration.integrationWorktree,
+                path: integrationPath ?? state.integration.integrationWorktree.path,
+              },
+              pendingBranches,
+            }),
+          );
         }
-        const worktree = subtask.worktree;
-        await this.messages.commitMutations(scope, [
-          mergeByIdMutation('subtasks', subtask.id, {
-            worktree:
-              typeof worktree === 'string' ? archivedPath : { ...worktree, path: archivedPath },
-          }),
-        ]);
       }
+      for (const subtask of state.subtasks) {
+        const worktree = subtask.worktree;
+        const sourcePath = typeof worktree === 'string' ? worktree : worktree?.path;
+        const path = sourcePath === undefined ? undefined : archivedBySource.get(sourcePath);
+        if (path === undefined || worktree === undefined) continue;
+        mutations.push(
+          mergeByIdMutation('subtasks', subtask.id, {
+            worktree: typeof worktree === 'string' ? path : { ...worktree, path },
+          }),
+        );
+      }
+      for (const worker of state.workers) {
+        const worktree = worker.worktree;
+        const sourcePath = typeof worktree === 'string' ? worktree : worktree?.path;
+        const path = sourcePath === undefined ? undefined : archivedBySource.get(sourcePath);
+        if (path === undefined || worktree === undefined) continue;
+        mutations.push(
+          mergeByIdMutation('workers', worker.workerId, {
+            worktree: typeof worktree === 'string' ? path : { ...worktree, path },
+          }),
+        );
+      }
+      if (mutations.length > 0) await this.messages.commitMutations(scope, mutations);
+      run.artifactPath = archived.path;
     } catch (error) {
-      terminalStatus = 'failed';
+      terminalStatus = 'needs_attention';
       terminalError = joinErrors(terminalError, `artifact archive failed: ${errorMessage(error)}`);
+      run.status = terminalStatus;
+      run.error = terminalError;
+      return;
     }
 
     try {
@@ -529,7 +568,12 @@ function joinErrors(current: string | undefined, next: string): string {
   return current === undefined ? next : `${current}; ${next}`;
 }
 
-function summaryFrom(state: AppState, runStatus: TaskRunStatus, error?: string): TaskSummary {
+function summaryFrom(
+  state: AppState,
+  runStatus: TaskRunStatus,
+  error?: string,
+  archivedArtifactPath?: string,
+): TaskSummary {
   const worktree =
     state.integration?.integrationWorktree ??
     state.subtasks.find((subtask) => subtask.worktree !== undefined)?.worktree;
@@ -542,7 +586,7 @@ function summaryFrom(state: AppState, runStatus: TaskRunStatus, error?: string):
     phase: state.phase,
     currentRole: state.nextRole ?? null,
     testResults: state.testResults ?? null,
-    artifactPath: artifactPath ?? null,
+    artifactPath: archivedArtifactPath ?? artifactPath ?? null,
     messageCount: state.messages.length,
     ...(error === undefined ? {} : { error }),
   };

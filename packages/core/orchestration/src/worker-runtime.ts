@@ -980,7 +980,7 @@ function assertAssignmentWorktree(
       : state.subtasks.find((entry) => entry.id === assignment.subtaskId)?.worktree,
   ]) {
     if (persisted === undefined || typeof persisted === 'string') continue;
-    if (JSON.stringify(persisted) !== JSON.stringify(worktree)) {
+    if (!deepEqual(persisted, worktree)) {
       throw new Error(`worker "${assignment.workerId}" worktree conflicts with persisted state`);
     }
   }

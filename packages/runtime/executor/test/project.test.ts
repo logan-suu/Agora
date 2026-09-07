@@ -585,6 +585,132 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     ).toThrow('unmigrated legacy worktree');
   });
 
+  it('limits branchOrIntegration to the canonical Integration wave instead of historical subtasks', () => {
+    const oldWorktree = {
+      path: '/wt/old',
+      branch: 'worker-old-abc123',
+      baseCommit: 'a'.repeat(40),
+      headCommit: 'c'.repeat(40),
+    };
+    const state = makeState({
+      subtasks: [
+        {
+          id: 'st-old',
+          title: 'old',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'done',
+          worktree: oldWorktree,
+        },
+        {
+          id: 'st-current',
+          title: 'current',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'done',
+          worktree: WORKTREE,
+        },
+      ],
+      workers: [
+        {
+          workerId: 'worker:old:0',
+          role: 'CODER',
+          executor: 'harness',
+          status: 'done',
+          subtaskId: 'st-old',
+          worktree: oldWorktree,
+          startedTs: 1,
+        },
+        {
+          workerId: 'worker:current:0',
+          role: 'CODER',
+          executor: 'harness',
+          status: 'done',
+          subtaskId: 'st-current',
+          worktree: WORKTREE,
+          startedTs: 2,
+        },
+      ],
+      integration: {
+        integrationId: 'integration-current',
+        waveId: 'wave-current',
+        base: { branch: 'main', commit: 'a'.repeat(40) },
+        integrationWorktree: {
+          path: '/wt/integration',
+          branch: 'integration-current',
+          baseCommit: 'a'.repeat(40),
+          headCommit: 'a'.repeat(40),
+        },
+        pendingBranches: [
+          {
+            workerId: 'worker:current:0',
+            subtaskId: 'st-current',
+            worktree: WORKTREE,
+            topologicalRank: 0,
+          },
+        ],
+        mergedBranches: [],
+        conflicts: [],
+        status: 'merging',
+      },
+    });
+
+    expect(slicesOf(state, 'REVIEWER').branchOrIntegration).toMatchObject({
+      worktrees: [{ workerId: 'worker:current:0', subtaskId: 'st-current', worktree: WORKTREE }],
+    });
+  });
+
+  it('fails closed without Integration when sequential candidates point at different worktrees', () => {
+    const other = {
+      path: '/wt/b',
+      branch: 'worker-b-abc123',
+      baseCommit: 'a'.repeat(40),
+      headCommit: 'c'.repeat(40),
+    };
+    const state = makeState({
+      subtasks: [
+        {
+          id: 'st-a',
+          title: 'a',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'done',
+          worktree: WORKTREE,
+        },
+        {
+          id: 'st-b',
+          title: 'b',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'done',
+          worktree: other,
+        },
+      ],
+      workers: [
+        {
+          workerId: 'worker:a',
+          role: 'CODER',
+          executor: 'harness',
+          status: 'done',
+          subtaskId: 'st-a',
+          worktree: WORKTREE,
+          startedTs: 1,
+        },
+        {
+          workerId: 'worker:b',
+          role: 'CODER',
+          executor: 'harness',
+          status: 'done',
+          subtaskId: 'st-b',
+          worktree: other,
+          startedTs: 2,
+        },
+      ],
+    });
+
+    expect(() => slicesOf(state, 'TESTER')).toThrow('require canonical Integration');
+  });
+
   it('TESTER interfaceContracts: architecture.interfaces passthrough with {} defaults', () => {
     const interfaces = [{ name: 'Cache', method: 'get' }];
     expect(

@@ -131,6 +131,7 @@ function successfulFactory(
   gate: Promise<void>,
   lifecycle: { archived: number; disposed: number } = { archived: 0, disposed: 0 },
   failCoder = false,
+  failArchive = false,
 ): TaskCompositionFactory {
   return async ({ scope, goal, transition, resume }) => {
     const initialWorktree: WorktreeRef = {
@@ -216,7 +217,16 @@ function successfulFactory(
       suspend: async () => undefined,
       archiveArtifact: async () => {
         lifecycle.archived += 1;
-        return `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`;
+        if (failArchive) throw new Error('injected archive failure');
+        return {
+          path: `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`,
+          worktrees: [
+            {
+              sourcePath: '/tmp/agora-demo-artifact',
+              archivedPath: `/durable/${scope.projectId}/${scope.taskId}/artifacts/worktree`,
+            },
+          ],
+        };
       },
       dispose: async () => {
         lifecycle.disposed += 1;
@@ -332,7 +342,15 @@ describe('TaskOrchestrationRuntime', () => {
         artifactPath: '/tmp/agora-directive-artifact',
         saveSafePoints: async () => [],
         suspend: async () => {},
-        archiveArtifact: async () => '/tmp/agora-directive-artifact',
+        archiveArtifact: async () => ({
+          path: '/tmp/agora-directive-artifact',
+          worktrees: [
+            {
+              sourcePath: '/tmp/agora-directive-artifact',
+              archivedPath: '/tmp/agora-directive-artifact',
+            },
+          ],
+        }),
         dispose: async () => {},
       };
     };
@@ -829,6 +847,27 @@ describe('TaskOrchestrationRuntime', () => {
       error: 'scripted worker failure',
     });
     expect(lifecycle).toEqual({ archived: 1, disposed: 1 });
+  });
+
+  it('keeps source resources alive when artifact archival needs attention', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const lifecycle = { archived: 0, disposed: 0 };
+    const scope = { projectId: 'project-a', taskId: 'archive-failed-task' };
+    const runtime = new TaskOrchestrationRuntime(
+      messages,
+      successfulFactory(Promise.resolve(), lifecycle, true, true),
+    );
+
+    await runtime.start({ ...scope, requestId: 'request-archive-failed', goal: 'Preserve output' });
+    await runtime.waitForIdle(scope);
+
+    await expect(runtime.summary(scope)).resolves.toMatchObject({
+      runStatus: 'needs_attention',
+      error: expect.stringContaining('artifact archive failed: injected archive failure'),
+    });
+    expect(lifecycle).toEqual({ archived: 1, disposed: 0 });
   });
 
   it('exposes create/start and refresh recovery through the task HTTP handlers', async () => {

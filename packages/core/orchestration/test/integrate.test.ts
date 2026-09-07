@@ -85,6 +85,11 @@ class FakeWorkspace implements IntegrationWorkspacePort {
       (ancestor === HEAD_B && descendant === MERGE_B)
     );
   }
+  async parentsOf(commit: string) {
+    if (commit === MERGE_A) return [BASE, HEAD_A];
+    if (commit === MERGE_B) return [MERGE_A, HEAD_B];
+    return [];
+  }
   async resetIntegration(ref: ReturnType<typeof worktree>, baseCommit: string) {
     this.head = baseCommit;
     return { ...ref, baseCommit, headCommit: baseCommit };
@@ -173,5 +178,78 @@ describe('IntegrationService', () => {
       status: 'done',
       base: { commit: BASE },
     });
+  });
+
+  it('recovers exactly one merge whose State response was lost', async () => {
+    const initialWorkspace = new FakeWorkspace();
+    const initialService = new IntegrationService(initialWorkspace, async (current, mutations) =>
+      applyMutations(current, mutations),
+    );
+    const completed = await initialService.integrateWave(state(), {
+      waveId: 'wave-1',
+      workerIds: ['worker-a', 'worker-b'],
+    });
+    const integration = completed.state.integration;
+    if (integration === undefined) throw new Error('expected Integration');
+    const { resultCommit: _resultCommit, ...inProgress } = integration;
+    const stale = {
+      ...completed.state,
+      integration: {
+        ...inProgress,
+        integrationWorktree: { ...integration.integrationWorktree, headCommit: BASE },
+        mergedBranches: [],
+        conflicts: [],
+        status: 'merging' as const,
+      },
+    };
+    const workspace = new FakeWorkspace();
+    workspace.head = MERGE_A;
+    const service = new IntegrationService(workspace, async (current, mutations) =>
+      applyMutations(current, mutations),
+    );
+
+    const recovered = await service.integrateWave(stale, {
+      waveId: 'wave-1',
+      workerIds: ['worker-a', 'worker-b'],
+    });
+
+    expect(workspace.merged).toEqual(['worker-b']);
+    expect(recovered.state.integration).toMatchObject({ status: 'done', resultCommit: MERGE_B });
+  });
+
+  it('fails closed when the actual integration HEAD already contains a later pending branch', async () => {
+    const initialWorkspace = new FakeWorkspace();
+    const initialService = new IntegrationService(initialWorkspace, async (current, mutations) =>
+      applyMutations(current, mutations),
+    );
+    const completed = await initialService.integrateWave(state(), {
+      waveId: 'wave-1',
+      workerIds: ['worker-a', 'worker-b'],
+    });
+    const integration = completed.state.integration;
+    if (integration === undefined) throw new Error('expected Integration');
+    const { resultCommit: _resultCommit, ...inProgress } = integration;
+    const stale = {
+      ...completed.state,
+      integration: {
+        ...inProgress,
+        integrationWorktree: { ...integration.integrationWorktree, headCommit: BASE },
+        mergedBranches: [],
+        conflicts: [],
+        status: 'merging' as const,
+      },
+    };
+    const workspace = new FakeWorkspace();
+    workspace.head = MERGE_B;
+    const service = new IntegrationService(workspace, async (current, mutations) =>
+      applyMutations(current, mutations),
+    );
+
+    await expect(
+      service.integrateWave(stale, {
+        waveId: 'wave-1',
+        workerIds: ['worker-a', 'worker-b'],
+      }),
+    ).rejects.toThrow('drifted');
   });
 });
