@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   accessSync,
   existsSync,
@@ -27,6 +28,24 @@ export interface MergeResult {
   ok: boolean;
   /** Conflicting paths, or a human-readable reason when the merge could not run. */
   conflicts?: string[];
+  /** Target worktree HEAD after a successful merge. */
+  headCommit?: string;
+}
+
+export function encodeGitIsolationKey(
+  projectId: string,
+  taskId: string,
+  isolationKey: string,
+): string {
+  if (projectId.length === 0 || taskId.length === 0 || isolationKey.length === 0) {
+    throw new Error('Git isolation identity parts must be non-empty');
+  }
+  const readable = isolationKey.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[.-]+|[.-]+$/g, '');
+  const digest = createHash('sha256')
+    .update(`${projectId}\u0000${taskId}\u0000${isolationKey}`)
+    .digest('hex')
+    .slice(0, 16);
+  return validateBranchName(`worker-${(readable || 'isolated').slice(0, 48)}-${digest}`);
 }
 
 /**
@@ -158,13 +177,14 @@ export class WorktreeGitService implements GitService {
   private disposed = false;
   private mainRepo: SimpleGit | undefined;
 
-  constructor(registry: WorktreeRegistry, mainRepoPath?: string) {
+  constructor(registry: WorktreeRegistry, mainRepoPath?: string, worktreesDir?: string) {
     this.registry = registry;
     if (mainRepoPath !== undefined) {
       this.mainRepoPath = mainRepoPath;
       // Namespace caller-owned worktrees by repository so sibling repositories
       // cannot race on the same task/branch directory.
-      this.worktreesDir = join(dirname(mainRepoPath), `${basename(mainRepoPath)}-worktrees`);
+      this.worktreesDir =
+        worktreesDir ?? join(dirname(mainRepoPath), `${basename(mainRepoPath)}-worktrees`);
     } else {
       // Lazily-created temp main repo: a base temp dir holds `main/` and `worktrees/`.
       const base = mkdtempSync(join(tmpdir(), 'agora-git-'));
@@ -209,17 +229,125 @@ export class WorktreeGitService implements GitService {
     name: string,
     signal?: AbortSignal,
   ): Promise<{ path: string; branch: string }> {
+    const main = await this.getMainRepo();
+    const baseCommit = (await main.revparse(['HEAD'])).trim();
+    return this.createWorktreeFrom(taskId, name, baseCommit, signal);
+  }
+
+  async createWorktreeFrom(
+    taskId: string,
+    name: string,
+    baseCommit: string,
+    signal?: AbortSignal,
+  ): Promise<{ path: string; branch: string }> {
     const safeTaskId = validateTaskId(taskId);
     const branch = validateBranchName(name);
     const main = await this.getMainRepo();
+    const baseRef = validateRefArg(baseCommit, 'base commit');
     const path = join(this.worktreesDir, `${safeTaskId}-${branch}`);
     signal?.throwIfAborted();
     // simple-git 3.x has no typed worktree task; drive `git worktree add` via raw.
-    await main.raw(['worktree', 'add', path, '-b', branch]);
+    await main.raw(['worktree', 'add', path, '-b', branch, baseRef]);
     signal?.throwIfAborted();
     this.registry.register(path);
     this.createdWorktrees.push(path);
     return { path, branch };
+  }
+
+  async headOf(worktree: string): Promise<string> {
+    const canonicalRoot = this.assertRegistered(worktree);
+    return (await simpleGit(canonicalRoot).revparse(['HEAD'])).trim();
+  }
+
+  async branchOf(worktree: string): Promise<string> {
+    const canonicalRoot = this.assertRegistered(worktree);
+    return (await simpleGit(canonicalRoot).revparse(['--abbrev-ref', 'HEAD'])).trim();
+  }
+
+  async canonicalHead(): Promise<string> {
+    return (await (await this.getMainRepo()).revparse(['HEAD'])).trim();
+  }
+
+  async canonicalBranch(): Promise<string> {
+    return (await (await this.getMainRepo()).revparse(['--abbrev-ref', 'HEAD'])).trim();
+  }
+
+  async registerExistingWorktree(
+    worktree: string,
+    expectedBranch?: string,
+  ): Promise<{ path: string; branch: string; headCommit: string }> {
+    await this.getMainRepo();
+    const lexical = resolve(worktree);
+    this.registry.register(lexical);
+    try {
+      const branch = await this.branchOf(lexical);
+      if (expectedBranch !== undefined && branch !== expectedBranch) {
+        throw new Error(
+          `persisted worktree branch mismatch: expected ${expectedBranch}, received ${branch}`,
+        );
+      }
+      const headCommit = await this.headOf(lexical);
+      if (!this.createdWorktrees.includes(lexical)) this.createdWorktrees.push(lexical);
+      return { path: realpathSync(lexical), branch, headCommit };
+    } catch (error) {
+      this.registry.unregister(lexical);
+      throw error;
+    }
+  }
+
+  async inspectLegacyWorktree(
+    worktree: string,
+  ): Promise<{ path: string; branch: string; baseCommit: string; headCommit: string }> {
+    const registered = await this.registerExistingWorktree(worktree);
+    const mainHead = await this.canonicalHead();
+    const baseCommit = (
+      await simpleGit(registered.path).raw(['merge-base', registered.headCommit, mainHead])
+    ).trim();
+    return { ...registered, baseCommit };
+  }
+
+  async resetWorktree(worktree: string, commit: string): Promise<void> {
+    const target = this.assertRegistered(worktree);
+    await simpleGit(target).reset(['--hard', validateRefArg(commit, 'reset commit')]);
+  }
+
+  async isAncestor(ancestor: string, descendant: string): Promise<boolean> {
+    const main = await this.getMainRepo();
+    const ancestorRef = validateRefArg(ancestor, 'ancestor');
+    const descendantRef = validateRefArg(descendant, 'descendant');
+    try {
+      await main.raw(['merge-base', '--is-ancestor', ancestorRef, descendantRef]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async mergeInWorktree(
+    targetWorktree: string,
+    branch: string,
+    signal?: AbortSignal,
+  ): Promise<MergeResult> {
+    const target = this.assertRegistered(targetWorktree);
+    const branchRef = validateRefArg(branch, 'branch');
+    const git = simpleGit(target);
+    try {
+      signal?.throwIfAborted();
+      const result = await git.merge([branchRef]);
+      if (result.result.includes('CONFLICT')) {
+        const conflicts = conflictPaths(result);
+        await git.raw(['merge', '--abort']).catch(() => undefined);
+        return { ok: false, conflicts };
+      }
+      return { ok: true, headCommit: (await git.revparse(['HEAD'])).trim() };
+    } catch (error) {
+      const conflicts =
+        error instanceof GitResponseError && error.git.conflicts.length > 0
+          ? conflictPaths(error.git as SimpleGitMergeResult)
+          : [humanMessage(error, `cannot merge branch: ${branchRef}`)];
+      await git.raw(['merge', '--abort']).catch(() => undefined);
+      return { ok: false, conflicts };
+    }
   }
 
   /**
@@ -295,10 +423,13 @@ export class WorktreeGitService implements GitService {
     }
     mkdirSync(this.mainRepoPath, { recursive: true });
     const git = simpleGit(this.mainRepoPath);
-    await git.init();
-    await git.addConfig('user.name', 'Agora');
-    await git.addConfig('user.email', 'agora@localhost');
-    await git.commit('initial', [], { '--allow-empty': null });
+    if (!(await git.checkIsRepo())) {
+      await git.init();
+      await git.addConfig('user.name', 'Agora');
+      await git.addConfig('user.email', 'agora@localhost');
+      await git.add(['-A']);
+      await git.commit('initial', [], { '--allow-empty': null });
+    }
     this.mainRepo = git;
     return git;
   }

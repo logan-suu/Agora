@@ -7,6 +7,7 @@ import {
 } from '@agora/core-domain';
 import {
   type HumanGateResolutionReceipt,
+  type IntegrateWaveResult,
   materializeHumanGate,
   runOrchestration,
   type StateTransition,
@@ -56,6 +57,7 @@ export interface TaskComposition {
   roster: readonly RoleSpec[];
   loadRoster?: () => Promise<readonly RoleSpec[]>;
   artifactPath: string;
+  integrate?: (state: AppState) => Promise<IntegrateWaveResult>;
   saveSafePoints(): Promise<readonly string[]>;
   suspend(): Promise<void>;
   archiveArtifact(): Promise<string>;
@@ -414,6 +416,7 @@ export class TaskOrchestrationRuntime {
         roster: composition.roster,
         ...(composition.loadRoster === undefined ? {} : { loadRoster: composition.loadRoster }),
         transition,
+        ...(composition.integrate === undefined ? {} : { integrate: composition.integrate }),
         suspendAtHumanGate: (_state, request) => this.#suspendAtHumanGate(scope, request),
       });
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
@@ -434,13 +437,32 @@ export class TaskOrchestrationRuntime {
     try {
       const archivedPath = await composition.archiveArtifact();
       const state = await this.messages.store.load(scope);
-      const subtask = state?.subtasks.find((entry) => entry.worktree === composition.artifactPath);
-      if (subtask === undefined) {
-        throw new Error('task artifact worktree is missing from persisted state');
+      if (state?.integration !== undefined) {
+        await this.messages.commitMutations(scope, [
+          setMutation('integration', {
+            ...state.integration,
+            integrationWorktree: {
+              ...state.integration.integrationWorktree,
+              path: archivedPath,
+            },
+          }),
+        ]);
+      } else {
+        const subtask = state?.subtasks.find((entry) => {
+          const path = typeof entry.worktree === 'string' ? entry.worktree : entry.worktree?.path;
+          return path === composition.artifactPath;
+        });
+        if (subtask === undefined) {
+          throw new Error('task artifact worktree is missing from persisted state');
+        }
+        const worktree = subtask.worktree;
+        await this.messages.commitMutations(scope, [
+          mergeByIdMutation('subtasks', subtask.id, {
+            worktree:
+              typeof worktree === 'string' ? archivedPath : { ...worktree, path: archivedPath },
+          }),
+        ]);
       }
-      await this.messages.commitMutations(scope, [
-        mergeByIdMutation('subtasks', subtask.id, { worktree: archivedPath }),
-      ]);
     } catch (error) {
       terminalStatus = 'failed';
       terminalError = joinErrors(terminalError, `artifact archive failed: ${errorMessage(error)}`);
@@ -508,7 +530,10 @@ function joinErrors(current: string | undefined, next: string): string {
 }
 
 function summaryFrom(state: AppState, runStatus: TaskRunStatus, error?: string): TaskSummary {
-  const artifactPath = state.subtasks.find((subtask) => subtask.worktree !== undefined)?.worktree;
+  const worktree =
+    state.integration?.integrationWorktree ??
+    state.subtasks.find((subtask) => subtask.worktree !== undefined)?.worktree;
+  const artifactPath = typeof worktree === 'string' ? worktree : worktree?.path;
   return {
     projectId: state.projectId,
     taskId: state.taskId,

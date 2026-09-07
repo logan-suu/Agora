@@ -4,6 +4,7 @@ export * from './complexity';
 export * from './coordinator';
 export * from './global-scheduler';
 export * from './human-gate';
+export * from './integrate';
 export * from './message-service';
 export * from './objection';
 export * from './orchestrator';

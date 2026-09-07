@@ -3,6 +3,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -13,6 +14,7 @@ import { WorktreeRegistry } from '@agora/tools-fs';
 import { simpleGit } from 'simple-git';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  encodeGitIsolationKey,
   GIT_TEARDOWN_STAGING,
   initializeRegisteredWorktree,
   validateBranchName,
@@ -130,6 +132,40 @@ describe('WorktreeGitService', () => {
       await expect(service.createWorktree('t1', bad)).rejects.toThrow('invalid branch name');
     }
     expect(validateBranchName('feature-ok')).toBe('feature-ok');
+  });
+
+  it('encodes logical worker ids deterministically without Git-ref collisions', () => {
+    const first = encodeGitIsolationKey('project-a', 'task-a', 'worker:dispatch:0');
+    const replay = encodeGitIsolationKey('project-a', 'task-a', 'worker:dispatch:0');
+    const sibling = encodeGitIsolationKey('project-a', 'task-a', 'worker/dispatch/0');
+
+    expect(first).toBe(replay);
+    expect(first).not.toBe(sibling);
+    expect(first).toMatch(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
+    expect(() => validateBranchName(first)).not.toThrow();
+  });
+
+  it('migrates a legacy string path by inspecting its real Git branch, base, and HEAD', async () => {
+    const parent = mkdtempSync(join(tmpdir(), 'agora-git-legacy-migration-'));
+    roots.push(parent);
+    const main = join(parent, 'repository');
+    const worktrees = join(parent, 'worktrees');
+    const creator = new WorktreeGitService(new WorktreeRegistry(), main, worktrees);
+    const created = await creator.createWorktree('task-a', 'legacy-worker');
+    const baseCommit = await creator.canonicalHead();
+    writeFileSync(join(created.path, 'migrated.txt'), 'legacy\n');
+    await simpleGit(created.path).add(['-A']);
+    await simpleGit(created.path).commit('legacy work');
+    const headCommit = (await simpleGit(created.path).revparse(['HEAD'])).trim();
+
+    // Simulate a process restart where State still contains only the old path.
+    const restarted = new WorktreeGitService(new WorktreeRegistry(), main, worktrees);
+    await expect(restarted.inspectLegacyWorktree(created.path)).resolves.toEqual({
+      path: realpathSync(created.path),
+      branch: 'legacy-worker',
+      baseCommit,
+      headCommit,
+    });
   });
 
   it('rejects task ids that could escape the worktrees directory (R7)', async () => {
@@ -297,6 +333,39 @@ describe('WorktreeGitService', () => {
 
     await mainGit.checkout(defaultBranch);
     expect(existsSync(join(main, 'feature.txt'))).toBe(true);
+  });
+
+  it('merges in a dedicated linked worktree and aborts a real conflict', async () => {
+    const registry = new WorktreeRegistry();
+    const root = mkdtempSync(join(tmpdir(), 'agora-git-integration-'));
+    roots.push(root);
+    const main = join(root, 'repository');
+    const worktrees = join(root, 'worktrees');
+    const service = new WorktreeGitService(registry, main, worktrees);
+    const workerA = track(await service.createWorktree('t1', 'worker-a'));
+    const baseCommit = await service.headOf(workerA.path);
+    const workerB = track(await service.createWorktreeFrom('t1', 'worker-b', baseCommit));
+    const integration = track(
+      await service.createWorktreeFrom('t1', 'integration-wave-1', baseCommit),
+    );
+
+    writeFileSync(join(workerA.path, 'conflict.txt'), 'worker-a\n');
+    await simpleGit(workerA.path).add(['-A']);
+    await simpleGit(workerA.path).commit('worker a');
+    writeFileSync(join(workerB.path, 'conflict.txt'), 'worker-b\n');
+    await simpleGit(workerB.path).add(['-A']);
+    await simpleGit(workerB.path).commit('worker b');
+
+    const first = await service.mergeInWorktree(integration.path, workerA.branch);
+    expect(first.ok).toBe(true);
+    expect(
+      await service.isAncestor(await service.headOf(workerA.path), first.headCommit as string),
+    ).toBe(true);
+
+    const conflict = await service.mergeInWorktree(integration.path, workerB.branch);
+    expect(conflict).toMatchObject({ ok: false, conflicts: ['conflict.txt'] });
+    expect(existsSync(join(integration.path, '.git', 'MERGE_HEAD'))).toBe(false);
+    expect(await simpleGit(integration.path).raw(['status', '--porcelain'])).toBe('');
   });
 
   it('returns ok:false when the target branch is checked out by a linked worktree', async () => {

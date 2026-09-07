@@ -156,6 +156,84 @@ describe('humanGate durable lifecycle planning (task 8.1)', () => {
     ).toThrow('must match paused workers one-to-one');
   });
 
+  it('accepts only a conflict contributor for an integration request_rework ruling', () => {
+    const worktree = {
+      path: '/data/task/worktrees/worker-a',
+      branch: 'worker-a',
+      baseCommit: 'a'.repeat(40),
+      headCommit: 'b'.repeat(40),
+    };
+    const integration = {
+      integrationId: 'integration-1',
+      waveId: 'wave-1',
+      base: { branch: 'main', commit: 'a'.repeat(40) },
+      integrationWorktree: {
+        ...worktree,
+        path: '/data/task/worktrees/integration',
+        branch: 'integration-a',
+      },
+      pendingBranches: [{ workerId: 'worker-a', subtaskId: 'st-a', worktree, topologicalRank: 0 }],
+      mergedBranches: [],
+      conflicts: [
+        {
+          workerId: 'worker-a',
+          subtaskId: 'st-a',
+          branch: 'worker-a',
+          headCommit: 'b'.repeat(40),
+          files: ['same.ts'],
+        },
+      ],
+      status: 'conflict' as const,
+    };
+    const state = applyMutations(createInitialAppState('task-1', 'goal', 'project-1'), [
+      mergeByIdMutation('subtasks', 'st-a', {
+        title: 'a',
+        ownerRole: 'CODER',
+        dependsOn: [],
+        status: 'blocked',
+        worktree,
+      }),
+      setMutation('integration', integration),
+      setMutation(
+        'humanGate',
+        materializeHumanGate(
+          {
+            triggerMsgId: 'integration-1',
+            triggerTs: 123,
+            reason: 'integration_conflict:integration-1',
+            options: ['request_rework'],
+            phase: 'integrating',
+          },
+          [],
+        ),
+      ),
+    ]);
+
+    expect(() =>
+      planHumanGateResolution(state, {
+        actionId: 'resolve-wrong',
+        gateId: 'human-gate:integration-1',
+        option: 'request_rework',
+        argument: 'worker-b',
+        enabledRoles: [],
+      }),
+    ).toThrow('conflict contributor');
+    const plan = planHumanGateResolution(state, {
+      actionId: 'resolve-a',
+      gateId: 'human-gate:integration-1',
+      option: 'request_rework',
+      argument: 'worker-a',
+      enabledRoles: [],
+    });
+    const resolved = applyMutations(state, plan.mutations);
+    expect(resolved.subtasks[0]?.status).toBe('todo');
+    expect(resolved.integration).toMatchObject({
+      status: 'idle',
+      mergedBranches: [],
+      conflicts: [],
+    });
+  });
+
   it('requires the unavailable role to be enabled before retry', () => {
     const base = createInitialAppState('task-1', 'goal');
     const state = applyMutations(base, [

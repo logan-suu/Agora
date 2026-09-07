@@ -17,6 +17,8 @@ export interface OrchestrationDeps {
   transition?: StateTransition;
   /** D4 composition-root hook: flush durable checkpoints before persisting a complete gate. */
   suspendAtHumanGate?: (state: AppState, request: HumanGateRequest) => Promise<AppState>;
+  /** Phase 9 explicit integration node; Coordinator topology wiring lands in 9.4. */
+  integrate?: (state: AppState) => Promise<{ state: AppState; gateRequest?: HumanGateRequest }>;
 }
 
 export function entry(state: AppState): AppState {
@@ -59,7 +61,23 @@ export async function runOrchestration(
         state = await transition(state, [setMutation('phase', 'done')]);
         break;
       case 'integrate':
-        throw new Error('integrate node is excluded from the Phase 0 slice (spec §9)');
+        if (deps.integrate === undefined) {
+          throw new Error('integrate node requires the Phase 9 integration service');
+        }
+        {
+          const result = await deps.integrate(state);
+          state = result.state;
+          if (result.gateRequest !== undefined) {
+            state =
+              deps.suspendAtHumanGate === undefined
+                ? await transition(state, [
+                    setMutation('humanGate', materializeHumanGate(result.gateRequest, [])),
+                  ])
+                : await deps.suspendAtHumanGate(state, result.gateRequest);
+            return state;
+          }
+        }
+        break;
       case 'human_gate':
         state =
           deps.suspendAtHumanGate === undefined

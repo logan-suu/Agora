@@ -3,14 +3,17 @@ import { access, cp, mkdir, rename, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
 import {
+  type AppState,
   applyMutations,
   createInitialAppState,
   mergeByIdMutation,
   type RoleSpec,
   type TestResults,
+  type WorktreeRef,
 } from '@agora/core-domain';
 import {
   GlobalScheduler,
+  IntegrationService,
   validateHumanGateWorkerResumes,
   WorkerRuntime,
 } from '@agora/core-orchestration';
@@ -29,14 +32,20 @@ import {
 } from '@agora/runtime-executor';
 import {
   createSandbox,
+  DockerSandbox,
   isRecoverableSandboxManager,
   type SandboxConfig,
   type SandboxManager,
+  WorkspaceAdapter,
   type Worktree,
 } from '@agora/runtime-sandbox';
 import { createToolCatalog, type ToolCatalog } from '@agora/tools-bridge';
 import { WorktreeRegistry } from '@agora/tools-fs';
-import { initializeRegisteredWorktree, WorktreeGitService } from '@agora/tools-git';
+import {
+  encodeGitIsolationKey,
+  initializeRegisteredWorktree,
+  WorktreeGitService,
+} from '@agora/tools-git';
 
 import type { TaskCompositionFactory } from './task-orchestration-runtime';
 
@@ -66,57 +75,99 @@ export function createWebTaskCompositionFactory(
     loadRoster,
     resume,
   }) => {
-    const sandbox = options.sandbox ?? createSandbox(options.sandboxConfig ?? { kind: 'docker' });
     const dataRoot = resolve(options.dataRoot ?? join(process.cwd(), '.data'));
-    let worktree: Worktree;
-    if (resume === undefined) {
-      worktree = await sandbox.createWorktree(scope.taskId, 'shared');
-    } else {
-      const paths = [
-        ...new Set(
-          resume.state.subtasks
-            .map((subtask) => subtask.worktree)
-            .filter((path): path is string => path !== undefined),
-        ),
-      ];
-      if (paths.length !== 1) {
-        throw new Error('humanGate resume requires exactly one persisted task worktree');
-      }
-      if (!isRecoverableSandboxManager(sandbox)) {
-        throw new Error('configured SandboxManager does not support D4 resume');
-      }
-      worktree = { path: paths[0] as string, branch: `${scope.taskId}-shared` };
-      await sandbox.resume(scope.taskId, [{ role: 'shared', worktree }]);
-    }
+    const taskRoot = join(dataRoot, 'projects', scope.projectId, 'tasks', scope.taskId);
+    await mkdir(taskRoot, { recursive: true });
     const registry = new WorktreeRegistry();
-    let gitService: WorktreeGitService | undefined;
-    let catalog: ToolCatalog | undefined;
-    try {
-      await initializeRegisteredWorktree(registry, worktree.path);
-      gitService = new WorktreeGitService(registry);
-      catalog = await createToolCatalog({
-        registry,
-        gitService,
-        sandbox,
-        getWorktree: async () => worktree,
+    const sandboxConfig = options.sandboxConfig ?? { kind: 'docker' as const };
+    const useWorkspaceAdapter = options.sandbox === undefined && sandboxConfig.kind === 'docker';
+    let gitService: WorktreeGitService;
+    let workspace: WorkspaceAdapter | undefined;
+    let legacyWorktree: Worktree | undefined;
+    let legacyWorktreeRef: WorktreeRef | undefined;
+    let sandbox: SandboxManager;
+    if (useWorkspaceAdapter) {
+      const { kind: _kind, ...dockerOptions } = sandboxConfig;
+      const execution = new DockerSandbox({
+        ...dockerOptions,
+        baseDir: dockerOptions.baseDir ?? dataRoot,
       });
-    } catch (error) {
-      await catalog?.dispose().catch(() => undefined);
-      await gitService?.dispose().catch(() => undefined);
-      if (resume !== undefined && isRecoverableSandboxManager(sandbox)) {
-        await sandbox.suspend(scope.taskId).catch(() => undefined);
+      gitService = new WorktreeGitService(
+        registry,
+        join(taskRoot, 'repository'),
+        join(taskRoot, 'worktrees'),
+      );
+      workspace = new WorkspaceAdapter({
+        projectId: scope.projectId,
+        taskId: scope.taskId,
+        taskRoot,
+        git: gitService,
+        execution,
+        encodeIsolationKey: encodeGitIsolationKey,
+      });
+      sandbox = workspace;
+    } else {
+      sandbox = options.sandbox ?? createSandbox(sandboxConfig);
+      if (resume === undefined) {
+        legacyWorktree = await sandbox.createWorktree(scope.taskId, 'shared');
       } else {
-        await sandbox.teardown(scope.taskId).catch(() => undefined);
+        const persistedWorktrees = resume.state.subtasks
+          .map((subtask) => subtask.worktree)
+          .filter((value): value is NonNullable<typeof value> => value !== undefined);
+        const paths = [
+          ...new Set(
+            persistedWorktrees.map((value) => (typeof value === 'string' ? value : value.path)),
+          ),
+        ];
+        if (paths.length !== 1) {
+          throw new Error('legacy humanGate resume requires exactly one persisted task worktree');
+        }
+        if (!isRecoverableSandboxManager(sandbox)) {
+          throw new Error('configured SandboxManager does not support D4 resume');
+        }
+        const firstPersisted = persistedWorktrees[0];
+        legacyWorktree = {
+          path: paths[0] as string,
+          branch:
+            typeof firstPersisted === 'object' ? firstPersisted.branch : `${scope.taskId}-shared`,
+        };
+        await sandbox.resume(scope.taskId, [{ role: 'shared', worktree: legacyWorktree }]);
       }
-      throw error;
+      gitService = new WorktreeGitService(registry);
+      try {
+        await initializeRegisteredWorktree(registry, (legacyWorktree as Worktree).path);
+        const legacyHead = await gitService.headOf((legacyWorktree as Worktree).path);
+        legacyWorktreeRef = {
+          path: (legacyWorktree as Worktree).path,
+          branch: await gitService.branchOf((legacyWorktree as Worktree).path),
+          baseCommit: legacyHead,
+          headCommit: legacyHead,
+        };
+      } catch (error) {
+        await gitService.dispose().catch(() => undefined);
+        await sandbox.teardown(scope.taskId).catch(() => undefined);
+        throw error;
+      }
     }
-    const activeCatalog = catalog;
     const activeGitService = gitService;
+    const catalogs = new Map<string, ToolCatalog>();
+    const worktrees = new Map<string, WorktreeRef>();
+    // A run can fail before its first worker is admitted. In that case the
+    // canonical repository is still the smallest valid artifact source; using
+    // taskRoot would recursively copy `artifacts/` into itself.
+    const resumedArtifactPath =
+      resume?.state.integration?.integrationWorktree.path ??
+      [...(resume?.state.subtasks ?? [])].reverse().find((entry) => entry.worktree !== undefined)
+        ?.worktree;
+    let artifactPath =
+      legacyWorktree?.path ??
+      (typeof resumedArtifactPath === 'string' ? resumedArtifactPath : resumedArtifactPath?.path) ??
+      join(taskRoot, 'repository');
     const executors: HarnessExecutor[] = [];
     let latestExecutor: HarnessExecutor | undefined;
     let latestRole: string | undefined;
     let resourcesReleased = false;
-    const readTestResults = async (): Promise<TestResults | undefined> => {
+    const readTestResults = async (worktree: Worktree): Promise<TestResults | undefined> => {
       try {
         const parsed = JSON.parse(
           await sandbox.read(worktree, TEST_RESULTS_FILE),
@@ -143,8 +194,37 @@ export function createWebTaskCompositionFactory(
       scope.taskId,
       'harness-sessions',
     );
-    const createExecutor = (spec: RoleSpec, resumeSessionId?: string): HarnessExecutor => {
-      const resolved = activeCatalog.resolve(
+    const ensureCatalog = async (workerId: string, worktree: Worktree): Promise<ToolCatalog> => {
+      const existing = catalogs.get(workerId);
+      if (existing !== undefined) return existing;
+      const catalog = await createToolCatalog({
+        registry,
+        gitService: activeGitService,
+        sandbox,
+        getWorktree: async () => worktree,
+      });
+      catalogs.set(workerId, catalog);
+      return catalog;
+    };
+    if (legacyWorktree !== undefined) {
+      try {
+        await ensureCatalog('legacy:shared', legacyWorktree);
+      } catch (error) {
+        await activeGitService.dispose().catch(() => undefined);
+        await sandbox.teardown(scope.taskId).catch(() => undefined);
+        throw error;
+      }
+    }
+    const createExecutor = (
+      spec: RoleSpec,
+      workerId: string,
+      worktree: Worktree,
+      resumeSessionId?: string,
+    ): HarnessExecutor => {
+      const catalog = catalogs.get(workerId);
+      if (catalog === undefined)
+        throw new Error(`tool catalog is unavailable for worker "${workerId}"`);
+      const resolved = catalog.resolve(
         spec.tools.filter((tool) => SIX_ROLE_TOOL_SURFACE.includes(tool)),
       );
       const handoff = SIX_ROLE_HANDOFF[spec.role] ?? '';
@@ -155,7 +235,7 @@ export function createWebTaskCompositionFactory(
       const turnMutations = SIX_ROLE_TURN_MUTATION_READERS[spec.role];
       const executor = new HarnessExecutor(executorSpec, {
         ...executorOptions,
-        tools: activeCatalog.all(),
+        tools: catalog.all(),
         allowTools: resolved.allowNames,
         sessionPersistence: {
           root: sessionRoot,
@@ -164,7 +244,7 @@ export function createWebTaskCompositionFactory(
           taskId: scope.taskId,
           ...(resumeSessionId === undefined ? {} : { resumeSessionId }),
         },
-        ...(spec.role === 'TESTER' ? { readTestResults } : {}),
+        ...(spec.role === 'TESTER' ? { readTestResults: () => readTestResults(worktree) } : {}),
         ...(turnMutations === undefined
           ? {}
           : { readTurnMutations: ({ text }) => turnMutations(text) }),
@@ -180,8 +260,12 @@ export function createWebTaskCompositionFactory(
       for (const executor of executors) {
         await executor.dispose().catch((error: unknown) => errors.push(error));
       }
-      await activeCatalog.dispose().catch((error: unknown) => errors.push(error));
-      await activeGitService.dispose().catch((error: unknown) => errors.push(error));
+      for (const catalog of catalogs.values()) {
+        await catalog.dispose().catch((error: unknown) => errors.push(error));
+      }
+      if (workspace === undefined) {
+        await activeGitService.dispose().catch((error: unknown) => errors.push(error));
+      }
       const release = terminal
         ? sandbox.teardown(scope.taskId)
         : isRecoverableSandboxManager(sandbox)
@@ -199,6 +283,39 @@ export function createWebTaskCompositionFactory(
     let legacyResumeRole: string | undefined;
     let legacyResumeWorkerId: string | undefined;
     try {
+      if (resume !== undefined && workspace !== undefined) {
+        const workerBindings = resume.state.workers.flatMap((worker) => {
+          if (worker.worktree === undefined) return [];
+          if (typeof worker.worktree === 'string') {
+            throw new Error(`worker "${worker.workerId}" has an unmigrated legacy worktree`);
+          }
+          return [{ isolationKey: worker.workerId, worktree: worker.worktree }];
+        });
+        const bindings = [...workerBindings];
+        if (resume.state.integration !== undefined) {
+          bindings.unshift({
+            isolationKey: `integration:${resume.state.integration.integrationId}`,
+            worktree: resume.state.integration.integrationWorktree,
+          });
+        }
+        if (bindings.length > 0) {
+          // Several sequential observer workers may reference the same produced
+          // or integrated worktree. Recover the physical path once under its
+          // owning isolation key, then create per-worker tool catalogs against
+          // that already-bound path.
+          const seenPaths = new Set<string>();
+          const physicalBindings = bindings.filter((binding) => {
+            if (seenPaths.has(binding.worktree.path)) return false;
+            seenPaths.add(binding.worktree.path);
+            return true;
+          });
+          await workspace.recoverWorktrees(physicalBindings);
+          for (const binding of bindings) {
+            worktrees.set(binding.isolationKey, binding.worktree);
+            await ensureCatalog(binding.isolationKey, binding.worktree);
+          }
+        }
+      }
       if (
         resume !== undefined &&
         (resume.receipt.safePointRefs.length > 0 || resume.receipt.workerResumes !== undefined)
@@ -210,11 +327,20 @@ export function createWebTaskCompositionFactory(
             throw new Error('Phase 8 sequential resume expects exactly one Harness safe point');
           }
           const ref = resume.receipt.safePointRefs[0] as string;
-          const identity = assertSafePointComposition(ref, scope, worktree.path);
+          const fallback = legacyWorktree;
+          if (fallback === undefined) {
+            throw new Error('legacy resume receipt cannot target a Phase 9 workspace');
+          }
+          const identity = assertSafePointComposition(ref, scope, fallback.path);
           const spec = roster.find((entry) => entry.role === identity.role);
           if (spec === undefined)
             throw new Error(`safe point role "${identity.role}" is not enabled`);
-          const executor = createExecutor(spec, resume.receipt.resumeSessionId);
+          const executor = createExecutor(
+            spec,
+            'legacy:shared',
+            fallback,
+            resume.receipt.resumeSessionId,
+          );
           await executor.loadSafePoint(ref);
           executor.injectInbox(
             project(
@@ -238,10 +364,20 @@ export function createWebTaskCompositionFactory(
             if (worker === undefined) {
               throw new Error(`resume worker "${plan.workerId}" is missing from task state`);
             }
+            const workerWorktree: Worktree =
+              workspace === undefined
+                ? (legacyWorktree as Worktree)
+                : typeof worker.worktree === 'object'
+                  ? worker.worktree
+                  : (() => {
+                      throw new Error(
+                        `resume worker "${plan.workerId}" has no structured worktree`,
+                      );
+                    })();
             const identity = assertSafePointComposition(
               plan.sourceSafePointRef,
               scope,
-              worktree.path,
+              workerWorktree.path,
             );
             if (identity.role !== worker.role) {
               throw new Error(
@@ -252,7 +388,12 @@ export function createWebTaskCompositionFactory(
             if (spec === undefined) {
               throw new Error(`safe point role "${identity.role}" is not enabled`);
             }
-            const executor = createExecutor(spec, plan.resumeSessionId);
+            const executor = createExecutor(
+              spec,
+              workspace === undefined ? 'legacy:shared' : plan.workerId,
+              workerWorktree,
+              plan.resumeSessionId,
+            );
             await executor.loadSafePoint(plan.sourceSafePointRef);
             executor.injectInbox(
               project(
@@ -270,6 +411,49 @@ export function createWebTaskCompositionFactory(
       await releaseRuntimeResources(false).catch(() => undefined);
       throw error;
     }
+    const activeWorkspace = workspace;
+    const resolveWorkerWorktree = async (
+      state: AppState,
+      assignment: { workerId: string; role: string; subtaskId?: string },
+    ): Promise<WorktreeRef> => {
+      if (activeWorkspace === undefined) {
+        if (legacyWorktreeRef === undefined)
+          throw new Error('legacy worktree reference is missing');
+        return legacyWorktreeRef;
+      }
+      const persisted = state.workers.find(
+        (entry) => entry.workerId === assignment.workerId,
+      )?.worktree;
+      if (typeof persisted === 'string') {
+        throw new Error(`worker "${assignment.workerId}" has an unmigrated legacy worktree`);
+      }
+      let ref = persisted ?? activeWorkspace.worktreeFor(assignment.workerId);
+      // TESTER and REVIEWER inspect the already-produced subtask (or the
+      // dedicated integration result after the Phase 9 topology is wired).
+      // Allocating a fresh branch here would silently hide CODER output.
+      if (ref === undefined && assignment.role !== 'CODER') {
+        const candidate =
+          state.integration?.status === 'done'
+            ? state.integration.integrationWorktree
+            : (state.subtasks.find((entry) => entry.id === assignment.subtaskId)?.worktree ??
+              [...state.subtasks].reverse().find((entry) => entry.worktree !== undefined)
+                ?.worktree);
+        if (typeof candidate === 'string') {
+          throw new Error(`worker "${assignment.workerId}" cannot inherit a legacy worktree`);
+        }
+        ref = candidate;
+      }
+      if (ref === undefined) {
+        await activeWorkspace.createWorktree(scope.taskId, assignment.workerId);
+        ref = activeWorkspace.worktreeFor(assignment.workerId);
+      }
+      if (ref === undefined)
+        throw new Error(`failed to allocate worktree for ${assignment.workerId}`);
+      worktrees.set(assignment.workerId, ref);
+      artifactPath = ref.path;
+      await ensureCatalog(assignment.workerId, ref);
+      return ref;
+    };
     const workerRuntime = new WorkerRuntime(
       {
         roster: DEFAULT_ROSTER,
@@ -302,7 +486,18 @@ export function createWebTaskCompositionFactory(
         ...(transitionStep === undefined ? {} : { transitionStep }),
         handleOutput,
         buildChannelContext,
-        buildExecutor: (spec, assignment): Executor => {
+        resolveWorktree: resolveWorkerWorktree,
+        refreshWorktree: async (ref: WorktreeRef) => {
+          const refreshed =
+            activeWorkspace === undefined
+              ? { ...ref, headCommit: await activeGitService.headOf(ref.path) }
+              : await activeWorkspace.refreshWorktree(ref);
+          const owner = [...worktrees].find(([, value]) => value.branch === ref.branch)?.[0];
+          if (owner !== undefined) worktrees.set(owner, refreshed);
+          artifactPath = refreshed.path;
+          return refreshed;
+        },
+        buildExecutor: (spec, assignment, assignedWorktree): Executor => {
           const restored =
             restoredExecutors.get(assignment.workerId) ??
             restoredExecutors.get(`legacy-role:${spec.role}`);
@@ -319,7 +514,15 @@ export function createWebTaskCompositionFactory(
             latestRole = spec.role;
             return executor;
           }
-          return createExecutor(spec);
+          const worktree = assignedWorktree ?? legacyWorktree;
+          if (worktree === undefined) {
+            throw new Error(`worker "${assignment.workerId}" has no execution worktree`);
+          }
+          return createExecutor(
+            spec,
+            workspace === undefined ? 'legacy:shared' : assignment.workerId,
+            worktree,
+          );
         },
       },
       scheduler,
@@ -333,15 +536,39 @@ export function createWebTaskCompositionFactory(
           ownerRole: 'CODER',
           dependsOn: [],
           status: 'todo',
-          worktree: worktree.path,
+          ...(legacyWorktreeRef === undefined ? {} : { worktree: legacyWorktreeRef }),
         }),
       ]);
+    const integrationService =
+      workspace === undefined ? undefined : new IntegrationService(workspace, transition);
     return {
       initialState,
       workerRuntime,
       roster: DEFAULT_ROSTER,
       ...(loadRoster === undefined ? {} : { loadRoster }),
-      artifactPath: worktree.path,
+      get artifactPath() {
+        return artifactPath;
+      },
+      ...(integrationService === undefined
+        ? {}
+        : {
+            integrate: async (state: typeof initialState) => {
+              const workerIds =
+                state.integration?.pendingBranches.map((entry) => entry.workerId) ??
+                state.workers
+                  .filter((worker) => worker.status === 'done' && worker.subtaskId !== undefined)
+                  .map((worker) => worker.workerId);
+              const result = await integrationService.integrateWave(state, {
+                waveId: state.integration?.waveId ?? `wave-${state.iterationCount}`,
+                workerIds,
+                baseBranch: await activeGitService.canonicalBranch(),
+              });
+              if (result.state.integration !== undefined) {
+                artifactPath = result.state.integration.integrationWorktree.path;
+              }
+              return result;
+            },
+          }),
       saveSafePoints: async () => {
         if (latestExecutor === undefined || latestRole === undefined) return [];
         return [await latestExecutor.saveSafePoint()];
@@ -368,7 +595,9 @@ export function createWebTaskCompositionFactory(
         await mkdir(dirname(destination), { recursive: true });
         const temporary = `${destination}.${randomUUID()}.tmp`;
         try {
-          await cp(worktree.path, temporary, { recursive: true });
+          const state = await loadState();
+          const source = state?.integration?.integrationWorktree.path ?? artifactPath;
+          await cp(source, temporary, { recursive: true });
           await rename(temporary, destination);
         } catch (error) {
           await rm(temporary, { recursive: true, force: true });

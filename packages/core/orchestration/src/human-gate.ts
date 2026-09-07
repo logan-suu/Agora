@@ -17,6 +17,7 @@ const ROLE_REASON = /^required_role_unavailable:([A-Za-z][A-Za-z0-9_-]*)$/;
 const DEPARTURE_REASON = /^role_departure_requires_replacement:([A-Za-z][A-Za-z0-9_-]*)$/;
 const OBJECTION_REASON = /^blocking_objection:([A-Za-z0-9][A-Za-z0-9._:-]*)$/;
 const COMPLETION_REASON = /^completion_confirmation:([A-Za-z0-9][A-Za-z0-9._:-]*)$/;
+const INTEGRATION_REASON = /^integration_conflict:([A-Za-z0-9][A-Za-z0-9._:-]*)$/;
 
 export interface HumanGateResolutionInput {
   actionId: string;
@@ -134,6 +135,7 @@ export function planHumanGateResolution(
     const departure = DEPARTURE_REASON.exec(gate.reason);
     const objection = OBJECTION_REASON.exec(gate.reason);
     const completion = COMPLETION_REASON.exec(gate.reason);
+    const integration = INTEGRATION_REASON.exec(gate.reason);
     if (unavailable !== null) {
       requireOption(input, 'retry', false);
       const role = normalizeRole(unavailable[1] as string);
@@ -196,8 +198,35 @@ export function planHumanGateResolution(
       });
       mutations.push(appendMutation('decisionLedger', built.decision));
       completionResolution = built.action;
+    } else if (integration !== null) {
+      requireOption(input, 'request_rework', true);
+      const workerId = input.argument as string;
+      const current = state.integration;
+      if (
+        current === undefined ||
+        current.integrationId !== integration[1] ||
+        current.status !== 'conflict'
+      ) {
+        throw new Error('integration conflict gate does not match canonical Integration');
+      }
+      const conflict = current.conflicts.find((entry) => entry.workerId === workerId);
+      if (conflict === undefined) {
+        throw new Error(`worker "${workerId}" is not an integration conflict contributor`);
+      }
+      const subtask = state.subtasks.find((entry) => entry.id === conflict.subtaskId);
+      if (subtask === undefined) throw new Error('integration conflict subtask is missing');
+      const { resultCommit: _resultCommit, ...withoutResult } = current;
+      mutations.push(
+        mergeByIdMutation('subtasks', conflict.subtaskId, { status: 'todo' }),
+        setMutation('integration', {
+          ...withoutResult,
+          mergedBranches: [],
+          conflicts: [],
+          status: 'idle',
+        }),
+      );
     } else {
-      throw new Error(`humanGate reason "${gate.reason}" has no Phase 8 resolver`);
+      throw new Error(`humanGate reason "${gate.reason}" has no resolver`);
     }
   }
   mutations.push(setMutation('humanGate', undefined));

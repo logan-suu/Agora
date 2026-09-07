@@ -8,6 +8,7 @@ import {
   latestCoordinationLedger,
   type RoleId,
   type RoleSpec,
+  type WorktreeRef,
 } from '@agora/core-domain';
 import type { ProjectionView } from './base';
 import {
@@ -128,7 +129,7 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
           ownerRole: s.ownerRole,
           status: s.status,
           priority: s.priority ?? 0,
-          worktree: s.worktree,
+          ...(s.worktree === undefined ? {} : { worktree: structuredClone(s.worktree) }),
         }));
     case 'architecture':
       return state.architecture === undefined ? {} : { ...state.architecture };
@@ -161,21 +162,14 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
           acceptance: [...requirement.acceptance],
         })),
       };
-    case 'branchOrPatch':
-      return {
-        worktrees: state.subtasks
-          .filter((s) => s.status !== 'done' && s.worktree !== undefined)
-          .map((s) => s.worktree),
-        patch: state.pendingPatch === undefined ? null : { ...state.pendingPatch },
-      };
+    case 'branchOrIntegration':
+      return branchOrIntegration(state);
     case 'interfaceContracts': {
       const declared = state.architecture?.interfaces;
       if (Array.isArray(declared)) return [...declared];
       if (typeof declared === 'object' && declared !== null) return { ...declared };
       return {}; // ARCHITECT has not declared interfaces yet
     }
-    case 'pendingPatch':
-      return state.pendingPatch === undefined ? null : { ...state.pendingPatch };
     case 'reviewContext': {
       const control = latestCoordinatorControlMessage(state);
       const reason = typeof control?.payload.reason === 'string' ? control.payload.reason : null;
@@ -200,6 +194,67 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
       // project.test); an unknown name is roster/implementation drift.
       throw new Error(`unknown projection slice "${slice}" declared for role "${String(role)}"`);
   }
+}
+
+function branchOrIntegration(state: AppState): unknown {
+  const worktrees = state.subtasks
+    // A completed CODER subtask is precisely what TESTER/REVIEWER must inspect
+    // and what the integration service later consumes.
+    .filter((subtask) => subtask.worktree !== undefined)
+    .map((subtask) => {
+      const subtaskWorktree = subtask.worktree;
+      if (subtaskWorktree === undefined) {
+        throw new Error(`subtask "${subtask.id}" worktree disappeared during projection`);
+      }
+      if (typeof subtaskWorktree === 'string') {
+        throw new Error(`subtask "${subtask.id}" has an unmigrated legacy worktree`);
+      }
+      const matches = state.workers.filter(
+        (worker) => worker.subtaskId === subtask.id && worker.worktree !== undefined,
+      );
+      const latestStartedTs = Math.max(...matches.map((worker) => worker.startedTs));
+      const currentMatches = matches.filter((worker) => worker.startedTs === latestStartedTs);
+      if (currentMatches.length !== 1) {
+        throw new Error(
+          `subtask "${subtask.id}" must match exactly one current WorkerState worktree`,
+        );
+      }
+      const worker = currentMatches[0];
+      const workerWorktree = worker?.worktree;
+      if (
+        worker === undefined ||
+        workerWorktree === undefined ||
+        typeof workerWorktree === 'string'
+      ) {
+        throw new Error(`subtask "${subtask.id}" has an unmigrated worker worktree`);
+      }
+      if (!sameWorktreeRef(subtaskWorktree, workerWorktree)) {
+        throw new Error(`subtask "${subtask.id}" worktree conflicts with WorkerState`);
+      }
+      return {
+        workerId: worker.workerId,
+        subtaskId: subtask.id,
+        worktree: structuredClone(subtaskWorktree),
+      };
+    })
+    .sort(
+      (left, right) =>
+        left.subtaskId.localeCompare(right.subtaskId) ||
+        left.workerId.localeCompare(right.workerId),
+    );
+  return {
+    worktrees,
+    integration: state.integration === undefined ? null : structuredClone(state.integration),
+  };
+}
+
+function sameWorktreeRef(left: WorktreeRef, right: WorktreeRef): boolean {
+  return (
+    left.path === right.path &&
+    left.branch === right.branch &&
+    left.baseCommit === right.baseCommit &&
+    left.headCommit === right.headCommit
+  );
 }
 
 function copiedFact(

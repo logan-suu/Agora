@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative } from 'node:path';
 import type { Container } from 'dockerode';
 import Dockerode from 'dockerode';
 import { assertInside } from './path-guard';
@@ -92,6 +92,41 @@ export class DockerSandbox implements SandboxManager {
     this.memoryBytes = options.memoryBytes ?? DEFAULT_MEMORY_BYTES;
     this.cpuShares = options.cpuShares ?? DEFAULT_CPU_SHARES;
     this.baseDir = options.baseDir ?? tmpdir();
+  }
+
+  /** Internal companion used by WorkspaceAdapter to mount an existing Git worktree path. */
+  async bindWorktree(
+    taskId: string,
+    isolationKey: string,
+    worktree: Worktree,
+    taskRoot: string,
+  ): Promise<void> {
+    const canonicalBase = realpathSync(this.baseDir);
+    const canonicalRoot = realpathSync(taskRoot);
+    const rootRel = relative(canonicalBase, canonicalRoot);
+    if (rootRel === '' || rootRel.startsWith('..')) {
+      throw new Error('task-owned workspace root is outside the configured Docker base directory');
+    }
+    const canonicalWorktree = realpathSync(worktree.path);
+    const worktreeRel = relative(canonicalRoot, canonicalWorktree);
+    if (worktreeRel === '' || worktreeRel.startsWith('..')) {
+      throw new Error('Git worktree is outside the task-owned workspace root');
+    }
+    let record = this.containers.get(taskId);
+    if (record === undefined) record = await this.createContainer(taskId, canonicalRoot);
+    if (record.hostRoot !== canonicalRoot) {
+      throw new Error(`task "${taskId}" already has a different Docker workspace root`);
+    }
+    const existing = record.roles.get(isolationKey);
+    if (existing !== undefined && existing !== canonicalWorktree) {
+      throw new Error(`isolation key "${isolationKey}" already maps to another worktree`);
+    }
+    if (
+      [...record.roles].some(([key, path]) => key !== isolationKey && path === canonicalWorktree)
+    ) {
+      throw new Error('two isolation keys cannot share one Docker worktree path');
+    }
+    record.roles.set(isolationKey, canonicalWorktree);
   }
 
   async createWorktree(taskId: string, role: string): Promise<Worktree> {
@@ -355,8 +390,9 @@ export class DockerSandbox implements SandboxManager {
 
   /** Locate the container record that owns a given worktree path. */
   private recordFor(worktree: Worktree): ContainerRecord {
+    const canonicalWorktree = realpathSync(worktree.path);
     for (const record of this.containers.values()) {
-      if ([...record.roles.values()].some((p) => resolve(p) === resolve(worktree.path))) {
+      if ([...record.roles.values()].some((path) => realpathSync(path) === canonicalWorktree)) {
         return record;
       }
     }
@@ -365,7 +401,7 @@ export class DockerSandbox implements SandboxManager {
 
   /** Map a host worktree path to its container-visible path. */
   private toContainerPath(record: ContainerRecord, hostPath: string): string {
-    const rel = relative(record.hostRoot, resolve(hostPath));
+    const rel = relative(realpathSync(record.hostRoot), realpathSync(hostPath));
     return join(CONTAINER_WORKDIR, rel);
   }
 }

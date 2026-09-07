@@ -273,15 +273,9 @@ describe('applyMutations · stage gating (spec §1 vs Phase 0 slice)', () => {
     expect(disabled).toEqual([]);
   });
 
-  it('throws the stage-gate error for every set field outside the Phase 0 slice', () => {
+  it('has unlocked every specified set field by Phase 9', () => {
     const disabled = SET_FIELDS.filter((field) => !ENABLED_SET_FIELDS.includes(field));
-    expect(disabled.length).toBeGreaterThan(0);
-    for (const field of disabled) {
-      const mutation = setMutation(field, null);
-      expect(() => applyMutations(createInitialAppState('t-1', 'goal'), [mutation])).toThrowError(
-        `mutation field "${field}" is defined by spec §1 but not enabled in Phase 0`,
-      );
-    }
+    expect(disabled).toEqual([]);
   });
 
   it('defensively rejects an unknown op forged past the type system', () => {
@@ -430,6 +424,7 @@ describe('mutation builders', () => {
       'nextRole',
       'iterationCount',
       'humanGate',
+      'integration',
       'architecture',
       'conventions',
       'complexity',

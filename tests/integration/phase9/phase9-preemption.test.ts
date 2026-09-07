@@ -204,7 +204,8 @@ describe('Phase 9 cooperative preemption real chain', () => {
         }),
       ]),
     );
-    expect(await runtime.summary(scope)).toMatchObject({
+    const finalSummary = await runtime.summary(scope);
+    expect(finalSummary, finalSummary?.error).toMatchObject({
       runStatus: 'needs_attention',
     });
     expect(state?.humanGate?.reason).toBe('completion_confirmation:phase9-approved');

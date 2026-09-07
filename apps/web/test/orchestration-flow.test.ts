@@ -13,6 +13,7 @@ import {
   type Message,
   mergeByIdMutation,
   setMutation,
+  type WorktreeRef,
 } from '@agora/core-domain';
 import { WorkerRuntime } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
@@ -132,6 +133,12 @@ function successfulFactory(
   failCoder = false,
 ): TaskCompositionFactory {
   return async ({ scope, goal, transition, resume }) => {
+    const initialWorktree: WorktreeRef = {
+      path: '/tmp/agora-demo-artifact',
+      branch: 'test-shared',
+      baseCommit: 'a'.repeat(40),
+      headCommit: 'a'.repeat(40),
+    };
     const initialState =
       resume?.state ??
       applyMutations(createInitialAppState(scope.taskId, goal, scope.projectId), [
@@ -140,12 +147,23 @@ function successfulFactory(
           ownerRole: 'CODER',
           dependsOn: [],
           status: 'todo',
-          worktree: '/tmp/agora-demo-artifact',
+          worktree: initialWorktree,
         }),
       ]);
     const workerRuntime = new WorkerRuntime({
       roster: DEFAULT_ROSTER,
       transition,
+      resolveWorktree: async (state, assignment) => {
+        const workerRef = state.workers.find(
+          (entry) => entry.workerId === assignment.workerId,
+        )?.worktree;
+        if (typeof workerRef === 'object') return workerRef;
+        const subtaskRef = state.subtasks.find(
+          (entry) => entry.id === assignment.subtaskId,
+        )?.worktree;
+        return typeof subtaskRef === 'object' ? subtaskRef : initialWorktree;
+      },
+      refreshWorktree: async (ref) => ref,
       buildExecutor: (spec) => {
         if (spec.role === 'CODER') {
           if (failCoder) return new FailingExecutor();

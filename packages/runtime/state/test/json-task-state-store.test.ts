@@ -120,6 +120,32 @@ describe('JsonTaskStateStore', () => {
     await expect(store.load(scope())).rejects.toThrow('objections must be an array');
   });
 
+  it('drops legacy pendingPatch metadata while retaining string worktrees for explicit Git migration', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const legacy = {
+      ...createInitialAppState('task-a', 'legacy goal', 'project-a'),
+      pendingPatch: { diff: 'obsolete' },
+      subtasks: [
+        {
+          id: 'st-1',
+          title: 'legacy',
+          ownerRole: 'CODER',
+          dependsOn: [],
+          status: 'in_progress',
+          worktree: '/legacy/worktree',
+        },
+      ],
+    };
+    const path = join(root, 'projects/project-a/tasks/task-a/state.json');
+    await store.initialize(scope(), createInitialAppState('task-a', 'legacy goal', 'project-a'));
+    await writeFile(path, `${JSON.stringify(legacy, null, 2)}\n`, 'utf8');
+
+    const loaded = await store.load(scope());
+    expect(loaded?.subtasks[0]?.worktree).toBe('/legacy/worktree');
+    expect(loaded).not.toHaveProperty('pendingPatch');
+  });
+
   it('normalizes a pre-D17 snapshot without workers and rejects a malformed workers slice', async () => {
     const root = await temporaryRoot();
     const store = new JsonTaskStateStore(root);

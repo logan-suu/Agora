@@ -54,7 +54,7 @@ describe('PHASE0_ROSTER', () => {
     expect(spec('CODER').routeWhen).toBe('designReady || testsFailed');
     expect(spec('TESTER').projection).toEqual([
       'acceptance',
-      'branchOrPatch',
+      'branchOrIntegration',
       'interfaceContracts',
       'coordinationContext',
     ]);

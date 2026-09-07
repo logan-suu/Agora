@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { AppState } from '../src/index';
-import { createInitialAppState } from '../src/index';
+import type { AppState, Integration, WorktreeRef } from '../src/index';
+import { createInitialAppState, isIntegration, isWorktreeRef } from '../src/index';
+
+const WORKTREE: WorktreeRef = {
+  path: '/data/tasks/task-2/worktrees/worker-a',
+  branch: 'worker-a-abc123',
+  baseCommit: 'a'.repeat(40),
+  headCommit: 'b'.repeat(40),
+};
 
 describe('createInitialAppState', () => {
   it('seeds the Phase 0 slice with defaults and omits optional keys entirely', () => {
@@ -13,7 +20,7 @@ describe('createInitialAppState', () => {
     expect(state.subtasks).toEqual([]);
     expect(state.workers).toEqual([]);
     expect(state.messages).toEqual([]);
-    expect('pendingPatch' in state).toBe(false);
+    expect('integration' in state).toBe(false);
     expect('conventions' in state).toBe(false);
     expect('testResults' in state).toBe(false);
     expect('nextRole' in state).toBe(false);
@@ -36,7 +43,6 @@ describe('createInitialAppState', () => {
       reviewComments: [],
       handoffPackets: [],
       decisionLedger: [],
-      pendingPatch: { files: ['src/lru.ts'] },
       nextRole: 'TESTER',
     };
     expect(state.subtasks[0]?.ownerRole).toBe('CODER');
@@ -45,5 +51,39 @@ describe('createInitialAppState', () => {
 
   it('accepts an explicit project scope', () => {
     expect(createInitialAppState('task-3', 'goal', 'project-b').projectId).toBe('project-b');
+  });
+
+  it('validates structured worktree and recoverable integration identities', () => {
+    const integration: Integration = {
+      integrationId: 'integration-1',
+      waveId: 'wave-1',
+      base: { branch: 'base', commit: 'a'.repeat(40) },
+      integrationWorktree: {
+        path: WORKTREE.path,
+        branch: 'integration-1',
+        baseCommit: WORKTREE.baseCommit,
+      },
+      pendingBranches: [
+        {
+          workerId: 'worker:dispatch:0',
+          subtaskId: 'st-1',
+          worktree: WORKTREE,
+          topologicalRank: 0,
+        },
+      ],
+      mergedBranches: [],
+      conflicts: [],
+      status: 'merging',
+    };
+
+    expect(isWorktreeRef(WORKTREE)).toBe(true);
+    expect(isIntegration(integration)).toBe(true);
+    expect(isWorktreeRef({ ...WORKTREE, branch: 'worker:bad' })).toBe(false);
+    expect(
+      isIntegration({
+        ...integration,
+        pendingBranches: [...integration.pendingBranches, integration.pendingBranches[0]],
+      }),
+    ).toBe(false);
   });
 });

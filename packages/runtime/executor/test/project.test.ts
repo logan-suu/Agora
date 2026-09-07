@@ -51,6 +51,13 @@ const LEADER_DECISION: Decision = {
   ts: 1,
 };
 
+const WORKTREE = {
+  path: '/wt/a',
+  branch: 'worker-a-abc123',
+  baseCommit: 'a'.repeat(40),
+  headCommit: 'b'.repeat(40),
+};
+
 function makeState(overrides: Partial<AppState> = {}): AppState {
   return { ...createInitialAppState('t-1', 'build an LRU cache'), ...overrides };
 }
@@ -526,7 +533,7 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     expect(slicesOf(makeState(), 'TESTER').acceptance).toEqual({ requirements: [] });
   });
 
-  it('TESTER branchOrPatch: active worktree paths plus pendingPatch (null until its writer lands)', () => {
+  it('TESTER branchOrIntegration: cross-validates and defensively copies worktree refs', () => {
     const patched = makeState({
       subtasks: [
         {
@@ -535,20 +542,47 @@ describe('project (task 2.4, spec §7 slice table)', () => {
           ownerRole: 'CODER',
           dependsOn: [],
           status: 'in_progress',
-          worktree: '/wt/a',
+          worktree: WORKTREE,
         },
         { id: 'st-2', title: 'old', ownerRole: 'CODER', dependsOn: [], status: 'done' },
       ],
-      pendingPatch: { diff: 'x' },
+      workers: [
+        {
+          workerId: 'worker:dispatch:0',
+          role: 'CODER',
+          executor: 'harness',
+          status: 'done',
+          subtaskId: 'st-1',
+          worktree: WORKTREE,
+          startedTs: 1,
+        },
+      ],
     });
-    expect(slicesOf(patched, 'TESTER').branchOrPatch).toEqual({
-      worktrees: ['/wt/a'],
-      patch: { diff: 'x' },
+    expect(slicesOf(patched, 'TESTER').branchOrIntegration).toEqual({
+      worktrees: [{ workerId: 'worker:dispatch:0', subtaskId: 'st-1', worktree: WORKTREE }],
+      integration: null,
     });
-    expect(slicesOf(makeState(), 'TESTER').branchOrPatch).toEqual({
+    expect(slicesOf(makeState(), 'TESTER').branchOrIntegration).toEqual({
       worktrees: [],
-      patch: null,
+      integration: null,
     });
+    expect(() =>
+      slicesOf(
+        makeState({
+          subtasks: [
+            {
+              id: 'legacy',
+              title: 'old',
+              ownerRole: 'CODER',
+              dependsOn: [],
+              status: 'in_progress',
+              worktree: '/legacy',
+            },
+          ],
+        }),
+        'TESTER',
+      ),
+    ).toThrow('unmigrated legacy worktree');
   });
 
   it('TESTER interfaceContracts: architecture.interfaces passthrough with {} defaults', () => {
@@ -565,7 +599,6 @@ describe('project (task 2.4, spec §7 slice table)', () => {
 
   it('REVIEWER gets structured failure context without receiving raw coordinator messages', () => {
     const rich = makeState({
-      pendingPatch: { diff: 'x' },
       conventions: { style: 'biome' },
       architecture: { modules: ['cache'] },
       testResults: TEST_RESULTS,
@@ -586,7 +619,7 @@ describe('project (task 2.4, spec §7 slice table)', () => {
       ],
     });
     const reviewer = slicesOf(rich, 'REVIEWER');
-    expect(reviewer.pendingPatch).toEqual({ diff: 'x' });
+    expect(reviewer.branchOrIntegration).toEqual({ worktrees: [], integration: null });
     expect(reviewer.conventions).toEqual({ style: 'biome' });
     expect(reviewer.architecture).toEqual({ modules: ['cache'] });
     expect(reviewer.reviewContext).toEqual({
@@ -602,7 +635,7 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     expect(JSON.stringify(reviewer)).not.toContain('SENTINEL-RAW-ANNOUNCEMENT');
     expect(JSON.stringify(reviewer)).not.toContain('m-root-cause');
     const bare = slicesOf(makeState(), 'REVIEWER');
-    expect(bare.pendingPatch).toBeNull();
+    expect(bare.branchOrIntegration).toEqual({ worktrees: [], integration: null });
     expect(bare.conventions).toEqual({});
     expect(bare.architecture).toEqual({});
     expect(bare.reviewContext).toEqual({
@@ -678,13 +711,23 @@ describe('project (task 2.4, spec §7 slice table)', () => {
           ownerRole: 'CODER',
           dependsOn: [],
           status: 'in_progress',
-          worktree: '/wt/a',
+          worktree: WORKTREE,
         },
       ],
       testResults: TEST_RESULTS,
       conventions: { style: 'biome' },
       architecture: { modules: ['cache'], interfaces: [{ name: 'Cache' }] },
-      pendingPatch: { diff: 'x' },
+      workers: [
+        {
+          workerId: 'worker:dispatch:0',
+          role: 'CODER',
+          executor: 'harness',
+          status: 'done',
+          subtaskId: 'st-1',
+          worktree: WORKTREE,
+          startedTs: 1,
+        },
+      ],
       decisionLedger: [LEADER_DECISION],
     });
     for (const spec of DEFAULT_ROSTER) {

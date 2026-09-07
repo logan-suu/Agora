@@ -4,6 +4,8 @@ import { dirname, join } from 'node:path';
 import {
   type AppState,
   applyMutations,
+  isIntegration,
+  isPersistedWorktreeRef,
   isSubtaskPriority,
   isWorkerState,
   type Mutation,
@@ -97,10 +99,11 @@ export class JsonTaskStateStore implements TaskStateStore {
       throw new Error(`invalid task state JSON at "${path}": expected an object`);
     }
     const record = parsed as Record<string, unknown>;
+    const { pendingPatch: _legacyPendingPatch, ...withoutPendingPatch } = record;
     const hasObjections = Object.hasOwn(record, 'objections');
     const hasWorkers = Object.hasOwn(record, 'workers');
     const state = {
-      ...record,
+      ...withoutPendingPatch,
       ...(hasObjections ? {} : { objections: [] }),
       ...(hasWorkers ? {} : { workers: [] }),
     } as unknown as AppState;
@@ -163,10 +166,15 @@ export class JsonTaskStateStore implements TaskStateStore {
           typeof subtask === 'object' &&
           subtask !== null &&
           !Array.isArray(subtask) &&
-          isSubtaskPriority((subtask as unknown as Record<string, unknown>).priority),
+          isSubtaskPriority((subtask as unknown as Record<string, unknown>).priority) &&
+          ((subtask as unknown as Record<string, unknown>).worktree === undefined ||
+            isPersistedWorktreeRef((subtask as unknown as Record<string, unknown>).worktree)),
       )
     ) {
-      throw new Error(`${prefix}: subtasks must contain valid priority`);
+      throw new Error(`${prefix}: subtasks must contain valid priority and worktree references`);
+    }
+    if (state.integration !== undefined && !isIntegration(state.integration)) {
+      throw new Error(`${prefix}: integration must be a valid recoverable Integration`);
     }
   }
 }

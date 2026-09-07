@@ -5,6 +5,7 @@ import {
   mergeByIdMutation,
   type RoleSpec,
   type TestResults,
+  type WorktreeRef,
 } from '@agora/core-domain';
 import { WorkerRuntime } from '@agora/core-orchestration';
 import {
@@ -128,6 +129,13 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
   const registry = new WorktreeRegistry();
   const gitService = new WorktreeGitService(registry, options.mainRepoPath);
   const worktree = await gitService.createWorktree(options.taskId, 'shared');
+  const initialHead = await gitService.headOf(worktree.path);
+  const worktreeRef: WorktreeRef = {
+    path: worktree.path,
+    branch: await gitService.branchOf(worktree.path),
+    baseCommit: initialHead,
+    headCommit: initialHead,
+  };
   let catalog: ToolCatalog;
   try {
     catalog = await createToolCatalog({
@@ -167,6 +175,20 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
   const executors: HarnessExecutor[] = [];
   const workerRuntime = new WorkerRuntime({
     roster: DEFAULT_ROSTER,
+    resolveWorktree: async (state, assignment) => {
+      const workerRef = state.workers.find(
+        (entry) => entry.workerId === assignment.workerId,
+      )?.worktree;
+      if (typeof workerRef === 'object') return workerRef;
+      const subtaskRef = state.subtasks.find(
+        (entry) => entry.id === assignment.subtaskId,
+      )?.worktree;
+      return typeof subtaskRef === 'object' ? subtaskRef : worktreeRef;
+    },
+    refreshWorktree: async (ref) => ({
+      ...ref,
+      headCommit: await gitService.headOf(ref.path),
+    }),
     buildExecutor: (spec, _assign): Executor => {
       // §2 matrix grant intersected with the Phase 2 surface; every whitelisted
       // entry resolves to a catalog implementation.
@@ -203,7 +225,7 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
       ownerRole: 'CODER',
       dependsOn: [],
       status: 'todo',
-      worktree: worktree.path,
+      worktree: worktreeRef,
     }),
   ]);
   return {

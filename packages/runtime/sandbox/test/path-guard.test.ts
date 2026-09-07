@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -86,5 +94,21 @@ describe('assertInside (shared path guard, R7 confinement)', () => {
   it('throws a clear error when the path cannot be resolved at all', () => {
     const root = makeRoot();
     expect(() => assertInside(root, '/definitely/not/under/root')).toThrow(/escapes sandbox root/);
+  });
+
+  it('reproduces the still-open DEF-004 check/use race without claiming confinement', () => {
+    const root = realpathSync(makeRoot());
+    const outside = realpathSync(mkdtempSync(join(tmpdir(), 'agora-outside-')));
+    roots.push(outside);
+    mkdirSync(join(root, 'replaceable'));
+    writeFileSync(join(outside, 'secret.txt'), 'outside');
+
+    // This is the exact vulnerable ordering: validation succeeds first, then a
+    // concurrent process replaces an ancestor before the caller's fs syscall.
+    const validatedTarget = assertInside(root, 'replaceable/secret.txt');
+    rmSync(join(root, 'replaceable'), { recursive: true });
+    symlinkSync(outside, join(root, 'replaceable'));
+
+    expect(readFileSync(validatedTarget, 'utf8')).toBe('outside');
   });
 });

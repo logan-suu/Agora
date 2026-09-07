@@ -49,8 +49,8 @@ import {
  *   `git.readonly` surface (chain E).
  * - DEF-008: routing and execution share the DEFAULT_ROSTER binding,
  *   enforced by assertRosterBinding at assembly (chain E).
- * - DEF-010: pendingPatch stays unset for the whole run — the CODER→REVIEWER
- *   patch flow travels via worktree refs (branchOrPatch slice) + git_diff,
+ * - DEF-010: pendingPatch is absent for the whole run — the CODER→REVIEWER
+ *   flow travels via worktree refs (branchOrIntegration slice) + git_diff,
  *   proving no State patch-metadata consumer exists (chain 1).
  * - DEF-005: resolved in this PR — the biome-backed lint-server
  *   (packages/tools/lint) lands and the catalog grants `lint_check`; the
@@ -589,9 +589,9 @@ describe('Phase 2 exit: six-role happy path (scripted LLM, real MCP fs/git + Loc
     for (const role of ['COORDINATOR', 'PM', 'ARCHITECT', 'CODER', 'TESTER', 'REVIEWER']) {
       expect(roles).toContain(role);
     }
-    // DEF-010: pendingPatch stayed unset for the whole run — the patch flow
-    // travels via worktree refs (branchOrPatch) + git_diff, no State metadata.
-    expect(final.pendingPatch).toBeUndefined();
+    // DEF-010: pendingPatch is absent for the whole run — the change flow
+    // travels via worktree refs (branchOrIntegration) + git_diff, no State metadata.
+    expect('pendingPatch' in final).toBe(false);
     // D16 replaces the old DEF-007 direct-finalize simplification.
     expect(final.humanGate?.reason).toBe('completion_confirmation:rv-approved');
   });
@@ -712,7 +712,8 @@ describe('Phase 2 exit: six-role happy path (scripted LLM, real MCP fs/git + Loc
     });
     expect(projectionOf('ARCHITECT').slices.repoStructure).toEqual({});
     expect(
-      (projectionOf('CODER').slices.assignedSubtask as { worktree: string }[])[0]?.worktree,
+      (projectionOf('CODER').slices.assignedSubtask as { worktree: { path: string } }[])[0]
+        ?.worktree.path,
     ).toBe(runtime.worktree.path);
     expect(
       (projectionOf('TESTER').slices.acceptance as { requirements: { id: string }[] })
@@ -723,7 +724,10 @@ describe('Phase 2 exit: six-role happy path (scripted LLM, real MCP fs/git + Loc
         (entry) => entry.name,
       ),
     ).toEqual(['add', 'mul']);
-    expect(projectionOf('REVIEWER').slices.pendingPatch).toBeNull();
+    expect(projectionOf('REVIEWER').slices.branchOrIntegration).toMatchObject({
+      worktrees: [{ worktree: { path: runtime.worktree.path } }],
+      integration: null,
+    });
     expect(projectionOf('REVIEWER').slices.conventions).toEqual({
       moduleSystem: 'commonjs',
       testRunner: 'node:test',
