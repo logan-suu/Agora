@@ -1,20 +1,14 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash } from 'node:crypto';
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  renameSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, renameSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative } from 'node:path';
 import type { Container } from 'dockerode';
 import Dockerode from 'dockerode';
-import { assertInside } from './path-guard';
 import type { RecoverableWorktreeBinding } from './recoverable-sandbox-manager';
+import { RootFileIndex } from './root-file-index';
 import type { SandboxManager } from './sandbox-manager';
+import { SecureFiles, withFrozenFileWrites } from './secure-files';
 import type { IntegrationResult, RunResult, Worktree } from './types';
 
 /** Default per-command timeout (decision R7: 30s). */
@@ -63,6 +57,18 @@ interface ContainerRecord {
   roles: Map<string, string>;
 }
 
+interface BoundWorktree {
+  path: string;
+  record?: ContainerRecord;
+  creating?: Promise<ContainerRecord>;
+}
+
+interface BoundTask {
+  root: string;
+  worktrees: Map<string, BoundWorktree>;
+  suspending: boolean;
+}
+
 /**
  * Phase 1+ sandbox implementation (decision D5 / spec §7.2).
  *
@@ -76,6 +82,7 @@ interface ContainerRecord {
  * only the implementation body differs from `LocalTempSandbox`.
  */
 export class DockerSandbox implements SandboxManager {
+  private readonly files = new RootFileIndex<SecureFiles>();
   private readonly docker: Dockerode;
   private readonly image: string;
   private readonly networkMode: string;
@@ -84,6 +91,9 @@ export class DockerSandbox implements SandboxManager {
   private readonly baseDir: string;
   private readonly containers = new Map<string, ContainerRecord>();
   private readonly creating = new Map<string, Promise<ContainerRecord>>();
+  private readonly boundTasks = new Map<string, BoundTask>();
+  private readonly fileOperations = new Map<string, Promise<unknown>>();
+  private readonly frozenFiles = new AsyncLocalStorage<ReadonlySet<string>>();
 
   constructor(options: DockerSandboxOptions = {}) {
     this.docker = options.docker ?? new Dockerode();
@@ -112,24 +122,39 @@ export class DockerSandbox implements SandboxManager {
     if (worktreeRel === '' || worktreeRel.startsWith('..')) {
       throw new Error('Git worktree is outside the task-owned workspace root');
     }
-    let record = this.containers.get(taskId);
-    if (record === undefined) record = await this.createContainer(taskId, canonicalRoot);
-    if (record.hostRoot !== canonicalRoot) {
+    if (this.containers.has(taskId) || this.creating.has(taskId))
+      throw new Error('cannot mix legacy and linked worktree Docker bindings');
+    let task = this.boundTasks.get(taskId);
+    if (task === undefined) {
+      task = { root: canonicalRoot, worktrees: new Map(), suspending: false };
+      this.boundTasks.set(taskId, task);
+    }
+    if (task.suspending) throw new Error('task Docker suspension is in progress');
+    if (task.root !== canonicalRoot) {
       throw new Error(`task "${taskId}" already has a different Docker workspace root`);
     }
-    const existing = record.roles.get(isolationKey);
-    if (existing !== undefined && existing !== canonicalWorktree) {
+    const existing = task.worktrees.get(isolationKey);
+    if (existing !== undefined && existing.path !== canonicalWorktree) {
       throw new Error(`isolation key "${isolationKey}" already maps to another worktree`);
     }
     if (
-      [...record.roles].some(([key, path]) => key !== isolationKey && path === canonicalWorktree)
+      [...task.worktrees].some(
+        ([key, binding]) => key !== isolationKey && binding.path === canonicalWorktree,
+      )
     ) {
       throw new Error('two isolation keys cannot share one Docker worktree path');
     }
-    record.roles.set(isolationKey, canonicalWorktree);
+    if (existing !== undefined)
+      this.filesFor({ ...worktree, path: canonicalWorktree }).verifyRoot();
+    if (existing === undefined) {
+      task.worktrees.set(isolationKey, { path: canonicalWorktree });
+      this.files.set(worktree.path, new SecureFiles(worktree.path, 'sandbox'));
+    }
   }
 
   async createWorktree(taskId: string, role: string): Promise<Worktree> {
+    if (this.boundTasks.has(taskId))
+      throw new Error('cannot mix legacy and linked worktree Docker bindings');
     const record = await this.ensureContainer(taskId);
     const roleDir = sanitizeSegment(role);
     const hostPath = join(record.hostRoot, roleDir);
@@ -148,24 +173,81 @@ export class DockerSandbox implements SandboxManager {
     }
     mkdirSync(hostPath, { recursive: true });
     record.roles.set(role, hostPath);
+    this.files.set(hostPath, new SecureFiles(hostPath, 'sandbox'));
     // One container per task: the worktree path is the role's host dir inside
     // the shared bind mount; the container path is derived on demand.
     return { path: hostPath, branch: `${taskId}-${role}` };
   }
 
+  private filesFor(worktree: Worktree): SecureFiles {
+    const files = this.files.get(worktree.path);
+    if (files === undefined) throw new Error('worktree not registered');
+    return files;
+  }
+
   async read(worktree: Worktree, path: string): Promise<string> {
-    const target = assertInside(worktree.path, path);
-    return readFileSync(target, 'utf8');
+    return this.filesFor(worktree).read(path);
   }
 
   async write(worktree: Worktree, path: string, content: string): Promise<void> {
-    const target = assertInside(worktree.path, path);
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, content, 'utf8');
+    this.filesFor(worktree).write(path, content);
   }
 
   async run(worktree: Worktree, cmd: string, timeout = DEFAULT_TIMEOUT_MS): Promise<RunResult> {
-    const record = this.recordFor(worktree);
+    const root = realpathSync(worktree.path);
+    if (this.frozenFiles.getStore()?.has(root))
+      throw new Error('cannot execute while worktree files are frozen');
+    return this.serializeFiles(root, () => this.runCommand(worktree, cmd, timeout));
+  }
+
+  /** Quiesce container processes during trusted Git and archive operations. */
+  async withStableFiles<T>(path: string, operation: () => Promise<T>): Promise<T> {
+    const root = realpathSync(path);
+    if (this.frozenFiles.getStore()?.has(root)) return operation();
+    return this.serializeFiles(root, () =>
+      withFrozenFileWrites(root, async () => {
+        let record: ContainerRecord | undefined;
+        for (const task of this.boundTasks.values()) {
+          const binding = [...task.worktrees.values()].find((entry) => entry.path === root);
+          if (binding === undefined) continue;
+          if (task.suspending) throw new Error('task Docker suspension is in progress');
+          record = binding.record;
+        }
+        const frozen = new Set([...(this.frozenFiles.getStore() ?? []), root]);
+        if (record === undefined) return this.frozenFiles.run(frozen, operation);
+        await record.container.pause();
+        let failure: unknown;
+        try {
+          return await this.frozenFiles.run(frozen, operation);
+        } catch (error) {
+          failure = error;
+          throw error;
+        } finally {
+          await record.container.unpause().catch((error: unknown) => {
+            throw new AggregateError(
+              failure === undefined ? [error] : [failure, error],
+              'worktree unpause failed',
+            );
+          });
+        }
+      }),
+    );
+  }
+
+  private async serializeFiles<T>(root: string, operation: () => Promise<T>): Promise<T> {
+    const result = (this.fileOperations.get(root) ?? Promise.resolve())
+      .catch(() => undefined)
+      .then(operation);
+    this.fileOperations.set(root, result);
+    try {
+      return await result;
+    } finally {
+      if (this.fileOperations.get(root) === result) this.fileOperations.delete(root);
+    }
+  }
+
+  private async runCommand(worktree: Worktree, cmd: string, timeout: number): Promise<RunResult> {
+    const record = await this.recordFor(worktree);
     const containerPath = this.toContainerPath(record, worktree.path);
     // Docker has no POST /exec/{id}/kill (404); wrap the command in coreutils
     // `timeout -s KILL` so a timeout kills only the exec process group and the
@@ -252,6 +334,10 @@ export class DockerSandbox implements SandboxManager {
   }
 
   async teardown(taskId: string): Promise<void> {
+    if (this.boundTasks.has(taskId)) {
+      await this.suspend(taskId);
+      return;
+    }
     const record = this.containers.get(taskId);
     if (record === undefined) {
       return;
@@ -267,6 +353,29 @@ export class DockerSandbox implements SandboxManager {
 
   /** Stop runtime resources without moving the host worktree (D4 non-terminal suspend). */
   async suspend(taskId: string): Promise<void> {
+    const task = this.boundTasks.get(taskId);
+    if (task !== undefined) {
+      task.suspending = true;
+      const results = await Promise.allSettled(
+        [...task.worktrees.values()].map(async (binding) => {
+          await this.fileOperations.get(binding.path)?.catch(() => undefined);
+          if (binding.creating !== undefined) await binding.creating.catch(() => undefined);
+          if (binding.record === undefined) return;
+          // Force removal stops all processes. Keep failed records for a retry.
+          await binding.record.container.remove({ force: true }).catch((error: unknown) => {
+            if (!(error instanceof Error && 'statusCode' in error && error.statusCode === 404))
+              throw error;
+          });
+          delete binding.record;
+        }),
+      );
+      const errors = results.flatMap((result) =>
+        result.status === 'rejected' ? [result.reason] : [],
+      );
+      if (errors.length > 0) throw new AggregateError(errors, 'task Docker suspension failed');
+      this.boundTasks.delete(taskId);
+      return;
+    }
     const record = this.containers.get(taskId);
     if (record === undefined) return;
     this.containers.delete(taskId);
@@ -300,6 +409,7 @@ export class DockerSandbox implements SandboxManager {
       }
       hostRoot = parent;
       roles.set(binding.role, path);
+      this.files.set(binding.worktree.path, new SecureFiles(binding.worktree.path, 'sandbox'));
     }
     const active = this.containers.get(taskId);
     if (active !== undefined) {
@@ -340,6 +450,12 @@ export class DockerSandbox implements SandboxManager {
     await this.ensureImage();
     const hostRoot =
       existingHostRoot ?? mkdtempSync(join(this.baseDir, dockerTaskRootPrefix(taskId)));
+    const record = await this.startContainer(hostRoot);
+    this.containers.set(taskId, record);
+    return record;
+  }
+
+  private async startContainer(hostRoot: string): Promise<ContainerRecord> {
     const container = await this.docker.createContainer({
       Image: this.image,
       Cmd: ['sleep', 'infinity'],
@@ -353,9 +469,15 @@ export class DockerSandbox implements SandboxManager {
         SecurityOpt: ['no-new-privileges:true'],
       },
     });
-    await container.start();
+    try {
+      await container.start();
+    } catch (error) {
+      await container.remove({ force: true }).catch((cleanupError) => {
+        throw new AggregateError([error, cleanupError], 'container start and cleanup failed');
+      });
+      throw error;
+    }
     const record: ContainerRecord = { container, hostRoot, roles: new Map() };
-    this.containers.set(taskId, record);
     return record;
   }
 
@@ -389,8 +511,28 @@ export class DockerSandbox implements SandboxManager {
   }
 
   /** Locate the container record that owns a given worktree path. */
-  private recordFor(worktree: Worktree): ContainerRecord {
+  private async recordFor(worktree: Worktree): Promise<ContainerRecord> {
     const canonicalWorktree = realpathSync(worktree.path);
+    for (const task of this.boundTasks.values()) {
+      for (const binding of task.worktrees.values()) {
+        if (binding.path !== canonicalWorktree) continue;
+        if (task.suspending) throw new Error('task Docker suspension is in progress');
+        if (binding.record !== undefined) return binding.record;
+        if (binding.creating !== undefined) return binding.creating;
+        const creating = (async () => {
+          await this.ensureImage();
+          const record = await this.startContainer(binding.path);
+          binding.record = record;
+          return record;
+        })();
+        binding.creating = creating;
+        try {
+          return await creating;
+        } finally {
+          delete binding.creating;
+        }
+      }
+    }
     for (const record of this.containers.values()) {
       if ([...record.roles.values()].some((path) => realpathSync(path) === canonicalWorktree)) {
         return record;

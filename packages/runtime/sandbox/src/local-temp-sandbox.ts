@@ -1,19 +1,12 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  renameSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, renameSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
-import { assertInside } from './path-guard';
+import { basename, join } from 'node:path';
 import type { RecoverableWorktreeBinding } from './recoverable-sandbox-manager';
+import { RootFileIndex } from './root-file-index';
 import type { SandboxManager } from './sandbox-manager';
+import { type RootFiles, SecureFiles } from './secure-files';
 import type { IntegrationResult, RunResult, Worktree } from './types';
 
 /** Default per-command timeout (decision R7: 30s). */
@@ -28,30 +21,46 @@ const TEARDOWN_STAGING = join(tmpdir(), 'agora-sandbox-trash');
  * Uses Node.js native `fs.mkdtempSync` for an isolated temp directory and
  * `child_process.spawn` for command execution. No Docker, no Git worktrees
  * until Phase 1+; the interface signature stays identical (decision R9).
- * Path confinement delegates to the shared {@link assertInside} guard
- * (DEF-001: realpath-hardened against symlink escape).
+ * File access uses identity-pinned directory capabilities, including when a
+ * trusted composition borrows a Git-created worktree.
  */
 export class LocalTempSandbox implements SandboxManager {
   /** Tracks the temp dir created per taskId so teardown can locate it. */
+  private readonly files = new RootFileIndex<RootFiles>();
   private readonly roots = new Map<string, string>();
 
   createWorktree(taskId: string, role: string): Promise<Worktree> {
     const prefix = localWorktreePrefix(taskId, role);
     const path = mkdtempSync(join(tmpdir(), prefix));
     this.roots.set(taskId, path);
+    this.files.set(path, new SecureFiles(path, 'sandbox'));
     // Phase 0 has no real Git branches (decision D5); branch is a placeholder.
     return Promise.resolve({ path, branch: `${taskId}-${role}` });
   }
 
+  /** Trusted companion: borrow an already registered file capability, without taking ownership. */
+  bindFiles(worktree: Worktree, files: RootFiles): void {
+    const existing = this.files.get(worktree.path);
+    if (existing !== undefined) {
+      existing.verifyRoot();
+      return;
+    }
+    files.verifyRoot();
+    this.files.set(worktree.path, files);
+  }
+
+  private filesFor(worktree: Worktree): RootFiles {
+    const files = this.files.get(worktree.path);
+    if (files === undefined) throw new Error('worktree not registered');
+    return files;
+  }
+
   async read(worktree: Worktree, path: string): Promise<string> {
-    const target = assertInside(worktree.path, path);
-    return readFileSync(target, 'utf8');
+    return this.filesFor(worktree).read(path);
   }
 
   async write(worktree: Worktree, path: string, content: string): Promise<void> {
-    const target = assertInside(worktree.path, path);
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, content, 'utf8');
+    this.filesFor(worktree).write(path, content);
   }
 
   run(worktree: Worktree, cmd: string, timeout = DEFAULT_TIMEOUT_MS): Promise<RunResult> {
@@ -74,6 +83,7 @@ export class LocalTempSandbox implements SandboxManager {
       return Promise.resolve();
     }
     this.roots.delete(taskId);
+    this.files.delete(root);
     // Move (not delete) to honor file protection (spec §6 teardown comment).
     mkdirSync(TEARDOWN_STAGING, { recursive: true });
     const destination = join(TEARDOWN_STAGING, basename(root));
@@ -106,6 +116,7 @@ export class LocalTempSandbox implements SandboxManager {
       );
     }
     this.roots.set(taskId, canonical);
+    this.files.set(path, new SecureFiles(path, 'sandbox'));
     return Promise.resolve();
   }
 }

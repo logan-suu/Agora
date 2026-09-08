@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, realpathSync, rmSync, symlinkSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -145,4 +145,30 @@ describe('LocalTempSandbox', () => {
     // Second teardown of an unknown task is a no-op.
     await expect(sandbox.teardown('never-created')).resolves.toBeUndefined();
   });
+});
+
+it('restores alias and canonical file access without accepting alias retargeting', async () => {
+  const owner = new LocalTempSandbox();
+  const original = await owner.createWorktree('alias-task', 'shared');
+  const base = mkdtempSync(join(tmpdir(), 'agora-alias-test-'));
+  const alias = join(base, 'alias');
+  symlinkSync(original.path, alias);
+  const resumed = new LocalTempSandbox();
+  try {
+    await owner.write(original, 'value', 'durable');
+    await resumed.resume('alias-task', [
+      { role: 'shared', worktree: { ...original, path: alias } },
+    ]);
+    const canonical = { ...original, path: realpathSync(original.path) };
+    expect(await resumed.read(canonical, 'value')).toBe('durable');
+    await resumed.write({ ...original, path: alias }, 'value', 'updated');
+    expect(await resumed.read(canonical, 'value')).toBe('updated');
+    unlinkSync(alias);
+    symlinkSync(base, alias);
+    await expect(resumed.read({ ...original, path: alias }, 'value')).rejects.toThrow(/retargeted/);
+    await expect(resumed.read(canonical, 'value')).rejects.toThrow(/retargeted/);
+  } finally {
+    await owner.teardown('alias-task');
+    rmSync(base, { recursive: true, force: true });
+  }
 });

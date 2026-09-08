@@ -1,5 +1,6 @@
 import { realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { type RootFiles, SecureFiles } from '@agora/runtime-sandbox/secure-files';
 
 /**
  * Allowlist of worktree roots an fs-server may touch.
@@ -20,16 +21,24 @@ import { resolve } from 'node:path';
  */
 export class WorktreeRegistry {
   private readonly canonicalRoots = new Map<string, string>();
+  private readonly files = new Map<string, RootFiles>();
 
   /** Register a worktree root, binding its canonical (symlink-resolved) path. */
   register(root: string): void {
     const lexical = resolve(root);
+    const existing = this.files.get(lexical);
+    if (existing !== undefined) {
+      existing.verifyRoot();
+      return;
+    }
     this.canonicalRoots.set(lexical, realpathSync(lexical));
+    this.files.set(lexical, new SecureFiles(root));
   }
 
   /** Remove a worktree root from the allowlist. */
   unregister(root: string): void {
     this.canonicalRoots.delete(resolve(root));
+    this.files.delete(resolve(root));
   }
 
   /**
@@ -38,5 +47,11 @@ export class WorktreeRegistry {
    */
   canonicalOf(root: string): string | undefined {
     return this.canonicalRoots.get(resolve(root));
+  }
+
+  filesFor(root: string): RootFiles {
+    const files = this.files.get(resolve(root));
+    if (files === undefined) throw new Error(`worktree not registered: ${root}`);
+    return files;
   }
 }

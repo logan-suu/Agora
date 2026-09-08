@@ -55,19 +55,18 @@ async function fixture() {
 async function receiptFixture() {
   const root = await mkdtemp(join(tmpdir(), 'agora-validation-replay-'));
   cleanups.push(() => rm(root, { recursive: true, force: true }));
-  const git = new WorktreeGitService(
-    new WorktreeRegistry(),
-    join(root, 'repository'),
-    join(root, 'worktrees'),
-  );
+  const registry = new WorktreeRegistry();
+  const git = new WorktreeGitService(registry, join(root, 'repository'), join(root, 'worktrees'));
   cleanups.push(() => git.dispose());
   const sandbox = new ObservedSandbox();
   const base = await git.canonicalHead();
   const coder = await git.createWorktreeFrom('task', 'coder', base);
+  sandbox.bindFiles(coder, registry.filesFor(coder.path));
   await sandbox.write(coder, 'answer.mjs', 'export const answer = 42;\n');
   const codeHead = await git.applyPatch(coder.path, '');
   const integration = await git.createWorktreeFrom('task', 'integration', codeHead);
   const testing = await git.createWorktreeFrom('task', 'testing', codeHead);
+  sandbox.bindFiles(testing, registry.filesFor(testing.path));
   await sandbox.write(
     testing,
     'answer.test.mjs',

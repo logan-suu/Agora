@@ -12,6 +12,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
+import { SecureFiles } from '@agora/runtime-sandbox/secure-files';
 import type { WorktreeRegistry } from '@agora/tools-fs';
 import {
   CheckRepoActions,
@@ -162,14 +163,15 @@ export async function initializeRegisteredWorktree(
   root: string,
 ): Promise<void> {
   const canonicalRoot = realpathSync(resolve(root));
-  const git = simpleGit(canonicalRoot);
+  const git = trustedGit(canonicalRoot);
   if (!(await git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT))) {
-    await git.init();
+    await git.init(['--initial-branch=main']);
     await git.addConfig('user.name', 'Agora');
     await git.addConfig('user.email', 'agora@localhost');
     await git.commit('initial', [], { '--allow-empty': null });
   }
   registry.register(root);
+  pinMetadata(registry, canonicalRoot, (await git.revparse(['--absolute-git-dir'])).trim());
 }
 
 /**
@@ -193,7 +195,14 @@ export class WorktreeGitService implements GitService {
   private disposed = false;
   private mainRepo: SimpleGit | undefined;
 
-  constructor(registry: WorktreeRegistry, mainRepoPath?: string, worktreesDir?: string) {
+  constructor(
+    registry: WorktreeRegistry,
+    mainRepoPath?: string,
+    worktreesDir?: string,
+    private readonly protection?: {
+      withWorktree<T>(path: string, operation: () => Promise<T>): Promise<T>;
+    },
+  ) {
     this.registry = registry;
     if (mainRepoPath !== undefined) {
       this.mainRepoPath = mainRepoPath;
@@ -211,33 +220,45 @@ export class WorktreeGitService implements GitService {
   }
 
   async applyPatch(worktree: string, patch: string, signal?: AbortSignal): Promise<string> {
-    const canonicalRoot = this.assertRegistered(worktree);
-    signal?.throwIfAborted();
-    const git = simpleGit(canonicalRoot);
-    // simple-git passes the patch as a command-line arg (a file path), so the
-    // patch text is staged to a temp file outside the worktree before applying.
-    const patchDir = mkdtempSync(join(tmpdir(), 'agora-patch-'));
-    const patchFile = join(patchDir, 'patch.diff');
-    writeFileSync(patchFile, patch, 'utf8');
-    try {
-      if (patch.trim().length > 0) await git.applyPatch(patchFile, ['--whitespace=nowarn']);
-    } finally {
-      rmSync(patchDir, { recursive: true, force: true });
-    }
-    // Cooperative cancellation (task 1.5 timeout policy): never stage+commit
-    // after the caller aborted — a late commit would land silently after the
-    // model was told the tool timed out.
-    signal?.throwIfAborted();
-    await git.add(['-A']);
-    signal?.throwIfAborted();
-    await git.commit('apply patch');
-    return (await git.revparse(['HEAD'])).trim();
+    this.assertRegistered(worktree);
+    const operation = async () => {
+      const canonicalRoot = this.assertRegistered(worktree);
+      signal?.throwIfAborted();
+      const git = this.worktreeGit(canonicalRoot);
+      // simple-git passes the patch as a command-line arg (a file path), so the
+      // patch text is staged to a temp file outside the worktree before applying.
+      const patchDir = mkdtempSync(join(tmpdir(), 'agora-patch-'));
+      const patchFile = join(patchDir, 'patch.diff');
+      writeFileSync(patchFile, patch, 'utf8');
+      try {
+        if (patch.trim().length > 0) await git.applyPatch(patchFile, ['--whitespace=nowarn']);
+      } finally {
+        rmSync(patchDir, { recursive: true, force: true });
+      }
+      // Cooperative cancellation (task 1.5 timeout policy): never stage+commit
+      // after the caller aborted — a late commit would land silently after the
+      // model was told the tool timed out.
+      signal?.throwIfAborted();
+      await git.add(['-A']);
+      signal?.throwIfAborted();
+      await git.commit('apply patch');
+      return (await git.revparse(['HEAD'])).trim();
+    };
+    return this.protection === undefined
+      ? operation()
+      : this.protection.withWorktree(worktree, operation);
   }
 
   async diff(worktree: string, ref?: string): Promise<UnifiedDiff> {
-    const canonicalRoot = this.assertRegistered(worktree);
-    const git = simpleGit(canonicalRoot);
-    return ref === undefined ? git.diff(['HEAD']) : git.diff([validateRefArg(ref, 'ref')]);
+    this.assertRegistered(worktree);
+    const operation = async () => {
+      const canonicalRoot = this.assertRegistered(worktree);
+      const git = this.worktreeGit(canonicalRoot);
+      return ref === undefined ? git.diff(['HEAD']) : git.diff([validateRefArg(ref, 'ref')]);
+    };
+    return this.protection === undefined
+      ? operation()
+      : this.protection.withWorktree(worktree, operation);
   }
 
   async createWorktree(
@@ -277,12 +298,23 @@ export class WorktreeGitService implements GitService {
       throw error;
     }
     this.registry.register(path);
+    pinMetadata(
+      this.registry,
+      realpathSync(path),
+      (await trustedGit(path).revparse(['--absolute-git-dir'])).trim(),
+    );
     return { path, branch };
   }
 
   async headOf(worktree: string): Promise<string> {
-    const canonicalRoot = this.assertRegistered(worktree);
-    return (await simpleGit(canonicalRoot).revparse(['HEAD'])).trim();
+    this.assertRegistered(worktree);
+    const operation = async () => {
+      const canonicalRoot = this.assertRegistered(worktree);
+      return (await this.worktreeGit(canonicalRoot).revparse(['HEAD'])).trim();
+    };
+    return this.protection === undefined
+      ? operation()
+      : this.protection.withWorktree(worktree, operation);
   }
 
   /** Trusted verification companion; never exposed as a model mutation tool. */
@@ -297,32 +329,44 @@ export class WorktreeGitService implements GitService {
     changedPaths: string[];
     trackedFiles: string[];
   }> {
-    const root = this.assertRegistered(worktree);
-    const git = simpleGit(root);
-    const base = validateRefArg(inputCommit, 'validation input commit');
-    const [head, status, ignored, changed, tracked, baseTracked] = await Promise.all([
-      git.revparse(['HEAD']),
-      git.raw(['status', '--porcelain=v1', '--untracked-files=all']),
-      git.raw(['ls-files', '--others', '--ignored', '--exclude-standard', '-z']),
-      git.raw(['diff', '--name-only', '-z', base, 'HEAD']),
-      git.raw(['ls-files', '-z']),
-      git.raw(['ls-tree', '-r', '--name-only', '-z', base]),
-    ]);
-    const trackedFiles = tracked.split('\0').filter(Boolean);
-    const present = new Set(trackedFiles);
-    return {
-      headCommit: head.trim(),
-      dirty: status.length > 0 || ignored.length > 0,
-      uncommittedChanges: status.length > 0,
-      removedPaths: baseTracked.split('\0').filter((path) => path !== '' && !present.has(path)),
-      changedPaths: changed.split('\0').filter(Boolean),
-      trackedFiles,
+    this.assertRegistered(worktree);
+    const operation = async () => {
+      const root = this.assertRegistered(worktree);
+      const git = this.worktreeGit(root);
+      const base = validateRefArg(inputCommit, 'validation input commit');
+      const [head, status, ignored, changed, tracked, baseTracked] = await Promise.all([
+        git.revparse(['HEAD']),
+        git.raw(['status', '--porcelain=v1', '--untracked-files=all']),
+        git.raw(['ls-files', '--others', '--ignored', '--exclude-standard', '-z']),
+        git.raw(['diff', '--name-only', '-z', base, 'HEAD']),
+        git.raw(['ls-files', '-z']),
+        git.raw(['ls-tree', '-r', '--name-only', '-z', base]),
+      ]);
+      const trackedFiles = tracked.split('\0').filter(Boolean);
+      const present = new Set(trackedFiles);
+      return {
+        headCommit: head.trim(),
+        dirty: status.length > 0 || ignored.length > 0,
+        uncommittedChanges: status.length > 0,
+        removedPaths: baseTracked.split('\0').filter((path) => path !== '' && !present.has(path)),
+        changedPaths: changed.split('\0').filter(Boolean),
+        trackedFiles,
+      };
     };
+    return this.protection === undefined
+      ? operation()
+      : this.protection.withWorktree(worktree, operation);
   }
 
   async branchOf(worktree: string): Promise<string> {
-    const canonicalRoot = this.assertRegistered(worktree);
-    return (await simpleGit(canonicalRoot).revparse(['--abbrev-ref', 'HEAD'])).trim();
+    this.assertRegistered(worktree);
+    const operation = async () => {
+      const canonicalRoot = this.assertRegistered(worktree);
+      return (await this.worktreeGit(canonicalRoot).revparse(['--abbrev-ref', 'HEAD'])).trim();
+    };
+    return this.protection === undefined
+      ? operation()
+      : this.protection.withWorktree(worktree, operation);
   }
 
   async canonicalHead(): Promise<string> {
@@ -341,7 +385,29 @@ export class WorktreeGitService implements GitService {
     const lexical = resolve(worktree);
     let registered = false;
     try {
-      const candidate = simpleGit(lexical);
+      const candidatePath = realpathSync(lexical);
+      const canonicalPath = realpathSync(resolve(this.mainRepoPath));
+      if (candidatePath === canonicalPath) {
+        throw new Error('persisted worktree cannot be the canonical main worktree');
+      }
+      const common = gitPath(this.mainRepoPath, await main.revparse(['--git-common-dir']));
+      let marker: string;
+      try {
+        marker = new SecureFiles(lexical).read('.git').trim();
+      } catch (cause) {
+        throw new Error(
+          'persisted worktree does not belong to the configured canonical repository',
+          { cause },
+        );
+      }
+      if (!marker.startsWith('gitdir: ') || marker.includes('\n'))
+        throw new Error('invalid linked worktree metadata');
+      const metadata = realpathSync(resolve(lexical, marker.slice(8)));
+      if (dirname(metadata) !== join(common, 'worktrees'))
+        throw new Error(
+          'persisted worktree does not belong to the configured canonical repository',
+        );
+      const candidate = trustedGit(lexical, metadata);
       const branch = (await candidate.revparse(['--abbrev-ref', 'HEAD'])).trim();
       if (expectedBranch !== undefined && branch !== expectedBranch) {
         throw new Error(
@@ -349,11 +415,6 @@ export class WorktreeGitService implements GitService {
         );
       }
       validateBranchName(branch);
-      const candidatePath = realpathSync(lexical);
-      const canonicalPath = realpathSync(resolve(this.mainRepoPath));
-      if (candidatePath === canonicalPath) {
-        throw new Error('persisted worktree cannot be the canonical main worktree');
-      }
       const [headCommit, canonicalCommonDir, candidateCommonDir, worktreeList] = await Promise.all([
         candidate.revparse(['HEAD']).then((value) => value.trim()),
         main.revparse(['--git-common-dir']).then((value) => gitPath(this.mainRepoPath, value)),
@@ -378,6 +439,7 @@ export class WorktreeGitService implements GitService {
         );
       }
       this.registry.register(lexical);
+      pinMetadata(this.registry, candidatePath, metadata);
       registered = true;
       if (!this.createdWorktrees.has(candidatePath))
         this.createdWorktrees.set(candidatePath, branch);
@@ -409,14 +471,20 @@ export class WorktreeGitService implements GitService {
     const registered = await this.registerExistingWorktree(worktree, expectedBranch);
     const mainHead = await this.canonicalHead();
     const baseCommit = (
-      await simpleGit(registered.path).raw(['merge-base', registered.headCommit, mainHead])
+      await this.worktreeGit(registered.path).raw(['merge-base', registered.headCommit, mainHead])
     ).trim();
     return { ...registered, baseCommit };
   }
 
   async resetWorktree(worktree: string, commit: string): Promise<void> {
-    const target = this.assertRegistered(worktree);
-    await simpleGit(target).reset(['--hard', validateRefArg(commit, 'reset commit')]);
+    this.assertRegistered(worktree);
+    const operation = async () => {
+      const target = this.assertRegistered(worktree);
+      await this.worktreeGit(target).reset(['--hard', validateRefArg(commit, 'reset commit')]);
+    };
+    return this.protection === undefined
+      ? operation()
+      : this.protection.withWorktree(worktree, operation);
   }
 
   async isAncestor(ancestor: string, descendant: string): Promise<boolean> {
@@ -445,27 +513,33 @@ export class WorktreeGitService implements GitService {
     branch: string,
     signal?: AbortSignal,
   ): Promise<MergeResult> {
-    const target = this.assertRegistered(targetWorktree);
-    const branchRef = validateRefArg(branch, 'branch');
-    const git = simpleGit(target);
-    try {
-      signal?.throwIfAborted();
-      const result = await git.merge([branchRef]);
-      if (result.result.includes('CONFLICT')) {
-        const conflicts = conflictPaths(result);
-        await abortMerge(git, target);
+    this.assertRegistered(targetWorktree);
+    const operation = async () => {
+      const target = this.assertRegistered(targetWorktree);
+      const branchRef = validateRefArg(branch, 'branch');
+      const git = this.worktreeGit(target);
+      try {
+        signal?.throwIfAborted();
+        const result = await git.merge([branchRef]);
+        if (result.result.includes('CONFLICT')) {
+          const conflicts = conflictPaths(result);
+          await abortMerge(git, target);
+          return { ok: false, conflicts };
+        }
+        return { ok: true, headCommit: (await git.revparse(['HEAD'])).trim() };
+      } catch (error) {
+        const conflicts =
+          error instanceof GitResponseError && error.git.conflicts.length > 0
+            ? conflictPaths(error.git as SimpleGitMergeResult)
+            : [humanMessage(error, `cannot merge branch: ${branchRef}`)];
+        if (await hasMergeHead(git, target)) await abortMerge(git, target);
+        if (error instanceof DOMException && error.name === 'AbortError') throw error;
         return { ok: false, conflicts };
       }
-      return { ok: true, headCommit: (await git.revparse(['HEAD'])).trim() };
-    } catch (error) {
-      const conflicts =
-        error instanceof GitResponseError && error.git.conflicts.length > 0
-          ? conflictPaths(error.git as SimpleGitMergeResult)
-          : [humanMessage(error, `cannot merge branch: ${branchRef}`)];
-      if (await hasMergeHead(git, target)) await abortMerge(git, target);
-      if (error instanceof DOMException && error.name === 'AbortError') throw error;
-      return { ok: false, conflicts };
-    }
+    };
+    return this.protection === undefined
+      ? operation()
+      : this.protection.withWorktree(targetWorktree, operation);
   }
 
   /**
@@ -538,11 +612,11 @@ export class WorktreeGitService implements GitService {
       return this.mainRepo;
     }
     mkdirSync(this.mainRepoPath, { recursive: true });
-    const git = simpleGit(this.mainRepoPath);
+    const git = trustedGit(this.mainRepoPath);
     // A task may live inside another checkout's ignored .data directory.
     // An ancestor repository must never become this task's canonical repo.
     if (!(await git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT))) {
-      await git.init();
+      await git.init(['--initial-branch=main']);
       await git.addConfig('user.name', 'Agora');
       await git.addConfig('user.email', 'agora@localhost');
       await git.add(['-A']);
@@ -550,6 +624,12 @@ export class WorktreeGitService implements GitService {
     }
     this.mainRepo = git;
     return git;
+  }
+
+  private worktreeGit(root: string): SimpleGit {
+    const metadata = metadataBindings.get(this.registry)?.get(realpathSync(root));
+    if (metadata === undefined) throw new Error('worktree Git metadata not registered');
+    return trustedGit(root, metadata);
   }
 
   /** Resolve the root to its bound canonical path, rejecting unregistered/retargeted roots. */
@@ -564,6 +644,7 @@ export class WorktreeGitService implements GitService {
       throw new Error(`worktree root retargeted: ${root}`);
     }
     accessSync(canonicalRoot, fsConstants.R_OK);
+    this.registry.filesFor(root).verifyRoot();
     return canonicalRoot;
   }
 }
@@ -641,4 +722,44 @@ async function abortMerge(git: SimpleGit, worktree: string): Promise<void> {
   if (await hasMergeHead(git, worktree)) {
     throw new Error('git merge --abort left MERGE_HEAD behind');
   }
+}
+
+// Pinned during trusted creation/recovery, before any model can edit the worktree.
+const metadataBindings = new WeakMap<WorktreeRegistry, Map<string, string>>();
+function pinMetadata(registry: WorktreeRegistry, root: string, metadata: string): void {
+  let bindings = metadataBindings.get(registry);
+  if (bindings === undefined) {
+    bindings = new Map();
+    metadataBindings.set(registry, bindings);
+  }
+  bindings.set(root, realpathSync(metadata));
+}
+
+function trustedGit(root: string, metadata?: string): SimpleGit {
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) =>
+      ['PATH', 'HOME', 'TMPDIR', 'TMP', 'TEMP', 'LANG', 'LC_ALL', 'SystemRoot'].includes(key),
+    ),
+  );
+  return simpleGit({
+    baseDir: root,
+    // Fixed values disable hooks and fsmonitor; callers cannot supply this configuration.
+    unsafe: {
+      allowUnsafeHooksPath: true,
+      allowUnsafeFsMonitor: true,
+      allowUnsafeProtocolOverride: true,
+      allowUnsafeConfigPaths: true,
+    },
+    config: [
+      'core.hooksPath=/dev/null',
+      'core.fsmonitor=false',
+      'core.attributesFile=/dev/null',
+      'protocol.file.allow=never',
+    ],
+  }).env({
+    ...env,
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_CONFIG_GLOBAL: '/dev/null',
+    ...(metadata === undefined ? {} : { GIT_DIR: metadata, GIT_WORK_TREE: root }),
+  });
 }

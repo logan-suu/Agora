@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import Dockerode from 'dockerode';
@@ -69,8 +69,21 @@ describeDocker('DockerSandbox (G5 real Docker execution)', () => {
     await expect(
       restarted.resume('docker-task-other', [{ role: 'CODER', worktree }]),
     ).rejects.toThrow(/does not belong to task/i);
-    await restarted.resume('docker-task-owner', [{ role: 'CODER', worktree }]);
-    await restarted.teardown('docker-task-owner');
+    const aliasRoot = mkdtempSync(join(tmpdir(), 'agora-docker-resume-alias-')),
+      alias = join(aliasRoot, 'alias');
+    symlinkSync(worktree.path, alias);
+    try {
+      await restarted.resume('docker-task-owner', [
+        { role: 'CODER', worktree: { ...worktree, path: alias } },
+      ]);
+      const restored = await restarted.createWorktree('docker-task-owner', 'CODER');
+      expect(restored.path).toBe(realpathSync(worktree.path));
+      await restarted.write(restored, 'resumed', 'durable');
+      expect(await restarted.read({ ...worktree, path: alias }, 'resumed')).toBe('durable');
+    } finally {
+      await restarted.teardown('docker-task-owner');
+      rmSync(aliasRoot, { recursive: true, force: true });
+    }
   }, 30_000);
 
   it('write then read round-trips content including nested paths', async () => {

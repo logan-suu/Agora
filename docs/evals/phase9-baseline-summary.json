@@ -1,0 +1,701 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-08T18:45:06.411Z",
+  "task": "9.5",
+  "groupId": "phase9-comparison-5a677346-85f6-4090-a872-247959886788",
+  "sourceCommit": "21fe533017295f922b6f2f406f9630a04c42c54e",
+  "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+  "sourceUnchangedDuringComparison": true,
+  "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+  "runnerVersion": "phase9-v1",
+  "modelConfig": {
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-flash",
+    "parameters": {
+      "maxTokens": 8192,
+      "temperature": 0.2,
+      "reasoningEffort": "high",
+      "retries": 0,
+      "contextLimit": 1000000,
+      "endpoint": "https://api.deepseek.com",
+      "requestReservationUsd": 0.45081344
+    }
+  },
+  "harnessVersion": "0.1.1-rc.2",
+  "nodeVersion": "v24.20.0",
+  "imageId": "sha256:6ced300970b1919c3ff96f482c6a342f2bca746922fcdc825e84e3b8f5ab3740",
+  "warmup": "Existing image and native helper prepared before timing; each attempt has fresh State, sessions, repository and containers. No model warmup.",
+  "leaderPolicy": "Approve only the normal completion_confirmation gate immediately after evidence checks; unexpected gates end the attempt without a guessed resolution.",
+  "dockerLimits": {
+    "memoryBytes": 536870912,
+    "cpuShares": 512,
+    "networkMode": "none"
+  },
+  "admissionCap": 3,
+  "budget": {
+    "perAttempt": {
+      "maxIterations": 8,
+      "maxDurationMs": 1200000,
+      "maxModelCalls": 120,
+      "maxToolCalls": 240,
+      "maxCostUsd": 2
+    },
+    "groupCostUsd": 10,
+    "groupMaxModelCalls": 1080,
+    "groupMaxToolCalls": 2160,
+    "groupMaxDurationMs": 10800000
+  },
+  "pricing": {
+    "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "checked": "2026-09-08",
+    "peak": {
+      "input": 0.44,
+      "cacheRead": 0.014,
+      "output": 1.32
+    },
+    "offPeak": {
+      "input": 0.22,
+      "cacheRead": 0.007,
+      "output": 0.66
+    }
+  },
+  "order": [
+    1,
+    2,
+    3,
+    2,
+    3,
+    1,
+    3,
+    1,
+    2
+  ],
+  "started": 9,
+  "passed": 0,
+  "failed": 9,
+  "totalEstimatedCostUsd": 0.05653133600000001,
+  "totalModelCalls": 13,
+  "totalToolCalls": 9,
+  "groups": [
+    {
+      "cap": 1,
+      "started": 3,
+      "passed": 0,
+      "failed": 3,
+      "successRate": 0,
+      "terminationDurationMsAllAttempts": {
+        "n": 3,
+        "mean": 75759.66666666667,
+        "median": 74064,
+        "sampleStdDev": 14630.384695329556
+      },
+      "completionDurationMsSuccessfulOnly": {
+        "n": 0,
+        "mean": null,
+        "median": null,
+        "sampleStdDev": null
+      },
+      "inputTokens": {
+        "n": 3,
+        "mean": 20080,
+        "median": 3037,
+        "sampleStdDev": 29521.073981141
+      },
+      "outputTokens": {
+        "n": 3,
+        "mean": 9247,
+        "median": 8192,
+        "sampleStdDev": 1827.3136019851656
+      },
+      "estimatedCostUsd": {
+        "n": 3,
+        "mean": 0.007721516,
+        "median": 0.0060748600000000005,
+        "sampleStdDev": 0.0033852520616013218
+      }
+    },
+    {
+      "cap": 2,
+      "started": 3,
+      "passed": 0,
+      "failed": 3,
+      "successRate": 0,
+      "terminationDurationMsAllAttempts": {
+        "n": 3,
+        "mean": 67237,
+        "median": 66129,
+        "sampleStdDev": 2772.354414572567
+      },
+      "completionDurationMsSuccessfulOnly": {
+        "n": 0,
+        "mean": null,
+        "median": null,
+        "sampleStdDev": null
+      },
+      "inputTokens": {
+        "n": 3,
+        "mean": 3038,
+        "median": 3038,
+        "sampleStdDev": 1
+      },
+      "outputTokens": {
+        "n": 3,
+        "mean": 8192,
+        "median": 8192,
+        "sampleStdDev": 0
+      },
+      "estimatedCostUsd": {
+        "n": 3,
+        "mean": 0.005647943999999999,
+        "median": 0.005475272,
+        "sampleStdDev": 0.0002992672228494125
+      }
+    },
+    {
+      "cap": 3,
+      "started": 3,
+      "passed": 0,
+      "failed": 3,
+      "successRate": 0,
+      "terminationDurationMsAllAttempts": {
+        "n": 3,
+        "mean": 70811,
+        "median": 69305,
+        "sampleStdDev": 3516.785890554044
+      },
+      "completionDurationMsSuccessfulOnly": {
+        "n": 0,
+        "mean": null,
+        "median": null,
+        "sampleStdDev": null
+      },
+      "inputTokens": {
+        "n": 3,
+        "mean": 3034.6666666666665,
+        "median": 3035,
+        "sampleStdDev": 1.5275252316519465
+      },
+      "outputTokens": {
+        "n": 3,
+        "mean": 8191.666666666667,
+        "median": 8192,
+        "sampleStdDev": 0.5773502691896257
+      },
+      "estimatedCostUsd": {
+        "n": 3,
+        "mean": 0.005474318666666668,
+        "median": 0.005474612,
+        "sampleStdDev": 7.072010558060425e-7
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "index": 1,
+      "runId": "phase9-wide-pipeline-model-a1-9f9ac105-0ff7-47de-81db-e4952ea9f347",
+      "cap": 1,
+      "attempt": 1,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "pm_output_window_exhausted",
+      "error": "PM turn produced no final message to interpret",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 3037,
+        "outputTokens": 8192,
+        "costUsd": 0.0060748600000000005,
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 62051
+      },
+      "stageDurations": {
+        "startToArchiveMs": 61770,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 61770,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 79
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 1,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 283,
+        "retainedLogicalBytesPeak": 158326,
+        "retainedAllocatedBytesPeak": 258048,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 158100,
+        "finalTaskAllocatedBytes": 249856,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a1-9f9ac105-0ff7-47de-81db-e4952ea9f347"
+    },
+    {
+      "index": 2,
+      "runId": "phase9-wide-pipeline-model-a1-71922229-1b1f-499b-a242-c39e96b89e90",
+      "cap": 2,
+      "attempt": 1,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "pm_output_window_exhausted",
+      "error": "PM turn produced no final message to interpret",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 3039,
+        "outputTokens": 8192,
+        "costUsd": 0.005993508,
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 65190
+      },
+      "stageDurations": {
+        "startToArchiveMs": 64879,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 64879,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 139
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 1,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 301,
+        "retainedLogicalBytesPeak": 164166,
+        "retainedAllocatedBytesPeak": 262144,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 163940,
+        "finalTaskAllocatedBytes": 253952,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a1-71922229-1b1f-499b-a242-c39e96b89e90"
+    },
+    {
+      "index": 3,
+      "runId": "phase9-wide-pipeline-model-a1-9b392aa1-277f-4501-b146-ccf6c86acb93",
+      "cap": 3,
+      "attempt": 1,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "pm_output_window_exhausted",
+      "error": "PM turn produced no final message to interpret",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 3036,
+        "outputTokens": 8192,
+        "costUsd": 0.005474832000000001,
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 69305
+      },
+      "stageDurations": {
+        "startToArchiveMs": 68020,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 68020,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 45
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 1,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 322,
+        "retainedLogicalBytesPeak": 166482,
+        "retainedAllocatedBytesPeak": 294912,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 165265,
+        "finalTaskAllocatedBytes": 258048,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a1-9b392aa1-277f-4501-b146-ccf6c86acb93"
+    },
+    {
+      "index": 4,
+      "runId": "phase9-wide-pipeline-model-a2-739470c7-1ee7-42a6-94a5-c442945c07c6",
+      "cap": 2,
+      "attempt": 2,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "pm_output_window_exhausted",
+      "error": "PM turn produced no final message to interpret",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 3038,
+        "outputTokens": 8192,
+        "costUsd": 0.005475272,
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 70392
+      },
+      "stageDurations": {
+        "startToArchiveMs": 69994,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 69994,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 119
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 1,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 326,
+        "retainedLogicalBytesPeak": 167618,
+        "retainedAllocatedBytesPeak": 266240,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 167392,
+        "finalTaskAllocatedBytes": 258048,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a2-739470c7-1ee7-42a6-94a5-c442945c07c6"
+    },
+    {
+      "index": 5,
+      "runId": "phase9-wide-pipeline-model-a2-f24bc173-b6ef-4df6-b507-51c50b56d82b",
+      "cap": 3,
+      "attempt": 2,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "pm_output_window_exhausted",
+      "error": "PM turn produced no final message to interpret",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 3035,
+        "outputTokens": 8192,
+        "costUsd": 0.005474612,
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 74830
+      },
+      "stageDurations": {
+        "startToArchiveMs": 74437,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 74437,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 138
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 1,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 346,
+        "retainedLogicalBytesPeak": 167955,
+        "retainedAllocatedBytesPeak": 266240,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 167729,
+        "finalTaskAllocatedBytes": 258048,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a2-f24bc173-b6ef-4df6-b507-51c50b56d82b"
+    },
+    {
+      "index": 6,
+      "runId": "phase9-wide-pipeline-model-a2-396106cc-4c3b-47c7-be6c-abe48e47aa78",
+      "cap": 1,
+      "attempt": 2,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "other",
+      "error": "PM final message is not valid JSON: SyntaxError: Expected property name or '}' in JSON at position 7345 (line 93 column 4)",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 3035,
+        "outputTokens": 8192,
+        "costUsd": 0.005474612,
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 74064
+      },
+      "stageDurations": {
+        "startToArchiveMs": 73754,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 73754,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 70
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 1,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 339,
+        "retainedLogicalBytesPeak": 167517,
+        "retainedAllocatedBytesPeak": 266240,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 167291,
+        "finalTaskAllocatedBytes": 258048,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a2-396106cc-4c3b-47c7-be6c-abe48e47aa78"
+    },
+    {
+      "index": 7,
+      "runId": "phase9-wide-pipeline-model-a3-28512090-90da-4520-9388-3316b42fda1e",
+      "cap": 3,
+      "attempt": 3,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "pm_output_window_exhausted",
+      "error": "PM turn produced no final message to interpret",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 3033,
+        "outputTokens": 8191,
+        "costUsd": 0.005473512000000001,
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 68298
+      },
+      "stageDurations": {
+        "startToArchiveMs": 67838,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 67838,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 155
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 1,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 311,
+        "retainedLogicalBytesPeak": 163937,
+        "retainedAllocatedBytesPeak": 262144,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 163711,
+        "finalTaskAllocatedBytes": 253952,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a3-28512090-90da-4520-9388-3316b42fda1e"
+    },
+    {
+      "index": 8,
+      "runId": "phase9-wide-pipeline-model-a3-5aaa417e-71df-4c10-b822-c60494ed333c",
+      "cap": 1,
+      "attempt": 3,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "architect_invalid_json",
+      "error": "ARCHITECT final message is not valid JSON: SyntaxError: Expected ',' or '}' after property value in JSON at position 10174 (line 1 column 10175)",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 54168,
+        "outputTokens": 11357,
+        "costUsd": 0.011615076,
+        "modelCalls": 5,
+        "toolCalls": 9,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 91164
+      },
+      "stageDurations": {
+        "startToArchiveMs": 90744,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 90744,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 30
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 2,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 415,
+        "retainedLogicalBytesPeak": 267069,
+        "retainedAllocatedBytesPeak": 417792,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 265626,
+        "finalTaskAllocatedBytes": 364544,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a3-5aaa417e-71df-4c10-b822-c60494ed333c"
+    },
+    {
+      "index": 9,
+      "runId": "phase9-wide-pipeline-model-a3-7627601f-affa-4386-9cab-a430564c3a71",
+      "cap": 2,
+      "attempt": 3,
+      "lifecycle": "final",
+      "status": "fail",
+      "failureClass": "pm_output_window_exhausted",
+      "error": "PM turn produced no final message to interpret",
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 3037,
+        "outputTokens": 8192,
+        "costUsd": 0.005475052,
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": 0,
+        "humanInterventions": 0,
+        "durationMs": 66129
+      },
+      "stageDurations": {
+        "startToArchiveMs": 65856,
+        "leaderWaitMs": "unknown",
+        "executionMinusLeaderMs": 65856,
+        "freshVerificationMs": "unknown",
+        "cleanupMs": 78
+      },
+      "workerLeasePeak": 1,
+      "finalWorkerLeases": 0,
+      "resources": {
+        "containerPeak": 0,
+        "retainedWorktreePeak": 1,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 302,
+        "retainedLogicalBytesPeak": 163286,
+        "retainedAllocatedBytesPeak": 262144,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 163060,
+        "finalTaskAllocatedBytes": 253952,
+        "finalLinkedWorktrees": 0,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "integrationConflicts": 0,
+      "cleanupErrors": [],
+      "sourceFingerprint": "f390ec0161f312023d89063edaaf2dde6962efd1242dd2c0adf0ea5d12d922b2",
+      "taskFingerprint": "a762080213e7333ffd88e0c30ef53df4566ae05df735d83249d80b939bfae899",
+      "evidenceDirectory": ".data/evals/phase9-wide-pipeline-model-a3-7627601f-affa-4386-9cab-a430564c3a71"
+    }
+  ],
+  "deterministic": {
+    "passed": 26,
+    "total": 26,
+    "independentExit": {
+      "workerLeasePeak": 3,
+      "codingWaves": [
+        [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        [
+          "E"
+        ]
+      ],
+      "validationTotals": [
+        7,
+        16
+      ],
+      "freshArtifactTests": 9
+    }
+  },
+  "regression": {
+    "testFiles": 116,
+    "tests": 982,
+    "passed": 982,
+    "liveFlashTestsIncluded": 3
+  },
+  "interpretation": {
+    "modelBaseline": "All attempts failed before CODER dispatch. Eight exhausted the 8192-token PM output window; one failed ARCHITECT JSON parsing. This fixed configuration does not support a concurrency performance comparison.",
+    "speedup": null,
+    "successLatencyDenominator": 0,
+    "terminationLatency": "All-attempt statistics measure failure termination, not successful completion.",
+    "statistics": "Three attempts per cap are exploratory; no significance or general speedup claim.",
+    "cost": "USD estimate from provider usage; excludes existing regression calls whose cost was not separately metered. Fork seeds are not counted as historical requests; every actual request is charged once.",
+    "resources": "200ms observations are sampled maxima, not strict CPU/memory peaks. Shared teardown-staging disk, CPU and memory usage are explicitly unknown.",
+    "nextExperiment": "Any changed output/reasoning configuration is a separate predeclared experiment; these nine failures must remain in the ledger."
+  }
+}

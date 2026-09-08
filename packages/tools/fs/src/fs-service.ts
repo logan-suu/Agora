@@ -1,14 +1,3 @@
-import {
-  accessSync,
-  type Dirent,
-  constants as fsConstants,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  realpathSync,
-  writeFileSync,
-} from 'node:fs';
-import { join, resolve, sep } from 'node:path';
 import type { WorktreeRegistry } from './worktree-registry';
 
 /** Optional 0-based character range for a read (`[start, end)`). */
@@ -25,9 +14,6 @@ export interface FsService {
   list(root: string, glob: string): string[];
 }
 
-/** Directories never surfaced by `list` (VCS / dependency noise). */
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.data']);
-
 /**
  * Worktree-scoped file service (spec §6 `fs-server`).
  *
@@ -40,54 +26,20 @@ export class WorktreeFsService implements FsService {
   constructor(private readonly registry: WorktreeRegistry) {}
 
   read(root: string, path: string, range?: ReadRange): string {
-    const target = this.assertInside(root, path);
-    const content = readFileSync(target, 'utf8');
+    const content = this.registry.filesFor(root).read(path);
     return range === undefined ? content : sliceContent(content, range);
   }
 
   write(root: string, path: string, content: string): void {
-    const target = this.assertInside(root, path);
-    mkdirSync(dirnameOf(target), { recursive: true });
-    writeFileSync(target, content, 'utf8');
+    this.registry.filesFor(root).write(path, content);
   }
 
   list(root: string, glob: string): string[] {
-    const rootResolved = this.assertRegistered(root);
     const matcher = globToRegExp(glob);
-    const matches: string[] = [];
-    walk(rootResolved, rootResolved, '', matches);
-    return matches.filter((rel) => matcher.test(rel)).sort();
-  }
-
-  private assertRegistered(root: string): string {
-    const lexical = resolve(root);
-    const bound = this.registry.canonicalOf(root);
-    if (bound === undefined) {
-      throw new Error(`worktree not registered: ${root}`);
-    }
-    const canonicalRoot = realpathSync(lexical);
-    if (canonicalRoot !== bound) {
-      throw new Error(`worktree root retargeted: ${root}`);
-    }
-    accessSync(canonicalRoot, fsConstants.R_OK);
-    return canonicalRoot;
-  }
-
-  /**
-   * Resolve `path` inside the worktree and reject any path that escapes it.
-   * Enforces decision R7: file operations are confined to the sandbox dir.
-   *
-   * Both the root and the resolved target are canonicalized with `realpath`
-   * (falling back to the nearest existing ancestor for not-yet-written paths)
-   * so a symlink inside the worktree cannot redirect access outside the root.
-   */
-  private assertInside(root: string, path: string): string {
-    const canonicalRoot = this.assertRegistered(root);
-    const target = realpathNearestExisting(resolve(canonicalRoot, path));
-    if (target !== canonicalRoot && !target.startsWith(canonicalRoot + sep)) {
-      throw new Error(`path escapes worktree root: ${path}`);
-    }
-    return target;
+    return this.registry
+      .filesFor(root)
+      .list()
+      .filter((path) => matcher.test(path));
   }
 }
 
@@ -98,25 +50,6 @@ function sliceContent(content: string, range: ReadRange): string {
     throw new Error(`range start (${start}) exceeds end (${end})`);
   }
   return content.slice(start, end);
-}
-
-/** Recursively collect file paths (relative to `base`, `/`-separated). */
-function walk(base: string, dir: string, rel: string, out: string[]): void {
-  let entries: Dirent[];
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return; // unreadable dir -> best-effort, skip silently
-  }
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) continue;
-      const childRel = rel === '' ? entry.name : `${rel}/${entry.name}`;
-      walk(base, join(dir, entry.name), childRel, out);
-    } else if (entry.isFile()) {
-      out.push(rel === '' ? entry.name : `${rel}/${entry.name}`);
-    }
-  }
 }
 
 /**
@@ -154,37 +87,4 @@ function segmentToRegExp(segment: string): string {
 
 function escapeRegExpChar(ch: string): string {
   return /[.*+?^${}()|[\]\\]/.test(ch) ? `\\${ch}` : ch;
-}
-
-function dirnameOf(path: string): string {
-  const last = path.lastIndexOf(sep);
-  return last > 0 ? path.slice(0, last) : path;
-}
-
-function basenameOf(path: string): string {
-  const last = path.lastIndexOf(sep);
-  return last >= 0 ? path.slice(last + 1) : path;
-}
-
-/**
- * Canonicalize `path`, walking up to the nearest existing ancestor when the
- * path does not exist yet (writes). Resolves every symlink above the nearest
- * existing component so an escaping symlink is surfaced to the caller.
- */
-function realpathNearestExisting(path: string): string {
-  const tail: string[] = [];
-  let current = path;
-  for (;;) {
-    try {
-      const canonical = realpathSync(current);
-      return tail.length === 0 ? canonical : join(canonical, ...tail.reverse());
-    } catch {
-      const parent = dirnameOf(current);
-      if (parent === current) {
-        throw new Error(`cannot resolve path: ${path}`);
-      }
-      tail.push(basenameOf(current));
-      current = parent;
-    }
-  }
 }

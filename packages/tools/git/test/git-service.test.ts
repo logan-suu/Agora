@@ -6,11 +6,12 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { WorktreeRegistry } from '@agora/tools-fs';
 import { simpleGit } from 'simple-git';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -532,17 +533,30 @@ describe('WorktreeGitService', () => {
     const service = new WorktreeGitService(registry);
     const { path } = await service.createWorktree('t1', 'feature-dispose');
     expect(existsSync(path)).toBe(true);
+    writeFileSync(join(path, 'retained-marker.txt'), path);
+    const inode = statSync(path).ino;
+    mkdirSync(GIT_TEARDOWN_STAGING, { recursive: true });
+    const before = new Set(readdirSync(GIT_TEARDOWN_STAGING));
 
     await service.dispose();
     expect(existsSync(path)).toBe(false);
-    const stagedBases = readdirSync(GIT_TEARDOWN_STAGING).filter((name) =>
-      name.startsWith('agora-git-'),
-    );
-    expect(stagedBases.length).toBeGreaterThanOrEqual(1);
-    const stagedWorktree = stagedBases
-      .map((name) => join(GIT_TEARDOWN_STAGING, name, 'worktrees', basename(path)))
-      .find((candidate) => existsSync(candidate));
-    expect(stagedWorktree).toBeDefined();
+    const stagedWorktrees = readdirSync(GIT_TEARDOWN_STAGING)
+      .filter((name) => !before.has(name))
+      .map((name) =>
+        join(
+          GIT_TEARDOWN_STAGING,
+          name,
+          basename(dirname(dirname(path))),
+          'worktrees',
+          basename(path),
+        ),
+      )
+      .filter((candidate) => existsSync(candidate));
+    expect(stagedWorktrees).toHaveLength(1);
+    const stagedWorktree = stagedWorktrees[0] as string;
+    expect(readFileSync(join(stagedWorktree, 'retained-marker.txt'), 'utf8')).toBe(path);
+    expect(statSync(stagedWorktree).ino).toBe(inode);
+    roots.push(dirname(dirname(dirname(stagedWorktree))));
 
     await expect(service.dispose()).resolves.toBeUndefined();
   });
@@ -553,10 +567,25 @@ describe('WorktreeGitService', () => {
     roots.push(main);
     const service = new WorktreeGitService(registry, main);
     const { path } = track(await service.createWorktree('t1', 'feature-dispose2'));
+    writeFileSync(join(path, 'retained-marker.txt'), path);
+    const inode = statSync(path).ino;
+    mkdirSync(GIT_TEARDOWN_STAGING, { recursive: true });
+    const before = new Set(readdirSync(GIT_TEARDOWN_STAGING));
 
     await service.dispose();
     expect(existsSync(path)).toBe(false);
-    expect(existsSync(join(GIT_TEARDOWN_STAGING, basename(path)))).toBe(true);
+    const stagedWorktrees = readdirSync(GIT_TEARDOWN_STAGING)
+      .filter((name) => !before.has(name))
+      .map((name) => join(GIT_TEARDOWN_STAGING, name, basename(path)))
+      .filter(
+        (candidate) =>
+          existsSync(join(candidate, 'retained-marker.txt')) &&
+          readFileSync(join(candidate, 'retained-marker.txt'), 'utf8') === path,
+      );
+    expect(stagedWorktrees).toHaveLength(1);
+    const stagedWorktree = stagedWorktrees[0] as string;
+    expect(statSync(stagedWorktree).ino).toBe(inode);
+    roots.push(dirname(stagedWorktree));
     expect(existsSync(main)).toBe(true);
   });
 });

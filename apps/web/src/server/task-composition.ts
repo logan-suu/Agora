@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { access, cp, mkdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 import {
@@ -43,6 +43,7 @@ import {
   WorkspaceAdapter,
   type Worktree,
 } from '@agora/runtime-sandbox';
+import { SecureFiles } from '@agora/runtime-sandbox/secure-files';
 import { createToolCatalog, type ToolCatalog } from '@agora/tools-bridge';
 import { WorktreeRegistry } from '@agora/tools-fs';
 import {
@@ -86,7 +87,7 @@ export interface WebTaskCompositionOptions {
   sandboxConfig?: SandboxConfig;
   sandbox?: SandboxManager;
   dataRoot?: string;
-  executorOptions?: Pick<HarnessExecutorOptions, 'adapter' | 'provider' | 'deepseek'>;
+  executorOptions?: Pick<HarnessExecutorOptions, 'adapter' | 'provider' | 'deepseek' | 'approval'>;
   scheduler?: GlobalScheduler;
 }
 
@@ -117,16 +118,19 @@ export function createWebTaskCompositionFactory(
     let legacyWorktree: Worktree | undefined;
     let legacyWorktreeRef: WorktreeRef | undefined;
     let sandbox: SandboxManager;
+    let stableFiles: DockerSandbox | undefined;
     if (useWorkspaceAdapter) {
       const { kind: _kind, ...dockerOptions } = sandboxConfig;
       const execution = new DockerSandbox({
         ...dockerOptions,
         baseDir: dockerOptions.baseDir ?? dataRoot,
       });
+      stableFiles = execution;
       gitService = new WorktreeGitService(
         registry,
         join(taskRoot, 'repository'),
         join(taskRoot, 'worktrees'),
+        { withWorktree: (path, operation) => execution.withStableFiles(path, operation) },
       );
       workspace = new WorkspaceAdapter({
         projectId: scope.projectId,
@@ -295,7 +299,12 @@ export function createWebTaskCompositionFactory(
           : {}),
         ...(turnMutations === undefined
           ? {}
-          : { readTurnMutations: ({ text }) => turnMutations(text) }),
+          : {
+              readTurnMutations: ({ text }) => turnMutations(text),
+              validateTurnOutput: ({ text }) => {
+                turnMutations(text);
+              },
+            }),
       });
       executors.push(executor);
       latestExecutor = executor;
@@ -720,13 +729,23 @@ export function createWebTaskCompositionFactory(
         const existingReceipt = await readArtifactArchiveReceipt(destination);
         if (existingReceipt !== undefined) return existingReceipt;
         const state = await loadState();
-        if (state?.phase === 'done' && state.parallelExecution?.acceptedReceiptId !== undefined)
-          await validationService?.verifyReceiptHead(
-            state,
-            state.parallelExecution.acceptedReceiptId,
-          );
         const plan = buildArtifactArchivePlan(state, fallbackArtifactPath, destination);
-        return materializeArtifactArchive(plan);
+        const archive = async () => {
+          if (state?.phase === 'done' && state.parallelExecution?.acceptedReceiptId !== undefined)
+            await validationService?.verifyReceiptHead(
+              state,
+              state.parallelExecution.acceptedReceiptId,
+            );
+          return materializeArtifactArchive(plan);
+        };
+        const protect = async (index: number): Promise<ArchivedArtifact> => {
+          const entry = plan.entries[index];
+          if (entry === undefined) return archive();
+          return stableFiles === undefined
+            ? protect(index + 1)
+            : stableFiles.withStableFiles(entry.sourcePath, () => protect(index + 1));
+        };
+        return protect(0);
       },
       dispose: () => releaseRuntimeResources(true),
     };
@@ -836,7 +855,7 @@ export async function materializeArtifactArchive(
     if (plan.bundled) {
       await mkdir(join(temporary, 'worktrees'), { recursive: true });
       for (const entry of plan.entries) {
-        await cp(entry.sourcePath, join(temporary, entry.relativePath), { recursive: true });
+        new SecureFiles(entry.sourcePath).snapshotTo(join(temporary, entry.relativePath));
       }
       await writeFile(
         join(temporary, 'artifact-manifest.json'),
@@ -866,7 +885,7 @@ export async function materializeArtifactArchive(
     } else {
       const entry = plan.entries[0];
       if (entry === undefined) throw new Error('artifact archive plan is empty');
-      await cp(entry.sourcePath, temporary, { recursive: true });
+      new SecureFiles(entry.sourcePath).snapshotTo(temporary);
     }
     await rename(temporary, plan.destination);
     await writeFile(

@@ -21,6 +21,7 @@ import {
 } from '@agora/runtime-executor';
 import {
   createSandbox,
+  LocalTempSandbox,
   type SandboxConfig,
   type SandboxManager,
   type Worktree,
@@ -129,6 +130,8 @@ export async function createPhase2Runtime(options: Phase2RuntimeOptions): Promis
   const registry = new WorktreeRegistry();
   const gitService = new WorktreeGitService(registry, options.mainRepoPath);
   const worktree = await gitService.createWorktree(options.taskId, 'shared');
+  if (sandbox instanceof LocalTempSandbox)
+    sandbox.bindFiles(worktree, registry.filesFor(worktree.path));
   const initialHead = await gitService.headOf(worktree.path);
   const worktreeRef: WorktreeRef = {
     path: worktree.path,
