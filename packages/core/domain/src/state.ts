@@ -360,6 +360,37 @@ export interface Message {
   ts: number;
 }
 
+/** Check the message envelope before field access or persistence; payload semantics are separate. */
+export function isMessage(value: unknown): value is Message {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  const types: readonly MsgType[] = [
+    'handoff',
+    'feedback',
+    'question',
+    'escalation',
+    'objection',
+    'chat',
+    'announce',
+  ];
+  return (
+    typeof record.msgId === 'string' &&
+    typeof record.channelId === 'string' &&
+    typeof record.fromRole === 'string' &&
+    typeof record.type === 'string' &&
+    types.includes(record.type as MsgType) &&
+    typeof record.payload === 'object' &&
+    record.payload !== null &&
+    !Array.isArray(record.payload) &&
+    typeof record.display === 'string' &&
+    typeof record.ts === 'number' &&
+    Number.isFinite(record.ts) &&
+    (record.threadId === undefined || typeof record.threadId === 'string') &&
+    (record.to === undefined ||
+      (Array.isArray(record.to) && Array.from(record.to).every((role) => typeof role === 'string')))
+  );
+}
+
 export interface TestResults {
   passed: boolean;
   total: number;
