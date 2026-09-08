@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.6
-**生效日期**：2026-09-07
+**版本**：v2.7
+**生效日期**：2026-09-08
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
@@ -118,7 +118,7 @@ R8  分层依赖倒置：L1 core/domain 禁止任何 I/O（fs/http/child_process
 R9  接口先行：Executor/SandboxManager 自阶段 0 定稿；TaskStateStore/MessageBus 在首次落地任务 5.3 定稿；ProjectChannelStore 在首次落地任务 6.1 定稿；ProjectCollaborationStore 在首次落地任务 7.1 定稿。既有 ProjectChannelStore 签名不变并作为 D12 协作快照的 Channel 视图；此后阶段退化只改实现体不改签名。D6 规定 MessageBus 不修改 State 或保存 inbox
 R10 目录与命名严格对齐架构文档 L1-L4 映射；State 字段 camelCase；角色用字面量联合 'COORDINATOR'|'PM'|'ARCHITECT'|'CODER'|'TESTER'|'REVIEWER'
 R11 测试红线：禁止弱化断言或 mock 绕过真实代码让测试变绿；必须分析根因（业务 bug→修代码；测试有误→修测试）；mock 必须在文件头注明原因；真实依赖优先。澄清：单元测试中 mock 外部依赖允许（注明原因）；G5 执行链路验收不得以 test double 替代真实实现；LocalTempSandbox 属真实实现而非 mock
-R12 有代码变更必须同步受影响文档；重大决策更新蓝图 §21 并打 [YYYY-MM-DD 架构决策更新] 标记；文档冲突作为 GitHub Issue 记录，不得写入 task-status.json
+R12 有代码变更必须同步受影响文档；重大决策更新蓝图 §21 并打 [YYYY-MM-DD 架构决策更新] 标记；文档冲突按 DOC-CONFLICT 先评审合理性再直接修正并同步，不创建或发布 GitHub Issue，不在 task-status.json 增设冲突台账；无法确定的实质架构取舍才向 Leader 澄清
 R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库既有风格）；严禁提交 secrets/.env/token
 ```
 
@@ -138,6 +138,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 实时通信      SSE（收）+ HTTP POST（发），禁用 WebSocket
 持久化        文件系统 JSON/JSONL（.data/）为默认；Phase 5 TaskStateStore 原子快照；Phase 7 D12 roster+Channel 原子 collaboration 快照；Phase 8 Harness 官方 JSONL session persistence + Agent factory seed/lineage 分叉；SQLite 仅复杂查询时可选
 部署          Phase 5–9 为单实例自托管后端；Vercel 仅前端；完整 Serverless/水平扩展须外部耐久 TaskStateStore + ProjectCollaborationStore（含 ProjectChannelStore 视图）+ 跨实例事件传输（D8/D12）
+文件入口构建  受信 POSIX C helper（macOS clang / Linux cc），首次测试/构建前 pnpm build:sandbox-native；跨目录部署的受信绝对路径配置见选型 §12
 测试          Vitest 3.x
 工程评测      渐进式 Agora Eval（Outcome/Process/Efficiency/Safety）；Phase 10 外部适配成熟 Coding Agent Benchmark
 代码质量      Biome 2.x（Lint + Format + Import 排序一体）
@@ -306,7 +307,7 @@ Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复�
 波次验收    D17/9.4：显式 executionPlan DAG + 串行 parallelExecution 固定 wave/attempt/base/assignment；新波次从上次 accepted 验证 HEAD 开工，指纹失效复验以规范 sourceReceiptId 绑定上一验证 HEAD 并保留累计测试；legacy modules 只显式退化顺序链。Integration.resultCommit 冻结，TESTER 在独立 validation worktree 写测试并实测精确 HEAD，可信 receipt 绑定 dispatch/commit/控制指纹后才闭合波次。preparation 当前固定关闭且不提供启用入口，只读计划仅为未来保留契约；TESTER/REVIEWER 不覆盖 CODER 的 Subtask.worktree；最终 REVIEWER/D16/artifact 绑定同一已验证累计产物。REVIEWER refs 返工覆盖目标与全部传递后继（含 done），缺 refs 才显式全量，坏 refs fail-closed；详细契约见详细设计 §3.1，9.4 实装证据见任务 notes，9.5 出口仍须独立验收
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
-工作区/集成 D17：createWorktree 六个公开签名不变，第二参数是逻辑 workerId isolation key，复合 workspace adapter 内部做确定性 Git-safe 编码；task-owned canonical repo 位于任务 .data，真实 linked worktree 与 Docker 只用同一规范路径，恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止双工作区、用户 checkout 写入或自动 push。State 只存结构化 WorktreeRef/Integration 引用，不存 pendingPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只可补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收中途失败必须补偿 worktree metadata 与临时 branch；冲突必须确认 abort 成功且无 MERGE_HEAD 后才打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 分支明细只投当前 Integration 波次，9.4 最终审阅另给累计验证产物与全计划任务索引；无 Integration 的顺序兼容仅允许候选收敛到同一 WorktreeRef，并发归档不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失或损坏 fail-closed。Phase 9 仅接受 request_rework <workerId> 并从原 base 重建。DEF-004 保持 open，9.5 前修复或由 Leader 明确可测试的后续安全边界
+工作区/集成 D17：createWorktree 六个公开签名不变，第二参数是逻辑 workerId isolation key，复合 workspace adapter 内部做确定性 Git-safe 编码；task-owned canonical repo 位于任务 .data，真实 linked worktree 与 Docker 只用同一规范路径，恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止双工作区、用户 checkout 写入或自动 push。State 只存结构化 WorktreeRef/Integration 引用，不存 pendingPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只可补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收中途失败必须补偿 worktree metadata 与临时 branch；冲突必须确认 abort 成功且无 MERGE_HEAD 后才打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 分支明细只投当前 Integration 波次，9.4 最终审阅另给累计验证产物与全计划任务索引；无 Integration 的顺序兼容仅允许候选收敛到同一 WorktreeRef，并发归档不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失或损坏 fail-closed。Phase 9 仅接受 request_rework <workerId> 并从原 base 重建。9.5 正式文件入口使用固定根身份的受信 POSIX helper；Docker 每 worktree 单挂载，宿主 Git/归档期间冻结该容器全部后台进程，容器停止成功后才回收 Git 工作树。DEF-004/010/013 状态只查延期台账
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
 意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；浏览器 msgId 统一满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在副作用前校验；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
@@ -338,7 +339,7 @@ Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 
 新会话一律先执行 `$agora-init-session`。
 
 ```text
-Explore  读 documents_required 章节 + 相关代码；逐字粘贴约束原文；发现文档矛盾必须暂停上报
+Explore  读 documents_required 章节 + 相关代码；逐字粘贴约束原文；文档矛盾先评审并同步修正，未决架构取舍再上报
 Plan     产出实现计划（改哪些文件/接口/schema/测试），等人确认
 Code     小步实现，一次一个可验证单元；TDD：写测试→红→写实现→绿
 Check    pnpm typecheck + pnpm lint + pnpm test
@@ -352,7 +353,7 @@ Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5
 - 未经人确认的计划不进入 Code（R8 之工作流表达）
 - 每个 Code 单元必须能被 Check 验证
 - 沙箱/Harness/工具链能力必须真实跑通，不以 mock 规避（G5）
-- Explore 发现矛盾/模糊/不可测 → 暂停编码报告问题等人类决策
+- Explore 发现矛盾/模糊/不可测 → 先评审并修正文档；仍无法确定的架构取舍暂停依赖它的编码，报告问题等人类决策
 - 有代码变更必须同步相关文档（R12）；重大决策更新蓝图 §21 打标记
 ```
 
@@ -402,7 +403,7 @@ pending -> ready -> in_progress -> done
 task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 允许顶层字段：version/project/description/last_updated/current_phase/usage/standing_decisions/baseline/milestones/phases
 允许任务字段：id/title/story/status/last_updated/documents_required/dependencies/test_file/notes
-文档冲突 → GitHub Issue（R12）；延期项 → `docs/deferred-items.json`（DEF-NNN，见常驻决策 DEF）；决策 → 蓝图 §21 标记段
+文档冲突 → 评审后直接修正来源文档并同步（R12/DOC-CONFLICT，不发布 Issue）；延期项 → `docs/deferred-items.json`（DEF-NNN，见常驻决策 DEF）；决策 → 蓝图 §21 标记段
 ```
 
 **级联更新（幂等）**：启动或任务完成时，遍历所有 `pending` 任务，`dependencies` 全部 `done` 则翻转为 `ready`。

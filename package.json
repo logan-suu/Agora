@@ -16,7 +16,11 @@
     "eval:phase7:deterministic": "vitest run --config vitest.eval.config.ts -t 'phase7 deterministic baseline'",
     "eval:phase7:model": "vitest run --config vitest.eval.config.ts -t 'phase7 model baseline'",
     "eval:phase8:deterministic": "vitest run --config vitest.eval.config.ts -t 'phase8 deterministic baseline'",
-    "eval:phase8:model": "vitest run --config vitest.eval.config.ts -t 'phase8 model baseline'"
+    "eval:phase8:model": "vitest run --config vitest.eval.config.ts -t 'phase8 model baseline'",
+    "build:sandbox-native": "node packages/runtime/sandbox/scripts/build-native.mjs",
+    "eval:phase9:deterministic": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t 'phase9 deterministic baseline'",
+    "eval:phase9:model": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t 'phase9 model baseline'",
+    "eval:phase9:verify-model": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t 'phase9 model repair verification'"
   },
   "devDependencies": {
     "@agora/core-domain": "workspace:*",
@@ -37,6 +41,7 @@
     "@deepseek-ai/dsh-tools": "0.1.1-rc.2",
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@deepseek-ai/dsh-llm-deepseek": "0.1.1-rc.2"
   }
 }

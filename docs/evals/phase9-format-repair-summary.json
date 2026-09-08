@@ -1,0 +1,1164 @@
+{
+  "schemaVersion": 1,
+  "task": "9.5",
+  "generatedAt": "2026-09-08T21:08:13.523Z",
+  "sourceFingerprint": "914b12e65fda04745fd1f6e8d4e89571d281af1e8259bf4fec33cd06401e66ff",
+  "sourceMatchesVerification": true,
+  "regression": {
+    "files": 119,
+    "tests": 995,
+    "skipped": 0
+  },
+  "deterministic": {
+    "passed": 26
+  },
+  "staticChecks": [
+    "typecheck",
+    "lint",
+    "Next production build"
+  ],
+  "naturalDiagnostic": {
+    "runId": "phase9-wide-pipeline-model-a1-c5ceab98-9611-426e-9727-bae8538cf470",
+    "status": "pass",
+    "lifecycle": "final",
+    "modelConfig": {
+      "provider": "deepseek-official",
+      "model": "deepseek-v4-flash",
+      "parameters": {
+        "maxTokens": 32768,
+        "temperature": 0.2,
+        "thinking": "enabled",
+        "reasoningEffort": "high",
+        "retries": 0,
+        "contextLimit": 1000000,
+        "endpoint": "https://api.deepseek.com",
+        "requestReservationUsd": 0.48325376000000003
+      }
+    },
+    "efficiency": {
+      "iterations": 1,
+      "inputTokens": 1545202,
+      "outputTokens": 65150,
+      "costUsd": 0.11324795200000001,
+      "modelCalls": 66,
+      "toolCalls": 107,
+      "repairIterations": 0,
+      "humanInterventions": 1,
+      "durationMs": 473664
+    },
+    "flow": {
+      "status": "completed",
+      "waves": [
+        [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        [
+          "E"
+        ]
+      ],
+      "leasePeak": 3,
+      "finalLeaseCount": 0,
+      "validationTotals": [
+        30,
+        45
+      ],
+      "validationOutcomes": [
+        {
+          "receiptId": "wave-validation:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf",
+          "passed": true
+        },
+        {
+          "receiptId": "wave-validation:96c39eb4-31f0-4818-aa06-330c1587094d",
+          "passed": true
+        }
+      ],
+      "processPassed": true,
+      "traceCoderSessions": 5,
+      "traceForks": 0,
+      "traceOmittedEvents": 0,
+      "integrationConflicts": 0,
+      "imageId": "sha256:6ced300970b1919c3ff96f482c6a342f2bca746922fcdc825e84e3b8f5ab3740",
+      "completionBound": true,
+      "freshVerification": {
+        "exitCode": 0,
+        "stdout": "TAP version 13\n# Subtest: normalize shape and immutability\nok 1 - normalize shape and immutability\n  ---\n  duration_ms: 2.160167\n  ...\n# Subtest: normalize rejects invalid shape\nok 2 - normalize rejects invalid shape\n  ---\n  duration_ms: 0.279833\n  ...\n# Subtest: score boundaries\nok 3 - score boundaries\n  ---\n  duration_ms: 0.082\n  ...\n# Subtest: invalid scores\nok 4 - invalid scores\n  ---\n  duration_ms: 0.169459\n  ...\n# Subtest: stable immutable ranking\nok 5 - stable immutable ranking\n  ---\n  duration_ms: 0.202708\n  ...\n# Subtest: page shape and overflow\nok 6 - page shape and overflow\n  ---\n  duration_ms: 0.150959\n  ...\n# Subtest: page validation\nok 7 - page validation\n  ---\n  duration_ms: 0.25975\n  ...\n# Subtest: composed pipeline\nok 8 - composed pipeline\n  ---\n  duration_ms: 0.228917\n  ...\n# Subtest: validate beyond selected page\nok 9 - validate beyond selected page\n  ---\n  duration_ms: 0.173292\n  ...\n1..9\n# tests 9\n# suites 0\n# pass 9\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 50.412042\n",
+        "stderr": "",
+        "timedOut": false
+      },
+      "iterations": 1,
+      "repairIterations": 0,
+      "times": {
+        "start": 1788901182342,
+        "gate": 1788901650951,
+        "approve": 1788901651166,
+        "archive": 1788901651926,
+        "verificationStart": 1788901653443,
+        "verificationEnd": 1788901653704,
+        "cleanupStart": 1788901653810,
+        "cleanupEnd": 1788901655958
+      },
+      "resources": {
+        "containerPeak": 7,
+        "retainedWorktreePeak": 11,
+        "compositionPeak": 1,
+        "sampleIntervalMs": 200,
+        "samples": 2148,
+        "retainedLogicalBytesPeak": 1513591,
+        "retainedAllocatedBytesPeak": 2600960,
+        "fileMeasurementMisses": 0,
+        "finalTaskLogicalBytes": 1445784,
+        "finalTaskAllocatedBytes": 2072576,
+        "finalLinkedWorktrees": 1,
+        "stagedWorktreeBytes": "unknown",
+        "cpuUsage": "unknown",
+        "memoryUsage": "unknown",
+        "measurementScope": "Task directory plus task-mounted containers; shared teardown staging, CPU and memory usage are not sampled."
+      },
+      "cleanupErrors": [],
+      "leaseIntervals": [
+        {
+          "workerId": "worker:7ce356eb-c28a-412e-a297-b7dfd77724da:0",
+          "start": 1788901182842,
+          "end": 1788901256843
+        },
+        {
+          "workerId": "worker:709ceba4-39e1-44a8-b929-384570f32af7:0",
+          "start": 1788901256868,
+          "end": 1788901348983
+        },
+        {
+          "workerId": "worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:0",
+          "start": 1788901349003,
+          "end": 1788901369277
+        },
+        {
+          "workerId": "worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+          "start": 1788901349003,
+          "end": 1788901378537
+        },
+        {
+          "workerId": "worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+          "start": 1788901349003,
+          "end": 1788901378327
+        },
+        {
+          "workerId": "worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:3",
+          "start": 1788901369279,
+          "end": 1788901382935
+        },
+        {
+          "workerId": "worker:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf:0",
+          "start": 1788901383670,
+          "end": 1788901455382
+        },
+        {
+          "workerId": "worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+          "start": 1788901455486,
+          "end": 1788901560299
+        },
+        {
+          "workerId": "worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+          "start": 1788901560827,
+          "end": 1788901619433
+        },
+        {
+          "workerId": "worker:59bfd755-12ef-4d0f-bff5-147a0976ce1a:0",
+          "start": 1788901619709,
+          "end": 1788901650697
+        }
+      ],
+      "cleanupIntervals": [
+        {
+          "kind": "suspend",
+          "start": 1788901650822,
+          "end": 1788901650941
+        },
+        {
+          "kind": "terminal",
+          "start": 1788901651930,
+          "end": 1788901653440
+        }
+      ]
+    },
+    "requests": [
+      {
+        "start": 1788901182904,
+        "sessionId": "session:worker:7ce356eb-c28a-412e-a297-b7dfd77724da:0",
+        "usage": {
+          "inputTokens": 128,
+          "outputTokens": 9707,
+          "cacheReadTokens": 2944,
+          "reasoningTokens": 7614
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901256819,
+        "costUsd": 0.006455388
+      },
+      {
+        "start": 1788901256921,
+        "sessionId": "session:worker:709ceba4-39e1-44a8-b929-384570f32af7:0",
+        "usage": {
+          "inputTokens": 4064,
+          "outputTokens": 115,
+          "cacheReadTokens": 1152,
+          "reasoningTokens": 58
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901259251,
+        "costUsd": 0.000978044
+      },
+      {
+        "start": 1788901259347,
+        "sessionId": "session:worker:709ceba4-39e1-44a8-b929-384570f32af7:0",
+        "usage": {
+          "inputTokens": 4177,
+          "outputTokens": 267,
+          "cacheReadTokens": 5248,
+          "reasoningTokens": 158
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901262391,
+        "costUsd": 0.0011318959999999999
+      },
+      {
+        "start": 1788901262418,
+        "sessionId": "session:worker:709ceba4-39e1-44a8-b929-384570f32af7:0",
+        "usage": {
+          "inputTokens": 4220,
+          "outputTokens": 7470,
+          "cacheReadTokens": 9600,
+          "reasoningTokens": 7442
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901325246,
+        "costUsd": 0.0059258
+      },
+      {
+        "start": 1788901325340,
+        "sessionId": "session:worker:709ceba4-39e1-44a8-b929-384570f32af7:0",
+        "usage": {
+          "inputTokens": 4119,
+          "outputTokens": 3055,
+          "cacheReadTokens": 21248,
+          "reasoningTokens": 1547
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901348967,
+        "costUsd": 0.0030712160000000003
+      },
+      {
+        "start": 1788901349048,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:0",
+        "usage": {
+          "inputTokens": 3186,
+          "outputTokens": 125,
+          "cacheReadTokens": 1408,
+          "reasoningTokens": 37
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901350740,
+        "costUsd": 0.000793276
+      },
+      {
+        "start": 1788901349080,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+        "usage": {
+          "inputTokens": 3186,
+          "outputTokens": 144,
+          "cacheReadTokens": 1408,
+          "reasoningTokens": 51
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901350734,
+        "costUsd": 0.0008058159999999999
+      },
+      {
+        "start": 1788901349111,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+        "usage": {
+          "inputTokens": 3186,
+          "outputTokens": 143,
+          "cacheReadTokens": 1408,
+          "reasoningTokens": 50
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901350758,
+        "costUsd": 0.0008051559999999999
+      },
+      {
+        "start": 1788901350978,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+        "usage": {
+          "inputTokens": 3362,
+          "outputTokens": 394,
+          "cacheReadTokens": 4736,
+          "reasoningTokens": 296
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901354296,
+        "costUsd": 0.001032832
+      },
+      {
+        "start": 1788901350983,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+        "usage": {
+          "inputTokens": 3361,
+          "outputTokens": 907,
+          "cacheReadTokens": 4736,
+          "reasoningTokens": 817
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901358490,
+        "costUsd": 0.001371192
+      },
+      {
+        "start": 1788901350984,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:0",
+        "usage": {
+          "inputTokens": 3466,
+          "outputTokens": 1286,
+          "cacheReadTokens": 4608,
+          "reasoningTokens": 979
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901359647,
+        "costUsd": 0.0016435360000000001
+      },
+      {
+        "start": 1788901354390,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+        "usage": {
+          "inputTokens": 3465,
+          "outputTokens": 345,
+          "cacheReadTokens": 8448,
+          "reasoningTokens": 268
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901357549,
+        "costUsd": 0.001049136
+      },
+      {
+        "start": 1788901357569,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+        "usage": {
+          "inputTokens": 3465,
+          "outputTokens": 221,
+          "cacheReadTokens": 12160,
+          "reasoningTokens": 179
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901359932,
+        "costUsd": 0.00099328
+      },
+      {
+        "start": 1788901358571,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+        "usage": {
+          "inputTokens": 3492,
+          "outputTokens": 318,
+          "cacheReadTokens": 8960,
+          "reasoningTokens": 211
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901361551,
+        "costUsd": 0.0010408400000000001
+      },
+      {
+        "start": 1788901359720,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:0",
+        "usage": {
+          "inputTokens": 3409,
+          "outputTokens": 617,
+          "cacheReadTokens": 9344,
+          "reasoningTokens": 90
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901363850,
+        "costUsd": 0.0012226080000000002
+      },
+      {
+        "start": 1788901360171,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+        "usage": {
+          "inputTokens": 3344,
+          "outputTokens": 1348,
+          "cacheReadTokens": 15744,
+          "reasoningTokens": 1049
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901370520,
+        "costUsd": 0.001735568
+      },
+      {
+        "start": 1788901361620,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+        "usage": {
+          "inputTokens": 3465,
+          "outputTokens": 843,
+          "cacheReadTokens": 12672,
+          "reasoningTokens": 612
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901368401,
+        "costUsd": 0.001407384
+      },
+      {
+        "start": 1788901364009,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:0",
+        "usage": {
+          "inputTokens": 3964,
+          "outputTokens": 85,
+          "cacheReadTokens": 12672,
+          "reasoningTokens": 28
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901365412,
+        "costUsd": 0.0010168840000000002
+      },
+      {
+        "start": 1788901365576,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:0",
+        "usage": {
+          "inputTokens": 3339,
+          "outputTokens": 339,
+          "cacheReadTokens": 16640,
+          "reasoningTokens": 0
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901369086,
+        "costUsd": 0.0010748
+      },
+      {
+        "start": 1788901368418,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+        "usage": {
+          "inputTokens": 3327,
+          "outputTokens": 455,
+          "cacheReadTokens": 16896,
+          "reasoningTokens": 40
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901372312,
+        "costUsd": 0.0011505120000000002
+      },
+      {
+        "start": 1788901369324,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:3",
+        "usage": {
+          "inputTokens": 3189,
+          "outputTokens": 113,
+          "cacheReadTokens": 1408,
+          "reasoningTokens": 33
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901370512,
+        "costUsd": 0.0007860160000000001
+      },
+      {
+        "start": 1788901370527,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+        "usage": {
+          "inputTokens": 3327,
+          "outputTokens": 330,
+          "cacheReadTokens": 20352,
+          "reasoningTokens": 32
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901373471,
+        "costUsd": 0.001092204
+      },
+      {
+        "start": 1788901370669,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:3",
+        "usage": {
+          "inputTokens": 3448,
+          "outputTokens": 157,
+          "cacheReadTokens": 4608,
+          "reasoningTokens": 91
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901372414,
+        "costUsd": 0.0008944360000000001
+      },
+      {
+        "start": 1788901372394,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+        "usage": {
+          "inputTokens": 3326,
+          "outputTokens": 81,
+          "cacheReadTokens": 20608,
+          "reasoningTokens": 23
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901373647,
+        "costUsd": 0.0009294360000000001
+      },
+      {
+        "start": 1788901372458,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:3",
+        "usage": {
+          "inputTokens": 3301,
+          "outputTokens": 361,
+          "cacheReadTokens": 8192,
+          "reasoningTokens": 170
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901374868,
+        "costUsd": 0.0010218240000000002
+      },
+      {
+        "start": 1788901373626,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+        "usage": {
+          "inputTokens": 3337,
+          "outputTokens": 128,
+          "cacheReadTokens": 23936,
+          "reasoningTokens": 30
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901375379,
+        "costUsd": 0.000986172
+      },
+      {
+        "start": 1788901373692,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+        "usage": {
+          "inputTokens": 3312,
+          "outputTokens": 77,
+          "cacheReadTokens": 23936,
+          "reasoningTokens": 24
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901375101,
+        "costUsd": 0.000947012
+      },
+      {
+        "start": 1788901374882,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:3",
+        "usage": {
+          "inputTokens": 3325,
+          "outputTokens": 530,
+          "cacheReadTokens": 11776,
+          "reasoningTokens": 31
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901378036,
+        "costUsd": 0.001163732
+      },
+      {
+        "start": 1788901375244,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:2",
+        "usage": {
+          "inputTokens": 3322,
+          "outputTokens": 271,
+          "cacheReadTokens": 27264,
+          "reasoningTokens": 37
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901378184,
+        "costUsd": 0.0011005480000000002
+      },
+      {
+        "start": 1788901375528,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:1",
+        "usage": {
+          "inputTokens": 3268,
+          "outputTokens": 264,
+          "cacheReadTokens": 27392,
+          "reasoningTokens": 0
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901378402,
+        "costUsd": 0.001084944
+      },
+      {
+        "start": 1788901378200,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:3",
+        "usage": {
+          "inputTokens": 3284,
+          "outputTokens": 81,
+          "cacheReadTokens": 15616,
+          "reasoningTokens": 25
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901379781,
+        "costUsd": 0.0008852520000000001
+      },
+      {
+        "start": 1788901379966,
+        "sessionId": "session:worker:6d2e9a92-0d2c-438e-a136-8dc440b4bc0a:3",
+        "usage": {
+          "inputTokens": 3301,
+          "outputTokens": 359,
+          "cacheReadTokens": 18944,
+          "reasoningTokens": 0
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901382740,
+        "costUsd": 0.001095768
+      },
+      {
+        "start": 1788901383714,
+        "sessionId": "session:worker:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf:0",
+        "usage": {
+          "inputTokens": 5843,
+          "outputTokens": 716,
+          "cacheReadTokens": 1280,
+          "reasoningTokens": 518
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901389001,
+        "costUsd": 0.00176698
+      },
+      {
+        "start": 1788901389167,
+        "sessionId": "session:worker:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf:0",
+        "usage": {
+          "inputTokens": 6789,
+          "outputTokens": 5101,
+          "cacheReadTokens": 7808,
+          "reasoningTokens": 4942
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901423650,
+        "costUsd": 0.004914896000000001
+      },
+      {
+        "start": 1788901423828,
+        "sessionId": "session:worker:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf:0",
+        "usage": {
+          "inputTokens": 6134,
+          "outputTokens": 3229,
+          "cacheReadTokens": 19584,
+          "reasoningTokens": 156
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901439638,
+        "costUsd": 0.0036177080000000007
+      },
+      {
+        "start": 1788901439667,
+        "sessionId": "session:worker:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf:0",
+        "usage": {
+          "inputTokens": 5893,
+          "outputTokens": 64,
+          "cacheReadTokens": 28928,
+          "reasoningTokens": 5
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901441569,
+        "costUsd": 0.001541196
+      },
+      {
+        "start": 1788901441704,
+        "sessionId": "session:worker:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf:0",
+        "usage": {
+          "inputTokens": 7509,
+          "outputTokens": 440,
+          "cacheReadTokens": 34816,
+          "reasoningTokens": 382
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901446403,
+        "costUsd": 0.002186092
+      },
+      {
+        "start": 1788901446555,
+        "sessionId": "session:worker:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf:0",
+        "usage": {
+          "inputTokens": 5842,
+          "outputTokens": 175,
+          "cacheReadTokens": 42752,
+          "reasoningTokens": 64
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901449090,
+        "costUsd": 0.001700004
+      },
+      {
+        "start": 1788901449338,
+        "sessionId": "session:worker:43cb48c5-9b52-41b0-a079-bc3a6ff7d0cf:0",
+        "usage": {
+          "inputTokens": 6243,
+          "outputTokens": 726,
+          "cacheReadTokens": 48512,
+          "reasoningTokens": 74
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901454923,
+        "costUsd": 0.002192204
+      },
+      {
+        "start": 1788901455539,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3453,
+          "outputTokens": 230,
+          "cacheReadTokens": 1408,
+          "reasoningTokens": 53
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901457129,
+        "costUsd": 0.000921316
+      },
+      {
+        "start": 1788901457156,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 4369,
+          "outputTokens": 95,
+          "cacheReadTokens": 4992,
+          "reasoningTokens": 40
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901458341,
+        "costUsd": 0.0010588239999999999
+      },
+      {
+        "start": 1788901458493,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3908,
+          "outputTokens": 1405,
+          "cacheReadTokens": 9344,
+          "reasoningTokens": 1323
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901470162,
+        "costUsd": 0.0018524680000000001
+      },
+      {
+        "start": 1788901470170,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 5668,
+          "outputTokens": 1418,
+          "cacheReadTokens": 14592,
+          "reasoningTokens": 993
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901479985,
+        "costUsd": 0.002284984
+      },
+      {
+        "start": 1788901479992,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3557,
+          "outputTokens": 1549,
+          "cacheReadTokens": 21632,
+          "reasoningTokens": 21
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901487187,
+        "costUsd": 0.0019563040000000003
+      },
+      {
+        "start": 1788901487197,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3626,
+          "outputTokens": 113,
+          "cacheReadTokens": 26624,
+          "reasoningTokens": 10
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901488799,
+        "costUsd": 0.0010586679999999998
+      },
+      {
+        "start": 1788901489396,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3756,
+          "outputTokens": 98,
+          "cacheReadTokens": 30336,
+          "reasoningTokens": 23
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901491525,
+        "costUsd": 0.0011033520000000002
+      },
+      {
+        "start": 1788901491645,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3830,
+          "outputTokens": 7042,
+          "cacheReadTokens": 34176,
+          "reasoningTokens": 6525
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901544392,
+        "costUsd": 0.005729552000000001
+      },
+      {
+        "start": 1788901544399,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3631,
+          "outputTokens": 111,
+          "cacheReadTokens": 44928,
+          "reasoningTokens": 8
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901546313,
+        "costUsd": 0.001186576
+      },
+      {
+        "start": 1788901546612,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3601,
+          "outputTokens": 86,
+          "cacheReadTokens": 48640,
+          "reasoningTokens": 27
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901548903,
+        "costUsd": 0.00118946
+      },
+      {
+        "start": 1788901549069,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3630,
+          "outputTokens": 95,
+          "cacheReadTokens": 52224,
+          "reasoningTokens": 53
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901551613,
+        "costUsd": 0.001226868
+      },
+      {
+        "start": 1788901551722,
+        "sessionId": "session:worker:97991ae8-9b04-4b2b-bf26-44a4df83004d:0",
+        "usage": {
+          "inputTokens": 3513,
+          "outputTokens": 944,
+          "cacheReadTokens": 55936,
+          "reasoningTokens": 466
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901560123,
+        "costUsd": 0.0017874520000000001
+      },
+      {
+        "start": 1788901560905,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4141,
+          "outputTokens": 111,
+          "cacheReadTokens": 1280,
+          "reasoningTokens": 17
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901563263,
+        "costUsd": 0.00099324
+      },
+      {
+        "start": 1788901563474,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4868,
+          "outputTokens": 347,
+          "cacheReadTokens": 5504,
+          "reasoningTokens": 235
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901567073,
+        "costUsd": 0.001338508
+      },
+      {
+        "start": 1788901567139,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 5410,
+          "outputTokens": 478,
+          "cacheReadTokens": 10624,
+          "reasoningTokens": 419
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901572120,
+        "costUsd": 0.001580048
+      },
+      {
+        "start": 1788901572236,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4730,
+          "outputTokens": 783,
+          "cacheReadTokens": 16000,
+          "reasoningTokens": 599
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901579657,
+        "costUsd": 0.0016693799999999998
+      },
+      {
+        "start": 1788901579677,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 8070,
+          "outputTokens": 621,
+          "cacheReadTokens": 21504,
+          "reasoningTokens": 477
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901585079,
+        "costUsd": 0.002335788
+      },
+      {
+        "start": 1788901585092,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4964,
+          "outputTokens": 255,
+          "cacheReadTokens": 30080,
+          "reasoningTokens": 162
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901587733,
+        "costUsd": 0.0014709399999999998
+      },
+      {
+        "start": 1788901587871,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4584,
+          "outputTokens": 3079,
+          "cacheReadTokens": 35200,
+          "reasoningTokens": 1414
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901606371,
+        "costUsd": 0.0032870200000000003
+      },
+      {
+        "start": 1788901606380,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4222,
+          "outputTokens": 67,
+          "cacheReadTokens": 42752,
+          "reasoningTokens": 25
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901607623,
+        "costUsd": 0.001272324
+      },
+      {
+        "start": 1788901607690,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4409,
+          "outputTokens": 63,
+          "cacheReadTokens": 46976,
+          "reasoningTokens": 0
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901609297,
+        "costUsd": 0.001340392
+      },
+      {
+        "start": 1788901609469,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4247,
+          "outputTokens": 140,
+          "cacheReadTokens": 51328,
+          "reasoningTokens": 27
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901611303,
+        "costUsd": 0.001386036
+      },
+      {
+        "start": 1788901611580,
+        "sessionId": "session:worker:96c39eb4-31f0-4818-aa06-330c1587094d:0",
+        "usage": {
+          "inputTokens": 4213,
+          "outputTokens": 851,
+          "cacheReadTokens": 55680,
+          "reasoningTokens": 203
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901618824,
+        "costUsd": 0.00187828
+      },
+      {
+        "start": 1788901619842,
+        "sessionId": "session:worker:59bfd755-12ef-4d0f-bff5-147a0976ce1a:0",
+        "usage": {
+          "inputTokens": 4734,
+          "outputTokens": 1207,
+          "cacheReadTokens": 1152,
+          "reasoningTokens": 1030
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901628141,
+        "costUsd": 0.0018461640000000002
+      },
+      {
+        "start": 1788901628172,
+        "sessionId": "session:worker:59bfd755-12ef-4d0f-bff5-147a0976ce1a:0",
+        "usage": {
+          "inputTokens": 5883,
+          "outputTokens": 327,
+          "cacheReadTokens": 7040,
+          "reasoningTokens": 113
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901630478,
+        "costUsd": 0.0015593599999999999
+      },
+      {
+        "start": 1788901630575,
+        "sessionId": "session:worker:59bfd755-12ef-4d0f-bff5-147a0976ce1a:0",
+        "usage": {
+          "inputTokens": 10222,
+          "outputTokens": 1230,
+          "cacheReadTokens": 13184,
+          "reasoningTokens": 1140
+        },
+        "finishReason": "tool-calls",
+        "outputTruncated": false,
+        "end": 1788901640886,
+        "costUsd": 0.003152928
+      },
+      {
+        "start": 1788901641058,
+        "sessionId": "session:worker:59bfd755-12ef-4d0f-bff5-147a0976ce1a:0",
+        "usage": {
+          "inputTokens": 6069,
+          "outputTokens": 1018,
+          "cacheReadTokens": 23296,
+          "reasoningTokens": 673
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901650636,
+        "costUsd": 0.002170132
+      }
+    ]
+  },
+  "formatFaultInjection": {
+    "runId": "phase9-format-hook-458fbcee-b9c5-4a29-8d37-7ae8fb1630a8",
+    "status": "pass",
+    "description": "Real provider instructed to return non-JSON on first response; no adapter replacement or host response rewriting",
+    "sourceFingerprint": "914b12e65fda04745fd1f6e8d4e89571d281af1e8259bf4fec33cd06401e66ff",
+    "rejected": 1,
+    "requests": [
+      {
+        "start": 1788901067201,
+        "sessionId": "format-g5",
+        "usage": {
+          "inputTokens": 386,
+          "outputTokens": 42,
+          "cacheReadTokens": 0,
+          "reasoningTokens": 39
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901068288,
+        "costUsd": 0.00011264
+      },
+      {
+        "start": 1788901068292,
+        "sessionId": "format-g5",
+        "usage": {
+          "inputTokens": 102,
+          "outputTokens": 40,
+          "cacheReadTokens": 384,
+          "reasoningTokens": 34
+        },
+        "finishReason": "stop",
+        "outputTruncated": false,
+        "end": 1788901069203,
+        "costUsd": 0.000051528000000000005
+      }
+    ],
+    "costUsd": 0.00016416800000000002
+  },
+  "priorComparison": {
+    "groupId": "phase9-comparison-9804daf4-ae8c-4dd9-a2b8-e4522895f6a2",
+    "sourceFingerprint": "db55ce0c22844aa73711eae42614059fdca66ae352a21e7210d5f0080e9de429",
+    "passed": 5,
+    "started": 9
+  },
+  "totalMeteredCostUsd": 0.85320198,
+  "regressionCostUsd": "not separately metered",
+  "limitations": [
+    "No nine-attempt comparison has been run with bounded output repair enabled. Prior comparison failures are retained.",
+    "Invalid objection/channel controls stay fail-closed; semantic conflicts require Leader resolution.",
+    "Fault injection is a real-provider capability check, not a natural-task success sample."
+  ]
+}

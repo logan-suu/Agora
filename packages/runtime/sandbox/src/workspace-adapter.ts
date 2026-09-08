@@ -64,6 +64,7 @@ export class WorkspaceAdapter implements RecoverableSandboxManager {
   readonly #byBranch = new Map<string, WorktreeRef>();
   #tail: Promise<void> = Promise.resolve();
   #disposed = false;
+  #disposing: Promise<void> | undefined;
 
   constructor(options: WorkspaceAdapterOptions) {
     this.#projectId = options.projectId;
@@ -252,15 +253,21 @@ export class WorkspaceAdapter implements RecoverableSandboxManager {
   async teardown(taskId: string): Promise<void> {
     this.#assertTask(taskId);
     if (this.#disposed) return;
-    this.#disposed = true;
-    const errors: unknown[] = [];
+    if (this.#disposing !== undefined) return this.#disposing;
     // The execution backend only borrows the task-owned root. Terminal cleanup
     // must remove the container without moving the canonical repository,
     // persisted state, sessions, or archived artifact out of `.data`.
-    await this.#execution.suspend(taskId).catch((error) => errors.push(error));
-    await this.#git.dispose().catch((error) => errors.push(error));
-    if (errors.length > 0)
-      throw new Error(`workspace teardown failed: ${errors.map(String).join('; ')}`);
+    const disposing = (async () => {
+      await this.#execution.suspend(taskId);
+      await this.#git.dispose();
+      this.#disposed = true;
+    })();
+    this.#disposing = disposing;
+    try {
+      await disposing;
+    } finally {
+      this.#disposing = undefined;
+    }
   }
 
   worktreeFor(isolationKey: string): WorktreeRef | undefined {

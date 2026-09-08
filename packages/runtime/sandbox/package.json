@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./secure-files": "./src/secure-files.ts"
   },
   "dependencies": {
     "@agora/core-domain": "workspace:*",
@@ -12,8 +13,6 @@
     "@deepseek-ai/dsh-tools": "0.1.1-rc.2"
   },
   "devDependencies": {
-    "@agora/tools-fs": "workspace:*",
-    "@agora/tools-git": "workspace:*",
     "@deepseek-ai/cordis": "4.0.1",
     "@deepseek-ai/dsh-system-prompt": "0.1.1-rc.2",
     "@types/dockerode": "catalog:"

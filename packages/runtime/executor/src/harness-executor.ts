@@ -98,6 +98,9 @@ export interface HarnessExecutorOptions {
    * the file protocol (CODER/TESTER) or with no writes (COORDINATOR).
    */
   readTurnMutations?: (turn: { text: string | null }) => Mutation[] | Promise<Mutation[]>;
+  /** Pure final-output validator. Enables at most two tool-free format retries per step.
+   * Must not perform I/O or mutate State; final mutation readers still run only once. */
+  validateTurnOutput?: (turn: { text: string | null }) => void;
   /** D4 durable session namespace and optional deterministic lineage-child id. */
   sessionPersistence?: {
     root: string;
@@ -169,6 +172,11 @@ export class HarnessExecutor implements Executor {
     | (() => Promise<{ id: string; status: string } | undefined>)
     | undefined;
   private readonly readTurnMutations: HarnessExecutorOptions['readTurnMutations'];
+  private readonly validateTurnOutput: HarnessExecutorOptions['validateTurnOutput'];
+  private outputRepairMessage: UserMessage | undefined;
+  private outputRepairRequests = 0;
+  private stepStartEventIndex = 0;
+  private outputRepairRestriction: (() => void) | undefined;
   private readonly sessionPersistence: HarnessExecutorOptions['sessionPersistence'];
   private readonly pluginFibers: Fiber[] = [];
   private ready: Promise<void>;
@@ -231,6 +239,7 @@ export class HarnessExecutor implements Executor {
     this.readTestResults = options.readTestResults;
     this.readSubtaskStatus = options.readSubtaskStatus;
     this.readTurnMutations = options.readTurnMutations;
+    this.validateTurnOutput = options.validateTurnOutput;
     this.sessionPersistence = options.sessionPersistence;
     this.ready = this.awaitPlugins();
   }
@@ -281,6 +290,8 @@ export class HarnessExecutor implements Executor {
     await this.ready;
     this.yieldedSafePoint = false;
     this.toolCallsThisTurn = 0;
+    this.outputRepairRequests = 0;
+    this.outputRepairMessage = undefined;
     // Injected view (injectInbox) wins over context.view on the next step.
     if (this.pendingInbox !== null) {
       this.view = this.pendingInbox;
@@ -291,9 +302,15 @@ export class HarnessExecutor implements Executor {
     this.activeSessionId = context.sessionId;
     const agent = await this.ensureAgent(context.sessionId);
 
+    this.stepStartEventIndex = agent.session.events.length;
     // Wake the self-driving loop with the projection slice as this turn's input.
     agent.followup(this.projectionMessage());
-    await agent.whenIdle();
+    try {
+      await agent.whenIdle();
+    } finally {
+      this.outputRepairRestriction?.();
+      this.outputRepairRestriction = undefined;
+    }
 
     if (this.yieldedSafePoint)
       return { kind: 'tool', output: {}, reachedSafeBoundary: true, mutations: [] };
@@ -304,9 +321,10 @@ export class HarnessExecutor implements Executor {
       throw new Error(`agent turn failed: ${failureMessage(failure)}`);
     }
 
-    const turn = lastAssistantTurn(agent, context.sessionId);
+    const turn = lastAssistantTurn(agent, context.sessionId, this.stepStartEventIndex);
     const parsed = turn === null ? null : parseAssistantControls(turn.text, turn.msgId);
     const text = parsed?.text ?? turn?.text ?? null;
+    this.validateTurnOutput?.({ text });
     const message =
       turn === null
         ? null
@@ -493,10 +511,47 @@ export class HarnessExecutor implements Executor {
           this.yieldedSafePoint = true;
           return { kind: 'reject' };
         }
+        if (this.outputRepairMessage !== undefined) {
+          if (this.outputRepairRequests >= 2) return { kind: 'reject' };
+          this.outputRepairRequests++;
+        }
         return {
           kind: 'enter',
-          messages: [this.projectionMessage(), ...toolExchangeOf(payload.messages)],
+          messages: [
+            this.projectionMessage(),
+            ...toolExchangeOf(payload.messages),
+            ...(this.outputRepairMessage === undefined ? [] : [this.outputRepairMessage]),
+          ],
         };
+      });
+      // The official loop owns the extra step. Only a pure structured handoff
+      // validator may request regeneration; control blocks remain fail-closed.
+      agentCtx.on('agent/turn-stopping', ({ agent }) => {
+        if (this.validateTurnOutput === undefined || this.outputRepairRequests >= 2) return;
+        const turn = lastAssistantTurn(agent, sessionId, this.stepStartEventIndex);
+        const parsed = turn === null ? null : parseAssistantControls(turn.text, turn.msgId);
+        if (parsed?.objection !== undefined || parsed?.channelAction !== undefined) return;
+        try {
+          this.validateTurnOutput({ text: parsed?.text ?? turn?.text ?? null });
+        } catch {
+          this.outputRepairMessage = createUserMessage({
+            source: { kind: 'plugin', plugin: 'agora-output-format' },
+            content: [
+              {
+                type: 'text',
+                text:
+                  '[output-format-repair] The final response failed the structured output contract. ' +
+                  'Regenerate the complete required JSON from the current projected slices. ' +
+                  'Use quoted keys, valid JSON escapes and fully closed objects/arrays. ' +
+                  'Return only the required JSON, without explanation or Markdown. ' +
+                  'Do not change requirements or decisions. Do not call tools. ' +
+                  'The correction request adds no raw group chat or parser error text.',
+              },
+            ],
+          });
+          this.outputRepairRestriction ??= agentCtx.tools.restrict({ allow: [] });
+          agent.steer(this.outputRepairMessage);
+        }
       });
       // Model routing: fix the provider/model from RoleSpec or env.
       agentCtx.on('agent/request', async (_payload, next) => {
@@ -925,8 +980,12 @@ function occurrences(text: string, needle: string): number {
 }
 
 /** Extract the last assistant text block and stable event identity from the durable session log. */
-function lastAssistantTurn(agent: Agent, sessionId: string): AssistantTurn | null {
-  for (let i = agent.session.events.length - 1; i >= 0; i -= 1) {
+function lastAssistantTurn(
+  agent: Agent,
+  sessionId: string,
+  startIndex: number,
+): AssistantTurn | null {
+  for (let i = agent.session.events.length - 1; i >= startIndex; i -= 1) {
     const event = agent.session.events[i];
     if (event?.type === 'assistant/message') {
       const message = (event.data as { message?: { content: unknown[] } }).message;
@@ -941,6 +1000,7 @@ function lastAssistantTurn(agent: Agent, sessionId: string): AssistantTurn | nul
           return { text: block.text, msgId: `assistant-${digest}` };
         }
       }
+      return null;
     }
   }
   return null;

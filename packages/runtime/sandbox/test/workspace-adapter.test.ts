@@ -57,6 +57,25 @@ class FailOnceExecutionBackend extends HostExecutionBackend {
 
 const roots: string[] = [];
 
+it('preserves linked worktrees after failed suspension and retries terminal cleanup', async () => {
+  class FailSuspendOnce extends HostExecutionBackend {
+    calls = 0;
+    override async suspend() {
+      if (++this.calls === 1) throw new Error('injected suspension failure');
+    }
+  }
+  const execution = new FailSuspendOnce();
+  const { adapter, git } = await fixtureWithExecution(execution);
+  const worktree = await adapter.createWorktree('task-a', 'worker-a');
+  await expect(adapter.teardown('task-a')).rejects.toThrow(/suspension failure/);
+  expect(await git.headOf(worktree.path)).toMatch(/^[0-9a-f]{40}$/);
+  await adapter.teardown('task-a');
+  expect(execution.calls).toBe(2);
+  await expect(readFile(join(worktree.path, '.git'))).rejects.toThrow();
+  await adapter.teardown('task-a');
+  expect(execution.calls).toBe(2);
+});
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });

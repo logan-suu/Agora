@@ -4,7 +4,7 @@ import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 import {
@@ -124,9 +124,7 @@ describeDocker('Phase 9 task-owned worktree integration (G5)', () => {
     const first = await allocate(adapter, 'phase9-ok', 'worker:dispatch:0');
     const second = await allocate(adapter, 'phase9-ok', 'worker:dispatch:1');
 
-    expect((await adapter.run(first, 'pwd')).stdout.trim()).toBe(
-      `/workspace/worktrees/${basename(first.path)}`,
-    );
+    expect((await adapter.run(first, 'pwd')).stdout.trim()).toBe('/workspace');
     const committedFirst = await commit(adapter, first, 'first.txt', 'first\n');
     const committedSecond = await commit(adapter, second, 'second.txt', 'second\n');
     let state = integrationState('phase9-ok', [
