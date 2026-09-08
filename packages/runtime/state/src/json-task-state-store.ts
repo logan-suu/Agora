@@ -6,6 +6,7 @@ import {
   applyMutations,
   assertParallelState,
   isIntegration,
+  isMessage,
   isPersistedWorktreeRef,
   isSubtaskPriority,
   isWorkerState,
@@ -151,6 +152,9 @@ export class JsonTaskStateStore implements TaskStateStore {
 
   #assertValidState(scope: TaskScope, state: AppState, prefix = 'invalid task state'): void {
     this.#assertStateMatchesScope(scope, state);
+    if (!Array.isArray(state.messages) || !state.messages.every(isMessage)) {
+      throw new Error(`${prefix}: messages must contain valid Message`);
+    }
     if (!Array.isArray(state.objections)) {
       throw new Error(`${prefix}: objections must be an array`);
     }

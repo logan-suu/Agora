@@ -36,6 +36,44 @@ afterEach(async () => {
 });
 
 describe('JsonTaskStateStore', () => {
+  it('rejects an invalid message batch atomically without changing the snapshot', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const initial = createInitialAppState('task-a', 'goal', 'project-a');
+    const path = join(root, 'projects/project-a/tasks/task-a/state.json');
+    await store.initialize(scope(), initial);
+    const before = await readFile(path, 'utf8');
+    for (const value of [null, undefined, { msgId: 'malformed' }]) {
+      await expect(
+        store.commit(scope(), [
+          appendMutation('messages', message('valid')),
+          appendMutation('messages', value),
+        ]),
+      ).rejects.toThrow('messages append requires a valid Message');
+      expect(await readFile(path, 'utf8')).toBe(before);
+      await expect(store.load(scope())).resolves.toEqual(initial);
+    }
+  });
+
+  it('rejects invalid message snapshots during initialization and load', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const initial = createInitialAppState('task-a', 'goal', 'project-a');
+    const invalid = { ...initial, messages: [{ msgId: 'malformed' }] } as typeof initial;
+    await expect(store.initialize(scope(), invalid)).rejects.toThrow(
+      'invalid task state: messages must contain valid Message',
+    );
+    await expect(store.load(scope())).resolves.toBeUndefined();
+    await store.initialize(scope(), initial);
+    const path = join(root, 'projects/project-a/tasks/task-a/state.json');
+    for (const messages of [null, {}, [null], [{ msgId: 'malformed' }]]) {
+      await writeFile(path, JSON.stringify({ ...initial, messages }), 'utf8');
+      await expect(store.load(scope())).rejects.toThrow(
+        `invalid task state JSON at "${path}": messages must contain valid Message`,
+      );
+    }
+  });
+
   it('initializes once and loads the persisted task snapshot', async () => {
     const root = await temporaryRoot();
     const store = new JsonTaskStateStore(root);

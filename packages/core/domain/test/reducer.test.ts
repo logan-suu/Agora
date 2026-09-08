@@ -64,6 +64,59 @@ function deepFreeze<T>(value: T): T {
 }
 
 describe('applyMutations · append', () => {
+  it('rejects malformed messages before reading fields or suppressing duplicate identities', () => {
+    const valid = makeMessage({ msgId: 'existing' });
+    const base = applyMutations(createInitialAppState('t-1', 'goal'), [
+      appendMutation('messages', valid),
+    ]);
+    const invalid: unknown[] = [null, undefined, 1, 'message', [], { msgId: 'existing' }];
+    for (const field of ['msgId', 'channelId', 'fromRole', 'type', 'payload', 'display', 'ts']) {
+      const missing = { ...valid } as Record<string, unknown>;
+      delete missing[field];
+      invalid.push(missing);
+    }
+    for (const patch of [
+      { type: 'unknown' },
+      { payload: null },
+      { payload: [] },
+      { payload: 'text' },
+      { ts: Number.NaN },
+      { ts: Number.POSITIVE_INFINITY },
+      { threadId: 1 },
+      { to: 'CODER' },
+      { to: [1] },
+      { channelId: 1 },
+      { fromRole: 1 },
+      { display: 1 },
+    ])
+      invalid.push({ ...valid, ...patch });
+    for (const value of invalid) {
+      expect(() => applyMutations(base, [appendMutation('messages', value)])).toThrow(
+        'messages append requires a valid Message',
+      );
+      expect(base.messages).toEqual([valid]);
+    }
+  });
+
+  it('accepts all message types and optional routing fields for custom roles', () => {
+    for (const type of [
+      'handoff',
+      'feedback',
+      'question',
+      'escalation',
+      'objection',
+      'chat',
+      'announce',
+    ] as const) {
+      const value = makeMessage({ type, fromRole: 'CUSTOM', threadId: 'thread', to: ['CUSTOM'] });
+      const state = applyMutations(createInitialAppState('t-1', 'goal'), [
+        appendMutation('messages', value),
+        appendMutation('messages', value),
+      ]);
+      expect(state.messages).toEqual([value]);
+    }
+  });
+
   it('commutativity: two appends applied in either order yield the same message set', () => {
     const base = createInitialAppState('t-1', 'goal');
     const first = appendMutation('messages', makeMessage());
@@ -96,11 +149,13 @@ describe('applyMutations · append', () => {
 
   it('idempotency falls back to deep equality for values without an identity key', () => {
     const base = createInitialAppState('t-1', 'goal');
-    const once = applyMutations(base, [appendMutation('messages', { kind: 'note', text: 'same' })]);
-    const twice = applyMutations(once, [
-      appendMutation('messages', { kind: 'note', text: 'same' }),
+    const once = applyMutations(base, [
+      appendMutation('reviewComments', { kind: 'note', text: 'same' }),
     ]);
-    expect(twice.messages.length).toBe(1);
+    const twice = applyMutations(once, [
+      appendMutation('reviewComments', { kind: 'note', text: 'same' }),
+    ]);
+    expect(twice.reviewComments).toEqual([{ kind: 'note', text: 'same' }]);
   });
 });
 

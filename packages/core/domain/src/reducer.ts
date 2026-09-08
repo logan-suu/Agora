@@ -17,7 +17,13 @@ import type {
   TestResults,
   WorkerState,
 } from './state';
-import { isIntegration, isPersistedWorktreeRef, isSubtaskPriority, isWorkerState } from './state';
+import {
+  isIntegration,
+  isMessage,
+  isPersistedWorktreeRef,
+  isSubtaskPriority,
+  isWorkerState,
+} from './state';
 
 export const APPEND_FIELDS = [
   'messages',
@@ -181,7 +187,8 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
   if (isNotEnabled(field, ENABLED_APPEND_FIELDS)) throw disabledFieldError(field);
   switch (field) {
     case 'messages': {
-      const message = value as Message;
+      if (!isMessage(value)) throw new Error('messages append requires a valid Message');
+      const message = value;
       const existing = state.messages.find((candidate) => candidate.msgId === message.msgId);
       if (
         (message.payload?.kind === 'wave_validation' ||
