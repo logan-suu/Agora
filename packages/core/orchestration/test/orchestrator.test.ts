@@ -14,7 +14,7 @@ import type { Executor, StepResult } from '@agora/runtime-executor';
 import { describe, expect, it, vi } from 'vitest';
 import { MAX_ITERATIONS } from '../src/coordinator';
 import type { OrchestrationDeps } from '../src/index';
-import { entry, runOrchestration, WorkerRuntime } from '../src/index';
+import { entry, GlobalScheduler, runOrchestration, WorkerRuntime } from '../src/index';
 
 class FakeExecutor implements Executor {
   private readonly queue: StepResult[];
@@ -135,6 +135,179 @@ function orchestrationWith(coders: FakeExecutor[], testers: FakeExecutor[]): Orc
 }
 
 describe('runOrchestration (Phase 0 fixed loop)', () => {
+  it('bounds retries for a failed singleton CODER in a parallel plan', async () => {
+    let canonical = applyMutations(createInitialAppState('single-failure', 'Implement one unit'), [
+      setMutation('complexity', { tier: 2, signals: {} }),
+      setMutation('phase', 'planning'),
+      setMutation('architecture', {
+        executionPlan: { version: 1, subtasks: [{ id: 'A', title: 'Only unit', dependsOn: [] }] },
+      }),
+    ]);
+    let calls = 0;
+    const transition: NonNullable<OrchestrationDeps['transition']> = async (_state, mutations) =>
+      (canonical = applyMutations(canonical, mutations));
+    const runtime = new WorkerRuntime({
+      roster: PHASE0_ROSTER,
+      loadState: async () => canonical,
+      transition,
+      buildExecutor: () => ({
+        async step() {
+          calls += 1;
+          throw new Error('controlled CODER failure');
+        },
+        async saveSafePoint() {
+          return 'controlled-safe-point';
+        },
+        async loadSafePoint() {},
+        injectInbox() {},
+      }),
+    });
+    const result = await runOrchestration(canonical, {
+      workerRuntime: runtime,
+      transition,
+      parallelContext: async () => ({
+        initialBase: { branch: 'main', commit: 'a'.repeat(40) },
+        controlFingerprint: 'f'.repeat(64),
+      }),
+    });
+    expect(result.humanGate?.reason).toBe('iteration_limit');
+    expect(result.iterationCount).toBe(MAX_ITERATIONS);
+    expect(calls).toBe(MAX_ITERATIONS + 1);
+    expect(new Set(result.workers.map((worker) => worker.workerId)).size).toBe(calls);
+    expect(result.workers.every((worker) => worker.status === 'failed')).toBe(true);
+  });
+
+  it('retries the whole failed and not-started batch with new identities at capacity one', async () => {
+    let canonical = applyMutations(
+      createInitialAppState('capacity-one-retry', 'Implement independent units'),
+      [
+        setMutation('complexity', { tier: 2, signals: {} }),
+        setMutation('phase', 'planning'),
+        setMutation('architecture', {
+          executionPlan: {
+            version: 1,
+            subtasks: ['A', 'B', 'C'].map((id) => ({ id, title: id, dependsOn: [] })),
+          },
+        }),
+      ],
+    );
+    const transition: NonNullable<OrchestrationDeps['transition']> = async (_state, mutations) =>
+      (canonical = applyMutations(canonical, mutations));
+    const attempts: { workerId: string; subtaskId: string }[] = [];
+    const runtime = new WorkerRuntime(
+      {
+        roster: PHASE0_ROSTER,
+        loadState: async () => canonical,
+        transition,
+        buildExecutor: (_spec, assignment) => ({
+          async step() {
+            if (assignment.subtaskId === undefined) throw new Error('missing coding subtask');
+            attempts.push({ workerId: assignment.workerId, subtaskId: assignment.subtaskId });
+            if (attempts.length === 1)
+              throw new Error('first CODER failed before siblings started');
+            return { kind: 'done' as const, output: {}, reachedSafeBoundary: true, mutations: [] };
+          },
+          async saveSafePoint() {
+            return 'safe';
+          },
+          async loadSafePoint() {},
+          injectInbox() {},
+        }),
+      },
+      new GlobalScheduler({ cap: 1 }),
+    );
+    // Stop at the real orchestration integration route; this test isolates retry ownership.
+    const integrate = vi.fn(async () => {
+      throw new Error('reached integration after retry');
+    });
+    await expect(
+      runOrchestration(canonical, {
+        workerRuntime: runtime,
+        transition,
+        integrate,
+        parallelContext: async () => ({
+          initialBase: { branch: 'main', commit: 'a'.repeat(40) },
+          controlFingerprint: 'f'.repeat(64),
+        }),
+      }),
+    ).rejects.toThrow('reached integration after retry');
+    expect(integrate).toHaveBeenCalledOnce();
+    const original = canonical.messages.find((message) => message.payload.kind === 'coding_wave')
+      ?.payload.workerIds;
+    if (!Array.isArray(original)) throw new Error('expected original coding wave');
+    expect(attempts.map((attempt) => attempt.subtaskId)).toEqual(['A', 'A', 'B', 'C']);
+    expect(attempts.slice(1).every((attempt) => !original.includes(attempt.workerId))).toBe(true);
+    expect(canonical.iterationCount).toBe(1);
+    expect(canonical.parallelExecution?.activeWave?.coderWorkerIds).toEqual(
+      attempts.slice(1).map((attempt) => attempt.workerId),
+    );
+  });
+
+  it.each(['workspace', 'completion', 'lease'] as const)(
+    'does not retry a singleton infrastructure failure at %s',
+    async (boundary) => {
+      let canonical = applyMutations(
+        createInitialAppState('single-infrastructure-failure', 'Implement one unit'),
+        [
+          setMutation('complexity', { tier: 2, signals: {} }),
+          setMutation('phase', 'planning'),
+          setMutation('architecture', {
+            executionPlan: {
+              version: 1,
+              subtasks: [{ id: 'A', title: 'Only unit', dependsOn: [] }],
+            },
+          }),
+        ],
+      );
+      const transition: NonNullable<OrchestrationDeps['transition']> = async (_state, mutations) =>
+        (canonical = applyMutations(canonical, mutations));
+      const scheduler = new GlobalScheduler();
+      if (boundary === 'lease')
+        vi.spyOn(scheduler, 'release').mockRejectedValueOnce(
+          new Error('lease infrastructure failure'),
+        );
+      const runtime = new WorkerRuntime(
+        {
+          roster: PHASE0_ROSTER,
+          loadState: async () => canonical,
+          transition,
+          ...(boundary === 'workspace'
+            ? {
+                resolveWorktree: async () => {
+                  throw new Error('workspace infrastructure failure');
+                },
+              }
+            : {}),
+          ...(boundary === 'completion'
+            ? {
+                completeAssignment: async () => {
+                  throw new Error('completion infrastructure failure');
+                },
+              }
+            : {}),
+          buildExecutor: () =>
+            new FakeExecutor([
+              { kind: 'done', output: {}, reachedSafeBoundary: true, mutations: [] },
+            ]),
+        },
+        scheduler,
+      );
+      await expect(
+        runOrchestration(canonical, {
+          workerRuntime: runtime,
+          transition,
+          parallelContext: async () => ({
+            initialBase: { branch: 'main', commit: 'a'.repeat(40) },
+            controlFingerprint: 'f'.repeat(64),
+          }),
+        }),
+      ).rejects.toThrow(`${boundary} infrastructure failure`);
+      expect(canonical.iterationCount).toBe(0);
+      expect(canonical.workers).toHaveLength(1);
+      expect(canonical.phase).toBe('coding');
+    },
+  );
+
   it('dispatches a recovered multi-worker route through runParallel', async () => {
     const runtime = new WorkerRuntime({
       roster: PHASE0_ROSTER,

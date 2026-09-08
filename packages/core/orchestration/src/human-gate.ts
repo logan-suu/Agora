@@ -4,10 +4,12 @@ import {
   buildCompletionResolution,
   buildObjectionResolution,
   type CompletionResolutionAction,
+  currentCompletionEvidence,
   type HumanGate,
   type HumanGateRequest,
   type Mutation,
   mergeByIdMutation,
+  type ReviewBinding,
   setMutation,
 } from '@agora/core-domain';
 import type { TaskScope } from '@agora/runtime-state';
@@ -35,6 +37,8 @@ export interface HumanGateResolutionReceipt {
   safePointRefs: string[];
   resumeSessionId: string;
   workerResumes?: WorkerResumePlan[];
+  completionEvidence?: ReviewBinding;
+  integrationRework?: AppState['integration'];
 }
 
 export interface WorkerResumePlan {
@@ -215,16 +219,59 @@ export function planHumanGateResolution(
       }
       const subtask = state.subtasks.find((entry) => entry.id === conflict.subtaskId);
       if (subtask === undefined) throw new Error('integration conflict subtask is missing');
-      const { resultCommit: _resultCommit, ...withoutResult } = current;
-      mutations.push(
-        mergeByIdMutation('subtasks', conflict.subtaskId, { status: 'todo' }),
-        setMutation('integration', {
-          ...withoutResult,
-          mergedBranches: [],
-          conflicts: [],
-          status: 'idle',
-        }),
-      );
+      if (state.parallelExecution !== undefined) {
+        const execution = state.parallelExecution;
+        const wave = execution.activeWave;
+        if (
+          wave === undefined ||
+          wave.waveId !== current.waveId ||
+          !wave.coderWorkerIds.includes(workerId)
+        )
+          throw new Error('integration rework is not a current wave contribution');
+        const dispatchId = `integration-rework:${input.actionId}`;
+        const replacementId = `worker:${dispatchId}:0`;
+        const { validation: _validation, ...coding } = wave;
+        mutations.push(
+          mergeByIdMutation('workers', replacementId, {
+            workerId: replacementId,
+            role: 'CODER',
+            subtaskId: conflict.subtaskId,
+            executor: 'harness',
+            status: 'pending',
+            sessionId: `session:${replacementId}`,
+            startedTs: input.ts ?? gate.openedTs,
+          }),
+          mergeByIdMutation('subtasks', conflict.subtaskId, {
+            status: 'in_progress',
+            worktree: undefined,
+          }),
+          setMutation('parallelExecution', {
+            ...execution,
+            activeWave: {
+              ...coding,
+              attempt: wave.attempt + 1,
+              coderWorkerIds: wave.coderWorkerIds.map((id) =>
+                id === workerId ? replacementId : id,
+              ),
+            },
+          }),
+          setMutation('integration', undefined),
+          setMutation('phase', 'coding'),
+          setMutation('nextRole', 'CODER'),
+          setMutation('iterationCount', state.iterationCount + 1),
+        );
+      } else {
+        const { resultCommit: _resultCommit, ...withoutResult } = current;
+        mutations.push(
+          mergeByIdMutation('subtasks', conflict.subtaskId, { status: 'todo' }),
+          setMutation('integration', {
+            ...withoutResult,
+            mergedBranches: [],
+            conflicts: [],
+            status: 'idle',
+          }),
+        );
+      }
     } else {
       throw new Error(`humanGate reason "${gate.reason}" has no resolver`);
     }
@@ -233,6 +280,12 @@ export function planHumanGateResolution(
   const workerResumes = deriveHumanGateWorkerResumes(state, gate, input.actionId);
   return {
     receipt: {
+      ...(state.parallelExecution !== undefined && input.option === 'request_rework'
+        ? { integrationRework: state.integration }
+        : {}),
+      ...(completionResolution === undefined || state.parallelExecution === undefined
+        ? {}
+        : { completionEvidence: currentCompletionEvidence(state) }),
       gateId: gate.gateId,
       option: input.option,
       ...(input.argument === undefined ? {} : { argument: input.argument }),

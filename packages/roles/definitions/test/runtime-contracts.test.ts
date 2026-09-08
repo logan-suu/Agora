@@ -12,6 +12,8 @@ describe('reviewerTurnMutations structured transport', () => {
 
   it('accepts one JSON code fence while preserving strict verdict validation', () => {
     expect(reviewerTurnMutations(`\`\`\`json\n${verdict}\n\`\`\``)).toHaveLength(1);
+    expect(reviewerTurnMutations(`\`\`\`json\n${verdict}\`\`\``)).toHaveLength(1);
+    expect(() => reviewerTurnMutations('```json\n[{"kind":"verdict"}]```')).toThrow(/safe id/);
   });
 
   it('rejects prose outside a fenced JSON payload', () => {

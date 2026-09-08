@@ -106,6 +106,30 @@ async function fixtureWithExecution(execution: WorkspaceExecutionBackend) {
 }
 
 describe('WorkspaceAdapter', () => {
+  it('creates a new wave from the accepted cumulative HEAD without moving the canonical checkout', async () => {
+    const { adapter, git } = await fixture();
+    const original = await git.canonicalHead();
+    const first = await adapter.createWorktree('task-a', 'worker:first:0');
+    await adapter.write(first, 'cumulative.txt', 'accepted code and tests');
+    await gitCommand(first.path, 'add', '.');
+    await gitCommand(
+      first.path,
+      '-c',
+      'user.name=Agora Test',
+      '-c',
+      'user.email=test@agora.local',
+      'commit',
+      '-m',
+      'Add cumulative artifact',
+    );
+    const accepted = (await gitCommand(first.path, 'rev-parse', 'HEAD')).trim();
+    const next = await adapter.createWorkerWorktree('worker:next:0', accepted);
+    expect(next.baseCommit).toBe(accepted);
+    expect(await adapter.read(next, 'cumulative.txt')).toBe('accepted code and tests');
+    expect(await git.canonicalHead()).toBe(original);
+    await expect(adapter.createWorkerWorktree('worker:next:0', original)).rejects.toThrow(/base/);
+    expect(await adapter.createWorkerWorktree('worker:next:0', accepted)).toEqual(next);
+  });
   it('creates distinct deterministic linked worktrees for same-role workers and binds those exact paths', async () => {
     const { adapter, execution, taskRoot } = await fixture();
     const first = await adapter.createWorktree('task-a', 'worker:dispatch:0');

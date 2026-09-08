@@ -24,6 +24,16 @@ export interface Executor {
   injectInbox(view: ProjectionView): void;
 }
 
+/** Optional companion; requests quiescence after the current complete Harness step. */
+export interface SafePointExecutor extends Executor {
+  requestSafePoint(): void;
+  cancelSafePoint?(): void;
+}
+
+export function supportsSafePointRequest(executor: Executor): executor is SafePointExecutor {
+  return 'requestSafePoint' in executor && typeof executor.requestSafePoint === 'function';
+}
+
 export interface ChannelSummarySourceEntry {
   ref: { taskId: string; msgId: string };
   fromRole: string;

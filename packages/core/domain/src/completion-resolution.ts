@@ -1,4 +1,11 @@
 import type { Decision } from './ledger';
+import {
+  canonicalJson,
+  currentReviewDispatch,
+  isReviewBinding,
+  type ReviewBinding,
+  validationReceipt,
+} from './parallel-execution';
 import type { AppState, Message } from './state';
 
 export const DEFAULT_COMPLETION_APPROVAL_RATIONALE =
@@ -95,6 +102,7 @@ export function buildCompletionResolution(
       `completion resolution review "${input.reviewId}" is not the current REVIEWER verdict`,
     );
   }
+  if (state.parallelExecution !== undefined) currentCompletionEvidence(state);
   const rationale = completionRationale(input.option, input.rationale);
   const resolutionDecisionId = `task-completion-resolution:${input.actionId}`;
   if (state.decisionLedger.some((decision) => decision.id === resolutionDecisionId)) {
@@ -178,6 +186,11 @@ export function deriveCompletionResolution(
   ) {
     throw new Error(`completion resolution decision "${String(decisionId)}" drifted`);
   }
+  if (
+    state.parallelExecution !== undefined &&
+    canonicalJson(receipt?.completionEvidence) !== canonicalJson(currentCompletionEvidence(state))
+  )
+    throw new Error('completion resolution evidence drifted');
   return {
     reviewId,
     option,
@@ -186,6 +199,56 @@ export function deriveCompletionResolution(
     rationale,
     resumed: hasCanonicalResumedMarker(state, message.msgId, gateId, receipt.resumeSessionId),
   };
+}
+
+export function currentCompletionEvidence(state: AppState): ReviewBinding {
+  const binding = currentReviewDispatch(state)?.payload.reviewBinding;
+  if (
+    !isReviewBinding(binding) ||
+    binding.planId !== state.parallelExecution?.planId ||
+    binding.validationReceiptId !== state.parallelExecution.acceptedReceiptId ||
+    state.parallelExecution.activeWave !== undefined
+  )
+    throw new Error('completion requires the accepted current plan validation evidence');
+  const receipt = validationReceipt(state, binding.validationReceiptId);
+  if (
+    !receipt.results.passed ||
+    receipt.planId !== binding.planId ||
+    receipt.worktree.headCommit !== binding.commit ||
+    receipt.controlFingerprint !== binding.controlFingerprint
+  )
+    throw new Error('completion validation binding drifted');
+  return structuredClone(binding);
+}
+
+/** Verify historical completion controls before excluding them from the technical input hash. */
+export function canonicalCompletionDecisionIds(state: AppState): ReadonlySet<string> {
+  const ids = new Set<string>();
+  for (const [index, message] of state.messages.entries()) {
+    const completion = asRecord(message.payload?.completionResolution);
+    if (typeof completion?.reviewId !== 'string') continue;
+    const nextDispatch = state.messages
+      .slice(index + 1)
+      .find(
+        (candidate) =>
+          candidate.fromRole === 'COORDINATOR' &&
+          candidate.type === 'announce' &&
+          candidate.payload.nextRole === 'REVIEWER',
+      );
+    const end = nextDispatch?.payload.reviewCommentCursor;
+    // The canonical message, intent, gate and Leader Decision are checked using
+    // the historical review cursor. Current wave evidence is checked separately.
+    const { parallelExecution: _execution, ...legacyView } = state;
+    const historical: AppState = {
+      ...legacyView,
+      messages: state.messages.slice(0, index + 1),
+      reviewComments:
+        typeof end === 'number' ? state.reviewComments.slice(0, end) : state.reviewComments,
+    };
+    const resolution = deriveCompletionResolution(historical, completion.reviewId);
+    if (resolution !== undefined) ids.add(resolution.resolutionDecisionId);
+  }
+  return ids;
 }
 
 function completionRationale(

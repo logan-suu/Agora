@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { realpathSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 
-import type { WorktreeRef } from '@agora/core-domain';
+import { isGitObjectId, type WorktreeRef } from '@agora/core-domain';
 
 import type {
   RecoverableSandboxManager,
@@ -76,18 +76,28 @@ export class WorkspaceAdapter implements RecoverableSandboxManager {
 
   async createWorktree(taskId: string, isolationKey: string): Promise<Worktree> {
     this.#assertTask(taskId);
+    const ref = await this.createWorkerWorktree(isolationKey, await this.#git.canonicalHead());
+    return { path: ref.path, branch: ref.branch };
+  }
+
+  /** Companion capability: bind an immutable worker identity to an explicit cumulative base. */
+  async createWorkerWorktree(isolationKey: string, baseCommit: string): Promise<WorktreeRef> {
+    if (!isGitObjectId(baseCommit)) throw new Error('worker base must be a full Git object id');
     return this.#enqueue(async () => {
       const existing = this.#byIsolationKey.get(isolationKey);
-      if (existing !== undefined) return { path: existing.path, branch: existing.branch };
-      const baseCommit = await this.#git.canonicalHead();
-      const branch = this.#encodeIsolationKey(this.#projectId, taskId, isolationKey);
-      const worktree = await this.#git.createWorktreeFrom(taskId, branch, baseCommit);
+      if (existing !== undefined) {
+        if (existing.baseCommit !== baseCommit)
+          throw new Error('worker identity has a conflicting base commit');
+        return this.refreshWorktree(existing);
+      }
+      const branch = this.#encodeIsolationKey(this.#projectId, this.#taskId, isolationKey);
+      const worktree = await this.#git.createWorktreeFrom(this.#taskId, branch, baseCommit);
       try {
         this.#assertOwnedPath(worktree.path);
-        const ref: WorktreeRef = { ...worktree, baseCommit };
-        await this.#execution.bindWorktree(taskId, isolationKey, worktree, this.#taskRoot);
+        const ref: WorktreeRef = { ...worktree, baseCommit, headCommit: baseCommit };
+        await this.#execution.bindWorktree(this.#taskId, isolationKey, worktree, this.#taskRoot);
         this.#remember(isolationKey, ref);
-        return worktree;
+        return structuredClone(ref);
       } catch (error) {
         await this.#git.retireWorktree(worktree.path, worktree.branch).catch((cleanupError) => {
           throw new AggregateError([error, cleanupError], 'worktree bind and compensation failed');

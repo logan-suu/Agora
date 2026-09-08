@@ -104,6 +104,20 @@ describe('JsonTaskStateStore', () => {
     await expect(store.load(scope())).rejects.toThrow('invalid task state JSON');
   });
 
+  it('retains the snapshot path and cause when parallel-state validation fails', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const initial = createInitialAppState('task-a', 'goal', 'project-a');
+    const path = join(root, 'projects/project-a/tasks/task-a/state.json');
+    await store.initialize(scope(), initial);
+    await writeFile(path, JSON.stringify({ ...initial, parallelExecution: {} }), 'utf8');
+
+    await expect(store.load(scope())).rejects.toMatchObject({
+      message: `invalid task state JSON at "${path}": invalid parallelExecution`,
+      cause: expect.objectContaining({ message: 'invalid parallelExecution' }),
+    });
+  });
+
   it('normalizes a pre-D14 snapshot without objections at the persistence boundary', async () => {
     const root = await temporaryRoot();
     const store = new JsonTaskStateStore(root);

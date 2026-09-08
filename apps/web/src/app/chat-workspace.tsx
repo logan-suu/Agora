@@ -33,6 +33,7 @@ import {
   type TraceSnapshotView,
   type WorkspaceViewModel,
 } from './chat-model';
+import { traceLanes } from './trace-lanes';
 
 interface ChatWorkspaceProps {
   model?: WorkspaceViewModel;
@@ -275,12 +276,81 @@ export function TracePanel({
   trace?: TraceSnapshotView | undefined;
   error?: string | undefined;
 }) {
+  const timeline = trace === undefined ? undefined : traceLanes(trace, Date.now());
   return (
     <section className="trace-panel" aria-label="Trace">
       <div className="trace-heading">
         <h2>Trace</h2>
         {trace ? <small>{trace.sessions.length} sessions</small> : null}
       </div>
+      {timeline !== undefined && timeline.lanes.length > 0 ? (
+        <section className="trace-timeline" aria-label="Worker session timeline">
+          <div className="trace-time-axis">
+            <span>0s</span>
+            <span>
+              {elapsed(timeline.start, timeline.end)}
+              {timeline.running ? ' · live' : ''}
+            </span>
+          </div>
+          {timeline.lanes.map((lane) => (
+            <div
+              className="trace-lane"
+              key={lane.rootSessionId}
+              data-root-session={lane.rootSessionId}
+            >
+              <div className="trace-lane-label">
+                <strong>{lane.role}</strong>
+                <code title={lane.rootSessionId}>{lane.rootSessionId.slice(-8)}</code>
+                {lane.parentOmitted ? <small>parent omitted</small> : null}
+              </div>
+              <div
+                className="trace-lane-track"
+                role="img"
+                aria-label={`${lane.role} ${lane.rootSessionId}`}
+              >
+                {lane.sessions.flatMap((session) =>
+                  session.turns.map((turn) => {
+                    const left =
+                      (100 * (turn.startedAt - timeline.start)) / (timeline.end - timeline.start);
+                    const width =
+                      (100 * ((turn.endedAt ?? timeline.end) - turn.startedAt)) /
+                      (timeline.end - timeline.start);
+                    const label = `${session.parentSessionId ? 'Fork · ' : ''}Turn ${turn.turn} · ${turn.status} · ${elapsed(turn.startedAt, turn.endedAt)}`;
+                    return (
+                      <span
+                        key={`${session.sessionId}:${turn.turn}`}
+                        className="trace-span"
+                        data-status={turn.status}
+                        style={{ left: `${left}%`, width: `${Math.max(0, width)}%` }}
+                        title={label}
+                      >
+                        {session.parentSessionId ? (
+                          <span className="trace-fork-mark" aria-hidden="true">
+                            ↳
+                          </span>
+                        ) : null}
+                        {turn.steps.map((step) => (
+                          <span
+                            key={step.step}
+                            className="trace-step-span"
+                            data-status={step.status}
+                            style={{
+                              left: `${(100 * (step.startedAt - turn.startedAt)) / Math.max(1, (turn.endedAt ?? timeline.end) - turn.startedAt)}%`,
+                              width: `${(100 * ((step.endedAt ?? turn.endedAt ?? timeline.end) - step.startedAt)) / Math.max(1, (turn.endedAt ?? timeline.end) - turn.startedAt)}%`,
+                            }}
+                            title={`Step ${step.step} · ${step.status} · ${elapsed(step.startedAt, step.endedAt)}`}
+                          />
+                        ))}
+                      </span>
+                    );
+                  }),
+                )}
+              </div>
+            </div>
+          ))}
+          <p className="trace-timeline-legend">Each lane follows one session lineage. ↳ Fork</p>
+        </section>
+      ) : null}
       {error ? (
         <p className="trace-error" role="alert">
           {error}
@@ -295,11 +365,12 @@ export function TracePanel({
             <details className="trace-session" key={session.sessionId} open>
               <summary>
                 <span className="trace-role">{session.role}</span>
-                <code>{session.sessionId.slice(0, 8)}</code>
+                <code title={session.sessionId}>{session.sessionId.slice(-8)}</code>
               </summary>
               {session.parentSessionId ? (
                 <p className="trace-lineage">
-                  resumed from <code>{session.parentSessionId.slice(0, 8)}</code>
+                  Fork · resumed from{' '}
+                  <code title={session.parentSessionId}>{session.parentSessionId.slice(-8)}</code>
                 </p>
               ) : null}
               <ol className="trace-turns">
@@ -374,7 +445,15 @@ function RightSidebar({
         <h2>Progress</h2>
         <ol>
           <li className={task ? 'progress-done' : 'progress-active'}>Create task</li>
-          <li className={task?.runStatus === 'running' ? 'progress-active' : undefined}>
+          <li
+            className={
+              task?.runStatus === 'completed'
+                ? 'progress-done'
+                : task?.runStatus === 'running'
+                  ? 'progress-active'
+                  : undefined
+            }
+          >
             Run six-role orchestration
           </li>
           <li className={task?.testResults?.passed ? 'progress-done' : undefined}>Pass tests</li>

@@ -150,6 +150,11 @@ export function planLeaderIntent(
     }
     case 'onboard_role':
     case 'assign': {
+      if (state.parallelExecution !== undefined)
+        return rejected(
+          intent,
+          'parallel tasks require a wave-bound assignment; use requirement/decision/priority or resolve the active gate',
+        );
       const role = roster.find((entry) => entry.role.toUpperCase() === intent.targetRole);
       if (role === undefined) {
         if (knownRoles.some((entry) => entry.toUpperCase() === intent.targetRole)) {

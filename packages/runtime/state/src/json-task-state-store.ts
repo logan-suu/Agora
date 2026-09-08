@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import {
   type AppState,
   applyMutations,
+  assertParallelState,
   isIntegration,
   isPersistedWorktreeRef,
   isSubtaskPriority,
@@ -175,6 +176,13 @@ export class JsonTaskStateStore implements TaskStateStore {
     }
     if (state.integration !== undefined && !isIntegration(state.integration)) {
       throw new Error(`${prefix}: integration must be a valid recoverable Integration`);
+    }
+    try {
+      assertParallelState(state);
+    } catch (error) {
+      throw new Error(`${prefix}: ${error instanceof Error ? error.message : String(error)}`, {
+        cause: error,
+      });
     }
   }
 }

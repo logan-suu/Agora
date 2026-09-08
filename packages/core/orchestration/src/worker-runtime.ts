@@ -7,7 +7,12 @@ import {
   Preemptor,
   type WorkerPauseReceipt,
 } from '@agora/core-preemption';
-import { type Executor, project, type StepResult } from '@agora/runtime-executor';
+import {
+  type Executor,
+  projectForAssignment,
+  type StepResult,
+  supportsSafePointRequest,
+} from '@agora/runtime-executor';
 import type { Assignment } from './coordinator';
 import { GlobalScheduler, type SlotLease } from './global-scheduler';
 import { planObjectionMutations } from './objection';
@@ -21,6 +26,12 @@ export interface WorkerRuntimeDeps {
   buildExecutor(spec: RoleSpec, assign: Assignment, worktree?: WorktreeRef): Executor;
   resolveWorktree?: (state: AppState, assignment: Assignment) => Promise<WorktreeRef>;
   refreshWorktree?: (worktree: WorktreeRef) => Promise<WorktreeRef>;
+  /** Trusted evidence producer; its mutations never originate from model output. */
+  completeAssignment?: (
+    state: AppState,
+    assignment: Assignment,
+    worktree: WorktreeRef | undefined,
+  ) => Promise<readonly Mutation[]>;
   buildChannelContext?: (
     state: AppState,
     role: string,
@@ -110,6 +121,7 @@ export class ParallelBatchError extends Error {
   constructor(
     readonly state: AppState,
     readonly failures: readonly WorkerFailure[],
+    readonly retryable = false,
   ) {
     super(
       `parallel worker batch failed: ${failures
@@ -127,8 +139,16 @@ export class UnknownRoleError extends Error {
   }
 }
 
+class WorkerStepError extends Error {
+  constructor(cause: unknown) {
+    super(errorMessage(cause), { cause });
+    this.name = 'WorkerStepError';
+  }
+}
+
 class CanonicalTaskJoin {
   readonly failures: WorkerFailure[] = [];
+  hasInfrastructureFailure = false;
   #current: AppState;
   #tail: Promise<void> = Promise.resolve();
 
@@ -173,6 +193,7 @@ class CanonicalTaskJoin {
   }
 
   recordFailure(workerId: string, error: unknown): void {
+    if (!(error instanceof WorkerStepError)) this.hasInfrastructureFailure = true;
     if (this.failures.some((failure) => failure.workerId === workerId)) return;
     this.failures.push({ workerId, status: 'failed', message: errorMessage(error) });
   }
@@ -326,7 +347,8 @@ export class WorkerRuntime {
     const failures = [...join.failures].sort((left, right) =>
       left.workerId.localeCompare(right.workerId),
     );
-    if (failures.length > 0 && !this.suspended) throw new ParallelBatchError(canonical, failures);
+    if (failures.length > 0 && !this.suspended)
+      throw new ParallelBatchError(canonical, failures, !join.hasInfrastructureFailure);
     return canonical;
   }
 
@@ -346,7 +368,9 @@ export class WorkerRuntime {
         await this.runAssignment(join, assign, true);
       } catch (error) {
         join.recordFailure(assign.workerId, error);
-        await this.markFailed(join, assign.workerId).catch(() => undefined);
+        await this.markFailed(join, assign.workerId).catch((failure) =>
+          join.recordFailure(assign.workerId, failure),
+        );
       } finally {
         if (lease !== undefined) {
           try {
@@ -498,7 +522,9 @@ export class WorkerRuntime {
           ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
           ...(resumeSessionId === undefined ? {} : { sessionId: resumeSessionId }),
         }),
-        ...(resolvedWorktree === undefined || assign.subtaskId === undefined
+        ...(resolvedWorktree === undefined ||
+        assign.subtaskId === undefined ||
+        (current.parallelExecution !== undefined && assign.role !== 'CODER')
           ? []
           : [mergeByIdMutation('subtasks', assign.subtaskId, { worktree: resolvedWorktree })]),
       ]);
@@ -574,12 +600,42 @@ export class WorkerRuntime {
       }
       current = await join.latest();
       this.assertCanonicalHandle(current, handle);
-      const result = await handle.executor.step({
+      const stepContext = {
         sessionId: handle.sessionId,
-        view: project(current, handle.role, roster, channelContext),
-      });
-      const completedWorktree =
-        result.kind === 'done' &&
+        view: projectForAssignment(
+          current,
+          {
+            workerId: handle.id,
+            role: handle.role,
+            ...(handle.subtaskId === undefined ? {} : { subtaskId: handle.subtaskId }),
+          },
+          roster,
+          channelContext,
+        ),
+      };
+      let result: StepResult;
+      try {
+        result = await handle.executor.step(stepContext);
+      } catch (error) {
+        // A completed tool may have committed before the provider request failed.
+        // Persist that stopped worker's actual HEAD before permitting a new identity.
+        if (handle.worktree !== undefined && this.deps.refreshWorktree !== undefined) {
+          const worktree = await this.deps.refreshWorktree(handle.worktree);
+          await join.commit(async (canonical) => {
+            this.assertCanonicalHandle(canonical, handle);
+            return this.transitionStep(canonical, handle.role, [
+              mergeByIdMutation('workers', handle.id, { worktree }),
+              ...(handle.role === 'CODER' && handle.subtaskId !== undefined
+                ? [mergeByIdMutation('subtasks', handle.subtaskId, { worktree })]
+                : []),
+            ]);
+          });
+          handle.worktree = worktree;
+        }
+        throw new WorkerStepError(error);
+      }
+      const boundaryWorktree =
+        result.reachedSafeBoundary &&
         handle.worktree !== undefined &&
         this.deps.refreshWorktree !== undefined
           ? await this.deps.refreshWorktree(handle.worktree)
@@ -589,7 +645,11 @@ export class WorkerRuntime {
         const roleStillEnabled = (await this.currentRoster()).some(
           (entry) => entry.role === handle.role,
         );
-        if (parallel) validateParallelOutput(handle, result);
+        const isolated =
+          parallel ||
+          (canonical.parallelExecution !== undefined &&
+            (handle.role === 'CODER' || handle.role === 'TESTER'));
+        if (isolated) validateParallelOutput(handle, result);
         if (this.deps.handleOutput !== undefined && !handle.drainRequested && roleStillEnabled) {
           await this.deps.handleOutput(canonical, handle.role, result.output);
         }
@@ -599,27 +659,52 @@ export class WorkerRuntime {
           result,
         );
         const mutations = [...result.mutations, ...planned];
-        if (parallel) validateParallelMutations(canonical, handle, mutations);
+        if (
+          mutations.some(
+            (mutation) => mutation.op === 'set' && mutation.field === 'parallelExecution',
+          )
+        )
+          throw new Error('model output cannot set parallelExecution');
+        if (
+          mutations.some(
+            (mutation) =>
+              mutation.op === 'append' &&
+              mutation.field === 'messages' &&
+              (mutation.value as { payload?: { kind?: string } })?.payload?.kind ===
+                'wave_validation',
+          )
+        )
+          throw new Error('model output cannot author validation receipts');
+        if (isolated) validateParallelMutations(canonical, handle, mutations);
+        const trusted =
+          result.kind === 'done'
+            ? ((await this.deps.completeAssignment?.(
+                canonical,
+                {
+                  workerId: handle.id,
+                  role: handle.role,
+                  ...(handle.subtaskId === undefined ? {} : { subtaskId: handle.subtaskId }),
+                },
+                boundaryWorktree ?? handle.worktree,
+              )) ?? [])
+            : [];
         return this.transitionStep(canonical, handle.role, [
           ...mutations,
+          ...trusted,
           ...(result.kind === 'done'
-            ? [
-                mergeByIdMutation('workers', handle.id, {
-                  status: 'done',
-                  ...(completedWorktree === undefined ? {} : { worktree: completedWorktree }),
-                }),
-                ...(completedWorktree === undefined || handle.subtaskId === undefined
-                  ? []
-                  : [
-                      mergeByIdMutation('subtasks', handle.subtaskId, {
-                        worktree: completedWorktree,
-                      }),
-                    ]),
-              ]
+            ? [mergeByIdMutation('workers', handle.id, { status: 'done' })]
             : []),
+          ...(boundaryWorktree === undefined
+            ? []
+            : [mergeByIdMutation('workers', handle.id, { worktree: boundaryWorktree })]),
+          ...(boundaryWorktree === undefined ||
+          handle.subtaskId === undefined ||
+          (canonical.parallelExecution !== undefined && handle.role !== 'CODER')
+            ? []
+            : [mergeByIdMutation('subtasks', handle.subtaskId, { worktree: boundaryWorktree })]),
         ]);
       });
-      if (completedWorktree !== undefined) handle.worktree = completedWorktree;
+      if (boundaryWorktree !== undefined) handle.worktree = boundaryWorktree;
       if (handle.drainRequested) {
         if (result.kind === 'done') {
           const safePointRef = await handle.executor.saveSafePoint();
@@ -751,6 +836,7 @@ export class WorkerRuntime {
       outcome,
       resolveOutcome,
     };
+    if (supportsSafePointRequest(handle.executor)) handle.executor.requestSafePoint();
     return receipt;
   }
 
@@ -768,7 +854,18 @@ export class WorkerRuntime {
         this.deps.buildChannelContext === undefined
           ? []
           : await this.deps.buildChannelContext(state, handle.role);
-      handle.executor.injectInbox(project(state, handle.role, roster, channelContext));
+      handle.executor.injectInbox(
+        projectForAssignment(
+          state,
+          {
+            workerId: handle.id,
+            role: handle.role,
+            ...(handle.subtaskId === undefined ? {} : { subtaskId: handle.subtaskId }),
+          },
+          roster,
+          channelContext,
+        ),
+      );
     }
     if (handles.length > 0) {
       const join = handles[0]?.join;
@@ -831,7 +928,10 @@ export class WorkerRuntime {
         ),
       );
     }
-    for (const handle of handles) handle.pause?.resolveOutcome('abort');
+    for (const handle of handles) {
+      if (supportsSafePointRequest(handle.executor)) handle.executor.cancelSafePoint?.();
+      handle.pause?.resolveOutcome('abort');
+    }
     taskPause.resolve('abort');
     if (this.taskPause === taskPause) this.taskPause = undefined;
   }
@@ -901,6 +1001,9 @@ export class WorkerRuntime {
       resolveRelease = resolve;
       rejectRelease = reject;
     });
+    // The release path still throws, and pause observers await the original promise.
+    // Observe rejection even when no pause is waiting for this worker's release.
+    void promise.catch(() => undefined);
     this.leaseReleases.set(workerId, {
       promise,
       resolve: resolveRelease,
@@ -975,7 +1078,8 @@ function assertAssignmentWorktree(
   if (worker === undefined) throw new Error(`worker "${assignment.workerId}" is missing`);
   for (const persisted of [
     worker.worktree,
-    assignment.subtaskId === undefined
+    assignment.subtaskId === undefined ||
+    (state.parallelExecution !== undefined && assignment.role !== 'CODER')
       ? undefined
       : state.subtasks.find((entry) => entry.id === assignment.subtaskId)?.worktree,
   ]) {

@@ -3,10 +3,14 @@ import {
   appendMutation,
   applyMutations,
   createInitialAppState,
+  isWorktreeRef,
   mergeByIdMutation,
   PHASE0_ROSTER,
 } from '@agora/core-domain';
 import type { Executor, ProjectionView, StepResult } from '@agora/runtime-executor';
+import { LocalTempSandbox } from '@agora/runtime-sandbox';
+import { WorktreeRegistry } from '@agora/tools-fs';
+import { initializeRegisteredWorktree, WorktreeGitService } from '@agora/tools-git';
 import { describe, expect, it } from 'vitest';
 import {
   GlobalScheduler,
@@ -916,6 +920,89 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     ]);
   });
 
+  it.each(['provider', 'head_refresh', 'head_commit'] as const)(
+    'classifies a %s failure after a real worker Git commit without losing recovery identity',
+    async (failurePoint) => {
+      // Only the provider failure is injected; worktree writes and Git commits are real.
+      const sandbox = new LocalTempSandbox();
+      const taskId = `failed-worker-head-${failurePoint}`;
+      const worktree = await sandbox.createWorktree(taskId, 'CODER');
+      const registry = new WorktreeRegistry();
+      const git = new WorktreeGitService(registry);
+      try {
+        await initializeRegisteredWorktree(registry, worktree.path);
+        const baseCommit = await git.headOf(worktree.path);
+        const ref = {
+          ...worktree,
+          branch: await git.branchOf(worktree.path),
+          baseCommit,
+          headCommit: baseCommit,
+        };
+        let canonical = applyMutations(createInitialAppState(taskId, 'Implement A'), [
+          mergeByIdMutation('subtasks', 'A', {
+            title: 'Implement A',
+            ownerRole: 'CODER',
+            dependsOn: [],
+            status: 'in_progress',
+          }),
+        ]);
+        const runtime = new WorkerRuntime({
+          roster: PHASE0_ROSTER,
+          loadState: async () => canonical,
+          transition: async (_state, mutations) => {
+            if (
+              failurePoint === 'head_commit' &&
+              mutations.some(
+                (mutation) =>
+                  mutation.op === 'mergeById' &&
+                  mutation.field === 'workers' &&
+                  'worktree' in mutation.value &&
+                  isWorktreeRef(mutation.value.worktree) &&
+                  mutation.value.worktree.headCommit !== baseCommit,
+              )
+            )
+              throw new Error('failed to persist refreshed HEAD');
+            canonical = applyMutations(canonical, mutations);
+            return canonical;
+          },
+          resolveWorktree: async () => ref,
+          refreshWorktree: async (assigned) => {
+            if (failurePoint === 'head_refresh') throw new Error('failed to inspect worker HEAD');
+            return { ...assigned, headCommit: await git.headOf(assigned.path) };
+          },
+          buildExecutor: () => ({
+            async step() {
+              await sandbox.write(ref, 'business.mjs', 'export const answer = 42;\n');
+              await git.applyPatch(ref.path, '');
+              throw new Error('provider failed after git_applyPatch');
+            },
+            async saveSafePoint() {
+              return 'unused';
+            },
+            async loadSafePoint() {},
+            injectInbox() {},
+          }),
+        });
+        const error = await runtime
+          .runParallel(canonical, [{ workerId: 'worker:failed:0', role: 'CODER', subtaskId: 'A' }])
+          .catch((caught: unknown) => caught);
+        if (!(error instanceof ParallelBatchError)) throw new Error('expected batch failure');
+        expect(error.retryable).toBe(failurePoint === 'provider');
+        expect(error.state.workers[0]?.status).toBe('failed');
+        const actualHead = await git.headOf(ref.path);
+        expect(actualHead).not.toBe(baseCommit);
+        if (failurePoint === 'provider') {
+          expect(error.state.workers[0]?.worktree).toMatchObject({ headCommit: actualHead });
+          expect(error.state.subtasks[0]?.worktree).toMatchObject({ headCommit: actualHead });
+          expect(canonical.workers[0]?.worktree).toEqual(error.state.workers[0]?.worktree);
+        }
+      } finally {
+        await git.dispose();
+        await sandbox.teardown(taskId);
+      }
+    },
+  );
+
   it('fails fast on malformed batches before constructing an executor', async () => {
     let builds = 0;
     const runtime = new WorkerRuntime({
@@ -1291,4 +1378,48 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
 
     await expect(runtime.runOne(seed, assigned)).resolves.toBeDefined();
   });
+});
+
+it('cancels the executor pause request on abort without injecting an uncommitted directive', async () => {
+  class CancelableExecutor extends ReprojectingExecutor {
+    pendingRequest = false;
+    requestSafePoint() {
+      this.pendingRequest = true;
+    }
+    cancelSafePoint() {
+      this.pendingRequest = false;
+    }
+  }
+  const executor = new CancelableExecutor();
+  let canonical = createInitialAppState('abort-pause', 'g');
+  const scheduler = new GlobalScheduler();
+  const runtime = new WorkerRuntime(
+    {
+      roster: PHASE0_ROSTER,
+      loadState: async () => canonical,
+      transition: async (state, mutations) => {
+        canonical = applyMutations(state, mutations);
+        return canonical;
+      },
+      buildExecutor: () => executor,
+    },
+    scheduler,
+  );
+  const running = runtime.runOne(canonical, assignment('CODER'));
+  await executor.stepStarted;
+  const pausing = runtime.requestPause({
+    scope: { projectId: canonical.projectId, taskId: canonical.taskId },
+    actionId: 'aborted',
+    reason: 'decision_change',
+    mode: 'reproject',
+  });
+  executor.release();
+  const receipt = await pausing;
+  expect(executor.pendingRequest).toBe(true);
+  await runtime.abortPause(receipt);
+  await running;
+  expect(executor.pendingRequest).toBe(false);
+  expect(executor.injected).toEqual([]);
+  expect(canonical.workers[0]?.status).toBe('done');
+  expect(scheduler.activeCount).toBe(0);
 });

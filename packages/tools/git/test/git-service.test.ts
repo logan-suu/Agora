@@ -77,6 +77,40 @@ describe('WorktreeGitService', () => {
     expect(branches.current).toBe('feature-a');
   });
 
+  it('initializes a nested task repository without discovering or branching the enclosing checkout', async () => {
+    const outer = mkdtempSync(join(tmpdir(), 'agora-nested-parent-'));
+    roots.push(outer);
+    const parent = simpleGit(outer);
+    await parent.init();
+    await parent.addConfig('user.name', 'Parent');
+    await parent.addConfig('user.email', 'parent@localhost');
+    writeFileSync(join(outer, 'private-parent.txt'), 'must never enter task worktrees');
+    await parent.add('-A');
+    await parent.commit('Parent-only source');
+    const parentHead = (await parent.revparse(['HEAD'])).trim();
+    const main = join(outer, '.data', 'task', 'repository');
+    const registry = new WorktreeRegistry();
+    const service = new WorktreeGitService(registry, main);
+    try {
+      const worker = await service.createWorktree('task', 'isolated');
+      expect(existsSync(join(worker.path, 'private-parent.txt'))).toBe(false);
+      expect(realpathSync((await simpleGit(main).revparse(['--show-toplevel'])).trim())).toBe(
+        realpathSync(main),
+      );
+      expect(await service.canonicalHead()).not.toBe(parentHead);
+      expect((await parent.branch()).all).not.toContain('isolated');
+      expect((await parent.revparse(['HEAD'])).trim()).toBe(parentHead);
+      const standalone = join(outer, '.data', 'standalone');
+      mkdirSync(standalone, { recursive: true });
+      await initializeRegisteredWorktree(registry, standalone);
+      expect(realpathSync((await simpleGit(standalone).revparse(['--show-toplevel'])).trim())).toBe(
+        realpathSync(standalone),
+      );
+    } finally {
+      await service.dispose();
+    }
+  });
+
   it('creates a real linked worktree with the expected branch and registers it', async () => {
     const registry = new WorktreeRegistry();
     const service = new WorktreeGitService(registry);

@@ -14,6 +14,23 @@ const enabledCoder: RoleSpec = {
 
 const roster = [enabledCoder];
 
+it('rejects unscoped role overrides of an adopted parallel plan without claiming an applied action', () => {
+  const state = {
+    ...createInitialAppState('parallel', 'goal'),
+    parallelExecution: {
+      version: 1 as const,
+      planId: 'plan',
+      initialBase: { branch: 'base', commit: 'a'.repeat(40) },
+    },
+  };
+  for (const display of ['@CODER change code', '/role onboard CODER']) {
+    expect(planLeaderIntent(parseLeaderIntent(display), state, roster)).toMatchObject({
+      action: { status: 'rejected', reason: expect.stringContaining('wave-bound') },
+      mutations: [],
+    });
+  }
+});
+
 describe('parseLeaderIntent', () => {
   it('recognizes only a single leading mention as a deterministic assignment', () => {
     expect(parseLeaderIntent('  @coder implement the cache  ')).toEqual({

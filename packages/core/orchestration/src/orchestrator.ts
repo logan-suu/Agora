@@ -3,7 +3,8 @@ import { applyMutations, setMutation } from '@agora/core-domain';
 import { evaluateComplexity } from './complexity';
 import { decide } from './coordinator';
 import { materializeHumanGate } from './human-gate';
-import type { StateTransition, WorkerRuntime } from './worker-runtime';
+import type { ParallelDecisionContext } from './parallel-coordinator';
+import { ParallelBatchError, type StateTransition, type WorkerRuntime } from './worker-runtime';
 
 export interface OrchestrationDeps {
   workerRuntime: WorkerRuntime;
@@ -19,6 +20,7 @@ export interface OrchestrationDeps {
   suspendAtHumanGate?: (state: AppState, request: HumanGateRequest) => Promise<AppState>;
   /** Phase 9 explicit integration node; Coordinator topology wiring lands in 9.4. */
   integrate?: (state: AppState) => Promise<{ state: AppState; gateRequest?: HumanGateRequest }>;
+  parallelContext?: (state: AppState) => Promise<ParallelDecisionContext>;
 }
 
 export function entry(state: AppState): AppState {
@@ -43,7 +45,9 @@ export async function runOrchestration(
   while (state.phase !== 'done') {
     const roster = (await deps.loadRoster?.()) ?? deps.roster;
     const resumingWorkerIds = deps.workerRuntime.resumableWorkerIds;
+    const parallel = await deps.parallelContext?.(state);
     const decision = decide(state, {
+      ...(parallel === undefined ? {} : { parallel }),
       ...(roster === undefined ? {} : { roster }),
       ...(resumingWorkerIds.length === 0 ? {} : { resumingWorkerIds }),
     });
@@ -53,9 +57,21 @@ export async function runOrchestration(
     const route = decision.route;
     switch (route.kind) {
       case 'worker':
-        state = route.parallel
-          ? await deps.workerRuntime.runParallel(state, route.batch)
-          : await deps.workerRuntime.runOne(state, route.batch[0]);
+        try {
+          state =
+            route.parallel || (state.parallelExecution !== undefined && state.phase === 'coding')
+              ? await deps.workerRuntime.runParallel(state, route.batch)
+              : await deps.workerRuntime.runOne(state, route.batch[0]);
+        } catch (error) {
+          if (
+            !(error instanceof ParallelBatchError) ||
+            !error.retryable ||
+            error.state.parallelExecution === undefined ||
+            error.state.phase !== 'coding'
+          )
+            throw error;
+          state = error.state;
+        }
         break;
       case 'finalize':
         state = await transition(state, [setMutation('phase', 'done')]);

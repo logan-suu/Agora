@@ -5,6 +5,7 @@ import {
   mergeByIdMutation,
   type RoleSpec,
   setMutation,
+  validationReceipt,
 } from '@agora/core-domain';
 import {
   type HumanGateResolutionReceipt,
@@ -59,6 +60,9 @@ export interface TaskComposition {
   loadRoster?: () => Promise<readonly RoleSpec[]>;
   artifactPath: string;
   integrate?: (state: AppState) => Promise<IntegrateWaveResult>;
+  parallelContext?: (
+    state: AppState,
+  ) => Promise<{ initialBase: { branch: string; commit: string }; controlFingerprint: string }>;
   saveSafePoints(): Promise<readonly string[]>;
   suspend(): Promise<void>;
   archiveArtifact(): Promise<ArchivedArtifact>;
@@ -99,6 +103,7 @@ interface ActiveRun {
   pendingFinalization:
     | { status: 'completed' | 'failed'; error: string | undefined; artifactArchived: boolean }
     | undefined;
+  pendingSuspension?: { error: string | undefined };
   error: string | undefined;
 }
 
@@ -154,6 +159,19 @@ export class TaskOrchestrationRuntime {
       if (existingRun !== undefined) {
         if (existingRun.goal !== input.goal) {
           throw new TaskGoalConflictError(input, existingRun.goal);
+        }
+        if (existingRun.pendingSuspension !== undefined) {
+          if (existingRun.status === 'running') {
+            const summary = await this.#requiredSummary(input);
+            return { ...summary, requestId: input.requestId, startOutcome: 'already_running' };
+          }
+          existingRun.status = 'running';
+          existingRun.promise = this.#suspendFailedParallelRun(
+            existingRun,
+            existingRun.pendingSuspension.error,
+          );
+          const summary = await this.#requiredSummary(input);
+          return { ...summary, requestId: input.requestId, startOutcome: 'started' };
         }
         if (existingRun.pendingFinalization !== undefined) {
           if (existingRun.composition === undefined) {
@@ -443,6 +461,7 @@ export class TaskOrchestrationRuntime {
     if (composition === undefined) throw new Error('active task composition is unavailable');
     let terminalStatus: ActiveRun['status'] = 'failed';
     let terminalError: string | undefined;
+    let suspendFailedParallel = false;
     try {
       const finalState = await runOrchestration(initialState, {
         workerRuntime: composition.workerRuntime,
@@ -450,24 +469,50 @@ export class TaskOrchestrationRuntime {
         ...(composition.loadRoster === undefined ? {} : { loadRoster: composition.loadRoster }),
         transition,
         ...(composition.integrate === undefined ? {} : { integrate: composition.integrate }),
+        ...(composition.parallelContext === undefined
+          ? {}
+          : { parallelContext: composition.parallelContext }),
         suspendAtHumanGate: (_state, request) => this.#suspendAtHumanGate(scope, request),
       });
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
     } catch (error) {
       terminalError = errorMessage(error);
       const persisted = await this.messages.store.load(scope).catch(() => undefined);
-      if (persisted !== undefined && requiresHumanGateAttention(persisted)) {
+      if (
+        persisted !== undefined &&
+        (requiresHumanGateAttention(persisted) || persisted.parallelExecution !== undefined)
+      ) {
         terminalStatus = 'needs_attention';
+        suspendFailedParallel = !requiresHumanGateAttention(persisted);
       }
     }
 
     if (terminalStatus === 'needs_attention') {
+      if (suspendFailedParallel) {
+        await this.#suspendFailedParallelRun(run, terminalError);
+        return;
+      }
       run.status = terminalStatus;
       run.error = terminalError;
       return;
     }
 
     await this.#finalizeRun(scope, run, terminalStatus, terminalError, false);
+  }
+
+  /** Release executable resources after a settled failure, preserving unverified source evidence. */
+  async #suspendFailedParallelRun(run: ActiveRun, error: string | undefined): Promise<void> {
+    run.pendingSuspension = { error };
+    const composition = run.composition;
+    try {
+      await composition?.suspend();
+      if (run.composition === composition) run.composition = undefined;
+      delete run.pendingSuspension;
+      run.error = error;
+    } catch (failure) {
+      run.error = joinErrors(error, `resource suspension failed: ${errorMessage(failure)}`);
+    }
+    run.status = 'needs_attention';
   }
 
   async #finalizeRun(
@@ -615,7 +660,11 @@ function summaryFrom(
   error?: string,
   archivedArtifactPath?: string,
 ): TaskSummary {
+  const accepted = state.parallelExecution?.acceptedReceiptId;
+  const validationWorkerId =
+    accepted === undefined ? undefined : validationReceipt(state, accepted).workerId;
   const worktree =
+    state.workers.find((worker) => worker.workerId === validationWorkerId)?.worktree ??
     state.integration?.integrationWorktree ??
     state.subtasks.find((subtask) => subtask.worktree !== undefined)?.worktree;
   const artifactPath = typeof worktree === 'string' ? worktree : worktree?.path;

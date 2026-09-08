@@ -180,6 +180,8 @@ export class HarnessExecutor implements Executor {
   private stepChain: Promise<unknown> = Promise.resolve();
   private activeSessionId: string | null = null;
   private toolCallsThisTurn = 0;
+  private safePointRequested = false;
+  private yieldedSafePoint = false;
 
   constructor(
     private readonly spec: RoleSpec,
@@ -277,6 +279,7 @@ export class HarnessExecutor implements Executor {
 
   private async doStep(context: StepContext): Promise<StepResult> {
     await this.ready;
+    this.yieldedSafePoint = false;
     this.toolCallsThisTurn = 0;
     // Injected view (injectInbox) wins over context.view on the next step.
     if (this.pendingInbox !== null) {
@@ -291,6 +294,9 @@ export class HarnessExecutor implements Executor {
     // Wake the self-driving loop with the projection slice as this turn's input.
     agent.followup(this.projectionMessage());
     await agent.whenIdle();
+
+    if (this.yieldedSafePoint)
+      return { kind: 'tool', output: {}, reachedSafeBoundary: true, mutations: [] };
 
     const failure = this.agentErrors.get(context.sessionId);
     if (failure !== undefined) {
@@ -423,7 +429,16 @@ export class HarnessExecutor implements Executor {
 
   /** Store the projection for the next `step`; the next `agent/pre-step` re-projects from it. */
   injectInbox(view: ProjectionView): void {
+    this.safePointRequested = false;
     this.pendingInbox = view;
+  }
+
+  requestSafePoint(): void {
+    this.safePointRequested = true;
+  }
+
+  cancelSafePoint(): void {
+    this.safePointRequested = false;
   }
 
   /** Release every agent loop and tear down all loaded plugins (reverse order). */
@@ -470,10 +485,19 @@ export class HarnessExecutor implements Executor {
       // but PRESERVE the mid-turn tool exchange (tool-call/tool-result) from the
       // claimed inbox messages. Without this the model would never see its own
       // tool outcomes and could not iterate (write code → run tests → fix).
-      agentCtx.on('agent/pre-step', async (payload) => ({
-        kind: 'enter',
-        messages: [this.projectionMessage(), ...toolExchangeOf(payload.messages)],
-      }));
+      agentCtx.on('agent/pre-step', async (payload) => {
+        // A proposed step follows a fully committed step/end. Rejecting it
+        // closes the turn without aborting a model stream or any tool call.
+        if (this.safePointRequested) {
+          this.safePointRequested = false;
+          this.yieldedSafePoint = true;
+          return { kind: 'reject' };
+        }
+        return {
+          kind: 'enter',
+          messages: [this.projectionMessage(), ...toolExchangeOf(payload.messages)],
+        };
+      });
       // Model routing: fix the provider/model from RoleSpec or env.
       agentCtx.on('agent/request', async (_payload, next) => {
         const config = await next();

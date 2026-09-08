@@ -12,6 +12,8 @@ import {
   createMainChannel,
   deriveCompletionResolution,
   deriveObjectionResolutions,
+  isIntegration,
+  isReviewBinding,
   type Message,
   type Mutation,
   type Phase9LeaderIntent,
@@ -922,6 +924,31 @@ function assertHumanGateResolutionReplay(
       throw new Error(`humanGate resolution action "${existing.msgId}" has incomplete effects`);
     }
   }
+  const integrationRework = receipt.integrationRework;
+  if (state.parallelExecution !== undefined && incoming.option === 'request_rework') {
+    if (
+      !isIntegration(integrationRework) ||
+      integrationRework.status !== 'conflict' ||
+      incoming.gateId !== `human-gate:${integrationRework.integrationId}`
+    )
+      throw new Error('integration rework receipt conflicts with its canonical gate');
+    const conflict = integrationRework.conflicts.find(
+      (entry) => entry.workerId === incoming.argument,
+    );
+    const replacement = state.workers.find(
+      (worker) => worker.workerId === `worker:integration-rework:${existing.msgId}:0`,
+    );
+    if (
+      conflict === undefined ||
+      replacement?.role !== 'CODER' ||
+      replacement.subtaskId !== conflict.subtaskId ||
+      typeof replacement.worktree === 'string' ||
+      (replacement.worktree !== undefined &&
+        replacement.worktree.baseCommit !== integrationRework.base.commit)
+    )
+      throw new Error('integration rework receipt has incomplete assignment effects');
+  } else if (integrationRework !== undefined)
+    throw new Error('unexpected integration rework receipt');
   return {
     gateId: incoming.gateId,
     option: incoming.option,
@@ -929,6 +956,10 @@ function assertHumanGateResolutionReplay(
     safePointRefs: [...(safePointRefs as string[])],
     resumeSessionId: receipt.resumeSessionId as string,
     ...(workerResumes === undefined ? {} : { workerResumes }),
+    ...(isReviewBinding(receipt.completionEvidence)
+      ? { completionEvidence: receipt.completionEvidence }
+      : {}),
+    ...(isIntegration(integrationRework) ? { integrationRework } : {}),
   };
 }
 

@@ -46,7 +46,9 @@ const DIAG_KEY_RE = /^(\s*)([A-Za-z_][\w-]*):\s*(.*)$/;
  * aggregate is always the *last* occurrence, so the last match wins. The `1..N`
  * plan line is used as a fallback for `total` when no `# tests` comment is
  * present. `not ok` assertions are collected at any indentation (so nested
- * failures are not missed) along with their YAML diagnostics block.
+ * failures are not missed) along with their YAML diagnostics block. Node's
+ * `type: suite` wrappers are excluded because its aggregate counts include
+ * tests, not suites; ordinary parent tests remain counted.
  */
 export function parseTap(output: string): TapSummary {
   const lines = output.split(/\r?\n/);
@@ -86,7 +88,7 @@ export function parseTap(output: string): TapSummary {
         name = findSubtestName(lines, i, indent);
       }
       const { block, nextIndex } = collectDiagnosticsBlock(lines, i + 1);
-      failures.push(extractFailure(name, block));
+      if (!isSuiteDiagnostic(block)) failures.push(extractFailure(name, block));
       i = nextIndex;
       continue;
     }
@@ -98,6 +100,19 @@ export function parseTap(output: string): TapSummary {
   }
 
   return { total, passed, failed, failures, ...(coverage === undefined ? {} : { coverage }) };
+}
+
+function isSuiteDiagnostic(block: readonly string[]): boolean {
+  const indent = block.find((line) => line.trim() !== '')?.match(/^(\s*)/)?.[1]?.length;
+  return block.some((line) => {
+    const field = line.match(DIAG_KEY_RE);
+    return (
+      field !== null &&
+      field[1]?.length === indent &&
+      field[2] === 'type' &&
+      unquote(field[3] ?? '') === 'suite'
+    );
+  });
 }
 
 /** Extract failure records from Node 24's default spec reporter detail section. */

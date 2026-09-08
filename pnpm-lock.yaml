@@ -143,6 +143,9 @@ importers:
       '@agora/tools-git':
         specifier: workspace:*
         version: link:../../packages/tools/git
+      '@agora/tools-test':
+        specifier: workspace:*
+        version: link:../../packages/tools/test
       dockerode:
         specifier: 'catalog:'
         version: 4.0.12

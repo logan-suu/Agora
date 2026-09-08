@@ -1,4 +1,10 @@
-import { appendMutation, type Mutation, mergeByIdMutation, setMutation } from '@agora/core-domain';
+import {
+  appendMutation,
+  isExecutionPlan,
+  type Mutation,
+  mergeByIdMutation,
+  setMutation,
+} from '@agora/core-domain';
 
 /** Tool groups exposed by the production six-role thin-executor runtime. */
 export const SIX_ROLE_TOOL_SURFACE: readonly string[] = [
@@ -16,13 +22,13 @@ export const SIX_ROLE_TOOL_SURFACE: readonly string[] = [
 export const SIX_ROLE_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   PM: '\n\n[Working rules]\n- You have no tools: reason from the projected slices only.\n- End your turn with a single JSON array as your final message, one requirement per item, each shaped {"id":"req-1","story":"...","acceptance":["..."],"nonGoals":["..."]}.',
   ARCHITECT:
-    '\n\n[Working rules]\n- Your grant is read-only (fs.read + git.readonly).\n- End your turn with a single JSON object as your final message shaped {"architecture":{...},"conventions":{...}}; both values must be plain JSON objects.',
+    '\n\n[Working rules]\n- Your grant is read-only (fs.read + git.readonly).\n- End your turn with a single JSON object as your final message shaped {"architecture":{...},"conventions":{...}}; both values must be plain JSON objects.\n- Include architecture.executionPlan exactly shaped {"version":1,"subtasks":[{"id":"A","title":"Concrete implementation assignment","dependsOn":[]}]}. Use unique safe ids, explicit dependencies and no cycles; independent tasks have empty dependsOn, composition tasks depend on their prerequisites. Do not add status, priority, worktree or worker identity fields. Keep existing subtask ids when revising a plan. modules alone requests a conservative sequential fallback.',
   CODER:
-    '\n\n[Working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files, fs_read to inspect, and sandbox_run to verify quickly.\n- Submit your work with git_applyPatch (the worktree argument is injected): it stages and commits the worktree (add -A), so fs-written files land in the commit.',
+    '\n\n[Working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files, fs_read to inspect, and sandbox_run to verify quickly.\n- Implement only your assigned subtask when an assignment is projected. Do not implement future dependencies or other workers\' assignments.\n- Submit your work with git_applyPatch (the worktree argument is injected): it stages and commits the worktree (add -A), so fs-written files land in the commit. Use {"patch":""} to commit files already written with fs_write.',
   TESTER:
     '\n\n[Working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
   REVIEWER:
-    '\n\n[Working rules]\n- Your grant is read-only: fs_read to inspect files, git_diff with ref `HEAD~1` to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array containing exactly one verdict entry shaped {"id":"rv-...","kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."}; other entries are optional comments. The verdict id must be unique for this review dispatch and match `[A-Za-z0-9][A-Za-z0-9._:-]*` so it can safely bind a D16 completion gate. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested. A test_failure_root_cause review must return changes_requested.\n- FINAL OUTPUT CONTRACT: return the raw JSON array only. Do not output prose or markdown before or after it（最终回复只能是原始 JSON 数组，前后不得附加解释或 Markdown）.',
+    '\n\n[Working rules]\n- Your grant is read-only: fs_read to inspect files, git_diff with ref `HEAD~1` to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- End your turn with a single JSON array containing exactly one verdict entry shaped {"id":"rv-...","kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."}; other entries are optional comments. The verdict id must be unique for this review dispatch and match `[A-Za-z0-9][A-Za-z0-9._:-]*` so it can safely bind a D16 completion gate. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested. A test_failure_root_cause review must return changes_requested. When reviewScope is projected, inspect the complete cumulative artifact and its full subtask index. For changes_requested, optionally include a non-empty unique subtaskIds array of exact current-plan ids; those tasks and all dependent successors will reopen. Omit subtaskIds only when the whole plan needs rework.\n- FINAL OUTPUT CONTRACT: return the raw JSON array only. Do not output prose or markdown before or after it（最终回复只能是原始 JSON 数组，前后不得附加解释或 Markdown）.',
 };
 
 const SAFE_VERDICT_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
@@ -38,7 +44,7 @@ function isStringArray(value: unknown): value is string[] {
 function parseTurnJson(text: string | null, role: string): unknown {
   if (text === null) throw new Error(`${role} turn produced no final message to interpret`);
   const trimmed = text.trim();
-  const fenced = /^```json[ \t]*\r?\n([\s\S]*?)\r?\n```$/.exec(trimmed);
+  const fenced = /^```json[ \t]*\r?\n([\s\S]*?)```$/.exec(trimmed);
   const json = fenced?.[1] ?? trimmed;
   try {
     return JSON.parse(json) as unknown;
@@ -75,6 +81,8 @@ export function architectTurnMutations(text: string | null): Mutation[] {
   if (!isRecord(conventions)) {
     throw new Error('ARCHITECT payload needs a non-array object "conventions"');
   }
+  if (Object.hasOwn(architecture, 'executionPlan') && !isExecutionPlan(architecture.executionPlan))
+    throw new Error('ARCHITECT architecture.executionPlan must be a valid exact-key DAG');
   return [setMutation('architecture', architecture), setMutation('conventions', conventions)];
 }
 
@@ -107,6 +115,14 @@ export function reviewerTurnMutations(text: string | null): Mutation[] {
       if (entry.verdict === 'approved' && entry.issueScope === 'architecture') {
         throw new Error('REVIEWER approved verdict cannot use architecture issueScope');
       }
+      if (
+        entry.subtaskIds !== undefined &&
+        (!Array.isArray(entry.subtaskIds) ||
+          entry.subtaskIds.length === 0 ||
+          !entry.subtaskIds.every((id) => typeof id === 'string' && SAFE_VERDICT_ID.test(id)) ||
+          new Set(entry.subtaskIds).size !== entry.subtaskIds.length)
+      )
+        throw new Error('REVIEWER subtaskIds must be non-empty unique safe plan references');
     }
     return entry;
   });
