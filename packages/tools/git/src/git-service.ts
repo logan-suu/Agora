@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import type { WorktreeRegistry } from '@agora/tools-fs';
 import {
+  CheckRepoActions,
   GitResponseError,
   type SimpleGit,
   type MergeResult as SimpleGitMergeResult,
@@ -162,7 +163,7 @@ export async function initializeRegisteredWorktree(
 ): Promise<void> {
   const canonicalRoot = realpathSync(resolve(root));
   const git = simpleGit(canonicalRoot);
-  if (!(await git.checkIsRepo())) {
+  if (!(await git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT))) {
     await git.init();
     await git.addConfig('user.name', 'Agora');
     await git.addConfig('user.email', 'agora@localhost');
@@ -219,7 +220,7 @@ export class WorktreeGitService implements GitService {
     const patchFile = join(patchDir, 'patch.diff');
     writeFileSync(patchFile, patch, 'utf8');
     try {
-      await git.applyPatch(patchFile, ['--whitespace=nowarn']);
+      if (patch.trim().length > 0) await git.applyPatch(patchFile, ['--whitespace=nowarn']);
     } finally {
       rmSync(patchDir, { recursive: true, force: true });
     }
@@ -282,6 +283,34 @@ export class WorktreeGitService implements GitService {
   async headOf(worktree: string): Promise<string> {
     const canonicalRoot = this.assertRegistered(worktree);
     return (await simpleGit(canonicalRoot).revparse(['HEAD'])).trim();
+  }
+
+  /** Trusted verification companion; never exposed as a model mutation tool. */
+  async inspectValidationWorktree(
+    worktree: string,
+    inputCommit: string,
+  ): Promise<{
+    headCommit: string;
+    dirty: boolean;
+    changedPaths: string[];
+    trackedFiles: string[];
+  }> {
+    const root = this.assertRegistered(worktree);
+    const git = simpleGit(root);
+    const base = validateRefArg(inputCommit, 'validation input commit');
+    const [head, status, ignored, changed, tracked] = await Promise.all([
+      git.revparse(['HEAD']),
+      git.raw(['status', '--porcelain=v1', '--untracked-files=all']),
+      git.raw(['ls-files', '--others', '--ignored', '--exclude-standard', '-z']),
+      git.raw(['diff', '--name-only', '-z', base, 'HEAD']),
+      git.raw(['ls-files', '-z']),
+    ]);
+    return {
+      headCommit: head.trim(),
+      dirty: status.length > 0 || ignored.length > 0,
+      changedPaths: changed.split('\0').filter(Boolean),
+      trackedFiles: tracked.split('\0').filter(Boolean),
+    };
   }
 
   async branchOf(worktree: string): Promise<string> {
@@ -503,7 +532,9 @@ export class WorktreeGitService implements GitService {
     }
     mkdirSync(this.mainRepoPath, { recursive: true });
     const git = simpleGit(this.mainRepoPath);
-    if (!(await git.checkIsRepo())) {
+    // A task may live inside another checkout's ignored .data directory.
+    // An ancestor repository must never become this task's canonical repo.
+    if (!(await git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT))) {
       await git.init();
       await git.addConfig('user.name', 'Agora');
       await git.addConfig('user.email', 'agora@localhost');

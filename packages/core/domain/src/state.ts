@@ -1,6 +1,7 @@
 import type { HandoffPacket } from './handoff';
 import type { Decision } from './ledger';
 import type { Objection } from './objection';
+import type { ParallelExecution } from './parallel-execution';
 
 export type Phase =
   | 'clarifying'
@@ -441,6 +442,7 @@ export interface AppState {
   architecture?: Record<string, unknown>;
   conventions?: Record<string, unknown>;
   integration?: Integration;
+  parallelExecution?: ParallelExecution;
   testResults?: TestResults;
   nextRole?: string;
   humanGate?: HumanGate;

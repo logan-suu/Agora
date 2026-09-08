@@ -21,6 +21,7 @@
     "@agora/tools-bridge": "workspace:*",
     "@agora/tools-fs": "workspace:*",
     "@agora/tools-git": "workspace:*",
+    "@agora/tools-test": "workspace:*",
     "dockerode": "catalog:",
     "next": "catalog:",
     "react": "catalog:",

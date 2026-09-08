@@ -1,13 +1,19 @@
 import {
   type AppState,
   activeRequirements,
+  adoptedExecutionPlan,
   type CoordinationLedgerPayload,
+  currentReviewDispatch,
   deriveLeaderDirective,
   deriveObjectionResolutions,
   deriveOnboardingContext,
+  type ExecutionWave,
+  isReviewBinding,
   latestCoordinationLedger,
   type RoleId,
   type RoleSpec,
+  validationReceipt,
+  validationSubtaskIds,
   type WorktreeRef,
 } from '@agora/core-domain';
 import type { ProjectionView } from './base';
@@ -62,6 +68,192 @@ export function project(
       return structuredClone(decision);
     });
   return { role: String(role), slices };
+}
+
+export interface ProjectionAssignment {
+  workerId: string;
+  role: RoleId;
+  subtaskId?: string;
+}
+
+/** D17 assignment lens, also used for D9 reproject and D4 Fork resume. */
+export function projectForAssignment(
+  state: AppState,
+  assignment: ProjectionAssignment,
+  roster: readonly RoleSpec[],
+  channelContext: readonly unknown[] = [],
+): ProjectionView {
+  const worker = state.workers.find((candidate) => candidate.workerId === assignment.workerId);
+  if (
+    worker === undefined ||
+    worker.role !== assignment.role ||
+    worker.subtaskId !== assignment.subtaskId
+  )
+    throw new Error('projection assignment does not match canonical WorkerState');
+  const execution = state.parallelExecution;
+  if (execution === undefined) return project(state, assignment.role, roster, channelContext);
+  const wave = execution.activeWave;
+  const isCoder = state.phase === 'coding' && wave?.coderWorkerIds.includes(assignment.workerId);
+  const isValidation =
+    state.phase === 'testing' && wave?.validation?.workerId === assignment.workerId;
+  const isPreparation =
+    state.phase === 'coding' && wave?.preparationWorkerId === assignment.workerId;
+  const dispatch = [...state.messages]
+    .reverse()
+    .find(
+      (message) =>
+        message.fromRole === 'COORDINATOR' &&
+        message.type === 'announce' &&
+        message.payload.nextRole === assignment.role,
+    );
+  const explicit =
+    (state.phase === 'review' || state.phase === 'planning') &&
+    Array.isArray(dispatch?.payload.workerIds) &&
+    dispatch.payload.workerIds.includes(assignment.workerId);
+  if (!isCoder && !isValidation && !isPreparation && !explicit)
+    throw new Error('assignment is not part of the current wave or serial dispatch');
+  const view = project(state, assignment.role, roster, channelContext);
+  const node = state.subtasks.find((candidate) => candidate.id === assignment.subtaskId);
+  const instruction = isCoder
+    ? node?.title
+    : isValidation
+      ? 'Write tests for this wave and cumulative completed work. Commit tests, then run the final validation command on that clean HEAD.'
+      : isPreparation
+        ? 'Prepare read-only acceptance checks for this wave.'
+        : 'Execute the current serial review or planning dispatch.';
+  if (instruction === undefined) throw new Error('assigned subtask is missing');
+  const visibleSubtaskIds =
+    isValidation && wave !== undefined ? validationSubtaskIds(state, wave) : wave?.subtaskIds;
+  if ('assignedSubtask' in view.slices)
+    view.slices.assignedSubtask = node === undefined ? [] : [structuredClone(node)];
+  view.slices.assignment = {
+    ...assignment,
+    ...(worker.worktree === undefined ? {} : { worktree: structuredClone(worker.worktree) }),
+    ...(wave === undefined
+      ? {}
+      : {
+          waveId: wave.waveId,
+          attempt: wave.attempt,
+          base: structuredClone(wave.base),
+          subtaskIds: [...(visibleSubtaskIds ?? wave.subtaskIds)],
+          completedSubtaskIds: state.subtasks
+            .filter((candidate) => candidate.status === 'done')
+            .map((candidate) => candidate.id),
+          finalWave: state.subtasks.every(
+            (candidate) => candidate.status === 'done' || visibleSubtaskIds?.includes(candidate.id),
+          ),
+        }),
+    ...(isValidation ? { validationDispatchId: wave?.validation?.dispatchId } : {}),
+  };
+  view.slices.coordinationContext = {
+    ...(view.slices.coordinationContext as Record<string, unknown> | undefined),
+    plan: [
+      {
+        id: assignment.workerId,
+        role: assignment.role,
+        instruction,
+        status: 'active',
+        dependsOn: node?.dependsOn ?? [],
+      },
+    ],
+    instructionOrQuestion: instruction,
+  };
+  if (isCoder && wave !== undefined) {
+    const receiptId = repairFeedbackReceipt(state, assignment, wave);
+    view.slices.failingTests =
+      receiptId === undefined
+        ? { passed: null, total: 0, failed: 0, failures: [] }
+        : structuredClone(validationReceipt(state, receiptId).results);
+  }
+  if (isValidation && wave?.validation !== undefined) {
+    view.slices.branchOrIntegration = {
+      ...(view.slices.branchOrIntegration as Record<string, unknown>),
+      validation: {
+        dispatchId: wave.validation.dispatchId,
+        integrationId: wave.validation.integrationId,
+        inputCommit: wave.validation.inputCommit,
+        ...(worker.worktree === undefined ? {} : { worktree: structuredClone(worker.worktree) }),
+      },
+    };
+  }
+  if (assignment.role === 'REVIEWER') {
+    const binding = currentReviewDispatch(state)?.payload.reviewBinding;
+    if (!isReviewBinding(binding) || binding.planId !== execution.planId)
+      throw new Error('review projection requires a current evidence binding');
+    const receipt = validationReceipt(state, binding.validationReceiptId);
+    view.slices.branchOrIntegration = {
+      ...(view.slices.branchOrIntegration as Record<string, unknown>),
+      reviewScope: {
+        planId: execution.planId,
+        validationReceiptId: binding.validationReceiptId,
+        worktree: structuredClone(receipt.worktree),
+        subtasks: adoptedExecutionPlan(state).subtasks.map((subtask) => ({
+          subtaskId: subtask.id,
+          title: subtask.title,
+          dependsOn: [...subtask.dependsOn],
+        })),
+      },
+    };
+  }
+  return view;
+}
+
+function repairFeedbackReceipt(
+  state: AppState,
+  assignment: ProjectionAssignment,
+  wave: ExecutionWave,
+): string | undefined {
+  const retry = [...state.messages]
+    .reverse()
+    .find(
+      (message) =>
+        message.fromRole === 'COORDINATOR' &&
+        message.type === 'announce' &&
+        message.channelId === 'main' &&
+        message.payload.kind === 'coding_retry' &&
+        message.payload.waveId === wave.waveId &&
+        message.payload.attempt === wave.attempt &&
+        Array.isArray(message.payload.workerIds) &&
+        message.payload.workerIds.includes(assignment.workerId),
+    );
+  if (typeof retry?.payload.failedReceiptId === 'string') {
+    const receipt = validationReceipt(state, retry.payload.failedReceiptId);
+    if (
+      receipt.planId !== state.parallelExecution?.planId ||
+      receipt.waveId !== wave.waveId ||
+      receipt.attempt >= wave.attempt ||
+      receipt.worktree.headCommit !== wave.base.commit ||
+      !receipt.subtaskIds.includes(assignment.subtaskId ?? '')
+    )
+      throw new Error('coding repair feedback does not match the current assignment');
+    return retry.payload.failedReceiptId;
+  }
+  const waveIndex = state.messages.findIndex((message) => message.msgId === wave.waveId);
+  const waveMessage = state.messages[waveIndex];
+  const sourceId = waveMessage?.payload.reworkSourceMsgId;
+  if (sourceId === undefined) return undefined;
+  const sourceIndex = state.messages.findIndex((message) => message.msgId === sourceId);
+  const source = state.messages[sourceIndex];
+  if (
+    waveMessage?.fromRole !== 'COORDINATOR' ||
+    waveMessage.type !== 'announce' ||
+    waveMessage.channelId !== 'main' ||
+    waveMessage.payload.kind !== 'coding_wave' ||
+    sourceIndex < 0 ||
+    sourceIndex >= waveIndex ||
+    source?.fromRole !== 'COORDINATOR' ||
+    source.type !== 'announce' ||
+    source.channelId !== 'main' ||
+    source.payload.kind !== 'review_rework' ||
+    !Array.isArray(source.payload.subtaskIds) ||
+    typeof source.payload.failedReceiptId !== 'string'
+  )
+    throw new Error('review repair feedback requires its canonical source');
+  if (!source.payload.subtaskIds.includes(assignment.subtaskId)) return undefined;
+  const receipt = validationReceipt(state, source.payload.failedReceiptId);
+  if (receipt.planId !== state.parallelExecution?.planId)
+    throw new Error('review repair feedback belongs to another plan');
+  return source.payload.failedReceiptId;
 }
 
 function sliceOf(state: AppState, role: RoleId, slice: string): unknown {

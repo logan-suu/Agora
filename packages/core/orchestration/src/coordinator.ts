@@ -17,6 +17,7 @@ import {
   mergeByIdMutation,
   setMutation,
 } from '@agora/core-domain';
+import { decideParallel, type ParallelDecisionContext } from './parallel-coordinator';
 import { buildCoordinationLedger, MAX_STALLS } from './progress-ledger';
 import { evaluateRouteWhen } from './route-conditions';
 
@@ -67,6 +68,8 @@ export interface CoordinatorDecision {
 }
 
 export interface DecideOptions {
+  /** Supplied by the real workspace/evidence capability, never inferred from a legacy snapshot. */
+  parallel?: ParallelDecisionContext;
   newId?: () => string;
   now?: () => number;
   /**
@@ -91,6 +94,17 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     now: options?.now ?? (() => Date.now()),
   };
   const blockingObjection = pendingBlockingObjectionGate(state);
+  if (
+    blockingObjection === undefined &&
+    (state.parallelExecution !== undefined ||
+      (options?.parallel !== undefined &&
+        state.complexity?.tier === 2 &&
+        state.phase === 'planning'))
+  ) {
+    if (options?.parallel === undefined)
+      throw new Error('parallel task requires its workspace/evidence capability');
+    return decideParallel(state, { ...options, parallel: options.parallel });
+  }
   const pendingDispatch = recoverPendingDispatch(state, options?.resumingWorkerIds ?? []);
   const leaderOverride = consumeLeaderAssignment(state, clock, options?.roster);
   let decision: DraftCoordinatorDecision;

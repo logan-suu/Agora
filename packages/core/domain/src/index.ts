@@ -8,6 +8,7 @@ export * from './ledger';
 export * from './objection';
 export * from './objection-resolution';
 export * from './onboarding';
+export * from './parallel-execution';
 export * from './reducer';
 export * from './roster';
 export * from './state';

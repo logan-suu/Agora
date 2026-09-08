@@ -4,6 +4,7 @@ import type { Decision } from './ledger';
 import { assertAppendableDecision } from './ledger';
 import type { Objection } from './objection';
 import { assertAppendableObjection } from './objection';
+import { assertParallelState, isParallelExecution } from './parallel-execution';
 import type {
   AppState,
   Complexity,
@@ -38,6 +39,7 @@ export const SET_FIELDS = [
   'iterationCount',
   'humanGate',
   'integration',
+  'parallelExecution',
   'architecture',
   'conventions',
   'complexity',
@@ -63,6 +65,7 @@ export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'iterationCount',
   'humanGate',
   'integration',
+  'parallelExecution',
   'architecture',
   'conventions',
   'complexity',
@@ -177,8 +180,19 @@ function deduplicatedAppend(list: readonly unknown[], value: unknown): unknown[]
 function applyAppend(state: AppState, field: AppendField, value: unknown): AppState {
   if (isNotEnabled(field, ENABLED_APPEND_FIELDS)) throw disabledFieldError(field);
   switch (field) {
-    case 'messages':
+    case 'messages': {
+      const message = value as Message;
+      const existing = state.messages.find((candidate) => candidate.msgId === message.msgId);
+      if (
+        (message.payload?.kind === 'wave_validation' ||
+          existing?.payload?.kind === 'wave_validation') &&
+        existing !== undefined &&
+        !deepEqual(existing, message)
+      ) {
+        throw new Error('immutable wave_validation receipt conflicts with its canonical message');
+      }
       return { ...state, messages: deduplicatedAppend(state.messages, value) as Message[] };
+    }
     case 'reviewComments':
       return {
         ...state,
@@ -322,6 +336,10 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
         throw new Error('architecture must be a non-array object');
       }
       return { ...state, architecture: value as Record<string, unknown> };
+    case 'parallelExecution':
+      if (!isParallelExecution(value))
+        throw new Error('parallelExecution must be a valid wave control record');
+      return { ...state, parallelExecution: value };
     case 'conventions':
       if (typeof value !== 'object' || value === null || Array.isArray(value)) {
         throw new Error('conventions must be a non-array object');
@@ -358,5 +376,6 @@ export function applyMutations(state: AppState, mutations: readonly Mutation[]):
         assertNever(mutation);
     }
   }
+  assertParallelState(current);
   return current;
 }

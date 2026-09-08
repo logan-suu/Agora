@@ -6,9 +6,12 @@ import {
   type AppState,
   applyMutations,
   createInitialAppState,
+  currentReviewDispatch,
+  isReviewBinding,
   mergeByIdMutation,
   type RoleSpec,
   type TestResults,
+  validationReceipt,
   type WorktreeRef,
 } from '@agora/core-domain';
 import {
@@ -29,6 +32,7 @@ import {
   type HarnessExecutorOptions,
   inspectHarnessSafePoint,
   project,
+  projectForAssignment,
 } from '@agora/runtime-executor';
 import {
   createSandbox,
@@ -48,6 +52,11 @@ import {
 } from '@agora/tools-git';
 
 import type { ArchivedArtifact, TaskCompositionFactory } from './task-orchestration-runtime';
+import {
+  controlFingerprint,
+  PARALLEL_TESTER_HANDOFF,
+  WaveValidationService,
+} from './wave-validation';
 
 const TEST_RESULTS_FILE = 'test-results.json';
 
@@ -171,6 +180,12 @@ export function createWebTaskCompositionFactory(
       }
     }
     const activeGitService = gitService;
+    const validationService = new WaveValidationService(
+      sandbox,
+      activeGitService,
+      join(taskRoot, 'artifacts'),
+    );
+    const assignmentStates = new Map<string, AppState>();
     const catalogs = new Map<string, ToolCatalog>();
     const worktrees = new Map<string, WorktreeRef>();
     // A run can fail before its first worker is admitted. In that case the
@@ -246,10 +261,18 @@ export function createWebTaskCompositionFactory(
       const catalog = catalogs.get(workerId);
       if (catalog === undefined)
         throw new Error(`tool catalog is unavailable for worker "${workerId}"`);
+      const assignedState = assignmentStates.get(workerId) ?? resume?.state;
+      const parallelTester =
+        assignedState?.parallelExecution?.activeWave?.validation?.workerId === workerId;
+      const logicalTools = parallelTester
+        ? [...spec.tools.filter((tool) => tool !== 'test.run'), 'git']
+        : spec.tools;
       const resolved = catalog.resolve(
-        spec.tools.filter((tool) => SIX_ROLE_TOOL_SURFACE.includes(tool)),
+        logicalTools.filter((tool) => SIX_ROLE_TOOL_SURFACE.includes(tool)),
       );
-      const handoff = SIX_ROLE_HANDOFF[spec.role] ?? '';
+      const handoff = parallelTester
+        ? PARALLEL_TESTER_HANDOFF
+        : (SIX_ROLE_HANDOFF[spec.role] ?? '');
       const executorSpec: RoleSpec = {
         ...spec,
         ...(handoff === '' ? {} : { systemPrompt: spec.systemPrompt + handoff }),
@@ -266,7 +289,9 @@ export function createWebTaskCompositionFactory(
           taskId: scope.taskId,
           ...(resumeSessionId === undefined ? {} : { resumeSessionId }),
         },
-        ...(spec.role === 'TESTER' ? { readTestResults: () => readTestResults(worktree) } : {}),
+        ...(spec.role === 'TESTER' && assignedState?.parallelExecution === undefined
+          ? { readTestResults: () => readTestResults(worktree) }
+          : {}),
         ...(turnMutations === undefined
           ? {}
           : { readTurnMutations: ({ text }) => turnMutations(text) }),
@@ -418,9 +443,13 @@ export function createWebTaskCompositionFactory(
             );
             await executor.loadSafePoint(plan.sourceSafePointRef);
             executor.injectInbox(
-              project(
+              projectForAssignment(
                 resume.state,
-                spec.role,
+                {
+                  workerId: plan.workerId,
+                  role: spec.role,
+                  ...(worker.subtaskId === undefined ? {} : { subtaskId: worker.subtaskId }),
+                },
                 roster,
                 await buildChannelContext(resume.state, spec.role),
               ),
@@ -438,6 +467,7 @@ export function createWebTaskCompositionFactory(
       state: AppState,
       assignment: { workerId: string; role: string; subtaskId?: string },
     ): Promise<WorktreeRef> => {
+      assignmentStates.set(assignment.workerId, state);
       if (activeWorkspace === undefined) {
         if (legacyWorktreeRef === undefined)
           throw new Error('legacy worktree reference is missing');
@@ -450,6 +480,25 @@ export function createWebTaskCompositionFactory(
         throw new Error(`worker "${assignment.workerId}" has an unmigrated legacy worktree`);
       }
       let ref = persisted ?? activeWorkspace.worktreeFor(assignment.workerId);
+      if (ref === undefined && state.parallelExecution !== undefined) {
+        const wave = state.parallelExecution.activeWave;
+        if (assignment.role === 'CODER') {
+          if (!wave?.coderWorkerIds.includes(assignment.workerId))
+            throw new Error('CODER is not assigned to the current wave');
+          ref = await activeWorkspace.createWorkerWorktree(assignment.workerId, wave.base.commit);
+        } else if (wave?.validation?.workerId === assignment.workerId) {
+          ref = await activeWorkspace.createWorkerWorktree(
+            assignment.workerId,
+            wave.validation.inputCommit,
+          );
+        } else if (assignment.role === 'REVIEWER') {
+          const binding = currentReviewDispatch(state)?.payload.reviewBinding;
+          if (!isReviewBinding(binding)) throw new Error('reviewer has no validation binding');
+          const receipt = validationReceipt(state, binding.validationReceiptId);
+          await validationService.verifyReceiptHead(state, binding.validationReceiptId);
+          ref = receipt.worktree;
+        }
+      }
       // TESTER and REVIEWER inspect the already-produced subtask (or the
       // dedicated integration result after the Phase 9 topology is wired).
       // Allocating a fresh branch here would silently hide CODER output.
@@ -519,6 +568,22 @@ export function createWebTaskCompositionFactory(
           artifactPath = refreshed.path;
           return refreshed;
         },
+        completeAssignment: async (state, assignment, worktree) => {
+          if (state.parallelExecution !== undefined && assignment.role === 'CODER') {
+            if (
+              worktree === undefined ||
+              (await activeGitService.inspectValidationWorktree(worktree.path, worktree.baseCommit))
+                .dirty
+            )
+              throw new Error('CODER must finish with a clean committed worktree');
+          }
+          if (state.parallelExecution?.activeWave?.validation?.workerId === assignment.workerId) {
+            if (worktree === undefined)
+              throw new Error('validation worker is missing its worktree');
+            return validationService.complete(state, assignment.workerId, worktree);
+          }
+          return [];
+        },
         buildExecutor: (spec, assignment, assignedWorktree): Executor => {
           const restored =
             restoredExecutors.get(assignment.workerId) ??
@@ -552,15 +617,20 @@ export function createWebTaskCompositionFactory(
     const subtaskId = `${scope.taskId}-sub-0`;
     const initialState =
       resume?.state ??
-      applyMutations(createInitialAppState(scope.taskId, goal, scope.projectId), [
-        mergeByIdMutation('subtasks', subtaskId, {
-          title: goal,
-          ownerRole: 'CODER',
-          dependsOn: [],
-          status: 'todo',
-          ...(legacyWorktreeRef === undefined ? {} : { worktree: legacyWorktreeRef }),
-        }),
-      ]);
+      applyMutations(
+        createInitialAppState(scope.taskId, goal, scope.projectId),
+        workspace === undefined
+          ? [
+              mergeByIdMutation('subtasks', subtaskId, {
+                title: goal,
+                ownerRole: 'CODER',
+                dependsOn: [],
+                status: 'todo',
+                ...(legacyWorktreeRef === undefined ? {} : { worktree: legacyWorktreeRef }),
+              }),
+            ]
+          : [],
+      );
     const integrationService =
       workspace === undefined ? undefined : new IntegrationService(workspace, transition);
     return {
@@ -571,19 +641,60 @@ export function createWebTaskCompositionFactory(
       get artifactPath() {
         return artifactPath;
       },
+      ...(workspace === undefined
+        ? {}
+        : {
+            parallelContext: async (state: AppState) => {
+              const execution = state.parallelExecution;
+              if (execution?.acceptedReceiptId !== undefined)
+                await validationService.verifyReceiptHead(state, execution.acceptedReceiptId);
+              const pendingReceipt = execution?.activeWave?.validation?.receiptId;
+              if (pendingReceipt !== undefined)
+                await validationService.verifyReceiptHead(state, pendingReceipt);
+              if (state.phase === 'planning' && execution !== undefined) {
+                const dispatch = [...state.messages]
+                  .reverse()
+                  .find(
+                    (message) =>
+                      message.fromRole === 'COORDINATOR' &&
+                      message.type === 'announce' &&
+                      message.payload.nextRole === 'ARCHITECT',
+                  );
+                if (dispatch?.payload.kind === 'parallel_replan_dispatch') {
+                  const sourceId = dispatch.payload.replanSourceReceiptId;
+                  if (typeof sourceId !== 'string')
+                    throw new Error('architecture replan has no validation source');
+                  await validationService.verifyReceiptHead(state, sourceId);
+                }
+              }
+              return {
+                initialBase: execution?.initialBase ?? {
+                  branch: await activeGitService.canonicalBranch(),
+                  commit: await activeGitService.canonicalHead(),
+                },
+                controlFingerprint: controlFingerprint(state),
+              };
+            },
+          }),
       ...(integrationService === undefined
         ? {}
         : {
             integrate: async (state: typeof initialState) => {
               const workerIds =
+                state.parallelExecution?.activeWave?.coderWorkerIds ??
                 state.integration?.pendingBranches.map((entry) => entry.workerId) ??
                 state.workers
                   .filter((worker) => worker.status === 'done' && worker.subtaskId !== undefined)
                   .map((worker) => worker.workerId);
               const result = await integrationService.integrateWave(state, {
-                waveId: state.integration?.waveId ?? `wave-${state.iterationCount}`,
+                waveId:
+                  state.parallelExecution?.activeWave?.waveId ??
+                  state.integration?.waveId ??
+                  `wave-${state.iterationCount}`,
                 workerIds,
-                baseBranch: await activeGitService.canonicalBranch(),
+                baseBranch:
+                  state.parallelExecution?.activeWave?.base.branch ??
+                  (await activeGitService.canonicalBranch()),
               });
               if (result.state.integration !== undefined) {
                 artifactPath = result.state.integration.integrationWorktree.path;
@@ -611,6 +722,11 @@ export function createWebTaskCompositionFactory(
         const existingReceipt = await readArtifactArchiveReceipt(destination);
         if (existingReceipt !== undefined) return existingReceipt;
         const state = await loadState();
+        if (state?.phase === 'done' && state.parallelExecution?.acceptedReceiptId !== undefined)
+          await validationService?.verifyReceiptHead(
+            state,
+            state.parallelExecution.acceptedReceiptId,
+          );
         const plan = buildArtifactArchivePlan(state, fallbackArtifactPath, destination);
         return materializeArtifactArchive(plan);
       },
@@ -645,7 +761,10 @@ export function buildArtifactArchivePlan(
     });
   };
 
-  if (state?.integration?.status === 'done') {
+  if (state?.parallelExecution?.acceptedReceiptId !== undefined && state.phase === 'done') {
+    const receipt = validationReceipt(state, state.parallelExecution.acceptedReceiptId);
+    add(`validation:${receipt.dispatchId}`, receipt.worktree);
+  } else if (state?.integration?.status === 'done') {
     add(`integration:${state.integration.integrationId}`, state.integration.integrationWorktree);
   } else {
     if (state?.integration !== undefined) {

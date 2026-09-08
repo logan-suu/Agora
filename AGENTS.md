@@ -1,6 +1,6 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.5
+**版本**：v2.6
 **生效日期**：2026-09-07
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
@@ -108,7 +108,7 @@ deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数
 
 ```
 R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），禁止直接赋值共享 State。D17 下并行 agent step 只可提交具稳定身份的 append；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区生成，这些合法并行 op 必须可交换、幂等。当前 Subtask 全字段均属串行控制面；并行模型输出的 workers merge、set、subtask、他人 worker 分区与 collaboration 写入均禁止，只能走任务串行控制面或 D12 ProjectCollaborationStore revision CAS；禁止合并多个完整 AppState 快照
-R2  上下文只经投影切片喂给 agent，永不投原始群聊 log；display（给人看）与 payload（给 agent 用）严格分离
+R2  上下文只经投影切片喂给 agent，永不投原始群聊 log；display（给人看）与 payload（给 agent 用）严格分离；9.4 同 role 并行须按 canonical assignment 缩小 subtask/worktree/指令切片，初始 Step、reproject、D4 resume 同路校验
 R3  leader 是唯一裁决者：不做 agent 间自动共识/投票；blocking 异议必须升级 humanGate 由人拍板；[2026-09-05 架构决策更新] TESTER pass/REVIEWER approved 只形成 completionCandidate，必须经 D16 completion_confirmation gate 的 Leader 终审后才允许 isRequestSatisfied=true/finalize
 R4  配合式抢占只能在安全点（step/end）打断，绝不硬杀 LLM token 流；Phase 9 以 task-scoped 稳定 actionId pause epoch 固定 active cohort。非阻塞 reproject 在 canonical commit 后复用原 context/lease/admission；humanGate 按 D4 执行完整 gate 落盘→释放已静止 worker lease→suspend composition→Leader resolve→每个 paused worker 全新 context 真 Fork 并重新取 lease。checkpoint 未 flush/未闭合时 fail-closed，旧 lease 不跨 Fork，不做内存动态挂起
 R5  阶段 0–9 所有 Worker 强制薄执行器（Harness）；RoleSpec.external 仅预留，不实现切换逻辑；厚 Agent 到阶段 10
@@ -196,6 +196,8 @@ Task: {task-id}        （涉及任务时）
 5. 无敏感数据提交（G7）
 6. 相关文档已同步（R12）
 
+> **[2026-09-07 Leader 测试约定]** 不得通过 skip、排除测试文件或移除既有凭证规避当前任务应执行的测试。已配置的开发测试用 `DEEPSEEK_API_KEY` 必须保留，真实模型测试与其他回归同样执行；环境或权限导致无法运行时，明确记录为未完成，不得以跳过结果宣称全部验收通过。
+
 ### 3.1.4 外部可见内容的语言规范
 
 Git commit message、分支名、PR 标题/描述、代码注释一律**英文**；`docs/` 目录下的 `.md/.json` 项目文档**豁免，沿用中文**。
@@ -232,7 +234,7 @@ Harness 边界（薄执行器职责，详见详细设计 §0/§6）：
 - ctx.subagents.start 的锁定 spawn provider 是 one-shot，只可作 worker 内一次性委派；禁止冒充可逐 turn、可 D4 suspend/Fork 的顶层 worker
 - agent/pre-step：直接覆写 messages 数组为 project(state, role) 返回值（决策 D1）
 - agent/request：按 RoleSpec.model 路由模型
-- agent/turn-stopping：配合式抢占落点（steering 反对关轮 → step 边界停）
+- 配合式抢占：SafePointExecutor companion 请求后，等待模型/工具 Step 自然结束，在下一 agent/pre-step 拒绝 proposal 并由官方 loop 闭合 turn；再 canonical commit/flush/checkpoint，不取消 token 流
 - ctx.compaction：单 agent 历史压缩委托 Harness，不自研；压缩伪历史属预期行为
 - 隔离两层互补：独立 Harness Context/session 是进程内隔离，workerId worktree 是文件隔离；实际 worker 执行受 GlobalScheduler lease 约束，active executable composition 另受生命周期 admission cap 约束但不由此获得 worker 额度
 ```
@@ -301,9 +303,10 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 完成终审    D16：TESTER pass + REVIEWER approved 仅形成 completionCandidate；Coordinator 只接受当前 REVIEWER dispatch 后恰一个、满足 `[A-Za-z0-9][A-Za-z0-9._:-]*` 且未跨轮复用的 verdict id，并打开 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion/request_changes；真 Fork resume 后交叉验证 canonical Message/Decision/receipt/current review，approve 才置 isRequestSatisfied=true 并 finalize，request_changes 保持 false、保守回 CODER；正常阶段不逐段审批
 Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复制进 State/Message/MessageBus；对人 DTO 仅含 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 prompt/projection/reasoning/arguments/results；child 只投 seed 后 native 事件且 parent 图无环；官方格式读取后仍校验跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；响应有界、截断显式
 并行度      D17：GlobalScheduler lease 是跨项目唯一 worker 执行额度，身份={projectId,taskId,workerId}，默认全局 cap=3、按项目轮转；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone；runParallel 处理完整 batch，all-settled 后 reload canonical State；subtask 必须状态可执行、dependsOn 已满足且 persisted WorkerState assignment 匹配才可激活，ownerRole 是实现责任归属而非 TESTER/REVIEWER 的独占执行门禁；可选 priority 只允许 0–100 整数、旧快照缺省 0，依赖满足优先，同一就绪集合按 priority 降序/稳定 id 破平局；task-scoped pause epoch 固定请求时 active cohort，同参数重放、异参数冲突，排队 acquire 取消并保持 pending，done/failed 不被 paused 覆盖；非阻塞 reproject 保留 lease/admission，humanGate 完整落盘后先释放已静止 worker lease；active executable composition 另受默认 3 个的生命周期 admission cap，满载在重资源初始化前返回可重试 429
+波次验收    D17/9.4：显式 executionPlan DAG + 串行 parallelExecution 固定 wave/attempt/base/assignment；新波次从上次 accepted 验证 HEAD 开工，指纹失效复验以规范 sourceReceiptId 绑定上一验证 HEAD 并保留累计测试；legacy modules 只显式退化顺序链。Integration.resultCommit 冻结，TESTER 在独立 validation worktree 写测试并实测精确 HEAD，可信 receipt 绑定 dispatch/commit/控制指纹后才闭合波次。preparation 只读计划，TESTER/REVIEWER 不覆盖 CODER 的 Subtask.worktree；最终 REVIEWER/D16/artifact 绑定同一已验证累计产物。REVIEWER refs 返工覆盖目标与全部传递后继（含 done），缺 refs 才显式全量，坏 refs fail-closed；详细契约见详细设计 §3.1，9.4 实装前不得宣称具备
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
-工作区/集成 D17：createWorktree 六个公开签名不变，第二参数是逻辑 workerId isolation key，复合 workspace adapter 内部做确定性 Git-safe 编码；task-owned canonical repo 位于任务 .data，真实 linked worktree 与 Docker 只用同一规范路径，恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止双工作区、用户 checkout 写入或自动 push。State 只存结构化 WorktreeRef/Integration 引用，不存 pendingPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只可补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收中途失败必须补偿 worktree metadata 与临时 branch；冲突必须确认 abort 成功且无 MERGE_HEAD 后才打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 只投当前 Integration 波次；无 Integration 的顺序兼容仅允许候选收敛到同一 WorktreeRef，并发归档不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失或损坏 fail-closed。Phase 9 仅接受 request_rework <workerId> 并从原 base 重建。DEF-004 保持 open，9.5 前修复或由 Leader 明确可测试的后续安全边界
+工作区/集成 D17：createWorktree 六个公开签名不变，第二参数是逻辑 workerId isolation key，复合 workspace adapter 内部做确定性 Git-safe 编码；task-owned canonical repo 位于任务 .data，真实 linked worktree 与 Docker 只用同一规范路径，恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止双工作区、用户 checkout 写入或自动 push。State 只存结构化 WorktreeRef/Integration 引用，不存 pendingPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只可补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收中途失败必须补偿 worktree metadata 与临时 branch；冲突必须确认 abort 成功且无 MERGE_HEAD 后才打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 分支明细只投当前 Integration 波次，9.4 最终审阅另给累计验证产物与全计划任务索引；无 Integration 的顺序兼容仅允许候选收敛到同一 WorktreeRef，并发归档不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失或损坏 fail-closed。Phase 9 仅接受 request_rework <workerId> 并从原 base 重建。DEF-004 保持 open，9.5 前修复或由 Leader 明确可测试的后续安全边界
 实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
 意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；浏览器 msgId 统一满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在副作用前校验；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；

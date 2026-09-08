@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-09-07T18:12:44.000Z",
+  "last_updated": "2026-09-07T21:02:17.643Z",
   "items": [
     {
       "id": "DEF-001",
@@ -234,7 +234,7 @@
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-08-30T11:00:35.000Z",
-      "notes": "Resolution condition: when Phase 9 parallel dispatch lands, carry subtask refs in reviewComments (REVIEWER sees per-subtask worktree refs via the current branchOrIntegration slice) and narrow reopenForRework to the referenced subset, keeping reopen-all as the fallback when no refs are present. Check this entry at the Phase 9 exit gate. [2026-09-05 D17 规格评审] 9.4 的拓扑波次必须让 REVIEWER 输出稳定 subtask refs；命中 refs 时只重开所指 subtask 及其未完成依赖后继，无 refs 才允许显式 degraded 的 reopen-all。9.5 验证两条路径后关闭本项。 [2026-09-07 9.3 规格同步] 投影名称随 D17 从 legacy branchOrPatch 校准为 branchOrIntegration；本项的窄化重开目标与状态不变。"
+      "notes": "Resolution condition: when Phase 9 parallel dispatch lands, carry subtask refs in reviewComments (REVIEWER sees per-subtask worktree refs via the current branchOrIntegration slice) and narrow reopenForRework to the referenced subset, keeping reopen-all as the fallback when no refs are present. Check this entry at the Phase 9 exit gate. [2026-09-05 D17 规格评审] 9.4 的拓扑波次必须让 REVIEWER 输出稳定 subtask refs；当时要求命中 refs 时只重开所指 subtask 及其未完成依赖后继；该范围已由下述 9.4 规格复评修订，无 refs 的显式 degraded reopen-all 保留。9.5 验证两条路径后关闭本项。 [2026-09-07 9.3 规格同步] 投影名称随 D17 从 legacy branchOrPatch 校准为 branchOrIntegration；本项的窄化重开目标与状态不变。 [2026-09-07 9.4 规格复评·Leader授权] REVIEWER verdict 可选 subtaskIds 必须非空、唯一且均属于当前 reviewBinding 的计划，未知/畸形/过期引用 fail-closed；有效 refs 重开所指任务及全部传递依赖后继，包括已 done 后继，防止上游返工后复用失效下游结果；只有字段缺省才显式 degraded 全量重开。最终 REVIEWER 投影给出累计验证 worktree 与全计划任务索引，分支明细仍限当前 Integration。9.4 实装并在 9.5 验证 A→C（C 已 done）重开、无关 B 保留、缺 refs 全量和坏 refs 拒绝后才可关闭，当前仍 open。"
     },
     {
       "id": "DEF-014",

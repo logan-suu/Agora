@@ -60,6 +60,81 @@ test at fail.test.mjs:3:1
 `;
 
 describe('parseTap', () => {
+  it('counts failed leaf tests without duplicating nested Node suite summaries', () => {
+    // Node 20 and 24 emit suite wrappers outside the aggregate test count.
+    const output = `TAP version 13
+# Subtest: outer suite
+    # Subtest: inner suite
+        # Subtest: broken acceptance
+        not ok 1 - broken acceptance
+          ---
+          location: '/suite.test.mjs:4:1'
+          failureType: 'testCodeFailure'
+          error: 'expected 2, received 1'
+          ...
+        1..1
+    not ok 1 - inner suite
+      ---
+      type: 'suite'
+      failureType: 'subtestsFailed'
+      error: '1 subtest failed'
+      ...
+    1..1
+not ok 1 - outer suite
+  ---
+  type: 'suite'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  ...
+1..1
+# tests 1
+# suites 2
+# pass 0
+# fail 1
+`;
+    expect(parseTap(output)).toEqual({
+      total: 1,
+      passed: 0,
+      failed: 1,
+      failures: [
+        {
+          test: 'broken acceptance',
+          message: "'expected 2, received 1'",
+          file: '/suite.test.mjs',
+          line: 4,
+        },
+      ],
+    });
+  });
+
+  it('keeps failed parent tests that Node includes in its aggregate count', () => {
+    const output = `TAP version 13
+# Subtest: parent test
+    # Subtest: child test
+    not ok 1 - child test
+      ---
+      failureType: 'testCodeFailure'
+      error: boom
+      ...
+    1..1
+not ok 1 - parent test
+  ---
+  type: 'test'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  ...
+1..1
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+`;
+    const summary = parseTap(output);
+    expect(summary.total).toBe(2);
+    expect(summary.failed).toBe(2);
+    expect(summary.failures.map((failure) => failure.test)).toEqual(['child test', 'parent test']);
+  });
+
   it('aggregates counts and extracts failure details from a real node --test sample', () => {
     const summary = parseTap(REAL_FAILING_SAMPLE);
     expect(summary.total).toBe(2);

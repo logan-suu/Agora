@@ -5,6 +5,7 @@ import {
   mergeByIdMutation,
   type RoleSpec,
   setMutation,
+  validationReceipt,
 } from '@agora/core-domain';
 import {
   type HumanGateResolutionReceipt,
@@ -59,6 +60,9 @@ export interface TaskComposition {
   loadRoster?: () => Promise<readonly RoleSpec[]>;
   artifactPath: string;
   integrate?: (state: AppState) => Promise<IntegrateWaveResult>;
+  parallelContext?: (
+    state: AppState,
+  ) => Promise<{ initialBase: { branch: string; commit: string }; controlFingerprint: string }>;
   saveSafePoints(): Promise<readonly string[]>;
   suspend(): Promise<void>;
   archiveArtifact(): Promise<ArchivedArtifact>;
@@ -450,13 +454,19 @@ export class TaskOrchestrationRuntime {
         ...(composition.loadRoster === undefined ? {} : { loadRoster: composition.loadRoster }),
         transition,
         ...(composition.integrate === undefined ? {} : { integrate: composition.integrate }),
+        ...(composition.parallelContext === undefined
+          ? {}
+          : { parallelContext: composition.parallelContext }),
         suspendAtHumanGate: (_state, request) => this.#suspendAtHumanGate(scope, request),
       });
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
     } catch (error) {
       terminalError = errorMessage(error);
       const persisted = await this.messages.store.load(scope).catch(() => undefined);
-      if (persisted !== undefined && requiresHumanGateAttention(persisted)) {
+      if (
+        persisted !== undefined &&
+        (requiresHumanGateAttention(persisted) || persisted.parallelExecution !== undefined)
+      ) {
         terminalStatus = 'needs_attention';
       }
     }
@@ -615,7 +625,11 @@ function summaryFrom(
   error?: string,
   archivedArtifactPath?: string,
 ): TaskSummary {
+  const accepted = state.parallelExecution?.acceptedReceiptId;
+  const validationWorkerId =
+    accepted === undefined ? undefined : validationReceipt(state, accepted).workerId;
   const worktree =
+    state.workers.find((worker) => worker.workerId === validationWorkerId)?.worktree ??
     state.integration?.integrationWorktree ??
     state.subtasks.find((subtask) => subtask.worktree !== undefined)?.worktree;
   const artifactPath = typeof worktree === 'string' ? worktree : worktree?.path;
