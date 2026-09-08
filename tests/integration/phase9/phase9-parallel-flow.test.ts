@@ -2,7 +2,7 @@
 // tool result is consumed and checked. HTTP, Harness sessions, Git, Docker,
 // task persistence, integration, test execution and D4/D16 are real implementations.
 import { existsSync } from 'node:fs';
-import { cp, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readdir, readFile, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type AppState, validationReceipt } from '@agora/core-domain';
@@ -22,7 +22,15 @@ const socket = join(process.env.HOME ?? '', '.docker/run/docker.sock');
 const docker = new Dockerode(existsSync(socket) ? { socketPath: socket } : {});
 const cleanups: (() => Promise<unknown>)[] = [];
 afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
+  const errors: unknown[] = [];
+  for (const cleanup of cleanups.splice(0).reverse()) {
+    try {
+      await cleanup();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length > 0) throw new AggregateError(errors, 'phase9 flow cleanup failed');
 });
 const plan = {
   version: 1,
@@ -62,7 +70,12 @@ class ParallelAdapter extends LlmAdapter {
     readonly changesOnce = false,
     readonly validationBarrier?: { entered(): void; release: Promise<void> },
     readonly reviewBarrier?: { entered(): void; release: Promise<void> },
-    readonly scenario?: 'conflict' | 'test_failure' | 'root_cause_failure' | 'architecture_failure',
+    readonly scenario?:
+      | 'conflict'
+      | 'test_failure'
+      | 'root_cause_failure'
+      | 'architecture_failure'
+      | 'ignored_cache',
     readonly validationHoldAfter = 0,
   ) {
     super();
@@ -152,6 +165,11 @@ class ParallelAdapter extends LlmAdapter {
         !assignment.workerId.includes('integration-rework:')
       )
         actions.push({ tool: 'fs_write', args: { path: 'shared.txt', content: `${subtask}\n` } });
+      if (this.scenario === 'ignored_cache')
+        actions.push(
+          { tool: 'fs_write', args: { path: '.gitignore', content: 'cache/\n' } },
+          { tool: 'fs_write', args: { path: 'cache/output.txt', content: 'local coder cache' } },
+        );
       actions.push(
         {
           tool: 'fs_write',
@@ -666,13 +684,107 @@ describe('Phase 9 automatic parallel flow (real G5)', () => {
     },
     60_000,
   );
+  it('continues the real Harness after aborting a quiescent validation pause', async () => {
+    let entered = () => {};
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const adapter = new ParallelAdapter(false, { entered, release: released });
+    const flow = await startFlow(adapter, 'abort-native-pause');
+    await started;
+    const worker = flow.workerRuntime;
+    if (worker === undefined) throw new Error('missing active worker runtime');
+    const pausing = worker.requestPause({
+      scope: flow.scope,
+      actionId: 'abort-native',
+      reason: 'decision_change',
+      mode: 'reproject',
+    });
+    release();
+    const receipt = await pausing;
+    expect(receipt.workers.some((entry) => entry.status === 'paused')).toBe(true);
+    await worker.abortPause(receipt);
+    await flow.runtime.waitForIdle(flow.scope);
+    const state = await flow.messages.store.load(flow.scope);
+    expect(state?.humanGate?.reason, JSON.stringify(await flow.runtime.summary(flow.scope))).toBe(
+      'completion_confirmation:parallel-review-1',
+    );
+    expect(state?.subtasks.every((node) => node.status === 'done')).toBe(true);
+    expect(state?.messages.some((message) => message.msgId === 'abort-native')).toBe(false);
+  }, 60_000);
+
+  it('suspends real parallel resources after evidence failure while preserving the source and freeing admission', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-failed-parallel-'));
+    cleanups.push(() => rm(root, { recursive: true, force: true }));
+    const scope = { projectId: 'failure-project', taskId: 'first' };
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const factory = createWebTaskCompositionFactory({
+      dataRoot: root,
+      sandboxConfig: { kind: 'docker', docker },
+      executorOptions: { adapter: new ParallelAdapter(), provider: 'phase9-g5', deepseek: false },
+    });
+    const runtime = new TaskOrchestrationRuntime(
+      messages,
+      async (input) => {
+        const composition = await factory(input);
+        cleanups.push(() => composition.suspend());
+        return {
+          ...composition,
+          parallelContext: async (state) => {
+            if (state.parallelExecution?.activeWave?.validation?.receiptId !== undefined)
+              throw new Error('injected evidence inspection failure');
+            if (composition.parallelContext === undefined)
+              throw new Error('missing parallel context');
+            return composition.parallelContext(state);
+          },
+        };
+      },
+      { maxActiveCompositions: 1 },
+    );
+    const input = {
+      ...scope,
+      requestId: 'start',
+      goal: 'Build a modular API system: A and B independently, then C combines them.',
+    };
+    await runtime.start(input);
+    await runtime.waitForIdle(scope);
+    expect(await runtime.summary(scope)).toMatchObject({
+      runStatus: 'needs_attention',
+      error: 'injected evidence inspection failure',
+    });
+    const state = await messages.store.load(scope);
+    expect(state?.humanGate).toBeUndefined();
+    if (state === undefined) throw new Error('missing preserved state');
+    const receiptId = state.parallelExecution?.activeWave?.validation?.receiptId;
+    if (receiptId === undefined) throw new Error('missing preserved receipt');
+    const receipt = validationReceipt(state, receiptId);
+    const taskRoot = join(root, 'projects', scope.projectId, 'tasks', scope.taskId);
+    expect(existsSync(join(taskRoot, 'artifacts', receipt.evidence.path))).toBe(true);
+    expect(existsSync(join(receipt.worktree.path, 'a.mjs'))).toBe(true);
+    expect(existsSync(join(taskRoot, 'artifacts/worktree'))).toBe(false);
+    const physicalTaskRoot = await realpath(taskRoot);
+    expect(
+      (await docker.listContainers({ all: true })).some((container) =>
+        container.Mounts.some((mount) => mount.Source.startsWith(physicalTaskRoot)),
+      ),
+    ).toBe(false);
+    await expect(
+      runtime.start({ ...input, taskId: 'second', requestId: 'second' }),
+    ).resolves.toMatchObject({ startOutcome: 'started' });
+    await runtime.waitForIdle({ ...scope, taskId: 'second' });
+  }, 60_000);
+
   it('runs A/B concurrently, inherits tested code into C, then approves and reruns the archived artifact', async () => {
     await docker.ping();
     const root = await mkdtemp(join(tmpdir(), 'agora-phase9-flow-'));
     cleanups.push(() => rm(root, { recursive: true, force: true }));
     const scope = { projectId: 'agora', taskId: 'parallel-task' };
     const messages = createMessageRuntime(root, new ChannelStream());
-    const adapter = new ParallelAdapter();
+    const adapter = new ParallelAdapter(false, undefined, undefined, 'ignored_cache');
     const baseFactory = createWebTaskCompositionFactory({
       dataRoot: root,
       sandboxConfig: { kind: 'docker', docker },
@@ -717,6 +829,15 @@ describe('Phase 9 automatic parallel flow (real G5)', () => {
     const waves = state.messages.filter((message) => message.payload.kind === 'coding_wave');
     expect(waves.map((wave) => wave.payload.subtaskIds)).toEqual([['A', 'B'], ['C']]);
     expect(waves[1]?.payload.base).toMatchObject({ commit: receipts[0]?.worktree.headCommit });
+    for (const worker of state.workers.filter((worker) => worker.role === 'CODER')) {
+      if (typeof worker.worktree !== 'object') throw new Error('missing coder worktree');
+      expect(await readFile(join(worker.worktree.path, 'cache/output.txt'), 'utf8')).toBe(
+        'local coder cache',
+      );
+    }
+    expect(receipts.every((receipt) => !existsSync(join(receipt.worktree.path, 'cache')))).toBe(
+      true,
+    );
     expect(adapter.observedRuns).toBeGreaterThanOrEqual(5);
     const trace = await new HarnessTraceReader(root).read(scope);
     expect(trace.sessions.filter((session) => session.role === 'CODER')).toHaveLength(3);

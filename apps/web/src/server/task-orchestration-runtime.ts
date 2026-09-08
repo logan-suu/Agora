@@ -103,6 +103,7 @@ interface ActiveRun {
   pendingFinalization:
     | { status: 'completed' | 'failed'; error: string | undefined; artifactArchived: boolean }
     | undefined;
+  pendingSuspension?: { error: string | undefined };
   error: string | undefined;
 }
 
@@ -158,6 +159,19 @@ export class TaskOrchestrationRuntime {
       if (existingRun !== undefined) {
         if (existingRun.goal !== input.goal) {
           throw new TaskGoalConflictError(input, existingRun.goal);
+        }
+        if (existingRun.pendingSuspension !== undefined) {
+          if (existingRun.status === 'running') {
+            const summary = await this.#requiredSummary(input);
+            return { ...summary, requestId: input.requestId, startOutcome: 'already_running' };
+          }
+          existingRun.status = 'running';
+          existingRun.promise = this.#suspendFailedParallelRun(
+            existingRun,
+            existingRun.pendingSuspension.error,
+          );
+          const summary = await this.#requiredSummary(input);
+          return { ...summary, requestId: input.requestId, startOutcome: 'started' };
         }
         if (existingRun.pendingFinalization !== undefined) {
           if (existingRun.composition === undefined) {
@@ -447,6 +461,7 @@ export class TaskOrchestrationRuntime {
     if (composition === undefined) throw new Error('active task composition is unavailable');
     let terminalStatus: ActiveRun['status'] = 'failed';
     let terminalError: string | undefined;
+    let suspendFailedParallel = false;
     try {
       const finalState = await runOrchestration(initialState, {
         workerRuntime: composition.workerRuntime,
@@ -468,16 +483,36 @@ export class TaskOrchestrationRuntime {
         (requiresHumanGateAttention(persisted) || persisted.parallelExecution !== undefined)
       ) {
         terminalStatus = 'needs_attention';
+        suspendFailedParallel = !requiresHumanGateAttention(persisted);
       }
     }
 
     if (terminalStatus === 'needs_attention') {
+      if (suspendFailedParallel) {
+        await this.#suspendFailedParallelRun(run, terminalError);
+        return;
+      }
       run.status = terminalStatus;
       run.error = terminalError;
       return;
     }
 
     await this.#finalizeRun(scope, run, terminalStatus, terminalError, false);
+  }
+
+  /** Release executable resources after a settled failure, preserving unverified source evidence. */
+  async #suspendFailedParallelRun(run: ActiveRun, error: string | undefined): Promise<void> {
+    run.pendingSuspension = { error };
+    const composition = run.composition;
+    try {
+      await composition?.suspend();
+      if (run.composition === composition) run.composition = undefined;
+      delete run.pendingSuspension;
+      run.error = error;
+    } catch (failure) {
+      run.error = joinErrors(error, `resource suspension failed: ${errorMessage(failure)}`);
+    }
+    run.status = 'needs_attention';
   }
 
   async #finalizeRun(

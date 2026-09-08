@@ -292,24 +292,31 @@ export class WorktreeGitService implements GitService {
   ): Promise<{
     headCommit: string;
     dirty: boolean;
+    uncommittedChanges: boolean;
+    removedPaths: string[];
     changedPaths: string[];
     trackedFiles: string[];
   }> {
     const root = this.assertRegistered(worktree);
     const git = simpleGit(root);
     const base = validateRefArg(inputCommit, 'validation input commit');
-    const [head, status, ignored, changed, tracked] = await Promise.all([
+    const [head, status, ignored, changed, tracked, baseTracked] = await Promise.all([
       git.revparse(['HEAD']),
       git.raw(['status', '--porcelain=v1', '--untracked-files=all']),
       git.raw(['ls-files', '--others', '--ignored', '--exclude-standard', '-z']),
       git.raw(['diff', '--name-only', '-z', base, 'HEAD']),
       git.raw(['ls-files', '-z']),
+      git.raw(['ls-tree', '-r', '--name-only', '-z', base]),
     ]);
+    const trackedFiles = tracked.split('\0').filter(Boolean);
+    const present = new Set(trackedFiles);
     return {
       headCommit: head.trim(),
       dirty: status.length > 0 || ignored.length > 0,
+      uncommittedChanges: status.length > 0,
+      removedPaths: baseTracked.split('\0').filter((path) => path !== '' && !present.has(path)),
       changedPaths: changed.split('\0').filter(Boolean),
-      trackedFiles: tracked.split('\0').filter(Boolean),
+      trackedFiles,
     };
   }
 

@@ -53,6 +53,7 @@ import {
 
 import type { ArchivedArtifact, TaskCompositionFactory } from './task-orchestration-runtime';
 import {
+  assertCoderWorktreeReady,
   controlFingerprint,
   PARALLEL_TESTER_HANDOFF,
   WaveValidationService,
@@ -570,12 +571,9 @@ export function createWebTaskCompositionFactory(
         },
         completeAssignment: async (state, assignment, worktree) => {
           if (state.parallelExecution !== undefined && assignment.role === 'CODER') {
-            if (
-              worktree === undefined ||
-              (await activeGitService.inspectValidationWorktree(worktree.path, worktree.baseCommit))
-                .dirty
-            )
+            if (worktree === undefined)
               throw new Error('CODER must finish with a clean committed worktree');
+            await assertCoderWorktreeReady(activeGitService, worktree);
           }
           if (state.parallelExecution?.activeWave?.validation?.workerId === assignment.workerId) {
             if (worktree === undefined)

@@ -211,10 +211,10 @@ describe('ChatWorkspace', () => {
           omittedEventCount: 7,
           sessions: [
             {
-              sessionId: 'session-1',
+              sessionId: 'child-session-12345678',
               role: 'CODER',
               createdAt: 1,
-              parentSessionId: 'session-0',
+              parentSessionId: 'parent-session-87654321',
               seedLength: 9,
               turns: [
                 {
@@ -257,5 +257,7 @@ describe('ChatWorkspace', () => {
     expect(visibleText).toContain('TOOL_FAILED');
     expect(visibleText).toContain('7 older trace events omitted');
     expect(html).not.toContain('prompt');
+    expect(html).toContain('<code title="child-session-12345678">12345678</code>');
+    expect(html).toContain('<code title="parent-session-87654321">87654321</code>');
   });
 });

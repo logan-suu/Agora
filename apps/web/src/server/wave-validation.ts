@@ -83,10 +83,27 @@ interface ExecutionEvidence {
   results: TestResults;
 }
 
+function assertCumulativeTests(removedPaths: readonly string[]): void {
+  if (removedPaths.some((path) => TEST_FILE.test(path)))
+    throw new Error('inherited cumulative test files must not be removed or renamed');
+}
+
+/** CODER caches are not part of Git input; inherited tests must survive each coding wave. */
+export async function assertCoderWorktreeReady(
+  git: WorktreeGitService,
+  worktree: WorktreeRef,
+): Promise<void> {
+  const inspection = await git.inspectValidationWorktree(worktree.path, worktree.baseCommit);
+  if (inspection.uncommittedChanges)
+    throw new Error('CODER must finish with a clean committed worktree');
+  assertCumulativeTests(inspection.removedPaths);
+}
+
 async function validationInput(git: WorktreeGitService, worktree: WorktreeRef) {
   const before = await git.inspectValidationWorktree(worktree.path, worktree.baseCommit);
   if (before.dirty)
     throw new Error('validation requires a clean committed worktree, including ignored files');
+  assertCumulativeTests(before.removedPaths);
   if (before.changedPaths.some((path) => !TEST_FILE.test(path) && !TEST_FIXTURE.test(path)))
     throw new Error('validation TESTER changed business files');
   const tests = before.trackedFiles.filter((path) => TEST_FILE.test(path)).sort();

@@ -13,6 +13,7 @@ import { WorktreeRegistry } from '@agora/tools-fs';
 import { initializeRegisteredWorktree, WorktreeGitService } from '@agora/tools-git';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  assertCoderWorktreeReady,
   controlFingerprint,
   executeValidation,
   WaveValidationService,
@@ -183,6 +184,8 @@ async function receiptFixture() {
     evidencePath: join(root, 'artifacts/validation/validation.json'),
   };
 }
+// Replay cases perform many real Git inspections; their test budget includes
+// setup and tampering checks, independently of the 30s sandbox command deadline.
 describe('trusted wave validation', () => {
   it('reuses immutable execution evidence when its canonical receipt commit was lost', async () => {
     const { state, ref, sandbox, service, evidencePath } = await receiptFixture();
@@ -199,7 +202,7 @@ describe('trusted wave validation', () => {
     expect(sandbox.runs).toBe(1);
     await expect(service.complete(recovered, 'worker:validation:0', ref)).resolves.toEqual([]);
     expect(sandbox.runs).toBe(1);
-  });
+  }, 30_000);
 
   it('rejects damaged, mismatched or changed replay evidence without executing or overwriting it', async () => {
     const { state, ref, sandbox, service, evidencePath, git } = await receiptFixture();
@@ -234,7 +237,7 @@ describe('trusted wave validation', () => {
     await expect(service.complete(state, 'worker:validation:0', ref)).rejects.toThrow(/evidence/);
     expect(await readFile(evidencePath, 'utf8')).toBe(original);
     expect(sandbox.runs).toBe(1);
-  });
+  }, 30_000);
 
   it('executes tracked tests with Unicode, spaces, quotes and leading hyphens instead of skipping them', async () => {
     const { sandbox, git, ref } = await fixture();
@@ -328,4 +331,69 @@ describe('trusted wave validation', () => {
       }),
     ).not.toBe(first);
   });
+});
+
+it('rejects deletion of an inherited cumulative regression test', async () => {
+  const { sandbox, git, ref } = await fixture();
+  await sandbox.write(ref, 'answer.mjs', 'export const answer = 0;');
+  await sandbox.write(
+    ref,
+    'regression.test.mjs',
+    "import {test} from 'node:test'; import assert from 'node:assert/strict'; import {answer} from './answer.mjs'; test('prior acceptance',()=>assert.equal(answer,42));",
+  );
+  await sandbox.write(
+    ref,
+    'smoke.test.mjs',
+    "import {test} from 'node:test'; test('smoke',()=>{});",
+  );
+  const baseCommit = await git.applyPatch(ref.path, '');
+  await rm(join(ref.path, 'regression.test.mjs'));
+  const headCommit = await git.applyPatch(ref.path, '');
+  await expect(
+    executeValidation(sandbox, git, { ...ref, baseCommit, headCommit }),
+  ).rejects.toThrow();
+});
+
+it('rejects renaming an inherited Unicode test outside the discovered test set', async () => {
+  const { sandbox, git, ref } = await fixture();
+  await sandbox.write(
+    ref,
+    '中文 用例.test.mjs',
+    "import {test} from 'node:test';test('previous',()=>{});",
+  );
+  await sandbox.write(
+    ref,
+    'smoke.test.mjs',
+    "import {test} from 'node:test';test('smoke',()=>{});",
+  );
+  const baseCommit = await git.applyPatch(ref.path, '');
+  const body = await readFile(join(ref.path, '中文 用例.test.mjs'), 'utf8');
+  await rm(join(ref.path, '中文 用例.test.mjs'));
+  await sandbox.write(ref, 'tests/fixtures/renamed.mjs', body);
+  const headCommit = await git.applyPatch(ref.path, '');
+  await expect(executeValidation(sandbox, git, { ...ref, baseCommit, headCommit })).rejects.toThrow(
+    /cumulative test/,
+  );
+});
+it('accepts ignored CODER caches but rejects uncommitted source and lost cumulative tests', async () => {
+  const { sandbox, git, ref } = await fixture();
+  await sandbox.write(ref, '.gitignore', 'cache/\n');
+  await sandbox.write(
+    ref,
+    'previous.test.mjs',
+    "import {test} from 'node:test';test('previous',()=>{});",
+  );
+  const baseCommit = await git.applyPatch(ref.path, '');
+  await sandbox.write(ref, 'answer.mjs', 'export const answer=42;');
+  const headCommit = await git.applyPatch(ref.path, '');
+  const coder = { ...ref, baseCommit, headCommit };
+  await sandbox.write(ref, 'cache/output.txt', 'cached');
+  await expect(assertCoderWorktreeReady(git, coder)).resolves.toBeUndefined();
+  await expect(executeValidation(sandbox, git, coder)).rejects.toThrow(/clean/);
+  await sandbox.write(ref, 'answer.mjs', 'export const answer=0;');
+  await expect(assertCoderWorktreeReady(git, coder)).rejects.toThrow(/clean/);
+  await git.applyPatch(ref.path, '');
+  await rm(join(ref.path, 'previous.test.mjs'));
+  await git.applyPatch(ref.path, '');
+  await expect(assertCoderWorktreeReady(git, coder)).rejects.toThrow(/cumulative test/);
 });

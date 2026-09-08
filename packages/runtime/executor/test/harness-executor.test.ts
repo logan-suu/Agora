@@ -510,3 +510,47 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
     }
   });
 });
+
+it('consumes a safe-point request so an aborted pause can continue without reproject', async () => {
+  const fake = new FakeLlmAdapter();
+  const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+  const context = {
+    sessionId: 'review-pause',
+    view: project(codingState(), 'CODER', PHASE0_ROSTER),
+  };
+  try {
+    expect((await executor.step(context)).kind).toBe('done');
+    executor.requestSafePoint();
+    expect((await executor.step(context)).kind).toBe('tool');
+    expect((await executor.step(context)).kind).toBe('done');
+  } finally {
+    await executor.dispose();
+  }
+});
+
+it('cancels a safe-point request before it reaches a native pre-step', async () => {
+  const fake = new FakeLlmAdapter();
+  const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
+  try {
+    executor.requestSafePoint();
+    executor.cancelSafePoint();
+    const result = await executor.step({
+      sessionId: 'cancel-before-yield',
+      view: project(codingState(), 'CODER', PHASE0_ROSTER),
+    });
+    expect(result.kind).toBe('done');
+    expect(fake.calls).toHaveLength(1);
+    executor.requestSafePoint();
+    expect(
+      (
+        await executor.step({
+          sessionId: 'cancel-before-yield',
+          view: project(codingState(), 'CODER', PHASE0_ROSTER),
+        })
+      ).kind,
+    ).toBe('tool');
+    expect(fake.calls).toHaveLength(1);
+  } finally {
+    await executor.dispose();
+  }
+});

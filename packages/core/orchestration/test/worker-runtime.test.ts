@@ -1379,3 +1379,47 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     await expect(runtime.runOne(seed, assigned)).resolves.toBeDefined();
   });
 });
+
+it('cancels the executor pause request on abort without injecting an uncommitted directive', async () => {
+  class CancelableExecutor extends ReprojectingExecutor {
+    pendingRequest = false;
+    requestSafePoint() {
+      this.pendingRequest = true;
+    }
+    cancelSafePoint() {
+      this.pendingRequest = false;
+    }
+  }
+  const executor = new CancelableExecutor();
+  let canonical = createInitialAppState('abort-pause', 'g');
+  const scheduler = new GlobalScheduler();
+  const runtime = new WorkerRuntime(
+    {
+      roster: PHASE0_ROSTER,
+      loadState: async () => canonical,
+      transition: async (state, mutations) => {
+        canonical = applyMutations(state, mutations);
+        return canonical;
+      },
+      buildExecutor: () => executor,
+    },
+    scheduler,
+  );
+  const running = runtime.runOne(canonical, assignment('CODER'));
+  await executor.stepStarted;
+  const pausing = runtime.requestPause({
+    scope: { projectId: canonical.projectId, taskId: canonical.taskId },
+    actionId: 'aborted',
+    reason: 'decision_change',
+    mode: 'reproject',
+  });
+  executor.release();
+  const receipt = await pausing;
+  expect(executor.pendingRequest).toBe(true);
+  await runtime.abortPause(receipt);
+  await running;
+  expect(executor.pendingRequest).toBe(false);
+  expect(executor.injected).toEqual([]);
+  expect(canonical.workers[0]?.status).toBe('done');
+  expect(scheduler.activeCount).toBe(0);
+});

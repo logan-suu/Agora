@@ -437,6 +437,10 @@ export class HarnessExecutor implements Executor {
     this.safePointRequested = true;
   }
 
+  cancelSafePoint(): void {
+    this.safePointRequested = false;
+  }
+
   /** Release every agent loop and tear down all loaded plugins (reverse order). */
   async dispose(): Promise<void> {
     await this.ready;
@@ -485,6 +489,7 @@ export class HarnessExecutor implements Executor {
         // A proposed step follows a fully committed step/end. Rejecting it
         // closes the turn without aborting a model stream or any tool call.
         if (this.safePointRequested) {
+          this.safePointRequested = false;
           this.yieldedSafePoint = true;
           return { kind: 'reject' };
         }

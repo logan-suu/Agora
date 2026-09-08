@@ -365,11 +365,12 @@ export function TracePanel({
             <details className="trace-session" key={session.sessionId} open>
               <summary>
                 <span className="trace-role">{session.role}</span>
-                <code>{session.sessionId.slice(-8)}</code>
+                <code title={session.sessionId}>{session.sessionId.slice(-8)}</code>
               </summary>
               {session.parentSessionId ? (
                 <p className="trace-lineage">
-                  Fork · resumed from <code>{session.parentSessionId.slice(0, 8)}</code>
+                  Fork · resumed from{' '}
+                  <code title={session.parentSessionId}>{session.parentSessionId.slice(-8)}</code>
                 </p>
               ) : null}
               <ol className="trace-turns">

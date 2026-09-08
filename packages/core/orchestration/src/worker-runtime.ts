@@ -928,7 +928,10 @@ export class WorkerRuntime {
         ),
       );
     }
-    for (const handle of handles) handle.pause?.resolveOutcome('abort');
+    for (const handle of handles) {
+      if (supportsSafePointRequest(handle.executor)) handle.executor.cancelSafePoint?.();
+      handle.pause?.resolveOutcome('abort');
+    }
     taskPause.resolve('abort');
     if (this.taskPause === taskPause) this.taskPause = undefined;
   }

@@ -21,7 +21,13 @@ import {
   validationSubtaskIds,
   type WaveValidationReceipt,
 } from '@agora/core-domain';
-import type { Assignment, CoordinatorDecision, DecideOptions, Route } from './coordinator';
+import {
+  type Assignment,
+  type CoordinatorDecision,
+  type DecideOptions,
+  MAX_ITERATIONS,
+  type Route,
+} from './coordinator';
 import { buildCoordinationLedger } from './progress-ledger';
 
 export interface ParallelDecisionContext {
@@ -436,7 +442,8 @@ function recoverDispatch(state: AppState, options: Options): CoordinatorDecision
 }
 
 function retryWorkers(state: AppState, workerIds: string[], clock: Clock): CoordinatorDecision {
-  if (state.iterationCount >= 8) return gate(state, clock, 'iteration_limit', ['continue']);
+  if (state.iterationCount >= MAX_ITERATIONS)
+    return gate(state, clock, 'iteration_limit', ['continue']);
   const execution = state.parallelExecution as ParallelExecution;
   const wave = execution.activeWave as ExecutionWave;
   const feedbackIds = new Set(
@@ -631,7 +638,8 @@ function testRework(
   options: Options,
   clock: Clock,
 ): CoordinatorDecision {
-  if (state.iterationCount >= 8) return gate(state, clock, 'iteration_limit', ['continue']);
+  if (state.iterationCount >= MAX_ITERATIONS)
+    return gate(state, clock, 'iteration_limit', ['continue']);
   const execution = state.parallelExecution as ParallelExecution;
   const wave = execution.activeWave as ExecutionWave;
   const finalRevalidation = wave.subtaskIds.every(
@@ -846,7 +854,8 @@ function consumeReview(state: AppState, options: Options, clock: Clock): Coordin
       : reopenClosure(plan, targets as string[]);
   if (verdict.verdict === 'changes_requested') {
     if (verdict.issueScope === 'architecture') {
-      if (state.iterationCount >= 8) return gate(state, clock, 'iteration_limit', ['continue']);
+      if (state.iterationCount >= MAX_ITERATIONS)
+        return gate(state, clock, 'iteration_limit', ['continue']);
       const roleGate = unavailable(state, options, clock, 'ARCHITECT');
       if (roleGate !== undefined) return roleGate;
       const message = control(
@@ -938,7 +947,8 @@ function reviewRework(
   clock: Clock,
   reason: string,
 ): CoordinatorDecision {
-  if (state.iterationCount >= 8) return gate(state, clock, 'iteration_limit', ['continue']);
+  if (state.iterationCount >= MAX_ITERATIONS)
+    return gate(state, clock, 'iteration_limit', ['continue']);
   const { activeWave: _wave, ...execution } = state.parallelExecution as ParallelExecution;
   const message = control(
     clock,

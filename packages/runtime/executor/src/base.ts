@@ -27,6 +27,7 @@ export interface Executor {
 /** Optional companion; requests quiescence after the current complete Harness step. */
 export interface SafePointExecutor extends Executor {
   requestSafePoint(): void;
+  cancelSafePoint?(): void;
 }
 
 export function supportsSafePointRequest(executor: Executor): executor is SafePointExecutor {
