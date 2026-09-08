@@ -20,7 +20,8 @@
     "build:sandbox-native": "node packages/runtime/sandbox/scripts/build-native.mjs",
     "eval:phase9:deterministic": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t 'phase9 deterministic baseline'",
     "eval:phase9:model": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t 'phase9 model baseline'",
-    "eval:phase9:verify-model": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t 'phase9 model repair verification'"
+    "eval:phase9:verify-model": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t 'phase9 model repair verification'",
+    "eval:phase9:format-repair": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t 'phase9 format repair G5'"
   },
   "devDependencies": {
     "@agora/core-domain": "workspace:*",

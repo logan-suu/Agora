@@ -6,10 +6,13 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { WorktreeFsService, WorktreeRegistry } from '@agora/tools-fs';
 import Dockerode from 'dockerode';
 import { expect, it } from 'vitest';
 import { DockerSandbox } from '../src/docker-sandbox';
@@ -41,12 +44,47 @@ it('mounts only the executing worktree and suspends every task container', async
       first,
       "node -e \"setInterval(()=>require('fs').writeFileSync('heartbeat',String(Date.now())),5)\" >/dev/null 2>&1 &",
     );
-    await sandbox.run(first, 'sleep 0.1');
+    await expect
+      .poll(() => existsSync(join(first.path, 'heartbeat')), { timeout: 5000 })
+      .toBe(true);
     await sandbox.withStableFiles(first.path, async () => {
       const before = readFileSync(join(first.path, 'heartbeat'), 'utf8');
       await new Promise((resolve) => setTimeout(resolve, 75));
       expect(readFileSync(join(first.path, 'heartbeat'), 'utf8')).toBe(before);
     });
+    const registry = new WorktreeRegistry();
+    registry.register(first.path);
+    const fs = new WorktreeFsService(registry);
+    fs.write(first.path, 'stable', 'before');
+    let entered!: () => void, release!: () => void;
+    const ready = new Promise<void>((r) => {
+      entered = r;
+    });
+    const released = new Promise<void>((r) => {
+      release = r;
+    });
+    const frozen = sandbox.withStableFiles(first.path, async () => {
+      entered();
+      await released;
+      expect(fs.read(first.path, 'stable')).toBe('before');
+      await sandbox.withStableFiles(first.path, async () => {
+        expect(() => fs.write(first.path, 'stable', 'nested')).toThrow(/frozen/);
+      });
+      throw new Error('trusted operation failed');
+    });
+    const failure = expect(frozen).rejects.toThrow('trusted operation failed');
+    await ready;
+    try {
+      expect(() => fs.write(first.path, 'stable', 'outside')).toThrow(/frozen/);
+      await expect(sandbox.write(first, 'stable', 'outside')).rejects.toThrow(/frozen/);
+      await sandbox.write(second, 'unrelated', 'allowed');
+    } finally {
+      release();
+      await failure;
+    }
+    fs.write(first.path, 'stable', 'after');
+    expect(await sandbox.read(first, 'stable')).toBe('after');
+    await sandbox.write(first, 'stable', 'resumed');
     expect((await sandbox.run(first, 'echo resumed')).stdout).toContain('resumed');
     const containers = await docker.listContainers({ all: true });
     const owned = containers.filter((item) =>
@@ -77,3 +115,28 @@ it('mounts only the executing worktree and suspends every task container', async
     rmSync(base, { recursive: true, force: true });
   }
 }, 30_000);
+
+it('binds canonical and alias Docker file access without refreshing root identity', async () => {
+  const base = mkdtempSync(join(tmpdir(), 'agora-docker-alias-')),
+    root = join(base, 'task'),
+    path = join(root, 'worktrees', 'coder'),
+    alias = join(base, 'alias');
+  mkdirSync(path, { recursive: true });
+  symlinkSync(path, alias);
+  const sandbox = new DockerSandbox({ baseDir: base });
+  const worktree = { path: alias, branch: 'coder' };
+  try {
+    await sandbox.bindWorktree('task', 'coder', worktree, root);
+    await sandbox.write(worktree, 'value', 'durable');
+    expect(await sandbox.read({ ...worktree, path: realpathSync(path) }, 'value')).toBe('durable');
+    unlinkSync(alias);
+    symlinkSync(base, alias);
+    await expect(sandbox.read(worktree, 'value')).rejects.toThrow(/retargeted/);
+    await expect(
+      sandbox.bindWorktree('task', 'coder', { ...worktree, path }, root),
+    ).rejects.toThrow(/retargeted/);
+  } finally {
+    await sandbox.suspend('task');
+    rmSync(base, { recursive: true, force: true });
+  }
+});

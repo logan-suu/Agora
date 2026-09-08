@@ -31,3 +31,19 @@ it('rejects invalid limits, reservations and settlements', () => {
   const reservation = budget.reserve(0.5);
   expect(() => budget.finish(reservation, -1)).toThrow();
 });
+
+it.each([-100, Number.NaN, Number.POSITIVE_INFINITY])(
+  'rejects unreliable cache-write usage %s',
+  (cacheWriteTokens) => {
+    const budget = new ExperimentBudget(1);
+    const reservation = budget.reserve(0.6);
+    const cost = usageCost(
+      { inputTokens: 1000, outputTokens: 100, cacheReadTokens: 0, cacheWriteTokens },
+      true,
+    );
+    expect(cost).toBeUndefined();
+    budget.finish(reservation, cost);
+    expect(budget.costUsd).toBe('unknown');
+    expect(() => budget.reserve(0.1)).toThrow(/unknown/);
+  },
+);

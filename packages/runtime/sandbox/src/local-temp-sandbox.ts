@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, realpathSync, renameSync, statSync } from 'node
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import type { RecoverableWorktreeBinding } from './recoverable-sandbox-manager';
+import { RootFileIndex } from './root-file-index';
 import type { SandboxManager } from './sandbox-manager';
 import { type RootFiles, SecureFiles } from './secure-files';
 import type { IntegrationResult, RunResult, Worktree } from './types';
@@ -25,7 +26,7 @@ const TEARDOWN_STAGING = join(tmpdir(), 'agora-sandbox-trash');
  */
 export class LocalTempSandbox implements SandboxManager {
   /** Tracks the temp dir created per taskId so teardown can locate it. */
-  private readonly files = new Map<string, RootFiles>();
+  private readonly files = new RootFileIndex<RootFiles>();
   private readonly roots = new Map<string, string>();
 
   createWorktree(taskId: string, role: string): Promise<Worktree> {

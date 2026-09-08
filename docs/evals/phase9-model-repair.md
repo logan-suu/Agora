@@ -57,7 +57,7 @@
 
 当前有界恢复版本源码/helper指纹：`914b12e65fda04745fd1f6e8d4e89571d281af1e8259bf4fec33cd06401e66ff`。完整默认回归119文件995项通过、0跳过（真实LRU264.8秒）；26项deterministic、typecheck、Biome301文件、Next生产build通过。
 
-真实格式故障注入为`phase9-format-hook-458fbcee-b9c5-4a29-8d37-7ae8fb1630a8`：直接请求真实Flash首次返回非JSON，官方纯校验拒绝后steer第二次请求返回合法JSON，仅提交最终一条消息；2请求、1次拒绝、USD0.000164168，未替换adapter或修改provider返回文本。驱动在`.data/plans/task95-format-g5.eval.ts`，官方session与结果在`.data/g5/<runId>/`。这是一项明确的故障注入正确性验证，不是自然任务成功率样本。
+真实格式故障注入为`phase9-format-hook-458fbcee-b9c5-4a29-8d37-7ae8fb1630a8`：直接请求真实Flash首次返回非JSON，官方纯校验拒绝后steer第二次请求返回合法JSON，仅提交最终一条消息；2请求、1次拒绝、USD0.000164168，未替换adapter或修改provider返回文本。历史运行驱动原位于`.data/plans/task95-format-g5.eval.ts`；PR #68修复将同一注入协议纳入版本化入口 [format-repair.eval.ts](../../tests/evals/phase9/format-repair.eval.ts)，保留已配置的`DEEPSEEK_API_KEY`后执行`pnpm eval:phase9:format-repair`即可重跑（独立付费G5、USD0.6预算，不进入默认测试）。官方session与结果在`.data/g5/<runId>/`，原始日志不随PR发布。这是一项明确的故障注入正确性验证，不是自然任务成功率样本。
 
 原组9次+两个诊断+修复后9次共20 runs、87 sessions、501463事件/91786108字节，经官方inspect完整展开并Gitleaks扫描0项，未含开发Key；包括新诊断与故障注入的最终全量审计见下文。
 
@@ -70,3 +70,7 @@
 最终审计覆盖22 runs、98个官方sessions、564853事件、103775237字节：Gitleaks 0项、未含开发Key。当前修改和新增文件亦扫描0项。原始组+修复诊断+第二次九次组+真实格式故障注入的累计计量为**USD0.853201980**，低于原USD10；三个既有真实回归的费用未单独计量，不在此值内。
 
 任务保持in_progress。未提交、推送、创建Issue或推进Phase10。
+
+## PR #68评审修复补验
+
+本轮修复、13条评论取舍及完整门禁见 [phase9-pr68-review.md](phase9-pr68-review.md)。最终指纹`51d91100857595962b83bb027b83471a4e72f3e58089b148b5ecfe504397da68`下1010项全量回归/0跳过、26项deterministic及真实Flash格式G5通过；保留中间LRU证据读取回归与一次资源竞争超时记录。本轮未重跑九次model对照。

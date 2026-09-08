@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Dockerode } from '@agora/runtime-sandbox';
 import { describe, expect, it } from 'vitest';
@@ -11,6 +11,7 @@ import { executePhase8DeterministicScenario, usesPhase8Docker } from '../phase8/
 import { executionFingerprint } from './fingerprint';
 import { ExperimentBudget, PRICING } from './metrics';
 import { MeteredFlashAdapter, MODEL_CONFIG } from './model-adapter';
+import { repairBudget } from './repair-budget';
 import { runWideFlow } from './scenario';
 import { WideFixtureAdapter } from './scripted-adapter';
 import { PHASE9_EVAL_TASKS, WIDE_TASK } from './tasks';
@@ -235,25 +236,6 @@ describe('phase9 model baseline', () => {
   }, 14_400_000);
 });
 
-async function repairBudget() {
-  const budget = new ExperimentBudget(2);
-  let spent = 0;
-  for (const entry of await readdir(evalRoot)) {
-    if (!entry.startsWith('phase9-wide-pipeline-model-')) continue;
-    const manifest = JSON.parse(await readFile(join(evalRoot, entry, 'manifest.json'), 'utf8'));
-    if (!manifest.groupId?.startsWith('phase9-repair-verification-')) continue;
-    const result = JSON.parse(
-      await readFile(join(evalRoot, entry, 'result.json'), 'utf8'),
-    ) as EvalResult;
-    if (result.lifecycle !== 'final' || typeof result.efficiency.costUsd !== 'number')
-      throw new Error('Previous repair verification is unfinished or has unknown cost');
-    spent += result.efficiency.costUsd;
-  }
-  const prior = budget.reserve(spent);
-  budget.finish(prior, spent);
-  return budget;
-}
-
 describe('phase9 model repair verification', () => {
   it('completes the public DAG with the repaired configuration before comparison', async () => {
     if (!process.env.DEEPSEEK_API_KEY) throw new Error('DEEPSEEK_API_KEY is required');
@@ -261,7 +243,7 @@ describe('phase9 model repair verification', () => {
       3,
       'model',
       1,
-      await repairBudget(),
+      await repairBudget(evalRoot),
       executionFingerprint(),
       undefined,
       `phase9-repair-verification-${randomUUID()}`,

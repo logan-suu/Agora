@@ -16,7 +16,12 @@ export function isPeak(date: Date): boolean {
 
 export function usageCost(usage: TokenUsage, peak: boolean): number | undefined {
   const rates = peak ? PRICING.peak : PRICING.offPeak;
-  const values = [usage.inputTokens, usage.cacheReadTokens, usage.outputTokens];
+  const values = [
+    usage.inputTokens,
+    usage.cacheReadTokens,
+    usage.outputTokens,
+    usage.cacheWriteTokens ?? 0,
+  ];
   if (values.some((value) => value === undefined || !Number.isFinite(value) || value < 0))
     return undefined;
   return (

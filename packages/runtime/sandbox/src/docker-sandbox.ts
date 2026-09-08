@@ -6,8 +6,9 @@ import { basename, dirname, join, relative } from 'node:path';
 import type { Container } from 'dockerode';
 import Dockerode from 'dockerode';
 import type { RecoverableWorktreeBinding } from './recoverable-sandbox-manager';
+import { RootFileIndex } from './root-file-index';
 import type { SandboxManager } from './sandbox-manager';
-import { SecureFiles } from './secure-files';
+import { SecureFiles, withFrozenFileWrites } from './secure-files';
 import type { IntegrationResult, RunResult, Worktree } from './types';
 
 /** Default per-command timeout (decision R7: 30s). */
@@ -81,7 +82,7 @@ interface BoundTask {
  * only the implementation body differs from `LocalTempSandbox`.
  */
 export class DockerSandbox implements SandboxManager {
-  private readonly files = new Map<string, SecureFiles>();
+  private readonly files = new RootFileIndex<SecureFiles>();
   private readonly docker: Dockerode;
   private readonly image: string;
   private readonly networkMode: string;
@@ -143,6 +144,8 @@ export class DockerSandbox implements SandboxManager {
     ) {
       throw new Error('two isolation keys cannot share one Docker worktree path');
     }
+    if (existing !== undefined)
+      this.filesFor({ ...worktree, path: canonicalWorktree }).verifyRoot();
     if (existing === undefined) {
       task.worktrees.set(isolationKey, { path: canonicalWorktree });
       this.files.set(worktree.path, new SecureFiles(worktree.path, 'sandbox'));
@@ -201,32 +204,34 @@ export class DockerSandbox implements SandboxManager {
   async withStableFiles<T>(path: string, operation: () => Promise<T>): Promise<T> {
     const root = realpathSync(path);
     if (this.frozenFiles.getStore()?.has(root)) return operation();
-    return this.serializeFiles(root, async () => {
-      let record: ContainerRecord | undefined;
-      for (const task of this.boundTasks.values()) {
-        const binding = [...task.worktrees.values()].find((entry) => entry.path === root);
-        if (binding === undefined) continue;
-        if (task.suspending) throw new Error('task Docker suspension is in progress');
-        record = binding.record;
-      }
-      const frozen = new Set([...(this.frozenFiles.getStore() ?? []), root]);
-      if (record === undefined) return this.frozenFiles.run(frozen, operation);
-      await record.container.pause();
-      let failure: unknown;
-      try {
-        return await this.frozenFiles.run(frozen, operation);
-      } catch (error) {
-        failure = error;
-        throw error;
-      } finally {
-        await record.container.unpause().catch((error: unknown) => {
-          throw new AggregateError(
-            failure === undefined ? [error] : [failure, error],
-            'worktree unpause failed',
-          );
-        });
-      }
-    });
+    return this.serializeFiles(root, () =>
+      withFrozenFileWrites(root, async () => {
+        let record: ContainerRecord | undefined;
+        for (const task of this.boundTasks.values()) {
+          const binding = [...task.worktrees.values()].find((entry) => entry.path === root);
+          if (binding === undefined) continue;
+          if (task.suspending) throw new Error('task Docker suspension is in progress');
+          record = binding.record;
+        }
+        const frozen = new Set([...(this.frozenFiles.getStore() ?? []), root]);
+        if (record === undefined) return this.frozenFiles.run(frozen, operation);
+        await record.container.pause();
+        let failure: unknown;
+        try {
+          return await this.frozenFiles.run(frozen, operation);
+        } catch (error) {
+          failure = error;
+          throw error;
+        } finally {
+          await record.container.unpause().catch((error: unknown) => {
+            throw new AggregateError(
+              failure === undefined ? [error] : [failure, error],
+              'worktree unpause failed',
+            );
+          });
+        }
+      }),
+    );
   }
 
   private async serializeFiles<T>(root: string, operation: () => Promise<T>): Promise<T> {

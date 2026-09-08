@@ -324,7 +324,8 @@ export class HarnessExecutor implements Executor {
     const turn = lastAssistantTurn(agent, context.sessionId, this.stepStartEventIndex);
     const parsed = turn === null ? null : parseAssistantControls(turn.text, turn.msgId);
     const text = parsed?.text ?? turn?.text ?? null;
-    this.validateTurnOutput?.({ text });
+    const isControl = parsed?.objection !== undefined || parsed?.channelAction !== undefined;
+    if (!isControl) this.validateTurnOutput?.({ text });
     const message =
       turn === null
         ? null
@@ -342,7 +343,7 @@ export class HarnessExecutor implements Executor {
         mutations.push(mergeByIdMutation('subtasks', subtask.id, { status: subtask.status }));
       }
     }
-    if (this.readTurnMutations !== undefined) {
+    if (!isControl && this.readTurnMutations !== undefined) {
       mutations.push(...(await this.readTurnMutations({ text })));
     }
     return {

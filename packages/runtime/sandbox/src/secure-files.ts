@@ -3,6 +3,25 @@ import { closeSync, constants, fstatSync, mkdirSync, openSync, realpathSync } fr
 import { isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Shared across capabilities for the same root, including the separate fs server.
+const frozenWrites = new Map<string, number>();
+
+/** Trusted read window: reject synchronous host writes until container thaw completes. */
+export async function withFrozenFileWrites<T>(
+  root: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const canonical = realpathSync(root);
+  frozenWrites.set(canonical, (frozenWrites.get(canonical) ?? 0) + 1);
+  try {
+    return await operation();
+  } finally {
+    const remaining = (frozenWrites.get(canonical) as number) - 1;
+    if (remaining === 0) frozenWrites.delete(canonical);
+    else frozenWrites.set(canonical, remaining);
+  }
+}
+
 /** L3 companion for synchronous, root-confined file operations. */
 export interface RootFiles {
   verifyRoot(): void;
@@ -41,6 +60,8 @@ export class SecureFiles implements RootFiles {
     return this.invoke('read', path).toString('utf8');
   }
   write(path: string, content: string): void {
+    if (frozenWrites.has(this.root))
+      throw new Error('cannot write while worktree files are frozen');
     this.invoke('write', path, content);
   }
   list(): string[] {

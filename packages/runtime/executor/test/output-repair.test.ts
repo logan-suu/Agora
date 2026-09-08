@@ -1,6 +1,7 @@
 // The scripted provider isolates malformed model output; the real Harness loop,
 // projection hook, tool restrictions and turn boundaries remain under test.
 import { createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
+import { LocalTempSandbox } from '@agora/runtime-sandbox';
 import { type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { describe, expect, it, vi } from 'vitest';
 import { HarnessExecutor } from '../src/harness-executor';
@@ -156,4 +157,82 @@ describe('bounded structured output repair', () => {
       await executor.dispose();
     }
   });
+});
+
+it.each([
+  [
+    'objection',
+    '<agora-objection>{"claim":"contradiction","target":{"kind":"requirement","id":"req-1"},"argument":"Conflicting requirements."}</agora-objection>',
+  ],
+  [
+    'channelAction',
+    '<agora-channel-action>{"kind":"close_sub_channel","channelId":"sub-a"}</agora-channel-action>',
+  ],
+])(
+  'returns valid %s controls without ordinary validation or the handoff reader',
+  async (key, reply) => {
+    const adapter = new Replies([reply]);
+    const validator = vi.fn(validate);
+    const reader = vi.fn(({ text }: { text: string | null }) => {
+      validate({ text });
+      return [];
+    });
+    const testReader = vi.fn(async () => undefined);
+    const executor = new HarnessExecutor(spec, {
+      adapter,
+      validateTurnOutput: validator,
+      readTurnMutations: reader,
+      readTestResults: testReader,
+    });
+    try {
+      const result = await executor.step(context);
+      expect(result.output[key]).toBeDefined();
+      expect(result.mutations).toHaveLength(1);
+      expect(result.mutations[0]).toMatchObject({
+        op: 'append',
+        field: 'messages',
+        value: {
+          payload: {
+            [key]: JSON.parse(reply.slice(reply.indexOf('>') + 1, reply.lastIndexOf('<'))),
+          },
+        },
+      });
+      expect(adapter.calls).toHaveLength(1);
+      expect(validator).not.toHaveBeenCalled();
+      expect(reader).not.toHaveBeenCalled();
+      expect(testReader).toHaveBeenCalledTimes(1);
+    } finally {
+      await executor.dispose();
+    }
+  },
+);
+
+it('preserves file-backed test evidence when TESTER also emits a valid advisory', async () => {
+  const sandbox = new LocalTempSandbox(),
+    worktree = await sandbox.createWorktree('control-test-evidence', 'TESTER');
+  const evidence = {
+    passed: false,
+    total: 52,
+    failed: 1,
+    failures: [{ file: 'probe.test.ts', message: 'capacity invariant violated' }],
+  };
+  await sandbox.write(worktree, 'test-results.json', JSON.stringify(evidence));
+  const tester = PHASE0_ROSTER.find((role) => role.role === 'TESTER');
+  if (!tester) throw Error('missing TESTER');
+  const adapter = new Replies([
+    '<agora-objection>{"claim":"concern","argument":"The implementation fails a capacity probe."}</agora-objection>',
+  ]);
+  const executor = new HarnessExecutor(tester, {
+    adapter,
+    readTestResults: async () => JSON.parse(await sandbox.read(worktree, 'test-results.json')),
+  });
+  try {
+    const result = await executor.step({ ...context, view: { role: 'TESTER', slices: {} } });
+    expect(result.output.objection).toMatchObject({ claim: 'concern' });
+    expect(result.mutations).toContainEqual({ op: 'set', field: 'testResults', value: evidence });
+    expect(adapter.calls).toHaveLength(1);
+  } finally {
+    await executor.dispose();
+    await sandbox.teardown('control-test-evidence');
+  }
 });
