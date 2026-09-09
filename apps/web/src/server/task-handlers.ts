@@ -1,5 +1,6 @@
 import { jsonError, readJsonObject, requiredString } from './http';
 import {
+  LocalStoppingError,
   TaskCompositionCapacityError,
   TaskGoalConflictError,
   type TaskOrchestrationRuntime,
@@ -19,6 +20,7 @@ export function createPostTask(runtime: TaskOrchestrationRuntime) {
       const result = await runtime.start({ projectId, taskId, requestId, goal });
       return Response.json(result, { status: result.startOutcome === 'started' ? 202 : 200 });
     } catch (error) {
+      if (error instanceof LocalStoppingError) return jsonError(error.message, 503);
       if (error instanceof TaskGoalConflictError) {
         return jsonError(error.message, 409);
       }

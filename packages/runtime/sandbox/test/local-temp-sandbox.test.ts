@@ -26,6 +26,24 @@ async function makeWorktree(taskId = 'task-1', role = 'CODER'): Promise<Worktree
 }
 
 describe('LocalTempSandbox', () => {
+  it('does not pass the credential master key into real user subprocesses', async () => {
+    const previous = process.env.AGORA_CREDENTIALS_KEY;
+    process.env.AGORA_CREDENTIALS_KEY = 'master-key-isolation-probe';
+    try {
+      const worktree = await makeWorktree('credential-environment');
+      const result = await sandbox.run(
+        worktree,
+        `node -e "process.exit(Object.hasOwn(process.env, 'AGORA_CREDENTIALS_KEY') ? 1 : 0)"`,
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).not.toContain('master-key-isolation-probe');
+      expect(result.stderr).not.toContain('master-key-isolation-probe');
+    } finally {
+      if (previous === undefined) delete process.env.AGORA_CREDENTIALS_KEY;
+      else process.env.AGORA_CREDENTIALS_KEY = previous;
+    }
+  });
+
   it('suspends without moving the worktree and re-registers it for terminal teardown', async () => {
     const sandbox = new LocalTempSandbox();
     const worktree = await sandbox.createWorktree('task-d4', 'shared');

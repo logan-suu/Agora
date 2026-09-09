@@ -269,6 +269,38 @@ async function approveCompletionGate(
 }
 
 describe('TaskOrchestrationRuntime', () => {
+  it('drains an in-flight worker without cancelling it and retains its completion gate', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-drain-worker-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    let release = () => {};
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const lifecycle = { archived: 0, disposed: 0 };
+    const runtime = new TaskOrchestrationRuntime(messages, successfulFactory(barrier, lifecycle));
+    const scope = { projectId: 'p', taskId: 'draining' };
+    await runtime.start({ ...scope, requestId: 'start', goal: 'Build TTL LRU' });
+    let stopped = false;
+    const drain = runtime.drain().then(() => {
+      stopped = true;
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(stopped).toBe(false);
+    await expect(
+      runtime.start({ ...scope, taskId: 'new', requestId: 'new', goal: 'New task' }),
+    ).rejects.toThrow('stopping');
+    release();
+    await drain;
+    expect(stopped).toBe(true);
+    expect((await messages.store.load(scope))?.humanGate?.reason).toMatch(
+      /^completion_confirmation:/,
+    );
+    expect(lifecycle.archived).toBe(0);
+    const state = await messages.store.load(scope);
+    expect(state?.messages.some((message) => message.msgId === 'coder-done')).toBe(true);
+  });
+
   it('binds Leader commands to the active WorkerRuntime pause barrier and reprojects in place', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
     roots.push(root);
@@ -852,6 +884,53 @@ describe('TaskOrchestrationRuntime', () => {
     });
     expect(lifecycle).toEqual({ archived: 1, disposed: 1 });
   });
+
+  it.each(['archive', 'dispose'])(
+    'retries pending %s during drain without discarding recovery',
+    async (stage) => {
+      const root = await mkdtemp(join(tmpdir(), 'agora-drain-finalization-'));
+      roots.push(root);
+      const messages = createMessageRuntime(root, new ChannelStream());
+      const lifecycle = { archived: 0, disposed: 0 };
+      const scope = { projectId: 'p', taskId: `drain-${stage}` };
+      let failing = true;
+      let suspended = 0;
+      const factory = successfulFactory(Promise.resolve(), lifecycle, true);
+      const runtime = new TaskOrchestrationRuntime(messages, async (input) => {
+        const composition = await factory(input);
+        return {
+          ...composition,
+          archiveArtifact: async () => {
+            if (failing && stage === 'archive') throw new Error('injected archive failure');
+            return composition.archiveArtifact();
+          },
+          dispose: async () => {
+            if (failing && stage === 'dispose') throw new Error('injected disposal failure');
+            await composition.dispose();
+          },
+          suspend: async () => {
+            suspended++;
+          },
+        };
+      });
+      await runtime.start({ ...scope, requestId: 'first', goal: 'Drain proof' });
+      await runtime.waitForIdle(scope);
+      await expect(runtime.drain()).rejects.toThrow('could not safely stop');
+      expect(suspended).toBe(0);
+      expect(lifecycle).toEqual({ archived: stage === 'archive' ? 0 : 1, disposed: 0 });
+      expect((await runtime.summary(scope))?.runStatus).toBe('needs_attention');
+      failing = false;
+      await runtime.drain();
+      expect(lifecycle).toEqual({ archived: 1, disposed: 1 });
+      expect(suspended).toBe(0);
+      await expect(runtime.summary(scope)).resolves.toMatchObject({
+        runStatus: 'failed',
+        artifactPath: `/durable/p/drain-${stage}/artifacts/worktree`,
+      });
+      await runtime.drain();
+      expect(lifecycle).toEqual({ archived: 1, disposed: 1 });
+    },
+  );
 
   it('keeps source resources alive when artifact archival needs attention', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));

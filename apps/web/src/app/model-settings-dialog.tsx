@@ -292,8 +292,8 @@ export function ModelSettingsDialog({
             ) : null}
             {!settings.credentialsAvailable ? (
               <p className="model-hint">
-                To save API keys, the server needs AGORA_CREDENTIALS_KEY. No-auth connections remain
-                available.
+                {settings.credentialMessage ?? 'Restart Agora to restore Keychain access.'} No-auth
+                connections remain available.
               </p>
             ) : null}
             <details className="model-advanced">

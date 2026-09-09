@@ -137,7 +137,9 @@ function identityHash(value: string): string {
 /** Run a command in a directory with spawn, capturing output and enforcing timeout. */
 function runInDir(cwd: string, cmd: string, timeoutMs: number): Promise<RunResult> {
   return new Promise<RunResult>((resolvePromise, reject) => {
-    const child = spawn(cmd, { cwd, shell: true });
+    const env = { ...process.env };
+    delete env.AGORA_CREDENTIALS_KEY;
+    const child = spawn(cmd, { cwd, shell: true, env });
     let stdout = '';
     let stderr = '';
     let timedOut = false;

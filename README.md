@@ -2,14 +2,14 @@
 
 ### A human-led, group-chat workspace where AI agents plan, code, test, and review together.
 
-**Current scope: local use.** Run Agora on your own computer and open its local address in your browser. The backend, Docker sandboxes, and Git worktrees run on that machine, and application data is stored locally. Cloud hosting is outside the current product scope. Model requests go to your chosen online API or local model service; local operation does not mean offline operation. Task 10.4 will improve local installation, startup, and configuration.
+**Current scope: local use.** Run Agora on your own computer and open its local address in your browser. The backend, Docker sandboxes, and Git worktrees run on that machine, and application data is stored locally. Cloud hosting is outside the current product scope. Model requests go to your chosen online API or local model service; local operation does not mean offline operation. The product installation and startup commands currently support macOS. The Linux product launcher and automatic credential setup are outside that task’s current scope; existing Linux sandbox support is separate.
 
-**Credential setup: current implementation and planned experience.** The current 10.3 implementation reads its encryption master key from the backend environment variable `AGORA_CREDENTIALS_KEY`. Task 10.4 will create and securely store this key automatically on first startup (macOS Keychain), then reuse it on subsequent starts. Users will only enter their model service Base URL, API key, and model name; the environment variable will remain an advanced option. Automatic key management is not implemented yet. The temporary launcher configured on the developer’s Mac is not a shipped installation feature.
+**Credential setup on macOS.** The local launcher creates a random encryption key in your macOS Keychain on first use and reuses it after restart. In the model settings dialog, enter your service's Base URL, API key, and model name, either for one Agent or the whole team. Keychain access may require macOS authorization. Existing encrypted connections remain unavailable when the original key cannot be accessed; the application shows recovery instructions and never silently replaces it.
 
 **Agora** takes its name from the ancient Greek *agorá*: the public gathering place where people met to exchange ideas and make decisions. This project brings that idea to software development—specialized AI agents work in a shared, visible space, while the human Leader remains present and makes the final call.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![MCP](https://img.shields.io/badge/MCP-Tool_Protocol-6C47FF)](https://modelcontextprotocol.io/)
 [![Status](https://img.shields.io/badge/Status-Phase_5_%E2%80%A2_MVP_Exit_Review-orange)](https://github.com/logan-suu/Agora)
@@ -50,9 +50,9 @@ Agora's central design rules are:
 - **Unified Harness agents:** every role uses Agora’s own agent implementation built on DeepSeek Harness. Harness supplies the agent loop, session persistence, and compaction; Agora implements role projections and collaboration control. External coding-agent executors are outside the product scope.
 - **Real execution evidence:** coding tasks run through sandbox, MCP, Git, test, persistence, and recovery paths rather than UI-only simulations.
 
-## What Works Today
+## Recorded Phase 5 Baseline
 
-Phase 5 provides a complete, sequential MVP loop:
+The historical Phase 5 recording demonstrates a complete, sequential MVP loop:
 
 - browser-based task creation and explicit start;
 - adaptive Tier 0/1/2 routing through a four-node orchestration loop;
@@ -68,7 +68,7 @@ Phase 5 provides a complete, sequential MVP loop:
 - validated, idempotent leading `@ROLE` assignment through the normal message endpoint;
 - responsive desktop and mobile group-chat UI.
 
-Phase 5 intentionally runs in a **trusted, single-user, single-instance, self-hosted** boundary. It supports one fixed `main` channel and at most one active run across the backend instance. Authentication, dynamic channel membership, active-run restart, horizontal scaling, and true parallel workers are not claimed yet.
+That Phase 5 baseline used a **trusted, single-user, single-instance, self-hosted** boundary. It supported one fixed `main` channel and at most one active run across the backend instance. Those historical results do not establish later channel, gate or parallel-worker features. Current installation and workflow instructions appear below; public authentication and horizontal scaling remain outside the product scope.
 
 ## Agora vs. AutoGen and AgentScope
 
@@ -112,65 +112,86 @@ flowchart LR
     Store --> Artifacts[Archived Task Artifacts]
 ```
 
-The Phase 5 runtime is deliberately sequential even though the domain model can describe more than one worker. True concurrent workers, cooperative preemption at Harness step boundaries, and integration checkpoints belong to Phase 9.
+The recorded Phase 5 runtime was sequential. Phase 9 subsequently added concurrent workers, cooperative preemption at Harness step boundaries, and integration checkpoints; current state and evidence are tracked in `docs/task-status.json`.
 
-## Quick Start
+## Quick Start (macOS)
 
 ### Prerequisites
 
-- Node.js 20 or newer
-- Corepack with pnpm 9.15.9
-- a running Docker daemon (Docker Desktop is sufficient)
-- a DeepSeek API key
-- Git
+- macOS with Node.js **24** and **pnpm 9.15.9** (the version pinned in `package.json`)
+- Git and Xcode Command Line Tools (`clang`)
+- Docker Desktop with its daemon running
+- an OpenAI-compatible model service, or a local compatible service
 
-### Install and run
+The new product launcher currently reports unsupported platforms on Linux. The existing POSIX sandbox's Linux support is separate; Linux product setup is deferred as DEF-017.
+
+### Install, check, and start
 
 ```bash
 git clone https://github.com/logan-suu/Agora.git
 cd Agora
-
-corepack enable
-pnpm install
-
-export DEEPSEEK_API_KEY="your-key-here"
-pnpm --filter @agora/web dev
+pnpm install --frozen-lockfile
+pnpm run setup
+pnpm run doctor
+pnpm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000), then:
+Use **`pnpm run setup`** explicitly: `pnpm setup` is pnpm's own shell-configuration command. Agora's setup checks dependencies, builds the trusted sandbox and Keychain helpers, and creates the Next.js production build. It does not install system dependencies or launch Docker Desktop for you. Run setup again after updating the source.
 
-1. enter a stable **Task ID** such as `ttl-lru-demo`;
-2. enter a concrete **Goal**;
-3. select **Start task**;
-4. while the task is still running, send a message beginning with one valid mention, such as `@TESTER re-check the acceptance criteria`, to exercise the current Phase 5 Leader-intent path;
-5. follow the active role, messages, test result, review result, and artifact path;
-6. refresh after completion to verify persisted recovery.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). If that port is occupied, use `pnpm start --port 3100` and open the address printed by the launcher. The server binds only to the loopback interface and rejects cross-site writes. Duplicate launchers for the same data directory are rejected.
 
-The web UI currently uses the fixed project ID `agora` and fixed channel ID `main`. Only one task may be actively running at a time. Starting another active task returns a visible conflict instead of silently creating unsupported parallel work. Assignments sent after a task reaches `done` are deliberately rejected by the Phase 5 Leader-intent contract.
+1. Choose **Set model for all Agents**, or an Agent's **Model** button.
+2. Enter the Base URL and model name. Enter an API key, or explicitly choose no authentication for a local service.
+3. Save. Saving does not call the model; **Test connection** sends a short model request.
+4. Enter a task ID and goal, then start the task.
+5. Follow the team in the main/sub channels and Trace. Complete any required Leader gate; Reviewer approval produces a completion candidate, followed by your final approval.
 
-### Configuration
+Settings changes apply to new tasks. Existing tasks and paused sessions retain their original model bindings. Multiple tasks share the existing global worker limit; this does not change the single-user, single-backend-instance boundary.
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `DEEPSEEK_API_KEY` | Yes for live agent runs | Read by the Harness executor for model requests |
-| `AGORA_DATA_ROOT` | No | Overrides the default repository-local `.data` persistence root |
+### Stop and restart
 
-Never commit API keys or `.env` files. Agora currently assumes a trusted local deployment and should not be exposed directly to untrusted users.
+Press **Ctrl+C** in the launch terminal, or run **`pnpm stop`** from another terminal in this checkout. If you use a custom `AGORA_DATA_ROOT`, supply the same value when stopping.
+
+Stopping closes admission to new work and waits for active model requests and tasks to finish or reach an existing human gate. It can take time; watch the terminal's draining message. No timeout forcibly kills an in-flight model. If resource cleanup fails, keep the process open and retry stop. Data, paused worktrees, sessions, artifacts, and the Keychain item are retained. `pnpm start` reopens the same data and credentials.
+
+An unexpected process exit retains the existing recovery rules: a durable human gate can resume through its persisted receipt; other unfinished work is shown as interrupted, with no promise of automatic continuation. After a crash, a stale local control socket may remain. The startup error prints its exact path. Verify that the old Agora process has exited before removing that socket; do not remove it while an instance is active.
+
+### Configuration and recovery
+
+| Setting | Purpose |
+| --- | --- |
+| Model settings dialog | Per-Agent or team-wide Base URL, API key, model name and optional token limits |
+| `AGORA_DATA_ROOT` | Optional data directory; defaults to this checkout's `.data` |
+| `AGORA_MODEL` | Optional legacy default model, used when no saved connection is selected |
+| `DEEPSEEK_API_KEY` | Optional legacy default-provider credential; required by the repository's live DeepSeek tests |
+| `AGORA_CREDENTIALS_KEY` | Advanced compatibility override: a canonical base64-encoded 32-byte key, used only for that process |
+
+Normal startup requires no master-key environment variable or `.env` editing. The macOS Keychain identity is service `com.agora.local.credentials`, account equal to the current macOS username, preserving the prior local setup. An explicitly supplied override takes precedence; an empty/invalid override fails instead of falling back. Overrides do not automatically replace Keychain items or re-encrypt history.
+
+For an existing advanced environment setup, **`pnpm credentials:adopt`** explicitly imports that same key into Keychain after checking all saved encrypted connections. It only creates a missing item or reuses an identical item; a conflicting Keychain key is rejected. Remove the override from your launching environment afterward. This operation never prints the key.
+
+If the Keychain is locked, unlock it and restart. If access is denied, allow the trusted Agora helper in macOS and restart. Missing or mismatched historical keys require restoring the **original** key, not generating a replacement. Damaged configuration requires a valid backup. Other paths, including no-auth model connections, remain available when encrypted credentials are unavailable.
+
+Back up both `.data` and the original macOS Keychain using protected backup facilities. Copying `.data` alone preserves API-key ciphertext but does not include its decryption key. Stopping or updating Agora does not delete either. Keep both backups private; never commit API keys or environment files.
 
 ### Verify the repository
 
 ```bash
+pnpm build:sandbox-native
+pnpm build:keychain-native
 pnpm typecheck
 pnpm lint
 pnpm test
 pnpm --filter @agora/web build
 ```
 
+The macOS suite includes a disposable, password-protected Keychain and preserves the user's login Keychain. Docker and configured live model tests must run; missing permissions/dependencies are reported as incomplete verification, not skipped passes. Explicit task 10.4 launcher and live-model G5 commands and results are recorded in [the local startup evidence](docs/evals/phase10-local-startup-evidence.md).
+
 ## Tech Stack
 
 | Layer | Technology |
 | --- | --- |
-| Language/runtime | TypeScript 5.9+, Node.js 20 |
+| Language/runtime | TypeScript 5.9+, Node.js 24 |
 | Web UI | Next.js 15, React 19 |
 | Single-agent kernel | DeepSeek Harness/Cordis ecosystem |
 | Coordination | Self-developed lightweight four-node orchestrator |
@@ -215,14 +236,14 @@ Agora/
 | 2 | Six-role coding, testing, review, and feedback loops | ✅ Complete |
 | 3 | Role projection, structured handoffs, and decision ledger | ✅ Complete |
 | 4 | Adaptive Tier 0/1/2 orchestration | ✅ Complete |
-| 5 | Recoverable group-chat MVP and real browser-triggered loop | 🚧 Exit review |
-| 6 | Dynamic channels, participants, threads, and server-side authorization | Planned |
-| 7 | Role recruitment, hot-swapping, and mandatory handoff | Planned |
-| 8 | HumanGate, blocking/advisory objections, and arbitration UI | Planned |
-| 9 | True parallel workers and cooperative preemption | Planned |
-| 10 | Unified Harness agents, local setup and startup, hardening, final benchmark, and portfolio demo | Planned |
+| 5 | Recoverable group-chat MVP and real browser-triggered loop | ✅ Complete |
+| 6 | Dynamic channels, participants, threads, and server-side authorization | ✅ Complete |
+| 7 | Role recruitment, hot-swapping, and mandatory handoff | ✅ Complete |
+| 8 | HumanGate, blocking/advisory objections, and arbitration UI | ✅ Complete |
+| 9 | True parallel workers and cooperative preemption | ✅ Complete |
+| 10 | Unified Harness agents, macOS setup and startup, hardening, final benchmark, and portfolio demo | In progress |
 
-The detailed task graph and current evidence live in [`docs/task-status.json`](docs/task-status.json). The final README and portfolio recording remain a separate Phase 10 deliverable; this document describes the Phase 5 MVP truthfully.
+The detailed task graph and current evidence live in [`docs/task-status.json`](docs/task-status.json). The final README and portfolio recording remain a separate Phase 10 deliverable; the Phase 5 recording above remains historical evidence, while Quick Start describes the current macOS launcher.
 
 ## Design Documents
 
