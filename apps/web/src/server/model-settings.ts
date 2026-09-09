@@ -7,6 +7,7 @@ import {
   type TaskScope,
 } from '@agora/runtime-state';
 import type { ModelSettingsCommand, ModelSettingsView } from '../lib/model-settings';
+import { localCredentialMessage, localCredentials } from './local-startup';
 import type { MessageRuntime } from './message-runtime';
 
 export class ModelSettingsError extends Error {
@@ -21,11 +22,20 @@ export class ModelSettingsError extends Error {
 /** Project defaults are mutable; a task's first model binding is immutable. */
 export class ModelSettingsService {
   readonly store: JsonModelConfigStore;
+  private readonly credentials: ReturnType<typeof localCredentials>;
   constructor(
     private readonly messages: MessageRuntime,
     store?: JsonModelConfigStore,
   ) {
-    this.store = store ?? new JsonModelConfigStore(messages.root);
+    this.credentials = store ? undefined : localCredentials(messages.root);
+    this.store =
+      store ??
+      new JsonModelConfigStore(
+        messages.root,
+        this.credentials
+          ? () => this.credentials?.value?.key()
+          : () => process.env.AGORA_CREDENTIALS_KEY,
+      );
   }
   private async snapshot(projectId: string) {
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(projectId))
@@ -36,6 +46,7 @@ export class ModelSettingsService {
     return value;
   }
   async get(projectId: string): Promise<ModelSettingsView> {
+    await this.credentials?.ready;
     const snapshot = await this.snapshot(projectId);
     const roles = await Promise.all(
       snapshot.roster.map(async ({ spec, status }) => {
@@ -61,10 +72,18 @@ export class ModelSettingsService {
     return {
       revision: snapshot.revision,
       credentialsAvailable: this.store.credentialsAvailable,
+      ...(!this.store.credentialsAvailable
+        ? {
+            credentialMessage:
+              localCredentialMessage(this.messages.root) ??
+              'Start Agora with pnpm start after pnpm run setup to enable Keychain storage.',
+          }
+        : {}),
       roles,
     };
   }
   async execute(command: ModelSettingsCommand): Promise<ModelSettingsView | { ok: true }> {
+    await this.credentials?.ready;
     const snapshot = await this.snapshot(command.projectId);
     if (snapshot.revision !== command.expectedRevision)
       throw new ModelSettingsError('Team settings changed. Reload before saving again.', 409);
@@ -189,12 +208,14 @@ export class ModelSettingsService {
       throw new ModelSettingsError('Enter an API key or explicitly choose no authentication.');
     if (!this.store.credentialsAvailable)
       throw new ModelSettingsError(
-        'Configure AGORA_CREDENTIALS_KEY on the server to store API keys.',
+        localCredentialMessage(this.messages.root) ??
+          'Start Agora with pnpm start to enable Keychain storage.',
         503,
       );
     return { model, connection, key: command.apiKey };
   }
   async freeze(scope: TaskScope, goal: string, legacy = false): Promise<TaskModelBinding> {
+    await this.credentials?.ready;
     const existing = await this.store.loadTask(scope);
     if (existing) {
       if (existing.goal !== goal) throw new Error('task model goal conflict');
@@ -221,6 +242,7 @@ export class ModelSettingsService {
   ): Promise<
     Map<string, { model: string; compatible?: NonNullable<HarnessExecutorOptions['compatible']> }>
   > {
+    await this.credentials?.ready;
     return new Map(
       await Promise.all(
         binding.roles.map(async (role) => {

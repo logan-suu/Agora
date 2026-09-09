@@ -269,6 +269,38 @@ async function approveCompletionGate(
 }
 
 describe('TaskOrchestrationRuntime', () => {
+  it('drains an in-flight worker without cancelling it and retains its completion gate', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-drain-worker-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    let release = () => {};
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const lifecycle = { archived: 0, disposed: 0 };
+    const runtime = new TaskOrchestrationRuntime(messages, successfulFactory(barrier, lifecycle));
+    const scope = { projectId: 'p', taskId: 'draining' };
+    await runtime.start({ ...scope, requestId: 'start', goal: 'Build TTL LRU' });
+    let stopped = false;
+    const drain = runtime.drain().then(() => {
+      stopped = true;
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(stopped).toBe(false);
+    await expect(
+      runtime.start({ ...scope, taskId: 'new', requestId: 'new', goal: 'New task' }),
+    ).rejects.toThrow('stopping');
+    release();
+    await drain;
+    expect(stopped).toBe(true);
+    expect((await messages.store.load(scope))?.humanGate?.reason).toMatch(
+      /^completion_confirmation:/,
+    );
+    expect(lifecycle.archived).toBe(0);
+    const state = await messages.store.load(scope);
+    expect(state?.messages.some((message) => message.msgId === 'coder-done')).toBe(true);
+  });
+
   it('binds Leader commands to the active WorkerRuntime pause barrier and reprojects in place', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-web-orchestration-test-'));
     roots.push(root);

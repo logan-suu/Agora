@@ -2,7 +2,7 @@
   "version": "1.0",
   "project": "Agora",
   "description": "Deferred review items tracked across all phases. Each entry maps to a source review comment that was deemed reasonable but deferred to a later phase. Check this file at each phase integration gate to identify items that may have been resolved as a side effect of other work.",
-  "last_updated": "2026-09-08T18:38:10.584Z",
+  "last_updated": "2026-09-09T17:20:42.347Z",
   "items": [
     {
       "id": "DEF-001",
@@ -289,6 +289,23 @@
       "resolved_by": null,
       "created_at": "2026-09-02T22:24:34.000Z",
       "notes": "Resolution condition: define a versioned generic routing contract covering candidate priority/tie-breaking, accepted routeWhen predicates or another deterministic selector, per-role output/mutation schema, authorization, failure fallback, iteration accounting, and humanGate escalation; then add deterministic and real-chain tests showing a custom role enters and exits the topology without hard-coded role branches. Reassess in Phase 10 against the default six-role product flow and unified Harness worker contract. [2026-09-08 D2 sync] External agent integration is canceled; this routing deferral remains open and is not resolved by that cancellation."
+    },
+    {
+      "id": "DEF-017",
+      "source": "Leader platform scope decision (2026-09-09), project blueprint §21 D8",
+      "pr": null,
+      "pr_url": null,
+      "comment_id": null,
+      "comment_url": null,
+      "task": "10.4",
+      "severity": "minor",
+      "item": "Linux product launcher and automatic system credential management",
+      "detail": "Leader明确“先仅适配macOS”。10.4本轮安装、启动、停止、配置、自动主密钥管理与产品验收仅覆盖macOS；Linux启动器及系统安全存储适配移出本轮范围，不引入libsecret/pkg-config/D-Bus依赖，不宣称Linux产品自动密钥管理可用。已有底层POSIX沙箱的Linux支持及历史测试保留。",
+      "target_phase": null,
+      "status": "open",
+      "resolved_by": null,
+      "created_at": "2026-09-09T17:20:42.347Z",
+      "notes": "不阻塞10.4或本轮Phase10出口。后续仅在Leader明确重启Linux产品适配时确定目标阶段、依赖、Secret Service与历史密钥兼容规则，并安排Linux宿主安装/启动/重启解密/真实执行及异常验收；没有计划日期，不以macOS结果或底层Linux沙箱测试关闭此项。"
     }
   ]
 }

@@ -11,6 +11,7 @@ export interface AgentModelView {
 export interface ModelSettingsView {
   revision: number;
   credentialsAvailable: boolean;
+  credentialMessage?: string;
   roles: AgentModelView[];
 }
 export interface ModelSettingsCommand {

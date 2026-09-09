@@ -19,6 +19,7 @@ import {
 } from '@agora/core-orchestration';
 import type { PauseReceipt, PauseRequest } from '@agora/core-preemption';
 import type { TaskScope } from '@agora/runtime-state';
+import { localBootstrap } from './local-startup';
 import type { MessageRuntime } from './message-runtime';
 import { safeRunError } from './run-error';
 
@@ -125,11 +126,18 @@ export class TaskCompositionCapacityError extends Error {
   }
 }
 
+export class LocalStoppingError extends Error {
+  constructor() {
+    super('Agora is stopping. Wait for shutdown, then restart to begin new work.');
+  }
+}
+
 /** Single-instance task lifecycle registry; D17 concurrency is owned by the shared scheduler. */
 export class TaskOrchestrationRuntime {
   readonly #runs = new Map<string, ActiveRun>();
   readonly #maxActiveCompositions: number;
   #lifecycleQueue: Promise<void> = Promise.resolve();
+  #draining = false;
 
   constructor(
     readonly messages: MessageRuntime,
@@ -141,6 +149,7 @@ export class TaskOrchestrationRuntime {
       throw new Error('maxActiveCompositions must be a positive integer');
     }
     this.#maxActiveCompositions = maxActiveCompositions;
+    localBootstrap()?.drains.add(() => this.drain());
     messages.bindRoleDrainPort({
       awaitSafePoint: (scope, role) => this.#awaitRoleSafePoint(scope, role),
     });
@@ -157,6 +166,7 @@ export class TaskOrchestrationRuntime {
 
   async start(input: TaskStartInput): Promise<TaskStartResult> {
     return this.#enqueueLifecycle(async () => {
+      this.#assertAcceptingWork();
       const existingRun = this.#runs.get(scopeKey(input));
       if (existingRun !== undefined) {
         if (existingRun.goal !== input.goal) {
@@ -293,6 +303,31 @@ export class TaskOrchestrationRuntime {
     await this.#runs.get(scopeKey(scope))?.promise;
   }
 
+  async drain(): Promise<void> {
+    this.#draining = true;
+    await this.#lifecycleQueue;
+    const results = await Promise.allSettled([...this.#runs.values()].map((run) => run.promise));
+    const errors = results.flatMap((result) =>
+      result.status === 'rejected' ? [result.reason] : [],
+    );
+    for (const run of this.#runs.values()) {
+      if (run.composition) {
+        try {
+          await run.composition.suspend();
+          run.composition = undefined;
+        } catch (error) {
+          errors.push(error);
+        }
+      }
+    }
+    if (errors.length)
+      throw new AggregateError(errors, 'Agora could not safely stop all resources. Retry stop.');
+  }
+
+  #assertAcceptingWork() {
+    if (this.#draining || localBootstrap()?.draining) throw new LocalStoppingError();
+  }
+
   async disposeAll(): Promise<void> {
     const runs = [...this.#runs.values()];
     await Promise.all(runs.map((run) => run.promise));
@@ -372,6 +407,7 @@ export class TaskOrchestrationRuntime {
     receipt: HumanGateResolutionReceipt,
   ): Promise<void> {
     await this.#enqueueLifecycle(async () => {
+      this.#assertAcceptingWork();
       let state = await this.messages.store.load(scope);
       if (state === undefined) throw new Error('cannot resume a missing task state');
       let existing = this.#runs.get(scopeKey(scope));
