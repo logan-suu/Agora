@@ -51,7 +51,7 @@ import {
   initializeRegisteredWorktree,
   WorktreeGitService,
 } from '@agora/tools-git';
-
+import type { ModelSettingsService } from './model-settings';
 import type { ArchivedArtifact, TaskCompositionFactory } from './task-orchestration-runtime';
 import {
   assertCoderWorktreeReady,
@@ -89,6 +89,7 @@ export interface WebTaskCompositionOptions {
   dataRoot?: string;
   executorOptions?: Pick<HarnessExecutorOptions, 'adapter' | 'provider' | 'deepseek' | 'approval'>;
   scheduler?: GlobalScheduler;
+  modelSettings?: ModelSettingsService;
 }
 
 /** Production D10 composition: Docker + MCP tools + Harness + six-role roster. */
@@ -108,6 +109,11 @@ export function createWebTaskCompositionFactory(
     resume,
   }) => {
     const dataRoot = resolve(options.dataRoot ?? join(process.cwd(), '.data'));
+    const modelBinding = await options.modelSettings?.freeze(scope, goal, resume !== undefined);
+    const modelRoutes =
+      modelBinding === undefined
+        ? undefined
+        : await options.modelSettings?.executorRoutes(modelBinding);
     const taskRoot = join(dataRoot, 'projects', scope.projectId, 'tasks', scope.taskId);
     await mkdir(taskRoot, { recursive: true });
     const registry = new WorktreeRegistry();
@@ -282,9 +288,19 @@ export function createWebTaskCompositionFactory(
         ...spec,
         ...(handoff === '' ? {} : { systemPrompt: spec.systemPrompt + handoff }),
       };
+      const route =
+        modelRoutes?.get(spec.role) ??
+        (modelBinding?.defaultModel ? { model: modelBinding.defaultModel } : undefined);
+      if (modelRoutes && !route) throw new Error('task deployment model binding is unavailable');
+      if (route) executorSpec.model = route.model;
       const turnMutations = SIX_ROLE_TURN_MUTATION_READERS[spec.role];
       const executor = new HarnessExecutor(executorSpec, {
-        ...executorOptions,
+        ...(route?.compatible
+          ? {
+              compatible: route.compatible,
+              ...(executorOptions.approval ? { approval: executorOptions.approval } : {}),
+            }
+          : executorOptions),
         tools: catalog.all(),
         allowTools: resolved.allowNames,
         sessionPersistence: {

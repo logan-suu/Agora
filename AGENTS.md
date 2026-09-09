@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.9
-**生效日期**：2026-09-08
+**版本**：v2.11
+**生效日期**：2026-09-09
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
@@ -137,7 +137,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 前端          Next.js 15 + React 19（Phase 5 起）
 实时通信      SSE（收）+ HTTP POST（发），禁用 WebSocket
 持久化        文件系统 JSON/JSONL（.data/）为默认；Phase 5 TaskStateStore 原子快照；Phase 7 D12 roster+Channel 原子 collaboration 快照；Phase 8 Harness 官方 JSONL session persistence + Agent factory seed/lineage 分叉；SQLite 仅复杂查询时可选
-部署          Phase 5–9 为单实例自托管后端；Vercel 仅前端；完整 Serverless/水平扩展须外部耐久 TaskStateStore + ProjectCollaborationStore（含 ProjectChannelStore 视图）+ 跨实例事件传输（D8/D12）
+本地运行      当前全栈仅在用户电脑运行：浏览器访问本机单实例后端，Harness/MCP/Git/Docker 与 .data 均在本机；不部署云端，不提供 Vercel/Serverless/水平扩展。可调用在线或本地模型 API；10.4 负责本地安装/启动/配置及系统安全存储中的自动主密钥管理，普通用户无需配置主密钥环境变量，具体契约见 D8（D8/D12，2026-09-09）
 文件入口构建  受信 POSIX C helper（macOS clang / Linux cc），首次测试/构建前 pnpm build:sandbox-native；跨目录部署的受信绝对路径配置见选型 §12
 测试          Vitest 3.x
 工程评测      渐进式 Agora Eval（Outcome/Process/Efficiency/Safety）；Phase 10 外部适配成熟 Coding Agent Benchmark
@@ -307,7 +307,7 @@ Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复�
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
 沙箱        超时 30s；文件限目录内；agent 产出的代码只在沙箱内执行（G7）
 工作区/集成 D17：createWorktree 六个公开签名不变，第二参数是逻辑 workerId isolation key，复合 workspace adapter 内部做确定性 Git-safe 编码；task-owned canonical repo 位于任务 .data，真实 linked worktree 与 Docker 只用同一规范路径，恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止双工作区、用户 checkout 写入或自动 push。State 只存结构化 WorktreeRef/Integration 引用，不存 pendingPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只可补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收中途失败必须补偿 worktree metadata 与临时 branch；冲突必须确认 abort 成功且无 MERGE_HEAD 后才打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 分支明细只投当前 Integration 波次，9.4 最终审阅另给累计验证产物与全计划任务索引；无 Integration 的顺序兼容仅允许候选收敛到同一 WorktreeRef，并发归档不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失或损坏 fail-closed。Phase 9 仅接受 request_rework <workerId> 并从原 base 重建。9.5 正式文件入口使用固定根身份的受信 POSIX helper；Docker 每 worktree 单挂载，宿主 Git/归档期间冻结该容器全部后台进程，容器停止成功后才回收 Git 工作树。DEF-004/010/013 状态只查延期台账
-实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 限定 Phase 5–9 后端为单实例自托管，Vercel 仅前端
+实时通信    SSE 收 + HTTP POST 发，不引入 WebSocket（FE）；D6 要求先提交/持久化 State 再投递展示信封，建连无缝覆盖快照+实时尾流，逻辑重试复用 msgId；D8 当前限定全栈本机单用户/单实例运行，不提供云端前后端；在线模型 API 调用不改变本地运行边界
 意图映射    D9：Leader 发言/指令统一走 POST /api/messages，服务端从 display 解析；浏览器 msgId 统一满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在副作用前校验；Phase 5 只执行经校验的开头单一 @ROLE→nextRole，
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
             Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga 与 /role onboard 单 Task State 接手；Phase 8 解锁绑定 gateId 的 /resolve-gate，并以 resolution receipt 支撑清 gate 后恢复；Phase 9 解锁 main-only `/requirement <id> <JSON>` 完整 upsert 未撤回 Requirement、`/decision <topic> <JSON>` append 显式 current-only supersedes 的 Leader Decision、`/priority <subtaskId> <0-100>` 更新未完成 Subtask；三者先预校验单主消息+控制 mutations，再经 task-scoped cohort 安全点屏障与 canonical commit 原子落盘，随后投递并 reproject，空 cohort 可立即提交；同 actionId 重放交叉验证消息和 State 效果，所有角色只消费结构化 leaderDirective、不读 display/raw log；blocking 则按 D4 suspend/Fork，

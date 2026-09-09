@@ -5,6 +5,7 @@ export * from './coordination-ledger';
 export * from './handoff';
 export * from './leader-directive';
 export * from './ledger';
+export * from './model-settings';
 export * from './objection';
 export * from './objection-resolution';
 export * from './onboarding';

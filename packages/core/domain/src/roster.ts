@@ -76,6 +76,7 @@ export function normalizeRoleSpec(spec: RoleSpec): RoleSpec {
     routeWhen: spec.routeWhen,
     ...(spec.externalCmd === undefined ? {} : { externalCmd: spec.externalCmd }),
     ...(spec.model === undefined ? {} : { model: spec.model }),
+    ...(spec.modelConnectionId === undefined ? {} : { modelConnectionId: spec.modelConnectionId }),
   };
 }
 
@@ -319,6 +320,7 @@ function assertRoleSpec(spec: RoleSpec): void {
       'routeWhen',
       'externalCmd',
       'model',
+      'modelConnectionId',
     ],
     'role spec',
   );
@@ -344,6 +346,16 @@ function assertRoleSpec(spec: RoleSpec): void {
   }
   if (spec.model !== undefined && typeof spec.model !== 'string') {
     throw new Error('role model must be a string');
+  }
+  if (
+    spec.modelConnectionId !== undefined &&
+    (typeof spec.modelConnectionId !== 'string' ||
+      !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(spec.modelConnectionId) ||
+      typeof spec.model !== 'string' ||
+      !spec.model.trim() ||
+      spec.model.length > 256)
+  ) {
+    throw new Error('invalid model connection reference');
   }
 }
 

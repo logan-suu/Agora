@@ -10,7 +10,6 @@ import {
   useState,
   useTransition,
 } from 'react';
-
 import {
   applyMention,
   type ChannelView,
@@ -33,6 +32,7 @@ import {
   type TraceSnapshotView,
   type WorkspaceViewModel,
 } from './chat-model';
+import { ModelSettingsDialog } from './model-settings-dialog';
 import { traceLanes } from './trace-lanes';
 
 interface ChatWorkspaceProps {
@@ -113,7 +113,13 @@ function RoleAvatar({ role, status }: { role: string; status?: PresenceStatus | 
   );
 }
 
-function TeamRow({ member }: { member: TeamMemberView }) {
+function TeamRow({
+  member,
+  onConfigure,
+}: {
+  member: TeamMemberView;
+  onConfigure: (role: string) => void;
+}) {
   return (
     <li className="team-row">
       <RoleAvatar role={member.role} status={member.status} />
@@ -121,6 +127,16 @@ function TeamRow({ member }: { member: TeamMemberView }) {
         <strong>{member.name}</strong>
         <small>{member.status}</small>
       </span>
+      {member.role.toUpperCase() !== 'LEADER' ? (
+        <button
+          type="button"
+          className="team-model-button"
+          aria-label={`Configure ${member.role} model`}
+          onClick={() => onConfigure(member.role)}
+        >
+          Model
+        </button>
+      ) : null}
     </li>
   );
 }
@@ -131,12 +147,14 @@ function LeftSidebar({
   selectedChannelId,
   open,
   onSelectChannel,
+  onConfigureModel,
 }: {
   model: WorkspaceViewModel;
   channels: ChannelView[];
   selectedChannelId: string;
   open: boolean;
   onSelectChannel: (channelId: string) => void;
+  onConfigureModel: (role: string) => void;
 }) {
   return (
     <aside className="left-sidebar" data-open={open} aria-label="Workspace navigation">
@@ -157,9 +175,17 @@ function LeftSidebar({
       </section>
       <section className="sidebar-section team-section">
         <h2>Team</h2>
+        <button
+          type="button"
+          className="team-model-all"
+          aria-label="Configure all Agent models"
+          onClick={() => onConfigureModel('all')}
+        >
+          Set model for all Agents
+        </button>
         <ul className="team-list">
           {model.team.map((member) => (
-            <TeamRow key={member.role} member={member} />
+            <TeamRow key={member.role} member={member} onConfigure={onConfigureModel} />
           ))}
         </ul>
       </section>
@@ -645,6 +671,7 @@ export function ChatWorkspace({
   projectId = 'agora',
 }: ChatWorkspaceProps) {
   const [messages, setMessages] = useState(model.messages);
+  const [modelSettingsTarget, setModelSettingsTarget] = useState<string>();
   const [channels, setChannels] = useState<ChannelView[]>(
     model.channels ?? [{ ...model.channel, kind: 'main', closed: false }],
   );
@@ -980,6 +1007,7 @@ export function ChatWorkspace({
       </header>
 
       <LeftSidebar
+        onConfigureModel={setModelSettingsTarget}
         model={runtimeModel}
         channels={channels}
         selectedChannelId={runtimeModel.channel.id}
@@ -990,6 +1018,13 @@ export function ChatWorkspace({
           setLeftOpen(false);
         }}
       />
+      {modelSettingsTarget !== undefined ? (
+        <ModelSettingsDialog
+          projectId={projectId}
+          initialTarget={modelSettingsTarget}
+          onClose={() => setModelSettingsTarget(undefined)}
+        />
+      ) : null}
       <section className="chat-column">
         <div className="mobile-context">
           <TerminalMark />
