@@ -5,8 +5,10 @@ import type {
 } from '@agora/comm-channels';
 import {
   addRole,
+  configureRoleModels,
   disableRole,
   enableRole,
+  type RoleModelSetting,
   type RoleSpec,
   type RosterTransition,
 } from '@agora/core-domain';
@@ -31,6 +33,19 @@ export class ProjectRosterService {
 
   async disableRole(projectId: string, role: string): Promise<ProjectCollaborationCommit> {
     return this.#transition(projectId, (snapshot) => disableRole(snapshot.roster, role));
+  }
+
+  async configureModels(
+    projectId: string,
+    expectedRevision: number,
+    roles: readonly string[],
+    setting: RoleModelSetting | null,
+  ): Promise<ProjectCollaborationCommit> {
+    const current = await this.#store.load(projectId);
+    if (!current || current.revision !== expectedRevision)
+      throw new Error('model settings revision conflict');
+    const roster = configureRoleModels(current.roster, roles, setting);
+    return this.#store.commit(projectId, expectedRevision, { roster, channels: current.channels });
   }
 
   async #transition(

@@ -22,6 +22,7 @@
     "@agora/tools-fs": "workspace:*",
     "@agora/tools-git": "workspace:*",
     "@agora/tools-test": "workspace:*",
+    "@deepseek-ai/dsh-llm-pi-ai": "0.1.1-rc.2",
     "dockerode": "catalog:",
     "next": "catalog:",
     "react": "catalog:",

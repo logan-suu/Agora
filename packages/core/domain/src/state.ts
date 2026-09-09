@@ -408,6 +408,7 @@ export interface RoleSpec {
   routeWhen: string;
   externalCmd?: string;
   model?: string;
+  modelConnectionId?: string;
 }
 
 export type RosterStatus = 'enabled' | 'disabled' | 'departing' | 'departed';

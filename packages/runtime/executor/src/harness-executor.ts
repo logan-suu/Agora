@@ -30,6 +30,7 @@ import {
 } from '@deepseek-ai/dsh-tool-call-timeout-policy';
 import ToolRuntime, { type ToolDefinition } from '@deepseek-ai/dsh-tools';
 import type { Executor, ProjectionView, StepContext, StepResult } from './base';
+import { type CompatibleModelOptions, installCompatibleModel } from './compatible-model';
 
 /** Default model name used when neither RoleSpec.model nor AGORA_MODEL is set. */
 const DEFAULT_MODEL = 'deepseek-v4-flash';
@@ -42,6 +43,7 @@ const DEEPSEEK_PROVIDER = 'deepseek-official';
 
 /** Options for constructing a {@link HarnessExecutor}. */
 export interface HarnessExecutorOptions {
+  compatible?: CompatibleModelOptions;
   /** Optional LLM adapter registered under `provider` (tests inject a fake). */
   adapter?: LlmAdapter;
   /** Provider key the adapter is registered under. Defaults to `agora`. */
@@ -176,6 +178,7 @@ export class HarnessExecutor implements Executor {
   private readonly ctx: Context;
   private readonly provider: string;
   private readonly model: string;
+  private readonly compatibleMaxTokens: number | undefined;
   private readonly adapter: LlmAdapter | undefined;
   private readonly tools: readonly ToolDefinition[] | undefined;
   private readonly allowTools: readonly string[] | undefined;
@@ -210,6 +213,12 @@ export class HarnessExecutor implements Executor {
     options: HarnessExecutorOptions = {},
   ) {
     this.model = this.spec.model ?? process.env.AGORA_MODEL ?? DEFAULT_MODEL;
+    this.compatibleMaxTokens = options.compatible?.maxTokens;
+    if (
+      options.compatible &&
+      (options.adapter || options.deepseek || options.compatible.model !== this.model)
+    )
+      throw new Error('conflicting model connection configuration');
     this.ctx = new Context();
     // Minimal plugin set; load order respects each plugin's `inject` deps.
     this.pluginFibers.push(this.ctx.plugin(AgentRegistry)); // ctx.agents
@@ -239,7 +248,11 @@ export class HarnessExecutor implements Executor {
     this.pluginFibers.push(this.ctx.plugin(LlmRetry));
     this.pluginFibers.push(this.ctx.plugin(AgentLoop)); // registers the agents factory
     this.pluginFibers.push(this.ctx.plugin(BasicCompactionEngine)); // ctx.compaction (zero-config auto)
-    if (options.deepseek !== undefined && options.deepseek !== false) {
+    if (options.compatible) {
+      const configured = installCompatibleModel(this.ctx, options.compatible);
+      this.provider = configured.provider;
+      this.pluginFibers.push(...configured.fibers);
+    } else if (options.deepseek !== undefined && options.deepseek !== false) {
       const apiKeyEnv =
         typeof options.deepseek === 'object' ? options.deepseek.apiKeyEnv : undefined;
       this.provider = DEEPSEEK_PROVIDER;
@@ -438,6 +451,16 @@ export class HarnessExecutor implements Executor {
     const checkpoint = decodeSafePoint(cursor);
     assertCheckpointScope(checkpoint, persistence, this.spec.role, this.agentPreset());
     const source = await this.ctx.sessionPersistence.load(SessionId(checkpoint.sourceSessionId));
+    if (
+      source.events.some(
+        (event) =>
+          event.type === 'request/header' &&
+          (event.data.header.config.provider !== this.provider ||
+            event.data.header.config.model !== this.model),
+      )
+    ) {
+      throw new Error('safe point model configuration does not match');
+    }
     if (source.meta.cwd !== checkpoint.cwd || source.meta.agentPreset !== checkpoint.agentPreset) {
       throw new Error('safe point source session metadata does not match the checkpoint');
     }
@@ -590,7 +613,14 @@ export class HarnessExecutor implements Executor {
       // Model routing: fix the provider/model from RoleSpec or env.
       agentCtx.on('agent/request', async (_payload, next) => {
         const config = await next();
-        return { ...config, provider: this.provider, model: this.resolveModel() };
+        return {
+          ...config,
+          provider: this.provider,
+          model: this.resolveModel(),
+          ...(this.compatibleMaxTokens === undefined
+            ? {}
+            : { maxTokens: this.compatibleMaxTokens }),
+        };
       });
       // The self-driving loop swallows turn failures internally (kick() catch);
       // surface them so a broken turn is never mistaken for an empty success.
@@ -627,6 +657,16 @@ export class HarnessExecutor implements Executor {
       throw new Error(`persisted child session "${resumeSessionId}" has conflicting lineage`);
     }
     const child = await this.ctx.sessionPersistence.load(SessionId(resumeSessionId));
+    if (
+      child.events.some(
+        (event) =>
+          event.type === 'request/header' &&
+          (event.data.header.config.provider !== this.provider ||
+            event.data.header.config.model !== this.model),
+      )
+    ) {
+      throw new Error('persisted child model configuration does not match');
+    }
     if (
       child.events.length < seed.length ||
       seed.some((event, index) => !isDeepStrictEqual(child.events[index], event))

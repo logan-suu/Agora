@@ -16,6 +16,12 @@ import {
 import { ChatWorkspace, TracePanel } from '../src/app/chat-workspace';
 
 describe('chat UI model', () => {
+  it('exposes team-wide and individual Agent model settings', () => {
+    const markup = renderToStaticMarkup(createElement(ChatWorkspace, {}));
+    expect(markup).toContain('Configure all Agent models');
+    expect(markup).toContain('Configure CODER model');
+    expect(markup).not.toContain('Configure LEADER model');
+  });
   it('sorts messages chronologically without mutating the source array', () => {
     const messages = [
       {

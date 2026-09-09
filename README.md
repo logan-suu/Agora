@@ -2,6 +2,10 @@
 
 ### A human-led, group-chat workspace where AI agents plan, code, test, and review together.
 
+**Current scope: local use.** Run Agora on your own computer and open its local address in your browser. The backend, Docker sandboxes, and Git worktrees run on that machine, and application data is stored locally. Cloud hosting is outside the current product scope. Model requests go to your chosen online API or local model service; local operation does not mean offline operation. Task 10.4 will improve local installation, startup, and configuration.
+
+**Credential setup: current implementation and planned experience.** The current 10.3 implementation reads its encryption master key from the backend environment variable `AGORA_CREDENTIALS_KEY`. Task 10.4 will create and securely store this key automatically on first startup (macOS Keychain), then reuse it on subsequent starts. Users will only enter their model service Base URL, API key, and model name; the environment variable will remain an advanced option. Automatic key management is not implemented yet. The temporary launcher configured on the developer’s Mac is not a shipped installation feature.
+
 **Agora** takes its name from the ancient Greek *agorá*: the public gathering place where people met to exchange ideas and make decisions. This project brings that idea to software development—specialized AI agents work in a shared, visible space, while the human Leader remains present and makes the final call.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -216,7 +220,7 @@ Agora/
 | 7 | Role recruitment, hot-swapping, and mandatory handoff | Planned |
 | 8 | HumanGate, blocking/advisory objections, and arbitration UI | Planned |
 | 9 | True parallel workers and cooperative preemption | Planned |
-| 10 | Optional thick executors, deployment, hardening, and final portfolio demo | Planned |
+| 10 | Unified Harness agents, local setup and startup, hardening, final benchmark, and portfolio demo | Planned |
 
 The detailed task graph and current evidence live in [`docs/task-status.json`](docs/task-status.json). The final README and portfolio recording remain a separate Phase 10 deliverable; this document describes the Phase 5 MVP truthfully.
 
@@ -233,6 +237,6 @@ The detailed task graph and current evidence live in [`docs/task-status.json`](d
 
 Agora is a personal portfolio project for the 2026 graduate recruitment season. It is being developed in small, evidence-backed phases: each phase must produce a demonstrable outcome before the next one begins.
 
-The current MVP is intended for trusted local evaluation. Before public multi-user deployment, it still needs authentication, participant authorization, broader security hardening, external durable state for horizontally scaled backends, and cross-instance event delivery.
+The current product targets trusted, single-user local operation. Public hosting, cloud sandboxes, and multi-instance scaling are outside the current scope. Any future change to that scope requires a separate architecture and security review.
 
 Feedback and architecture discussions are welcome. Automated PR merges are intentionally not part of the project workflow: changes are reviewed and merged by a human.
