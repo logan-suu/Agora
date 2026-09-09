@@ -310,7 +310,24 @@ export class TaskOrchestrationRuntime {
     const errors = results.flatMap((result) =>
       result.status === 'rejected' ? [result.reason] : [],
     );
-    for (const run of this.#runs.values()) {
+    for (const [key, run] of this.#runs) {
+      if (run.pendingFinalization) {
+        try {
+          const separator = key.indexOf('\u0000');
+          const pending = run.pendingFinalization;
+          await this.#finalizeRun(
+            { projectId: key.slice(0, separator), taskId: key.slice(separator + 1) },
+            run,
+            pending.status,
+            pending.error,
+            pending.artifactArchived,
+          );
+          if (run.pendingFinalization) throw new Error('Task finalization still needs attention');
+        } catch (error) {
+          errors.push(error);
+        }
+        continue;
+      }
       if (run.composition) {
         try {
           await run.composition.suspend();

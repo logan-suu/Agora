@@ -26,6 +26,7 @@ function invoke(args: string[], input?: string): Promise<{ code: number; output:
         output: stdout.trim(),
       });
     });
+    child.stdin?.on('error', () => {});
     child.stdin?.end(input ?? '');
   });
 }

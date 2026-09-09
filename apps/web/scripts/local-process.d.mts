@@ -1,4 +1,4 @@
-import type { SystemCredentialStore } from '../../../packages/runtime/state/src/local-credentials';
+import type { SystemCredentialStore } from '@agora/runtime-state';
 export function childEnvironment(source?: NodeJS.ProcessEnv): NodeJS.ProcessEnv;
 export function controlPath(root: string): string;
 export function keychainStore(

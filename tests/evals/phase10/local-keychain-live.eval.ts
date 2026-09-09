@@ -24,8 +24,8 @@ import { finishWithCleanup } from '../../integration/phase10/cleanup';
 it('phase10 macOS automatic Keychain live G5 uses persisted credentials in the production composition', async () => {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error('DEEPSEEK_API_KEY is required for the explicit live probe');
-  const root = await mkdtemp(join(tmpdir(), 'agora-compatible-live-'));
   if (process.platform !== 'darwin') throw new Error('This explicit G5 requires macOS.');
+  const root = await mkdtemp(join(tmpdir(), 'agora-compatible-live-'));
   const exec = promisify(execFile);
   const keychain = join(root, 'test.keychain-db');
   const password = randomBytes(24).toString('hex');

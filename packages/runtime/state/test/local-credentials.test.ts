@@ -85,6 +85,8 @@ it('reports OS failures safely and keeps unauthenticated records usable', async 
       },
     });
     expect(result.status).toBe(code);
+    expect(Object.keys(result).sort()).toEqual(['key', 'status']);
+    expect(result.key()).toBeUndefined();
     expect(JSON.stringify(result)).not.toContain('sensitive');
     const store = new JsonModelConfigStore(root, result.key);
     const c = await store.createConnection('p', options);

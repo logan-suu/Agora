@@ -1,6 +1,6 @@
 # Task 10.4 macOS 本地启动与主密钥管理验收
 
-日期：2026-09-09。分支：`feat/phase10-local-startup`。本记录是本地实现/验证证据，任务保持 `in_progress`，尚未 commit/push/PR/合并；不是 Phase 10 最终出口或 Benchmark 报告。
+日期：2026-09-09。分支：`feat/phase10-local-startup`。实现与交付记录：[PR #71](https://github.com/logan-suu/Agora/pull/71) 已创建并推送，任务保持 `in_progress`，待人工合并；不是 Phase 10 最终出口或 Benchmark 报告。
 
 ## 范围与实施
 
@@ -76,7 +76,7 @@ macOS授权拒绝、系统不可用和冲突等异常由注入OS端口的单元�
 
 - 正式 `pnpm run setup` 成功，包含依赖检查、两个原生helper和Next生产构建；日志 `/tmp/agora104-setup.log`。正式 `pnpm run doctor` 成功，日志 `/tmp/agora104-doctor.log`。使用 `run doctor` 避免调用pnpm自身同名命令，README及启动器错误提示已同步。
 - 最后控制socket增加断开客户端错误处理后，产品启动G5复验1/1通过，17.09s，日志 `/tmp/agora104-final-launcher-g5.log`。
-- 所有临时验收服务已停止；真实开发数据、已有Keychain项和开发模型凭据保留。没有commit、push或PR操作，任务保持in_progress，待后续交付及人工合并。
+- 所有临时验收服务已停止；真实开发数据、已有Keychain项和开发模型凭据保留。该段记录的是提交前检查点；随后已创建并推送PR #71，当前保持in_progress，待人工合并。
 
 - 最终全量回归：**134文件 / 1077测试通过，0失败 / 0 skip**，345.81s，日志 `/tmp/agora104-final-full-test.log`。最终类型检查和lint通过（339文件），日志 `/tmp/agora104-final-static.log`；最后仅修正doctor命令提示，无运行逻辑变化。
 - G7：33个交付文件的精确集合gitleaks脱敏扫描通过，无泄漏；日志 `/tmp/agora104-final-secrets-scan.log`。`git diff --check`通过。
@@ -88,3 +88,11 @@ macOS授权拒绝、系统不可用和冲突等异常由注入OS端口的单元�
 修复后 `pnpm typecheck` 与 `pnpm lint` 通过；两条显式G5共2文件/2测试通过，12.62s，日志 `/tmp/agora104-commit-g5-final.log`，包括真实Keychain/Next保存重启/在途请求停机/生产工具链及真实DeepSeek。首次门禁命令的maxWorkers参数被pnpm test自身拒绝，未执行测试；已改用 `pnpm run test --maxWorkers=2` 执行全部测试，无跳过或排除。
 
 提交门禁完整回归：`pnpm run test --maxWorkers=2` **134文件/1077测试通过，0失败/0 skip**，260.91s，日志 `/tmp/agora104-commit-test.log`；静态检查日志 `/tmp/agora104-commit-typecheck.log`、`/tmp/agora104-commit-lint.log`；33文件精确秘密扫描无泄漏，日志 `/tmp/agora104-commit-secrets.log`。`git diff --check`通过。Leader已显式授权提交、推送及PR，任务仍保持in_progress，PR信息记录于task-status.json。
+
+## PR #71 评审修复
+
+Leader授权修复后，新增归档失败与资源释放失败的停机回归：两例在旧实现均失败，修复后相关Runtime测试18/18通过。`drain()` 先重试 pendingFinalization；未完成则保留 composition 并报告失败，完成后才允许停机，已归档的重试不再归档。红日志 `/tmp/agora71-fix-red.log`，绿日志 `/tmp/agora71-fix-runtime.log`。这些是明确注入归档/释放故障的Runtime回归，不冒充真实Docker故障G5。
+
+其余审查项：重复实例断言限定具体控制socket错误；产品G5从首次资源获取即进入清理保护，每次获取登记逆序清理；非macOS检查移至创建临时目录前；主密钥先断言ready/存在再检查日志，无no-key占位；OS失败断言完整字段与空key；测试helper补stdin错误监听；类型声明经公开包入口导入。保留Node24产品锁定，不按bot建议扩展未验收版本。交付状态更新为PR #71已创建、待人工合并。
+
+修复后交付门禁：`pnpm typecheck`、`pnpm lint`通过；`pnpm run setup`成功，原生helper及Next生产产物已重建（`/tmp/agora71-build.log`）。完整回归 **134文件/1079测试通过，0失败/0 skip**，288.34s（`/tmp/agora71-test.log`）；两条真实G5 **2/2通过**，12.59s（`/tmp/agora71-g5.log`）。秘密扫描无泄漏（`/tmp/agora71-secrets.log`），`git diff --check`通过。修复更新同一PR #71，任务仍in_progress，须人工合并。
