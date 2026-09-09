@@ -91,3 +91,5 @@ D2 全角色继续统一 Harness，未新增外部 Agent 执行器。Executor/Sa
 针对 request-retry 与 harness-executor 的 39 项测试通过；完整交付复验结果如下。未改变请求头 fail-closed 或新增 Docker skip；CodeRabbit 两条建议不符合 D15/详细设计 §6.1 的日志校验与必跑 G5 要求，不作为延期项。当前内置 DeepSeek 默认配置本来就是有限 normal，未宣称其默认无界重试。
 
 本轮原生 helper 构建、pnpm typecheck、pnpm lint 全通过；pnpm run test --maxWorkers=2：124 文件/1040 测试通过、0 失败/0 skip，219.13s，含既有三项真实 DeepSeek 与全部 Docker 回归；独立 10.2 G5 1/1 通过，4.64s。日志 /tmp/agora-pr69-fix-tests.log、/tmp/agora-pr69-fix-g5.log；故障复现日志 /tmp/agora-pr69-fix-red.log。五个明确交付文件经 diff/敏感信息校验，未发现密钥样式字面量，Phase 0–9 记录不变。
+
+[2026-09-08 PR #69 修复交付] 57d3eec（Validate the registered Harness retry policy）已推送至 feat/phase10-resilience。已英文回复并解决策略校验线程 discussion_r3964045697；请求头放宽与新增 Docker skip 两条建议已回复不采纳依据，线程保留供评审确认。PR https://github.com/logan-suu/Agora/pull/69 仍 open，任务 in_progress，未合并。
