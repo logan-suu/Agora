@@ -83,3 +83,11 @@ D2 全角色继续统一 Harness，未新增外部 Agent 执行器。Executor/Sa
 本轮未改实现或测试；此前 Next 构建与浏览器证据继续适用于同一源码。交付审查覆盖 33 个明确文件，未发现密钥样式字面量、未纳入 .env/.data；任务依赖有效、Phase 0–9 记录保持不变。
 
 实现提交：`ec2670d`。PR：[Agora #69](https://github.com/logan-suu/Agora/pull/69)，`feat/phase10-resilience` → `dev-1.0.0`。已推送并创建 PR，10.2 保持 `in_progress`，待人工审阅与合并。
+
+## PR #69 修复复验
+
+2026-09-08，Leader 授权修复评审问题。回归先红：有状态 adapter 第一次策略为 normal、第二次为 always，旧实现在 AUTHENTICATION 错误后发出 8 次请求；另 4 个非法策略用例因初始化拒绝阻断 dispose 而失败（10 通过/5 失败）。修复后注册时仅捕获一次策略，统一从 ctx.llm 注册表校验注入 adapter 和内置 DeepSeek 路由；认证错误只发出 1 次请求。always、次数 6、延迟 10001ms、扩展 AUTHENTICATION 白名单均在 dispatch 前拒绝，仍可清理已装配插件。执行入口保留初始化错误。
+
+针对 request-retry 与 harness-executor 的 39 项测试通过；完整交付复验结果如下。未改变请求头 fail-closed 或新增 Docker skip；CodeRabbit 两条建议不符合 D15/详细设计 §6.1 的日志校验与必跑 G5 要求，不作为延期项。当前内置 DeepSeek 默认配置本来就是有限 normal，未宣称其默认无界重试。
+
+本轮原生 helper 构建、pnpm typecheck、pnpm lint 全通过；pnpm run test --maxWorkers=2：124 文件/1040 测试通过、0 失败/0 skip，219.13s，含既有三项真实 DeepSeek 与全部 Docker 回归；独立 10.2 G5 1/1 通过，4.64s。日志 /tmp/agora-pr69-fix-tests.log、/tmp/agora-pr69-fix-g5.log；故障复现日志 /tmp/agora-pr69-fix-red.log。五个明确交付文件经 diff/敏感信息校验，未发现密钥样式字面量，Phase 0–9 记录不变。

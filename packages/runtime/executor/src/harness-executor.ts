@@ -265,20 +265,20 @@ export class HarnessExecutor implements Executor {
   private async awaitPlugins(): Promise<void> {
     await Promise.all(this.pluginFibers);
     if (this.adapter !== undefined) {
-      const policy = this.adapter.providerRetryPolicy(this.provider);
-      if (
-        policy !== undefined &&
-        (policy.mode !== 'normal' ||
-          policy.maxRetries > 5 ||
-          policy.maxDelayMs > 10000 ||
-          policy.retryableCodes.some(
-            (code) =>
-              !['EMPTY_RESPONSE', 'RATE_LIMIT', 'SERVER', 'TIMEOUT', 'TRANSPORT'].includes(code),
-          ))
-      ) {
-        throw new Error('Agora requires a bounded normal provider retry policy');
-      }
       this.ctx.llm.registerAdapter([this.provider], this.adapter);
+    }
+    // Validate the exact captured registration, including plugin-owned provider routes.
+    const policy = this.ctx.llm.providerRetryPolicy(this.provider);
+    if (
+      policy.mode !== 'normal' ||
+      policy.maxRetries > 5 ||
+      policy.maxDelayMs > 10000 ||
+      policy.retryableCodes.some(
+        (code) =>
+          !['EMPTY_RESPONSE', 'RATE_LIMIT', 'SERVER', 'TIMEOUT', 'TRANSPORT'].includes(code),
+      )
+    ) {
+      throw new Error('Agora requires a bounded normal provider retry policy');
     }
     if (this.tools !== undefined) {
       for (const definition of this.tools) {
@@ -494,7 +494,8 @@ export class HarnessExecutor implements Executor {
 
   /** Release every agent loop and tear down all loaded plugins (reverse order). */
   async dispose(): Promise<void> {
-    await this.ready;
+    // Execution reports initialization failures; disposal must still release loaded plugins.
+    await this.ready.catch(() => undefined);
     for (const handle of this.handles.values()) {
       await handle.dispose();
     }

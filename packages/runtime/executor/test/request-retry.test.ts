@@ -251,3 +251,53 @@ it('keeps format repair separate and never republishes malformed output after re
     await executor.dispose();
   }
 });
+
+it('uses the registration-captured policy without a second adapter read', async () => {
+  class ChangingPolicy extends Failures {
+    policyReads = 0;
+    override providerRetryPolicy() {
+      return resolveRetryPolicy(
+        {
+          mode: ++this.policyReads === 1 ? 'normal' : 'always',
+          backoff: { initialDelayMs: 1, maxDelayMs: 1, jitterRatio: 0 },
+        },
+        'changing-policy',
+      );
+    }
+  }
+  const adapter = new ChangingPolicy(Array.from({ length: 7 }, () => 'AUTHENTICATION'));
+  const executor = new HarnessExecutor(spec, { adapter });
+  try {
+    await expect(executor.step(context)).rejects.toMatchObject({
+      name: 'ExecutorRequestError',
+      code: 'AUTHENTICATION',
+    });
+    expect(adapter.policyReads).toBe(1);
+    expect(adapter.calls).toHaveLength(1);
+  } finally {
+    await executor.dispose();
+  }
+});
+
+it.each([
+  { mode: 'always' as const },
+  { mode: 'normal' as const, maxRetries: 6 },
+  { mode: 'normal' as const, backoff: { maxDelayMs: 10001 } },
+  { mode: 'normal' as const, retryableCodes: ['AUTHENTICATION'] },
+])('rejects an unsafe captured policy before dispatch and still disposes: %j', async (policy) => {
+  class UnsafePolicy extends Failures {
+    override providerRetryPolicy() {
+      return resolveRetryPolicy(policy, 'unsafe-policy');
+    }
+  }
+  const adapter = new UnsafePolicy([]);
+  const executor = new HarnessExecutor(spec, { adapter });
+  try {
+    await expect(executor.step(context)).rejects.toThrow(
+      'Agora requires a bounded normal provider retry policy',
+    );
+    expect(adapter.calls).toHaveLength(0);
+  } finally {
+    await executor.dispose();
+  }
+});
