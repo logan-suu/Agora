@@ -987,7 +987,8 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
           .runParallel(canonical, [{ workerId: 'worker:failed:0', role: 'CODER', subtaskId: 'A' }])
           .catch((caught: unknown) => caught);
         if (!(error instanceof ParallelBatchError)) throw new Error('expected batch failure');
-        expect(error.retryable).toBe(failurePoint === 'provider');
+        // A provider/unknown exception is not explicit TESTER or REVIEWER rework.
+        expect(error.retryable).toBe(false);
         expect(error.state.workers[0]?.status).toBe('failed');
         const actualHead = await git.headOf(ref.path);
         expect(actualHead).not.toBe(baseCommit);

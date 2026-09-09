@@ -112,6 +112,18 @@ describe('fetchTraceSnapshot', () => {
                   startedAt: 2,
                   endedAt: 5,
                   status: 'completed',
+                  retries: [
+                    {
+                      retryId: 'chain',
+                      retry: 1,
+                      maxRetries: 2,
+                      delayMs: 1.5,
+                      scheduledAt: 2,
+                      backoffEndedAt: 3,
+                      status: 'backoff_completed',
+                      errorCode: 'RATE_LIMIT',
+                    },
+                  ],
                   tools: [
                     {
                       callId: 'call-1',

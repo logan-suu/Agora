@@ -389,6 +389,28 @@ export function TracePanel({
                               {step.status} · {elapsed(step.startedAt, step.endedAt)}
                             </small>
                           </div>
+                          {step.retries && step.retries.length > 0 ? (
+                            <ul className="trace-tools" aria-label="Request recovery">
+                              {step.retries.map((retry) => (
+                                <li
+                                  key={`${retry.retryId}:${retry.retry}`}
+                                  data-status={retry.status}
+                                >
+                                  <span>
+                                    Retry {retry.retry}/{retry.maxRetries}
+                                  </span>
+                                  <small>
+                                    {retry.status === 'waiting'
+                                      ? 'Waiting to retry'
+                                      : retry.status === 'backoff_completed'
+                                        ? 'Backoff completed'
+                                        : 'Closed without retry start'}
+                                    {` · ${Math.round(retry.delayMs)} ms · ${retry.errorCode}`}
+                                  </small>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
                           {step.tools.length > 0 ? (
                             <ul className="trace-tools">
                               {step.tools.map((tool) => (

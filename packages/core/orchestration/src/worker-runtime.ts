@@ -115,6 +115,9 @@ export interface WorkerFailure {
   workerId: string;
   status: 'failed' | 'not_started_due_to_batch_failure';
   message: string;
+  stage?: 'execution' | 'state_commit' | 'lease_release';
+  /** Live diagnostic cause; never serialize into State or public DTOs. */
+  cause?: unknown;
 }
 
 export class ParallelBatchError extends Error {
@@ -148,7 +151,6 @@ class WorkerStepError extends Error {
 
 class CanonicalTaskJoin {
   readonly failures: WorkerFailure[] = [];
-  hasInfrastructureFailure = false;
   #current: AppState;
   #tail: Promise<void> = Promise.resolve();
 
@@ -192,10 +194,18 @@ class CanonicalTaskJoin {
     return result;
   }
 
-  recordFailure(workerId: string, error: unknown): void {
-    if (!(error instanceof WorkerStepError)) this.hasInfrastructureFailure = true;
-    if (this.failures.some((failure) => failure.workerId === workerId)) return;
-    this.failures.push({ workerId, status: 'failed', message: errorMessage(error) });
+  recordFailure(
+    workerId: string,
+    error: unknown,
+    stage: WorkerFailure['stage'] = 'execution',
+  ): void {
+    this.failures.push({
+      workerId,
+      status: 'failed',
+      stage,
+      cause: error,
+      message: errorMessage(error),
+    });
   }
 
   recordNotStarted(workerId: string): void {
@@ -311,14 +321,21 @@ export class WorkerRuntime {
     const lease = await this.acquireLease(prepared.projectId, prepared.taskId, assign.workerId);
     if (lease === undefined) return join.drainAndLoad();
     this.beginLeaseRelease(assign.workerId);
+    const errors: unknown[] = [];
     try {
       await this.runAssignment(join, assign, false);
     } catch (error) {
-      await this.markFailed(join, assign.workerId).catch(() => undefined);
-      throw error;
+      errors.push(error);
+      await this.markFailed(join, assign.workerId).catch((failure) => {
+        errors.push(failure);
+      });
     } finally {
-      await this.releaseLease(assign.workerId, lease);
+      await this.releaseLease(assign.workerId, lease).catch((error) => {
+        errors.push(error);
+      });
     }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) throw new AggregateError(errors, 'Worker execution and recovery failed');
     return join.drainAndLoad();
   }
 
@@ -343,12 +360,21 @@ export class WorkerRuntime {
     if (!this.suspended) {
       for (const assignment of queue) join.recordNotStarted(assignment.workerId);
     }
-    const canonical = await join.drainAndLoad();
+    let canonical: AppState;
+    try {
+      canonical = await join.drainAndLoad();
+    } catch (error) {
+      if (join.failures.length > 0)
+        throw new AggregateError(
+          [...join.failures.map((f) => f.cause), error],
+          'Worker failure and canonical reload failed',
+        );
+      throw error;
+    }
     const failures = [...join.failures].sort((left, right) =>
       left.workerId.localeCompare(right.workerId),
     );
-    if (failures.length > 0 && !this.suspended)
-      throw new ParallelBatchError(canonical, failures, !join.hasInfrastructureFailure);
+    if (failures.length > 0 && !this.suspended) throw new ParallelBatchError(canonical, failures);
     return canonical;
   }
 
@@ -369,14 +395,14 @@ export class WorkerRuntime {
       } catch (error) {
         join.recordFailure(assign.workerId, error);
         await this.markFailed(join, assign.workerId).catch((failure) =>
-          join.recordFailure(assign.workerId, failure),
+          join.recordFailure(assign.workerId, failure, 'state_commit'),
         );
       } finally {
         if (lease !== undefined) {
           try {
             await this.releaseLease(assign.workerId, lease);
           } catch (error) {
-            join.recordFailure(assign.workerId, error);
+            join.recordFailure(assign.workerId, error, 'lease_release');
           }
         }
       }
@@ -619,18 +645,25 @@ export class WorkerRuntime {
       } catch (error) {
         // A completed tool may have committed before the provider request failed.
         // Persist that stopped worker's actual HEAD before permitting a new identity.
-        if (handle.worktree !== undefined && this.deps.refreshWorktree !== undefined) {
-          const worktree = await this.deps.refreshWorktree(handle.worktree);
-          await join.commit(async (canonical) => {
-            this.assertCanonicalHandle(canonical, handle);
-            return this.transitionStep(canonical, handle.role, [
-              mergeByIdMutation('workers', handle.id, { worktree }),
-              ...(handle.role === 'CODER' && handle.subtaskId !== undefined
-                ? [mergeByIdMutation('subtasks', handle.subtaskId, { worktree })]
-                : []),
-            ]);
-          });
-          handle.worktree = worktree;
+        try {
+          if (handle.worktree !== undefined && this.deps.refreshWorktree !== undefined) {
+            const worktree = await this.deps.refreshWorktree(handle.worktree);
+            await join.commit(async (canonical) => {
+              this.assertCanonicalHandle(canonical, handle);
+              return this.transitionStep(canonical, handle.role, [
+                mergeByIdMutation('workers', handle.id, { worktree }),
+                ...(handle.role === 'CODER' && handle.subtaskId !== undefined
+                  ? [mergeByIdMutation('subtasks', handle.subtaskId, { worktree })]
+                  : []),
+              ]);
+            });
+            handle.worktree = worktree;
+          }
+        } catch (recoveryError) {
+          throw new AggregateError(
+            [error, recoveryError],
+            'Worker execution and HEAD recovery failed',
+          );
         }
         throw new WorkerStepError(error);
       }

@@ -754,7 +754,7 @@ describe('Phase 9 automatic parallel flow (real G5)', () => {
     await runtime.waitForIdle(scope);
     expect(await runtime.summary(scope)).toMatchObject({
       runStatus: 'needs_attention',
-      error: 'injected evidence inspection failure',
+      error: '[RUN_FAILED] Task execution failed.',
     });
     const state = await messages.store.load(scope);
     expect(state?.humanGate).toBeUndefined();

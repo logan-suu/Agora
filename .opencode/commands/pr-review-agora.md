@@ -17,7 +17,7 @@ agent: build
    - R1：共享 State 写入是否全部走 `applyMutations()`？Mutation op 是否可交换、幂等？
    - R2：**投影是否泄漏了原始群聊 log？** display/payload 是否分离？（本项目头号死穴）
    - R4：是否存在硬杀 LLM token 流的代码？抢占是否落在安全点（step/end）？
-   - R5：阶段 0–9 是否混入厚执行器切换逻辑？
+   - R5/D2：是否违背所有阶段统一 Harness 路线，混入外部编码 Agent 接入或薄/厚切换逻辑？
    - R6：KB 是否被写入？sliceKB 是否返回空对象？
    - R7/R8：沙箱外是否有文件操作/child_process？L1 domain 是否引入 I/O？分层方向是否反向？
    - R9：Executor/SandboxManager/MessageBus 等接口签名是否被修改？
