@@ -91,3 +91,19 @@ Leader 授权“进行审查修复”后，按三个假设检查：①串行真�
 ## PR 交付记录（2026-09-09）
 
 功能提交 `9ce5149dc8679ec16e37d8e7b0fd0676fa38b38a` 已推送至 `feat/phase10-model-routing`，PR [#70](https://github.com/logan-suu/Agora/pull/70) 的 base 为 `dev-1.0.0`。37 个精确交付文件约 1.40MB 与暂存差异约 179KB 分别通过 gitleaks 扫描，未发现秘密；本机钥匙串、环境文件及 `.data` 临时启动脚本均未提交。代码与最新通过门禁的源码一致。10.3 保持 `in_progress`，由人类审阅合并后再收尾；10.4 自动主密钥管理尚未实现。CodeRabbit CLI 外部审查没有执行，不将 PR 创建或本地门禁冒充该服务的审查结论。
+
+## PR #70 评论复核与修复（2026-09-09）
+
+本轮读取 GitHub PR 已有的 CodeRabbit 自动评论，未启动额外 CLI 出站审查。3 条 inline 评论均对照当前代码确认有效并修复：
+
+| 评论 | 问题与处理 | 规格依据 |
+| --- | --- | --- |
+| 3970914226 | 执行器直接输入绕过存储 URL 校验；新增 HTTPS/回环 HTTP、无 userinfo/query/fragment 校验，在创建 Context 前及安装 provider 前执行，错误不回显 URL | 详细设计 §3 兼容传输、G7 |
+| 3970914236 | live G5 的 dispose 异常可遮蔽原测试体错误并跳过 rm；先捕获原错误，再独立尝试所有清理，保留单错误或聚合多个错误 | R11/G5、详细设计 §11 清理规则 |
+| 3970914246 | 集成测试 Promise.all 首个 dispose 拒绝会跳过后续清理；逐项收集 Executor/catalog/Git/Docker/server/目录清理结果，保留测试体与所有清理失败 | R11/G5、详细设计 §11 清理规则 |
+
+复用仅测试使用的 `tests/integration/phase10/cleanup.ts`，不引入产品依赖或修改冻结端口。新增 URL 回归先验证 8 个非法 URL 均未被拒绝（red），清理 helper 回归先因缺模块失败；实现后定向 3 文件/17 测试全通过，含 14 条 URL/官方 HTTP/SSE adapter 检查、2 条清理故障注入、1 条真实工具/Fork 集成。清理故障注入使用真实临时目录，验证三个原始错误完整保留、前序失败后仍执行目录删除、单错误和 throw undefined 不被吞；未用替身替代 G5。
+
+CodeRabbit 的 80% docstring coverage 警告不是仓库 G1–G7 门禁；新增入口校验与测试 helper 已有英文职责说明，不为覆盖率补重复实现的注释。三条会话将在完整门禁通过并推送修复后逐条英文回复并解决；任务保持 in_progress，PR 不自动合并。
+
+本轮修复门禁：`pnpm build:sandbox-native`、`pnpm typecheck`、`pnpm lint`、`git diff --check` 均通过；完整 `pnpm run test --maxWorkers=2` 为 **130 文件 / 1065 测试通过，0 失败 / 0 skip，210.01s**（`/tmp/agora70-full-test.log`）。独立真实模型 G5 为 **1/1 通过，测试耗时 3.97s，总耗时 4.85s**（`/tmp/agora70-live-g5.log`），使用既有开发 DeepSeek 凭据经生产组合完成真实工具调用与清理。未修改既有断言、超时或跳过规则。本轮无 UI 变更，未重复先前浏览器 QA/生产构建；类型检查与完整回归覆盖当前源码。

@@ -15,6 +15,7 @@ import { MessageRuntime } from '../../../apps/web/src/server/message-runtime';
 import { ModelSettingsService } from '../../../apps/web/src/server/model-settings';
 import { createWebTaskCompositionFactory } from '../../../apps/web/src/server/task-composition';
 import type { TaskComposition } from '../../../apps/web/src/server/task-orchestration-runtime';
+import { finishWithCleanup } from '../../integration/phase10/cleanup';
 
 it('phase10 compatible model live G5 uses encrypted configuration in the production composition', async () => {
   const apiKey = process.env.DEEPSEEK_API_KEY;
@@ -25,6 +26,7 @@ it('phase10 compatible model live G5 uses encrypted configuration in the product
   const goal =
     'Use fs_write to write model-connection.txt with exactly compatible-ok. Then use sandbox_run to run node -e "console.log(40+2)". Verify stdout is 42, then reply briefly. Do both tool calls.';
   let composition: TaskComposition | undefined;
+  const errors: unknown[] = [];
   try {
     const messages = new MessageRuntime(root, new ChannelStream(), DEFAULT_ROSTER);
     const settings = new ModelSettingsService(messages, new JsonModelConfigStore(root, () => key));
@@ -95,8 +97,12 @@ it('phase10 compatible model live G5 uses encrypted configuration in the product
     expect(
       (await settings.store.loadTask(scope))?.roles.find((r) => r.role === 'CONNECTION_PROBE'),
     ).toMatchObject({ model: 'deepseek-v4-flash', connectionId: expect.any(String) });
+  } catch (error) {
+    errors.push(error);
   } finally {
-    await composition?.dispose();
-    await rm(root, { recursive: true, force: true });
+    await finishWithCleanup(errors, [
+      () => composition?.dispose(),
+      () => rm(root, { recursive: true, force: true }),
+    ]);
   }
 }, 180000);

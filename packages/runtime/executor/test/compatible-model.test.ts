@@ -6,6 +6,60 @@ import { PHASE0_ROSTER } from '@agora/core-domain';
 import { expect, it } from 'vitest';
 import { HarnessExecutor } from '../src/harness-executor';
 
+it.each([
+  'http://example.com/v1',
+  'http://localhost.example.com/v1',
+  'ftp://example.com/v1',
+  'file:///tmp/model',
+  'https://user:private-key@example.com/v1',
+  'https://example.com/v1?key=private-key',
+  'https://example.com/v1#private-key',
+  'not-a-url',
+])('rejects unsafe direct executor URL %s before installing transport', async (baseURL) => {
+  const spec = PHASE0_ROSTER.find((r) => r.role === 'COORDINATOR');
+  if (!spec) throw new Error('missing Coordinator');
+  const originalFetch = globalThis.fetch;
+  let executor: HarnessExecutor | undefined;
+  try {
+    expect(() => {
+      executor = new HarnessExecutor(spec, {
+        compatible: {
+          id: 'invalid-url',
+          baseURL,
+          model: 'deepseek-v4-flash',
+          contextWindow: 32768,
+          maxTokens: 128,
+          resolveApiKey: async () => 'never-resolved',
+        },
+      });
+    }).toThrow('invalid model service URL');
+    expect(globalThis.fetch).toBe(originalFetch);
+  } finally {
+    await executor?.dispose();
+  }
+});
+
+it.each([
+  'https://example.com/v1',
+  'http://localhost/v1',
+  'http://127.0.0.1/v1',
+  'http://[::1]/v1',
+])('accepts a secure or loopback direct executor URL %s', async (baseURL) => {
+  const spec = PHASE0_ROSTER.find((r) => r.role === 'COORDINATOR');
+  if (!spec) throw new Error('missing Coordinator');
+  const executor = new HarnessExecutor(spec, {
+    compatible: {
+      id: 'valid-url',
+      baseURL,
+      model: 'deepseek-v4-flash',
+      contextWindow: 32768,
+      maxTokens: 128,
+      resolveApiKey: async () => undefined,
+    },
+  });
+  await executor.dispose();
+});
+
 it('isolates concurrent connection credentials and sanitizes terminal provider errors', async () => {
   const received: { url: string | undefined; auth: string | undefined }[] = [];
   const server = createServer(async (req, res) => {

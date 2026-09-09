@@ -20,6 +20,7 @@ import { expect, it } from 'vitest';
 import { ChannelStream } from '../../../apps/web/src/server/channel-stream';
 import { MessageRuntime } from '../../../apps/web/src/server/message-runtime';
 import { ModelSettingsService } from '../../../apps/web/src/server/model-settings';
+import { finishWithCleanup } from './cleanup';
 
 // Node 24 provides Zstandard; the repository retains @types/node 20 for its sandbox surface.
 const { zstdDecompressSync } = zlib as typeof zlib & {
@@ -80,6 +81,7 @@ it('runs frozen per-Agent connections through real tools, canonical state and a 
   const git = new WorktreeGitService(registry);
   const executors: HarnessExecutor[] = [];
   let catalog: ToolCatalog | undefined;
+  const errors: unknown[] = [];
   try {
     await docker.ping();
     const messages = new MessageRuntime(root, new ChannelStream(), PHASE0_ROSTER);
@@ -242,13 +244,19 @@ it('runs frozen per-Agent connections through real tools, canonical state and a 
     );
     executors.push(wrong);
     await expect(wrong.loadSafePoint(checkpoint)).rejects.toThrow('model configuration');
+  } catch (error) {
+    errors.push(error);
   } finally {
-    await Promise.all(executors.map((e) => e.dispose()));
-    await catalog?.dispose();
-    await git.dispose();
-    await sandbox.teardown(scope.taskId);
-    server.close();
-    await once(server, 'close');
-    await rm(root, { recursive: true, force: true });
+    await finishWithCleanup(errors, [
+      ...executors.map((executor) => () => executor.dispose()),
+      () => catalog?.dispose(),
+      () => git.dispose(),
+      () => sandbox.teardown(scope.taskId),
+      async () => {
+        server.close();
+        await once(server, 'close');
+      },
+      () => rm(root, { recursive: true, force: true }),
+    ]);
   }
 }, 120000);

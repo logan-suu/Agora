@@ -30,7 +30,11 @@ import {
 } from '@deepseek-ai/dsh-tool-call-timeout-policy';
 import ToolRuntime, { type ToolDefinition } from '@deepseek-ai/dsh-tools';
 import type { Executor, ProjectionView, StepContext, StepResult } from './base';
-import { type CompatibleModelOptions, installCompatibleModel } from './compatible-model';
+import {
+  assertCompatibleModelURL,
+  type CompatibleModelOptions,
+  installCompatibleModel,
+} from './compatible-model';
 
 /** Default model name used when neither RoleSpec.model nor AGORA_MODEL is set. */
 const DEFAULT_MODEL = 'deepseek-v4-flash';
@@ -219,6 +223,7 @@ export class HarnessExecutor implements Executor {
       (options.adapter || options.deepseek || options.compatible.model !== this.model)
     )
       throw new Error('conflicting model connection configuration');
+    if (options.compatible) assertCompatibleModelURL(options.compatible.baseURL);
     this.ctx = new Context();
     // Minimal plugin set; load order respects each plugin's `inject` deps.
     this.pluginFibers.push(this.ctx.plugin(AgentRegistry)); // ctx.agents

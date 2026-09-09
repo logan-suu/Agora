@@ -13,6 +13,26 @@ export interface CompatibleModelOptions {
   resolveApiKey: () => Promise<string | undefined>;
 }
 
+/** Reject unsafe direct callers before creating plugins or resolving credentials. */
+export function assertCompatibleModelURL(baseURL: string): void {
+  let url: URL;
+  try {
+    if (typeof baseURL !== 'string' || baseURL.length > 2048) throw new Error();
+    url = new URL(baseURL);
+  } catch {
+    throw new Error('invalid model service URL');
+  }
+  const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  if (
+    (url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback)) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  )
+    throw new Error('invalid model service URL');
+}
+
 /** An executor can resolve exactly its own immutable connection, never ambient credentials. */
 class ConnectionCredentials extends CredentialProvider {
   constructor(
@@ -75,6 +95,7 @@ function installTransportPolicy() {
 }
 
 export function installCompatibleModel(ctx: Context, options: CompatibleModelOptions) {
+  assertCompatibleModelURL(options.baseURL);
   installTransportPolicy();
   const provider = `agora-model-${options.id}`;
   const credentials = ctx.plugin(ConnectionCredentials, options);
