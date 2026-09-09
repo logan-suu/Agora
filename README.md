@@ -43,7 +43,7 @@ Agora's central design rules are:
 - **One collaboration surface:** communication appears as channels in a group-chat UI.
 - **One final authority:** agents may object, but the human Leader decides; agents do not vote themselves into consensus.
 - **Role-projected context:** display messages and model payloads are separate, and raw chat logs are never injected wholesale.
-- **Thin executors:** the project reuses Harness for the single-agent loop and implements only the coordination layer above it.
+- **Unified Harness agents:** every role uses Agora’s own agent implementation built on DeepSeek Harness. Harness supplies the agent loop, session persistence, and compaction; Agora implements role projections and collaboration control. External coding-agent executors are outside the product scope.
 - **Real execution evidence:** coding tasks run through sandbox, MCP, Git, test, persistence, and recovery paths rather than UI-only simulations.
 
 ## What Works Today

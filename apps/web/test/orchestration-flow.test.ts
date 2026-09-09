@@ -574,7 +574,7 @@ describe('TaskOrchestrationRuntime', () => {
 
     await expect(runtime.summary(scope)).resolves.toMatchObject({
       runStatus: 'needs_attention',
-      error: expect.stringContaining('injected suspension cleanup failure'),
+      error: '[RUN_FAILED] Task execution failed.',
     });
     expect(lifecycle.archived).toBe(0);
     await expect(messages.store.load(scope)).resolves.toMatchObject({
@@ -848,7 +848,7 @@ describe('TaskOrchestrationRuntime', () => {
     await expect(runtime.summary(scope)).resolves.toMatchObject({
       runStatus: 'failed',
       artifactPath: '/durable/project-a/failed-task/artifacts/worktree',
-      error: 'scripted worker failure',
+      error: '[RUN_FAILED] Task execution failed.',
     });
     expect(lifecycle).toEqual({ archived: 1, disposed: 1 });
   });
@@ -869,7 +869,9 @@ describe('TaskOrchestrationRuntime', () => {
 
     await expect(runtime.summary(scope)).resolves.toMatchObject({
       runStatus: 'needs_attention',
-      error: expect.stringContaining('artifact archive failed: injected archive failure'),
+      error: expect.stringContaining(
+        'artifact archive failed: [RUN_FAILED] Task execution failed.',
+      ),
     });
     expect(lifecycle).toEqual({ archived: 1, disposed: 0 });
 
@@ -878,7 +880,7 @@ describe('TaskOrchestrationRuntime', () => {
     await expect(runtime.summary(scope)).resolves.toMatchObject({
       runStatus: 'failed',
       artifactPath: '/durable/project-a/archive-failed-task/artifacts/worktree',
-      error: 'scripted worker failure',
+      error: '[RUN_FAILED] Task execution failed.',
     });
     expect(lifecycle).toEqual({ archived: 2, disposed: 1 });
   });
@@ -906,7 +908,9 @@ describe('TaskOrchestrationRuntime', () => {
     await runtime.waitForIdle(scope);
     await expect(runtime.summary(scope)).resolves.toMatchObject({
       runStatus: 'needs_attention',
-      error: expect.stringContaining('artifact archive failed: injected archive failure'),
+      error: expect.stringContaining(
+        'artifact archive failed: [RUN_FAILED] Task execution failed.',
+      ),
     });
 
     const departure = await createPostMessage(messages)(
@@ -930,7 +934,9 @@ describe('TaskOrchestrationRuntime', () => {
     ).resolves.toMatchObject({
       startOutcome: 'needs_attention',
       runStatus: 'needs_attention',
-      error: expect.stringContaining('artifact archive failed: injected archive failure'),
+      error: expect.stringContaining(
+        'artifact archive failed: [RUN_FAILED] Task execution failed.',
+      ),
     });
     await expect(runtime.waitForIdle(scope)).resolves.toBeUndefined();
     await expect(runtime.disposeAll()).resolves.toBeUndefined();

@@ -401,3 +401,129 @@ describe('projectTraceInspections', () => {
     );
   });
 });
+
+function retryInspection() {
+  const policyKey = JSON.stringify(['normal', 2, ['RATE_LIMIT'], 1, 10, 0]);
+  return inspection('retry-session', 'CODER', [
+    event(0, 10, 'turn/start', { turn: 1 }),
+    event(1, 11, 'step/start', { turn: 1, step: 1 }),
+    event(2, 12, 'request/header', { header: { config: { provider: 'test' } } }),
+    event(3, 13, 'llm/retry', {
+      turn: 1,
+      step: 1,
+      retryId: 'retry-chain',
+      retry: 1,
+      maxRetries: 2,
+      provider: 'test',
+      mode: 'normal',
+      policyKey,
+      delayMs: 1,
+      failure: { code: 'RATE_LIMIT', message: 'SECRET', requestId: 'SECRET' },
+    }),
+    event(4, 14, 'llm/retry-started', { turn: 1, step: 1, retryId: 'retry-chain', retry: 1 }),
+    event(5, 15, 'llm/retry', {
+      turn: 1,
+      step: 1,
+      retryId: 'retry-chain',
+      retry: 2,
+      maxRetries: 2,
+      provider: 'test',
+      mode: 'normal',
+      policyKey,
+      delayMs: 2,
+      failure: { code: 'RATE_LIMIT', message: 'SECRET' },
+    }),
+  ]);
+}
+
+describe('retry Trace facts', () => {
+  it('distinguishes backoff completion, open waiting and closed without start', () => {
+    const source = { ...retryInspection() };
+    const read = () => projectTraceInspections('p', 't', [source]).sessions[0]?.turns[0]?.steps[0];
+    expect(read()).toMatchObject({
+      retries: [
+        {
+          retryId: 'retry-chain',
+          retry: 1,
+          maxRetries: 2,
+          delayMs: 1,
+          scheduledAt: 13,
+          backoffEndedAt: 14,
+          status: 'backoff_completed',
+          errorCode: 'RATE_LIMIT',
+        },
+        { retry: 2, status: 'waiting' },
+      ],
+    });
+    source.events = [
+      ...source.events,
+      event(6, 16, 'step/end', { turn: 1, step: 1 }),
+      event(7, 17, 'turn/end', { turn: 1, reason: { kind: 'error' } }),
+    ];
+    expect(read()).toMatchObject({
+      status: 'error',
+      retries: [{ status: 'backoff_completed' }, { status: 'closed_without_start' }],
+    });
+    expect(JSON.stringify(read())).not.toMatch(/SECRET|failure|policyKey|provider|requestId/);
+    const trimmed = projectTraceInspections('p', 't', [source], { maxEvents: 6 });
+    expect(trimmed.sessions).toEqual([]);
+    expect(trimmed.omittedEventCount).toBe(7);
+  });
+  it.each(['provider', 'policyKey', 'retry', 'retryId', 'maxRetries', 'delayMs'])(
+    'rejects corrupted %s even in an omitted turn',
+    (field) => {
+      const source = { ...retryInspection() };
+      const data = source.events[5]?.data as unknown as Record<string, unknown>;
+      data[field] =
+        field === 'delayMs'
+          ? Infinity
+          : field === 'retry'
+            ? 1
+            : field === 'maxRetries'
+              ? 3
+              : 'corrupt';
+      expect(() => projectTraceInspections('p', 't', [source], { maxEvents: 1 })).toThrow();
+    },
+  );
+  it('rejects duplicate starts and starts beyond the owning step', () => {
+    for (const closed of [false, true]) {
+      const source = { ...retryInspection() };
+      source.events = source.events.slice(0, 5);
+      if (closed)
+        source.events = [...source.events, event(5, 15, 'step/end', { turn: 1, step: 1 })];
+      source.events = [
+        ...source.events,
+        event(source.events.length, 17, 'llm/retry-started', {
+          turn: 1,
+          step: 1,
+          retryId: 'retry-chain',
+          retry: 1,
+        }),
+      ];
+      expect(() => projectTraceInspections('p', 't', [source])).toThrow();
+    }
+  });
+  it('does not count a lineage seed twice', () => {
+    const parent = { ...retryInspection() };
+    parent.events = [
+      ...parent.events,
+      event(6, 16, 'step/end', { turn: 1, step: 1 }),
+      event(7, 17, 'turn/end', { turn: 1, reason: { kind: 'error' } }),
+    ];
+    const child = inspection(
+      'child',
+      'CODER',
+      [
+        ...parent.events,
+        event(8, 18, 'turn/start', { turn: 2 }),
+        event(9, 19, 'turn/end', { turn: 2, reason: { kind: 'completed' } }),
+      ],
+      { parentSession: 'retry-session', seedLength: 8 },
+    );
+    const result = projectTraceInspections('p', 't', [parent, child]);
+    expect(JSON.stringify(result).match(/"retryId"/g)).toHaveLength(2);
+    expect(
+      projectTraceInspections('p', 't', [parent, child], { maxEvents: 1 }).omittedEventCount,
+    ).toBe(9);
+  });
+});

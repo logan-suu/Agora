@@ -13,9 +13,12 @@ import { Context, type Fiber } from '@deepseek-ai/cordis';
 import AgentRegistry, { type Agent, type AgentHandle } from '@deepseek-ai/dsh-agent';
 import AgentLoop from '@deepseek-ai/dsh-agent-loop';
 import BasicCompactionEngine from '@deepseek-ai/dsh-compaction-basic';
-import LlmRuntime, { type LlmAdapter } from '@deepseek-ai/dsh-llm';
+import InvariantRegistry from '@deepseek-ai/dsh-invariants';
+import LlmRuntime, { type LlmAdapter, LlmError } from '@deepseek-ai/dsh-llm';
 import { createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm/message';
 import * as LlmDeepseek from '@deepseek-ai/dsh-llm-deepseek';
+import * as LlmRetry from '@deepseek-ai/dsh-llm-retry';
+import * as RetryInvariant from '@deepseek-ai/dsh-llm-retry/invariant';
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session';
 import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl';
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt';
@@ -111,6 +114,16 @@ export interface HarnessExecutorOptions {
   };
 }
 
+/** A terminal provider failure; outer worker dispatch must not reset its request budget. */
+export class ExecutorRequestError extends Error {
+  readonly code: string;
+  constructor(cause: LlmError) {
+    super('Model request failed after bounded recovery.', { cause });
+    this.name = 'ExecutorRequestError';
+    this.code = cause.code;
+  }
+}
+
 interface SafePointPayload {
   version: 1;
   projectId: string;
@@ -162,6 +175,7 @@ export function inspectHarnessSafePoint(cursor: string): HarnessSafePointIdentit
 export class HarnessExecutor implements Executor {
   private readonly ctx: Context;
   private readonly provider: string;
+  private readonly model: string;
   private readonly adapter: LlmAdapter | undefined;
   private readonly tools: readonly ToolDefinition[] | undefined;
   private readonly allowTools: readonly string[] | undefined;
@@ -195,6 +209,7 @@ export class HarnessExecutor implements Executor {
     private readonly spec: RoleSpec,
     options: HarnessExecutorOptions = {},
   ) {
+    this.model = this.spec.model ?? process.env.AGORA_MODEL ?? DEFAULT_MODEL;
     this.ctx = new Context();
     // Minimal plugin set; load order respects each plugin's `inject` deps.
     this.pluginFibers.push(this.ctx.plugin(AgentRegistry)); // ctx.agents
@@ -219,6 +234,9 @@ export class HarnessExecutor implements Executor {
       }),
     ); // ctx.tools timeout policy (task 1.5, R7): arms ToolDefinition.timeoutMs → TOOL_TIMEOUT
     this.pluginFibers.push(this.ctx.plugin(TokenMeter)); // ctx.tokenMeter (needed by compaction)
+    this.pluginFibers.push(this.ctx.plugin(InvariantRegistry));
+    this.pluginFibers.push(this.ctx.plugin(RetryInvariant));
+    this.pluginFibers.push(this.ctx.plugin(LlmRetry));
     this.pluginFibers.push(this.ctx.plugin(AgentLoop)); // registers the agents factory
     this.pluginFibers.push(this.ctx.plugin(BasicCompactionEngine)); // ctx.compaction (zero-config auto)
     if (options.deepseek !== undefined && options.deepseek !== false) {
@@ -248,6 +266,19 @@ export class HarnessExecutor implements Executor {
     await Promise.all(this.pluginFibers);
     if (this.adapter !== undefined) {
       this.ctx.llm.registerAdapter([this.provider], this.adapter);
+    }
+    // Validate the exact captured registration, including plugin-owned provider routes.
+    const policy = this.ctx.llm.providerRetryPolicy(this.provider);
+    if (
+      policy.mode !== 'normal' ||
+      policy.maxRetries > 5 ||
+      policy.maxDelayMs > 10000 ||
+      policy.retryableCodes.some(
+        (code) =>
+          !['EMPTY_RESPONSE', 'RATE_LIMIT', 'SERVER', 'TIMEOUT', 'TRANSPORT'].includes(code),
+      )
+    ) {
+      throw new Error('Agora requires a bounded normal provider retry policy');
     }
     if (this.tools !== undefined) {
       for (const definition of this.tools) {
@@ -318,7 +349,8 @@ export class HarnessExecutor implements Executor {
     const failure = this.agentErrors.get(context.sessionId);
     if (failure !== undefined) {
       this.agentErrors.delete(context.sessionId);
-      throw new Error(`agent turn failed: ${failureMessage(failure)}`);
+      if (failure instanceof LlmError) throw new ExecutorRequestError(failure);
+      throw new Error(`agent turn failed: ${failureMessage(failure)}`, { cause: failure });
     }
 
     const turn = lastAssistantTurn(agent, context.sessionId, this.stepStartEventIndex);
@@ -462,7 +494,8 @@ export class HarnessExecutor implements Executor {
 
   /** Release every agent loop and tear down all loaded plugins (reverse order). */
   async dispose(): Promise<void> {
-    await this.ready;
+    // Execution reports initialization failures; disposal must still release loaded plugins.
+    await this.ready.catch(() => undefined);
     for (const handle of this.handles.values()) {
       await handle.dispose();
     }
@@ -619,7 +652,7 @@ export class HarnessExecutor implements Executor {
   }
 
   private resolveModel(): string {
-    return this.spec.model ?? process.env.AGORA_MODEL ?? DEFAULT_MODEL;
+    return this.model;
   }
 
   /** Serialize the current projection view into a single user message. */

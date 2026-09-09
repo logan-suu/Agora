@@ -1,4 +1,5 @@
 import type {
+  TraceRetryView,
   TraceSessionView,
   TraceSnapshot,
   TraceStepStatus,
@@ -160,6 +161,7 @@ function parseTraceSession(value: unknown): TraceSessionView {
             'endedAt?',
             'status',
             'tools',
+            'retries?',
           ]);
           return {
             step: integerField(stepRecord, 'step'),
@@ -174,6 +176,9 @@ function parseTraceSession(value: unknown): TraceSessionView {
               'error',
               'interrupted',
             ]),
+            ...(stepRecord.retries === undefined
+              ? {}
+              : { retries: arrayField(stepRecord, 'retries').map(parseTraceRetry) }),
             tools: arrayField(stepRecord, 'tools').map((tool) => {
               const toolRecord = exactRecord(tool, [
                 'callId',
@@ -204,6 +209,61 @@ function parseTraceSession(value: unknown): TraceSessionView {
         }),
       };
     }),
+  };
+}
+
+function parseTraceRetry(value: unknown): TraceRetryView {
+  const row = exactRecord(value, [
+    'retryId',
+    'retry',
+    'maxRetries',
+    'delayMs',
+    'scheduledAt',
+    'backoffEndedAt?',
+    'status',
+    'errorCode',
+  ]);
+  const retryId = stringField(row, 'retryId');
+  const retry = integerField(row, 'retry');
+  const maxRetries = integerField(row, 'maxRetries');
+  const delayMs = row.delayMs;
+  const scheduledAt = integerField(row, 'scheduledAt');
+  const backoffEndedAt =
+    row.backoffEndedAt === undefined ? undefined : integerField(row, 'backoffEndedAt');
+  const status = statusField<TraceRetryView['status']>(row, 'status', [
+    'waiting',
+    'backoff_completed',
+    'closed_without_start',
+  ]);
+  if (
+    !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(retryId) ||
+    retry < 1 ||
+    retry > maxRetries ||
+    maxRetries > 5 ||
+    typeof delayMs !== 'number' ||
+    !Number.isFinite(delayMs) ||
+    delayMs < 0 ||
+    delayMs > 10000 ||
+    (status === 'backoff_completed') !== (backoffEndedAt !== undefined) ||
+    (backoffEndedAt !== undefined && backoffEndedAt < scheduledAt)
+  )
+    throw new Error('invalid trace response');
+  return {
+    retryId,
+    retry,
+    maxRetries,
+    delayMs,
+    scheduledAt,
+    ...(backoffEndedAt === undefined ? {} : { backoffEndedAt }),
+    status,
+    errorCode: statusField<TraceRetryView['errorCode']>(row, 'errorCode', [
+      'EMPTY_RESPONSE',
+      'RATE_LIMIT',
+      'SERVER',
+      'TIMEOUT',
+      'TRANSPORT',
+      'UNKNOWN',
+    ]),
   };
 }
 

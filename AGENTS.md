@@ -1,6 +1,6 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.7
+**版本**：v2.9
 **生效日期**：2026-09-08
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
@@ -23,7 +23,7 @@
 | **技术选型文档** | `docs/技术选型文档.md` | 版本锁定（§12）/ 备选方案排除（§4）/ MCP 工具清单（§6）/ 沙箱（§7）/ SSE（§9）/ 持久化（§10）/ 决策记录（§13） |
 | **开发计划安排** | `docs/开发计划安排.md` | Phase 0-10 任务分解 / 里程碑 M0-M10 / 风险 / 秋招 Demo 检查点（§17） |
 | **框架调研与借鉴决策** | `docs/框架调研与借鉴决策.md` | AutoGen/AgentScope 源码级结论 / 8 个借鉴模式 / 借鉴-拒绝矩阵 |
-| **任务状态** | `docs/task-status.json` | 11 phase / 62 任务 / 依赖图 / standing_decisions——每个任务开工前必读 |
+| **任务状态** | `docs/task-status.json` | 11 phase / 61 活动任务（原 10.1 已取消） / 依赖图 / standing_decisions——每个任务开工前必读 |
 | **延期项台账** | `docs/deferred-items.json` | 全阶段延期项统一台账（DEF-NNN，格式对齐 iTestAgent）；常驻决策 DEF 的唯一数据源，阶段出口检查时逐条核对 |
 
 ### 0.2 任务类型 → 文档快速索引（Agent 必读）
@@ -111,7 +111,7 @@ R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeB
 R2  上下文只经投影切片喂给 agent，永不投原始群聊 log；display（给人看）与 payload（给 agent 用）严格分离；9.4 同 role 并行须按 canonical assignment 缩小 subtask/worktree/指令切片，初始 Step、reproject、D4 resume 同路校验
 R3  leader 是唯一裁决者：不做 agent 间自动共识/投票；blocking 异议必须升级 humanGate 由人拍板；[2026-09-05 架构决策更新] TESTER pass/REVIEWER approved 只形成 completionCandidate，必须经 D16 completion_confirmation gate 的 Leader 终审后才允许 isRequestSatisfied=true/finalize
 R4  配合式抢占只能在安全点（step/end）打断，绝不硬杀 LLM token 流；Phase 9 以 task-scoped 稳定 actionId pause epoch 固定 active cohort。非阻塞 reproject 在 canonical commit 后复用原 context/lease/admission；humanGate 按 D4 执行完整 gate 落盘→释放已静止 worker lease→suspend composition→Leader resolve→每个 paused worker 全新 context 真 Fork 并重新取 lease。checkpoint 未 flush/未闭合时 fail-closed，旧 lease 不跨 Fork，不做内存动态挂起
-R5  阶段 0–9 所有 Worker 强制薄执行器（Harness）；RoleSpec.external 仅预留，不实现切换逻辑；厚 Agent 到阶段 10
+R5  所有阶段、所有角色统一使用基于 DeepSeek Harness 的自研 Agent/HarnessExecutor；复用官方 loop、会话持久化与压缩，自研角色、投影及协作控制。不接入外部编码 Agent，不实现薄/厚切换；external/externalCmd 仅保留旧兼容表示，不作为执行能力或后续路线承诺（D2）
 R6  阶段 0–N KnowledgeBase 只读（Write-Block），Librarian 仅空桩，不引入向量检索依赖；sliceKB 阶段 0 返回空对象
 R7  阶段 0 沙箱只用 LocalTempSandbox；文件操作限定沙箱目录内；run 默认超时 30s；dockerode/simple-git 为 optionalDependencies
 R8  分层依赖倒置：L1 core/domain 禁止任何 I/O（fs/http/child_process）；L2 编排只能调用 L3 端口接口；业务代码不直接 child_process（沙箱包内除外且经 MCP server 暴露）
@@ -218,8 +218,7 @@ L3 端口抽象层   packages/comm/bus                      MessageBus 接口（
                 runtime/executor/base.ts               Executor 接口
                 runtime/sandbox                        SandboxManager 接口
                 runtime/state                          TaskStateStore 接口
-L4 基础设施层   runtime/executor/harness-executor.ts   薄执行器（P0-P9 唯一允许形态）
-                runtime/executor/external-executor.ts  厚执行器（仅 P10+）
+L4 基础设施层   runtime/executor/harness-executor.ts   基于 DeepSeek Harness 的统一执行器（所有阶段）
                 runtime/sandbox/local-temp-sandbox.ts  LocalTempSandbox（P0）/ docker(P1+)
                 runtime/state/json-task-state-store.ts JSON State 原子快照适配器（P5）
                 packages/tools/*                       MCP servers
@@ -302,7 +301,7 @@ KB          阶段 0–N 只读（决策 D3）：sliceKB 返回空对象/极简�
 写所有权    结构化切片只读投影；D17 并行 agent step 只写稳定 append，WorkerState 生命周期只由 WorkerRuntime 内部按自身分区提交，当前 Subtask 全字段与并行 set 均归串行控制面（WO）
 裁决        leader 唯一；D14：异议目标区分 decision/requirement，未知/失效引用 fail-fast；contradiction=blocking 经绑定 gate 的 D4 裁决，concern/advisory 继续并可直接裁决；每次裁决原子写规范 Leader 消息+最高权威 resolution Decision，accept blocking 必须撤回目标；Decision.supersedes 只允许同 topic 的 current Decision；未决视图与重放交叉验证全部后置事实；所有角色通过结构化 objectionResolutions 系统切片取得已验证裁决，不读原始 Leader 消息；语义拿不准由上游声明 concern
 完成终审    D16：TESTER pass + REVIEWER approved 仅形成 completionCandidate；Coordinator 只接受当前 REVIEWER dispatch 后恰一个、满足 `[A-Za-z0-9][A-Za-z0-9._:-]*` 且未跨轮复用的 verdict id，并打开 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion/request_changes；真 Fork resume 后交叉验证 canonical Message/Decision/receipt/current review，approve 才置 isRequestSatisfied=true 并 finalize，request_changes 保持 false、保守回 CODER；正常阶段不逐段审批
-Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复制进 State/Message/MessageBus；对人 DTO 仅含 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 prompt/projection/reasoning/arguments/results；child 只投 seed 后 native 事件且 parent 图无环；官方格式读取后仍校验跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；响应有界、截断显式
+Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复制进 State/Message/MessageBus；对人 DTO 的基础字段为 role/session lineage、turn/step 时间状态与工具名/状态/错误码；10.2 重试白名单与事件语义按详细设计 §6.1（实测证据见 docs/evals/phase10-resilience-evidence.md），禁止原始 failure 文本及 prompt/projection/reasoning/arguments/results；child 只投 seed 后 native 事件且 parent 图无环；官方格式读取后仍校验跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；响应有界、截断显式
 并行度      D17：GlobalScheduler lease 是跨项目唯一 worker 执行额度，身份={projectId,taskId,workerId}，默认全局 cap=3、按项目轮转；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone；runParallel 处理完整 batch，all-settled 后 reload canonical State；subtask 必须状态可执行、dependsOn 已满足且 persisted WorkerState assignment 匹配才可激活，ownerRole 是实现责任归属而非 TESTER/REVIEWER 的独占执行门禁；可选 priority 只允许 0–100 整数、旧快照缺省 0，依赖满足优先，同一就绪集合按 priority 降序/稳定 id 破平局；task-scoped pause epoch 固定请求时 active cohort，同参数重放、异参数冲突，排队 acquire 取消并保持 pending，done/failed 不被 paused 覆盖；非阻塞 reproject 保留 lease/admission，humanGate 完整落盘后先释放已静止 worker lease；active executable composition 另受默认 3 个的生命周期 admission cap，满载在重资源初始化前返回可重试 429
 波次验收    D17/9.4：显式 executionPlan DAG + 串行 parallelExecution 固定 wave/attempt/base/assignment；新波次从上次 accepted 验证 HEAD 开工，指纹失效复验以规范 sourceReceiptId 绑定上一验证 HEAD 并保留累计测试；legacy modules 只显式退化顺序链。Integration.resultCommit 冻结，TESTER 在独立 validation worktree 写测试并实测精确 HEAD，可信 receipt 绑定 dispatch/commit/控制指纹后才闭合波次。preparation 当前固定关闭且不提供启用入口，只读计划仅为未来保留契约；TESTER/REVIEWER 不覆盖 CODER 的 Subtask.worktree；最终 REVIEWER/D16/artifact 绑定同一已验证累计产物。REVIEWER refs 返工覆盖目标与全部传递后继（含 done），缺 refs 才显式全量，坏 refs fail-closed；详细契约见详细设计 §3.1，9.4 实装证据见任务 notes，9.5 出口仍须独立验收
 迭代上限    iterationCount 默认 8 轮，超限强制置 humanGate 升级人（默认开启，不许设 None）
@@ -448,7 +447,7 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 | 在 token 流中途硬杀 LLM | 状态半截撕裂 | R4 |
 | 直接赋值共享 State | 并行写乱 | R1 |
 | 中途修改接口签名 | 破坏阶段退化承诺 | R9 |
-| 阶段 0-9 实现厚执行器切换 | 越阶段范围 | R5/决策 D2 |
+| 接入外部编码 Agent 或实现薄/厚执行器切换 | 违反统一 Harness 路线 | R5/决策 D2 |
 | 阶段 0 强装 Docker/Git 依赖 | 违背瘦身决策 | R7/决策 D5 |
 | 引入 WebSocket 替代 SSE | 违背选型决策 | FE |
 | mock 绕过沙箱实测让 G5 变绿 | 能力失真 | R11/G5 |

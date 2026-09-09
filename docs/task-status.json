@@ -4,7 +4,7 @@
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
   "last_updated": "2026-09-08",
   "current_phase": 10,
-  "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。",
+  "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。",
   "standing_decisions": [
     {
       "id": "D1",
@@ -13,8 +13,8 @@
     },
     {
       "id": "D2",
-      "rule": "阶段 0–9 所有 Worker 强制绑定为薄执行器（Harness）；RoleSpec.external 仅作预留扩展点；厚 Agent 接入延后至阶段 10",
-      "source": "docs/详细设计方案.md §6"
+      "rule": "所有阶段、所有角色统一使用基于 DeepSeek Harness 的自研 Agent/HarnessExecutor；复用官方 loop、会话持久化、inbox 与压缩，自研角色、投影、编排及并发/抢占控制。不接入外部编码 Agent、不实现薄/厚切换；external/externalCmd 仅为旧兼容表示。原任务 10.1 取消，活动图移除并保留历史编号；D1/D4/D15/D17 与冻结端口保持，D11 Benchmark 任务/环境/Grader 适配不受影响",
+      "source": "docs/项目蓝图.md §21；docs/详细设计方案.md §6；docs/开发计划安排.md §13"
     },
     {
       "id": "D3",
@@ -78,8 +78,8 @@
     },
     {
       "id": "D15",
-      "rule": "Trace 只从当前任务锁定版本官方 Harness JSONL 读时派生，不复制进 AppState/Message/MessageBus/第二份日志。DTO 严格白名单 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 projection/prompt/assistant/reasoning/工具 arguments/results/环境变量/文件正文。child 只投 seedLength 后 native 事件并保留 parent 引用，parent 图无环；官方格式读取后仍校验 turn/step/tool 跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；独立有界 GET 快照显式报告 omittedEventCount；Phase 8 短轮询顺序时间线，9.4 以根 sessionId/lineage 分同 role 泳道，真实 turn/step 时间呈现并行与 Fork，不复制 State 为 Trace 真相",
-      "source": "docs/项目蓝图.md §16/§21；docs/详细设计方案.md §6；docs/系统架构设计文档.md §4.4/§9；docs/开发计划安排.md §11；docs/开发计划安排.md §12"
+      "rule": "Trace 只从当前任务锁定版本官方 Harness JSONL 读时派生，不复制进 AppState/Message/MessageBus/第二份日志。DTO 严格白名单 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 projection/prompt/assistant/reasoning/工具 arguments/results/环境变量/文件正文。child 只投 seedLength 后 native 事件并保留 parent 引用，parent 图无环；官方格式读取后仍校验 turn/step/tool 跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；独立有界 GET 快照显式报告 omittedEventCount；Phase 8 短轮询顺序时间线，9.4 以根 sessionId/lineage 分同 role 泳道，真实 turn/step 时间呈现并行与 Fork，不复制 State 为 Trace 真相；10.2 按详细设计 §6.1 增同 open Step 的最小 retries 白名单，链内 retryId+retry 标识等待，started 仅退避完成，状态 waiting/backoff_completed/closed_without_start；两个官方事件都计入原响应上限/lineage 去重，禁止原始 failure 文本。实测证据见 docs/evals/phase10-resilience-evidence.md",
+      "source": "docs/项目蓝图.md §16/§21；docs/详细设计方案.md §6；docs/系统架构设计文档.md §4.4/§9；docs/开发计划安排.md §11；docs/开发计划安排.md §12；docs/详细设计方案.md §6.1；docs/reviews/task102-spec-review.md"
     },
     {
       "id": "D16",
@@ -88,7 +88,7 @@
     },
     {
       "id": "D17",
-      "rule": "Phase 9 真并行使用 GlobalScheduler 稳定 lease 作为跨项目唯一 worker 执行额度（默认 cap=3、按项目轮转排队），lease/assignment 逻辑身份为 {projectId,taskId,workerId}；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone。runParallel 处理全部合法 assignment，不 slice 丢尾部；同 role 可并行多个独立薄 HarnessExecutor/Context/Agent/session，锁定版本 one-shot ctx.subagents.start 不作为顶层 worker。Phase 9 复合 workspace adapter 对逻辑 workerId 做确定性 Git-safe 编码，从 .data 内 task-owned canonical repo 创建真实 linked worktree，并把同一路径挂入 Docker；恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 的唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止 Git/Docker 双目录、用户 checkout 写入或自动 push。State 以结构化 WorktreeRef 和可恢复 Integration 保存 base/head/有序分支/进度/冲突/resultCommit，删除 pendingPatch/branchOrPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收失败必须补偿 worktree metadata 与临时 branch；冲突只有在 abort 成功且真实 Git metadata 无 MERGE_HEAD 后才可打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 的分支明细只投当前 Integration 波次，9.4 最终审阅另给已验证累计产物与全计划任务索引；无 Integration 的顺序兼容只允许候选收敛到同一 WorktreeRef，并发归档使用直接 code-unit 稳定排序且不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失/损坏或引用不存在 fail-closed。Phase 9 仅允许 request_rework <workerId> 并从原 base 重建。模型/工具调用并行，但 step 输出处理与 TaskStateStore 写入进入 per-task canonical commit queue：重读最新 State、校验 enabled roster/subtask 可执行状态/依赖/persisted WorkerState assignment/写所有权后原子提交；ownerRole 是责任归属而非独占执行门禁。并行 agent step 只可 append 稳定身份事实；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区提交。task-scoped pause 以稳定 actionId 建立 epoch 并固定 active cohort，同参数重放、异参数冲突；排队 acquire 取消后保持 pending，已启动 Step 先提交再 flush，done/failed 不被 paused 覆盖。非阻塞 reproject 保留原 context/lease/admission；humanGate 在完整 gate 落盘后释放已静止 worker lease，composition 清理失败仅保留 admission/needs_attention，resume 用 per-worker lineage 计划并重新排队新 lease，旧 lease 不跨 Fork。join 等全部已启动 worker settled 和提交队列排空后 reload canonical State；失败不硬杀同批 LLM、不回滚成功事实。active executable composition 另受默认 3 个 admission cap，满载在重资源初始化前返回可重试 429；当前 Subtask 全字段（含可选 0–100 整数 priority）、并行全局 set/他人 worker/collaboration 写入属串行控制面。旧 priority 缺省为 0；依赖满足优先，同一就绪集合按 priority 降序、稳定 id 破平局。禁止 mergeStates(AppState[]) 与 Promise.all fail-fast 猜最终状态；正式文件安全契约见详细设计§6/§11.7及DEF台账；9.4 严格 executionPlan DAG + parallelExecution 固定 wave/attempt/base/assignment，legacy modules 只显式退化为顺序链；新 wave 从上一 accepted validation HEAD 开工，模型投影按 assignment 隔离。preparation 只读计划；Integration.resultCommit 冻结，TESTER 在独立 validation worktree 提交测试并由可信服务绑定真实命令/dispatch/HEAD/需求决策指纹的不可变 receipt，测试通过才闭合 wave 并推进累计基线。TESTER/REVIEWER 不覆盖 Subtask.worktree；最终 artifact 取 accepted 验证产物，历史 receipt 不改写。旧结果/历史 worker 不越 wave 重放，失败有界返工；具体契约见详细设计 §3.1；canonical 初始化必须检查指定目录本身为 Git root，禁止继承 .data 上层用户 checkout；9.4 preparation 固定关闭，可信 Node/TAP 验证及单条 Leader integrationRework receipt 见详细设计 §3.1；D9/D14 指纹失效复验用规范 dispatch.sourceReceiptId 绑定更早的同 wave/attempt/Integration 验证 HEAD，保留全部累计测试并复核源证据；首次验证才从 Integration.resultCommit 开工；9.4 root-cause修复仅重写所需CODER，保留贡献经规范来源派生的累计验收范围通过后才闭合；验证证据先落盘而State回执丢失时严格复用首次执行，合法测试文件全集与suite叶测试计数不降级，失败反馈绑定当前返工身份；PR #66 修复：CODER/validation 均拒绝移除输入提交中的累计测试路径，CODER 忽略缓存不等于未提交改动，validation 仍严格拒绝 ignored。无 gate 并行错误收敛后 suspend 可执行资源、保留 State/worktree/JSONL/证据，成功释放 admission；失败保留 pendingSuspension 供 start 重试清理，不终态归档或自动重跑业务；9.5 按详细设计 §11.7 独立出口矩阵验收，worker lease/admission不代表持久worktree或容器总数上限；DEF-004默认须正式文件入口及后台进程竞态修复证据，后续支持边界需Leader另行明确接受、可强制实测并保留open，不能由本次规格评审推导豁免；9.5生产Docker逐worktree单挂载，正式文件入口固定根身份并用受信POSIX目录句柄helper，Git固定可信metadata并关闭全局配置，宿主Git及验证HEAD至归档复制全程冻结同目录容器后台进程，窗口内同根正式宿主写入口拒绝写入且别名共享固定根身份，停止成功后才回收Git工作树，失败可重试；平台与构建部署边界见蓝图§13/§21及详细设计§6",
+      "rule": "Phase 9 真并行使用 GlobalScheduler 稳定 lease 作为跨项目唯一 worker 执行额度（默认 cap=3、按项目轮转排队），lease/assignment 逻辑身份为 {projectId,taskId,workerId}；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone。runParallel 处理全部合法 assignment，不 slice 丢尾部；同 role 可并行多个独立薄 HarnessExecutor/Context/Agent/session，锁定版本 one-shot ctx.subagents.start 不作为顶层 worker。Phase 9 复合 workspace adapter 对逻辑 workerId 做确定性 Git-safe 编码，从 .data 内 task-owned canonical repo 创建真实 linked worktree，并把同一路径挂入 Docker；恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 的唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止 Git/Docker 双目录、用户 checkout 写入或自动 push。State 以结构化 WorktreeRef 和可恢复 Integration 保存 base/head/有序分支/进度/冲突/resultCommit，删除 pendingPatch/branchOrPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收失败必须补偿 worktree metadata 与临时 branch；冲突只有在 abort 成功且真实 Git metadata 无 MERGE_HEAD 后才可打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 的分支明细只投当前 Integration 波次，9.4 最终审阅另给已验证累计产物与全计划任务索引；无 Integration 的顺序兼容只允许候选收敛到同一 WorktreeRef，并发归档使用直接 code-unit 稳定排序且不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失/损坏或引用不存在 fail-closed。Phase 9 仅允许 request_rework <workerId> 并从原 base 重建。模型/工具调用并行，但 step 输出处理与 TaskStateStore 写入进入 per-task canonical commit queue：重读最新 State、校验 enabled roster/subtask 可执行状态/依赖/persisted WorkerState assignment/写所有权后原子提交；ownerRole 是责任归属而非独占执行门禁。并行 agent step 只可 append 稳定身份事实；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区提交。task-scoped pause 以稳定 actionId 建立 epoch 并固定 active cohort，同参数重放、异参数冲突；排队 acquire 取消后保持 pending，已启动 Step 先提交再 flush，done/failed 不被 paused 覆盖。非阻塞 reproject 保留原 context/lease/admission；humanGate 在完整 gate 落盘后释放已静止 worker lease，composition 清理失败仅保留 admission/needs_attention，resume 用 per-worker lineage 计划并重新排队新 lease，旧 lease 不跨 Fork。join 等全部已启动 worker settled 和提交队列排空后 reload canonical State；失败不硬杀同批 LLM、不回滚成功事实。active executable composition 另受默认 3 个 admission cap，满载在重资源初始化前返回可重试 429；当前 Subtask 全字段（含可选 0–100 整数 priority）、并行全局 set/他人 worker/collaboration 写入属串行控制面。旧 priority 缺省为 0；依赖满足优先，同一就绪集合按 priority 降序、稳定 id 破平局。禁止 mergeStates(AppState[]) 与 Promise.all fail-fast 猜最终状态；正式文件安全契约见详细设计§6/§11.7及DEF台账；9.4 严格 executionPlan DAG + parallelExecution 固定 wave/attempt/base/assignment，legacy modules 只显式退化为顺序链；新 wave 从上一 accepted validation HEAD 开工，模型投影按 assignment 隔离。preparation 只读计划；Integration.resultCommit 冻结，TESTER 在独立 validation worktree 提交测试并由可信服务绑定真实命令/dispatch/HEAD/需求决策指纹的不可变 receipt，测试通过才闭合 wave 并推进累计基线。TESTER/REVIEWER 不覆盖 Subtask.worktree；最终 artifact 取 accepted 验证产物，历史 receipt 不改写。旧结果/历史 worker 不越 wave 重放，失败有界返工；具体契约见详细设计 §3.1；canonical 初始化必须检查指定目录本身为 Git root，禁止继承 .data 上层用户 checkout；9.4 preparation 固定关闭，可信 Node/TAP 验证及单条 Leader integrationRework receipt 见详细设计 §3.1；D9/D14 指纹失效复验用规范 dispatch.sourceReceiptId 绑定更早的同 wave/attempt/Integration 验证 HEAD，保留全部累计测试并复核源证据；首次验证才从 Integration.resultCommit 开工；9.4 root-cause修复仅重写所需CODER，保留贡献经规范来源派生的累计验收范围通过后才闭合；验证证据先落盘而State回执丢失时严格复用首次执行，合法测试文件全集与suite叶测试计数不降级，失败反馈绑定当前返工身份；PR #66 修复：CODER/validation 均拒绝移除输入提交中的累计测试路径，CODER 忽略缓存不等于未提交改动，validation 仍严格拒绝 ignored。无 gate 并行错误收敛后 suspend 可执行资源、保留 State/worktree/JSONL/证据，成功释放 admission；失败保留 pendingSuspension 供 start 重试清理，不终态归档或自动重跑业务；9.5 按详细设计 §11.7 独立出口矩阵验收，worker lease/admission不代表持久worktree或容器总数上限；DEF-004默认须正式文件入口及后台进程竞态修复证据，后续支持边界需Leader另行明确接受、可强制实测并保留open，不能由本次规格评审推导豁免；9.5生产Docker逐worktree单挂载，正式文件入口固定根身份并用受信POSIX目录句柄helper，Git固定可信metadata并关闭全局配置，宿主Git及验证HEAD至归档复制全程冻结同目录容器后台进程，窗口内同根正式宿主写入口拒绝写入且别名共享固定根身份，停止成功后才回收Git工作树，失败可重试；平台与构建部署边界见蓝图§13/§21及详细设计§6；10.2 韧性规则：provider 耗尽/永久失败不借 worker 重派重置预算；有身份的失败、failed 提交与 lease/清理错误分别保留，不按 workerId 去重丢原因；并行未验证失败 suspend 保留，顺序 failed 可归档诊断但不等于 D16 成功；进程退出不承诺临终写 State 或自动续跑，见详细设计 §6.1（实测证据见 docs/evals/phase10-resilience-evidence.md）",
       "source": "docs/项目蓝图.md §6/§13/§21；docs/详细设计方案.md §1/§2/§3/§4/§5/§6/§7/§8；docs/系统架构设计文档.md §4.1/§4.2/§5/§9；docs/技术选型文档.md §7/§8/§10；docs/开发计划安排.md §12"
     },
     {
@@ -149,7 +149,7 @@
       },
       {
         "path": "docs/开发计划安排.md",
-        "role": "Phase 0-10 的 62 个任务、渐进式 Eval 与时间估算（本文件的任务来源）"
+        "role": "Phase 0-10 的 61 个活动任务、渐进式 Eval 与时间估算；原 10.1 取消记录见 §13（本文件的任务来源）"
       },
       {
         "path": "docs/框架调研与借鉴决策.md",
@@ -1262,40 +1262,28 @@
     },
     {
       "id": 10,
-      "name": "产品化打磨 + 最终 Benchmark（厚 Agent 接入 + 部署 + Eval，2 周）",
-      "status": "not_started",
+      "name": "产品化打磨 + 最终 Benchmark（Harness 统一执行 + 部署 + Eval，2 周）",
+      "status": "in_progress",
       "integration_test": "10.7",
-      "exit_criteria": "可直接演示且有可审计证据的完整产品：厚执行器可选接入、错误恢复健壮、一键部署、最终 Benchmark 报告完成",
+      "exit_criteria": "可直接演示且有可审计证据的完整产品：统一基于 DeepSeek Harness 的自研 Agent、错误恢复健壮、一键部署、最终 Benchmark 报告完成",
       "tasks": [
-        {
-          "id": "10.1",
-          "title": "ExternalAgentExecutor 厚执行器接入",
-          "story": null,
-          "status": "ready",
-          "documents_required": [
-            "docs/详细设计方案.md §6",
-            "docs/项目蓝图.md §16/§17"
-          ],
-          "dependencies": [
-            "9.5"
-          ],
-          "test_file": null,
-          "notes": "决策 D2 解锁点：厚 Agent 接入延后至此阶段，此前不进行薄/厚动态切换。runtime/executor/external-executor.ts：step() = 喂自包含简报（目标+约束+文件入口+验收）→外部 agent（opencode/OpenHands 等）自己跑到边界→拿回 diff+摘要；整段一个大 Step，reachedSafeBoundary 仅结束时为真（只能任务边界抢占）。仅用于边界清晰的重编码子任务。",
-          "last_updated": "2026-09-08"
-        },
         {
           "id": "10.2",
           "title": "错误恢复增强 + 日志完善",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
-            "docs/系统架构设计文档.md §6"
+            "docs/系统架构设计文档.md §6/§9",
+            "docs/详细设计方案.md §4/§6（重点 §6.1）",
+            "docs/项目蓝图.md §16/§21（10.2/D4/D15/D17）",
+            "docs/技术选型文档.md §4.1/§12",
+            "docs/开发计划安排.md §13"
           ],
           "dependencies": [
             "9.5"
           ],
-          "test_file": null,
-          "notes": "对照韧性表逐项落地：LLM 超时/限流→agent/request-error 重试+指数退避；沙箱死循环→强制 timeout 30s 杀进程返回失败结果；worker 崩溃→捕获 unhandledRejection 置 failed→下一轮自动重试或升级人。",
+          "test_file": "tests/integration/phase10/phase10-resilience.test.ts",
+          "notes": "按详细设计 §6.1 和架构 §6 实现：复用锁定 Harness 的同 open Step 有限 provider 重试；预算耗尽/永久故障不得由 worker 重派绕过；有身份的失败规范写回且原错/持久化/释放失败分别保留；沙箱默认 30s；D15 最小 retry 安全投影；顺序 failed 诊断归档与并行未验证 suspend 分开。进程退出不承诺自动续跑，不用全局 unhandledRejection 猜 worker 身份。\n[2026-09-08 开工] Leader 明确开始 10.2；已核对依赖 9.5 与 Phase 9 出口均 done，current_phase=10。分支 feat/phase10-resilience 保留前序已授权 D2 统一 Harness 路线文档修改。进入 Explore/Plan：核对架构 §6 韧性矩阵、Harness request-error/官方事件、WorkerRuntime/Coordinator 失败收敛及沙箱超时。计划待确认，未编写实现或新增测试，未执行本任务 G5/model 实验；无 commit/push 授权。\n[2026-09-08 Plan 检查点] 计划已写入 .data/plans/task102-implementation-plan.md，等待 Leader 确认。已查本地锁定官方 dsh-llm-retry@0.1.1-rc.2：具有限 normal 重试与官方持久 retry/started 事件，可复用而不自研循环；拟声明直接依赖，D15 增安全有界重试投影。需校准旧 unhandledRejection/进程崩溃措辞为有身份的执行边界捕获；发现 runOne failed 持久失败吞错等静态风险，尚未复现。计划建议新增 Flash G5 USD1 软预算；本轮无源码/测试变更，无测试或模型执行。\n[2026-09-08 规格合理性评审] Leader 要求先评审并修正不合理规格。对照锁定分发 JS，确认官方 retry README 的 closed-step/new-turn 描述与 agent-loop/invariant 相冲突；撤销此前 Plan 的该假设，按同 open Step、链内 retryId+retry 身份、started 仅代表退避完成定稿。校准全局 unhandledRejection 归属、预算绕过、原错被持久化/清理遮蔽、顺序 failed 诊断归档与并行 suspend 区别；精确 TraceRetryView/裁剪/白名单已在详细设计 §6.1 定义。官方 companion 不是纯 inspect validator，明确写侧装配与读侧验证职责。评审证据见 docs/reviews/task102-spec-review.md，计划已按新规格重写。仅文档与静态核查，没有新增代码/测试/模型运行；USD1 仍是未获批准的实验建议，未创建 Issue、未 commit/push。\n[2026-09-08 实装与本地验收] Leader 回复“确认”批准修订计划后按 TDD 实施。显式装配锁定 dsh-llm-retry + dsh-invariants/官方 companion；normal 同 Step 有限重试，模型路由固定，ExecutorRequestError 保留 typed cause；WorkerRuntime 不将任意执行异常转为业务重派，原错/failed 提交/lease 释放/HEAD 恢复失败分别保留。TraceStepView.retries 从官方 JSONL 读时派生，检查 provider/固定 policy/连续链/唯一 started/安全字段/seed 去重/完整 turn 裁剪；Web 仅固定错误码和说明，原诊断有界留在进程内。保留 failed 诊断归档与并行 suspend。新增 tests/integration/phase10/phase10-resilience.test.ts 真实 Harness+MCP+Docker+Git+JSON State+lease+JSONL/Fork 组合链；协议模型响应注入与 live model 证据分开。最终 pnpm run test --maxWorkers=2：124 文件/1035 测试全过、0 skip，含既有三项真实 DeepSeek Flash、全部 Docker/跨阶段回归；typecheck/lint/Next 生产构建通过。Chrome 1440×1000 与 390×844 任务状态抽屉验证重试三状态、展开/折叠、刷新、截断，无 JS/HTTP 错误或横向溢出。初次沙箱权限失败及一次自动审批拒绝均已记录，核实固定测试 payload/官方 DeepSeek 目的地/临时 Docker 范围后获准重跑。证据及覆盖表：docs/evals/phase10-resilience-evidence.md。未运行额外 Benchmark 或新增付费实验；已有 live 回归实际计费未知、不虚报 USD1 内。保留 in_progress，无 commit/push/PR，等待后续交付授权与人类合并；不改变 10.7 出口状态。\n[2026-09-08 交付门禁] Leader 调用 agora-commit 明确授权提交、推送与创建 PR。交付轮次重跑 pnpm build:sandbox-native、pnpm typecheck、pnpm lint 全通过；pnpm run test --maxWorkers=2 共 124 文件/1035 测试通过、0 失败/0 skip，286.07s，含三项真实 DeepSeek 和全部 Docker 回归；独立 pnpm exec vitest run tests/integration/phase10/phase10-resilience.test.ts 1/1 通过，4.70s。33 个交付文件经差异与敏感信息核查，未纳入运行时文件/凭证；JSON/依赖与 Phase 0–9 历史记录校验通过。任务保持 in_progress，PR 链接随后追加。\n[2026-09-08 PR 交付] 实现提交 ec2670d（Strengthen Harness recovery and expose safe retry traces）已推送至 feat/phase10-resilience；PR https://github.com/logan-suu/Agora/pull/69，base=dev-1.0.0。G1/G3/G4/G5/G6/G7 交付自检通过，具体命令与真实链证据见上条及 docs/evals/phase10-resilience-evidence.md。任务保持 in_progress，未自动合并；人类合并后由 agora-pr-merge 收尾，10.7 阶段出口仍独立。\n[2026-09-08 PR #69 修复] Leader 授权修复 P2：重试策略校验改为读取 ctx.llm 注册表实际捕获值，注入 adapter 仅注册时取策略一次，内置 provider 同路校验；初始化失败仍可 dispose 清理。新增 5 项回归先红后绿，相关 39 项通过；完整回归/G5 正在复验，完成后追加证据。保留 D15 损坏请求头拒绝与 G5 必跑，不采纳静默忽略/新增 skip 建议。任务仍 in_progress。\n[2026-09-08 PR #69 修复验收] 本轮原生 helper 构建、pnpm typecheck、pnpm lint 全通过；pnpm run test --maxWorkers=2：124 文件/1040 测试通过、0 失败/0 skip，219.13s，含既有三项真实 DeepSeek 与全部 Docker 回归；独立 10.2 G5 1/1 通过，4.64s。日志 /tmp/agora-pr69-fix-tests.log、/tmp/agora-pr69-fix-g5.log；故障复现日志 /tmp/agora-pr69-fix-red.log。五个明确交付文件经 diff/敏感信息校验，未发现密钥样式字面量，Phase 0–9 记录不变。 修复通过门禁，推送与评论处理记录随后追加；仍保持 in_progress，未合并 PR。\n[2026-09-08 PR #69 修复交付] 57d3eec（Validate the registered Harness retry policy）已推送至 feat/phase10-resilience。已英文回复并解决策略校验线程 discussion_r3964045697；请求头放宽与新增 Docker skip 两条建议已回复不采纳依据，线程保留供评审确认。PR https://github.com/logan-suu/Agora/pull/69 仍 open，任务 in_progress，未合并。",
           "last_updated": "2026-09-08"
         },
         {
@@ -1342,12 +1330,12 @@
             "docs/开发计划安排.md §13"
           ],
           "dependencies": [
-            "10.1",
             "10.3",
             "10.4"
           ],
           "test_file": "tests/evals/phase10/run-final-benchmark.eval.ts",
-          "notes": "D11 最终落地：以外部 adapter 接入 SWE-bench Verified、Terminal-Bench/Harbor 等成熟任务/环境/Outcome Grader 的小型固定子集，同时保留 Agora 协作语义 holdout；完成单 Agent/多 Agent、全量历史/角色投影、串行/并行、固定模型/角色路由对照。固定数据集版本/任务 ID、adapter、模型、工具、预算、超时和环境，重复运行并报告均值、方差、失败分类、成本与时延；公开集/内部集分开报告，不刷榜。Harbor/Python/uv 等依赖须在开工时重新核对版本/许可证/网络成本且不得进入默认产品运行时。"
+          "notes": "D11 最终落地：以外部 adapter 接入 SWE-bench Verified、Terminal-Bench/Harbor 等成熟任务/环境/Outcome Grader 的小型固定子集，同时保留 Agora 协作语义 holdout；完成单 Agent/多 Agent、全量历史/角色投影、串行/并行、固定模型/角色路由对照。固定数据集版本/任务 ID、adapter、模型、工具、预算、超时和环境，重复运行并报告均值、方差、失败分类、成本与时延；公开集/内部集分开报告，不刷榜。Harbor/Python/uv 等依赖须在开工时重新核对版本/许可证/网络成本且不得进入默认产品运行时。\n[2026-09-08 D2 文档同步] Leader 取消外部 Agent 接入；移除原任务 10.1 依赖，取消记录见开发计划 §13。被测执行与产品 worker 统一基于 DeepSeek Harness；本次只修订范围与依赖，未执行本任务或新增测试/Eval 证据。",
+          "last_updated": "2026-09-08"
         },
         {
           "id": "10.6",
@@ -1375,13 +1363,13 @@
             "docs/开发计划安排.md §13"
           ],
           "dependencies": [
-            "10.1",
             "10.2",
             "10.3",
             "10.6"
           ],
           "test_file": "tests/integration/phase10/phase10-exit.test.ts",
-          "notes": "对照五条成功标准逐项验收：①能跑通闭环（中小规模编码任务自主完成全流程）②产品形态完整生动（群聊实时呈现+可观测+一键部署）③协作可控（职责清晰/可断点/可中途插决策）④工程质量稳（上下文不崩/并行不乱/行为可预期）⑤可扩展（增删角色/换模型工具改动局部化）。同时审计 10.5 Benchmark 的任务/环境/模型/预算/重复次数可追溯、公开集与 holdout 分离、统计/失败分类完整，且 Benchmark 未替代全量测试/G5。"
+          "notes": "对照五条成功标准逐项验收：①能跑通闭环（中小规模编码任务自主完成全流程）②产品形态完整生动（群聊实时呈现+可观测+一键部署）③协作可控（职责清晰/可断点/可中途插决策）④工程质量稳（上下文不崩/并行不乱/行为可预期）⑤可扩展（增删角色/换模型工具改动局部化）。同时审计 10.5 Benchmark 的任务/环境/模型/预算/重复次数可追溯、公开集与 holdout 分离、统计/失败分类完整，且 Benchmark 未替代全量测试/G5。\n[2026-09-08 D2 文档同步] Leader 取消外部 Agent 接入；移除原任务 10.1 依赖，取消记录见开发计划 §13。被测执行与产品 worker 统一基于 DeepSeek Harness；本次只修订范围与依赖，未执行本任务或新增测试/Eval 证据。",
+          "last_updated": "2026-09-08"
         }
       ]
     }

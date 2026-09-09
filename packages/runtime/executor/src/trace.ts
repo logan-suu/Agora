@@ -1,3 +1,7 @@
+import { RetryHistory, retryView, type TraceRetryView } from './trace-retry';
+
+export type { TraceRetryView } from './trace-retry';
+
 import { join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -21,6 +25,8 @@ const TRACE_EVENT_TYPES = new Set([
   'step/end',
   'tool/call',
   'tool/result',
+  'llm/retry',
+  'llm/retry-started',
 ]);
 
 export type TraceTurnStatus =
@@ -50,6 +56,7 @@ export interface TraceStepView {
   endedAt?: number;
   status: TraceStepStatus;
   tools: TraceToolCallView[];
+  retries?: TraceRetryView[];
 }
 
 export interface TraceTurnView {
@@ -256,6 +263,22 @@ function projectSession(inspection: TraceInspection): ProjectedSession {
     if (event.type === 'step/end') {
       step.endedAt = event.time;
       step.status = 'completed';
+      for (const retry of step.retries ?? [])
+        if (retry.status === 'waiting') retry.status = 'closed_without_start';
+      continue;
+    }
+    if (event.type === 'llm/retry') {
+      step.retries ??= [];
+      step.retries.push(retryView(data, event.time));
+      continue;
+    }
+    if (event.type === 'llm/retry-started') {
+      const retry = step.retries?.find(
+        (entry) => entry.retryId === data.retryId && entry.retry === data.retry,
+      );
+      if (retry === undefined) throw new Error('retry start has no scheduled wait');
+      retry.backoffEndedAt = event.time;
+      retry.status = 'backoff_completed';
       continue;
     }
     if (event.type === 'tool/call') {
@@ -326,6 +349,7 @@ function validateLineages(byId: ReadonlyMap<string, TraceInspection>): void {
 }
 
 function validateEventSequence(inspection: TraceInspection): void {
+  const retryHistory = new RetryHistory();
   let openTurn: number | undefined;
   let openStep: number | undefined;
   let nextTurn = 1;
@@ -343,6 +367,13 @@ function validateEventSequence(inspection: TraceInspection): void {
     }
     const data = event.data as Record<string, unknown>;
     switch (event.type) {
+      case 'request/header':
+        retryHistory.header(data);
+        break;
+      case 'llm/retry':
+      case 'llm/retry-started':
+        retryHistory.consume(event.type, data, event.time, openTurn, openStep);
+        break;
       case 'turn/start': {
         const turn = integerField(data, 'turn', event.type);
         if (openTurn !== undefined) fail(`turn/start ${turn} while turn ${openTurn} is open`);

@@ -288,7 +288,7 @@
       "status": "open",
       "resolved_by": null,
       "created_at": "2026-09-02T22:24:34.000Z",
-      "notes": "Resolution condition: define a versioned generic routing contract covering candidate priority/tie-breaking, accepted routeWhen predicates or another deterministic selector, per-role output/mutation schema, authorization, failure fallback, iteration accounting, and humanGate escalation; then add deterministic and real-chain tests showing a custom role enters and exits the topology without hard-coded role branches. Reassess in Phase 10 after the default six-role product flow and external executor boundary are stable."
+      "notes": "Resolution condition: define a versioned generic routing contract covering candidate priority/tie-breaking, accepted routeWhen predicates or another deterministic selector, per-role output/mutation schema, authorization, failure fallback, iteration accounting, and humanGate escalation; then add deterministic and real-chain tests showing a custom role enters and exits the topology without hard-coded role branches. Reassess in Phase 10 against the default six-role product flow and unified Harness worker contract. [2026-09-08 D2 sync] External agent integration is canceled; this routing deferral remains open and is not resolved by that cancellation."
     }
   ]
 }

@@ -19,8 +19,8 @@ import {
 } from '@agora/core-orchestration';
 import type { PauseReceipt, PauseRequest } from '@agora/core-preemption';
 import type { TaskScope } from '@agora/runtime-state';
-
 import type { MessageRuntime } from './message-runtime';
+import { safeRunError } from './run-error';
 
 export type TaskRunStatus = 'running' | 'completed' | 'needs_attention' | 'failed' | 'interrupted';
 
@@ -105,6 +105,8 @@ interface ActiveRun {
     | undefined;
   pendingSuspension?: { error: string | undefined };
   error: string | undefined;
+  /** Bounded in-process diagnostics, excluded from public summaries and persistence. */
+  diagnostics?: Partial<Record<'execution' | 'suspension' | 'archive' | 'disposal', unknown>>;
 }
 
 export class TaskGoalConflictError extends Error {
@@ -476,6 +478,8 @@ export class TaskOrchestrationRuntime {
       });
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
     } catch (error) {
+      run.diagnostics ??= {};
+      run.diagnostics.execution = error;
       terminalError = errorMessage(error);
       const persisted = await this.messages.store.load(scope).catch(() => undefined);
       if (
@@ -510,6 +514,8 @@ export class TaskOrchestrationRuntime {
       delete run.pendingSuspension;
       run.error = error;
     } catch (failure) {
+      run.diagnostics ??= {};
+      run.diagnostics.suspension = failure;
       run.error = joinErrors(error, `resource suspension failed: ${errorMessage(failure)}`);
     }
     run.status = 'needs_attention';
@@ -587,6 +593,8 @@ export class TaskOrchestrationRuntime {
     } catch (error) {
       run.pendingFinalization = { status: terminalStatus, error: terminalError, artifactArchived };
       run.status = 'needs_attention';
+      run.diagnostics ??= {};
+      run.diagnostics.archive = error;
       run.error = joinErrors(terminalError, `artifact archive failed: ${errorMessage(error)}`);
       return;
     }
@@ -596,6 +604,8 @@ export class TaskOrchestrationRuntime {
     } catch (error) {
       run.pendingFinalization = { status: terminalStatus, error: terminalError, artifactArchived };
       run.status = 'needs_attention';
+      run.diagnostics ??= {};
+      run.diagnostics.disposal = error;
       run.error = joinErrors(terminalError, `resource disposal failed: ${errorMessage(error)}`);
       return;
     }
@@ -647,7 +657,7 @@ function emptyPauseReceipt(
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return safeRunError(error);
 }
 
 function joinErrors(current: string | undefined, next: string): string {

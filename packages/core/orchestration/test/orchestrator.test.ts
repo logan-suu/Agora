@@ -135,7 +135,7 @@ function orchestrationWith(coders: FakeExecutor[], testers: FakeExecutor[]): Orc
 }
 
 describe('runOrchestration (Phase 0 fixed loop)', () => {
-  it('bounds retries for a failed singleton CODER in a parallel plan', async () => {
+  it('stops a failed singleton CODER without resetting its provider budget', async () => {
     let canonical = applyMutations(createInitialAppState('single-failure', 'Implement one unit'), [
       setMutation('complexity', { tier: 2, signals: {} }),
       setMutation('phase', 'planning'),
@@ -162,22 +162,24 @@ describe('runOrchestration (Phase 0 fixed loop)', () => {
         injectInbox() {},
       }),
     });
-    const result = await runOrchestration(canonical, {
-      workerRuntime: runtime,
-      transition,
-      parallelContext: async () => ({
-        initialBase: { branch: 'main', commit: 'a'.repeat(40) },
-        controlFingerprint: 'f'.repeat(64),
+    await expect(
+      runOrchestration(canonical, {
+        workerRuntime: runtime,
+        transition,
+        parallelContext: async () => ({
+          initialBase: { branch: 'main', commit: 'a'.repeat(40) },
+          controlFingerprint: 'f'.repeat(64),
+        }),
       }),
-    });
-    expect(result.humanGate?.reason).toBe('iteration_limit');
-    expect(result.iterationCount).toBe(MAX_ITERATIONS);
-    expect(calls).toBe(MAX_ITERATIONS + 1);
-    expect(new Set(result.workers.map((worker) => worker.workerId)).size).toBe(calls);
-    expect(result.workers.every((worker) => worker.status === 'failed')).toBe(true);
+    ).rejects.toThrow('controlled CODER failure');
+    expect(canonical.humanGate).toBeUndefined();
+    expect(canonical.iterationCount).toBe(0);
+    expect(calls).toBe(1);
+    expect(canonical.workers).toHaveLength(1);
+    expect(canonical.workers[0]?.status).toBe('failed');
   });
 
-  it('retries the whole failed and not-started batch with new identities at capacity one', async () => {
+  it('preserves not-started assignments after an unknown failure at capacity one', async () => {
     let canonical = applyMutations(
       createInitialAppState('capacity-one-retry', 'Implement independent units'),
       [
@@ -216,7 +218,7 @@ describe('runOrchestration (Phase 0 fixed loop)', () => {
       },
       new GlobalScheduler({ cap: 1 }),
     );
-    // Stop at the real orchestration integration route; this test isolates retry ownership.
+    // A failed provider/unknown exception must never reach integration or allocate a new wave.
     const integrate = vi.fn(async () => {
       throw new Error('reached integration after retry');
     });
@@ -230,17 +232,16 @@ describe('runOrchestration (Phase 0 fixed loop)', () => {
           controlFingerprint: 'f'.repeat(64),
         }),
       }),
-    ).rejects.toThrow('reached integration after retry');
-    expect(integrate).toHaveBeenCalledOnce();
+    ).rejects.toThrow('first CODER failed before siblings started');
+    expect(integrate).not.toHaveBeenCalled();
     const original = canonical.messages.find((message) => message.payload.kind === 'coding_wave')
       ?.payload.workerIds;
     if (!Array.isArray(original)) throw new Error('expected original coding wave');
-    expect(attempts.map((attempt) => attempt.subtaskId)).toEqual(['A', 'A', 'B', 'C']);
-    expect(attempts.slice(1).every((attempt) => !original.includes(attempt.workerId))).toBe(true);
-    expect(canonical.iterationCount).toBe(1);
-    expect(canonical.parallelExecution?.activeWave?.coderWorkerIds).toEqual(
-      attempts.slice(1).map((attempt) => attempt.workerId),
-    );
+    expect(attempts.map((attempt) => attempt.subtaskId)).toEqual(['A']);
+    expect(original).toContain(attempts[0]?.workerId);
+    expect(canonical.iterationCount).toBe(0);
+    expect(canonical.parallelExecution?.activeWave?.coderWorkerIds).toEqual(original);
+    expect(canonical.workers.map((w) => w.status)).toEqual(['failed', 'pending', 'pending']);
   });
 
   it.each(['workspace', 'completion', 'lease'] as const)(

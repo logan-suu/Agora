@@ -38,7 +38,7 @@ agent: build
    - 共享 State 写入只走 `applyMutations()` 合并函数（R1）
    - 永不投原始群聊 log，上下文只经投影切片（R2）
    - 不做 agent 自动共识（R3）；安全点外不打断 LLM（R4）
-   - 阶段 0-9 只用薄执行器（R5）；KB 只读（R6）
+   - 所有阶段统一使用基于 DeepSeek Harness 的自研 Agent，不接外部执行器（R5/D2）；KB 只读（R6）
    - 目录与命名对齐 R10；接口签名不改只改实现体（R9）
 8. TDD 循环：写测试 → `pnpm test`（红）→ 写实现 → `pnpm test`（绿）。
 9. 运行 `pnpm typecheck && pnpm lint`。
