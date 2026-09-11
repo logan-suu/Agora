@@ -75,6 +75,20 @@ describe('git-server MCP round-trip', () => {
     const { commitId } = JSON.parse(textOf(applied.content));
     expect(commitId).toMatch(/^[0-9a-f]{40}$/);
     expect(readFileSync(join(path, 'a.txt'), 'utf8')).toBe('world\n');
+    const listing = await client.listTools();
+    expect(listing.tools.find((t) => t.name === 'applyPatch')?.description).toContain(
+      'Use {"patch":""}',
+    );
+    writeFileSync(join(path, 'b.txt'), 'written before commit\n');
+    const committed = await client.callTool({
+      name: 'applyPatch',
+      arguments: { worktree: path, patch: '' },
+    });
+    expect(committed.isError).toBeFalsy();
+    const nextCommit = JSON.parse(textOf(committed.content)).commitId;
+    expect(nextCommit).not.toBe(commitId);
+    expect(await git.show([`${nextCommit}:b.txt`])).toBe('written before commit\n');
+    expect(await git.show([`${nextCommit}:a.txt`])).toBe('world\n');
   });
 
   it('serves diff in both modes through the MCP boundary', async () => {

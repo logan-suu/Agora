@@ -7,14 +7,14 @@ import {
   type Message,
   PHASE0_ROSTER,
 } from '@agora/core-domain';
+import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { describe, expect, it } from 'vitest';
 import { HarnessExecutor } from '../src/harness-executor';
 import { project } from '../src/project';
 
-// Mock 原因（R11）：本文件注入 FakeLlmAdapter 隔离真实 LLM 调用，
-// 仅验证 HarnessExecutor 的编排逻辑（pre-step 覆写 / 模型路由 / mutations 聚合 /
-// done 收敛）。真实执行链路（真实 provider）的 G5 实测留待任务 0.6/0.7。
+// Only external model responses are scripted. Official Harness projection, routing,
+// mutation collection and turn completion are real; live providers have separate G5 tests.
 class FakeLlmAdapter extends LlmAdapter {
   public readonly calls: {
     provider: string;
@@ -57,6 +57,33 @@ function codingState(): AppState {
 }
 
 describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => {
+  it.each(['CODER', 'TESTER', 'REVIEWER'] as const)(
+    'explains the implementation-repair boundary and blocking consequences to %s',
+    async (role) => {
+      const spec = DEFAULT_ROSTER.find((r) => r.role === role);
+      if (!spec) throw new Error('missing role');
+      const fake = new FakeLlmAdapter('Ordinary implementation feedback.');
+      const executor = new HarnessExecutor(spec, { adapter: fake, provider: 'agora' });
+      try {
+        await executor.step({
+          sessionId: `repair-boundary-${role}`,
+          view: project(codingState(), role, DEFAULT_ROSTER),
+        });
+        const system = fake.calls[0]?.system;
+        expect(system).toContain('challenges the current requirement or decision itself');
+        expect(system).toContain('accepting a blocking objection withdraws its target');
+        expect(system).toContain('ordinary implementation defects and failing tests');
+        expect(system).toContain('TESTER records failed test results');
+        expect(system).toContain('REVIEWER returns changes_requested');
+        expect(system).not.toContain(
+          'For a proven conflict with a projected current requirement, use',
+        );
+      } finally {
+        await executor.dispose();
+      }
+    },
+  );
+
   it('runs one turn per step, emits a done StepResult, and folds the reply into a messages append mutation', async () => {
     const fake = new FakeLlmAdapter();
     const executor = new HarnessExecutor(CODER_SPEC, { adapter: fake, provider: 'agora' });
@@ -314,8 +341,9 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
       await executor.step({ sessionId: 'ses-2', view });
 
       const call = fake.calls[0];
-      expect(call?.messagesText).toContain('"role":"CODER"');
-      expect(call?.messagesText).toContain('write LRU');
+      expect(call?.system).toContain('"role":"CODER"');
+      expect(call?.system).toContain('write LRU');
+      expect(call?.messagesText).not.toContain('write LRU');
     } finally {
       await executor.dispose();
     }
@@ -372,8 +400,9 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
       await executor.step({ sessionId: 'ses-4', view: project(initial, 'CODER', PHASE0_ROSTER) });
 
       expect(fake.calls).toHaveLength(2);
-      expect(fake.calls[0]?.messagesText).toContain('first plan');
-      expect(fake.calls[1]?.messagesText).toContain('revised plan');
+      expect(fake.calls[0]?.system).toContain('first plan');
+      expect(fake.calls[1]?.system).toContain('revised plan');
+      expect(fake.calls[1]?.system).not.toContain('first plan');
     } finally {
       await executor.dispose();
     }
@@ -412,7 +441,8 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
 
       expect(fake.calls).toHaveLength(2);
       // Fresh session: the second agent's history must not contain the first session's view.
-      expect(fake.calls[1]?.messagesText).toContain('task-for-session-b');
+      expect(fake.calls[1]?.system).toContain('task-for-session-b');
+      expect(fake.calls[1]?.system).not.toContain('task-for-session-a');
       expect(fake.calls[1]?.messagesText).not.toContain('task-for-session-a');
     } finally {
       await executor.dispose();
@@ -467,7 +497,7 @@ describe('HarnessExecutor (Phase 0 thin executor over DeepSeek Harness)', () => 
           view: project(codingState(), 'CODER', PHASE0_ROSTER),
         });
         expect(resumedFake.calls).toHaveLength(1);
-        expect(resumedFake.calls[0]?.messagesText).toContain('latest projected task');
+        expect(resumedFake.calls[0]?.system).toContain('latest projected task');
       } finally {
         await resumed.dispose();
       }

@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.11
-**生效日期**：2026-09-09
+**版本**：v2.13
+**生效日期**：2026-09-10
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
@@ -39,7 +39,7 @@
 | 复杂度 Tier/进度台账 | 详细设计 §3 + 框架调研 模式③ | Tier 0/1/2 + Ledger 双循环改造版 |
 | worker 生命周期/配合式抢占 | 详细设计 §4 + 架构 §4.1/§4.2 + 框架调研 模式⑦ | D17 lease/canonical join；安全点 = step/end；workerId 只作逻辑身份 |
 | Channel/消息总线/threadId/intent | 详细设计 §5 + 蓝图 §11 | 单一 Channel 原语 + leader 恒在不变量 |
-| Executor/HarnessExecutor 接入 | 详细设计 §0/§6 + 选型 §4 + 框架调研 §1 | 四扩展点映射 + pre-step 覆写（决策 D1） |
+| Executor/HarnessExecutor 接入 | 详细设计 §0/§6/§7 + 选型 §4 + 框架调研 §1 | 官方系统段投影 + pre-step 新增消息准入（决策 D1） |
 | MCP 工具 server | 详细设计 §6 + 选型 §6 | fs/test/git/lint/sandbox 五类接口签名 |
 | 沙箱（LocalTemp/Docker/worktree） | 详细设计 §1/§4/§6 + 选型 §7/§8/§10 + 架构 §4.1/§5.2/§9 | SandboxManager 冻结接口 + D5/D17；Git/Docker 单一路径 + 专用集成 worktree |
 | 投影/压缩/三铁律/sliceKB | 详细设计 §7 + 蓝图 §8 | 三条投影铁律 + 存储与上下文分离 |
@@ -232,7 +232,7 @@ Harness 边界（薄执行器职责，详见详细设计 §0/§6）：
 ```
 - D17 顶层 worker：每个稳定 workerId 由既有 HarnessExecutor 工厂创建独立 Context/Agent/session；复用 ctx.agents.create + followup/whenIdle，不自研 loop
 - ctx.subagents.start 的锁定 spawn provider 是 one-shot，只可作 worker 内一次性委派；禁止冒充可逐 turn、可 D4 suspend/Fork 的顶层 worker
-- agent/pre-step：直接覆写 messages 数组为 project(state, role) 返回值（决策 D1）
+- D1：官方 SystemPrompt scoped section/variable 每请求组装当前 project(state, role) / assignment 投影；pre-step 只准入每 turn 一次固定启动、工具交换和有界格式恢复，不得每个工具 Step 重发投影 user 指令。当前投影不进入历史压缩，原始群聊永不准入（2026-09-10）
 - agent/request：按 RoleSpec.model 路由模型
 - 配合式抢占：SafePointExecutor companion 请求后，等待模型/工具 Step 自然结束，在下一 agent/pre-step 拒绝 proposal 并由官方 loop 闭合 turn；再 canonical commit/flush/checkpoint，不取消 token 流
 - ctx.compaction：单 agent 历史压缩委托 Harness，不自研；压缩伪历史属预期行为
@@ -357,6 +357,8 @@ Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5
 ```
 
 ---
+
+**[2026-09-10 Leader修复授权]** 工作中发现需要修复的问题，应先停止受影响的实验或操作，审查根因与规格合理性，再直接进行已授权任务范围内的修复、文档同步及必要验证，不重复要求Leader确认修复计划。无法自行确定的实质架构取舍仍向Leader澄清；新费用上限、外传范围及不可逆操作不由此扩大。不得带着已知问题继续批量实验。
 
 ## 8. 质量门禁 G1-G7（并入主线前必过）
 

@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "kind": "post-benchmark-repair-diagnostic",
+  "recordedAt": "2026-09-10T04:32:28.946121+00:00",
+  "sourceFiles": {
+    "packages/core/orchestration/src/coordinator.ts": "7f8ab058723dde0576d25700201130022bf07667d8bd528b7d89610dae0bbd6c",
+    "packages/core/orchestration/src/parallel-coordinator.ts": "b357df882007026d38195c77626dd2fef8fe15c4d466919ef25acfd85b776d81",
+    "packages/core/orchestration/src/review-continuation.ts": "31908ece98fc894c6a51fa51015fa724a61abee79fb3c30e0d2aa5947c358011",
+    "packages/runtime/executor/src/project.ts": "828cc09e9217f7e182b00002b2f265b13510df021d81afa92c6e935da694c21b",
+    "tests/evals/phase10/final/model-adapter.ts": "310d772f6203631c43f6837784ffa548e2e4607d3c0d10c10cecc6686294f5ba"
+  },
+  "frozenGroupFingerprint": "2606aab0d19eecf651ef97ae7a0bd6b0285bf31fb380c7ef91b940f3a036f8f7",
+  "frozenSnapshotFiles": 349,
+  "frozenSnapshotMatches": true,
+  "formalBenchmarkRerun": false,
+  "diagnostic": {
+    "runId": "phase10-driver-diagnostic-mixed-model-a3-a7d37d44-0555-42af-9d22-8905cc502f06",
+    "task": "answer42 with an advisory before the ordinary review verdict",
+    "source": "own diagnostic; no public benchmark or holdout task",
+    "overallStatus": "pass",
+    "modelCalls": 24,
+    "costUsd": 0.07010645599999998,
+    "unknownUsageCalls": 0,
+    "peakInputTokenEstimate": 22672,
+    "advisories": 1,
+    "reviewWorkers": 2,
+    "reviewWorkersDone": true,
+    "verdicts": 1,
+    "iterations": 2,
+    "phase": "done",
+    "verificationExitCode": 0,
+    "verificationTimedOut": false,
+    "completionBound": true,
+    "gateReached": true,
+    "finalLeaseCount": 0,
+    "artifactHashes": {
+      "result.json": "907dcde584a151a9e33f9afc395f5a4706043f8ec7ed3b8c378351eb4e284501",
+      "multi-evidence.json": "463177438ae7c9ba40b8a2d9e1a9adad650bf3d46b739605a90c1c8c25c3543a",
+      "verification.json": "7113230785bbbcff270ffbca06f945546427bd9da711fd090ddb043ca8ee1489",
+      "model-requests.json": "b47a53860c77fee744affa40ae8b6e5d3e1ef2c723460a2e6b99aa3f9c23ad7a",
+      "data/projects/agora/tasks/benchmark/state.json": "bc1d21385f69e674dfb9c460bc7ba09bc0c7a1234fee18c5cf90364ac2e6da6c"
+    },
+    "lifecycle": "final",
+    "roleModels": {
+      "PM": "deepseek-v4-pro",
+      "ARCHITECT": "deepseek-v4-pro",
+      "CODER": "deepseek-v4-flash",
+      "TESTER": "deepseek-v4-flash",
+      "REVIEWER": "deepseek-v4-pro"
+    }
+  },
+  "verification": {
+    "filesPassed": 143,
+    "testsPassed": 1114,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 431.64,
+    "typecheck": "failed-at-recorded-snapshot",
+    "lint": "pass",
+    "lintFiles": 370,
+    "typecheckCorrection": {
+      "date": "2026-09-10",
+      "reason": "Message.type widened by an unnecessary array spread in the new assignment projection test; the original pass claim was incorrect",
+      "fixedIn": "OpenCode Go configuration change",
+      "subsequentCheck": "pass",
+      "log": "/private/tmp/agora105-opencode-types-final.log"
+    }
+  },
+  "budget": {
+    "totalAccountedUsd": 8.472523903999974,
+    "totalLimitUsd": 20,
+    "formalAccountedUsd": 7.101204523999974,
+    "diagnosticAccountedUsd": 1.3713193800000008,
+    "diagnosticLimitUsd": 3,
+    "unsettledRequests": 0
+  }
+}

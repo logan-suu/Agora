@@ -1,6 +1,7 @@
 import type { SubChannel } from '@agora/core-domain';
 import { LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { describe, expect, it } from 'vitest';
+import { projectedInputText } from '../../../../tests/evals/core/projected-input';
 
 import { HarnessChannelSummaryGenerator } from '../src/index';
 
@@ -17,11 +18,7 @@ class QueueAdapter extends LlmAdapter {
   }
 
   async *stream(options: Parameters<LlmAdapter['stream']>[0]): AsyncIterable<StreamChunk> {
-    const first = options.messages[0];
-    const block = first?.content.find((entry) => entry.type === 'text');
-    if (block === undefined || block.type !== 'text')
-      throw new Error('expected summary projection');
-    const projection = JSON.parse(block.text) as {
+    const projection = JSON.parse(projectedInputText(options)) as {
       slices: { summaryInput: Record<string, unknown> };
     };
     this.inputs.push(projection.slices.summaryInput);
@@ -160,12 +157,9 @@ describe('HarnessChannelSummaryGenerator', () => {
       override async *stream(
         options: Parameters<LlmAdapter['stream']>[0],
       ): AsyncIterable<StreamChunk> {
-        const first = options.messages[0];
-        const block = first?.content.find((entry) => entry.type === 'text');
-        const projection =
-          block?.type === 'text'
-            ? (JSON.parse(block.text) as { slices: { summaryInput: { stage?: unknown } } })
-            : undefined;
+        const projection = JSON.parse(projectedInputText(options)) as {
+          slices: { summaryInput: { stage?: unknown } };
+        };
         if (projection?.slices.summaryInput.stage === 'merge') {
           mergeStarted();
           await mergeGate;

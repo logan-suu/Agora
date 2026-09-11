@@ -5,14 +5,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-
 import { applyMutations, createInitialAppState, setMutation } from '@agora/core-domain';
 import { decide, latestCoordinationLedger } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { createSandbox, Dockerode, type RunResult } from '@agora/runtime-sandbox';
 import { CallId, type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-
 import { POST as postCommand } from '../../../apps/web/src/app/api/commands/route';
 import { ChannelStream } from '../../../apps/web/src/server/channel-stream';
 import { createGetStream, createPostMessage } from '../../../apps/web/src/server/message-handlers';
@@ -20,6 +18,7 @@ import { createMessageRuntime } from '../../../apps/web/src/server/message-runti
 import { createWebTaskCompositionFactory } from '../../../apps/web/src/server/task-composition';
 import { createPostTask } from '../../../apps/web/src/server/task-handlers';
 import { TaskOrchestrationRuntime } from '../../../apps/web/src/server/task-orchestration-runtime';
+import { projectedInputText } from '../../evals/core/projected-input';
 
 const decoder = new TextDecoder();
 const roots: string[] = [];
@@ -580,10 +579,7 @@ class ScriptedExternalLlm extends LlmAdapter {
 }
 
 function projectionRole(options: GenerateOptions): string {
-  const first = options.messages[0];
-  const text = first?.content.find((block) => block.type === 'text');
-  if (text?.type !== 'text') throw new Error('expected projected role input');
-  const parsed = JSON.parse(text.text) as { role?: unknown };
+  const parsed = JSON.parse(projectedInputText(options)) as { role?: unknown };
   if (typeof parsed.role !== 'string') throw new Error('expected projected role');
   return parsed.role;
 }

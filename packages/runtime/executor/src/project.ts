@@ -114,13 +114,28 @@ export function projectForAssignment(
     throw new Error('assignment is not part of the current wave or serial dispatch');
   const view = project(state, assignment.role, roster, channelContext);
   const node = state.subtasks.find((candidate) => candidate.id === assignment.subtaskId);
+  const advisoryId =
+    explicit && assignment.role === 'REVIEWER' ? dispatch?.payload.advisorySourceMsgId : undefined;
+  if (
+    advisoryId !== undefined &&
+    (typeof advisoryId !== 'string' ||
+      !state.objections.some(
+        (objection) =>
+          objection.id === advisoryId &&
+          objection.fromRole === 'REVIEWER' &&
+          objection.track === 'advisory',
+      ))
+  )
+    throw new Error('review continuation projection requires its advisory fact');
   const instruction = isCoder
     ? node?.title
     : isValidation
       ? 'Write tests for this wave and cumulative completed work. Commit tests, then run the final validation command on that clean HEAD.'
       : isPreparation
         ? 'Prepare read-only acceptance checks for this wave.'
-        : 'Execute the current serial review or planning dispatch.';
+        : advisoryId !== undefined
+          ? 'The advisory has been recorded. Continue the bound review and provide its required verdict.'
+          : 'Execute the current serial review or planning dispatch.';
   if (instruction === undefined) throw new Error('assigned subtask is missing');
   const visibleSubtaskIds =
     isValidation && wave !== undefined ? validationSubtaskIds(state, wave) : wave?.subtaskIds;

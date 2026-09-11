@@ -21,6 +21,7 @@ import {
   createPhase1Runtime,
   type Phase1Runtime,
 } from '../../../packages/core/__tests__/e2e/phase1-runtime';
+import { projectedInputText } from '../../evals/core/projected-input';
 
 /**
  * Phase 1 exit integration test (task 1.6) — deterministic regression covering
@@ -139,14 +140,9 @@ class ScriptedLlmAdapter extends LlmAdapter {
   }
 }
 
-/** Parse the projected role from the first message (the pre-step projection). */
+/** Parse the projected role from the current D1 system section. */
 function projectionRoleOf(call: GenerateOptions): string {
-  const first = call.messages[0];
-  const block = first === undefined ? undefined : first.content.find((b) => b.type === 'text');
-  if (block === undefined || block.type !== 'text') {
-    throw new Error('scripted adapter expected the projection as the first message block');
-  }
-  const view = JSON.parse(block.text) as { role?: unknown };
+  const view = JSON.parse(projectedInputText(call)) as { role?: unknown };
   if (typeof view.role !== 'string') {
     throw new Error('scripted adapter expected a role in the projection');
   }
@@ -352,18 +348,14 @@ describe('Phase 1 exit integration (scripted LLM, real MCP fs + LocalTemp sandbo
     expect(runResult?.timedOut).toBe(false);
   });
 
-  it('chain 4: pre-step overwrites the LLM input with the projection (R2/D1)', () => {
+  it('chain 4: system context carries the current projection (R2/D1)', () => {
     for (const role of ['CODER', 'TESTER'] as const) {
       const calls = adapter.calls.filter((c) => projectionRoleOf(c) === role);
       const first = calls[0];
       if (first === undefined) {
         throw new Error(`no scripted LLM call recorded for role ${role}`);
       }
-      const textBlock = first.messages[0]?.content.find((b) => b.type === 'text');
-      if (textBlock?.type !== 'text') {
-        throw new Error('expected the projection as the first message block');
-      }
-      const view = JSON.parse(textBlock.text) as { role?: unknown; slices?: unknown };
+      const view = JSON.parse(projectedInputText(first)) as { role?: unknown; slices?: unknown };
       expect(view.role).toBe(role);
       const slicesJson = JSON.stringify(view.slices);
       expect(slicesJson).not.toContain('channelId');

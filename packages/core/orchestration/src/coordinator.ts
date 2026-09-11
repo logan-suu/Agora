@@ -12,6 +12,7 @@ import {
   appendMutation,
   applyMutations,
   currentApprovedReviewId,
+  currentReviewDispatch,
   deriveCompletionResolution,
   deriveObjectionResolutions,
   mergeByIdMutation,
@@ -19,6 +20,7 @@ import {
 } from '@agora/core-domain';
 import { decideParallel, type ParallelDecisionContext } from './parallel-coordinator';
 import { buildCoordinationLedger, MAX_STALLS } from './progress-ledger';
+import { currentReviewAdvisory } from './review-continuation';
 import { evaluateRouteWhen } from './route-conditions';
 
 export const MAX_ITERATIONS = 8;
@@ -940,6 +942,35 @@ function evaluateReview(
 ): DraftCoordinatorDecision {
   const reviewEntries = currentReviewEntries(state);
   const verdictEntries = reviewEntries.filter((entry) => entry.kind === 'verdict');
+  if (verdictEntries.length === 0) {
+    const advisory = currentReviewAdvisory(state);
+    if (advisory !== undefined) {
+      const limit = ifIterationLimit(state, clock);
+      if (limit !== undefined) return limit;
+      const previous = currentReviewDispatch(state);
+      const message: Message = {
+        msgId: clock.newId(),
+        channelId: 'main',
+        fromRole: 'COORDINATOR',
+        type: 'announce',
+        payload: {
+          ...previous?.payload,
+          nextRole: 'REVIEWER',
+          reviewCommentCursor: state.reviewComments.length,
+          advisorySourceMsgId: advisory.msgId,
+        },
+        display: 'Continue the review after recording the advisory; provide the required verdict',
+        ts: clock.now(),
+      };
+      return {
+        route: { kind: 'worker', batch: [{ role: 'REVIEWER' }], parallel: false },
+        mutations: [
+          appendMutation('messages', message),
+          setMutation('iterationCount', state.iterationCount + 1),
+        ],
+      };
+    }
+  }
   if (verdictEntries.length !== 1) {
     throw new Error(
       `current review turn must contain exactly one verdict; got ${verdictEntries.length}`,

@@ -17,6 +17,11 @@ export interface GitServerOptions {
   mainRepoPath?: string;
 }
 
+export const GIT_APPLY_PATCH_DESCRIPTION =
+  'Apply a unified diff patch inside a registered worktree, stage all changes, and commit. Use {"patch":""} to commit files already written with fs_write; do not reconstruct a diff or revert those files. A non-empty patch must have correct hunk counts and a trailing newline. Returns the new commit id.';
+export const GIT_PATCH_PARAMETER_DESCRIPTION =
+  'Unified diff patch text, or an empty string to commit existing worktree changes.';
+
 /**
  * Build an MCP git-server (spec §6 `git-server`).
  *
@@ -32,11 +37,10 @@ export function createGitServer(options: GitServerOptions = {}): McpServer {
   server.registerTool(
     'applyPatch',
     {
-      description:
-        'Apply a unified diff patch inside a registered worktree, stage all changes, and commit. Returns the new commit id.',
+      description: GIT_APPLY_PATCH_DESCRIPTION,
       inputSchema: {
         worktree: z.string().describe('Registered worktree root path.'),
-        patch: z.string().describe('Unified diff patch text to apply.'),
+        patch: z.string().describe(GIT_PATCH_PARAMETER_DESCRIPTION),
       },
     },
     async ({ worktree, patch }, extra) => {

@@ -1,6 +1,7 @@
 // The scripted provider isolates malformed model output; the real Harness loop,
 // projection hook, tool restrictions and turn boundaries remain under test.
 import { createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
+import { architectTurnMutations, DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { LocalTempSandbox } from '@agora/runtime-sandbox';
 import { type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { describe, expect, it, vi } from 'vitest';
@@ -34,6 +35,58 @@ const validate = ({ text }: { text: string | null }) => {
 };
 
 describe('bounded structured output repair', () => {
+  it('repairs a misplaced architecture plan before publishing or reading mutations', async () => {
+    const architect = DEFAULT_ROSTER.find((role) => role.role === 'ARCHITECT');
+    if (!architect) throw new Error('missing ARCHITECT');
+    const plan = { version: 1, subtasks: [{ id: 'A', title: 'Implement module', dependsOn: [] }] };
+    const modules = [{ id: 'A', file: 'module.mjs' }];
+    const bad = JSON.stringify({ architecture: { modules }, conventions: {}, executionPlan: plan });
+    const architecture = { modules, executionPlan: plan };
+    const good = JSON.stringify({ architecture, conventions: {} });
+    const adapter = new Replies([bad, good]);
+    const reader = vi.fn(({ text }: { text: string | null }) => architectTurnMutations(text));
+    const executor = new HarnessExecutor(architect, {
+      adapter,
+      validateTurnOutput: ({ text }) => {
+        architectTurnMutations(text);
+      },
+      readTurnMutations: reader,
+      tools: [
+        {
+          name: 'inspect',
+          description: 'inspect',
+          parameters: {},
+          output: { schema: {}, render: () => [] },
+          execute: async () => ({ ok: true }),
+        },
+      ],
+      allowTools: ['inspect'],
+    });
+    try {
+      const result = await executor.step({
+        sessionId: 'architecture-output-repair',
+        view: project(
+          createInitialAppState('repair-plan', 'Implement module'),
+          'ARCHITECT',
+          DEFAULT_ROSTER,
+        ),
+      });
+      expect(adapter.calls).toHaveLength(2);
+      expect(adapter.calls[0]?.tools?.map((tool) => tool.name)).toContain('inspect');
+      expect(adapter.calls[1]?.tools ?? []).toEqual([]);
+      expect(JSON.stringify(adapter.calls[1]?.messages)).toContain('output-format-repair');
+      expect(reader).toHaveBeenCalledExactlyOnceWith({ text: good });
+      expect(result.output).toEqual({ text: good });
+      expect(result.mutations).toContainEqual({
+        op: 'set',
+        field: 'architecture',
+        value: architecture,
+      });
+      expect(JSON.stringify(result.mutations)).not.toContain(bad);
+    } finally {
+      await executor.dispose();
+    }
+  });
   it.each(['Explanation before JSON {"ok":true}', '{"regex":"/\\s+/g"}'])(
     'regenerates invalid syntax in the official turn without publishing the rejected candidate: %s',
     async (bad) => {
@@ -51,11 +104,8 @@ describe('bounded structured output repair', () => {
         expect(result.output).toEqual({ text: '{"ok":true}' });
         expect(result.mutations).toHaveLength(1);
         const repairInput = JSON.stringify(adapter.calls[1]?.messages);
-        expect(
-          adapter.calls[1]?.messages.some((m) =>
-            m.content.some((c) => c.type === 'text' && c.text === JSON.stringify(context.view)),
-          ),
-        ).toBe(true);
+        expect(adapter.calls[1]?.system).toContain(JSON.stringify(context.view));
+        expect(repairInput).not.toContain(JSON.stringify(context.view));
         expect(repairInput).toContain('output-format-repair');
         expect(JSON.stringify(result.mutations)).not.toContain(bad);
       } finally {

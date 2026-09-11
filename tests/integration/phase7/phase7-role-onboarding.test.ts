@@ -13,17 +13,21 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ChannelStream } from '../../../apps/web/src/server/channel-stream';
 import { createPostMessage } from '../../../apps/web/src/server/message-handlers';
 import { createMessageRuntime } from '../../../apps/web/src/server/message-runtime';
+import { projectedInputText } from '../../evals/core/projected-input';
 
 class CapturingAdapter extends LlmAdapter {
   readonly inputs: string[] = [];
 
   async *stream(options: Parameters<LlmAdapter['stream']>[0]): AsyncIterable<StreamChunk> {
+    projectedInputText(options);
     this.inputs.push(
-      options.messages
-        .flatMap((message) => message.content)
-        .filter((content) => content.type === 'text')
-        .map((content) => content.text)
-        .join('\n'),
+      [
+        options.system ?? '',
+        ...options.messages
+          .flatMap((message) => message.content)
+          .filter((content) => content.type === 'text')
+          .map((content) => content.text),
+      ].join('\n'),
     );
     yield { type: 'block-start', index: 0, blockType: 'text' };
     yield { type: 'text-delta', index: 0, text: 'Handoff accepted and testing started.' };

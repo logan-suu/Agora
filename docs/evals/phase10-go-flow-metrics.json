@@ -1,0 +1,130 @@
+{
+  "date": "2026-09-10",
+  "kind": "go-full-flow-diagnostic",
+  "runs": [
+    {
+      "runId": "phase10-go-flow-single-model-a1-b998450c-9568-4daa-8ddc-5ff8ae7d0592",
+      "status": "fail",
+      "lifecycle": "final",
+      "efficiency": {
+        "iterations": "unknown",
+        "inputTokens": "unknown",
+        "outputTokens": "unknown",
+        "costUsd": 0.00025425,
+        "modelCalls": 1,
+        "toolCalls": 2,
+        "repairIterations": "unknown",
+        "humanInterventions": "unknown",
+        "durationMs": 2154
+      },
+      "hashes": {
+        "diagnostic-config.json": "b46b351446c7a8ad3e2823aeebd4f728786bc27814774064ec8ecfd97eb3db18",
+        "result.json": "f4fd9748987fb2010fcbb0cd317db9084118781059e7625410c54ca2f995cf40",
+        "observation.json": "118eccc9d73cfe61c57bf85ad86e45f075a6d409cdc18aeb80b26c2cecb9afe2",
+        "model-requests.json": "92f4dfd1389bf08f4486cacdd1acd1e177af1548638ccd79b63dc19df292d864"
+      }
+    },
+    {
+      "runId": "phase10-go-flow-single-model-a1-b372c455-6264-4c9b-8907-5d44a70fd9c7",
+      "status": "pass",
+      "lifecycle": "final",
+      "efficiency": {
+        "iterations": "unknown",
+        "inputTokens": "unknown",
+        "outputTokens": "unknown",
+        "costUsd": 0.0014484,
+        "modelCalls": 8,
+        "toolCalls": 10,
+        "repairIterations": "unknown",
+        "humanInterventions": "unknown",
+        "durationMs": 20380
+      },
+      "hashes": {
+        "trace.json": "61d4df2dc29e9fa474ace0935ca437c495510435d77bbc6659e31678b8fa24a1",
+        "diagnostic-config.json": "5a8dbe6be914fd043b1968b6fd7940cccd406a4335c20646265f3dd16681ebea",
+        "result.json": "fa9e09e4bfd932660f414234be2e59852ad88a54f6855df6455828acc73a40c9",
+        "observation.json": "333ffcbfb811a75cf3506fc49d651c65a693d8b82b48538028214b2101da40f7",
+        "verification.json": "7113230785bbbcff270ffbca06f945546427bd9da711fd090ddb043ca8ee1489",
+        "model-requests.json": "e1bcf83b9b3cb8fa72f211f0a2666f52e8d4d75e65dc0a434151f3803cf8d904",
+        "routes.json": "752ab07a77a137a839fcb3238204770f63d98bd473b2a728e8c541a8eb13705b"
+      }
+    },
+    {
+      "runId": "phase10-go-flow-mixed-model-a1-d1d207b8-b4d7-4b1f-947b-4afdb294cb9c",
+      "status": "pass",
+      "lifecycle": "final",
+      "efficiency": {
+        "iterations": "unknown",
+        "inputTokens": "unknown",
+        "outputTokens": "unknown",
+        "costUsd": 0.013555385999999999,
+        "modelCalls": 19,
+        "toolCalls": 24,
+        "repairIterations": "unknown",
+        "humanInterventions": "unknown",
+        "durationMs": 129991
+      },
+      "hashes": {
+        "trace.json": "1066ec435e48f66b33938b6d8d2a9edcc5a5ac51120bebd9a0d005c75467be59",
+        "diagnostic-config.json": "5a8dbe6be914fd043b1968b6fd7940cccd406a4335c20646265f3dd16681ebea",
+        "result.json": "b34e029ccc7ed551eeb29602b07ed5091ba2967d673255f7c1c0fc2c1159e397",
+        "observation.json": "6d7495e4507bab46bd3f0fe748c831abb51170a4805b1deb2747302bc06005af",
+        "multi-evidence.json": "e10043c7e540e7b779657a4c663d68b3f9e32b4dffcfde20ca22ca05ec512c99",
+        "verification.json": "7113230785bbbcff270ffbca06f945546427bd9da711fd090ddb043ca8ee1489",
+        "model-requests.json": "852af392efc2471146b9516323a0d29d138ab932fc62b595258d13c8ffc703fd",
+        "routes.json": "c189ab8f66b6c130f9aafc5df304c82e19789908727daa9c623e826609384868"
+      },
+      "collaboration": {
+        "completed": true,
+        "completionBound": true,
+        "gateReached": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "iterations": 1,
+        "repairIterations": 0,
+        "validations": [
+          {
+            "id": "wave-validation:6370deb1-72d2-449c-9100-074426f948f4",
+            "passed": true,
+            "total": 2
+          }
+        ],
+        "forks": 0
+      },
+      "containerPeak": "unknown",
+      "rawContainerPeakInvalid": 0
+    }
+  ],
+  "flowRequestsIncludingFailure": 28,
+  "allDiagnosticRequests": 47,
+  "quotaUpperBoundUsd": 0.09402825000000001,
+  "flowIncrementQuotaUsd": 0.015258036000000003,
+  "diagnosticQuotaLimitUsd": 0.5,
+  "unsettledRequests": 0,
+  "remainingFlowContainersVerified": 0,
+  "mountObserverRealCheck": {
+    "observedWhileRunning": 1,
+    "remainingAfterCleanup": 0,
+    "modelCalls": 0
+  },
+  "postRunFixes": [
+    "Docker Desktop mount matching; historical container peak remains unknown",
+    "Unique tag listing followed by immutable digest inspection for all benchmark entry points"
+  ],
+  "currentSourceHashes": {
+    "tests/evals/phase10/go-flow-diagnostic.eval.ts": "7d76b61391a2a34180215349dad223601d7ea0e14d4be9eff89eaaf49422f4a9",
+    "tests/evals/phase10/final/flow-tool-policy.ts": "011663b6b206fb5e3be8ab858f38f365f3051a0d88498c52b1066abed60f36e2",
+    "tests/evals/phase10/final/task-container.ts": "e0a0e844ad9ac82f3301921be2e9851822bdf0a9b280bf1ae9a4bedb171000e7",
+    "tests/evals/phase10/final/benchmark-image.ts": "1b61d1dc6034276a5cbb4c32488f548340cde705089d87ededc030e671a6bec4",
+    "tests/evals/phase10/final/multi-driver.ts": "a4af3cdc2fd9ea2e92ac0974e42b8f8e2ef4e9162e87e37658856e8a84cc3ba9"
+  },
+  "verification": {
+    "offlineFiles": 14,
+    "offlineTests": 37,
+    "typecheck": "pass",
+    "lint": "pass",
+    "lintFiles": 384,
+    "fullRegressionRun": false,
+    "formalRerun": false
+  }
+}

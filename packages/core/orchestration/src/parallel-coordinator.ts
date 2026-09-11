@@ -29,6 +29,7 @@ import {
   type Route,
 } from './coordinator';
 import { buildCoordinationLedger } from './progress-ledger';
+import { currentReviewAdvisory } from './review-continuation';
 
 export interface ParallelDecisionContext {
   initialBase: { branch: string; commit: string };
@@ -707,6 +708,7 @@ function dispatchReview(
   options: Options,
   clock: Clock,
   failedReceiptId?: string,
+  continuation?: Message,
 ): CoordinatorDecision {
   const roleGate = unavailable(state, options, clock, 'REVIEWER');
   if (roleGate !== undefined) return roleGate;
@@ -741,13 +743,16 @@ function dispatchReview(
       nextRole: 'REVIEWER',
       reviewCommentCursor: state.reviewComments.length,
       reviewBinding,
+      ...(continuation === undefined ? {} : { advisorySourceMsgId: continuation.msgId }),
       ...(failedReceiptId === undefined
         ? {}
         : { reason: 'repeated_test_failures', failureStreak: 2 }),
     },
-    failedReceiptId === undefined
-      ? 'Review the complete cumulative implementation'
-      : 'Review the root cause of repeated test failures',
+    continuation !== undefined
+      ? 'Continue the bound review after recording the advisory; provide the required verdict'
+      : failedReceiptId === undefined
+        ? 'Review the complete cumulative implementation'
+        : 'Review the root cause of repeated test failures',
   );
   const assignment: Assignment = { workerId: `worker:${message.msgId}:0`, role: 'REVIEWER' };
   message.payload.workerIds = [assignment.workerId];
@@ -757,6 +762,9 @@ function dispatchReview(
     [
       appendMutation('messages', message),
       ...registrations([assignment], message.ts),
+      ...(continuation === undefined
+        ? []
+        : [setMutation('iterationCount', state.iterationCount + 1)]),
       setMutation('phase', 'review'),
       setMutation('nextRole', 'REVIEWER'),
     ],
@@ -838,6 +846,22 @@ function consumeReview(state: AppState, options: Options, clock: Clock): Coordin
   )
     throw new Error('invalid current review cursor');
   const verdicts = state.reviewComments.slice(cursor).filter((entry) => entry.kind === 'verdict');
+  if (verdicts.length === 0) {
+    const advisory = currentReviewAdvisory(state);
+    if (advisory !== undefined) {
+      if (state.iterationCount >= MAX_ITERATIONS)
+        return gate(state, clock, 'iteration_limit', ['continue']);
+      return dispatchReview(
+        state,
+        options,
+        clock,
+        dispatch?.payload.reason === 'repeated_test_failures'
+          ? binding.validationReceiptId
+          : undefined,
+        advisory,
+      );
+    }
+  }
   const verdict = verdicts[0];
   if (
     verdicts.length !== 1 ||

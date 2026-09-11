@@ -9,6 +9,7 @@ import { Dockerode } from '@agora/runtime-sandbox';
 import { CallId, type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { projectedInputText } from '../../../tests/evals/core/projected-input';
 import { ChannelStream } from '../src/server/channel-stream';
 import { createPostMessage } from '../src/server/message-handlers';
 import { createMessageRuntime } from '../src/server/message-runtime';
@@ -170,10 +171,7 @@ class ScriptedAdapter extends LlmAdapter {
 }
 
 function projectionRole(options: GenerateOptions): string {
-  const first = options.messages[0];
-  const text = first?.content.find((block) => block.type === 'text');
-  if (text?.type !== 'text') throw new Error('expected projected role input');
-  const parsed = JSON.parse(text.text) as { role?: unknown };
+  const parsed = JSON.parse(projectedInputText(options)) as { role?: unknown };
   if (typeof parsed.role !== 'string') throw new Error('expected projected role');
   return parsed.role;
 }

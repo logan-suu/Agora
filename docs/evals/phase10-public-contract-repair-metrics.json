@@ -1,0 +1,74 @@
+{
+  "date": "2026-09-10",
+  "task": "10.5",
+  "status": "repaired-and-frozen-not-run",
+  "group": "phase10-final-v5",
+  "fingerprint": "65d2b89e180c9e5fc04f5a52b7e743fd06ed37830d4011f6a5defb2958d07601",
+  "sourceFingerprint": "a125c4836dc0c331d61a01c1fc684d9426c57b17ad198adafcbbfe36bb9acae2",
+  "sourceFiles": 359,
+  "pending": 54,
+  "started": 0,
+  "final": 0,
+  "publicTaskVersion": 4,
+  "holdoutTaskVersion": 1,
+  "unchangedHoldoutTrialFingerprints": 18,
+  "historicalSnapshotsVerified": {
+    "v3": 349,
+    "v4": 357
+  },
+  "checks": {
+    "targeted": {
+      "files": 16,
+      "passed": 46
+    },
+    "fullRegressionInitial": {
+      "files": 151,
+      "passed": 1137,
+      "failed": 1,
+      "total": 1138,
+      "failure": "stale deepseek-v4-pro model assertion in mixed routing fixture"
+    },
+    "affectedFileAfterRepair": {
+      "passed": 7,
+      "failed": 0
+    },
+    "typecheck": "pass",
+    "lint": {
+      "status": "pass",
+      "files": 388
+    },
+    "publicDockerPreflight": {
+      "positiveTests": 99,
+      "negativeStartersRejected": 4,
+      "pmProjectionVariants": 12
+    },
+    "holdoutDockerPreflight": {
+      "positive": 2,
+      "negativeRejected": 2
+    },
+    "freeze": "pass"
+  },
+  "ledgers": {
+    "phase10-budget.json": {
+      "requests": 2326,
+      "spent": 8.499622596,
+      "unsettled": 0,
+      "totalLimit": 20,
+      "formalLimit": 17
+    },
+    "phase10-opencode-go-quota-budget.json": {
+      "requests": 9,
+      "spent": 0.073971504,
+      "unsettled": 0,
+      "totalLimit": 5,
+      "formalLimit": 5
+    }
+  },
+  "officialRegressionIncrementUsd": 0.027098692,
+  "newGoRequests": 0,
+  "formalRemainingUsd": 4.926028496,
+  "limitations": [
+    "No v5 online outcome yet",
+    "Public contract repair does not prove elimination of model formatting errors or intermittent STREAM_CLOSED"
+  ]
+}

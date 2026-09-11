@@ -27,7 +27,11 @@
     "start": "node apps/web/scripts/local.mjs start",
     "stop": "node apps/web/scripts/local.mjs stop",
     "credentials:adopt": "node apps/web/scripts/local.mjs adopt-key",
-    "build:keychain-native": "node packages/runtime/state/scripts/build-keychain.mjs"
+    "build:keychain-native": "node packages/runtime/state/scripts/build-keychain.mjs",
+    "eval:phase10:preflight": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t \"phase10 .* verifier preflight\"",
+    "eval:phase10:freeze": "vitest run --config vitest.eval.config.ts -t \"phase10 freeze final benchmark\"",
+    "eval:phase10:model": "pnpm build:sandbox-native && vitest run --config vitest.eval.config.ts -t \"phase10 run final model benchmark\"",
+    "eval:phase10:report": "vitest run --config vitest.eval.config.ts -t \"phase10 report final benchmark\""
   },
   "devDependencies": {
     "@agora/core-domain": "workspace:*",

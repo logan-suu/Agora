@@ -1,0 +1,112 @@
+{
+  "date": "2026-09-10",
+  "status": "investigated-not-reproduced",
+  "diagnosis": "Intermittent response termination failure is most consistent with evidence; original wire termination versus parser EOF framing remains inconclusive.",
+  "confirmed": {
+    "clientIdleTimeoutMs": 300000,
+    "originalInputEstimate": 3418,
+    "contextLimit": 65536,
+    "originalFailureCode": "STREAM_CLOSED",
+    "formalStopRemains": true,
+    "formalSourceUnchangedFiles": 357
+  },
+  "replayScope": "Same persisted prompt/tool-result content and configuration; byte count and token estimate matched. Original raw HTTP payload and response tail were not retained.",
+  "requests": [
+    {
+      "trial": "go-stream-investigation:1",
+      "httpStatus": 200,
+      "durationMs": 150951,
+      "frames": 7780,
+      "bytes": 1818249,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "usageFrames": [
+        {
+          "prompt_tokens": 3871,
+          "completion_tokens": 7873,
+          "total_tokens": 11744,
+          "prompt_tokens_details": {}
+        }
+      ],
+      "adapterSucceeded": true,
+      "maxReadGapMs": 4515,
+      "costUsd": 0.00530445
+    },
+    {
+      "trial": "go-stream-investigation:2",
+      "httpStatus": 200,
+      "durationMs": 31804,
+      "frames": 1149,
+      "bytes": 286279,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "usageFrames": [
+        {
+          "prompt_tokens": 3871,
+          "completion_tokens": 1223,
+          "total_tokens": 5094,
+          "prompt_tokens_details": {
+            "cached_tokens": 3840
+          }
+        }
+      ],
+      "adapterSucceeded": true,
+      "maxReadGapMs": 6351,
+      "costUsd": 0.0007499699999999999
+    }
+  ],
+  "diagnosticIncrementUsd": 0.00605442,
+  "diagnosticCumulativeUsd": 0.10008267000000001,
+  "diagnosticRequestCount": 49,
+  "diagnosticUnsettled": 0,
+  "formalUnknownRequestsUnchanged": 1,
+  "codeChanges": "none; diagnostic scripts remain outside frozen source/default tests",
+  "offlineParser": [
+    {
+      "mode": "delimited-done",
+      "chunkTypes": [
+        "block-start",
+        "text-delta",
+        "block-end",
+        "usage",
+        "finish"
+      ],
+      "status": "success"
+    },
+    {
+      "mode": "undelimited-done",
+      "chunkTypes": [
+        "block-start",
+        "text-delta"
+      ],
+      "status": "error",
+      "code": "STREAM_CLOSED"
+    },
+    {
+      "mode": "no-done",
+      "chunkTypes": [
+        "block-start",
+        "text-delta"
+      ],
+      "status": "error",
+      "code": "STREAM_CLOSED"
+    },
+    {
+      "mode": "truncated",
+      "chunkTypes": [
+        "block-start",
+        "text-delta"
+      ],
+      "status": "error",
+      "code": "STREAM_CLOSED"
+    }
+  ],
+  "scriptHashes": {
+    "probe.test.ts": "6576991a019c71fba31e9c0c2a4d01c09aa2dd93b674dd2eb2288833643859ea",
+    "vitest.config.mjs": "64aedb0e407e22d0ee00c6f1fda229b75349ae92e67f95a183a7915ede3933c4"
+  }
+}

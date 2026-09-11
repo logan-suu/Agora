@@ -1,7 +1,12 @@
 import type { SandboxManager, Worktree } from '@agora/runtime-sandbox';
 import { createSandboxRunTool, wireToolName } from '@agora/runtime-sandbox';
 import { createFsServer, WorktreeRegistry } from '@agora/tools-fs';
-import { createGitServer, type GitService } from '@agora/tools-git';
+import {
+  createGitServer,
+  GIT_APPLY_PATCH_DESCRIPTION,
+  GIT_PATCH_PARAMETER_DESCRIPTION,
+  type GitService,
+} from '@agora/tools-git';
 import { createLintServer } from '@agora/tools-lint';
 import { createTestServer } from '@agora/tools-test';
 import type { ContentBlock } from '@deepseek-ai/dsh-llm';
@@ -232,13 +237,12 @@ const MCP_TOOLS: readonly McpToolSpec[] = [
     mcpTool: 'applyPatch',
     needsWorktree: true,
     timeoutMs: DEFAULT_MCP_TIMEOUT_MS,
-    description:
-      'Apply a unified diff patch inside the sandbox worktree, stage all changes, and commit. Returns the new commit id.',
+    description: GIT_APPLY_PATCH_DESCRIPTION,
     parameters: {
       patch: {
         type: 'string',
         required: true,
-        description: 'Unified diff patch text to apply.',
+        description: GIT_PATCH_PARAMETER_DESCRIPTION,
       },
     },
   },

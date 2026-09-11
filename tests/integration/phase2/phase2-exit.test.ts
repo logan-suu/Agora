@@ -23,6 +23,7 @@ import {
   type Phase2Runtime,
   reviewerTurnMutations,
 } from '../../../packages/core/__tests__/e2e/phase2-runtime';
+import { projectedInputText } from '../../evals/core/projected-input';
 
 /**
  * Phase 2 exit integration test (task 2.5) — deterministic regression covering
@@ -399,8 +400,8 @@ const LIMIT_TURNS: RoleTurns = {
 
 /**
  * Scripted LLM (R11: external dependency only). Turns are detected from the
- * message stream itself: each turn's first request carries the fresh projection
- * with zero tool results (decision D1 pre-step overwrite), so completed === 0
+ * message stream itself: each role turn starts with zero tool results; its
+ * current projection is supplied in the D1 system section, so completed === 0
  * advances the per-role turn index. Every scripted tool call executes on the
  * REAL ToolRuntime against the REAL sandbox/worktree.
  */
@@ -430,7 +431,7 @@ class TurnScriptedLlmAdapter extends LlmAdapter {
   }
 }
 
-/** Parse the projected role from the first message (the pre-step projection). */
+/** Parse the projected role from the current D1 system section. */
 function projectionRoleOf(call: GenerateOptions): string {
   const view = projectionViewOf(call);
   if (typeof view.role !== 'string') {
@@ -443,12 +444,10 @@ function projectionViewOf(call: GenerateOptions): {
   role?: unknown;
   slices?: Record<string, unknown>;
 } {
-  const first = call.messages[0];
-  const block = first === undefined ? undefined : first.content.find((b) => b.type === 'text');
-  if (block === undefined || block.type !== 'text') {
-    throw new Error('scripted adapter expected the projection as the first message block');
-  }
-  return JSON.parse(block.text) as { role?: unknown; slices?: Record<string, unknown> };
+  return JSON.parse(projectedInputText(call)) as {
+    role?: unknown;
+    slices?: Record<string, unknown>;
+  };
 }
 
 /** Number of tool executions already completed: one tool-result block per executed call. */
@@ -686,14 +685,11 @@ describe('Phase 2 exit: six-role happy path (scripted LLM, real MCP fs/git + Loc
     expect(lintIssues[0]).toEqual([]);
   });
 
-  it('chain 4: pre-step overwrites the LLM input with the per-role projection (R2/D1)', () => {
+  it('chain 4: system context carries the current per-role projection (R2/D1)', () => {
     const projectionOf = (role: string): { role: string; slices: Record<string, unknown> } => {
       const first = roleCalls(adapter, role)[0];
       if (first === undefined) throw new Error(`no scripted LLM call recorded for role ${role}`);
-      const textBlock = first.messages[0]?.content.find((b) => b.type === 'text');
-      if (textBlock?.type !== 'text') {
-        throw new Error(`expected the projection as the first message block for ${role}`);
-      }
+      const textBlock = { text: projectedInputText(first) };
       expect(completedActionsOf(first)).toBe(0);
       return JSON.parse(textBlock.text) as { role: string; slices: Record<string, unknown> };
     };

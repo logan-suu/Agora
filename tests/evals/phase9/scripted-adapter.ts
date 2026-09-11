@@ -1,6 +1,7 @@
 // Only external LLM output is scripted; every tool result comes from the real runtime.
 import assert from 'node:assert/strict';
 import { CallId, type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
+import { projectedInputText } from '../core/projected-input';
 import { acceptanceSource, GOAL, IMPLEMENTATIONS, PLAN } from '../fixtures/phase9/contract';
 
 type Action = { name: string; args: Record<string, unknown> };
@@ -15,9 +16,7 @@ export class WideFixtureAdapter extends LlmAdapter {
     super();
   }
   async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-    const block = options.messages[0]?.content.find((entry) => entry.type === 'text');
-    assert(block?.type === 'text');
-    const view = JSON.parse(block.text);
+    const view = JSON.parse(projectedInputText(options));
     if (view.role === 'PM') {
       yield* text(JSON.stringify([{ id: 'R', story: GOAL, acceptance: [GOAL], nonGoals: [] }]));
       return;
