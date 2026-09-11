@@ -1371,3 +1371,62 @@ describe('coordinator.decide · tier-aware topology routing (task 4.2, spec §3)
     expect(next.subtasks).toHaveLength(1);
   });
 });
+
+function sequentialAdvisoryReview(): AppState {
+  const state = reviewState('approved');
+  const payload = { claim: 'concern' as const, argument: 'Naming can be improved.' };
+  return applyMutations({ ...state, reviewComments: [] }, [
+    appendMutation('messages', {
+      msgId: 'review-advisory',
+      threadId: 'review-advisory',
+      channelId: 'main',
+      fromRole: 'REVIEWER',
+      type: 'objection',
+      payload: { objection: payload },
+      display: payload.argument,
+      ts: 1001,
+    }),
+    appendMutation('objections', {
+      id: 'review-advisory',
+      threadId: 'review-advisory',
+      fromRole: 'REVIEWER',
+      ...payload,
+      track: 'advisory',
+      ts: 1001,
+    }),
+  ]);
+}
+it('continues a canonical sequential advisory without accepting it as a verdict or replaying the old worker', () => {
+  const state = sequentialAdvisoryReview();
+  let sequence = 0;
+  const options = {
+    newId: () => `continuation-${++sequence}`,
+    now: () => 1002,
+    roster: FULL_ROSTER,
+  };
+  const decision = decide(state, options);
+  expect(decision.route).toMatchObject({ kind: 'worker', batch: [{ role: 'REVIEWER' }] });
+  expect(decision.completionCandidate).not.toBe(true);
+  const next = applyMutations(state, decision.mutations);
+  expect(next.iterationCount).toBe(state.iterationCount + 1);
+  expect(next.objections).toEqual(state.objections);
+  expect(decide(next, options).route).toEqual(decision.route);
+  const settled = applyCompletedWorkerDecision(state, decision);
+  expect(() => decide(settled, options)).toThrow(/exactly one verdict/);
+  const approved = applyMutations(settled, [
+    appendMutation('reviewComments', {
+      id: 'continued-verdict',
+      kind: 'verdict',
+      verdict: 'approved',
+    }),
+  ]);
+  expect(decide(approved, options).route).toMatchObject({
+    kind: 'human_gate',
+    request: { reason: 'completion_confirmation:continued-verdict' },
+  });
+  const limited = applyMutations(state, [setMutation('iterationCount', MAX_ITERATIONS)]);
+  expect(decide(limited, options).route).toMatchObject({
+    kind: 'human_gate',
+    request: { reason: 'iteration_limit' },
+  });
+});

@@ -1,0 +1,47 @@
+{
+  "date": "2026-09-10",
+  "group": "phase10-final-v5",
+  "status": "stopped-for-tool-loop-review",
+  "final": 1,
+  "passed": 0,
+  "failed": 1,
+  "pending": 53,
+  "runId": "phase10-grade-school-model-a1-c89778f0-7df1-42ee-aabf-5ab6eac2f64f",
+  "requests": 19,
+  "toolCalls": 23,
+  "efficiency": {
+    "iterations": "unknown",
+    "inputTokens": 356887,
+    "outputTokens": 15908,
+    "costUsd": 0.015887322,
+    "modelCalls": 19,
+    "toolCalls": 23,
+    "repairIterations": "unknown",
+    "humanInterventions": "unknown",
+    "durationMs": 373730
+  },
+  "providerRequestsAllCompleted": true,
+  "repeatedPatchErrorSteps": [
+    5,
+    7,
+    10,
+    11,
+    18
+  ],
+  "actualPatchLineCount": 77,
+  "declaredPatchLineCount": 100,
+  "stop": {
+    "trial": "grade-school-single-1",
+    "reason": "operator-review-repeated-tool-patch-failures",
+    "at": "2026-09-10T16:35:44.234729+00:00"
+  },
+  "cleanupCheck": "pass",
+  "independentContainerMatches": 0,
+  "sourceFilesUnchanged": 359,
+  "totalFormalRequests": 28,
+  "totalFormalQuotaUsd": 0.089858826,
+  "remainingFormalQuotaUsd": 4.910141174,
+  "unsettled": 0,
+  "independentOutcomeExecuted": false,
+  "pmVariantExecuted": false
+}

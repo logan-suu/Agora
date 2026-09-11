@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-10",
+  "group": "phase10-final-v4",
+  "status": "stopped-awaiting-contract-decision",
+  "planned": 54,
+  "final": 4,
+  "passed": 0,
+  "failed": 4,
+  "pending": 50,
+  "modelRequests": 9,
+  "budgetLimitUsd": 5,
+  "accountedUpperBoundUsd": 0.073971504,
+  "auditedUnknownRequests": 1,
+  "unsettled": 0,
+  "rawOriginalUsageStillUnknown": true,
+  "attempts": [
+    {
+      "trial": "grade-school-single-1",
+      "status": "fail",
+      "runRoot": "/Users/logansu/Documents/Dev/Agora/.data/evals/phase10-grade-school-model-a1-8ceb5ca7-3419-4664-86a4-3a2379e5f26a",
+      "calls": 2,
+      "costUsd": "unknown",
+      "cleanup": "pass"
+    },
+    {
+      "trial": "grade-school-multi-1",
+      "status": "fail",
+      "runRoot": "/Users/logansu/Documents/Dev/Agora/.data/evals/phase10-grade-school-model-a1-b7a02748-68c1-45ce-9019-12b22738aa55",
+      "calls": 3,
+      "costUsd": 0.005109834000000001,
+      "cleanup": "pass"
+    },
+    {
+      "trial": "grade-school-mixed-1",
+      "status": "fail",
+      "runRoot": "/Users/logansu/Documents/Dev/Agora/.data/evals/phase10-grade-school-model-a1-fa8f17f8-9c18-4d3a-8daa-a031080ad95c",
+      "calls": 1,
+      "costUsd": 0.003223218,
+      "cleanup": "pass"
+    },
+    {
+      "trial": "grade-school-multi-2",
+      "status": "fail",
+      "runRoot": "/Users/logansu/Documents/Dev/Agora/.data/evals/phase10-grade-school-model-a2-904519ca-0c3b-4765-9eba-18352b1771d9",
+      "calls": 3,
+      "costUsd": 0.006290952,
+      "cleanup": "pass"
+    }
+  ],
+  "review": "docs/reviews/task105-pm-public-contract-review.md"
+}

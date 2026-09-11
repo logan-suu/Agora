@@ -4,7 +4,6 @@
 import { access, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-
 import {
   addDecision,
   appendMutation,
@@ -20,12 +19,12 @@ import { HarnessExecutor, HarnessTraceReader, project } from '@agora/runtime-exe
 import { LocalTempSandbox } from '@agora/runtime-sandbox';
 import { type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { afterEach, describe, expect, it } from 'vitest';
-
 import { ChannelStream } from '../../../apps/web/src/server/channel-stream';
 import { createPostMessage } from '../../../apps/web/src/server/message-handlers';
 import { createMessageRuntime } from '../../../apps/web/src/server/message-runtime';
 import { createWebTaskCompositionFactory } from '../../../apps/web/src/server/task-composition';
 import { TaskOrchestrationRuntime } from '../../../apps/web/src/server/task-orchestration-runtime';
+import { projectedInputText } from '../../evals/core/projected-input';
 
 class Phase8Adapter extends LlmAdapter {
   reviewerTurns = 0;
@@ -360,9 +359,7 @@ describe('Phase 8 exit matrix', () => {
 });
 
 function projectionRole(options: GenerateOptions): string {
-  const text = options.messages[0]?.content.find((block) => block.type === 'text');
-  if (text?.type !== 'text') throw new Error('expected projected role input');
-  const parsed = JSON.parse(text.text) as { role?: unknown };
+  const parsed = JSON.parse(projectedInputText(options)) as { role?: unknown };
   if (typeof parsed.role !== 'string') throw new Error('expected projected role');
   return parsed.role;
 }

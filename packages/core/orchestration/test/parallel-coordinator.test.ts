@@ -529,3 +529,144 @@ describe('Phase 9 wave coordinator', () => {
     expect(resumed.workers.find((worker) => worker.workerId === b.workerId)?.status).toBe('failed');
   });
 });
+
+function advisoryReview(state: AppState): AppState {
+  const reviewer = required(
+    [...state.workers].reverse().find((worker) => worker.role === 'REVIEWER'),
+  );
+  const id = `advisory-${++sequence}`;
+  const objection = {
+    id,
+    threadId: id,
+    fromRole: 'REVIEWER',
+    claim: 'concern' as const,
+    argument: 'Consider improving naming after completing this review.',
+    track: 'advisory' as const,
+    ts: 101,
+  };
+  return applyMutations(state, [
+    mergeByIdMutation('workers', reviewer.workerId, { status: 'done' }),
+    appendMutation('messages', {
+      msgId: id,
+      threadId: id,
+      channelId: 'main',
+      fromRole: 'REVIEWER',
+      type: 'objection',
+      payload: { objection: { claim: objection.claim, argument: objection.argument } },
+      display: objection.argument,
+      ts: objection.ts,
+    }),
+    appendMutation('objections', objection),
+  ]);
+}
+
+it('continues a settled advisory review on a new worker with the same verified artifact, then requires Leader approval', () => {
+  const state = advisoryReview(awaitingReview());
+  const oldReviewer = required(
+    [...state.workers].reverse().find((worker) => worker.role === 'REVIEWER'),
+  );
+  const oldDispatch = required(
+    [...state.messages].reverse().find((message) => message.payload.nextRole === 'REVIEWER'),
+  );
+  const decision = decide(state, options());
+  expect(decision.route.kind).toBe('worker');
+  const next = applyMutations(state, decision.mutations);
+  const dispatch = required(
+    [...next.messages].reverse().find((message) => message.payload.nextRole === 'REVIEWER'),
+  );
+  expect(dispatch.payload.reviewBinding).toEqual(oldDispatch.payload.reviewBinding);
+  expect(next.workers.find((worker) => worker.workerId === oldReviewer.workerId)?.status).toBe(
+    'done',
+  );
+  expect(next.objections).toEqual(state.objections);
+  expect(next.iterationCount).toBe(state.iterationCount + 1);
+  expect(next.reviewComments).toEqual([]);
+  expect(decide(next, options()).route).toEqual(decision.route);
+  const reviewer = required(
+    [...next.workers].reverse().find((worker) => worker.role === 'REVIEWER'),
+  );
+  expect(reviewer.workerId).not.toBe(oldReviewer.workerId);
+  const settled = applyMutations(next, [
+    mergeByIdMutation('workers', reviewer.workerId, { status: 'done' }),
+  ]);
+  expect(() => decide(settled, options())).toThrow(/verdict/);
+  const approved = applyMutations(settled, [
+    appendMutation('reviewComments', {
+      id: 'continued-approval',
+      kind: 'verdict',
+      verdict: 'approved',
+    }),
+  ]);
+  expect(decide(approved, options()).route).toMatchObject({
+    kind: 'human_gate',
+    request: { reason: 'completion_confirmation:continued-approval' },
+  });
+});
+it('bounds advisory continuation and rejects missing or inconsistent canonical objection evidence', () => {
+  const state = advisoryReview(awaitingReview());
+  expect(
+    decide(applyMutations(state, [setMutation('iterationCount', 8)]), options()).route,
+  ).toMatchObject({ kind: 'human_gate', request: { reason: 'iteration_limit' } });
+  expect(() => decide({ ...state, objections: [] }, options())).toThrow();
+  const corrupted = structuredClone(state);
+  const objection = required(corrupted.objections[0]);
+  objection.argument = 'Mismatched immutable fact';
+  expect(() => decide(corrupted, options())).toThrow();
+});
+
+it('keeps root-cause validation binding and forbids approval after an advisory continuation', () => {
+  const initial = planned();
+  const started = applyMutations(initial, decide(initial, options()).mutations);
+  const failed = testedWave(started, false);
+  const retry = applyMutations(failed, decide(failed, options()).mutations);
+  const failedAgain = testedWave(retry, false);
+  const state = advisoryReview(
+    applyMutations(failedAgain, decide(failedAgain, options()).mutations),
+  );
+  const before = required(
+    [...state.messages].reverse().find((message) => message.payload.nextRole === 'REVIEWER'),
+  );
+  const next = applyMutations(state, decide(state, options()).mutations);
+  const after = required(
+    [...next.messages].reverse().find((message) => message.payload.nextRole === 'REVIEWER'),
+  );
+  expect(after.payload.reason).toBe('repeated_test_failures');
+  expect(after.payload.reviewBinding).toEqual(before.payload.reviewBinding);
+  const reviewer = required(
+    [...next.workers].reverse().find((worker) => worker.role === 'REVIEWER'),
+  );
+  const approved = applyMutations(next, [
+    mergeByIdMutation('workers', reviewer.workerId, { status: 'done' }),
+    appendMutation('reviewComments', {
+      id: 'invalid-root-approval',
+      kind: 'verdict',
+      verdict: 'approved',
+    }),
+  ]);
+  expect(() => decide(approved, options())).toThrow('root-cause review cannot approve');
+});
+it('prioritizes a blocking REVIEWER objection over advisory continuation', () => {
+  const state = advisoryReview(awaitingReview());
+  const blocking = applyMutations(state, [
+    mergeByIdMutation('requirements', 'R', {
+      id: 'R',
+      story: 'Preserve correctness',
+      acceptance: ['Correct output'],
+      nonGoals: [],
+    }),
+    appendMutation('objections', {
+      id: 'blocking-review',
+      threadId: 'blocking-review',
+      fromRole: 'REVIEWER',
+      claim: 'contradiction',
+      track: 'blocking',
+      target: { kind: 'requirement', id: 'R' },
+      argument: 'The implementation contradicts R.',
+      ts: 102,
+    }),
+  ]);
+  expect(decide(blocking, options()).route).toMatchObject({
+    kind: 'human_gate',
+    request: { reason: 'blocking_objection:blocking-review' },
+  });
+});

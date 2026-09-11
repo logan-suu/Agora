@@ -2,8 +2,44 @@ import { describe, expect, it } from 'vitest';
 import { architectTurnMutations, reviewerTurnMutations } from '../src/runtime-contracts';
 
 describe('architectTurnMutations structured transport', () => {
+  const executionPlan = {
+    version: 1,
+    subtasks: [{ id: 'A', title: 'Implement module', dependsOn: [] }],
+  };
   it('requires both architecture and conventions objects promised by the prompt', () => {
     expect(() => architectTurnMutations('{"architecture":{"modules":[]}}')).toThrow(/conventions/);
+  });
+  it.each(['executionPlan', 'unexpected'])('rejects the extra top-level key %s', (key) => {
+    expect(() =>
+      architectTurnMutations(
+        JSON.stringify({ architecture: {}, conventions: {}, [key]: executionPlan }),
+      ),
+    ).toThrow(/top-level/);
+  });
+  it('rejects object modules without a nested execution plan before state can be committed', () => {
+    expect(() =>
+      architectTurnMutations(
+        JSON.stringify({ architecture: { modules: [{ id: 'A' }] }, conventions: {} }),
+      ),
+    ).toThrow(/legacy modules/);
+  });
+  it('accepts object modules with a nested plan and preserves legacy string modules', () => {
+    const architecture = { modules: [{ id: 'A' }], executionPlan };
+    expect(
+      architectTurnMutations(JSON.stringify({ architecture, conventions: {} })),
+    ).toContainEqual({
+      op: 'set',
+      field: 'architecture',
+      value: architecture,
+    });
+    expect(() =>
+      architectTurnMutations(
+        JSON.stringify({ architecture: { modules: ['Module A'] }, conventions: {} }),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      architectTurnMutations(JSON.stringify({ architecture: {}, conventions: {} })),
+    ).not.toThrow();
   });
 });
 

@@ -17,6 +17,7 @@ import { createMessageRuntime } from '../../../apps/web/src/server/message-runti
 import { createWebTaskCompositionFactory } from '../../../apps/web/src/server/task-composition';
 import { createPostTask } from '../../../apps/web/src/server/task-handlers';
 import { TaskOrchestrationRuntime } from '../../../apps/web/src/server/task-orchestration-runtime';
+import { projectedInputText } from '../../evals/core/projected-input';
 
 const socket = join(process.env.HOME ?? '', '.docker/run/docker.sock');
 const docker = new Dockerode(existsSync(socket) ? { socketPath: socket } : {});
@@ -86,9 +87,7 @@ class ParallelAdapter extends LlmAdapter {
   private initialValidation: string | undefined;
   private readonly validations = new Set<string>();
   async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-    const block = options.messages[0]?.content.find((candidate) => candidate.type === 'text');
-    if (block?.type !== 'text') throw new Error('missing actual projected input');
-    const view = JSON.parse(block.text) as View;
+    const view = JSON.parse(projectedInputText(options)) as View;
     const rootCause =
       this.scenario === 'root_cause_failure' || this.scenario === 'architecture_failure';
     const assignment = view.slices.assignment;

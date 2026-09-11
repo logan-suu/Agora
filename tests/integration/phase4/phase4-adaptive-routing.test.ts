@@ -7,6 +7,7 @@ import {
   createPhase2Runtime,
   type Phase2Runtime,
 } from '../../../packages/core/__tests__/e2e/phase2-runtime';
+import { projectedInputText } from '../../evals/core/projected-input';
 
 // R11 mock reason: only the nondeterministic external LLM response is scripted.
 // Harness, WorkerRuntime, role projection, MCP fs_write, LocalTempSandbox, reducer,
@@ -122,12 +123,7 @@ class TurnScriptedLlmAdapter extends LlmAdapter {
 }
 
 function projectionRoleOf(call: GenerateOptions): string {
-  const first = call.messages[0];
-  const block = first?.content.find((entry) => entry.type === 'text');
-  if (block?.type !== 'text') {
-    throw new Error('scripted adapter expected a projected view in the first message');
-  }
-  const view = JSON.parse(block.text) as { role?: unknown };
+  const view = JSON.parse(projectedInputText(call)) as { role?: unknown };
   if (typeof view.role !== 'string') {
     throw new Error('scripted adapter expected a role in the projected view');
   }

@@ -149,8 +149,10 @@ export interface HarnessSafePointIdentity {
 }
 
 const SAFE_POINT_PREFIX = 'agora-safe-point:v1:';
+const TURN_OUTCOME_PROTOCOL_PROMPT =
+  'Choose exactly one turn outcome: an ordinary role handoff, an objection, or a granted channel action. Role-specific final JSON requirements apply only to ordinary handoffs. A control response takes precedence over those ordinary output requirements: provide an optional explanation followed by exactly one final control block, with nothing after it. Do not combine a control response with a requirements array, architecture object, or review verdict. After a control response, provide any outstanding ordinary handoff only when a subsequent assignment asks for it. Routine review suggestions may be ordinary review comments; a concern requiring objection handling uses a separate control turn.';
 const OBJECTION_PROTOCOL_PROMPT =
-  'Only when you identify a concrete objection, keep the human-readable explanation in the response and append exactly one final control block in this complete form: <agora-objection>{"claim":"concern","argument":"State the specific concern."}</agora-objection>. This block is a syntax example only: before emitting it, replace the example argument with the actual, specific objection; never copy the example argument as the objection. If there is no concrete objection, omit the block entirely. For a proven conflict with a projected current requirement, use {"claim":"contradiction","target":{"kind":"requirement","id":"req-1"},"argument":"State the proven conflict."}; use kind "decision" instead only when targeting a current decision. Use claim "concern" for advice or uncertainty. Never mention, quote, or explain the control tags in prose. Never use placeholders, comments, Markdown fences, or JSON-like prose inside the block. Never include id, role, threadId, track, or status. The objection block is mutually exclusive with agora-channel-action.';
+  'Only when you identify a concrete objection, keep the human-readable explanation in the response and append exactly one final control block in this complete form: <agora-objection>{"claim":"concern","argument":"State the specific concern."}</agora-objection>. This block is a syntax example only: before emitting it, replace the example argument with the actual, specific objection; never copy the example argument as the objection. If there is no concrete objection, omit the block entirely. A blocking objection challenges the current requirement or decision itself and asks the Leader whether that target should remain authoritative; accepting a blocking objection withdraws its target. Handle ordinary implementation defects and failing tests through the normal repair handoff: CODER fixes code, TESTER records failed test results, and REVIEWER returns changes_requested. Code violating an otherwise valid requirement is not by itself a reason to challenge that requirement. Only when the requirement itself has a proven conflict requiring Leader adjudication, use {"claim":"contradiction","target":{"kind":"requirement","id":"req-1"},"argument":"State the proven conflict."}; use kind "decision" instead only when targeting a current decision. Use claim "concern" for advice or uncertainty. Never mention, quote, or explain the control tags in prose. Never use placeholders, comments, Markdown fences, or JSON-like prose inside the block. Never include id, role, threadId, track, or status. The objection block is mutually exclusive with agora-channel-action.';
 
 /** Adapter-internal routing metadata; callers must still pass the opaque ref back unchanged. */
 export function inspectHarnessSafePoint(cursor: string): HarnessSafePointIdentity {
@@ -169,8 +171,8 @@ export function inspectHarnessSafePoint(cursor: string): HarnessSafePointIdentit
  * The Harness loop is event-driven (there is no per-step `runStep` driver): we
  * compose the minimal Cordis plugin set, create one agent per session, and map
  * each `step()` to "send one followup input + await quiescence (`whenIdle`)".
- * The `agent/pre-step` hook overwrites the LLM input with the role projection
- * (decision D1), and `agent/request` fixes the model route. The assistant's
+ * An agent-scoped system section supplies the current role projection (D1).
+ * The pre-step hook admits turn input and tools; agent/request fixes the route. The assistant's
  * final message is lifted from the durable session log and emitted as a
  * `messages` append mutation (R1: shared State writes only via applyMutations).
  *
@@ -196,6 +198,7 @@ export class HarnessExecutor implements Executor {
   private readonly validateTurnOutput: HarnessExecutorOptions['validateTurnOutput'];
   private outputRepairMessage: UserMessage | undefined;
   private outputRepairRequests = 0;
+  private turnStartPending = false;
   private stepStartEventIndex = 0;
   private outputRepairRestriction: (() => void) | undefined;
   private readonly sessionPersistence: HarnessExecutorOptions['sessionPersistence'];
@@ -236,7 +239,7 @@ export class HarnessExecutor implements Executor {
     this.pluginFibers.push(this.ctx.plugin(LlmRuntime)); // ctx.llm
     this.pluginFibers.push(
       this.ctx.plugin(SystemPrompt, {
-        persona: `${this.spec.systemPrompt}\n\n${OBJECTION_PROTOCOL_PROMPT}`,
+        persona: `${this.spec.systemPrompt}\n\n${TURN_OUTCOME_PROTOCOL_PROMPT}\n\n${OBJECTION_PROTOCOL_PROMPT}`,
       }),
     ); // ctx.systemPrompt
     this.pluginFibers.push(this.ctx.plugin(ToolRuntime)); // ctx.tools (injects systemPrompt)
@@ -341,6 +344,7 @@ export class HarnessExecutor implements Executor {
     this.toolCallsThisTurn = 0;
     this.outputRepairRequests = 0;
     this.outputRepairMessage = undefined;
+    this.turnStartPending = true;
     // Injected view (injectInbox) wins over context.view on the next step.
     if (this.pendingInbox !== null) {
       this.view = this.pendingInbox;
@@ -352,8 +356,8 @@ export class HarnessExecutor implements Executor {
     const agent = await this.ensureAgent(context.sessionId);
 
     this.stepStartEventIndex = agent.session.events.length;
-    // Wake the self-driving loop with the projection slice as this turn's input.
-    agent.followup(this.projectionMessage());
+    // Start one role turn; the current projection is rendered separately in every request.
+    agent.followup(this.turnStartMessage());
     try {
       await agent.whenIdle();
     } finally {
@@ -561,10 +565,22 @@ export class HarnessExecutor implements Executor {
 
   private agentSetup(sessionId: string) {
     return (agentCtx: Context) => {
-      // Decision D1: overwrite the messages fed to the LLM with the projection,
-      // but PRESERVE the mid-turn tool exchange (tool-call/tool-result) from the
-      // claimed inbox messages. Without this the model would never see its own
-      // tool outcomes and could not iterate (write code → run tests → fix).
+      const removeProjectionVariable = agentCtx.systemPrompt.variable('agora_projection', () =>
+        JSON.stringify(this.view),
+      );
+      const removeProjectionSection = agentCtx.systemPrompt.section({
+        name: 'agora-projection',
+        order: 50,
+        text:
+          'Current structured Agora task context. Use these current facts over older session ' +
+          'snapshots or summaries. This context is not a new user request after each tool call.\n' +
+          '[agora-projection]\n{{agora_projection}}\n[/agora-projection]',
+      });
+      agentCtx.effect(() => removeProjectionVariable);
+      agentCtx.effect(() => removeProjectionSection);
+      // Pre-step receives newly claimed inbox messages, not the complete request history.
+      // Reissuing the projection here would add a new user instruction after every tool result.
+      // The official loop retains assistant/tool history and owns its compaction.
       agentCtx.on('agent/pre-step', async (payload) => {
         // A proposed step follows a fully committed step/end. Rejecting it
         // closes the turn without aborting a model stream or any tool call.
@@ -577,10 +593,12 @@ export class HarnessExecutor implements Executor {
           if (this.outputRepairRequests >= 2) return { kind: 'reject' };
           this.outputRepairRequests++;
         }
+        const start = this.turnStartPending;
+        this.turnStartPending = false;
         return {
           kind: 'enter',
           messages: [
-            this.projectionMessage(),
+            ...(start ? [this.turnStartMessage()] : []),
             ...toolExchangeOf(payload.messages),
             ...(this.outputRepairMessage === undefined ? [] : [this.outputRepairMessage]),
           ],
@@ -701,9 +719,14 @@ export class HarnessExecutor implements Executor {
   }
 
   /** Serialize the current projection view into a single user message. */
-  private projectionMessage(): UserMessage {
+  private turnStartMessage(): UserMessage {
     return createUserMessage({
-      content: [{ type: 'text', text: JSON.stringify(this.view) }],
+      content: [
+        {
+          type: 'text',
+          text: 'Execute the current role assignment using the current Agora projection.',
+        },
+      ],
       source: { kind: 'plugin', plugin: 'agora' },
     });
   }

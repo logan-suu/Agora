@@ -1,0 +1,4828 @@
+{
+  "schemaVersion": 1,
+  "groupId": "phase10-final-v14",
+  "generatedAt": "2026-09-11T05:17:54.114Z",
+  "createdAt": "2026-09-11T02:31:56.081Z",
+  "complete": true,
+  "fingerprint": "257e8c78bef43ca1139b645ebc96307f8090894aab25e872a2619e3c6ac85eec",
+  "sourceFingerprint": "93cafece021f1c5ada5a7db7173738405317a11569665ec555ba82efdd89f1e4",
+  "protocol": {
+    "version": "opencode-go-objection-scope-v14",
+    "executionEnvironment": "node20-no-git-cli-use-granted-mcp-tools",
+    "publicContractVisibility": "source-pinned-behavioral-facts-in-all-variant-goals",
+    "publicTestVisibility": "readable-non-executable-contract-with-xtest-activated",
+    "holdoutTestVisibility": "withheld",
+    "referenceVisibility": "withheld"
+  },
+  "reportScope": "frozen-group",
+  "planned": 18,
+  "started": 18,
+  "final": 18,
+  "passed": 14,
+  "outcomeExecuted": 14,
+  "outcomePassed": 14,
+  "operatorInterrupted": 1,
+  "active": [],
+  "unstarted": [],
+  "retainedOutsideComparison": [],
+  "models": {
+    "single": "deepseek-v4-flash",
+    "multi": "deepseek-v4-flash",
+    "mixed": {
+      "PM": "deepseek-flash",
+      "ARCHITECT": "deepseek-flash",
+      "REVIEWER": "deepseek-flash",
+      "others": "deepseek-v4-flash"
+    },
+    "parallel": "deepseek-v4-flash",
+    "sparse": "deepseek-v4-flash"
+  },
+  "configuration": {
+    "pricingSource": "https://opencode.ai/docs/go/#usage-limits",
+    "pricingChecked": "2026-09-10",
+    "peakRates": {
+      "deepseek-v4-flash": {
+        "input": 0.3,
+        "cacheRead": 0.006,
+        "output": 1.2
+      },
+      "deepseek-flash": {
+        "input": 0.3,
+        "cacheRead": 0.006,
+        "output": 1.2
+      }
+    },
+    "peakUtcWindows": "Monday-Friday [01:00,04:00) and [06:00,10:00); other hours use 0.5 times peak rates",
+    "endpoint": "https://opencode.ai/zen/go/v1",
+    "contextLimit": 65536,
+    "maxTokens": 32768,
+    "temperature": 0.2,
+    "thinking": "enabled",
+    "reasoningEffort": "high",
+    "maxCalls": 120,
+    "maxTools": 240,
+    "maxDurationMs": 1200000
+  },
+  "image": {
+    "id": "sha256:198dba14be3e05a6c663d97f2bdc53a8c5a3c32c50b090f665f131b8d9812934",
+    "architecture": "arm64",
+    "size": 273685111
+  },
+  "environment": {
+    "warmPolicy": "prebuilt image; fresh network-none 512MiB cpuShares512 container/workspace/session for every attempt; shared provider cache remains uncontrolled",
+    "lockHash": "7d059c52ff4ae76bc88aab31eeaf8d9aa7947f2985e3b709e5cc4ee4904ff21e"
+  },
+  "publicSources": [
+    {
+      "name": "grade-school",
+      "revision": "7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f",
+      "expectedTests": 10,
+      "files": [
+        {
+          "path": "grade-school.js",
+          "sha256": "1eb3ebac5d31f2ab784068fc7d3ec8b93ccacfcc5507cb6882efac7a8999dce2",
+          "audience": "agent"
+        },
+        {
+          "path": ".docs/instructions.md",
+          "sha256": "8dc7133cd5f0564717108757c27ad96ebadf44f03b5fde5c35b826aaeb0b4e0f",
+          "audience": "agent"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e52f804e74f0fbd34e8927962319df346166b8194094309a0aee318693df44df",
+          "audience": "metadata"
+        },
+        {
+          "path": "package.json",
+          "sha256": "641447fb0a8d3a907c0ad9f8a004d94391e0995fb603a37ee602cb7b1b0a62de",
+          "audience": "verifier"
+        },
+        {
+          "path": "babel.config.js",
+          "sha256": "76d07c91b23ee54d8064fae124c8937f9d02a6f758a63446e137f62923e0e8fa",
+          "audience": "verifier"
+        },
+        {
+          "path": "grade-school.spec.js",
+          "sha256": "055838a67683c40987054b9df345f4fb8dce41cd4e0fbf54f45b73d6a8e2d024",
+          "audience": "verifier"
+        },
+        {
+          "path": ".meta/proof.ci.js",
+          "sha256": "681ac5ad5f7c4ed4281f434fc88cba1509fc63e768af982d2fd052cefb70b12c",
+          "audience": "reference"
+        }
+      ]
+    },
+    {
+      "name": "wordy",
+      "revision": "7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f",
+      "expectedTests": 23,
+      "files": [
+        {
+          "path": "wordy.js",
+          "sha256": "a3e38272e31830d28d4b7e796287b7e838e0963f4dcdd219585d6b08d10212a6",
+          "audience": "agent"
+        },
+        {
+          "path": ".docs/instructions.md",
+          "sha256": "b9e24dd95b27fa04f706e4dd9e5c7f430684b1af13a1cfde34faee705300aeee",
+          "audience": "agent"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e52f804e74f0fbd34e8927962319df346166b8194094309a0aee318693df44df",
+          "audience": "metadata"
+        },
+        {
+          "path": "package.json",
+          "sha256": "038d0628628b8256b9bd6cf507d1f62d1036a78f0eb509ef766832b0ef588a46",
+          "audience": "verifier"
+        },
+        {
+          "path": "babel.config.js",
+          "sha256": "76d07c91b23ee54d8064fae124c8937f9d02a6f758a63446e137f62923e0e8fa",
+          "audience": "verifier"
+        },
+        {
+          "path": "wordy.spec.js",
+          "sha256": "a84461b9dbe0e07c41bf655a3266bc9b1e0aced504da0df3034d9a4ca4d04dac",
+          "audience": "verifier"
+        },
+        {
+          "path": ".meta/proof.ci.js",
+          "sha256": "faf605269e12fc60675dde53f4a0e752b5ddcd1c1296ed3d2304b3bd0acba7d8",
+          "audience": "reference"
+        }
+      ]
+    },
+    {
+      "name": "book-store",
+      "revision": "7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f",
+      "expectedTests": 17,
+      "files": [
+        {
+          "path": "book-store.js",
+          "sha256": "dddec1d9d2a60c4c7e32f4f7b9f9245078907d46e3d24a7dbc1011e2738d882f",
+          "audience": "agent"
+        },
+        {
+          "path": ".docs/instructions.md",
+          "sha256": "025999b58db674568be4d2239fc577b749ec40e98593fc3638e21e72915ad4c5",
+          "audience": "agent"
+        },
+        {
+          "path": ".docs/instructions.append.md",
+          "sha256": "2e5a5a532d6785aaa47e537b555f55c07555efbdab4c0317a4ad6fbf5078d741",
+          "audience": "agent"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e52f804e74f0fbd34e8927962319df346166b8194094309a0aee318693df44df",
+          "audience": "metadata"
+        },
+        {
+          "path": "package.json",
+          "sha256": "7ccac13eae6b8a35fd5e2f0dcdf472f447cc7ef8b16dcee07d10fba75c0f8e85",
+          "audience": "verifier"
+        },
+        {
+          "path": "babel.config.js",
+          "sha256": "76d07c91b23ee54d8064fae124c8937f9d02a6f758a63446e137f62923e0e8fa",
+          "audience": "verifier"
+        },
+        {
+          "path": "book-store.spec.js",
+          "sha256": "b5173e06b26eac34667c4ed456e0d3a1a70d929ee6da2d1ab661baa31f9f9320",
+          "audience": "verifier"
+        },
+        {
+          "path": ".meta/proof.ci.js",
+          "sha256": "86fa356b22031075f7eb00355ea9c239702e7cb83a4939cef8a5fb4d3974db1c",
+          "audience": "reference"
+        }
+      ]
+    },
+    {
+      "name": "forth",
+      "revision": "7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f",
+      "expectedTests": 49,
+      "files": [
+        {
+          "path": "forth.js",
+          "sha256": "10b22e0a92b020bef406ad5f13fb75b28350373269a0cec097a61e7ec2eb6cc4",
+          "audience": "agent"
+        },
+        {
+          "path": ".docs/instructions.md",
+          "sha256": "06875da79159e3783cde3d006e405f8329e16837b09b0b4b8225efc3d27a6d9c",
+          "audience": "agent"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e52f804e74f0fbd34e8927962319df346166b8194094309a0aee318693df44df",
+          "audience": "metadata"
+        },
+        {
+          "path": "package.json",
+          "sha256": "8ce148029270d32b3b8466ae39257d82e7f60bb9104365df62fe3be2fc7637f0",
+          "audience": "verifier"
+        },
+        {
+          "path": "babel.config.js",
+          "sha256": "76d07c91b23ee54d8064fae124c8937f9d02a6f758a63446e137f62923e0e8fa",
+          "audience": "verifier"
+        },
+        {
+          "path": "forth.spec.js",
+          "sha256": "d54c1cf8c7e20d26bd173e451c0a04d9617ec2a9a7c14d16762942fd17e7ee6d",
+          "audience": "verifier"
+        },
+        {
+          "path": ".meta/proof.ci.js",
+          "sha256": "61fdac019920d16c90a7501259c58d46c4ac49f2c11f3f701bc1f595509ad9d0",
+          "audience": "reference"
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "metric": "subscription-quota-equivalent-usd",
+    "costMeaning": "Budget occupation includes explicit reservation-upper-bound audits; never substitutes for missing reported usage.",
+    "thisComparisonAuditedUpperBoundRequests": 2,
+    "thisComparisonAuditedUpperBoundUsd": 0.1179648,
+    "allGroupsAuditedUpperBoundUsd": 0.1769472,
+    "allGroupsRequests": 2462,
+    "thisGroupRequests": 877,
+    "thisComparisonRequests": 877,
+    "thisComparisonBudgetOccupiedUsd": 1.1658525300000002,
+    "priorGroupsRequests": 1585,
+    "unsettledRequests": 0,
+    "totalLimitUsd": 5,
+    "formalLimitUsd": 5,
+    "allGroupsBudgetOccupiedUsd": 3.0899975040000056,
+    "thisGroupBudgetOccupiedUsd": 1.1658525300000002,
+    "priorGroupsBudgetOccupiedUsd": 1.9241449740000003,
+    "reservedUsd": 0,
+    "unknownReservedUsd": 0,
+    "auditedUpperBoundRequests": 3,
+    "remainingAfterReservationsUsd": 1.9100024959999944,
+    "officialRegressionAuditGap": "Resolved by provider billing window upper-bound adjustment USD0.125900192 in the separate official ledger. See phase10-regression-audit-gap-20260910-plan.json. Not included in Go ledger."
+  },
+  "cells": [
+    {
+      "key": "holdout/thermal-inspection/multi",
+      "planned": 3,
+      "final": 3,
+      "passed": 3,
+      "outcomeExecuted": 3,
+      "outcomePassed": 3,
+      "operatorInterrupted": 0,
+      "successDurationMs": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 513075,
+        "median": 487800,
+        "variance": 3206413171,
+        "standardDeviation": 56625.19908132774
+      },
+      "failureDurationMs": {
+        "count": 0,
+        "unknownCount": 0,
+        "mean": null,
+        "median": null,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "budgetOccupiedUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.072494644,
+        "median": 0.07020889199999998,
+        "variance": 0.000018888338605871944,
+        "standardDeviation": 0.00434607162916949
+      },
+      "costUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.072494644,
+        "median": 0.07020889199999998,
+        "variance": 0.000018888338605871944,
+        "standardDeviation": 0.00434607162916949
+      },
+      "peakRateEquivalentUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.072494644,
+        "median": 0.07020889199999998,
+        "variance": 0.000018888338605871944,
+        "standardDeviation": 0.00434607162916949
+      },
+      "modelCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 49.333333333333336,
+        "median": 50,
+        "variance": 1.3333333333333335,
+        "standardDeviation": 1.1547005383792517
+      },
+      "toolCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 78,
+        "median": 78,
+        "variance": 1,
+        "standardDeviation": 1
+      },
+      "iterations": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 1,
+        "median": 1,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "repairIterations": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0,
+        "median": 0,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "humanInterventions": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 2,
+        "median": 2,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "inputTokens": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 433551,
+        "median": 435989,
+        "variance": 251199147,
+        "standardDeviation": 15849.263295181892
+      },
+      "outputTokens": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 35902,
+        "median": 33994,
+        "variance": 16665637,
+        "standardDeviation": 4082.356794793909
+      }
+    },
+    {
+      "key": "holdout/thermal-inspection/parallel",
+      "planned": 3,
+      "final": 3,
+      "passed": 2,
+      "outcomeExecuted": 2,
+      "outcomePassed": 2,
+      "operatorInterrupted": 1,
+      "successDurationMs": {
+        "count": 2,
+        "unknownCount": 0,
+        "mean": 379795,
+        "median": 379795,
+        "variance": 4299055538,
+        "standardDeviation": 65567.1833923038
+      },
+      "failureDurationMs": {
+        "count": 1,
+        "unknownCount": 0,
+        "mean": 580725,
+        "median": 580725,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "budgetOccupiedUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.07474846400000001,
+        "median": 0.07226281199999998,
+        "variance": 0.000194852506551312,
+        "standardDeviation": 0.01395895793214207
+      },
+      "costUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.07474846400000001,
+        "median": 0.07226281199999998,
+        "variance": 0.000194852506551312,
+        "standardDeviation": 0.01395895793214207
+      },
+      "peakRateEquivalentUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.07474846400000001,
+        "median": 0.07226281199999998,
+        "variance": 0.000194852506551312,
+        "standardDeviation": 0.01395895793214207
+      },
+      "modelCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 50.666666666666664,
+        "median": 50,
+        "variance": 4.333333333333333,
+        "standardDeviation": 2.0816659994661326
+      },
+      "toolCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 76.66666666666667,
+        "median": 75,
+        "variance": 8.333333333333332,
+        "standardDeviation": 2.8867513459481287
+      },
+      "iterations": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 1,
+        "median": 1,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "repairIterations": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 0,
+        "median": 0,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "humanInterventions": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 2,
+        "median": 2,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "inputTokens": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 533756,
+        "median": 482733,
+        "variance": 15266785053,
+        "standardDeviation": 123558.83235527924
+      },
+      "outputTokens": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 35412.666666666664,
+        "median": 33114,
+        "variance": 74405350.33333334,
+        "standardDeviation": 8625.85360027246
+      }
+    },
+    {
+      "key": "holdout/thermal-inspection/sparse",
+      "planned": 3,
+      "final": 3,
+      "passed": 3,
+      "outcomeExecuted": 3,
+      "outcomePassed": 3,
+      "operatorInterrupted": 0,
+      "successDurationMs": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 438920.6666666667,
+        "median": 434747,
+        "variance": 814435792.3333333,
+        "standardDeviation": 28538.3214701449
+      },
+      "failureDurationMs": {
+        "count": 0,
+        "unknownCount": 0,
+        "mean": null,
+        "median": null,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "budgetOccupiedUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.067056536,
+        "median": 0.068788644,
+        "variance": 0.00001302368127038406,
+        "standardDeviation": 0.003608833782592939
+      },
+      "costUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.067056536,
+        "median": 0.068788644,
+        "variance": 0.00001302368127038406,
+        "standardDeviation": 0.003608833782592939
+      },
+      "peakRateEquivalentUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.067056536,
+        "median": 0.068788644,
+        "variance": 0.00001302368127038406,
+        "standardDeviation": 0.003608833782592939
+      },
+      "modelCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 50.333333333333336,
+        "median": 50,
+        "variance": 2.333333333333333,
+        "standardDeviation": 1.5275252316519465
+      },
+      "toolCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 80,
+        "median": 81,
+        "variance": 3,
+        "standardDeviation": 1.7320508075688772
+      },
+      "iterations": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 1,
+        "median": 1,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "repairIterations": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0,
+        "median": 0,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "humanInterventions": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 2,
+        "median": 2,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "inputTokens": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 437958,
+        "median": 426792,
+        "variance": 526732263,
+        "standardDeviation": 22950.648422212387
+      },
+      "outputTokens": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 32693.666666666668,
+        "median": 33998,
+        "variance": 6153436.333333333,
+        "standardDeviation": 2480.612088443764
+      }
+    },
+    {
+      "key": "holdout/daily-availability/multi",
+      "planned": 3,
+      "final": 3,
+      "passed": 3,
+      "outcomeExecuted": 3,
+      "outcomePassed": 3,
+      "operatorInterrupted": 0,
+      "successDurationMs": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 527710.3333333334,
+        "median": 500148,
+        "variance": 3094472426.3333335,
+        "standardDeviation": 55627.98240394247
+      },
+      "failureDurationMs": {
+        "count": 0,
+        "unknownCount": 0,
+        "mean": null,
+        "median": null,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "budgetOccupiedUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.05128711,
+        "median": 0.038436354000000006,
+        "variance": 0.0005635223618055958,
+        "standardDeviation": 0.023738625946031412
+      },
+      "costUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.05128711,
+        "median": 0.038436354000000006,
+        "variance": 0.0005635223618055958,
+        "standardDeviation": 0.023738625946031412
+      },
+      "peakRateEquivalentUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.07634732,
+        "median": 0.07687270800000001,
+        "variance": 0.000006946624626383992,
+        "standardDeviation": 0.002635645011450516
+      },
+      "modelCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 52,
+        "median": 50,
+        "variance": 12,
+        "standardDeviation": 3.4641016151377544
+      },
+      "toolCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 80,
+        "median": 80,
+        "variance": 4,
+        "standardDeviation": 2
+      },
+      "iterations": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 1,
+        "median": 1,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "repairIterations": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0,
+        "median": 0,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "humanInterventions": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 1,
+        "median": 1,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "inputTokens": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 487244.6666666667,
+        "median": 476879,
+        "variance": 1419449974.3333335,
+        "standardDeviation": 37675.58857315083
+      },
+      "outputTokens": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 39236.666666666664,
+        "median": 40677,
+        "variance": 7644476.333333334,
+        "standardDeviation": 2764.864613924764
+      }
+    },
+    {
+      "key": "holdout/daily-availability/parallel",
+      "planned": 3,
+      "final": 3,
+      "passed": 2,
+      "outcomeExecuted": 2,
+      "outcomePassed": 2,
+      "operatorInterrupted": 0,
+      "successDurationMs": {
+        "count": 2,
+        "unknownCount": 0,
+        "mean": 406252,
+        "median": 406252,
+        "variance": 2811300128,
+        "standardDeviation": 53021.69488049208
+      },
+      "failureDurationMs": {
+        "count": 1,
+        "unknownCount": 0,
+        "mean": 630779,
+        "median": 630779,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "budgetOccupiedUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.06647220599999999,
+        "median": 0.07017279600000001,
+        "variance": 0.0006994859007117243,
+        "standardDeviation": 0.026447795762817822
+      },
+      "costUsd": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 0.0542709,
+        "median": 0.0542709,
+        "variance": 0.0005057405927896326,
+        "standardDeviation": 0.022488676990646484
+      },
+      "peakRateEquivalentUsd": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 0.07404876599999999,
+        "median": 0.07404876599999999,
+        "variance": 0.000014464045069127865,
+        "standardDeviation": 0.0038031625089033293
+      },
+      "modelCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 49,
+        "median": 50,
+        "variance": 3,
+        "standardDeviation": 1.7320508075688772
+      },
+      "toolCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 77,
+        "median": 76,
+        "variance": 13,
+        "standardDeviation": 3.605551275463989
+      },
+      "iterations": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 1,
+        "median": 1,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "repairIterations": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 0,
+        "median": 0,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "humanInterventions": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 1,
+        "median": 1,
+        "variance": 0,
+        "standardDeviation": 0
+      },
+      "inputTokens": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 449002.5,
+        "median": 449002.5,
+        "variance": 346766112.5,
+        "standardDeviation": 18621.65708254773
+      },
+      "outputTokens": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 37641,
+        "median": 37641,
+        "variance": 7197218,
+        "standardDeviation": 2682.7631278217614
+      }
+    },
+    {
+      "key": "holdout/daily-availability/sparse",
+      "planned": 3,
+      "final": 3,
+      "passed": 1,
+      "outcomeExecuted": 1,
+      "outcomePassed": 1,
+      "operatorInterrupted": 0,
+      "successDurationMs": {
+        "count": 1,
+        "unknownCount": 0,
+        "mean": 497316,
+        "median": 497316,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "failureDurationMs": {
+        "count": 2,
+        "unknownCount": 0,
+        "mean": 651667,
+        "median": 651667,
+        "variance": 613340146568,
+        "standardDeviation": 783160.3581438478
+      },
+      "budgetOccupiedUsd": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 0.056558550000000006,
+        "median": 0.0589824,
+        "variance": 0.0003115512945726839,
+        "standardDeviation": 0.01765081569142582
+      },
+      "costUsd": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 0.055346624999999997,
+        "median": 0.055346624999999997,
+        "variance": 0.0006142900159116179,
+        "standardDeviation": 0.02478487474068848
+      },
+      "peakRateEquivalentUsd": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 0.11069324999999999,
+        "median": 0.11069324999999999,
+        "variance": 0.0024571600636464717,
+        "standardDeviation": 0.04956974948137696
+      },
+      "modelCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 41,
+        "median": 51,
+        "variance": 1300,
+        "standardDeviation": 36.05551275463989
+      },
+      "toolCalls": {
+        "count": 3,
+        "unknownCount": 0,
+        "mean": 63.666666666666664,
+        "median": 74,
+        "variance": 3502.333333333334,
+        "standardDeviation": 59.18051481132395
+      },
+      "iterations": {
+        "count": 1,
+        "unknownCount": 2,
+        "mean": 1,
+        "median": 1,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "repairIterations": {
+        "count": 1,
+        "unknownCount": 2,
+        "mean": 0,
+        "median": 0,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "humanInterventions": {
+        "count": 1,
+        "unknownCount": 2,
+        "mean": 1,
+        "median": 1,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "inputTokens": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 610703.5,
+        "median": 610703.5,
+        "variance": 57302973112.5,
+        "standardDeviation": 239380.39416898787
+      },
+      "outputTokens": {
+        "count": 2,
+        "unknownCount": 1,
+        "mean": 61872.5,
+        "median": 61872.5,
+        "variance": 1031079460.5,
+        "standardDeviation": 32110.42604046231
+      }
+    }
+  ],
+  "paired": [
+    {
+      "task": "thermal-inspection",
+      "attempt": 1,
+      "baseline": "multi",
+      "variant": "sparse",
+      "baselineMs": 487800,
+      "variantMs": 469316,
+      "speedRatio": 1.039384977286093,
+      "differenceMs": -18484,
+      "peakRateCostDifferenceUsd": -0.001420247999999985,
+      "costDifferenceUsd": -0.001420247999999985
+    },
+    {
+      "task": "thermal-inspection",
+      "attempt": 2,
+      "baseline": "multi",
+      "variant": "parallel",
+      "baselineMs": 577936,
+      "variantMs": 426158,
+      "speedRatio": 1.3561542901928392,
+      "differenceMs": -151778,
+      "peakRateCostDifferenceUsd": 0.0024943799999999627,
+      "costDifferenceUsd": 0.0024943799999999627
+    },
+    {
+      "task": "thermal-inspection",
+      "attempt": 2,
+      "baseline": "multi",
+      "variant": "sparse",
+      "baselineMs": 577936,
+      "variantMs": 412699,
+      "speedRatio": 1.4003813917649426,
+      "differenceMs": -165237,
+      "peakRateCostDifferenceUsd": -0.0002956439999999977,
+      "costDifferenceUsd": -0.0002956439999999977
+    },
+    {
+      "task": "thermal-inspection",
+      "attempt": 3,
+      "baseline": "multi",
+      "variant": "parallel",
+      "baselineMs": 473489,
+      "variantMs": 333432,
+      "speedRatio": 1.4200466661868087,
+      "differenceMs": -140057,
+      "peakRateCostDifferenceUsd": -0.01530729599999997,
+      "costDifferenceUsd": -0.01530729599999997
+    },
+    {
+      "task": "thermal-inspection",
+      "attempt": 3,
+      "baseline": "multi",
+      "variant": "sparse",
+      "baselineMs": 473489,
+      "variantMs": 434747,
+      "speedRatio": 1.0891138984282813,
+      "differenceMs": -38742,
+      "peakRateCostDifferenceUsd": -0.014598431999999995,
+      "costDifferenceUsd": -0.014598431999999995
+    },
+    {
+      "task": "daily-availability",
+      "attempt": 1,
+      "baseline": "multi",
+      "variant": "parallel",
+      "baselineMs": 591738,
+      "variantMs": 368760,
+      "speedRatio": 1.6046697038724373,
+      "differenceMs": -222978,
+      "peakRateCostDifferenceUsd": -0.007321175999999985,
+      "costDifferenceUsd": -0.008507903999999983
+    },
+    {
+      "task": "daily-availability",
+      "attempt": 2,
+      "baseline": "multi",
+      "variant": "parallel",
+      "baselineMs": 500148,
+      "variantMs": 443744,
+      "speedRatio": 1.1271093242950891,
+      "differenceMs": -56404,
+      "peakRateCostDifferenceUsd": -0.00013470000000002924,
+      "costDifferenceUsd": -0.00006735000000001462
+    },
+    {
+      "task": "daily-availability",
+      "attempt": 3,
+      "baseline": "multi",
+      "variant": "sparse",
+      "baselineMs": 491245,
+      "variantMs": 497316,
+      "speedRatio": 0.9877924699788464,
+      "differenceMs": 6071,
+      "peakRateCostDifferenceUsd": 0.002153591999999996,
+      "costDifferenceUsd": 0.001076795999999998
+    }
+  ],
+  "rows": [
+    {
+      "id": "thermal-inspection-multi-1",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "multi",
+      "attempt": 1,
+      "runId": "phase10-thermal-inspection-model-a1-fe9d53f7-f870-48d4-a3aa-ab4eff17a7dc",
+      "taskFingerprint": "169df6074fc6e2d4a93a9a752eec35f038740f929ea9899cbec4bdda0555113d",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 183,
+        "codeHash": null,
+        "reportHash": "4fce52ba721c362849fefc63fdc1b1fc6d1090340be49343c7410b0d03c0c3b4"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 435989,
+        "outputTokens": 33994,
+        "costUsd": 0.07020889199999998,
+        "modelCalls": 50,
+        "toolCalls": 79,
+        "repairIterations": 0,
+        "humanInterventions": 2,
+        "durationMs": 487800
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 3,
+        "CODER:deepseek-v4-flash": 26,
+        "TESTER:deepseek-v4-flash": 16,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 14994,
+      "requestInputBytesMax": 67265,
+      "requestDurationMs": {
+        "count": 50,
+        "unknownCount": 0,
+        "mean": 9452.48,
+        "median": 5912,
+        "variance": 209301632.54040816,
+        "standardDeviation": 14467.260713086225
+      },
+      "modelServiceWorkMs": 472624,
+      "accounting": {
+        "budgetOccupiedUsd": 0.07020889199999998,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.07020889199999998,
+        "requests": 50,
+        "knownCostRequests": 50,
+        "reportedCostUsd": 0.07020889199999998,
+        "uncachedInputUpperBoundRequests": 10
+      },
+      "segmentsMs": {
+        "toGate": 482844,
+        "gateToApprove": 0,
+        "approveToArchive": 525,
+        "cleanup": 121
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:1c6aa59d-264f-4e95-b0c9-4ec7c3563264",
+            "passed": true,
+            "total": 19
+          },
+          {
+            "id": "wave-validation:47c3166f-6e0f-4faa-a200-e02147ff85ea",
+            "passed": true,
+            "total": 27
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 951,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a1-fe9d53f7-f870-48d4-a3aa-ab4eff17a7dc"
+    },
+    {
+      "id": "thermal-inspection-parallel-1",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "parallel",
+      "attempt": 1,
+      "runId": "phase10-thermal-inspection-model-a1-62931464-61b5-401a-aeb1-3cec4c4453c3",
+      "taskFingerprint": "169df6074fc6e2d4a93a9a752eec35f038740f929ea9899cbec4bdda0555113d",
+      "final": true,
+      "passed": false,
+      "operatorInterrupted": true,
+      "operatorStopRequested": true,
+      "outcome": "not-executed",
+      "independentVerifier": null,
+      "efficiency": {
+        "iterations": "unknown",
+        "inputTokens": 674655,
+        "outputTokens": 44955,
+        "costUsd": 0.08978326800000001,
+        "modelCalls": 53,
+        "toolCalls": 75,
+        "repairIterations": "unknown",
+        "humanInterventions": "unknown",
+        "durationMs": 580725
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "fail"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "unknown"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "unknown"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": "operator-interrupted-reviewer-readonly-stagnation",
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 24,
+        "TESTER:deepseek-v4-flash": 16,
+        "REVIEWER:deepseek-v4-flash": 10
+      },
+      "peakConcurrentModelRequests": 3,
+      "requestInputEstimateMax": 37127,
+      "requestInputBytesMax": 159431,
+      "requestDurationMs": {
+        "count": 53,
+        "unknownCount": 0,
+        "mean": 11556.698113207547,
+        "median": 5163,
+        "variance": 264819007.36865023,
+        "standardDeviation": 16273.260502082863
+      },
+      "modelServiceWorkMs": 612505,
+      "accounting": {
+        "budgetOccupiedUsd": 0.08978326800000001,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.08978326800000001,
+        "requests": 53,
+        "knownCostRequests": 53,
+        "reportedCostUsd": 0.08978326800000001,
+        "uncachedInputUpperBoundRequests": 9
+      },
+      "segmentsMs": {
+        "toGate": -1789094445475,
+        "gateToApprove": 0,
+        "approveToArchive": 0,
+        "cleanup": 106
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": false,
+        "completionBound": false,
+        "gateLeaseCount": -1,
+        "finalLeaseCount": 0,
+        "leasePeak": 3,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 0,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:0b35e9cc-a79f-4602-b223-7c58ab235fab",
+            "passed": true,
+            "total": 18
+          },
+          {
+            "id": "wave-validation:c20e07ea-dbd9-4775-bba5-ab1a4d36400b",
+            "passed": true,
+            "total": 26
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 1133,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a1-62931464-61b5-401a-aeb1-3cec4c4453c3"
+    },
+    {
+      "id": "thermal-inspection-sparse-1",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "sparse",
+      "attempt": 1,
+      "runId": "phase10-thermal-inspection-model-a1-173bbe3e-52bd-4818-8d94-c4b1f7ca0148",
+      "taskFingerprint": "f19793160dd538a1ca07395da1a4dc65e64b588000b27cd63975410e320f8d0a",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 239,
+        "codeHash": null,
+        "reportHash": "4c0d1c9ce3827038f043113dc557a618280c3fc2843f5090130f2639a745c19f"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 464355,
+        "outputTokens": 33998,
+        "costUsd": 0.068788644,
+        "modelCalls": 52,
+        "toolCalls": 81,
+        "repairIterations": 0,
+        "humanInterventions": 2,
+        "durationMs": 469316
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "context-policy-reached",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 26,
+        "TESTER:deepseek-v4-flash": 19,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 16940,
+      "requestInputBytesMax": 76673,
+      "requestDurationMs": {
+        "count": 52,
+        "unknownCount": 0,
+        "mean": 8714.634615384615,
+        "median": 4363.5,
+        "variance": 154759895.29524887,
+        "standardDeviation": 12440.253023763176
+      },
+      "modelServiceWorkMs": 453161,
+      "accounting": {
+        "budgetOccupiedUsd": 0.068788644,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.068788644,
+        "requests": 52,
+        "knownCostRequests": 52,
+        "reportedCostUsd": 0.068788644,
+        "uncachedInputUpperBoundRequests": 9
+      },
+      "segmentsMs": {
+        "toGate": 464013,
+        "gateToApprove": 0,
+        "approveToArchive": 612,
+        "cleanup": 294
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 12,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:21cfefa6-5082-4b69-aa89-896f345dee83",
+            "passed": true,
+            "total": 18
+          },
+          {
+            "id": "wave-validation:98a496b6-5e0e-4194-9194-d287ee6cc697",
+            "passed": true,
+            "total": 27
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 916,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a1-173bbe3e-52bd-4818-8d94-c4b1f7ca0148"
+    },
+    {
+      "id": "thermal-inspection-parallel-2",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "parallel",
+      "attempt": 2,
+      "runId": "phase10-thermal-inspection-model-a2-61338270-b972-40b0-9178-3871ba0f5d57",
+      "taskFingerprint": "169df6074fc6e2d4a93a9a752eec35f038740f929ea9899cbec4bdda0555113d",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 235,
+        "codeHash": null,
+        "reportHash": "1bfe8d38783de1845d23596834f7f63f7e18d0f910cae526d93622424f78116f"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 482733,
+        "outputTokens": 33114,
+        "costUsd": 0.07226281199999998,
+        "modelCalls": 49,
+        "toolCalls": 75,
+        "repairIterations": 0,
+        "humanInterventions": 2,
+        "durationMs": 426158
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 25,
+        "TESTER:deepseek-v4-flash": 17,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 3,
+      "requestInputEstimateMax": 19056,
+      "requestInputBytesMax": 85164,
+      "requestDurationMs": {
+        "count": 49,
+        "unknownCount": 0,
+        "mean": 9268.020408163266,
+        "median": 4580,
+        "variance": 260934884.4787415,
+        "standardDeviation": 16153.479020902634
+      },
+      "modelServiceWorkMs": 454133,
+      "accounting": {
+        "budgetOccupiedUsd": 0.07226281199999998,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.07226281199999998,
+        "requests": 49,
+        "knownCostRequests": 49,
+        "reportedCostUsd": 0.07226281199999998,
+        "uncachedInputUpperBoundRequests": 10
+      },
+      "segmentsMs": {
+        "toGate": 420884,
+        "gateToApprove": 0,
+        "approveToArchive": 594,
+        "cleanup": 475
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 3,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:9db8becb-ec50-475c-9f0d-140a97df5b9e",
+            "passed": true,
+            "total": 22
+          },
+          {
+            "id": "wave-validation:24a561f8-b0b8-42f5-be19-db33fd9303f6",
+            "passed": true,
+            "total": 30
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 834,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a2-61338270-b972-40b0-9178-3871ba0f5d57"
+    },
+    {
+      "id": "thermal-inspection-sparse-2",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "sparse",
+      "attempt": 2,
+      "runId": "phase10-thermal-inspection-model-a2-f96a658e-5221-42b7-a87d-fcda00668d03",
+      "taskFingerprint": "f19793160dd538a1ca07395da1a4dc65e64b588000b27cd63975410e320f8d0a",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 247,
+        "codeHash": null,
+        "reportHash": "f5f67e760ed1624593aa0e72db4242f3c70134bcbb33cec405c9d3df5c58fe92"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 422727,
+        "outputTokens": 34250,
+        "costUsd": 0.06947278800000002,
+        "modelCalls": 50,
+        "toolCalls": 78,
+        "repairIterations": 0,
+        "humanInterventions": 2,
+        "durationMs": 412699
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "context-policy-reached",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 26,
+        "TESTER:deepseek-v4-flash": 17,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 13503,
+      "requestInputBytesMax": 62461,
+      "requestDurationMs": {
+        "count": 50,
+        "unknownCount": 0,
+        "mean": 7948.1,
+        "median": 3587.5,
+        "variance": 89817479.31632653,
+        "standardDeviation": 9477.208413679977
+      },
+      "modelServiceWorkMs": 397405,
+      "accounting": {
+        "budgetOccupiedUsd": 0.06947278800000002,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.06947278800000002,
+        "requests": 50,
+        "knownCostRequests": 50,
+        "reportedCostUsd": 0.06947278800000002,
+        "uncachedInputUpperBoundRequests": 9
+      },
+      "segmentsMs": {
+        "toGate": 407648,
+        "gateToApprove": 0,
+        "approveToArchive": 605,
+        "cleanup": 250
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 12,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:81898413-1453-4354-b29b-4d6513ba87b4",
+            "passed": true,
+            "total": 22
+          },
+          {
+            "id": "wave-validation:407f3287-3685-4b54-9099-0865cd3ebdfb",
+            "passed": true,
+            "total": 30
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 807,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a2-f96a658e-5221-42b7-a87d-fcda00668d03"
+    },
+    {
+      "id": "thermal-inspection-multi-2",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "multi",
+      "attempt": 2,
+      "runId": "phase10-thermal-inspection-model-a2-9bcf408f-e14a-4941-82c0-e9f0ee497b00",
+      "taskFingerprint": "169df6074fc6e2d4a93a9a752eec35f038740f929ea9899cbec4bdda0555113d",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 242,
+        "codeHash": null,
+        "reportHash": "d50ece3f2e1b7746f1491077d009571e369194ab29724f22b516351ecb43a0dd"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 448040,
+        "outputTokens": 33123,
+        "costUsd": 0.06976843200000002,
+        "modelCalls": 50,
+        "toolCalls": 78,
+        "repairIterations": 0,
+        "humanInterventions": 2,
+        "durationMs": 577936
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 26,
+        "TESTER:deepseek-v4-flash": 17,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 15059,
+      "requestInputBytesMax": 68048,
+      "requestDurationMs": {
+        "count": 50,
+        "unknownCount": 0,
+        "mean": 11248.64,
+        "median": 4509,
+        "variance": 414014972.3575511,
+        "standardDeviation": 20347.35787166361
+      },
+      "modelServiceWorkMs": 562432,
+      "accounting": {
+        "budgetOccupiedUsd": 0.06976843200000002,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.06976843200000002,
+        "requests": 50,
+        "knownCostRequests": 50,
+        "reportedCostUsd": 0.06976843200000002,
+        "uncachedInputUpperBoundRequests": 10
+      },
+      "segmentsMs": {
+        "toGate": 572630,
+        "gateToApprove": 0,
+        "approveToArchive": 611,
+        "cleanup": 444
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:16bfbfd4-74d3-448f-a176-42f3385701fd",
+            "passed": true,
+            "total": 18
+          },
+          {
+            "id": "wave-validation:ea479941-87a4-4d0a-a1e4-b2ad1052701d",
+            "passed": true,
+            "total": 25
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 1131,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a2-9bcf408f-e14a-4941-82c0-e9f0ee497b00"
+    },
+    {
+      "id": "thermal-inspection-sparse-3",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "sparse",
+      "attempt": 3,
+      "runId": "phase10-thermal-inspection-model-a3-3e3d6da8-9fcc-4ee8-b2cd-aabc74ae8d30",
+      "taskFingerprint": "f19793160dd538a1ca07395da1a4dc65e64b588000b27cd63975410e320f8d0a",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 253,
+        "codeHash": null,
+        "reportHash": "f65b5d2408b9fd5c0350d8371281738d3ac2af9ed1dc29a43ea01bc8208ef4aa"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 426792,
+        "outputTokens": 29833,
+        "costUsd": 0.062908176,
+        "modelCalls": 49,
+        "toolCalls": 81,
+        "repairIterations": 0,
+        "humanInterventions": 2,
+        "durationMs": 434747
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "context-policy-reached",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 25,
+        "TESTER:deepseek-v4-flash": 16,
+        "REVIEWER:deepseek-v4-flash": 5
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 15478,
+      "requestInputBytesMax": 69146,
+      "requestDurationMs": {
+        "count": 49,
+        "unknownCount": 0,
+        "mean": 8557.285714285714,
+        "median": 4488,
+        "variance": 139280113.50000003,
+        "standardDeviation": 11801.699602175951
+      },
+      "modelServiceWorkMs": 419307,
+      "accounting": {
+        "budgetOccupiedUsd": 0.062908176,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.062908176,
+        "requests": 49,
+        "knownCostRequests": 49,
+        "reportedCostUsd": 0.062908176,
+        "uncachedInputUpperBoundRequests": 9
+      },
+      "segmentsMs": {
+        "toGate": 429649,
+        "gateToApprove": 0,
+        "approveToArchive": 588,
+        "cleanup": 283
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 12,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:89d1c59c-55e0-4420-9a19-58df0fb7956e",
+            "passed": true,
+            "total": 22
+          },
+          {
+            "id": "wave-validation:7f652a62-9fbf-4dd6-8ff3-b6aad76c3df5",
+            "passed": true,
+            "total": 29
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 849,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a3-3e3d6da8-9fcc-4ee8-b2cd-aabc74ae8d30"
+    },
+    {
+      "id": "thermal-inspection-multi-3",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "multi",
+      "attempt": 3,
+      "runId": "phase10-thermal-inspection-model-a3-b91a6df9-781d-4a7d-8514-3345a4922316",
+      "taskFingerprint": "169df6074fc6e2d4a93a9a752eec35f038740f929ea9899cbec4bdda0555113d",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 213,
+        "codeHash": null,
+        "reportHash": "5d092265b19a01cd4f3bd9052672d7e33c972f6c784026c34d64e5d4502a40f8"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 416624,
+        "outputTokens": 40589,
+        "costUsd": 0.07750660799999999,
+        "modelCalls": 48,
+        "toolCalls": 77,
+        "repairIterations": 0,
+        "humanInterventions": 2,
+        "durationMs": 473489
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 3,
+        "CODER:deepseek-v4-flash": 25,
+        "TESTER:deepseek-v4-flash": 15,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 14598,
+      "requestInputBytesMax": 66820,
+      "requestDurationMs": {
+        "count": 48,
+        "unknownCount": 0,
+        "mean": 9553.291666666666,
+        "median": 5407.5,
+        "variance": 281243726.8492908,
+        "standardDeviation": 16770.322800986592
+      },
+      "modelServiceWorkMs": 458558,
+      "accounting": {
+        "budgetOccupiedUsd": 0.07750660799999999,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.07750660799999999,
+        "requests": 48,
+        "knownCostRequests": 48,
+        "reportedCostUsd": 0.07750660799999999,
+        "uncachedInputUpperBoundRequests": 10
+      },
+      "segmentsMs": {
+        "toGate": 468547,
+        "gateToApprove": 0,
+        "approveToArchive": 529,
+        "cleanup": 278
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:24ee2d03-a9ca-42f6-ba96-03721f0be8bf",
+            "passed": true,
+            "total": 20
+          },
+          {
+            "id": "wave-validation:1e0b46be-c10a-4daa-9a0d-0e366c225512",
+            "passed": true,
+            "total": 29
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 925,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a3-b91a6df9-781d-4a7d-8514-3345a4922316"
+    },
+    {
+      "id": "thermal-inspection-parallel-3",
+      "task": "thermal-inspection",
+      "suite": "holdout",
+      "variant": "parallel",
+      "attempt": 3,
+      "runId": "phase10-thermal-inspection-model-a3-ccfeedd2-6dd2-4356-bd0f-296dcf2bde43",
+      "taskFingerprint": "169df6074fc6e2d4a93a9a752eec35f038740f929ea9899cbec4bdda0555113d",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 221,
+        "codeHash": null,
+        "reportHash": "54da54cdaf80ce727d2e6e35710b2b2666250bbde4afd14b3c714376eb039fd2"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 443880,
+        "outputTokens": 28169,
+        "costUsd": 0.06219931200000002,
+        "modelCalls": 50,
+        "toolCalls": 80,
+        "repairIterations": 0,
+        "humanInterventions": 2,
+        "durationMs": 333432
+      },
+      "checks": [
+        {
+          "id": "outcome.file:validate.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:convert.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:dose.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:action.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:report.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "requirement-applied",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 26,
+        "TESTER:deepseek-v4-flash": 17,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 3,
+      "requestInputEstimateMax": 14964,
+      "requestInputBytesMax": 68626,
+      "requestDurationMs": {
+        "count": 50,
+        "unknownCount": 0,
+        "mean": 7623.32,
+        "median": 4377,
+        "variance": 118865647.89551021,
+        "standardDeviation": 10902.552356925888
+      },
+      "modelServiceWorkMs": 381166,
+      "accounting": {
+        "budgetOccupiedUsd": 0.06219931200000002,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.06219931200000002,
+        "requests": 50,
+        "knownCostRequests": 50,
+        "reportedCostUsd": 0.06219931200000002,
+        "uncachedInputUpperBoundRequests": 10
+      },
+      "segmentsMs": {
+        "toGate": 328636,
+        "gateToApprove": 0,
+        "approveToArchive": 499,
+        "cleanup": 123
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 3,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": true,
+        "requirementApplied": true,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:392ed403-0d93-473f-aa96-1da79bc10ed7",
+            "passed": true,
+            "total": 18
+          },
+          {
+            "id": "wave-validation:2abb129a-233a-433a-be16-ecbd70406c51",
+            "passed": true,
+            "total": 27
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 651,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-thermal-inspection-model-a3-ccfeedd2-6dd2-4356-bd0f-296dcf2bde43"
+    },
+    {
+      "id": "daily-availability-multi-1",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "multi",
+      "attempt": 1,
+      "runId": "phase10-daily-availability-model-a1-2601ee47-cfb0-4337-88aa-77c6874a060f",
+      "taskFingerprint": "dfd85b671217cd92591bcb0dd3c9ac7cede02d0dbd9f56fd532b8086d3a1326a",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 213,
+        "codeHash": null,
+        "reportHash": "2d8d4cacab74904294f3e94fa7a5fda9b5d9b3592e5daf8b26230e5dafde4d21"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 455837,
+        "outputTokens": 40984,
+        "costUsd": 0.07868069999999999,
+        "modelCalls": 50,
+        "toolCalls": 78,
+        "repairIterations": 0,
+        "humanInterventions": 1,
+        "durationMs": 591738
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 29,
+        "TESTER:deepseek-v4-flash": 14,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 15550,
+      "requestInputBytesMax": 69132,
+      "requestDurationMs": {
+        "count": 50,
+        "unknownCount": 0,
+        "mean": 11533.66,
+        "median": 5652.5,
+        "variance": 529022962.1473469,
+        "standardDeviation": 23000.499171699445
+      },
+      "modelServiceWorkMs": 576683,
+      "accounting": {
+        "budgetOccupiedUsd": 0.07868069999999999,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.07868069999999999,
+        "requests": 50,
+        "knownCostRequests": 50,
+        "reportedCostUsd": 0.07868069999999999,
+        "uncachedInputUpperBoundRequests": 10
+      },
+      "segmentsMs": {
+        "toGate": 586712,
+        "gateToApprove": 0,
+        "approveToArchive": 518,
+        "cleanup": 345
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:b38745ce-7709-4723-886d-f69cd31586de",
+            "passed": true,
+            "total": 37
+          },
+          {
+            "id": "wave-validation:0413455a-96d5-4569-94c5-dc1ee2db0d6f",
+            "passed": true,
+            "total": 49
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 1156,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a1-2601ee47-cfb0-4337-88aa-77c6874a060f"
+    },
+    {
+      "id": "daily-availability-parallel-1",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "parallel",
+      "attempt": 1,
+      "runId": "phase10-daily-availability-model-a1-e78ce00e-9fa2-408c-aa47-291937d59361",
+      "taskFingerprint": "dfd85b671217cd92591bcb0dd3c9ac7cede02d0dbd9f56fd532b8086d3a1326a",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 206,
+        "codeHash": null,
+        "reportHash": "dc2c78c1e5c186efdacf54a6dd99e5392afe2dca667810b4e7fab22ac62d5886"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 435835,
+        "outputTokens": 35744,
+        "costUsd": 0.07017279600000001,
+        "modelCalls": 50,
+        "toolCalls": 74,
+        "repairIterations": 0,
+        "humanInterventions": 1,
+        "durationMs": 368760
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 27,
+        "TESTER:deepseek-v4-flash": 16,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 3,
+      "requestInputEstimateMax": 14867,
+      "requestInputBytesMax": 65865,
+      "requestDurationMs": {
+        "count": 50,
+        "unknownCount": 0,
+        "mean": 8244.9,
+        "median": 4469.5,
+        "variance": 125837602.70408164,
+        "standardDeviation": 11217.7360774838
+      },
+      "modelServiceWorkMs": 412245,
+      "accounting": {
+        "budgetOccupiedUsd": 0.07017279600000001,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.07135952400000001,
+        "requests": 50,
+        "knownCostRequests": 50,
+        "reportedCostUsd": 0.07017279600000001,
+        "uncachedInputUpperBoundRequests": 9
+      },
+      "segmentsMs": {
+        "toGate": 363610,
+        "gateToApprove": 0,
+        "approveToArchive": 504,
+        "cleanup": 497
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 3,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:cc574b77-9620-4313-bd3b-ba96abfc5a42",
+            "passed": true,
+            "total": 18
+          },
+          {
+            "id": "wave-validation:5cba3e53-0629-4589-8d81-4d45c670b8e9",
+            "passed": true,
+            "total": 29
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 720,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a1-e78ce00e-9fa2-408c-aa47-291937d59361"
+    },
+    {
+      "id": "daily-availability-sparse-1",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "sparse",
+      "attempt": 1,
+      "runId": "phase10-daily-availability-model-a1-890c133a-9f20-4326-905c-1840127eaa9b",
+      "taskFingerprint": "37e5a15e6a1f5d4c3d4f124add3d4e6be145495fe6581e57ae38fdf78e93eac9",
+      "final": true,
+      "passed": false,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "not-executed",
+      "independentVerifier": null,
+      "efficiency": {
+        "iterations": "unknown",
+        "inputTokens": "unknown",
+        "outputTokens": "unknown",
+        "costUsd": "unknown",
+        "modelCalls": 1,
+        "toolCalls": 0,
+        "repairIterations": "unknown",
+        "humanInterventions": "unknown",
+        "durationMs": 97889
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "fail"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "unknown"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "context-policy-reached",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "unknown"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "unknown"
+        }
+      ],
+      "failureClassification": "provider-stream-closed-without-usage",
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 4693,
+      "requestInputBytesMax": 19883,
+      "requestDurationMs": {
+        "count": 1,
+        "unknownCount": 0,
+        "mean": 96811,
+        "median": 96811,
+        "variance": null,
+        "standardDeviation": null
+      },
+      "modelServiceWorkMs": 96811,
+      "accounting": {
+        "budgetOccupiedUsd": 0.0589824,
+        "auditedUpperBoundRequests": 1,
+        "auditedUpperBoundUsd": 0.0589824,
+        "peakRateEquivalentUsd": null,
+        "requests": 1,
+        "knownCostRequests": 0,
+        "reportedCostUsd": null,
+        "uncachedInputUpperBoundRequests": 0
+      },
+      "segmentsMs": {
+        "toGate": -1789099252858,
+        "gateToApprove": 0,
+        "approveToArchive": 1789099349799,
+        "cleanup": 502
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": false,
+        "completionBound": false,
+        "gateLeaseCount": -1,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 0,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 1,
+        "waves": [],
+        "validations": []
+      },
+      "resources": {
+        "containerPeak": 0,
+        "worktreePeak": 1,
+        "compositionPeak": 1,
+        "samples": 191,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a1-890c133a-9f20-4326-905c-1840127eaa9b"
+    },
+    {
+      "id": "daily-availability-parallel-2",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "parallel",
+      "attempt": 2,
+      "runId": "phase10-daily-availability-model-a2-5f7e4045-b4ec-4ac1-851a-287226fd32d5",
+      "taskFingerprint": "dfd85b671217cd92591bcb0dd3c9ac7cede02d0dbd9f56fd532b8086d3a1326a",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 230,
+        "codeHash": null,
+        "reportHash": "4949d5be945592d102e6fc5ebafdf0815e8795fdd06b46069172b1cbe686bed2"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 462170,
+        "outputTokens": 39538,
+        "costUsd": 0.03836900399999999,
+        "modelCalls": 50,
+        "toolCalls": 81,
+        "repairIterations": 0,
+        "humanInterventions": 1,
+        "durationMs": 443744
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 27,
+        "TESTER:deepseek-v4-flash": 16,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 3,
+      "requestInputEstimateMax": 14575,
+      "requestInputBytesMax": 67089,
+      "requestDurationMs": {
+        "count": 50,
+        "unknownCount": 0,
+        "mean": 10183.68,
+        "median": 4873.5,
+        "variance": 260464892.50775513,
+        "standardDeviation": 16138.924763061359
+      },
+      "modelServiceWorkMs": 509184,
+      "accounting": {
+        "budgetOccupiedUsd": 0.03836900399999999,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.07673800799999998,
+        "requests": 50,
+        "knownCostRequests": 50,
+        "reportedCostUsd": 0.03836900399999999,
+        "uncachedInputUpperBoundRequests": 9
+      },
+      "segmentsMs": {
+        "toGate": 438777,
+        "gateToApprove": 0,
+        "approveToArchive": 513,
+        "cleanup": 180
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 3,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:08807d3b-0588-482f-a570-2978fefac8d6",
+            "passed": true,
+            "total": 22
+          },
+          {
+            "id": "wave-validation:9fd384a0-3cc5-4efe-9202-ce6776f893b0",
+            "passed": true,
+            "total": 35
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 866,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a2-5f7e4045-b4ec-4ac1-851a-287226fd32d5"
+    },
+    {
+      "id": "daily-availability-sparse-2",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "sparse",
+      "attempt": 2,
+      "runId": "phase10-daily-availability-model-a2-aef40430-45f3-4f75-ad58-a3d6b1128481",
+      "taskFingerprint": "37e5a15e6a1f5d4c3d4f124add3d4e6be145495fe6581e57ae38fdf78e93eac9",
+      "final": true,
+      "passed": false,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "not-executed",
+      "independentVerifier": null,
+      "efficiency": {
+        "iterations": "unknown",
+        "inputTokens": 779971,
+        "outputTokens": 84578,
+        "costUsd": 0.072872178,
+        "modelCalls": 71,
+        "toolCalls": 117,
+        "repairIterations": "unknown",
+        "humanInterventions": "unknown",
+        "durationMs": 1205445
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "fail"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "unknown"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "context-policy-reached",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "fail"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "unknown"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": "attempt-time-budget-exhausted-after-review-rework",
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 3,
+        "CODER:deepseek-v4-flash": 37,
+        "TESTER:deepseek-v4-flash": 24,
+        "REVIEWER:deepseek-v4-flash": 6
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 31119,
+      "requestInputBytesMax": 134042,
+      "requestDurationMs": {
+        "count": 71,
+        "unknownCount": 0,
+        "mean": 16768.323943661973,
+        "median": 5651,
+        "variance": 1388676858.0507042,
+        "standardDeviation": 37264.95482421392
+      },
+      "modelServiceWorkMs": 1190551,
+      "accounting": {
+        "budgetOccupiedUsd": 0.072872178,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.145744356,
+        "requests": 71,
+        "knownCostRequests": 71,
+        "reportedCostUsd": 0.072872178,
+        "uncachedInputUpperBoundRequests": 14
+      },
+      "segmentsMs": {
+        "toGate": -1789100351295,
+        "gateToApprove": 0,
+        "approveToArchive": 0,
+        "cleanup": 206
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": false,
+        "completionBound": false,
+        "gateLeaseCount": -1,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 0,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 13,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ],
+          [
+            "A"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:6087791d-8403-4b1f-8086-e0875e996a10",
+            "passed": true,
+            "total": 20
+          },
+          {
+            "id": "wave-validation:09bc4fe6-5e5e-4027-b658-ea9dbf59a124",
+            "passed": true,
+            "total": 28
+          },
+          {
+            "id": "wave-validation:15e60057-a89f-4e5a-95de-69a3af43847c",
+            "passed": true,
+            "total": 29
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 9,
+        "worktreePeak": 15,
+        "compositionPeak": 1,
+        "samples": 2351,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a2-aef40430-45f3-4f75-ad58-a3d6b1128481"
+    },
+    {
+      "id": "daily-availability-multi-2",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "multi",
+      "attempt": 2,
+      "runId": "phase10-daily-availability-model-a2-a283ae4a-738f-46aa-a012-3195b0c52bd8",
+      "taskFingerprint": "dfd85b671217cd92591bcb0dd3c9ac7cede02d0dbd9f56fd532b8086d3a1326a",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 239,
+        "codeHash": null,
+        "reportHash": "15a828403046a19412a3742f10ebe6577e12d40db24e58ddf6474679e7898844"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 476879,
+        "outputTokens": 40677,
+        "costUsd": 0.038436354000000006,
+        "modelCalls": 50,
+        "toolCalls": 80,
+        "repairIterations": 0,
+        "humanInterventions": 1,
+        "durationMs": 500148
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 25,
+        "TESTER:deepseek-v4-flash": 18,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 18225,
+      "requestInputBytesMax": 80188,
+      "requestDurationMs": {
+        "count": 50,
+        "unknownCount": 0,
+        "mean": 9688.32,
+        "median": 4320.5,
+        "variance": 265884760.4261224,
+        "standardDeviation": 16305.97315176627
+      },
+      "modelServiceWorkMs": 484416,
+      "accounting": {
+        "budgetOccupiedUsd": 0.038436354000000006,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.07687270800000001,
+        "requests": 50,
+        "knownCostRequests": 50,
+        "reportedCostUsd": 0.038436354000000006,
+        "uncachedInputUpperBoundRequests": 9
+      },
+      "segmentsMs": {
+        "toGate": 494752,
+        "gateToApprove": 0,
+        "approveToArchive": 643,
+        "cleanup": 391
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:5e112365-562b-482f-97a8-b4a685839e7f",
+            "passed": true,
+            "total": 20
+          },
+          {
+            "id": "wave-validation:92aec5cb-5511-4a21-b812-bbeace63408f",
+            "passed": true,
+            "total": 27
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 976,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a2-a283ae4a-738f-46aa-a012-3195b0c52bd8"
+    },
+    {
+      "id": "daily-availability-sparse-3",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "sparse",
+      "attempt": 3,
+      "runId": "phase10-daily-availability-model-a3-5718c3b8-1a6f-45f4-83eb-71572167d2b9",
+      "taskFingerprint": "37e5a15e6a1f5d4c3d4f124add3d4e6be145495fe6581e57ae38fdf78e93eac9",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 208,
+        "codeHash": null,
+        "reportHash": "8fa89b1ae163c0ddbb270036c77a91369d70e03a86a580e4a3d4fff8dd9b4297"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 441436,
+        "outputTokens": 39167,
+        "costUsd": 0.037821072,
+        "modelCalls": 51,
+        "toolCalls": 74,
+        "repairIterations": 0,
+        "humanInterventions": 1,
+        "durationMs": 497316
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "context-policy-reached",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 3,
+        "CODER:deepseek-v4-flash": 27,
+        "TESTER:deepseek-v4-flash": 16,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 15861,
+      "requestInputBytesMax": 70527,
+      "requestDurationMs": {
+        "count": 51,
+        "unknownCount": 0,
+        "mean": 9471.803921568628,
+        "median": 4039,
+        "variance": 179488041.6007843,
+        "standardDeviation": 13397.31471604606
+      },
+      "modelServiceWorkMs": 483062,
+      "accounting": {
+        "budgetOccupiedUsd": 0.037821072,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.075642144,
+        "requests": 51,
+        "knownCostRequests": 51,
+        "reportedCostUsd": 0.037821072,
+        "uncachedInputUpperBoundRequests": 9
+      },
+      "segmentsMs": {
+        "toGate": 492375,
+        "gateToApprove": 0,
+        "approveToArchive": 509,
+        "cleanup": 302
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 10,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:c01a11d0-fbc2-458d-8261-dbdead78437a",
+            "passed": true,
+            "total": 35
+          },
+          {
+            "id": "wave-validation:99687622-0ffd-45e7-bf43-8ab2af068a4c",
+            "passed": true,
+            "total": 49
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 971,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a3-5718c3b8-1a6f-45f4-83eb-71572167d2b9"
+    },
+    {
+      "id": "daily-availability-multi-3",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "multi",
+      "attempt": 3,
+      "runId": "phase10-daily-availability-model-a3-e2e2e959-980c-4cbd-8d3b-6ec64fe83ae8",
+      "taskFingerprint": "dfd85b671217cd92591bcb0dd3c9ac7cede02d0dbd9f56fd532b8086d3a1326a",
+      "final": true,
+      "passed": true,
+      "operatorInterrupted": false,
+      "operatorStopRequested": false,
+      "outcome": "pass",
+      "independentVerifier": {
+        "passed": true,
+        "tests": 11,
+        "exitCode": null,
+        "durationMs": 206,
+        "codeHash": null,
+        "reportHash": "04cc1295ed13e4b62b8e4ae924b15e7915789f4c3dbb3fd310802391431b43f4"
+      },
+      "efficiency": {
+        "iterations": 1,
+        "inputTokens": 529018,
+        "outputTokens": 36049,
+        "costUsd": 0.036744276,
+        "modelCalls": 56,
+        "toolCalls": 82,
+        "repairIterations": 0,
+        "humanInterventions": 1,
+        "durationMs": 491245
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "pass"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "pass"
+        }
+      ],
+      "failureClassification": null,
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 3,
+        "CODER:deepseek-v4-flash": 29,
+        "TESTER:deepseek-v4-flash": 19,
+        "REVIEWER:deepseek-v4-flash": 4
+      },
+      "peakConcurrentModelRequests": 1,
+      "requestInputEstimateMax": 15866,
+      "requestInputBytesMax": 73643,
+      "requestDurationMs": {
+        "count": 56,
+        "unknownCount": 0,
+        "mean": 8496.982142857143,
+        "median": 5078,
+        "variance": 88333028.7087662,
+        "standardDeviation": 9398.56524735378
+      },
+      "modelServiceWorkMs": 475831,
+      "accounting": {
+        "budgetOccupiedUsd": 0.036744276,
+        "auditedUpperBoundRequests": 0,
+        "auditedUpperBoundUsd": 0,
+        "peakRateEquivalentUsd": 0.073488552,
+        "requests": 56,
+        "knownCostRequests": 56,
+        "reportedCostUsd": 0.036744276,
+        "uncachedInputUpperBoundRequests": 10
+      },
+      "segmentsMs": {
+        "toGate": 486310,
+        "gateToApprove": 0,
+        "approveToArchive": 508,
+        "cleanup": 254
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": true,
+        "completionBound": true,
+        "gateLeaseCount": 0,
+        "finalLeaseCount": 0,
+        "leasePeak": 1,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 1,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:44721e5c-f4b2-40b9-af43-c4f4d49710eb",
+            "passed": true,
+            "total": 22
+          },
+          {
+            "id": "wave-validation:2803f8b3-4b38-42e2-ba55-0b6e90fb011d",
+            "passed": true,
+            "total": 34
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 959,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a3-e2e2e959-980c-4cbd-8d3b-6ec64fe83ae8"
+    },
+    {
+      "id": "daily-availability-parallel-3",
+      "task": "daily-availability",
+      "suite": "holdout",
+      "variant": "parallel",
+      "attempt": 3,
+      "runId": "phase10-daily-availability-model-a3-dee2fd50-25d0-4565-9680-b87dcba9caa3",
+      "taskFingerprint": "dfd85b671217cd92591bcb0dd3c9ac7cede02d0dbd9f56fd532b8086d3a1326a",
+      "final": true,
+      "passed": false,
+      "operatorInterrupted": false,
+      "operatorStopRequested": true,
+      "outcome": "not-executed",
+      "independentVerifier": null,
+      "efficiency": {
+        "iterations": "unknown",
+        "inputTokens": "unknown",
+        "outputTokens": "unknown",
+        "costUsd": "unknown",
+        "modelCalls": 47,
+        "toolCalls": 76,
+        "repairIterations": "unknown",
+        "humanInterventions": "unknown",
+        "durationMs": 630779
+      },
+      "checks": [
+        {
+          "id": "outcome.file:minute.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:union.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:coverage.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:gaps.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.file:summary.mjs",
+          "category": "outcome",
+          "status": "unknown"
+        },
+        {
+          "id": "outcome.assertion:independent-outcome",
+          "category": "outcome",
+          "status": "fail"
+        },
+        {
+          "id": "safety.cleanup",
+          "category": "safety",
+          "status": "pass"
+        },
+        {
+          "id": "safety.verifier-integrity",
+          "category": "safety",
+          "status": "unknown"
+        },
+        {
+          "id": "model-routing",
+          "category": "process",
+          "status": "pass"
+        },
+        {
+          "id": "completion-bound",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "gate-released",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "fixed-plan",
+          "category": "process",
+          "status": "unknown"
+        },
+        {
+          "id": "efficiency.duration",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.iterations",
+          "category": "efficiency",
+          "status": "unknown"
+        },
+        {
+          "id": "efficiency.model-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.tool-calls",
+          "category": "efficiency",
+          "status": "pass"
+        },
+        {
+          "id": "efficiency.cost-usd",
+          "category": "efficiency",
+          "status": "unknown"
+        }
+      ],
+      "failureClassification": "provider-stream-closed-during-repetitive-review",
+      "routeCalls": {
+        "PM:deepseek-v4-flash": 1,
+        "ARCHITECT:deepseek-v4-flash": 2,
+        "CODER:deepseek-v4-flash": 26,
+        "TESTER:deepseek-v4-flash": 15,
+        "REVIEWER:deepseek-v4-flash": 3
+      },
+      "peakConcurrentModelRequests": 3,
+      "requestInputEstimateMax": 14226,
+      "requestInputBytesMax": 64304,
+      "requestDurationMs": {
+        "count": 47,
+        "unknownCount": 0,
+        "mean": 14583.765957446809,
+        "median": 8133,
+        "variance": 1222060717.0092509,
+        "standardDeviation": 34957.98502501611
+      },
+      "modelServiceWorkMs": 685437,
+      "accounting": {
+        "budgetOccupiedUsd": 0.090874818,
+        "auditedUpperBoundRequests": 1,
+        "auditedUpperBoundUsd": 0.0589824,
+        "peakRateEquivalentUsd": null,
+        "requests": 47,
+        "knownCostRequests": 46,
+        "reportedCostUsd": null,
+        "uncachedInputUpperBoundRequests": 10
+      },
+      "segmentsMs": {
+        "toGate": -1789103132143,
+        "gateToApprove": 0,
+        "approveToArchive": 0,
+        "cleanup": 136
+      },
+      "mechanisms": {
+        "compaction": {
+          "started": 0,
+          "automaticStarted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "unclosed": 0
+        },
+        "gateReached": false,
+        "completionBound": false,
+        "gateLeaseCount": -1,
+        "finalLeaseCount": 0,
+        "leasePeak": 3,
+        "forks": 0,
+        "plannedWorkerResumes": 0,
+        "resumeCompositions": 0,
+        "requirementSubmitted": false,
+        "requirementApplied": false,
+        "traceOmittedEvents": 0,
+        "changedProjections": 0,
+        "waves": [
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E"
+          ]
+        ],
+        "validations": [
+          {
+            "id": "wave-validation:d934c9a2-6448-4fcc-8658-f0064a36faae",
+            "passed": true,
+            "total": 19
+          },
+          {
+            "id": "wave-validation:07684985-fbe8-4a14-a41f-e03c40a62790",
+            "passed": true,
+            "total": 30
+          }
+        ]
+      },
+      "resources": {
+        "containerPeak": 7,
+        "worktreePeak": 11,
+        "compositionPeak": 1,
+        "samples": 1230,
+        "cpu": "unknown",
+        "memory": "unknown",
+        "sampleIntervalMs": 500
+      },
+      "artifactDirectory": ".data/evals/phase10-daily-availability-model-a3-dee2fd50-25d0-4565-9680-b87dcba9caa3"
+    }
+  ],
+  "measurementNotes": [
+    "Fixed four-task Aider Polyglot JavaScript subset and two internal holdouts; not an official leaderboard score.",
+    "Public contract text is readable; reference implementations and private graders remain isolated.",
+    "All started failures and operator interruptions stay in the denominator; independent grading not reached is not a proven code failure.",
+    "At most three repetitions per cell; variance is descriptive and gives no statistical-significance or general superiority claim.",
+    "Only matching task/repetition pairs with both overall results passing enter timing comparisons.",
+    "Go costs are subscription quota equivalents, not additional billed dollars; prior groups and diagnostics are not mixed into this group success rates.",
+    "Provider caching and alias versions are not controlled. Unknown metrics remain null or unknown.",
+    "Runtime source, task definitions and budgets were frozen; per-stop review records remain under the original group."
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "date": "2026-09-10",
+  "kind": "opencode-go-live-diagnostic",
+  "runId": "phase10-go-diagnostic-4303803a-4e0d-4acb-aced-833708294e23",
+  "passed": true,
+  "stages": [
+    {
+      "stage": "connection",
+      "model": "deepseek-v4-flash",
+      "pages": 1,
+      "summaries": 0
+    },
+    {
+      "stage": "connection",
+      "model": "deepseek-flash",
+      "pages": 1,
+      "summaries": 0
+    },
+    {
+      "stage": "pressure",
+      "model": "deepseek-v4-flash",
+      "pages": 2,
+      "summaries": 1
+    },
+    {
+      "stage": "pressure",
+      "model": "deepseek-flash",
+      "pages": 2,
+      "summaries": 1
+    }
+  ],
+  "successfulRunRequests": 14,
+  "totalRequestsIncludingStoppedRuns": 19,
+  "quotaUpperBoundUsd": 0.07877021399999999,
+  "diagnosticQuotaLimitUsd": 0.5,
+  "unsettledRequests": 0,
+  "maxRequestInputEstimate": 31603,
+  "offlineFiles": 11,
+  "offlineTests": 31,
+  "typecheck": "pass",
+  "lint": "pass",
+  "lintFiles": 377,
+  "formalRerun": false,
+  "fullRegressionRun": false,
+  "historicalSnapshotFilesUnchanged": 349,
+  "sources": {
+    "tests/evals/phase10/go-diagnostic.eval.ts": "be4d2b31735c1e03a3e93a1a06f4b059c31937b2c2c62391625dca4931561b4c",
+    "tests/evals/phase10/final/model-adapter.ts": "1246f0453296a6a21a2847b4cb32d8d7c716a12af03376821d362e94be5efdf3",
+    "tests/evals/phase10/final/model-profile.ts": "7ddb4fd8b426de34b7b9ac863b91a14ceb702f51c3312aba16345a6a2f5acce6",
+    "tests/evals/phase10/final/go-tool-stream.ts": "2b2c1c0ff57fe3ab60d2bc7b7e5c1dfdedbce2d4e8e23ab8456863b423b1a85a"
+  },
+  "artifacts": {
+    "evidence.json": "1eb3592224a075a4986ba3cef1db47dd17995dc58dc5e1a66e650a9d8373dd4e",
+    "go-pressure-deepseek-v4-flash/harness-sessions/--var-folders-_r-6dh_2jf542d4p97jl9nqwk480000gn-T-agora-go-pressure-deepseek-v4-flash-4e9d998541145799-CODER-g6yvET--/go-pressure-deepseek-v4-flash/session.jsonl.zstd": "831d87fa6489540b1a2959b8fd40af7cd2112b1b43e42fb944d785ead1849736",
+    "go-connection-deepseek-flash/harness-sessions/--var-folders-_r-6dh_2jf542d4p97jl9nqwk480000gn-T-agora-go-connection-deepseek-flash-9770f0a866282bbb-CODER-IENYjm--/go-connection-deepseek-flash/session.jsonl.zstd": "e335fe1166a704ebd667050eccf2478337e7549e530b858e126238e6f47b9af3",
+    "go-pressure-deepseek-flash/harness-sessions/--var-folders-_r-6dh_2jf542d4p97jl9nqwk480000gn-T-agora-go-pressure-deepseek-flash-f13031ae5e01c0b0-CODER-PfkoUA--/go-pressure-deepseek-flash/session.jsonl.zstd": "ea5dc16708fff77b7a7b8a58804944fd962c9f945364df4b1f1189eb0dba45ce",
+    "go-connection-deepseek-v4-flash/harness-sessions/--var-folders-_r-6dh_2jf542d4p97jl9nqwk480000gn-T-agora-go-connection-deepseek-v4-flash-badfc3ca9a23a624-CODER-UD0zeR--/go-connection-deepseek-v4-flash/session.jsonl.zstd": "6609182daf0ac322212e51052af7fa7ac26cc68f16b7b4db1afe0fa0b7e7c54f"
+  }
+}

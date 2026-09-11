@@ -365,3 +365,77 @@ describe('assignment projection', () => {
     ).toThrow(/current wave/);
   });
 });
+
+it('projects an explicit verdict continuation instruction from the canonical review dispatch without raw objection text', () => {
+  const reviewer = { ...coder, role: 'REVIEWER' };
+  const current = state();
+  current.phase = 'review';
+  const receiptId = failedReceipt(current);
+  current.messages.push({
+    msgId: 'plan',
+    channelId: 'main',
+    fromRole: 'COORDINATOR',
+    type: 'announce',
+    display: 'Plan',
+    ts: 1,
+    payload: {
+      kind: 'execution_plan',
+      plan: {
+        version: 1,
+        subtasks: [
+          { id: 'A', title: 'A', dependsOn: [] },
+          { id: 'B', title: 'B', dependsOn: [] },
+        ],
+      },
+    },
+  });
+  current.messages.push({
+    msgId: 'review-next',
+    channelId: 'main',
+    fromRole: 'COORDINATOR',
+    type: 'announce',
+    payload: {
+      nextRole: 'REVIEWER',
+      workerIds: ['reviewer-next'],
+      advisorySourceMsgId: 'advisory',
+      reviewBinding: {
+        planId: 'plan',
+        validationReceiptId: receiptId,
+        commit: 'c'.repeat(40),
+        controlFingerprint: 'f'.repeat(64),
+      },
+    },
+    display: 'RAW_DISPLAY',
+    ts: 2,
+  });
+  current.objections = [
+    {
+      id: 'advisory',
+      threadId: 'advisory',
+      fromRole: 'REVIEWER',
+      claim: 'concern',
+      track: 'advisory',
+      argument: 'RAW_ARGUMENT',
+      ts: 1,
+    },
+  ];
+  current.workers.push({
+    workerId: 'reviewer-next',
+    role: 'REVIEWER',
+    executor: 'harness',
+    status: 'pending',
+    startedTs: 2,
+  });
+  const view = projectForAssignment(current, { workerId: 'reviewer-next', role: 'REVIEWER' }, [
+    reviewer,
+  ]);
+  expect(view.slices.coordinationContext).toMatchObject({
+    instructionOrQuestion:
+      'The advisory has been recorded. Continue the bound review and provide its required verdict.',
+  });
+  expect(JSON.stringify(view)).not.toContain('RAW_');
+  current.objections = [];
+  expect(() =>
+    projectForAssignment(current, { workerId: 'reviewer-next', role: 'REVIEWER' }, [reviewer]),
+  ).toThrow(/advisory/);
+});

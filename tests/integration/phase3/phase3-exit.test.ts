@@ -14,6 +14,7 @@ import {
   createPhase2Runtime,
   type Phase2Runtime,
 } from '../../../packages/core/__tests__/e2e/phase2-runtime';
+import { projectedInputText } from '../../evals/core/projected-input';
 
 /**
  * Phase 3 exit integration test (task 3.5) — deterministic regression covering
@@ -206,12 +207,7 @@ class TurnScriptedLlmAdapter extends LlmAdapter {
 }
 
 function projectionRoleOf(call: GenerateOptions): string {
-  const first = call.messages[0];
-  const block = first === undefined ? undefined : first.content.find((b) => b.type === 'text');
-  if (block === undefined || block.type !== 'text') {
-    throw new Error('scripted adapter expected the projection as the first message block');
-  }
-  const view = JSON.parse(block.text) as { role?: unknown };
+  const view = JSON.parse(projectedInputText(call)) as { role?: unknown };
   if (typeof view.role !== 'string') {
     throw new Error('scripted adapter expected a role in the projection');
   }
@@ -256,7 +252,7 @@ function roleCalls(adapter: TurnScriptedLlmAdapter, role: string): GenerateOptio
   return adapter.calls.filter((c) => projectionRoleOf(c) === role);
 }
 
-/** The parsed ProjectionView of a role's first scripted request (D1 pre-step overwrite). */
+/** The parsed ProjectionView from a role's first scripted request's D1 system section. */
 function firstProjectionOf(
   adapter: TurnScriptedLlmAdapter,
   role: string,
@@ -266,10 +262,7 @@ function firstProjectionOf(
 } {
   const first = roleCalls(adapter, role)[0];
   if (first === undefined) throw new Error(`no scripted LLM call recorded for role ${role}`);
-  const block = first.messages[0]?.content.find((b) => b.type === 'text');
-  if (block?.type !== 'text') {
-    throw new Error(`expected the projection as the first message block for ${role}`);
-  }
+  const block = { text: projectedInputText(first) };
   expect(completedActionsOf(first)).toBe(0);
   return JSON.parse(block.text) as { role: string; slices: Record<string, unknown> };
 }
