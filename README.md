@@ -290,7 +290,7 @@ The detailed task graph and current evidence live in [`docs/task-status.json`](d
 
 ## Project Status and Scope
 
-Agora is a personal portfolio project for the 2026 graduate recruitment season. It is being developed in small, evidence-backed phases: each phase must produce a demonstrable outcome before the next one begins.
+Agora is a personal portfolio project for the 2027 graduate recruitment season. It is being developed in small, evidence-backed phases: each phase must produce a demonstrable outcome before the next one begins.
 
 The current product targets trusted, single-user local operation. Public hosting, cloud sandboxes, and multi-instance scaling are outside the current scope. Any future change to that scope requires a separate architecture and security review.
 
