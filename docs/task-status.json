@@ -2,7 +2,7 @@
   "version": "1.3",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-12",
+  "last_updated": "2026-09-13",
   "current_phase": 10,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。",
   "standing_decisions": [
@@ -1369,7 +1369,7 @@
           "id": "10.7",
           "title": "Phase 10 出口验收（对照蓝图成功标准）",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §1/§21",
             "docs/详细设计方案.md §11",
@@ -1383,8 +1383,8 @@
             "10.6"
           ],
           "test_file": "tests/integration/phase10/phase10-exit.test.ts",
-          "notes": "对照五条成功标准逐项验收：①能跑通闭环（中小规模编码任务推进正常阶段及有界返工，完成仍须D16 Leader终审）②产品形态完整生动（群聊实时呈现+可观测+本机一键启动）③协作可控（职责清晰/可断点/可中途插决策）④工程质量稳（上下文不崩/并行不乱/行为可预期）⑤可扩展（增删角色/换模型工具改动局部化）。同时审计 10.5 Benchmark 的任务/环境/模型/预算/重复次数可追溯、公开集与 holdout 分离、统计/失败分类完整，且 Benchmark 未替代全量测试/G5。\n[2026-09-08 D2 文档同步] Leader 取消外部 Agent 接入；移除原任务 10.1 依赖，取消记录见开发计划 §13。被测执行与产品 worker 统一基于 DeepSeek Harness；本次只修订范围与依赖，未执行本任务或新增测试/Eval 证据。\n[2026-09-09 D8 同步] 出口验收目标为本地运行完整产品，云端部署不属成功标准；任务状态/依赖保持不变。 [2026-09-12 优化验收入口同步] 开始出口前必读详细设计§11.10 E01–E12及docs/reviews/task106-doc-acceptance-audit.md，逐项映射现有/新增测试；不能从旧截图、默认JSON展示、旧无自动跟随、65K/8192演示限制或Go120秒中间版本推导现行要求。合法自定义小容量/旧task binding测试保留；需求变更自然语言确认与D16用户命令边界分开。已有证据不替代本轮真实跨包/G5与完整回归，phase10-exit.test.ts尚未实现。本轮仅同步文档，依赖10.6未done，保持pending。\n[2026-09-12 依赖级联] 10.6已随PR #73人工合并并完成门禁收尾，全部依赖done，pending→ready。尚未开始出口测试；开工前按详细设计§11.10 E01–E12及来源规格评审测试计划，保留安全、权威、幂等和真实链路验收。",
-          "last_updated": "2026-09-12"
+          "notes": "对照五条成功标准逐项验收：①能跑通闭环（中小规模编码任务推进正常阶段及有界返工，完成仍须D16 Leader终审）②产品形态完整生动（群聊实时呈现+可观测+本机一键启动）③协作可控（职责清晰/可断点/可中途插决策）④工程质量稳（上下文不崩/并行不乱/行为可预期）⑤可扩展（增删角色/换模型工具改动局部化）。同时审计 10.5 Benchmark 的任务/环境/模型/预算/重复次数可追溯、公开集与 holdout 分离、统计/失败分类完整，且 Benchmark 未替代全量测试/G5。\n[2026-09-08 D2 文档同步] Leader 取消外部 Agent 接入；移除原任务 10.1 依赖，取消记录见开发计划 §13。被测执行与产品 worker 统一基于 DeepSeek Harness；本次只修订范围与依赖，未执行本任务或新增测试/Eval 证据。\n[2026-09-09 D8 同步] 出口验收目标为本地运行完整产品，云端部署不属成功标准；任务状态/依赖保持不变。 [2026-09-12 优化验收入口同步] 开始出口前必读详细设计§11.10 E01–E12及docs/reviews/task106-doc-acceptance-audit.md，逐项映射现有/新增测试；不能从旧截图、默认JSON展示、旧无自动跟随、65K/8192演示限制或Go120秒中间版本推导现行要求。合法自定义小容量/旧task binding测试保留；需求变更自然语言确认与D16用户命令边界分开。已有证据不替代本轮真实跨包/G5与完整回归，phase10-exit.test.ts尚未实现。本轮仅同步文档，依赖10.6未done，保持pending。\n[2026-09-12 依赖级联] 10.6已随PR #73人工合并并完成门禁收尾，全部依赖done，pending→ready。尚未开始出口测试；开工前按详细设计§11.10 E01–E12及来源规格评审测试计划，保留安全、权威、幂等和真实链路验收。\n[2026-09-12 T10.7开工] Leader明确“开始”；依赖10.2/10.3/10.6及前阶段出口9.5均done。基线dev-1.0.0 a18d7ec，分支codex/phase10-exit-acceptance。已核对五条成功标准、E01–E12、现有跨包测试及DEF-016/017；具体计划docs/reviews/task107-exit-plan.md待确认，尚未编写测试、运行出口或调用模型。冻结Benchmark和已接受视频保持原证据身份，阶段出口未通过。\n[2026-09-12 出口实现与实测] Leader已确认task107-exit-plan.md。新增phase10-exit.test.ts/exit-fixture.ts两项真实Harness/HTTP/SSE/安全点/Git/Docker/验证/归档链通过：关联需求原子确认及过期后二次拒绝、D4 TESTER真Fork、旧指纹复验继承精确HEAD、累计2/5/8/10/13测试、D16返工反馈到三角色及独立批准、新Docker13测试复验、74消息/19官方session/CODER重叠、worktrees空和lease0。accepted HEAD 47a18a0e43cab1d7d7984a51d6f5bfa550d7acd9。仅外部模型回复和时机脚本化；另新增显式natural-input-live.eval.ts，真实官方Flash解释合成关联需求，经正式确认/replay/重载，1项G5通过，不进入默认或冻结Benchmark。完整回归168文件1259项通过0skip，224.44s，保留既有真实模型；typecheck/lint、helper、生产build、doctor/start/stop通过。Chrome桌面1440及手机390验证真实State/SSE/Trace、Markdown/原文/goal/滚动及32/33px边界；自然语言卡片和四种作用域竞态以本地HTTP夹具单列。官方18回归+1 live请求usage完整，既有费率估算USD0.010483218；无Go请求、不混入冻结费用。公开v11/内部v14源码365/369文件与36/18归档hash一致，原33/36与14/18及失败/unknown/方差分别保留，无补跑或合并成绩。完整证据docs/evals/phase10-exit-evidence.md，私有原始证据.data/verification/task107；全量日志SHA256=5bc9bf783b21dfa80cad8efd59caa235aaafc20a8b8ebc53d3dfb58f498cf66e。五标准/E01–E12已映射，DEF-016/017继续延期；不宣称空白Mac全安装或新Go在线验证。无生产代码/依赖/冻结端口变更。保持in_progress，无commit/push/PR，done及Phase10收尾等待人工合并。\n[2026-09-13 交付门禁] Leader显式调用agora-commit，授权提交/推送/创建PR；分支改名test/phase10-exit-acceptance，目标origin/dev-1.0.0仍为a18d7ec。重新typecheck/lint通过；完整默认回归168文件1259测试全绿0skip，229.21s，包含新出口真实链2项23.385s；独立真实官方模型自然语言解释G5 1项2.483s通过。仅追加用量观察setup，未改include/exclude或移除凭据。gitleaks扫描8个交付文件无泄漏，diff/文档链接/依赖通过。官方请求17回归+1 live均HTTP200且usage完整，按既有费率估算USD0.011154060，与09-12数据分列；无Go或冻结Benchmark执行。原始交付证据.data/verification/task107/delivery及delivery-regression；全量日志SHA256=a7a1f100724d316b76745e533eb48b01b8ae1faaa4eaf728e1bec0c89e84b3c7。详见docs/evals/phase10-exit-evidence.md交付复验节。任务保持in_progress，PR链接待创建后补记，禁止自动合并。",
+          "last_updated": "2026-09-13"
         }
       ]
     }
