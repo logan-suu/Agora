@@ -60,6 +60,9 @@ export type ExitView = {
 type Action = { tool: string; args: Record<string, unknown> };
 
 export class ExitAdapter extends LlmAdapter {
+  constructor(private readonly failRole?: string) {
+    super();
+  }
   readonly coders = barrier();
   readonly validation = barrier();
   readonly review = barrier();
@@ -81,6 +84,7 @@ export class ExitAdapter extends LlmAdapter {
   async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     const view = JSON.parse(projectedInputText(options)) as ExitView;
     this.views.push(structuredClone(view));
+    if (view.role === this.failRole) throw new Error(`Expected fixture ${view.role} failure`);
     if (view.slices.leaderInput) {
       this.interpretations++;
       expect(options.tools ?? []).toHaveLength(0);

@@ -11,6 +11,7 @@ import { ChannelStream } from '../../../apps/web/src/server/channel-stream';
 import { createPostMessage } from '../../../apps/web/src/server/message-handlers';
 import { createMessageRuntime } from '../../../apps/web/src/server/message-runtime';
 import { finishWithCleanup } from '../../integration/phase10/cleanup';
+import { assertNaturalPriceChanges } from './natural-input-checks';
 
 it('phase10 natural input live G5 confirms a real tool-free interpretation atomically', async () => {
   if (!process.env.DEEPSEEK_API_KEY)
@@ -69,13 +70,8 @@ it('phase10 natural input live G5 confirms a real tool-free interpretation atomi
     if (!proposed) throw new Error('Missing state');
     expect(proposed.requirements).toEqual(before?.requirements);
     const proposal = requirementProposalView(proposed);
-    expect(proposal?.changes.map((c) => c.requirementId).sort()).toEqual(['quote', 'ticket']);
-    const ticket = proposal?.changes.find((c) => c.requirementId === 'ticket');
-    const quote = proposal?.changes.find((c) => c.requirementId === 'quote');
-    expect(JSON.stringify(ticket?.after).replaceAll(',', '')).toContain('900');
-    expect(JSON.stringify(ticket?.after.acceptance).replaceAll(',', '')).toContain('1800');
-    expect(JSON.stringify(quote?.after.acceptance).replaceAll(',', '')).toContain('16800');
-    expect(ticket?.after.nonGoals).toEqual(['No payment processing.']);
+    if (!proposal) throw new Error('Missing proposal');
+    assertNaturalPriceChanges(proposal.changes);
     expect((await send('price-input', display)).status).toBe(202);
     const choice = { requirementProposal: { proposalId: proposal?.proposalId, action: 'confirm' } };
     for (let replay = 0; replay < 2; replay++) {

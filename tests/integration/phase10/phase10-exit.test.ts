@@ -17,7 +17,7 @@ import {
 } from '@agora/core-orchestration';
 import { HarnessRequirementInterpreter, HarnessTraceReader } from '@agora/runtime-executor';
 import { Dockerode, DockerSandbox } from '@agora/runtime-sandbox';
-import { expect, it } from 'vitest';
+import { expect, it, onTestFinished } from 'vitest';
 import { ChannelStream } from '../../../apps/web/src/server/channel-stream';
 import { createGetStream, createPostMessage } from '../../../apps/web/src/server/message-handlers';
 import { createMessageRuntime } from '../../../apps/web/src/server/message-runtime';
@@ -29,15 +29,15 @@ import {
 } from '../../../apps/web/src/server/task-orchestration-runtime';
 import { finishWithCleanup } from './cleanup';
 import { EXIT_FEEDBACK, EXIT_GOAL, ExitAdapter } from './exit-fixture';
+import { waitForExitStage } from './exit-wait';
 
-async function fixture(taskId: string) {
+async function fixture(taskId: string, adapter = new ExitAdapter()) {
   const root = await mkdtemp(join(tmpdir(), 'agora-phase10-exit-'));
   const scope = { projectId: 'phase10-exit', taskId };
   const socket = join(process.env.HOME ?? '', '.docker/run/docker.sock');
   const docker = new Dockerode(existsSync(socket) ? { socketPath: socket } : {});
   const messages = createMessageRuntime(root, new ChannelStream());
   const scheduler = new GlobalScheduler({ cap: 3 });
-  const adapter = new ExitAdapter();
   const compositions: TaskComposition[] = [];
   let worker: WorkerRuntime | undefined;
   let lifecycle: HumanGateLifecyclePort | undefined;
@@ -91,6 +91,20 @@ async function fixture(taskId: string) {
     if (!value) throw new Error('Missing canonical state');
     return value;
   };
+  const waiting = new AbortController();
+  const waitStage = (entered: Promise<void>, name: string, timeoutMs?: number) =>
+    waitForExitStage(
+      entered,
+      name,
+      async () => {
+        const summary = await runtime.summary(scope);
+        return summary && ['failed', 'completed', 'interrupted'].includes(summary.runStatus)
+          ? `${summary.runStatus}: ${summary.error ?? summary.phase}`
+          : undefined;
+      },
+      timeoutMs,
+      waiting.signal,
+    );
   const start = async () => {
     await docker.ping();
     const response = await createPostTask(runtime)(
@@ -100,19 +114,31 @@ async function fixture(taskId: string) {
       }),
     );
     expect(response.status).toBe(202);
-    await adapter.coders.entered;
+    await waitStage(adapter.coders.entered, 'CODERs');
   };
-  const cleanup = async () => {
-    adapter.releaseAll();
-    await finishWithCleanup(
-      [],
-      [
-        () => runtime.drain(),
-        ...compositions.map((c) => () => c.dispose()),
-        () => rm(root, { recursive: true, force: true }),
-      ],
-    );
-  };
+  let cleanupPromise: Promise<void> | undefined;
+  const cleanup = () =>
+    (cleanupPromise ??= (async () => {
+      // Cancel only test-side entry waits, never a Harness model request.
+      waiting.abort(new Error('Fixture cleanup started'));
+      adapter.releaseAll();
+      await finishWithCleanup(
+        [],
+        [
+          () => runtime.drain(),
+          // Drain can create a resumed composition; take the disposal list afterward.
+          () =>
+            finishWithCleanup(
+              [],
+              compositions.map((c) => () => c.dispose()),
+            ),
+          () => rm(root, { recursive: true, force: true }),
+        ],
+      );
+    })());
+  // Runner timeouts do not unwind the suspended test body. This hook releases
+  // scripted barriers and joins the same cleanup used by the ordinary finally.
+  onTestFinished(cleanup, 60_000);
   return {
     root,
     scope,
@@ -125,6 +151,7 @@ async function fixture(taskId: string) {
     send,
     state,
     start,
+    waitStage,
     cleanup,
     get worker() {
       return worker;
@@ -158,6 +185,13 @@ it('confirms natural input at real safe points, Forks validation, invalidates re
   const abort = new AbortController();
   let streamRead: Promise<string> | undefined;
   const fresh = new DockerSandbox({ docker: f.docker, baseDir: f.root });
+  let streamCleanup: Promise<void> | undefined;
+  const cleanupStream = () =>
+    (streamCleanup ??= (async () => {
+      abort.abort();
+      await finishWithCleanup([], [() => streamRead, () => fresh.teardown('exit-verification')]);
+    })());
+  onTestFinished(cleanupStream, 60_000);
   try {
     await f.start();
     expect(f.scheduler.activeCount).toBe(2);
@@ -207,7 +241,7 @@ it('confirms natural input at real safe points, Forks validation, invalidates re
       ['a equals 4.'],
       ['sum equals 7.'],
     ]);
-    await f.adapter.validation.entered;
+    await f.waitStage(f.adapter.validation.entered, 'TESTER');
     const prePause = await f.state();
     const dispatch = prePause.parallelExecution?.activeWave?.validation;
     const paused = f.lifecycle?.suspend(f.scope, {
@@ -236,7 +270,7 @@ it('confirms natural input at real safe points, Forks validation, invalidates re
         '/resolve-gate human-gate:exit-validation-pause continue',
       ),
     );
-    await f.adapter.review.entered;
+    await f.waitStage(f.adapter.review.entered, 'REVIEWER');
     const reviewed = await f.state();
     const oldId = reviewed.parallelExecution?.acceptedReceiptId as string;
     const oldReceipt = validationReceipt(reviewed, oldId);
@@ -391,12 +425,7 @@ it('confirms natural input at real safe points, Forks validation, invalidates re
   } catch (error) {
     errors.push(error);
   } finally {
-    abort.abort();
-    await finishWithCleanup(errors, [
-      () => streamRead,
-      () => fresh.teardown('exit-verification'),
-      () => f.cleanup(),
-    ]);
+    await finishWithCleanup(errors, [cleanupStream, () => f.cleanup()]);
   }
 }, 120_000);
 
@@ -438,3 +467,30 @@ it('rejects a proposal whose facts change while the real active cohort drains wi
     await finishWithCleanup(errors, [() => f.cleanup()]);
   }
 }, 90_000);
+
+it('reports a pre-CODER runtime failure and removes the real fixture resources', async () => {
+  const f = await fixture('failed-entry', new ExitAdapter('PM'));
+  try {
+    await expect(f.start()).rejects.toThrow(/CODERs not reached: failed/);
+  } finally {
+    await f.cleanup();
+  }
+  expect(f.scheduler.activeCount).toBe(0);
+  expect(existsSync(f.root)).toBe(false);
+}, 60_000);
+
+it('releases blocked real workers when a stage deadline rejects and cleanup runs', async () => {
+  const f = await fixture('missing-entry');
+  try {
+    await f.start();
+    expect(f.scheduler.activeCount).toBe(2);
+    await expect(f.waitStage(new Promise(() => {}), 'unreachable stage', 25)).rejects.toThrow(
+      'Timed out waiting for unreachable stage',
+    );
+  } finally {
+    await f.cleanup();
+  }
+  expect(f.adapter.observedRuns).toBeGreaterThan(0);
+  expect(f.scheduler.activeCount).toBe(0);
+  expect(existsSync(f.root)).toBe(false);
+}, 60_000);

@@ -113,3 +113,23 @@ Leader显式调用`agora-commit`授权提交、推送与创建PR。分支调整�
 - 敏感信息扫描覆盖8个拟交付文件，gitleaks无泄漏；文档链接、任务依赖与git diff --check核对通过。PR链接及提交身份写入task-status notes；10.7不提前标done。
 
 交付私有证据：`.data/verification/task107/delivery/`（命令/config/日志/hash清单）与`delivery-regression/official-requests.jsonl`。`test-full.log` SHA-256为`a7a1f100724d316b76745e533eb48b01b8ae1faaa4eaf728e1bec0c89e84b3c7`；`live.log`为`9948e8262d9e766954914c621f8c85d6473a9159725e9f57e17432f8faec43f0`。以上为当前交付门禁；正文中的09-12未提交状态及测试数量/费用均为当时快照。
+
+## PR #76 评审修复（2026-09-13）
+
+Leader授权修复两项P2测试缺陷。此前live G5仅检查数字子串，可能把1900/11800/116800及未请求的场地改价误判为正确；角色entry barrier无失败出口，Vitest整体超时不展开测试体finally。修复不修改生产源码或冻结接口。
+
+控制原文：详细设计§11.9“保持非目标和未请求的验收条件。”；已确认计划规定“所有资源清理动作都尝试并保留原错及清理错误。”
+
+- `natural-input-checks.ts`为本合成英文场景逐字段核对完整数值、cents单位、票数/小时数、未改场地价格和两项nonGoals；允许英文two/three、数字分组与措辞变化，不做整句匹配，不是通用自然语言语义判分器。真实live入口在确认前调用该检查器，持久化/重放检查独立保留。
+- `exit-wait.ts`为每个CODER/TESTER/REVIEWER进入等待设置20秒截止，监测真实runtime失败/结束，保留状态读取错误，结束时清除计时器。cleanup只取消测试侧进入等待、释放脚本barrier，不取消Harness模型请求；fixture与SSE/独立验证沙箱注册`onTestFinished`钩子，与正常finally共用一次清理Promise。drain后再读取最新composition列表回收，所有清理错误继续保留。
+- 新增断言/等待回归：初次14项中11失败、3通过，证实原缺口；修复后14项全绿，后补2项清理取消等待的回归。错误票价/票价总额/组合总额/场地价格/数量/非目标和额外错误数字均必须拒绝，正确改写必须通过。
+- 真实出口专项4/4通过（30.962s）：保留原2项，并增加PM提前失败、真实CODER活动时等待截止两条路径；两者均验证lease=0、临时根目录已删除。真实官方模型解释G5再次1/1通过（2.240s），未启动冻结Benchmark。
+- 单独临时探针故意触发Vitest 3秒整体超时，日志保留1个预期失败；实际结束钩子继续执行，afterAll验证真实worker drain、lease=0与根目录移除。总9.12s。它是失败清理机制证据，不计为默认套件通过，也不以skip或改超时断言隐藏失败。
+
+修复后的完整门禁、CodeRabbit复核及提交身份见task-status最新notes。私有修复日志/config/探针留在`.data/verification/task107/pr76-fix/`，用量在`pr76-fix-regression/official-requests.jsonl`，不重写前述历史结果。PR保持开放、任务保持in_progress，未执行自动合并。
+
+修复门禁：typecheck/lint通过；完整默认回归170文件/1277项全绿0skip，236.84s，包含新增16项校验/等待回归及4项出口真实链；独立live G5另计1项。只有用量观察setup附加到原配置，既有凭据、include/exclude及真实模型测试均保留。官方用量为30次回归+1次live，31次均HTTP200且usage完整；按既有审计费率估算回归USD0.014166966、live USD0.000190938，合计USD0.014357904。无Go或冻结Benchmark新请求，历史结果不变。`full-test.log` SHA-256=`db0b291b1d26c8b9df286eda6ec9b6c5481d6c97318b3be1be35675db3a7e4e3`；`live.log`=`ef10ba173ee3a7d6b89b06c60ed8bb20928066dedce214b30b4256bffb9e712c`；预期失败探针`runner-timeout.log`=`910b1fe17b56fb17bca5de4bea6f1937dcfc55fa6a2c33c37f427a08ff172ceb`。
+
+包含新增文件的CodeRabbit复核进一步指出：只比较排序后的数字集合会接受金额/数量/时长互换。已用5项反例复现（5红），随后增加字段中的cents、票/人数、venue hours和计价单位关联断言；两张票/两人/三小时与1800/16800的关系分别校验，原完整数值检查继续拒绝额外错误数字。21项校验/等待测试全绿，真实模型G5再次1/1通过（3.382s），typecheck/lint通过。上面的1277项和31请求为这一追加修复前的快照；最终版本的全量回归与累计请求按后续记录，不把中间门禁冒充最终源码通过。
+
+**最终修复门禁（同日，覆盖数字关联追加修复）：** 170文件/1282项默认回归全绿0skip，236.52s；包含15项价格/关联检查、6项等待回归及4项真实出口链。独立真实模型G5 1/1，3.382s。typecheck/lint与11个交付文件的gitleaks均通过，CodeRabbit最终覆盖全部11个修复文件并返回0 issues（此前包含新增文件的复核提出1项数字关联问题，已补5项红绿回归修复）。最终全量日志`full-test-final.log` SHA-256=`e468b9b1a757ee3ec7cc50dfc77b38d1730a4df925c1f93b01c1ffb466028b68`，最终live日志`live-association.log`=`f2a2b86cf7705c020576284d4e9c50522a7edbc6d183c0e11edc9c1a5c5d01f9`；CodeRabbit日志=`b18a389c91dc3c220978340b6b8fbac6d2e628279b4faf7c426a8cd2504233cd`。本轮修复累计55次官方请求均HTTP200、usage完整，按既有费率估算USD0.029965644；其中最后一次G5 USD0.000388338、最后一轮回归23请求/USD0.015219402，其余属于已记录的上一轮修复验证。无Go/冻结Benchmark调用，所有中间结果与预期超时失败保留。
