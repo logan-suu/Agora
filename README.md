@@ -29,7 +29,7 @@ Start with [Quick Start](#quick-start-macos). See the [final benchmark report](d
 
 ## Product demo
 
-[![Watch the English product demo](docs/demo/Agora-Natural-Chat-Demo-2026-09-12.poster.png)](docs/demo/Agora-Natural-Chat-Demo-2026-09-12.mp4)
+https://github.com/user-attachments/assets/d24f4192-8353-43b8-b164-0cbcf700abc2
 
 One real task: describe a goal, change the ticket price in plain English, review and confirm the proposal, repair issues found in verification, then approve completion and keep the artifact. The English recording includes real rework and cuts waiting periods. Rework and final approval use the existing gate command; no JSON is pasted into chat. See the [recording evidence, editing notes and downloadable artifact](docs/demo/task106-natural-chat-demo.md). The archived output passes 18 project tests plus 8 independent checks.
 

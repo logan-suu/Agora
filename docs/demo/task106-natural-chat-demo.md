@@ -4,9 +4,9 @@
 
 This English recording follows one real local task, `quote-en-take-9`, from a plain-language goal through a confirmed requirement change, repairs, verification, human completion approval and archive. It includes real rework; it is a selected demonstration, not a benchmark or a reliability estimate.
 
-[![Watch the English demo](Agora-Natural-Chat-Demo-2026-09-12.poster.png)](Agora-Natural-Chat-Demo-2026-09-12.mp4)
+https://github.com/user-attachments/assets/d24f4192-8353-43b8-b164-0cbcf700abc2
 
-[Video](Agora-Natural-Chat-Demo-2026-09-12.mp4) · [Editing timeline](Agora-Natural-Chat-Demo-2026-09-12.timeline.json) · [Six-file artifact](Agora-Natural-Chat-Artifact-2026-09-12.zip)
+[Watch video](https://github.com/user-attachments/assets/d24f4192-8353-43b8-b164-0cbcf700abc2) · [MP4 file](Agora-Natural-Chat-Demo-2026-09-12.mp4) · [Editing timeline](Agora-Natural-Chat-Demo-2026-09-12.timeline.json) · [Six-file artifact](Agora-Natural-Chat-Artifact-2026-09-12.zip)
 
 ## The interaction
 
@@ -47,3 +47,5 @@ The withdrawn JSON-input recording and failed earlier takes were deleted as requ
 ## GitHub playback distribution
 
 The MP4 distribution preserves the accepted 202-second edit at 1920 × 1080 and 12 fps, without audio. It uses H.264, yuv420p and fast start, and is 8681621 bytes (below the 10 MB video attachment limit). SHA-256: `29764a6f2083cee1ffd67d0c8da32034ce2495f5e89b4524de0a8f8aa5fd1f9b`. The timeline retains the original accepted WebM hash and records the separate distribution hash. Historical source and verification documents are pinned to [revision 83fe416](https://github.com/logan-suu/Agora/tree/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo); the active directory contains only this current demo package.
+
+The GitHub attachment player was verified in a signed-out browser: metadata loaded as 202 seconds / 1920 × 1080, playback advanced, pause/resume worked, and no media error occurred. The player URL is the stable GitHub attachment address; temporary signed delivery URLs are not stored.
