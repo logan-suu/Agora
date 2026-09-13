@@ -2,6 +2,20 @@
 
 ### A human-led, group-chat workspace where AI agents plan, code, test, and review together.
 
+## Contents
+
+- [Current product](#current-product)
+- [Product demo](#product-demo)
+- [What is Agora?](#what-is-agora)
+- [Evidence and limits](#evidence-and-limits)
+- [Architecture](#architecture)
+- [Quick Start (macOS)](#quick-start-macos)
+- [Tech Stack](#tech-stack)
+- [Repository Layout](#repository-layout)
+- [Roadmap](#roadmap)
+- [Design Documents](#design-documents)
+- [Project Status and Scope](#project-status-and-scope)
+
 **Current scope: local use.** Run Agora on your own computer and open its local address in your browser. The backend, Docker sandboxes, and Git worktrees run on that machine, and application data is stored locally. Cloud hosting is outside the current product scope. Model requests go to your chosen online API or local model service; local operation does not mean offline operation. The product installation and startup commands currently support macOS. The Linux product launcher and automatic credential setup are outside that task’s current scope; existing Linux sandbox support is separate.
 
 **Credential setup on macOS.** The local launcher creates a random encryption key in your macOS Keychain on first use and reuses it after restart. In the model settings dialog, enter your service's Base URL, API key, and model name, either for one Agent or the whole team. Keychain access may require macOS authorization. Existing encrypted connections remain unavailable when the original key cannot be accessed; the application shows recovery instructions and never silently replaces it.
