@@ -110,6 +110,8 @@ export interface HarnessExecutorOptions {
   /** Pure final-output validator. Enables at most two tool-free format retries per step.
    * Must not perform I/O or mutate State; final mutation readers still run only once. */
   validateTurnOutput?: (turn: { text: string | null }) => void;
+  /** Trusted static role contract guidance; never parser errors or model output. */
+  outputFormatHint?: string;
   /** D4 durable session namespace and optional deterministic lineage-child id. */
   sessionPersistence?: {
     root: string;
@@ -196,6 +198,7 @@ export class HarnessExecutor implements Executor {
     | undefined;
   private readonly readTurnMutations: HarnessExecutorOptions['readTurnMutations'];
   private readonly validateTurnOutput: HarnessExecutorOptions['validateTurnOutput'];
+  private readonly outputFormatHint: string | undefined;
   private outputRepairMessage: UserMessage | undefined;
   private outputRepairRequests = 0;
   private turnStartPending = false;
@@ -279,6 +282,7 @@ export class HarnessExecutor implements Executor {
     this.readSubtaskStatus = options.readSubtaskStatus;
     this.readTurnMutations = options.readTurnMutations;
     this.validateTurnOutput = options.validateTurnOutput;
+    this.outputFormatHint = options.outputFormatHint;
     this.sessionPersistence = options.sessionPersistence;
     this.ready = this.awaitPlugins();
   }
@@ -573,7 +577,10 @@ export class HarnessExecutor implements Executor {
         order: 50,
         text:
           'Current structured Agora task context. Use these current facts over older session ' +
-          'snapshots or summaries. This context is not a new user request after each tool call.\n' +
+          'snapshots or summaries. currentRequirements contains the current effective requirements; ' +
+          'use it over outdated requirement values copied into architecture or task titles. ' +
+          'It does not expand your assigned subtask or worktree permissions. ' +
+          'This context is not a new user request after each tool call.\n' +
           '[agora-projection]\n{{agora_projection}}\n[/agora-projection]',
       });
       agentCtx.effect(() => removeProjectionVariable);
@@ -625,7 +632,10 @@ export class HarnessExecutor implements Executor {
                   'Use quoted keys, valid JSON escapes and fully closed objects/arrays. ' +
                   'Return only the required JSON, without explanation or Markdown. ' +
                   'Do not change requirements or decisions. Do not call tools. ' +
-                  'The correction request adds no raw group chat or parser error text.',
+                  'The correction request adds no raw group chat or parser error text.' +
+                  (this.outputFormatHint === undefined
+                    ? ''
+                    : `\n[role-output-contract] ${this.outputFormatHint}`),
               },
             ],
           });

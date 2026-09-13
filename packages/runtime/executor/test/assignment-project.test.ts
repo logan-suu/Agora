@@ -50,6 +50,48 @@ function state(): AppState {
   };
 }
 
+it('retains successive requirement edits for workers with a legacy role projection', () => {
+  const current = state();
+  current.architecture = { ticketPrice: 1000 };
+  current.requirements = [
+    {
+      id: 'req-ticket',
+      story: 'Charge 900 cents',
+      acceptance: ['two tickets cost 1800'],
+      nonGoals: [],
+    },
+    {
+      id: 'req-quote',
+      story: 'Compose the quote',
+      acceptance: ['quote(2, 3) totals 16800'],
+      nonGoals: [],
+    },
+  ];
+  current.messages = current.requirements.map(({ id, ...requirement }, index) => ({
+    msgId: `change-${index}`,
+    channelId: 'main',
+    fromRole: 'leader',
+    type: 'chat',
+    ts: index,
+    display: 'PRIVATE-LEADER-DISPLAY',
+    payload: {
+      kind: 'leader_intent',
+      intent: { kind: 'requirement_change', requirementId: id, requirement },
+      action: { status: 'applied' },
+    },
+  }));
+  const assignment = { workerId: 'worker:wave:0', role: 'CODER', subtaskId: 'A' };
+  const recovered = JSON.parse(JSON.stringify(current)) as AppState;
+  const projectCurrent = () => projectForAssignment(recovered, assignment, [coder]);
+  const view = projectCurrent();
+  expect(view.slices.leaderDirective).toMatchObject({ actionId: 'change-1' });
+  expect(view.slices.currentRequirements).toEqual(current.requirements);
+  expect(view.slices.assignedSubtask).toEqual([current.subtasks[0]]);
+  expect(JSON.stringify(view)).not.toContain('PRIVATE-LEADER-DISPLAY');
+  (view.slices.currentRequirements as AppState['requirements'])[0]?.acceptance.push('mutated');
+  expect(projectCurrent().slices.currentRequirements).toEqual(current.requirements);
+});
+
 // Canonical control and receipt facts isolate assignment slicing from model execution.
 function failedReceipt(current: AppState): string {
   const dispatchId = 'validation-old';
@@ -153,6 +195,32 @@ function feedback(current: AppState, subtaskId = 'A') {
 }
 
 describe('assignment projection', () => {
+  it('keeps each coder assignment narrow during initial work and resumed wave repair', () => {
+    for (const current of [state(), repairing()]) {
+      const recovered = JSON.parse(JSON.stringify(current)) as AppState;
+      for (const worker of recovered.workers.filter((entry) => entry.role === 'CODER')) {
+        if (worker.subtaskId === undefined) throw new Error('missing coder subtask');
+        worker.status = 'paused';
+        const view = projectForAssignment(
+          recovered,
+          { workerId: worker.workerId, role: 'CODER', subtaskId: worker.subtaskId },
+          [coder],
+        );
+        expect(view.slices.assignment).toMatchObject({
+          subtaskId: worker.subtaskId,
+          subtaskIds: [worker.subtaskId],
+          finalWave: true,
+        });
+        expect(view.slices.assignedSubtask).toEqual([
+          expect.objectContaining({ id: worker.subtaskId }),
+        ]);
+        if (current.parallelExecution?.activeWave?.attempt === 2) {
+          expect(view.slices.failingTests).toMatchObject({ passed: false, failed: 1 });
+        }
+      }
+    }
+  });
+
   it('retains bound repair feedback across reproject and D4 worker resume', () => {
     const current = repairing();
     expect(feedback(current)).toMatchObject({ passed: false, failed: 1 });
@@ -316,6 +384,99 @@ describe('assignment projection', () => {
       [tester],
     );
     expect(testerView.slices.assignment).toMatchObject({ subtaskIds: ['A', 'B'], finalWave: true });
+    expect(testerView.slices.validationScope).toMatchObject({
+      currentSubtasks: [{ subtaskId: 'A' }, { subtaskId: 'B' }],
+      completedSubtasks: [],
+      deferredSubtasks: [],
+    });
+  });
+
+  it('separates current and completed validation work from future dependent features', () => {
+    const current = state();
+    current.phase = 'testing';
+    current.messages.push({
+      msgId: 'wave',
+      channelId: 'main',
+      fromRole: 'COORDINATOR',
+      type: 'announce',
+      ts: 1,
+      display: 'Validate A and B',
+      payload: { kind: 'coding_wave' },
+    });
+    current.subtasks.push(
+      {
+        id: 'C',
+        title: 'Implement quote.mjs importing ticket and venue',
+        dependsOn: ['A', 'B'],
+        ownerRole: 'CODER',
+        status: 'todo',
+      },
+      {
+        id: 'T',
+        title: 'Add final cumulative tests',
+        dependsOn: ['C'],
+        ownerRole: 'CODER',
+        status: 'todo',
+      },
+      {
+        id: 'D',
+        title: 'Implement existing shared types',
+        dependsOn: [],
+        ownerRole: 'CODER',
+        status: 'done',
+      },
+    );
+    const wave = current.parallelExecution?.activeWave;
+    if (!wave) throw new Error('expected wave');
+    wave.validation = {
+      dispatchId: 'validate',
+      workerId: 'worker:validate:0',
+      integrationId: 'integrate',
+      inputCommit: 'a'.repeat(40),
+    };
+    current.workers.push({
+      workerId: 'worker:validate:0',
+      role: 'TESTER',
+      executor: 'harness',
+      status: 'running',
+      startedTs: 2,
+    });
+    const assignment = { workerId: 'worker:validate:0', role: 'TESTER' };
+    const view = projectForAssignment(current, assignment, [
+      { ...coder, role: 'TESTER', projection: [] },
+    ]);
+    expect(view.slices.validationScope).toEqual({
+      currentSubtasks: ['A', 'B'].map((id) => ({
+        subtaskId: id,
+        title: `Implement ${id}`,
+        dependsOn: [],
+      })),
+      completedSubtasks: [
+        { subtaskId: 'D', title: 'Implement existing shared types', dependsOn: [] },
+      ],
+      deferredSubtasks: [
+        {
+          subtaskId: 'C',
+          title: 'Implement quote.mjs importing ticket and venue',
+          dependsOn: ['A', 'B'],
+        },
+        { subtaskId: 'T', title: 'Add final cumulative tests', dependsOn: ['C'] },
+      ],
+    });
+    expect(view.slices.assignment).toMatchObject({ subtaskIds: ['A', 'B'], finalWave: false });
+    expect(view.slices.coordinationContext).toMatchObject({
+      instructionOrQuestion: expect.stringContaining(
+        'Do not import or add tests for deferredSubtasks',
+      ),
+    });
+    (
+      view.slices.validationScope as { deferredSubtasks: { dependsOn: string[] }[] }
+    ).deferredSubtasks[0]?.dependsOn.push('mutated');
+    const restored = JSON.parse(JSON.stringify(current)) as AppState;
+    expect(
+      projectForAssignment(restored, assignment, [{ ...coder, role: 'TESTER', projection: [] }])
+        .slices.validationScope,
+    ).toMatchObject({ deferredSubtasks: [{ dependsOn: ['A', 'B'] }, { dependsOn: ['C'] }] });
   });
 
   it('fails closed when an explicit review repair source is missing', () => {

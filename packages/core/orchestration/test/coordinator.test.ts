@@ -844,6 +844,24 @@ describe('coordinator.decide · structured coordination artifacts (task 4.4 + DE
     ]);
   });
 
+  it('preserves failures without a source location and emits no invented file reference', () => {
+    const failure = { test: '(exit 1)', message: 'process failed before TAP', file: '', line: 0 };
+    const state = applyMutations(requirementsReadyState(), [
+      setMutation('nextRole', 'PM'),
+      setMutation('testResults', { passed: false, total: 0, failed: 0, failures: [failure] }),
+    ]);
+    const next = applyMutations(
+      state,
+      decide(state, { ...clock(), roster: FULL_ROSTER }).mutations,
+    );
+    expect(next.nextRole).toBe('ARCHITECT');
+    expect(next.testResults?.failures).toEqual([failure]);
+    expect(next.handoffPackets[0]).toMatchObject({
+      openIssues: ['(exit 1): process failed before TAP'],
+      fileRefs: [],
+    });
+  });
+
   it('does not emit a handoff when the coordinator re-dispatches the same role', () => {
     const state = applyMutations(createInitialAppState('t-1', 'g'), [
       setMutation('nextRole', 'PM'),

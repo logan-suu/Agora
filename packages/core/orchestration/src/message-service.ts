@@ -8,6 +8,7 @@ import {
 import {
   type AppState,
   appendMutation,
+  assertNoRequirementControlMessages,
   createInitialAppState,
   type Message,
   type Mutation,
@@ -123,6 +124,7 @@ export class MessageService {
     role: string,
     mutations: readonly Mutation[],
   ): Promise<MutationCommitResult> {
+    assertNoRequirementControlMessages(mutations);
     return this.#commitMutations(scope, mutations, role);
   }
 

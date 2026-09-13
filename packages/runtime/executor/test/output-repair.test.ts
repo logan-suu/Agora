@@ -1,7 +1,11 @@
 // The scripted provider isolates malformed model output; the real Harness loop,
 // projection hook, tool restrictions and turn boundaries remain under test.
 import { createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
-import { architectTurnMutations, DEFAULT_ROSTER } from '@agora/roles-definitions';
+import {
+  architectTurnMutations,
+  DEFAULT_ROSTER,
+  SIX_ROLE_FORMAT_REPAIR,
+} from '@agora/roles-definitions';
 import { LocalTempSandbox } from '@agora/runtime-sandbox';
 import { type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm';
 import { describe, expect, it, vi } from 'vitest';
@@ -35,6 +39,48 @@ const validate = ({ text }: { text: string | null }) => {
 };
 
 describe('bounded structured output repair', () => {
+  it('carries the role contract into repair of nested conventions without changing their values', async () => {
+    const architect = DEFAULT_ROSTER.find((role) => role.role === 'ARCHITECT');
+    if (!architect) throw new Error('missing ARCHITECT');
+    const architecture = {
+      modules: [{ id: 'A', file: 'answer.mjs' }],
+      executionPlan: { version: 1, subtasks: [{ id: 'A', title: 'Answer', dependsOn: [] }] },
+    };
+    const conventions = { runtime: 'Node', rationale: 'Keep the existing decision.' };
+    const bad = JSON.stringify({ architecture: { ...architecture, conventions } });
+    const good = JSON.stringify({ architecture, conventions });
+    const adapter = new Replies([bad, good]);
+    const reader = vi.fn(({ text }: { text: string | null }) => architectTurnMutations(text));
+    const executor = new HarnessExecutor(architect, {
+      adapter,
+      outputFormatHint: SIX_ROLE_FORMAT_REPAIR.ARCHITECT ?? '',
+      validateTurnOutput: ({ text }) => {
+        architectTurnMutations(text);
+      },
+      readTurnMutations: reader,
+    });
+    try {
+      const result = await executor.step({ ...context, view: { role: 'ARCHITECT', slices: {} } });
+      expect(adapter.calls).toHaveLength(2);
+      const repair = JSON.stringify(adapter.calls[1]?.messages.at(-1));
+      expect(repair).toContain('architecture.conventions');
+      expect(repair).toContain('top-level');
+      expect(adapter.calls[1]?.tools ?? []).toEqual([]);
+      expect(reader).toHaveBeenCalledExactlyOnceWith({ text: good });
+      expect(result.mutations).toContainEqual({
+        op: 'set',
+        field: 'conventions',
+        value: conventions,
+      });
+      expect(result.mutations).toContainEqual({
+        op: 'set',
+        field: 'architecture',
+        value: architecture,
+      });
+    } finally {
+      await executor.dispose();
+    }
+  });
   it('repairs a misplaced architecture plan before publishing or reading mutations', async () => {
     const architect = DEFAULT_ROSTER.find((role) => role.role === 'ARCHITECT');
     if (!architect) throw new Error('missing ARCHITECT');

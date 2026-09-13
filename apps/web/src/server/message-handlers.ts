@@ -4,7 +4,11 @@ import { resolveParticipantChannel } from '@agora/comm-channels';
 import { isSafeMessageId } from '../lib/intent';
 import { type ChannelEvent, encodeSseEvent } from './channel-stream';
 import { jsonError, readJsonObject, requiredString } from './http';
-import type { MessageRuntime } from './message-runtime';
+import {
+  type MessageRuntime,
+  RequirementInputError,
+  type RequirementProposalAction,
+} from './message-runtime';
 
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const encoder = new TextEncoder();
@@ -25,6 +29,21 @@ export function createPostMessage(runtime: MessageRuntime) {
       return jsonError('projectId, taskId, channelId, msgId, and display are required');
     }
     if (!isSafeMessageId(msgId)) return jsonError('msgId must be a safe stable token');
+    let requirementProposal: RequirementProposalAction | undefined;
+    if (body?.requirementProposal !== undefined) {
+      const value = body.requirementProposal;
+      if (typeof value !== 'object' || value === null || Array.isArray(value))
+        return jsonError('Invalid proposal confirmation');
+      const ref = value as Record<string, unknown>;
+      if (
+        Object.keys(ref).sort().join(',') !== 'action,proposalId' ||
+        typeof ref.proposalId !== 'string' ||
+        !isSafeMessageId(ref.proposalId) ||
+        (ref.action !== 'confirm' && ref.action !== 'dismiss')
+      )
+        return jsonError('Invalid proposal confirmation');
+      requirementProposal = { proposalId: ref.proposalId, action: ref.action };
+    }
     const scope = { projectId, taskId };
     if ((await runtime.store.load(scope)) === undefined) {
       return jsonError('task not found; create it through POST /api/tasks first', 404);
@@ -36,17 +55,23 @@ export function createPostMessage(runtime: MessageRuntime) {
     } catch (error) {
       return jsonError(error instanceof Error ? error.message : 'invalid channel address');
     }
-    const result = await runtime.commitLeaderMessage(scope, {
-      msgId,
-      channelId,
-      display,
-      ts: Date.now(),
-    });
+    try {
+      const result = await runtime.commitLeaderMessage(scope, {
+        msgId,
+        channelId,
+        display,
+        ts: Date.now(),
+        ...(requirementProposal ? { requirementProposal } : {}),
+      });
 
-    return Response.json(
-      { accepted: true, published: result.published, action: result.action },
-      { status: 202 },
-    );
+      return Response.json(
+        { accepted: true, published: result.published, action: result.action },
+        { status: 202 },
+      );
+    } catch (error) {
+      if (error instanceof RequirementInputError) return jsonError(error.message, error.status);
+      throw error;
+    }
   };
 }
 

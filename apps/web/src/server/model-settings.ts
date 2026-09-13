@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { HarnessExecutor, type HarnessExecutorOptions } from '@agora/runtime-executor';
 import {
@@ -127,7 +128,7 @@ export class ModelSettingsService {
       );
       try {
         await executor.step({
-          sessionId: 'connection-test',
+          sessionId: `connection-test:${randomUUID()}`,
           view: { role: 'COORDINATOR', slices: { instruction: 'Reply OK.' } },
         });
       } catch {
@@ -224,7 +225,8 @@ export class ModelSettingsService {
     const snapshot = await this.snapshot(scope.projectId);
     return this.store.bindTask({
       version: 1,
-      ...scope,
+      projectId: scope.projectId,
+      taskId: scope.taskId,
       goal,
       defaultModel: process.env.AGORA_MODEL ?? 'deepseek-v4-flash',
       roles: snapshot.roster.map(({ spec }) => {

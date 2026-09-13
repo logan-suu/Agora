@@ -1,3 +1,4 @@
+import type { RequirementProposalView } from '@agora/core-domain';
 import type {
   TraceRetryView,
   TraceSessionView,
@@ -73,6 +74,7 @@ export interface TaskRuntimeView {
   testResults: { passed: boolean; total: number; failed: number } | null;
   artifactPath: string | null;
   messageCount: number;
+  requirementProposal?: RequirementProposalView;
   error?: string;
 }
 

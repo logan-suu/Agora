@@ -10,6 +10,7 @@ import {
   useState,
   useTransition,
 } from 'react';
+import { ChatHistory } from './chat-history';
 import {
   applyMention,
   type ChannelView,
@@ -32,7 +33,10 @@ import {
   type TraceSnapshotView,
   type WorkspaceViewModel,
 } from './chat-model';
+import { MessageContent } from './message-content';
+import { MessageMarkdown } from './message-markdown';
 import { ModelSettingsDialog } from './model-settings-dialog';
+import { RequirementProposalCard } from './requirement-proposal-card';
 import { traceLanes } from './trace-lanes';
 
 interface ChatWorkspaceProps {
@@ -193,20 +197,6 @@ function LeftSidebar({
   );
 }
 
-function displayWithMentions(display: string): ReactNode[] {
-  return React.Children.toArray(
-    display.split(/(@[A-Z]+)/g).map((part, index) =>
-      part.startsWith('@') ? (
-        <span className="mention" key={`${part}-${index}`}>
-          {part}
-        </span>
-      ) : (
-        part
-      ),
-    ),
-  );
-}
-
 function displayMessageFromUnknown(value: unknown): ChatMessageView | undefined {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
   const record = value as Record<string, unknown>;
@@ -249,9 +239,11 @@ function parseDisplayMessages(data: string): ChatMessageView[] | undefined {
 function MessageRow({
   message,
   status,
+  children,
 }: {
   message: ChatMessageView;
   status?: PresenceStatus | undefined;
+  children?: ReactNode;
 }) {
   const time = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
@@ -270,22 +262,41 @@ function MessageRow({
           <strong>{roleLabels[message.fromRole] ?? message.fromRole}</strong>
           <time dateTime={new Date(message.ts).toISOString()}>{time}</time>
         </header>
-        <p>{displayWithMentions(message.display)}</p>
+        <MessageContent role={message.fromRole} display={message.display} />
+        {children}
         {message.reference ? <code>{message.reference}</code> : null}
       </div>
     </article>
   );
 }
 
-function MessageList({ messages, team }: { messages: ChatMessageView[]; team: TeamMemberView[] }) {
+function MessageList({
+  messages,
+  team,
+  proposal,
+  busy,
+  onRespond,
+}: {
+  messages: ChatMessageView[];
+  team: TeamMemberView[];
+  proposal: TaskRuntimeView['requirementProposal'];
+  busy: boolean;
+  onRespond: (action: 'confirm' | 'dismiss') => void;
+}) {
   const statuses = new Map(team.map((member) => [member.role, member.status]));
+  const ordered = useMemo(() => sortMessagesByTimestamp(messages), [messages]);
+  const messageIds = useMemo(() => ordered.map((message) => message.msgId), [ordered]);
 
   return (
-    <section className="message-list" aria-label="Messages" aria-live="polite">
-      {sortMessagesByTimestamp(messages).map((message) => (
-        <MessageRow key={message.msgId} message={message} status={statuses.get(message.fromRole)} />
+    <ChatHistory messageIds={messageIds}>
+      {ordered.map((message) => (
+        <MessageRow key={message.msgId} message={message} status={statuses.get(message.fromRole)}>
+          {proposal?.proposalId === message.msgId ? (
+            <RequirementProposalCard proposal={proposal} busy={busy} onRespond={onRespond} />
+          ) : null}
+        </MessageRow>
       ))}
-    </section>
+    </ChatHistory>
   );
 }
 
@@ -467,6 +478,31 @@ export function TracePanel({
   );
 }
 
+function TaskOverview({ task }: { task: WorkspaceViewModel['task'] }) {
+  return (
+    <section className="task-summary">
+      <h2>Current task</h2>
+      <div className="task-identity">
+        <p className="task-id">{task.id}</p>
+        <span className="task-status">{task.status}</span>
+      </div>
+      <h3 className="task-goal-label">Goal</h3>
+      <details className="task-goal">
+        <summary>
+          <span className="task-goal-preview">{task.title}</span>
+          <span className="task-goal-toggle">
+            <span className="task-goal-expand">View full goal</span>
+            <span className="task-goal-collapse">Collapse goal</span>
+          </span>
+        </summary>
+        <div className="task-goal-full">
+          <MessageMarkdown text={task.title} />
+        </div>
+      </details>
+    </section>
+  );
+}
+
 function RightSidebar({
   model,
   open,
@@ -482,13 +518,7 @@ function RightSidebar({
 }) {
   return (
     <aside className="right-sidebar" data-open={open} aria-label="Task status">
-      <section className="task-summary">
-        <h2>Current task</h2>
-        <p className="task-title">
-          <span>{model.task.id}</span> {model.task.title}
-        </p>
-        <span className="task-status">{model.task.status}</span>
-      </section>
+      <TaskOverview key={model.task.id} task={model.task} />
       <section className="task-progress">
         <h2>Progress</h2>
         <ol>
@@ -602,6 +632,7 @@ interface ComposerProps {
   onMention: (role: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
+  submitting?: boolean;
 }
 
 function Composer({
@@ -611,6 +642,7 @@ function Composer({
   onMention,
   onSubmit,
   disabled = false,
+  submitting = false,
 }: ComposerProps) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -657,10 +689,11 @@ function Composer({
       </label>
       <button
         className="send-button"
-        disabled={disabled || draft.trim().length === 0}
+        disabled={disabled || submitting || draft.trim().length === 0}
+        aria-busy={submitting}
         type="submit"
       >
-        Send
+        {submitting ? 'Sending…' : 'Send'}
       </button>
     </form>
   );
@@ -693,6 +726,9 @@ export function ChatWorkspace({
   const [channelRefreshError, setChannelRefreshError] = useState<string>();
   const [submissionNotice, setSubmissionNotice] = useState<LeaderActionNotice>();
   const pendingSubmission = React.useRef<PendingMessageSubmission | undefined>(undefined);
+  const pendingProposalSubmission = React.useRef<{ key: string; msgId: string } | undefined>(
+    undefined,
+  );
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const mentionQuery = getMentionQuery(draft);
@@ -819,7 +855,7 @@ export function ChatWorkspace({
   }, [channelRefreshNonce, projectId, task?.runStatus, taskId]);
 
   useEffect(() => {
-    if (task?.runStatus !== 'running') return;
+    if (task === undefined) return;
     let active = true;
     const refresh = async () => {
       try {
@@ -835,12 +871,14 @@ export function ChatWorkspace({
         }
       }
     };
-    const timer = setInterval(() => void refresh(), 1000);
+    void refresh();
+    const timer =
+      task.runStatus === 'running' ? setInterval(() => void refresh(), 1000) : undefined;
     return () => {
       active = false;
-      clearInterval(timer);
+      if (timer !== undefined) clearInterval(timer);
     };
-  }, [projectId, task?.runStatus, taskId]);
+  }, [channelRefreshNonce, projectId, task?.runStatus, taskId]);
 
   useEffect(() => {
     if (task === undefined) return;
@@ -945,16 +983,66 @@ export function ChatWorkspace({
           display,
         }),
       });
-      if (!response.ok) throw new Error(`Message submission failed (${response.status})`);
-      setSubmissionNotice(leaderActionNoticeFromResponse(await response.json()));
+      const body = await response.json();
+      if (!response.ok)
+        throw new Error(body.error ?? `Message submission failed (${response.status})`);
+      setSubmissionNotice(leaderActionNoticeFromResponse(body));
       setChannelRefreshNonce((current) => current + 1);
       if (pendingSubmission.current?.msgId === submission.msgId) {
         pendingSubmission.current = undefined;
       }
-      setDraft('');
+      setDraft((current) => (current.trim() === display ? '' : current));
     } catch (error) {
       setSubmissionError(error instanceof Error ? error.message : 'Message submission failed');
     } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function respondToProposal(action: 'confirm' | 'dismiss') {
+    const proposal = task?.requirementProposal;
+    if (!proposal || submitting) return;
+    const key = JSON.stringify([projectId, taskId, proposal.proposalId, action]);
+    const submission =
+      pendingProposalSubmission.current?.key === key
+        ? pendingProposalSubmission.current
+        : { key, msgId: crypto.randomUUID() };
+    pendingProposalSubmission.current = submission;
+    setSubmitting(true);
+    setSubmissionError(undefined);
+    setSubmissionNotice(undefined);
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          taskId,
+          channelId: 'main',
+          msgId: submission.msgId,
+          display:
+            action === 'confirm'
+              ? 'Confirm these requirement changes.'
+              : 'Discard this change proposal.',
+          requirementProposal: { proposalId: proposal.proposalId, action },
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok)
+        throw new Error(body.error ?? `Proposal submission failed (${response.status})`);
+      if (pendingProposalSubmission.current?.msgId === submission.msgId)
+        pendingProposalSubmission.current = undefined;
+      setSubmissionNotice({
+        kind: 'applied',
+        text:
+          action === 'confirm'
+            ? 'Requirement changes applied.'
+            : 'Proposal discarded. Requirements are unchanged.',
+      });
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : 'Proposal submission failed');
+    } finally {
+      setChannelRefreshNonce((current) => current + 1);
       setSubmitting(false);
     }
   }
@@ -1038,14 +1126,22 @@ export function ChatWorkspace({
           goal={goal}
           pending={taskPending}
           task={task}
-          error={taskError}
+          error={taskError ?? task?.error}
           onTaskIdChange={changeTaskId}
           onGoalChange={setGoal}
           onStart={startTask}
         />
-        <MessageList messages={messages} team={runtimeModel.team} />
+        <MessageList
+          key={JSON.stringify([projectId, taskId, runtimeModel.channel.id])}
+          messages={messages}
+          team={runtimeModel.team}
+          proposal={task?.requirementProposal}
+          busy={submitting}
+          onRespond={respondToProposal}
+        />
         <Composer
           draft={draft}
+          submitting={submitting}
           mentionOptions={mentionOptions}
           onDraftChange={setDraft}
           onMention={selectMention}

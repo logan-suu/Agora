@@ -80,6 +80,74 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
+it('retires historical task worktrees after reconstruction without touching another task', async () => {
+  const { adapter, git, taskRoot } = await fixture();
+  const old = await adapter.createIntegrationWorktree(
+    'old-wave',
+    'old-integration',
+    await git.canonicalHead(),
+  );
+  const current = await adapter.createWorktree('task-a', 'current-worker');
+  const other = await git.createWorktree('task-b', 'unrelated');
+  const externalGit = new WorktreeGitService(
+    new WorktreeRegistry(),
+    join(taskRoot, 'repository'),
+    join(taskRoot, 'external'),
+  );
+  const external = await externalGit.createWorktree('task-a', 'external');
+  await writeFile(join(taskRoot, 'state.json'), 'durable state');
+  await adapter.suspend('task-a');
+  const recoveredGit = new WorktreeGitService(
+    new WorktreeRegistry(),
+    join(taskRoot, 'repository'),
+    join(taskRoot, 'worktrees'),
+  );
+  const recovered = new WorkspaceAdapter({
+    projectId: 'project-a',
+    taskId: 'task-a',
+    taskRoot,
+    git: recoveredGit,
+    execution: new HostExecutionBackend(),
+    encodeIsolationKey: encodeGitIsolationKey,
+  });
+  await recovered.recoverWorktrees([
+    {
+      isolationKey: 'current-worker',
+      worktree: {
+        ...current,
+        baseCommit: await git.canonicalHead(),
+        headCommit: await git.headOf(current.path),
+      },
+    },
+  ]);
+  await recovered.teardown('task-a');
+  await expect(readFile(join(old.path, '.git'))).rejects.toThrow();
+  await expect(readFile(join(current.path, '.git'))).rejects.toThrow();
+  expect(await readFile(join(other.path, '.git'), 'utf8')).toContain('gitdir:');
+  expect(await readFile(join(external.path, '.git'), 'utf8')).toContain('gitdir:');
+  expect(await readFile(join(taskRoot, 'state.json'), 'utf8')).toBe('durable state');
+  expect(
+    await gitCommand(join(taskRoot, 'repository'), 'worktree', 'list', '--porcelain'),
+  ).not.toContain(old.path);
+});
+
+it('refuses mismatched task worktree names before retiring any files', async () => {
+  const { adapter, git, taskRoot } = await fixture();
+  const tree = await adapter.createWorktree('task-a', 'worker');
+  const moved = join(taskRoot, 'worktrees', 'task-a-wrong-branch');
+  await gitCommand(join(taskRoot, 'repository'), 'worktree', 'move', tree.path, moved);
+  const recovered = new WorktreeGitService(
+    new WorktreeRegistry(),
+    join(taskRoot, 'repository'),
+    join(taskRoot, 'worktrees'),
+  );
+  await expect(recovered.recoverTaskWorktreesForDisposal('task-a')).rejects.toThrow(
+    /owned namespace/,
+  );
+  expect(await readFile(join(moved, '.git'), 'utf8')).toContain('gitdir:');
+  expect(await git.canonicalHead()).toMatch(/^[0-9a-f]{40}$/);
+});
+
 async function fixture() {
   const dataRoot = await mkdtemp(join(tmpdir(), 'agora-workspace-adapter-'));
   roots.push(dataRoot);

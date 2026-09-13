@@ -306,11 +306,50 @@ function workerStateOf(value: Record<string, unknown>): WorkerState {
   return worker as unknown as WorkerState;
 }
 
+/** Reject malformed model feedback before it can poison coordinator handoffs. */
+function testResultsOf(value: unknown): TestResults | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('invalid test results');
+  }
+  const result = value as Partial<TestResults>;
+  if (
+    typeof result.passed !== 'boolean' ||
+    !Number.isInteger(result.total) ||
+    (result.total ?? -1) < 0 ||
+    !Number.isInteger(result.failed) ||
+    (result.failed ?? -1) < 0 ||
+    !Array.isArray(result.failures) ||
+    result.failures.some(
+      (failure) =>
+        typeof failure !== 'object' ||
+        failure === null ||
+        typeof failure.test !== 'string' ||
+        typeof failure.message !== 'string' ||
+        typeof failure.file !== 'string' ||
+        !Number.isInteger(failure.line) ||
+        failure.line < 0,
+    ) ||
+    (result.coverage !== undefined && !Number.isFinite(result.coverage))
+  ) {
+    throw new Error(
+      'invalid test results: expected counts and failures with test, message, file and line',
+    );
+  }
+  return value as TestResults;
+}
+
 function applySet(state: AppState, field: SetField, value: unknown): AppState {
   if (isNotEnabled(field, ENABLED_SET_FIELDS)) throw disabledFieldError(field);
   switch (field) {
-    case 'testResults':
-      return { ...state, testResults: value as TestResults };
+    case 'testResults': {
+      const testResults = testResultsOf(value);
+      if (testResults === undefined) {
+        const { testResults: _removed, ...withoutTestResults } = state;
+        return withoutTestResults;
+      }
+      return { ...state, testResults };
+    }
     case 'phase':
       return { ...state, phase: value as Phase };
     case 'nextRole':

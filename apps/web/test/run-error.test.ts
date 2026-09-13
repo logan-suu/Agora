@@ -29,4 +29,27 @@ describe('public run error projection', () => {
     error.cause = error;
     expect(safeRunError(error)).toBe('[RUN_FAILED] Task execution failed.');
   });
+  it('identifies a timeout inside parallel and cleanup failures without exposing provider text', () => {
+    const error = new AggregateError([
+      new ParallelBatchError(createInitialAppState('timeout', 'test'), [
+        {
+          workerId: 'coder',
+          status: 'failed',
+          message: 'PRIVATE_WORKER_DETAILS',
+          cause: new ExecutorRequestError(new LlmError('SECRET_URL_AND_KEY', 'TIMEOUT')),
+        },
+      ]),
+    ]);
+    expect(safeRunError(error)).toBe(
+      '[MODEL_REQUEST_TIMEOUT] The model service timed out after bounded retries. Check service availability before trying again.',
+    );
+  });
+  it('never reflects an unknown provider code into the public summary', () => {
+    expect(safeRunError(new ExecutorRequestError(new LlmError('SECRET', 'PRIVATE_CODE')))).toBe(
+      '[MODEL_REQUEST_FAILED] Model request failed. Check model availability and credentials.',
+    );
+  });
 });
+
+import { createInitialAppState } from '@agora/core-domain';
+import { ParallelBatchError } from '@agora/core-orchestration';

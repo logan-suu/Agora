@@ -40,7 +40,7 @@ const PHASE0_HANDOFF: Readonly<Partial<Record<string, string>>> = {
   CODER:
     '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write for implementation files (e.g. lru-cache.ts), fs_read to inspect, and sandbox_run to verify quickly.',
   TESTER:
-    '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>` or `node <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}',
+    '\n\n[Phase 0 working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>` or `node <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}\n- On failure, set passed=false and report every failure as {"test":"test name","message":"observed failure","file":"cache.test.mjs","line":4}, using the actual worktree-relative file and line; use file="" and line=0 only when the tool reports no source location. Do not use strings, omit location fields, or claim success after a failed test.',
 };
 
 /**

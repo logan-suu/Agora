@@ -876,6 +876,9 @@ describe('Phase 9 automatic parallel flow (real G5)', () => {
       artifactPath: artifact,
     });
     expect(await readFile(join(artifact, 'c.mjs'), 'utf8')).toContain('a + b');
+    expect(
+      await readdir(join(root, 'projects', scope.projectId, 'tasks', scope.taskId, 'worktrees')),
+    ).toEqual([]);
     const fresh = new DockerSandbox({ docker, baseDir: root });
     cleanups.push(() => fresh.teardown('archive-rerun'));
     const target = await fresh.createWorktree('archive-rerun', 'verify');

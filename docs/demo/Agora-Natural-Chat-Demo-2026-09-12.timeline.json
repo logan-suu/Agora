@@ -1,0 +1,213 @@
+{
+  "taskId": "quote-en-take-9",
+  "date": "2026-09-12",
+  "completedAtUtc": "2026-09-13T00:34:32Z",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "fps": 12,
+  "durationSeconds": 202.0,
+  "audio": "none; English on-screen guide",
+  "editing": "Cuts omit waiting; all footage at 1x. Three segments continue the same task through a Leader-requested repair and completion approval. Real rework is disclosed. The first price-related repair is summarized on a card; later repair and approval use the existing gate command. Cards are editorial explanations, not product UI.",
+  "sourceVideos": [
+    {
+      "segment": "01",
+      "sha256": "f92daa8ce5abd715cb1f23acf0d5e975fb2bd8ab14c3c7f78b6844899d0db006"
+    },
+    {
+      "segment": "02",
+      "sha256": "ffb2312409a4d6230c06077a6107e8840d8daba9e66da52176276d1efabbcfdd"
+    },
+    {
+      "segment": "03",
+      "sha256": "9870b6792108f7343515791b12487683c9508306fa2f3da1548a9c588867a44a"
+    }
+  ],
+  "outputSha256": "dfd8f4fa545f858f60d092b2e18aaa6c5388419c0a707302ace512345aa03e72",
+  "segments": [
+    {
+      "kind": "card",
+      "seconds": 6,
+      "title": "One chat.\nA working team.",
+      "body": "Agora\nA local multi-agent coding workspace",
+      "detail": "Real product recording | English edition\nOne task, real models and tools, human approval",
+      "outputStart": 0.0,
+      "outputEnd": 6.0,
+      "frames": 72
+    },
+    {
+      "kind": "clip",
+      "source": "01",
+      "start": 3,
+      "seconds": 12,
+      "title": "Start with\na goal.",
+      "body": "Ask for a small event quote calculator in plain English.",
+      "detail": "Ticket and venue modules, a combined quote, and tests. Six roles share one conversation.",
+      "speed": 1,
+      "outputStart": 6.0,
+      "outputEnd": 18.0,
+      "frames": 144
+    },
+    {
+      "kind": "clip",
+      "source": "01",
+      "start": 145,
+      "seconds": 23,
+      "title": "Change it\nin plain English.",
+      "body": "While two Coders work, ask for tickets to cost 900 cents per person.",
+      "detail": "The recorded Coder runs overlap by 6.3 seconds. Each uses its own context and worktree.",
+      "speed": 1,
+      "outputStart": 18.0,
+      "outputEnd": 41.0,
+      "frames": 276
+    },
+    {
+      "kind": "clip",
+      "source": "01",
+      "start": 167,
+      "seconds": 10,
+      "title": "Review the\nproposed change.",
+      "body": "The team proposes readable before-and-after requirements.",
+      "detail": "The message input contains ordinary language. The proposed change needs your confirmation.",
+      "speed": 1,
+      "outputStart": 41.0,
+      "outputEnd": 51.0,
+      "frames": 120
+    },
+    {
+      "kind": "clip",
+      "source": "01",
+      "start": 242,
+      "seconds": 21,
+      "title": "Confirm\nwhat changes.",
+      "body": "Read both affected requirements, then select Confirm changes.",
+      "detail": "Tickets: 1,000 to 900 cents.\nVenue: still 5,000 cents per hour.\nOther rules stay in place.",
+      "speed": 1,
+      "outputStart": 51.0,
+      "outputEnd": 72.0,
+      "frames": 252
+    },
+    {
+      "kind": "clip",
+      "source": "01",
+      "start": 308,
+      "seconds": 9,
+      "title": "Continue\nfrom the update.",
+      "body": "The confirmed change is applied to the same running task.",
+      "detail": "The system waits for a safe step boundary. Part of that waiting interval is cut.",
+      "speed": 1,
+      "outputStart": 72.0,
+      "outputEnd": 81.0,
+      "frames": 108
+    },
+    {
+      "kind": "card",
+      "seconds": 10,
+      "title": "Real work includes rework.",
+      "body": "Cumulative checks caught the old ticket price. Reviewer sent the ticket module and its dependants back, keeping the venue work.",
+      "detail": "The next candidate passed 15 project tests. Independent checks then found an error-type bug for Symbol and null-prototype objects. The Leader requested another repair.",
+      "outputStart": 81.0,
+      "outputEnd": 91.0,
+      "frames": 120
+    },
+    {
+      "kind": "clip",
+      "source": "02",
+      "start": 18,
+      "seconds": 17,
+      "title": "Ask for\na focused repair.",
+      "body": "The Leader returns the same task with specific English feedback.",
+      "detail": "Use static RangeError messages. Preserve inherited tests and add the missing edge cases.\nThe existing gate command is shown.",
+      "speed": 1,
+      "outputStart": 91.0,
+      "outputEnd": 108.0,
+      "frames": 204
+    },
+    {
+      "kind": "clip",
+      "source": "02",
+      "start": 75,
+      "seconds": 12,
+      "title": "Fix the cause.\nKeep the scope.",
+      "body": "The ticket Coder explains the unsafe input conversion and its repair.",
+      "detail": "Both pricing modules are repaired in their own worktrees. The quote module propagates their errors.",
+      "speed": 1,
+      "outputStart": 108.0,
+      "outputEnd": 120.0,
+      "frames": 144
+    },
+    {
+      "kind": "clip",
+      "source": "02",
+      "start": 211,
+      "seconds": 13,
+      "title": "Verify the\ncumulative result.",
+      "body": "The integrated suite now passes 18 tests, including the new regression cases.",
+      "detail": "All three inherited test files remain at their original paths, with existing assertions preserved.",
+      "speed": 1,
+      "outputStart": 120.0,
+      "outputEnd": 133.0,
+      "frames": 156
+    },
+    {
+      "kind": "clip",
+      "source": "02",
+      "start": 428,
+      "seconds": 14,
+      "title": "Review the\nrepaired artifact.",
+      "body": "Reviewer approves the validated candidate. Completion still waits for the Leader.",
+      "detail": "Commit 15b4aa96\n18 project tests plus 8 independent checks pass. No skipped checks.",
+      "speed": 1,
+      "outputStart": 133.0,
+      "outputEnd": 147.0,
+      "frames": 168
+    },
+    {
+      "kind": "card",
+      "seconds": 6,
+      "title": "The Leader\nhas the final say.",
+      "body": "Recording paused for human completion approval.",
+      "detail": "The next clip continues the same task.\nHuman waiting time is omitted.",
+      "outputStart": 147.0,
+      "outputEnd": 153.0,
+      "frames": 72
+    },
+    {
+      "kind": "clip",
+      "source": "03",
+      "start": 20,
+      "seconds": 25,
+      "title": "Approve\nand archive.",
+      "body": "The Leader approves completion through the product interface.",
+      "detail": "The task finishes and archives the reviewed artifact. Its task worktrees and containers are released.",
+      "speed": 1,
+      "outputStart": 153.0,
+      "outputEnd": 178.0,
+      "frames": 300
+    },
+    {
+      "kind": "clip",
+      "source": "03",
+      "start": 61,
+      "seconds": 15,
+      "title": "Refresh.\nThe result stays.",
+      "body": "Completed state and the archived artifact remain available after refresh.",
+      "detail": "No live worker is needed to inspect the result.",
+      "speed": 1,
+      "outputStart": 178.0,
+      "outputEnd": 193.0,
+      "frames": 180
+    },
+    {
+      "kind": "card",
+      "seconds": 9,
+      "title": "Built. Repaired.\nVerified. Approved.",
+      "body": "6 archived files match the approved commit.\n18 project tests + 8 independent checks pass after archive.",
+      "detail": "quote(2, 3): tickets 1,800 + venue 15,000 = 16,800 cents\nquote-en-take-9 | OpenCode Go / DeepSeek V4 Flash\nEdited real footage at 1x. Waiting periods cut. No audio.",
+      "outputStart": 193.0,
+      "outputEnd": 202.0,
+      "frames": 108
+    }
+  ]
+}

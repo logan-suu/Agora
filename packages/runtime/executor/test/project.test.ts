@@ -350,6 +350,10 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     });
     expect(slicesOf(state, 'ARCHITECT').requirements).toEqual([]);
     expect(slicesOf(state, 'TESTER').acceptance).toEqual({ requirements: [] });
+    for (const role of ['CODER', 'REVIEWER', 'CUSTOM']) {
+      expect(slicesOf(state, role).currentRequirements).toEqual([]);
+      expect(() => slicesOf({ ...state, decisionLedger: [] }, role)).toThrow();
+    }
   });
 
   it('injects a validated objection resolution into every role as a system slice', () => {

@@ -22,6 +22,7 @@ import {
 } from '@agora/core-orchestration';
 import {
   DEFAULT_ROSTER,
+  SIX_ROLE_FORMAT_REPAIR,
   SIX_ROLE_HANDOFF,
   SIX_ROLE_TOOL_SURFACE,
   SIX_ROLE_TURN_MUTATION_READERS,
@@ -317,6 +318,7 @@ export function createWebTaskCompositionFactory(
           ? {}
           : {
               readTurnMutations: ({ text }) => turnMutations(text),
+              outputFormatHint: SIX_ROLE_FORMAT_REPAIR[spec.role],
               validateTurnOutput: ({ text }) => {
                 turnMutations(text);
               },

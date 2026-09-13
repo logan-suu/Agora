@@ -74,7 +74,7 @@ class ConnectionCredentials extends CredentialProvider {
   }
 }
 
-const transport = new AsyncLocalStorage<{ url: string; noAuth: boolean }>();
+const transport = new AsyncLocalStorage<{ url: string; noAuth: boolean; goSessionId?: string }>();
 let installed = false;
 /** pi-ai uses the SDK's global fetch; only requests inside this async scope receive this policy. */
 function installTransportPolicy() {
@@ -90,13 +90,27 @@ function installTransportPolicy() {
     const headers = new Headers(request.headers);
     if (policy.noAuth) headers.delete('authorization');
     headers.delete('cookie');
-    return original(new Request(request, { headers, redirect: 'error' }));
+    if (policy.goSessionId !== undefined) headers.set('x-opencode-session', policy.goSessionId);
+    // Temporary Request clones can lose their abort followers after GC in Node.
+    // Keep the SDK's original signal connected directly to the actual fetch.
+    const signal =
+      init?.signal !== undefined
+        ? init.signal
+        : input instanceof Request
+          ? input.signal
+          : undefined;
+    return original(
+      new Request(request, { headers, redirect: 'error' }),
+      signal === undefined ? undefined : { signal },
+    );
   };
 }
 
 export function installCompatibleModel(ctx: Context, options: CompatibleModelOptions) {
   assertCompatibleModelURL(options.baseURL);
   installTransportPolicy();
+  const isGo = new URL(options.baseURL).hostname === 'opencode.ai';
+  const goDeepSeek = isGo && ['deepseek-v4-flash', 'deepseek-v4-pro'].includes(options.model);
   const provider = `agora-model-${options.id}`;
   const credentials = ctx.plugin(ConnectionCredentials, options);
   const plugin = ctx.plugin(PiAi, {
@@ -105,26 +119,51 @@ export function installCompatibleModel(ctx: Context, options: CompatibleModelOpt
         api: 'openai-completions',
         baseURL: options.baseURL,
         apiKeyEnv: 'AGORA_CONNECTION_KEY',
-        timeoutMs: 120000,
-        streamIdleTimeoutMs: 30000,
+        timeoutMs: isGo ? 300000 : 120000,
+        streamIdleTimeoutMs: isGo ? 300000 : 30000,
         models: [
-          { id: options.model, contextWindow: options.contextWindow, maxTokens: options.maxTokens },
+          {
+            id: options.model,
+            contextWindow: options.contextWindow,
+            maxTokens: options.maxTokens,
+            ...(goDeepSeek
+              ? {
+                  // Preserve the provider default while enabling native reasoning replay.
+                  reasoningEfforts: {
+                    low: 'low',
+                    medium: 'high',
+                    high: 'high',
+                    xhigh: 'high',
+                    max: 'max',
+                  },
+                  compat: {
+                    thinkingFormat: 'deepseek' as const,
+                    requiresReasoningContentOnAssistantMessages: true,
+                  },
+                }
+              : {}),
+          },
         ],
         retryPolicy: { mode: 'normal', maxRetries: 2 },
       },
     },
   });
-  ctx.on('llm/stream', (_request, next) => guarded(next, options));
+  ctx.on('llm/stream', (request, next) => guarded(next, options, request.sessionId));
   return { provider, fibers: [credentials, plugin] };
 }
 
 async function* guarded(
   next: () => AsyncIterable<StreamChunk>,
   options: CompatibleModelOptions,
+  sessionId?: string,
 ): AsyncIterable<StreamChunk> {
+  const isGo = new URL(options.baseURL).hostname === 'opencode.ai';
+  if (isGo && !sessionId)
+    throw new LlmError('Go requests require a Harness session identity', 'INVALID_REQUEST');
   const policy = {
     url: `${options.baseURL}/chat/completions`,
     noAuth: (await options.resolveApiKey()) === undefined,
+    ...(isGo ? { goSessionId: sessionId as string } : {}),
   };
   const iterator = transport.run(policy, () => next()[Symbol.asyncIterator]());
   try {

@@ -542,6 +542,40 @@ export class WorktreeGitService implements GitService {
       : this.protection.withWorktree(targetWorktree, operation);
   }
 
+  /** Reclaim ownership of prior-process trees only within this task's configured namespace. */
+  async recoverTaskWorktreesForDisposal(taskId: string): Promise<void> {
+    const safeTaskId = validateTaskId(taskId);
+    if (!existsSync(this.worktreesDir)) return;
+    const lexicalRoot = resolve(this.worktreesDir);
+    const canonicalRoot = realpathSync(lexicalRoot);
+    const main = await this.getMainRepo();
+    const entries = parseGitWorktreeList(await main.raw(['worktree', 'list', '--porcelain', '-z']));
+    for (const entry of entries) {
+      const path = resolve(entry.path);
+      if (
+        (dirname(path) !== lexicalRoot && dirname(path) !== canonicalRoot) ||
+        !basename(path).startsWith(`${safeTaskId}-`)
+      )
+        continue;
+      const branch = entry.branchRef?.startsWith('refs/heads/')
+        ? entry.branchRef.slice(11)
+        : undefined;
+      if (
+        branch === undefined ||
+        basename(path) !== `${safeTaskId}-${branch}` ||
+        dirname(realpathSync(path)) !== canonicalRoot
+      ) {
+        throw new Error('task cleanup worktree does not match its owned namespace');
+      }
+      const alreadyOwned = [...this.createdWorktrees].some(
+        ([ownedPath, ownedBranch]) =>
+          ownedBranch === branch && realpathSync(ownedPath) === realpathSync(path),
+      );
+      if (alreadyOwned) continue;
+      await this.registerExistingWorktree(path, branch);
+    }
+  }
+
   /**
    * Release service-owned git trees at end of life: the temp base (main repo +
    * linked worktrees) when the main repo is service-owned, or each created

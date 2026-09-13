@@ -26,7 +26,9 @@
     "dockerode": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "react-markdown": "catalog:",
+    "remark-gfm": "catalog:"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-llm": "0.1.1-rc.2",

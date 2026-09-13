@@ -1,4 +1,16 @@
-import type { ChannelSummary, Mutation, SubChannel } from '@agora/core-domain';
+import type {
+  ChannelSummary,
+  Mutation,
+  RequirementInterpretation,
+  RequirementInterpretationInput,
+  SubChannel,
+} from '@agora/core-domain';
+
+export interface RequirementInterpreter {
+  interpret(
+    input: RequirementInterpretationInput & { projectId: string; taskId: string },
+  ): Promise<RequirementInterpretation>;
+}
 
 export interface ProjectionView {
   role: string;

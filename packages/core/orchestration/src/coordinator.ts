@@ -15,6 +15,7 @@ import {
   currentReviewDispatch,
   deriveCompletionResolution,
   deriveObjectionResolutions,
+  isFileRef,
   mergeByIdMutation,
   setMutation,
 } from '@agora/core-domain';
@@ -400,7 +401,9 @@ function handoffForRoleSwitch(
   );
   const fileRefs = [
     ...new Set(
-      state.testResults?.failures.map((failure) => `${failure.file}:${String(failure.line)}`) ?? [],
+      state.testResults?.failures
+        .map((failure) => `${failure.file}:${String(failure.line)}`)
+        .filter(isFileRef) ?? [],
     ),
   ];
   return {
@@ -515,16 +518,16 @@ function dispatchFromClarifying(
   // Spec §3 Tier 0: 直接 CODER→TESTER 小环，跳过 PM/ARCH — even when rostered;
   // REVIEWER stays roster-gated downstream (task 4.2 ruling ①).
   if (tierOf(state) === 0) {
-    return dispatchCoder(state, clock, `Tier 0 小环：跳过 PM/ARCH，直接派发 CODER：${state.goal}`);
+    return dispatchCoder(state, clock, 'Assigning CODER to implement the task (Tier 0).');
   }
   const requirementsReady = evaluateRouteWhen(state, 'requirementsReady');
   if (!requirementsReady && hasRole(roster, 'PM')) {
     return dispatchPM(state, clock);
   }
   if (requirementsReady && hasRole(roster, 'ARCHITECT')) {
-    return dispatchArchitect(state, clock);
+    return dispatchArchitect(clock);
   }
-  return dispatchCoder(state, clock, `Coordinator 派发任务给 CODER：${state.goal}`);
+  return dispatchCoder(state, clock, 'Assigning CODER to implement the task.');
 }
 
 function announce(clock: Clock, payload: Record<string, unknown>, display: string): Message {
@@ -549,13 +552,13 @@ function dispatchPM(state: AppState, clock: Clock): DraftCoordinatorDecision {
       setMutation('nextRole', 'PM'),
       appendMutation(
         'messages',
-        announce(clock, { nextRole: 'PM' }, `Coordinator 派发 PM 提炼需求：${state.goal}`),
+        announce(clock, { nextRole: 'PM' }, 'Assigning PM to define requirements.'),
       ),
     ],
   };
 }
 
-function dispatchArchitect(state: AppState, clock: Clock): DraftCoordinatorDecision {
+function dispatchArchitect(clock: Clock): DraftCoordinatorDecision {
   return {
     route: { kind: 'worker', batch: [{ role: 'ARCHITECT' }], parallel: false },
     mutations: [
@@ -566,7 +569,7 @@ function dispatchArchitect(state: AppState, clock: Clock): DraftCoordinatorDecis
         announce(
           clock,
           { nextRole: 'ARCHITECT' },
-          `需求已定，派发 ARCHITECT 出设计：${state.goal}`,
+          'Requirements ready. Assigning ARCHITECT to design the solution.',
         ),
       ),
     ],
@@ -620,11 +623,16 @@ function modulesOf(state: AppState): string[] {
 function dispatchTier2Coder(state: AppState, clock: Clock): DraftCoordinatorDecision {
   const modules = modulesOf(state);
   if (modules.length < 2) {
-    return dispatchCoder(state, clock, `Tier 2 无多模块拆分依据，退化为单 subtask：${state.goal}`, {
-      tier: 2,
-      degraded: true,
-      reason: 'architecture.modules missing or single',
-    });
+    return dispatchCoder(
+      state,
+      clock,
+      'No module breakdown available. Assigning CODER to a single subtask (Tier 2).',
+      {
+        tier: 2,
+        degraded: true,
+        reason: 'architecture.modules missing or single',
+      },
+    );
   }
   const subtasks: Subtask[] = modules.map((title, index) => ({
     id: subtaskIdAt(state, index),
@@ -652,7 +660,7 @@ function dispatchTier2Coder(state: AppState, clock: Clock): DraftCoordinatorDeci
             subtaskCount: subtasks.length,
             degraded: false,
           },
-          `设计完成（Tier 2，拆分 ${subtasks.length} 个 subtask），按依赖序派发首个 CODER：${first.title}`,
+          `Design ready (${subtasks.length} subtasks). Assigning CODER to subtask ${first.id}.`,
         ),
       ),
       setMutation('nextRole', 'CODER'),
@@ -666,7 +674,7 @@ function dispatchAfterPlanning(state: AppState, clock: Clock): DraftCoordinatorD
     throw new Error('phase "planning" requires architecture written by ARCHITECT via mutations');
   }
   if (tierOf(state) === 2) return dispatchTier2Coder(state, clock);
-  return dispatchCoder(state, clock, `设计完成，派发 CODER 实现：${state.goal}`);
+  return dispatchCoder(state, clock, 'Design ready. Assigning CODER to implement the solution.');
 }
 
 function activeCoderSubtaskId(state: AppState): string {
@@ -701,7 +709,7 @@ function escalationMessage(state: AppState, clock: Clock): Message {
       iterationCount: state.iterationCount,
       limit: MAX_ITERATIONS,
     },
-    display: `已达迭代上限（${state.iterationCount}/${MAX_ITERATIONS} 轮），升级 humanGate 由 Leader 裁决`,
+    display: `Iteration limit reached (${state.iterationCount}/${MAX_ITERATIONS} rounds). Awaiting a Leader decision.`,
     ts: clock.now(),
   };
 }
@@ -786,7 +794,7 @@ function evaluateTestResults(
             announce(
               clock,
               { nextRole: 'CODER', subtaskId: next.id, tier: tierOf(state) },
-              `subtask 完成（${activeId}），按依赖序激活下一个：${next.title}`,
+              `Subtask ${activeId} completed. Assigning CODER to subtask ${next.id}.`,
             ),
           ),
         ],
@@ -804,7 +812,7 @@ function evaluateTestResults(
             announce(
               clock,
               { nextRole: 'REVIEWER', reviewCommentCursor: state.reviewComments.length },
-              `测试全过（${state.testResults.total}/${state.testResults.total}），派发 REVIEWER 评审`,
+              `All tests passed (${state.testResults.total}/${state.testResults.total}). Assigning REVIEWER.`,
             ),
           ),
         ],
@@ -834,7 +842,7 @@ function evaluateTestResults(
               failed: state.testResults.failed,
               total: state.testResults.total,
             },
-            `测试连续失败 ${failureStreak} 轮，派发 REVIEWER 审查根因`,
+            `Tests failed for ${failureStreak} consecutive rounds. Assigning REVIEWER to investigate the root cause.`,
           ),
         ),
       ],
@@ -855,7 +863,7 @@ function evaluateTestResults(
       total: state.testResults.total,
       ...(reviewerUnavailable ? { degraded: true, degradedReason: 'reviewer_not_rostered' } : {}),
     },
-    display: `测试未通过（${state.testResults.failed}/${state.testResults.total}），退回 CODER 第 ${state.iterationCount + 1} 轮`,
+    display: `Tests failed (${state.testResults.failed}/${state.testResults.total}). Returning to CODER for round ${state.iterationCount + 1}.`,
     ts: clock.now(),
   };
   return {
@@ -1072,7 +1080,7 @@ function evaluateReview(
                 tier: complexity.tier,
                 reviewCommentId: complexity.signals.escalation.reviewCommentId,
               },
-              `REVIEWER 指出架构问题，复杂度 Tier ${tierOf(state)}→${complexity.tier}，拉 ARCHITECT 重设计`,
+              `REVIEWER identified an architecture issue. Complexity Tier ${tierOf(state)} → ${complexity.tier}. Assigning ARCHITECT to redesign.`,
             ),
           ),
         ],
@@ -1094,7 +1102,7 @@ function evaluateReview(
           ? { degraded: true, degradedReason: 'architect_not_rostered' }
           : {}),
       },
-      display: `评审退回（${reviewEntries.length} 条意见），退回 CODER 第 ${state.iterationCount + 1} 轮`,
+      display: `Review requested changes (${reviewEntries.length} comments). Returning to CODER for round ${state.iterationCount + 1}.`,
       ts: clock.now(),
     };
     const reopen = reopenForRework(state);

@@ -4,7 +4,13 @@ import type { AppState, Message } from './state';
 
 const SAFE_TOKEN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
+export interface RequirementChange {
+  requirementId: string;
+  requirement: { story: string; acceptance: string[]; nonGoals: string[] };
+}
+
 export type Phase9LeaderIntent =
+  | { kind: 'requirements_change'; changes: RequirementChange[] }
   | {
       kind: 'requirement_change';
       requirementId: string;
@@ -51,6 +57,17 @@ export function planPhase9LeaderAction(
   }
   const intent = normalizePhase9LeaderIntent(input.intent);
   switch (intent.kind) {
+    case 'requirements_change':
+      return {
+        intent,
+        mutations: intent.changes.flatMap(
+          (change) =>
+            planPhase9LeaderAction(state, {
+              ...input,
+              intent: { kind: 'requirement_change', ...change },
+            }).mutations,
+        ),
+      };
     case 'requirement_change': {
       const current = state.requirements.find((entry) => entry.id === intent.requirementId);
       if (current?.withdrawnByDecisionId !== undefined) {
@@ -141,6 +158,20 @@ export function normalizePhase9LeaderIntent(intent: Phase9LeaderIntent): Phase9L
     throw new Error('Phase 9 Leader intent must be an object');
   }
   switch (intent.kind) {
+    case 'requirements_change': {
+      assertExactKeys(intent, ['kind', 'changes']);
+      if (!Array.isArray(intent.changes) || intent.changes.length < 1 || intent.changes.length > 20)
+        throw new Error('requirements_change requires 1 through 20 changes');
+      const changes = intent.changes.map((change) => {
+        assertExactKeys(change, ['requirementId', 'requirement']);
+        const normalized = normalizePhase9LeaderIntent({ kind: 'requirement_change', ...change });
+        if (normalized.kind !== 'requirement_change') throw new Error('invalid requirement change');
+        return { requirementId: normalized.requirementId, requirement: normalized.requirement };
+      });
+      if (new Set(changes.map((change) => change.requirementId)).size !== changes.length)
+        throw new Error('duplicate requirement changes');
+      return { kind: intent.kind, changes };
+    }
     case 'requirement_change': {
       assertExactKeys(intent, ['kind', 'requirementId', 'requirement']);
       assertSafeToken(intent.requirementId, 'requirementId');
@@ -193,7 +224,12 @@ function phase9IntentOf(message: Message): Phase9LeaderIntent | undefined {
     return undefined;
   }
   const kind = (candidate as Record<string, unknown>).kind;
-  if (kind !== 'requirement_change' && kind !== 'decision_change' && kind !== 'priority_change') {
+  if (
+    kind !== 'requirements_change' &&
+    kind !== 'requirement_change' &&
+    kind !== 'decision_change' &&
+    kind !== 'priority_change'
+  ) {
     return undefined;
   }
   return normalizePhase9LeaderIntent(candidate as Phase9LeaderIntent);
@@ -221,6 +257,10 @@ function hasCanonicalPhase9Envelope(message: Message): boolean {
 
 function assertEffect(state: AppState, message: Message, intent: Phase9LeaderIntent): void {
   switch (intent.kind) {
+    case 'requirements_change':
+      for (const change of intent.changes)
+        assertEffect(state, message, { kind: 'requirement_change', ...change });
+      return;
     case 'requirement_change': {
       const requirement = state.requirements.find((entry) => entry.id === intent.requirementId);
       if (
@@ -267,16 +307,18 @@ function directiveOf(
   intent: Phase9LeaderIntent,
 ): LeaderDirective {
   const data =
-    intent.kind === 'requirement_change'
-      ? { requirementId: intent.requirementId, requirement: structuredClone(intent.requirement) }
-      : intent.kind === 'decision_change'
-        ? {
-            topic: intent.topic,
-            decision: intent.decision,
-            rationale: intent.rationale,
-            ...(intent.supersedes === undefined ? {} : { supersedes: intent.supersedes }),
-          }
-        : { subtaskId: intent.subtaskId, priority: intent.priority };
+    intent.kind === 'requirements_change'
+      ? { changes: structuredClone(intent.changes) }
+      : intent.kind === 'requirement_change'
+        ? { requirementId: intent.requirementId, requirement: structuredClone(intent.requirement) }
+        : intent.kind === 'decision_change'
+          ? {
+              topic: intent.topic,
+              decision: intent.decision,
+              rationale: intent.rationale,
+              ...(intent.supersedes === undefined ? {} : { supersedes: intent.supersedes }),
+            }
+          : { subtaskId: intent.subtaskId, priority: intent.priority };
   return {
     actionId: message.msgId,
     kind: intent.kind,
