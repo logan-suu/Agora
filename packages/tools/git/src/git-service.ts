@@ -3,6 +3,7 @@ import {
   accessSync,
   existsSync,
   constants as fsConstants,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   realpathSync,
@@ -426,9 +427,12 @@ export class WorktreeGitService implements GitService {
           'persisted worktree does not belong to the configured canonical repository',
         );
       }
-      const matches = parseGitWorktreeList(worktreeList).filter(
-        (entry) => realpathSync(resolve(entry.path)) === candidatePath,
-      );
+      const matches = parseGitWorktreeList(worktreeList).filter((entry) => {
+        const path = resolve(entry.path);
+        if (entry.prunable && lstatSync(path, { throwIfNoEntry: false }) === undefined)
+          return false;
+        return realpathSync(path) === candidatePath;
+      });
       if (
         matches.length !== 1 ||
         matches[0]?.headCommit !== headCommit ||
@@ -457,8 +461,15 @@ export class WorktreeGitService implements GitService {
       throw new Error(`worktree is not owned by this Git service: ${worktree}`);
     }
     const main = await this.getMainRepo();
+    const canonicalPath = join(realpathSync(dirname(lexical)), basename(lexical));
     if (existsSync(lexical)) this.moveToStaging(lexical);
-    await main.raw(['worktree', 'prune']);
+    const entries = parseGitWorktreeList(await main.raw(['worktree', 'list', '--porcelain', '-z']));
+    const entry = entries.find((entry) => resolve(entry.path) === canonicalPath);
+    if (entry !== undefined) {
+      if (entry.branchRef !== `refs/heads/${safeBranch}`)
+        throw new Error('retired worktree branch no longer matches its owned identity');
+      await main.raw(['worktree', 'remove', '--force', '--', entry.path]);
+    }
     if (await hasLocalBranch(main, safeBranch)) await main.raw(['branch', '-D', safeBranch]);
     this.registry.unregister(lexical);
     this.createdWorktrees.delete(lexical);
@@ -560,13 +571,23 @@ export class WorktreeGitService implements GitService {
       const branch = entry.branchRef?.startsWith('refs/heads/')
         ? entry.branchRef.slice(11)
         : undefined;
-      if (
-        branch === undefined ||
-        basename(path) !== `${safeTaskId}-${branch}` ||
-        dirname(realpathSync(path)) !== canonicalRoot
-      ) {
+      if (branch === undefined || basename(path) !== `${safeTaskId}-${branch}`) {
         throw new Error('task cleanup worktree does not match its owned namespace');
       }
+      if (entry.prunable && lstatSync(path, { throwIfNoEntry: false }) === undefined) {
+        // A missing directory cannot be registered. Prove its task namespace and
+        // current branch tip before retaining only its disposal ownership.
+        validateBranchName(branch);
+        if (
+          entry.locked ||
+          (await main.revparse([`refs/heads/${branch}`])).trim() !== entry.headCommit
+        )
+          throw new Error('stale task cleanup worktree has changed or locked identity');
+        this.createdWorktrees.set(path, branch);
+        continue;
+      }
+      if (dirname(realpathSync(path)) !== canonicalRoot)
+        throw new Error('task cleanup worktree does not match its owned namespace');
       const alreadyOwned = [...this.createdWorktrees].some(
         ([ownedPath, ownedBranch]) =>
           ownedBranch === branch && realpathSync(ownedPath) === realpathSync(path),
@@ -702,6 +723,8 @@ interface GitWorktreeListEntry {
   path: string;
   headCommit: string;
   branchRef?: string;
+  prunable: boolean;
+  locked: boolean;
 }
 
 function parseGitWorktreeList(raw: string): GitWorktreeListEntry[] {
@@ -711,17 +734,27 @@ function parseGitWorktreeList(raw: string): GitWorktreeListEntry[] {
     let path: string | undefined;
     let headCommit: string | undefined;
     let branchRef: string | undefined;
+    let prunable = false;
+    let locked = false;
     for (const field of record.split('\0')) {
       if (field.startsWith('worktree ')) path = uniqueGitField(path, field.slice(9), 'worktree');
       else if (field.startsWith('HEAD '))
         headCommit = uniqueGitField(headCommit, field.slice(5), 'HEAD');
       else if (field.startsWith('branch '))
         branchRef = uniqueGitField(branchRef, field.slice(7), 'branch');
+      else if (field === 'prunable' || field.startsWith('prunable ')) prunable = true;
+      else if (field === 'locked' || field.startsWith('locked ')) locked = true;
     }
     if (path === undefined || headCommit === undefined) {
       throw new Error('canonical git worktree list contains an incomplete record');
     }
-    entries.push({ path, headCommit, ...(branchRef === undefined ? {} : { branchRef }) });
+    entries.push({
+      path,
+      headCommit,
+      prunable,
+      locked,
+      ...(branchRef === undefined ? {} : { branchRef }),
+    });
   }
   return entries;
 }

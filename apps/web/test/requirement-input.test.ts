@@ -90,6 +90,25 @@ async function fixture(
 }
 
 describe('natural-language requirement confirmation', () => {
+  it('rejects reserved Leader IDs before persistence and leaves later interpretation usable', async () => {
+    const { runtime, send } = await fixture();
+    expect((await send('requirement-proposal:input', 'Change tickets to 900 cents.')).status).toBe(
+      400,
+    );
+    expect((await runtime.store.load(scope))?.messages).toHaveLength(0);
+    await expect(
+      runtime.commitLeaderMessage(scope, {
+        msgId: 'requirement-proposal:direct',
+        channelId: 'main',
+        display: 'Hello',
+        ts: 1,
+      }),
+    ).rejects.toThrow('reserved');
+    expect((await send('input', 'Change tickets to 900 cents.')).status).toBe(202);
+    expect((await send('input', 'Change tickets to 900 cents.')).status).toBe(202);
+    expect((await runtime.store.load(scope))?.messages).toHaveLength(2);
+  });
+
   it('persists a readable proposal, reloads it, and atomically confirms both changes exactly once', async () => {
     const calls: RequirementInterpretationInput[] = [];
     const { root, runtime, send, act } = await fixture(async (input) => {

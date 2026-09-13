@@ -935,6 +935,27 @@ describe('applyMutations · Phase 4 unlocked field (task 4.1, spec §1/§3)', ()
 
 describe('test result admission before coordinator handoff', () => {
   it.each([
+    { failed: 1, failures: [] },
+    { failed: 0, failures: [{ test: 'price', message: 'wrong price', file: '', line: 0 }] },
+  ])('rejects success with failure evidence: %j', (failureEvidence) => {
+    const state = createInitialAppState('contradictory-results', 'Verify price');
+    expect(() =>
+      applyMutations(state, [
+        setMutation('testResults', {
+          passed: true,
+          total: 1,
+          ...failureEvidence,
+        }),
+      ]),
+    ).toThrow('invalid test results');
+    expect(state.testResults).toBeUndefined();
+    const failure = { passed: false, total: 1, ...failureEvidence };
+    expect(applyMutations(state, [setMutation('testResults', failure)]).testResults).toEqual(
+      failure,
+    );
+  });
+
+  it.each([
     { test: 'ttl', message: 'expired value returned' },
     { test: 'ttl', message: 'expired value returned', file: 'cache.test.mjs', line: '4' },
     { test: 'ttl', message: 'expired value returned', file: 'cache.test.mjs', line: Number.NaN },

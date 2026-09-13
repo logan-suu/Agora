@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   useTransition,
@@ -729,6 +730,19 @@ export function ChatWorkspace({
   const pendingProposalSubmission = React.useRef<{ key: string; msgId: string } | undefined>(
     undefined,
   );
+  const submissionScope = useMemo(
+    () => ({ projectId, taskId, channelId: selectedChannelId }),
+    [projectId, taskId, selectedChannelId],
+  );
+  const activeSubmissionScope = React.useRef(submissionScope);
+  useLayoutEffect(() => {
+    activeSubmissionScope.current = submissionScope;
+    pendingSubmission.current = undefined;
+    pendingProposalSubmission.current = undefined;
+    setSubmitting(false);
+    setSubmissionNotice(undefined);
+    setSubmissionError(undefined);
+  }, [submissionScope]);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const mentionQuery = getMentionQuery(draft);
@@ -945,11 +959,13 @@ export function ChatWorkspace({
           }),
         });
         const body = (await response.json()) as TaskRuntimeView & { error?: string };
+        if (activeSubmissionScope.current !== submissionScope) return;
         if (!response.ok) throw new Error(body.error ?? `Task start failed (${response.status})`);
         setTask(body);
         setChannelRefreshNonce((current) => current + 1);
       } catch (error) {
-        setTaskError(error instanceof Error ? error.message : 'Task start failed');
+        if (activeSubmissionScope.current === submissionScope)
+          setTaskError(error instanceof Error ? error.message : 'Task start failed');
       }
     });
   }
@@ -984,6 +1000,7 @@ export function ChatWorkspace({
         }),
       });
       const body = await response.json();
+      if (activeSubmissionScope.current !== submissionScope) return;
       if (!response.ok)
         throw new Error(body.error ?? `Message submission failed (${response.status})`);
       setSubmissionNotice(leaderActionNoticeFromResponse(body));
@@ -993,9 +1010,10 @@ export function ChatWorkspace({
       }
       setDraft((current) => (current.trim() === display ? '' : current));
     } catch (error) {
-      setSubmissionError(error instanceof Error ? error.message : 'Message submission failed');
+      if (activeSubmissionScope.current === submissionScope)
+        setSubmissionError(error instanceof Error ? error.message : 'Message submission failed');
     } finally {
-      setSubmitting(false);
+      if (activeSubmissionScope.current === submissionScope) setSubmitting(false);
     }
   }
 
@@ -1028,6 +1046,7 @@ export function ChatWorkspace({
         }),
       });
       const body = await response.json();
+      if (activeSubmissionScope.current !== submissionScope) return;
       if (!response.ok)
         throw new Error(body.error ?? `Proposal submission failed (${response.status})`);
       if (pendingProposalSubmission.current?.msgId === submission.msgId)
@@ -1040,10 +1059,13 @@ export function ChatWorkspace({
             : 'Proposal discarded. Requirements are unchanged.',
       });
     } catch (error) {
-      setSubmissionError(error instanceof Error ? error.message : 'Proposal submission failed');
+      if (activeSubmissionScope.current === submissionScope)
+        setSubmissionError(error instanceof Error ? error.message : 'Proposal submission failed');
     } finally {
-      setChannelRefreshNonce((current) => current + 1);
-      setSubmitting(false);
+      if (activeSubmissionScope.current === submissionScope) {
+        setChannelRefreshNonce((current) => current + 1);
+        setSubmitting(false);
+      }
     }
   }
 

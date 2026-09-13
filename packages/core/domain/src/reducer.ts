@@ -320,6 +320,7 @@ function testResultsOf(value: unknown): TestResults | undefined {
     !Number.isInteger(result.failed) ||
     (result.failed ?? -1) < 0 ||
     !Array.isArray(result.failures) ||
+    (result.passed && (result.failed !== 0 || result.failures.length !== 0)) ||
     result.failures.some(
       (failure) =>
         typeof failure !== 'object' ||

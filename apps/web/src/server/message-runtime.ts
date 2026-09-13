@@ -281,6 +281,11 @@ export class MessageRuntime {
     scope: TaskScope,
     input: LeaderMessageInput,
   ): Promise<MessageCommitResult & { action: LeaderActionStatus }> {
+    if (input.msgId.startsWith('requirement-proposal:'))
+      throw new RequirementInputError(
+        'This message ID prefix is reserved for server proposals.',
+        400,
+      );
     return this.#enqueueLeader(scope, () => this.#commitLeaderMessage(scope, input));
   }
 
