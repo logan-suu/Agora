@@ -1,10 +1,10 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.14
-**生效日期**：2026-09-12
+**版本**：v2.15
+**生效日期**：2026-09-13
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
-**任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
+**任务追踪**：`docs/task-status.json` 是全部任务当前状态、依赖与常驻决策摘要的唯一索引；`docs/task-history/<taskId>.md` 保存完整执行证据。初始化运行 `node scripts/task-status.mjs summary`，按需读取，禁止默认整文件/全历史输出。维护规范见 [docs/task-tracking.md](docs/task-tracking.md)。
 **决策记录**：蓝图为主要决策定稿处——重大架构决策集中于 §21「已定决策」，个别按章节落位（如 §16 实时通信 / §17 阶段路线），均带 `[YYYY-MM-DD 架构决策更新]` 标记。**真相源层级**：每条决策的完整定义以其来源文档章节为准；`docs/task-status.json` 的 `standing_decisions` 是唯一的摘要索引（ID / 一句话规则 / source 指针）；本文档只按 ID 引用。决策变更时必须经 `$agora-sync-docs` 一并更新，不得只改其一
 
 ---
@@ -23,7 +23,8 @@
 | **技术选型文档** | `docs/技术选型文档.md` | 版本锁定（§12）/ 备选方案排除（§4）/ MCP 工具清单（§6）/ 沙箱（§7）/ SSE（§9）/ 持久化（§10）/ 决策记录（§13） |
 | **开发计划安排** | `docs/开发计划安排.md` | Phase 0-10 任务分解 / 里程碑 M0-M10 / 风险 / 秋招 Demo 检查点（§17） |
 | **框架调研与借鉴决策** | `docs/框架调研与借鉴决策.md` | AutoGen/AgentScope 源码级结论 / 8 个借鉴模式 / 借鉴-拒绝矩阵 |
-| **任务状态** | `docs/task-status.json` | 11 phase / 61 活动任务（原 10.1 已取消） / 依赖图 / standing_decisions——每个任务开工前必读 |
+| **任务状态** | `docs/task-status.json` | 全部任务当前状态/依赖/出口及短决策索引；通过 summary/task/phase/decisions 按需读取 |
+| **任务历史** | `docs/task-history/<taskId>.md` | 完整执行/失败/修复/门禁/交付时点记录，按需追读，不维护第二份当前状态 |
 | **延期项台账** | `docs/deferred-items.json` | 全阶段延期项统一台账（DEF-NNN，格式对齐 iTestAgent）；常驻决策 DEF 的唯一数据源，阶段出口检查时逐条核对 |
 
 ### 0.2 任务类型 → 文档快速索引（Agent 必读）
@@ -32,7 +33,7 @@
 
 | 任务类型 | 应读取的文档 | 重点章节 |
 |---|---|---|
-| 初次启动/建立全局认知 | 本文件 + `task-status.json` + 蓝图 §21 | 全文阅读，建立决策与进度地图 |
+| 初次启动/建立全局认知 | 本文件 + 查询工具 summary + 按任务选择 decisions/source | 建立当前进度地图；不默认读全部任务、历史或蓝图 §21 全文 |
 | State/reducer/schema/合并函数 | 详细设计 §1 + 架构 §5 | D17 并行 mutation 身份分区；set 仅串行控制面 |
 | 角色 prompt/RoleSpec/权限矩阵 | 详细设计 §2 | 六角色规格 + 工具白名单矩阵 |
 | 编排主循环/coordinator 路由 | 详细设计 §3 + 蓝图 §9 | 4 通用节点 + 条件路由 + 反馈升级 |
@@ -60,7 +61,7 @@
 
 ### 0.3 Agent 文档读取规范
 
-1. **启动时**：自动加载本文件，并**必须**读取 `docs/task-status.json` 以确认当前任务状态与常驻决策。
+1. **启动时**：加载本文件，运行 `node scripts/task-status.mjs summary` 确认当前任务状态及决策 ID；选任务后运行 `task <id>`、`decisions <id...>` 并读取对应 source。脚本程序读取完整索引，Agent 只接收所需输出；不默认 `cat` 索引或批量加载历史。
 2. **执行任务时**：根据 §0.2 映射表精准读取相关章节。
 3. **引用原文**：回复中必须**逐字粘贴**相关约束/接口签名/决策规则原文。
 4. **禁止推断**：严禁"根据常规做法，我认为应该…"式推断。文档描述模糊时必须停止编码并向人类提出澄清问题。
@@ -99,7 +100,8 @@ LLM 永不在 token 流中被硬杀；底层循环复用 Harness，编排只有 
 技术选型文档        选型定稿与版本锁定
 开发计划安排        Phase 0-10 分解与里程碑
 框架调研与借鉴决策  外部框架结论快照（带日期）
-task-status.json    进度与常驻决策（standing_decisions）
+task-status.json    唯一当前进度与常驻决策摘要（standing_decisions）
+task-history/       完整任务历史证据，按需读取，不作当前状态来源
 deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数据源）
 ```
 
@@ -269,7 +271,8 @@ agora/
 ├── tests/evals/
 │   ├── phase{N}/                   # D11 渐进式工程 Eval 入口/fixture/grader（非默认 pnpm test）
 │   └── fixtures/                   # 小型自有任务；公开 Benchmark 仅记版本/ID，不复制数据集
-├── docs/                           # 7 份设计文档 + task-status.json（见 §0.1）
+├── scripts/task-status.mjs         # 只读研发任务查询（不属于产品运行时）
+├── docs/                           # 来源规格、紧凑索引、task-history 与证据（见 §0.1）
 ├── .agents/skills/                 # 14 个 Codex 项目级工作流 Skill（主入口）
 ├── .opencode/commands/             # OpenCode 兼容副本（迁移验证后再退役）
 ├── AGENTS.md
@@ -344,7 +347,7 @@ Explore  读 documents_required 章节 + 相关代码；逐字粘贴约束原文
 Plan     产出实现计划（改哪些文件/接口/schema/测试），等人确认
 Code     小步实现，一次一个可验证单元；TDD：写测试→红→写实现→绿
 Check    pnpm typecheck + pnpm lint + pnpm test
-Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5）；证据留档进 notes
+Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5）；完整证据入任务历史，notes 保留短摘要和引用
 交付     $agora-commit：门禁→功能分支提交→PR(base=dev-1.0.0)；PR 合并后 $agora-pr-merge 标 done→级联翻转→阶段收尾
 ```
 
@@ -369,7 +372,7 @@ G1 规格一致      实现与 8 份文档及 standing_decisions 不冲突
 G3 静态检查      pnpm typecheck + pnpm lint 通过（scripts 未建立前用 pnpm exec 等价命令）
 G4 测试通过      pnpm test 全绿，含既有回归
 G5 执行链路实测  沙箱/Harness/工具能力必须真实跑通验证，不以 mock 规避
-G6 证据留档      task-status.json notes 记录自检结论、关键发现、偏差与延期项引用（延期项本体入 docs/deferred-items.json）
+G6 证据留档      task-status.json notes 保留当前结论及证据引用，完整自检/失败/修复/偏差/交付追加 docs/task-history/<taskId>.md；已有报告只链接，延期项本体仍在 docs/deferred-items.json
 G7 安全合规      无敏感数据落盘明文；agent 产出的代码只在沙箱内执行
 ```
 
@@ -410,6 +413,8 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 ```
 
 **级联更新（幂等）**：启动或任务完成时，遍历所有 `pending` 任务，`dependencies` 全部 `done` 则翻转为 `ready`。
+
+**[2026-09-13 研发追踪维护]** notes 最多 800 个 Unicode 码点，保存当前结论、下一步/阻塞条件及历史/证据链接；完整执行历史追加 `docs/task-history/<taskId>.md`，不在索引累积日志。standing_decisions.rule 最多 500 码点，ID/source 保留，完整规则读 source。字段白名单不变，历史路径按 ID 派生；已完成任务保留。旧文档“任务 notes/门禁证据”指短摘要及其历史引用。`history` 默认末页并明确省略范围，恢复、验收、提交/收尾必须继续追读相关证据。`check` 校验索引和迁移原文哈希，不替代 G1–G7。查询全部只读，级联仍由工作流执行。详见 [维护规范](docs/task-tracking.md)。
 
 ### 8.1.4 跨阶段阻断规则
 
