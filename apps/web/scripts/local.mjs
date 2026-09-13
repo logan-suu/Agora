@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { connect, createServer as createControlServer } from 'node:net';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkDependencies, installGuide, platformError } from './local-diagnostics.mjs';
 import { controlPath, keychainStore, runTool } from './local-process.mjs';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
@@ -13,7 +14,6 @@ const action = process.argv[2] ?? 'start';
 const args = process.argv.slice(3);
 const explicit = process.env.AGORA_CREDENTIALS_KEY;
 delete process.env.AGORA_CREDENTIALS_KEY;
-const platformError = 'The Agora product launcher currently supports macOS only.';
 let control;
 let app;
 let http;
@@ -26,25 +26,15 @@ let stopping;
 let acceptingHttp = false;
 
 async function diagnose(buildRequired) {
-  if (process.platform !== 'darwin') throw new Error(platformError);
-  if (Number(process.versions.node.split('.')[0]) !== 24)
-    throw new Error('Install Node.js 24 before starting Agora.');
-  const checks = [
-    ['pnpm', ['--version']],
-    ['git', ['--version']],
-    ['/usr/bin/clang', ['--version']],
-    ['docker', ['info', '--format', '{{.ServerVersion}}']],
-  ];
-  const results = await Promise.allSettled(
-    checks.map(([tool, flags]) => runTool(tool, flags, repo)),
-  );
-  const failures = results.flatMap((r, i) => (r.status === 'rejected' ? [checks[i][0]] : []));
-  if (failures.length)
+  await checkDependencies(repo);
+  try {
+    createRequire(resolve(web, 'package.json')).resolve('next/package.json');
+    createRequire(resolve(repo, 'package.json')).resolve('typescript/package.json');
+  } catch {
     throw new Error(
-      `Check these dependencies before retrying: ${failures.join(', ')}. Docker Desktop must be running.`,
+      `Agora packages are missing. From the Agora directory, run pnpm install --frozen-lockfile, then pnpm run setup. See ${installGuide}.`,
     );
-  if (results[0].status !== 'fulfilled' || results[0].value !== '9.15.9')
-    throw new Error('Use pnpm 9.15.9, as pinned in package.json.');
+  }
   if (buildRequired) {
     for (const path of [
       helper,
@@ -59,7 +49,9 @@ async function diagnose(buildRequired) {
         if (!info.isFile() || info.isSymbolicLink()) throw new Error();
         await access(path);
       } catch {
-        throw new Error('Build artifacts are missing or unsafe. Run pnpm run setup.');
+        throw new Error(
+          `Build artifacts are missing or unsafe. From the Agora directory, run pnpm run setup, then pnpm run doctor. See ${installGuide}.`,
+        );
       }
     }
   }

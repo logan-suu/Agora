@@ -133,6 +133,8 @@ A nonblocking instruction updates structured state at a safe point and reproject
 
 ## Quick Start (macOS)
 
+**First time setting up a Mac for development?** Follow the [new Mac installation guide](docs/install-macos.md) first. It walks through installing each tool, checking versions, fixing missing dependencies, and opening Agora for the first time. Docker Desktop must be installed and running; Agora does not bundle it.
+
 ### Prerequisites
 
 - macOS with Node.js **24** and **pnpm 9.15.9** (the version pinned in `package.json`)
@@ -141,6 +143,19 @@ A nonblocking instruction updates structured state at a safe point and reproject
 - a compatible Chat Completions service with SSE and function-tool support, online or local
 
 The new product launcher currently reports unsupported platforms on Linux. The existing POSIX sandbox's Linux support is separate; Linux product setup is deferred as DEF-017.
+
+Check your tools in Terminal before cloning:
+
+```bash
+node --version
+pnpm --version
+git --version
+/usr/bin/clang --version
+docker --version
+docker info --format '{{.ServerVersion}}'
+```
+
+Node must report `v24.x.x`, pnpm must report `9.15.9`, and the remaining commands must succeed. Installation links and repair steps are in the [guide](docs/install-macos.md#install-the-required-tools).
 
 ### Install, check, and start
 
@@ -154,6 +169,8 @@ pnpm start
 ```
 
 Use **`pnpm run setup`** explicitly: `pnpm setup` is pnpm's own shell-configuration command. Agora's setup checks dependencies, builds the trusted sandbox and Keychain helpers, and creates the Next.js production build. It does not install system dependencies or launch Docker Desktop for you. Run setup again after updating the source.
+
+If setup or doctor fails, follow its dependency-specific repair steps and [troubleshooting guide](docs/install-macos.md#troubleshooting). Once Node and the checkout are available, `node apps/web/scripts/local.mjs doctor` runs diagnostics even if pnpm is unavailable. Diagnostics report missing tools and version mismatches together, and distinguish an unavailable Docker CLI from an unreachable engine.
 
 Open [http://127.0.0.1:3000](http://127.0.0.1:3000). If that port is occupied, use `pnpm start --port 3100` and open the address printed by the launcher. The server binds only to the loopback interface and rejects cross-site writes. Duplicate launchers for the same data directory are rejected.
 
