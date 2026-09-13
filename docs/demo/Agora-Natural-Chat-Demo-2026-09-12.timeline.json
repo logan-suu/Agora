@@ -209,5 +209,16 @@
       "outputEnd": 202.0,
       "frames": 108
     }
-  ]
+  ],
+  "distribution": {
+    "file": "Agora-Natural-Chat-Demo-2026-09-12.mp4",
+    "sha256": "29764a6f2083cee1ffd67d0c8da32034ce2495f5e89b4524de0a8f8aa5fd1f9b",
+    "bytes": 8681621,
+    "codec": "H.264 / yuv420p",
+    "fastStart": true,
+    "sourceSha256": "dfd8f4fa545f858f60d092b2e18aaa6c5388419c0a707302ace512345aa03e72",
+    "durationSeconds": 202,
+    "frameCount": 2424,
+    "editingChanged": false
+  }
 }
