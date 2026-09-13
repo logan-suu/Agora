@@ -12,21 +12,26 @@
 [![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![MCP](https://img.shields.io/badge/MCP-Tool_Protocol-6C47FF)](https://modelcontextprotocol.io/)
-[![Status](https://img.shields.io/badge/Status-Phase_5_%E2%80%A2_MVP_Exit_Review-orange)](https://github.com/logan-suu/Agora)
+[![Status](https://img.shields.io/badge/Status-Phase_10_%E2%80%A2_Product_Demo-orange)](https://github.com/logan-suu/Agora)
 
-## Live Phase 5 Demo
+## Current product
 
-![Agora Phase 5 live demo: a TTL LRU cache moves from Coder to Tester to Reviewer and survives refresh](docs/demo/Agora-Phase5-TTL-LRU-Live-Demo-2026-09-01.gif)
+Agora runs a six-role coding team on your Mac. Independent Coder workers can execute concurrently in separate Git worktrees and Docker containers. The team validates cumulative work before review; the human Leader approves final completion.
 
-This is a real browser-triggered Task 5.5 run—not a scripted chat animation. In the recording, Agora:
+- **Direct the work:** describe requirement changes in ordinary chat, review a before-and-after proposal, and click **Confirm changes**. Ambiguous requests can ask for clarification; proposals never apply themselves. Existing decision commands remain available through the same chat entry.
+- **Read the discussion:** messages support Markdown headings, lists, quotes, links, code blocks and tables. Requirements and reviews appear as readable sections with their original JSON available on demand.
+- **Inspect execution:** view persisted progress and session timelines, including concurrent workers and resumed session lineage.
+- **Keep authority:** ordinary test failures return for repair; blocking objections and final completion require the Leader.
+- **Choose models:** configure an OpenAI-compatible service for the whole team or individual roles. New verified DeepSeek V4 connections default to a 1M context window and 384K maximum output with automatic Harness history compaction; custom limits remain independently editable.
+- **Keep artifacts:** completed code and tests remain available after execution resources are released.
 
-1. accepts a goal to implement a TTL-aware LRU cache;
-2. routes the task through `CODER → TESTER → REVIEWER`;
-3. streams persisted progress into the group chat over SSE;
-4. runs the generated test suite successfully;
-5. reaches `done`, archives the artifact, and restores the same nine-message timeline after refresh.
+Start with [Quick Start](#quick-start-macos). See the [final benchmark report](docs/evals/phase10-opencode-go-final-report.md), [engineering interview notes](docs/portfolio/engineering-notes.md), and [historical Phase 5 recording](#historical-phase-5-demo). The [current recording status](docs/demo/task106-evidence.md) records Task 10.6 attempts, repairs and verification; Phase 10 final acceptance remains separate.
 
-The recorded run used DeepSeek through the Harness executor, a real Docker sandbox, MCP tools, host Git, JSON state persistence, and the same production composition root used by the web application.
+## Product demo
+
+[![Watch the English product demo](docs/demo/Agora-Natural-Chat-Demo-2026-09-12.poster.png)](docs/demo/Agora-Natural-Chat-Demo-2026-09-12.webm)
+
+One real task: describe a goal, change the ticket price in plain English, review and confirm the proposal, repair issues found in verification, then approve completion and keep the artifact. The English recording includes real rework and cuts waiting periods. Rework and final approval use the existing gate command; no JSON is pasted into chat. See the [recording evidence, editing notes and downloadable artifact](docs/demo/task106-natural-chat-demo.md). The archived output passes 18 project tests plus 8 independent checks.
 
 ## What is Agora?
 
@@ -37,7 +42,7 @@ Agora is an opinionated multi-agent coding product, not a generic agent-chat SDK
 - **Architect** produces implementation boundaries and decisions.
 - **Coder** changes the code in an isolated workspace.
 - **Tester** runs acceptance checks and reports evidence.
-- **Reviewer** accepts the result or sends it back for rework.
+- **Reviewer** recommends completion or requests rework; the Leader makes the final decision.
 - **Leader (you)** can observe, redirect, approve, or overrule the team.
 
 The visible chat is a control surface, not the agents' raw context. Each role receives a structured projection of shared state, including only the facts, decisions, file references, and local channel context it needs. This keeps long conversations from turning into an ever-growing prompt shared by every agent.
@@ -50,69 +55,67 @@ Agora's central design rules are:
 - **Unified Harness agents:** every role uses Agora’s own agent implementation built on DeepSeek Harness. Harness supplies the agent loop, session persistence, and compaction; Agora implements role projections and collaboration control. External coding-agent executors are outside the product scope.
 - **Real execution evidence:** coding tasks run through sandbox, MCP, Git, test, persistence, and recovery paths rather than UI-only simulations.
 
-## Recorded Phase 5 Baseline
+## Evidence and limits
 
-The historical Phase 5 recording demonstrates a complete, sequential MVP loop:
+The final evaluation uses a fixed four-task Aider Polyglot JavaScript subset and two internal collaboration tasks, with three independent attempts per task and variant. These are small exploratory comparisons, not a full benchmark ranking.
 
-- browser-based task creation and explicit start;
-- adaptive Tier 0/1/2 routing through a four-node orchestration loop;
-- structured handoffs, decision ledger, test/review feedback, and iteration limits;
-- role-specific context projection enforced before each Harness step;
-- DeepSeek Harness execution with typed role outputs;
-- Docker task sandboxing plus host-managed Git worktrees;
-- MCP filesystem, test, Git, lint, and sandbox tools;
-- state mutation through commutative, idempotent reducers;
-- atomic JSON snapshots under `.data/projects/{projectId}/tasks/{taskId}`;
-- persisted-message-first delivery through MessageBus and SSE;
-- refresh and server-restart recovery for completed task state, messages, and archived artifacts;
-- validated, idempotent leading `@ROLE` assignment through the normal message endpoint;
-- responsive desktop and mobile group-chat UI.
+| Frozen group | Variant | Overall pass / attempts |
+| --- | --- | --- |
+| Public v11 | Single Harness Agent | 12 / 12 |
+| Public v11 | Multiple roles, one model | 11 / 12 |
+| Public v11 | Multiple roles, mixed models | 10 / 12 |
+| Internal v14 | Serial execution of the same DAG | 6 / 6 |
+| Internal v14 | Parallel execution | 4 / 6 |
+| Internal v14 | Sparse structured channel context | 4 / 6 |
 
-That Phase 5 baseline used a **trusted, single-user, single-instance, self-hosted** boundary. It supported one fixed `main` channel and at most one active run across the backend instance. Those historical results do not establish later channel, gate or parallel-worker features. Current installation and workflow instructions appear below; public authentication and horizontal scaling remain outside the product scope.
+Public v11 and internal v14 use different frozen source versions and are reported separately. All non-mixed variants use `deepseek-v4-flash` through OpenCode Go; mixed variants use `deepseek-flash` for PM, Architect and Reviewer. Provider model aliases are not fixed-weight guarantees.
 
-## Agora vs. AutoGen and AgentScope
+Among four internal pairs where both serial and parallel runs passed, the mean speed ratio was **1.38 ± 0.20 sample SD**. Parallel passed 4/6 attempts, compared with serial's 6/6; the selected successful pairs do not establish a general speed or reliability advantage. On the public subset, multiple roles added an average 176.12 seconds across 11 successful pairs. Multi-agent coordination has measurable overhead.
 
-AutoGen and AgentScope are capable general-purpose frameworks. Agora addresses a narrower product question: **what should a human-led AI coding team feel like, and which collaboration invariants should the product enforce by default?**
+Failures include interrupted review, exhausted request/time budgets and streaming disconnections. An attempt that never reached independent grading is not proof of incorrect code. Worker Fork and history compaction were not triggered in these final groups; separate functional checks cover those mechanisms. Unknown usage remains unknown; subscription quota estimates and conservative budget reservations are not cash billing totals.
 
-| Dimension | Agora | AutoGen | AgentScope |
-| --- | --- | --- | --- |
-| Primary focus | Opinionated coding collaboration product and UI | General multi-agent framework with Core, AgentChat, extensions, and Studio | General platform for building and operating agent applications |
-| Collaboration model | Group chat is the product control surface; a lightweight Coordinator routes coding roles | Offers several team patterns; `SelectorGroupChat` can use shared team context and model-based speaker selection | Supplies agents, teams, messaging, tools, sandboxing, deployment, and observability primitives |
-| Context policy | Role projections are a system invariant; raw display history is not an agent prompt | Context management is configurable by the application/team pattern | Context and memory policy are framework/application concerns |
-| Human authority | The Leader is always present and is the sole final authority; blocking disagreement must escalate to the human | Supports human-in-the-loop agents and feedback, while the final authority policy is application-defined | Supports human participation and team construction, while authority policy is application-defined |
-| Coding execution | A prescribed Harness → projection → MCP → Docker/worktree → test/review → persisted artifact path | Extensible code executors and general agent/tool workflows | General tools, workspaces/sandboxes, services, and deployment capabilities |
-| Orchestration stance | Four generic nodes plus deterministic routing; collaboration scale follows task complexity | Provides high- and low-level orchestration APIs and multiple team patterns | Provides flexible agent/team construction and runtime services |
+The [full report](docs/evals/phase10-opencode-go-final-report.md) includes configuration, failures, mechanism coverage and historical attempts. [Public metrics](docs/evals/phase10-opencode-go-public-metrics.json) and [internal metrics](docs/evals/phase10-opencode-go-internal-metrics.json) provide individual results, sample sizes and variance. These frozen measurements are not a fresh evaluation of every later source revision.
 
-The point is not that Agora replaces either framework. It deliberately borrows proven patterns—AutoGen's termination conditions, code-executor boundary, Magentic-One ledger, and handoffs; AgentScope's message semantics, write ownership, interrupt structure, and separation of storage from context—while enforcing a different product contract around role projection and human authority.
+Current boundaries:
 
-Comparison notes:
+- macOS product installation; Linux launcher and automatic credential setup are deferred.
+- Local, single-user, single-backend operation; model APIs can be online.
+- Chat Completions, SSE and function tools through the configured compatible provider; Responses-only and OAuth-only services are not claimed compatible.
+- Custom roles can be registered and explicitly assigned where supported. Arbitrary custom-role autonomous routing is deferred; parallel plans reject assignments without the required wave/subtask binding.
+- Unexpected process exits do not promise automatic continuation of all unfinished work.
+- Role projections and sandbox controls enforce specific boundaries; they do not guarantee unlimited context, perfect model decisions or immunity to every attack.
 
-- The AutoGen description follows its [official repository](https://github.com/microsoft/autogen) and [`SelectorGroupChat` documentation](https://microsoft.github.io/autogen/dev/user-guide/agentchat-user-guide/selector-group-chat.html). As of September 2026, the repository describes AutoGen as community-maintained and recommends Microsoft Agent Framework for new, long-term-supported projects.
-- The AgentScope description follows its [official repository](https://github.com/agentscope-ai/agentscope).
-- Agora's detailed source-level comparison is a dated 2026-08-24 research snapshot in [Framework Research and Adoption Decisions](docs/框架调研与借鉴决策.md), so it should not be read as a permanent claim about future versions of either project.
+See [deferred items](docs/deferred-items.json) and the [engineering notes](docs/portfolio/engineering-notes.md) for evidence and tradeoffs. The [framework research](docs/框架调研与借鉴决策.md) is a dated design input, not a current feature ranking of other frameworks.
 
 ## Architecture
 
 ```mermaid
-flowchart LR
-    Leader[Human Leader] <--> Web[Next.js Group Chat]
-    Web -->|POST task / message| API[Web Composition Root]
-    API --> Orchestrator[Lightweight Orchestrator]
-    Orchestrator --> Coordinator[Coordinator Routing]
-    Coordinator --> Worker[Current Role Worker]
-    Worker --> Projection[Role Projection]
-    Projection --> Harness[Harness Executor]
-    Harness --> MCP[MCP Tool Bridge]
-    MCP --> Sandbox[Docker Sandbox + Git Worktree]
-
-    Orchestrator --> Reducer[applyMutations]
-    Reducer --> Store[Atomic JSON TaskStateStore]
-    Store --> Bus[MessageBus]
-    Bus -->|SSE snapshot + live tail| Web
-    Store --> Artifacts[Archived Task Artifacts]
+flowchart TB
+    Leader[Human Leader] <--> Web[Local group chat]
+    Web -->|Task lifecycle and message POST| App[Application services and orchestration]
+    App --> Scheduler[Global worker leases]
+    Scheduler --> Workers[Independent Harness workers]
+    Workers --> Projection[Current role and assignment projection]
+    Projection --> Loop[Official Harness loop and history]
+    Loop --> MCP[MCP tools]
+    MCP --> Worktrees[Task-owned Git worktrees and Docker containers]
+    Worktrees --> Validation[Integration and cumulative test validation]
+    Validation --> Review[Reviewer completion candidate]
+    Review --> Gate[Leader completion gate]
+    Leader -->|Approve or request changes| Gate
+    Gate -->|Approved evidence| Artifacts[Archived code and tests]
+    App --> Commit[Serialized task commit via applyMutations]
+    Workers --> Commit
+    Commit --> State[Atomic JSON task state]
+    State -->|Committed display messages| Bus[MessageBus and SSE]
+    Bus --> Web
+    Loop --> Sessions[Official Harness JSONL sessions]
+    Sessions -->|Bounded safe Trace snapshot| Web
 ```
 
-The recorded Phase 5 runtime was sequential. Phase 9 subsequently added concurrent workers, cooperative preemption at Harness step boundaries, and integration checkpoints; current state and evidence are tracked in `docs/task-status.json`.
+Model and tool calls can overlap; shared task commits are serialized. Each worker holds a global scheduler lease and receives only its role/assignment slice. Independent code is integrated in waves, and Tester evidence binds the validated cumulative commit. Reviewer approval creates a candidate; only the Leader's approval can finalize it.
+
+A nonblocking instruction updates structured state at a safe point and reprojects the existing worker context. A blocking gate persists checkpoints, releases executable resources and later resumes paused workers in fresh Harness contexts with verified session lineage. Trace is derived from official session logs; it does not expose raw prompts, reasoning or tool arguments/results.
 
 ## Quick Start (macOS)
 
@@ -121,7 +124,7 @@ The recorded Phase 5 runtime was sequential. Phase 9 subsequently added concurre
 - macOS with Node.js **24** and **pnpm 9.15.9** (the version pinned in `package.json`)
 - Git and Xcode Command Line Tools (`clang`)
 - Docker Desktop with its daemon running
-- an OpenAI-compatible model service, or a local compatible service
+- a compatible Chat Completions service with SSE and function-tool support, online or local
 
 The new product launcher currently reports unsupported platforms on Linux. The existing POSIX sandbox's Linux support is separate; Linux product setup is deferred as DEF-017.
 
@@ -196,9 +199,9 @@ The macOS suite includes a disposable, password-protected Keychain and preserves
 | Single-agent kernel | DeepSeek Harness/Cordis ecosystem |
 | Coordination | Self-developed lightweight four-node orchestrator |
 | Tool protocol | MCP TypeScript SDK |
-| Sandbox | Docker per task, with a LocalTemp adapter retained for lower-phase tests |
+| Sandbox | Docker per worktree, with a LocalTemp adapter retained for lower-phase tests |
 | Source isolation | Git worktrees managed through `simple-git` |
-| Persistence | Atomic JSON snapshots and archived task artifacts under `.data/` |
+| Persistence | Atomic JSON snapshots, official Harness JSONL sessions and archived task artifacts under `.data/` |
 | Realtime transport | SSE for receive, HTTP POST for send |
 | Testing/quality | Vitest 3, TypeScript, Biome 2 |
 | Workspace | pnpm 9 monorepo |
@@ -207,7 +210,7 @@ The macOS suite includes a disposable, password-protected Keychain and preserves
 
 ```text
 Agora/
-├── apps/web/                       # Next.js group-chat UI and Phase 5 server composition
+├── apps/web/                       # Next.js group-chat UI and local server composition
 ├── packages/
 │   ├── core/
 │   │   ├── domain/                 # State, mutations, roles, and pure domain logic
@@ -243,7 +246,15 @@ Agora/
 | 9 | True parallel workers and cooperative preemption | ✅ Complete |
 | 10 | Unified Harness agents, macOS setup and startup, hardening, final benchmark, and portfolio demo | In progress |
 
-The detailed task graph and current evidence live in [`docs/task-status.json`](docs/task-status.json). The final README and portfolio recording remain a separate Phase 10 deliverable; the Phase 5 recording above remains historical evidence, while Quick Start describes the current macOS launcher.
+The detailed task graph and current evidence live in [`docs/task-status.json`](docs/task-status.json). Tasks 10.2–10.5 are complete; Task 10.6 prepares the current documentation and recording. Task 10.7 independently verifies the final product exit criteria.
+
+## Historical Phase 5 Demo
+
+![Historical Agora Phase 5 TTL LRU coding demo](docs/demo/Agora-Phase5-TTL-LRU-Live-Demo-2026-09-01.gif)
+
+This September 1, 2026 recording shows a real browser-triggered TTL-aware LRU task through Coder, Tester and Reviewer, with persisted SSE progress, successful tests, archived output and refresh recovery. It used Harness, MCP, Docker and Git.
+
+It documents the sequential Phase 5 baseline. The later Leader completion gate, subchannels and parallel workers are outside that recording's scope; its earlier completion flow does not describe the current product.
 
 ## Design Documents
 

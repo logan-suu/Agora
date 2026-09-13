@@ -30,7 +30,7 @@ function isStringArray(value: unknown): value is string[] {
  */
 const FILE_REF_PATTERN = /^[^\s:]+:L?\d+(?:-L?\d+)?$/;
 
-function isFileRef(value: unknown): value is string {
+export function isFileRef(value: unknown): value is string {
   return typeof value === 'string' && FILE_REF_PATTERN.test(value);
 }
 

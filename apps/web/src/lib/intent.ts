@@ -120,6 +120,7 @@ export function planLeaderIntent(
     case 'close_sub_channel':
     case 'resolve_human_gate':
     case 'resolve_objection':
+    case 'requirements_change':
     case 'requirement_change':
     case 'decision_change':
     case 'priority_change':

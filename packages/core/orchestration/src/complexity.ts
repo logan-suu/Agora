@@ -8,6 +8,7 @@ export interface ComplexityInput {
 
 export const TIER2_KEYWORDS = [
   '模块',
+  'module',
   '微服务',
   '数据库',
   '前后端',

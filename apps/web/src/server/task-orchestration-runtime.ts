@@ -3,7 +3,9 @@ import {
   type HumanGateRequest,
   type Mutation,
   mergeByIdMutation,
+  type RequirementProposalView,
   type RoleSpec,
+  requirementProposalView,
   setMutation,
   validationReceipt,
 } from '@agora/core-domain';
@@ -46,6 +48,7 @@ export interface TaskSummary extends TaskScope {
   testResults: AppState['testResults'] | null;
   artifactPath: string | null;
   messageCount: number;
+  requirementProposal?: RequirementProposalView;
   error?: string;
 }
 
@@ -306,6 +309,7 @@ export class TaskOrchestrationRuntime {
   async drain(): Promise<void> {
     this.#draining = true;
     await this.#lifecycleQueue;
+    await this.messages.waitForLeaderInputs();
     const results = await Promise.allSettled([...this.#runs.values()].map((run) => run.promise));
     const errors = results.flatMap((result) =>
       result.status === 'rejected' ? [result.reason] : [],
@@ -731,6 +735,7 @@ function summaryFrom(
     state.integration?.integrationWorktree ??
     state.subtasks.find((subtask) => subtask.worktree !== undefined)?.worktree;
   const artifactPath = typeof worktree === 'string' ? worktree : worktree?.path;
+  const requirementProposal = requirementProposalView(state);
   return {
     projectId: state.projectId,
     taskId: state.taskId,
@@ -741,6 +746,7 @@ function summaryFrom(
     testResults: state.testResults ?? null,
     artifactPath: archivedArtifactPath ?? artifactPath ?? null,
     messageCount: state.messages.length,
+    ...(requirementProposal ? { requirementProposal } : {}),
     ...(error === undefined ? {} : { error }),
   };
 }

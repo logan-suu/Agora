@@ -274,6 +274,9 @@ describe('applyMutations · set', () => {
     const results = { passed: true, total: 3, failed: 0, failures: [] };
     const next = applyMutations(base, [setMutation('testResults', results)]);
     expect(next.testResults).toEqual(results);
+    expect(
+      applyMutations(next, [setMutation('testResults', undefined)]).testResults,
+    ).toBeUndefined();
   });
 });
 
@@ -927,5 +930,66 @@ describe('applyMutations · Phase 4 unlocked field (task 4.1, spec §1/§3)', ()
     ]);
     expect(setThenAppend.complexity).toEqual(appendThenSet.complexity);
     expect(sortMessages(setThenAppend)).toEqual(sortMessages(appendThenSet));
+  });
+});
+
+describe('test result admission before coordinator handoff', () => {
+  it.each([
+    { failed: 1, failures: [] },
+    { failed: 0, failures: [{ test: 'price', message: 'wrong price', file: '', line: 0 }] },
+  ])('rejects success with failure evidence: %j', (failureEvidence) => {
+    const state = createInitialAppState('contradictory-results', 'Verify price');
+    expect(() =>
+      applyMutations(state, [
+        setMutation('testResults', {
+          passed: true,
+          total: 1,
+          ...failureEvidence,
+        }),
+      ]),
+    ).toThrow('invalid test results');
+    expect(state.testResults).toBeUndefined();
+    const failure = { passed: false, total: 1, ...failureEvidence };
+    expect(applyMutations(state, [setMutation('testResults', failure)]).testResults).toEqual(
+      failure,
+    );
+  });
+
+  it.each([
+    { test: 'ttl', message: 'expired value returned' },
+    { test: 'ttl', message: 'expired value returned', file: 'cache.test.mjs', line: '4' },
+    { test: 'ttl', message: 'expired value returned', file: 'cache.test.mjs', line: Number.NaN },
+    'ttl failed',
+  ])('rejects a malformed failure without committing shared State: %j', (failure) => {
+    const state = createInitialAppState('failure-admission', 'Verify TTL');
+    expect(() =>
+      applyMutations(state, [
+        setMutation('testResults', {
+          passed: false,
+          total: 1,
+          failed: 1,
+          failures: [failure],
+        }),
+      ]),
+    ).toThrow('invalid test results');
+    expect(state.testResults).toBeUndefined();
+  });
+
+  it('preserves a valid failed result for normal feedback routing', () => {
+    const results = {
+      passed: false,
+      total: 1,
+      failed: 1,
+      failures: [
+        { test: 'ttl', message: 'expired value returned', file: 'cache.test.mjs', line: 4 },
+      ],
+    };
+    const next = applyMutations(createInitialAppState('failure-admission', 'Verify TTL'), [
+      setMutation('testResults', results),
+    ]);
+    expect(next.testResults).toEqual(results);
+    expect(
+      applyMutations(next, [setMutation('testResults', undefined)]).testResults,
+    ).toBeUndefined();
   });
 });

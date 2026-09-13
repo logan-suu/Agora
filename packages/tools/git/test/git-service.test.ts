@@ -528,6 +528,68 @@ describe('WorktreeGitService', () => {
     expect(result.conflicts).toContain('conflict.txt');
   });
 
+  it('reclaims missing task trees after restart without pruning other task records', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'agora-recover-disposal-'));
+    roots.push(root);
+    const main = join(root, 'repo');
+    const service = new WorktreeGitService(new WorktreeRegistry(), main);
+    const missing = await service.createWorktree('task', 'missing');
+    const healthy = await service.createWorktree('task', 'healthy');
+    const foreign = await service.createWorktree('other', 'foreign');
+    rmSync(missing.path, { recursive: true });
+    rmSync(foreign.path, { recursive: true });
+    const git = simpleGit(main);
+    expect(await git.raw(['worktree', 'list', '--porcelain'])).toContain('prunable');
+    const restarted = new WorktreeGitService(new WorktreeRegistry(), main);
+    await restarted.recoverTaskWorktreesForDisposal('task');
+    await restarted.recoverTaskWorktreesForDisposal('task');
+    mkdirSync(GIT_TEARDOWN_STAGING, { recursive: true });
+    const before = new Set(readdirSync(GIT_TEARDOWN_STAGING));
+    try {
+      await restarted.dispose();
+      await restarted.dispose();
+      const remaining = await git.raw(['worktree', 'list', '--porcelain']);
+      expect(remaining).not.toContain(missing.path);
+      expect(remaining).not.toContain(healthy.path);
+      expect(remaining).toContain(foreign.path);
+      expect((await git.branchLocal()).all).not.toContain('missing');
+      expect((await git.branchLocal()).all).not.toContain('healthy');
+      expect((await git.branchLocal()).all).toContain('foreign');
+      expect(existsSync(main)).toBe(true);
+    } finally {
+      for (const name of readdirSync(GIT_TEARDOWN_STAGING)) {
+        if (
+          !before.has(name) &&
+          existsSync(join(GIT_TEARDOWN_STAGING, name, basename(healthy.path)))
+        )
+          roots.push(join(GIT_TEARDOWN_STAGING, name));
+      }
+    }
+  });
+
+  it.each(['mismatched branch', 'replacement symlink'])(
+    'rejects stale disposal with %s and preserves foreign files',
+    async (change) => {
+      const root = mkdtempSync(join(tmpdir(), 'agora-stale-identity-'));
+      roots.push(root);
+      const main = join(root, 'repo');
+      const service = new WorktreeGitService(new WorktreeRegistry(), main);
+      const tree = await service.createWorktree('task', 'stale');
+      if (change === 'mismatched branch')
+        await simpleGit(tree.path).checkoutLocalBranch('different');
+      rmSync(tree.path, { recursive: true });
+      const foreign = join(root, 'foreign');
+      mkdirSync(foreign);
+      writeFileSync(join(foreign, 'marker'), 'preserve');
+      const git = simpleGit(main);
+      if (change === 'replacement symlink') symlinkSync(foreign, tree.path);
+      const restarted = new WorktreeGitService(new WorktreeRegistry(), main);
+      await expect(restarted.recoverTaskWorktreesForDisposal('task')).rejects.toThrow();
+      expect(readFileSync(join(foreign, 'marker'), 'utf8')).toBe('preserve');
+      expect((await git.branchLocal()).all).toContain('stale');
+    },
+  );
+
   it('moves its service-owned temp base to staging on dispose (no leak)', async () => {
     const registry = new WorktreeRegistry();
     const service = new WorktreeGitService(registry);

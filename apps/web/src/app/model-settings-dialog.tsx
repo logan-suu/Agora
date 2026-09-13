@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { knownModelContextWindow, knownModelMaxOutputTokens } from '../lib/model-capacity';
 import type {
   AgentModelView,
   ModelSettingsCommand,
@@ -43,6 +44,8 @@ export function ModelSettingsDialog({
   const [settings, setSettings] = useState<ModelSettingsView>();
   const [target, setTarget] = useState(initialTarget);
   const [draft, setDraft] = useState({ ...emptyDraft });
+  const [customContext, setCustomContext] = useState(false);
+  const [customOutput, setCustomOutput] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [pending, setPending] = useState(false);
@@ -62,9 +65,10 @@ export function ModelSettingsDialog({
         if (!response.ok) throw new Error(value.error ?? 'Unable to load model settings.');
         if (controller.signal.aborted) return;
         setSettings(value);
-        setDraft(
-          draftFor((value as ModelSettingsView).roles.find((r) => r.role === initialTarget)),
-        );
+        const role = (value as ModelSettingsView).roles.find((r) => r.role === initialTarget);
+        setCustomContext(Boolean(role?.connectionId));
+        setCustomOutput(Boolean(role?.connectionId));
+        setDraft(draftFor(role));
         setTarget(initialTarget);
         setError('');
       })
@@ -87,6 +91,22 @@ export function ModelSettingsDialog({
         roles.findIndex((other) => other.connectionId === r.connectionId) === index,
     ) ?? [];
   const selected = settings?.roles.find((r) => r.role === target);
+  const modelCapacity = knownModelContextWindow(draft.baseURL, draft.model);
+  const modelOutput = knownModelMaxOutputTokens(draft.baseURL, draft.model);
+  function changeModelConnection(patch: Partial<Pick<typeof draft, 'baseURL' | 'model'>>) {
+    setDraft((current) => {
+      const next = { ...current, ...patch };
+      return {
+        ...next,
+        contextWindow: customContext
+          ? next.contextWindow
+          : (knownModelContextWindow(next.baseURL, next.model) ?? 32768),
+        maxTokens: customOutput
+          ? next.maxTokens
+          : (knownModelMaxOutputTokens(next.baseURL, next.model) ?? 4096),
+      };
+    });
+  }
   async function submit(action: ModelSettingsCommand['action']) {
     if (!settings || pending) return;
     setPending(true);
@@ -114,6 +134,8 @@ export function ModelSettingsDialog({
           target === 'all' ? targets.some((t) => t.role === r.role) : r.role === target,
         );
         setDraft(draftFor(role));
+        setCustomContext(Boolean(role?.connectionId));
+        setCustomOutput(Boolean(role?.connectionId));
         setNotice(
           action === 'reset'
             ? `Deployment defaults restored for ${targets.length} Agent(s).`
@@ -186,6 +208,12 @@ export function ModelSettingsDialog({
                   const next = event.target.value;
                   setTarget(next);
                   setDraft(draftFor(settings.roles.find((r) => r.role === next)));
+                  setCustomContext(
+                    Boolean(settings.roles.find((r) => r.role === next)?.connectionId),
+                  );
+                  setCustomOutput(
+                    Boolean(settings.roles.find((r) => r.role === next)?.connectionId),
+                  );
                   setNotice('');
                   setError('');
                 }}
@@ -223,6 +251,8 @@ export function ModelSettingsDialog({
                 onChange={(event) => {
                   const role = connections.find((r) => r.connectionId === event.target.value);
                   setDraft(draftFor(role));
+                  setCustomContext(Boolean(role?.connectionId));
+                  setCustomOutput(Boolean(role?.connectionId));
                   setNotice('');
                 }}
               >
@@ -242,7 +272,7 @@ export function ModelSettingsDialog({
                 value={draft.baseURL}
                 placeholder="https://gateway.example/v1"
                 autoComplete="off"
-                onChange={(event) => setDraft({ ...draft, baseURL: event.target.value })}
+                onChange={(event) => changeModelConnection({ baseURL: event.target.value })}
               />
             </label>
             <small className="model-hint">
@@ -256,7 +286,7 @@ export function ModelSettingsDialog({
                 maxLength={256}
                 placeholder="Enter the provider’s model ID"
                 autoComplete="off"
-                onChange={(event) => setDraft({ ...draft, model: event.target.value })}
+                onChange={(event) => changeModelConnection({ model: event.target.value })}
               />
             </label>
             <label>
@@ -307,9 +337,10 @@ export function ModelSettingsDialog({
                     max={2000000}
                     required
                     value={draft.contextWindow}
-                    onChange={(event) =>
-                      setDraft({ ...draft, contextWindow: Number(event.target.value) })
-                    }
+                    onChange={(event) => {
+                      setCustomContext(true);
+                      setDraft({ ...draft, contextWindow: Number(event.target.value) });
+                    }}
                   />
                 </label>
                 <label>
@@ -320,14 +351,30 @@ export function ModelSettingsDialog({
                     max={draft.contextWindow}
                     required
                     value={draft.maxTokens}
-                    onChange={(event) =>
-                      setDraft({ ...draft, maxTokens: Number(event.target.value) })
-                    }
+                    onChange={(event) => {
+                      setCustomOutput(true);
+                      setDraft({ ...draft, maxTokens: Number(event.target.value) });
+                    }}
                   />
                 </label>
               </div>
+              {modelCapacity !== undefined && modelOutput !== undefined ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomContext(false);
+                    setCustomOutput(false);
+                    setDraft({ ...draft, contextWindow: modelCapacity, maxTokens: modelOutput });
+                  }}
+                >
+                  Use model limits
+                </button>
+              ) : null}
               <small className="model-hint">
-                Set limits supported by your provider. Defaults: 32,768 context / 4,096 output.
+                {modelCapacity !== undefined
+                  ? `Model limits: ${modelCapacity.toLocaleString('en-US')} context / ${modelOutput?.toLocaleString('en-US')} output tokens. History compresses automatically.`
+                  : 'Confirm the context window supported by your provider. History compresses automatically.'}{' '}
+                The output limit is configured separately.
               </small>
             </details>
             <div className="model-actions">

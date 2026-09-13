@@ -24,6 +24,45 @@ function leaderMessage(actionId: string, intent: Phase9LeaderIntent, ts = 10): M
 }
 
 describe('Phase 9 Leader action planning', () => {
+  it('applies a confirmed set of related requirements atomically and checks every replay effect', () => {
+    const state = createInitialAppState('task-a', 'goal', 'project-a');
+    const intent = {
+      kind: 'requirements_change' as const,
+      changes: [
+        {
+          requirementId: 'ticket',
+          requirement: { story: 'Charge 900 cents', acceptance: ['Two cost 1800'], nonGoals: [] },
+        },
+        {
+          requirementId: 'quote',
+          requirement: { story: 'Combine costs', acceptance: ['Total is 16800'], nonGoals: [] },
+        },
+      ],
+    };
+    const plan = planPhase9LeaderAction(state, { actionId: 'confirm', intent, ts: 10 });
+    const changed = applyMutations(state, plan.mutations);
+    expect(changed.requirements.map((r) => r.id)).toEqual(['ticket', 'quote']);
+    expect(state.requirements).toEqual([]);
+    expect(
+      assertPhase9LeaderActionReplay(changed, leaderMessage('confirm', intent), intent).data,
+    ).toEqual({ changes: intent.changes });
+    const drifted = applyMutations(changed, [
+      mergeByIdMutation('requirements', 'quote', { story: 'Drift' }),
+    ]);
+    expect(() =>
+      assertPhase9LeaderActionReplay(drifted, leaderMessage('confirm', intent), intent),
+    ).toThrow(/drifted/);
+    const firstChange = intent.changes[0];
+    if (!firstChange) throw new Error('Missing change');
+    expect(() =>
+      planPhase9LeaderAction(state, {
+        actionId: 'bad',
+        intent: { ...intent, changes: [firstChange, firstChange] },
+        ts: 10,
+      }),
+    ).toThrow(/duplicate/);
+  });
+
   it('fully upserts an active requirement and rejects revival of a withdrawn one', () => {
     const state = createInitialAppState('task-a', 'goal', 'project-a');
     const intent: Phase9LeaderIntent = {

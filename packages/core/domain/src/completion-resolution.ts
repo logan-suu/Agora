@@ -221,6 +221,56 @@ export function currentCompletionEvidence(state: AppState): ReviewBinding {
   return structuredClone(binding);
 }
 
+/** Latest Leader completion feedback, verified against its historical review boundary. */
+export function deriveCompletionFeedback(state: AppState): CompletionResolutionView | null {
+  const reverseIndex = [...state.messages]
+    .reverse()
+    .findIndex((message) => asRecord(message.payload.completionResolution) !== undefined);
+  if (reverseIndex < 0) return null;
+  const index = state.messages.length - 1 - reverseIndex;
+  const completion = asRecord(state.messages[index]?.payload.completionResolution);
+  if (typeof completion?.reviewId !== 'string')
+    throw new Error('completion feedback requires a canonical review id');
+  const nextIndex = state.messages.findIndex(
+    (message, position) =>
+      position > index &&
+      message.fromRole === 'COORDINATOR' &&
+      message.type === 'announce' &&
+      message.payload.nextRole === 'REVIEWER',
+  );
+  const cursor =
+    nextIndex < 0
+      ? state.reviewComments.length
+      : state.messages[nextIndex]?.payload.reviewCommentCursor;
+  if (
+    typeof cursor !== 'number' ||
+    !Number.isInteger(cursor) ||
+    cursor < 0 ||
+    cursor > state.reviewComments.length
+  )
+    throw new Error('completion feedback requires a valid historical review cursor');
+  const historical: AppState = {
+    ...state,
+    messages: state.messages.slice(0, nextIndex < 0 ? undefined : nextIndex),
+    reviewComments: state.reviewComments.slice(0, cursor),
+  };
+  if (state.parallelExecution !== undefined) {
+    const binding = currentReviewDispatch(historical)?.payload.reviewBinding;
+    if (!isReviewBinding(binding))
+      throw new Error('completion feedback requires historical validation evidence');
+    // Rework may already have a new wave/receipt. Validate the original review
+    // and its immutable evidence without treating that old HEAD as current.
+    const { activeWave: _wave, ...execution } = state.parallelExecution;
+    historical.parallelExecution = {
+      ...execution,
+      planId: binding.planId,
+      acceptedReceiptId: binding.validationReceiptId,
+    };
+  }
+  const resolution = deriveCompletionResolution(historical, completion.reviewId);
+  return resolution?.resumed ? structuredClone(resolution) : null;
+}
+
 /** Verify historical completion controls before excluding them from the technical input hash. */
 export function canonicalCompletionDecisionIds(state: AppState): ReadonlySet<string> {
   const ids = new Set<string>();

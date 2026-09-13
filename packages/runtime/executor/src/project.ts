@@ -4,10 +4,12 @@ import {
   adoptedExecutionPlan,
   type CoordinationLedgerPayload,
   currentReviewDispatch,
+  deriveCompletionFeedback,
   deriveLeaderDirective,
   deriveObjectionResolutions,
   deriveOnboardingContext,
   type ExecutionWave,
+  isFileRef,
   isReviewBinding,
   latestCoordinationLedger,
   type RoleId,
@@ -52,8 +54,12 @@ export function project(
     }
   }
   slices.channels = structuredClone([...channelContext]);
+  slices.currentRequirements = activeRequirements(state).map(
+    ({ id, story, acceptance, nonGoals }) => structuredClone({ id, story, acceptance, nonGoals }),
+  );
   slices.onboardingContext = deriveOnboardingContext(state, role);
   slices.leaderDirective = deriveLeaderDirective(state);
+  slices.completionFeedback = deriveCompletionFeedback(state);
   slices.objectionResolutions = deriveObjectionResolutions(state)
     .filter((entry) => entry.status === 'resolved')
     .map((entry) => {
@@ -130,7 +136,7 @@ export function projectForAssignment(
   const instruction = isCoder
     ? node?.title
     : isValidation
-      ? 'Write tests for this wave and cumulative completed work. Commit tests, then run the final validation command on that clean HEAD.'
+      ? 'Validate only currentSubtasks and completedSubtasks in validationScope. Do not import or add tests for deferredSubtasks. Whole-task requirements do not expand this wave. Commit tests, then run validation on that clean HEAD.'
       : isPreparation
         ? 'Prepare read-only acceptance checks for this wave.'
         : advisoryId !== undefined
@@ -150,7 +156,8 @@ export function projectForAssignment(
           waveId: wave.waveId,
           attempt: wave.attempt,
           base: structuredClone(wave.base),
-          subtaskIds: [...(visibleSubtaskIds ?? wave.subtaskIds)],
+          subtaskIds:
+            isCoder && node !== undefined ? [node.id] : [...(visibleSubtaskIds ?? wave.subtaskIds)],
           completedSubtaskIds: state.subtasks
             .filter((candidate) => candidate.status === 'done')
             .map((candidate) => candidate.id),
@@ -181,6 +188,23 @@ export function projectForAssignment(
         : structuredClone(validationReceipt(state, receiptId).results);
   }
   if (isValidation && wave?.validation !== undefined) {
+    const covered = new Set(visibleSubtaskIds);
+    const describe = (subtask: AppState['subtasks'][number]) => ({
+      subtaskId: subtask.id,
+      title: subtask.title,
+      dependsOn: [...subtask.dependsOn],
+    });
+    view.slices.validationScope = {
+      currentSubtasks: state.subtasks
+        .filter((subtask) => subtask.status !== 'done' && covered.has(subtask.id))
+        .map(describe),
+      completedSubtasks: state.subtasks
+        .filter((subtask) => subtask.status === 'done')
+        .map(describe),
+      deferredSubtasks: state.subtasks
+        .filter((subtask) => subtask.status !== 'done' && !covered.has(subtask.id))
+        .map(describe),
+    };
     view.slices.branchOrIntegration = {
       ...(view.slices.branchOrIntegration as Record<string, unknown>),
       validation: {
@@ -353,6 +377,7 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
       // Iron rule 2: path+line refs only — the truth lives in the worktree.
       const byFile = new Map<string, number[]>();
       for (const failure of state.testResults?.failures ?? []) {
+        if (!isFileRef(`${failure.file}:${String(failure.line)}`)) continue;
         const lines = byFile.get(failure.file);
         if (lines === undefined) {
           byFile.set(failure.file, [failure.line]);

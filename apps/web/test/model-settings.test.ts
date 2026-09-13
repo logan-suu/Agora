@@ -11,6 +11,90 @@ import { ChannelStream } from '../src/server/channel-stream';
 import { MessageRuntime } from '../src/server/message-runtime';
 import { ModelSettingsService, modelSettingsHandlers } from '../src/server/model-settings';
 
+it('restores full capacity with the encrypted key while keeping old task connections immutable', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'agora-model-capacity-'));
+  const masterKey = randomBytes(32).toString('base64');
+  const store = new JsonModelConfigStore(root, () => masterKey);
+  const service = new ModelSettingsService(
+    new MessageRuntime(root, new ChannelStream(), DEFAULT_ROSTER),
+    store,
+  );
+  try {
+    const initial = await service.get('p');
+    const command = {
+      action: 'save' as const,
+      projectId: 'p',
+      target: 'all',
+      expectedRevision: initial.revision,
+      model: 'deepseek-v4-flash',
+      baseURL: 'https://opencode.ai/zen/go/v1',
+      contextWindow: 65536,
+      maxTokens: 8192,
+      auth: 'replace' as const,
+      apiKey: 'local-test-key',
+    };
+    await service.execute(command);
+    const before = await service.get('p');
+    const oldConnection = before.roles[0]?.connectionId;
+    if (!oldConnection) throw new Error('missing connection');
+    const oldBinding = await service.freeze({ projectId: 'p', taskId: 'before' }, 'old goal');
+    await service.execute({
+      ...command,
+      expectedRevision: before.revision,
+      auth: 'keep',
+      apiKey: '',
+      connectionId: oldConnection,
+      contextWindow: 1000000,
+    });
+    const after = await service.get('p');
+    expect(after.roles).toHaveLength(6);
+    expect(
+      after.roles.every(
+        (r) => r.contextWindow === 1000000 && r.maxTokens === 8192 && r.apiKeyConfigured,
+      ),
+    ).toBe(true);
+    const newConnection = after.roles[0]?.connectionId;
+    if (!newConnection) throw new Error('missing new connection');
+    expect(newConnection).not.toBe(oldConnection);
+    expect(await store.resolveKey('p', newConnection)).toBe('local-test-key');
+    expect((await store.loadConnection('p', oldConnection)).contextWindow).toBe(65536);
+    expect(JSON.stringify(after)).not.toContain('local-test-key');
+    expect(await service.freeze({ projectId: 'p', taskId: 'before' }, 'old goal')).toEqual(
+      oldBinding,
+    );
+    const newBinding = await service.freeze({ projectId: 'p', taskId: 'after' }, 'new goal');
+    await service.execute({
+      ...command,
+      expectedRevision: after.revision,
+      auth: 'keep',
+      apiKey: '',
+      connectionId: newConnection,
+      contextWindow: 1000000,
+      maxTokens: 384000,
+    });
+    const fullBinding = await service.freeze({ projectId: 'p', taskId: 'full' }, 'full limits');
+    for (const [binding, capacity] of [
+      [oldBinding, 65536],
+      [newBinding, 1000000],
+    ] as const) {
+      const routes = await service.executorRoutes(binding);
+      expect([...routes.values()].every((r) => r.compatible?.maxTokens === 8192)).toBe(true);
+      expect([...routes.values()].every((r) => r.compatible?.contextWindow === capacity)).toBe(
+        true,
+      );
+    }
+    const fullRoutes = await service.executorRoutes(fullBinding);
+    expect(
+      [...fullRoutes.values()].every(
+        (r) => r.compatible?.contextWindow === 1000000 && r.compatible.maxTokens === 384000,
+      ),
+    ).toBe(true);
+    expect((await store.loadConnection('p', newConnection)).maxTokens).toBe(8192);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 it('updates disabled/custom Agents and rejects a competing atomic batch', async () => {
   const root = await mkdtemp(join(tmpdir(), 'agora-model-cas-'));
   const messages = new MessageRuntime(root, new ChannelStream(), DEFAULT_ROSTER);
@@ -48,7 +132,12 @@ it('updates disabled/custom Agents and rejects a competing atomic batch', async 
     expect(new Set(saved.roles.map((r) => r.model)).size).toBe(1);
     expect(saved.roles.find((r) => r.role === 'TESTER')?.status).toBe('disabled');
     expect(saved.roles.find((r) => r.role === 'RELEASE_MANAGER')?.connectionId).toBeDefined();
-    const bound = await service.freeze({ projectId: 'p', taskId: 'old' }, 'goal');
+    // The real lifecycle passes TaskStartInput, which contains request-only fields.
+    const startInput = { projectId: 'p', taskId: 'old', requestId: 'browser-start', goal: 'goal' };
+    const bound = await service.freeze(startInput, startInput.goal);
+    expect(Object.keys(bound).sort()).toEqual(
+      ['version', 'projectId', 'taskId', 'goal', 'defaultModel', 'roles'].sort(),
+    );
     await service.execute({
       action: 'reset',
       projectId: 'p',

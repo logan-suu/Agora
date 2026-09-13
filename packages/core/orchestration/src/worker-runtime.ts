@@ -1,5 +1,9 @@
 import type { AppState, Mutation, RoleSpec, WorkerState, WorktreeRef } from '@agora/core-domain';
-import { applyMutations, mergeByIdMutation } from '@agora/core-domain';
+import {
+  applyMutations,
+  assertNoRequirementControlMessages,
+  mergeByIdMutation,
+} from '@agora/core-domain';
 import {
   type PauseMode,
   type PauseReceipt,
@@ -692,6 +696,7 @@ export class WorkerRuntime {
           result,
         );
         const mutations = [...result.mutations, ...planned];
+        assertNoRequirementControlMessages(mutations);
         if (
           mutations.some(
             (mutation) => mutation.op === 'set' && mutation.field === 'parallelExecution',

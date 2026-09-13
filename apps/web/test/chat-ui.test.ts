@@ -205,7 +205,7 @@ describe('ChatWorkspace', () => {
     expect(html).toContain('aria-label="Message the team"');
     expect(visibleText).toContain('Idle');
     expect(visibleText).not.toContain('Live');
-    expect(visibleText).not.toContain('Collapse');
+    expect(html).toContain('<details class="task-goal">');
   });
 
   it('renders the sanitized trace hierarchy, status, and truncation notice', () => {

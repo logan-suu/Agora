@@ -9,8 +9,11 @@ export function safeRunError(error: unknown): string {
     const next = queue.shift();
     if (seen.has(next)) continue;
     seen.add(next);
-    if (next instanceof ExecutorRequestError)
+    if (next instanceof ExecutorRequestError) {
+      if (next.code === 'TIMEOUT')
+        return '[MODEL_REQUEST_TIMEOUT] The model service timed out after bounded retries. Check service availability before trying again.';
       return '[MODEL_REQUEST_FAILED] Model request failed. Check model availability and credentials.';
+    }
     if (next instanceof Error && next.cause !== undefined) queue.push(next.cause);
     if (next instanceof AggregateError) queue.push(...next.errors.slice(0, 32));
     if (next instanceof ParallelBatchError)

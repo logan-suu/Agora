@@ -9,19 +9,26 @@ import {
 import {
   type AppState,
   assertPhase9LeaderActionReplay,
+  confirmedRequirementIntent,
   createMainChannel,
   deriveCompletionResolution,
   deriveObjectionResolutions,
   isIntegration,
   isReviewBinding,
+  latestRequirementInterpretation,
   type Message,
   type Mutation,
+  normalizeRequirementInterpretation,
   type Phase9LeaderIntent,
   planPhase9LeaderAction,
   planRoleOnboarding,
+  type RequirementInterpretationInput,
   type RoleOnboardingReceipt,
   type RoleSpec,
   type RosterEntry,
+  readRequirementInterpretation,
+  requirementBasis,
+  requirementProposalResolution,
   validateAppliedOnboardingMessage,
 } from '@agora/core-domain';
 import {
@@ -47,6 +54,7 @@ import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import {
   type ChannelSummaryGenerator,
   HarnessChannelSummaryGenerator,
+  type RequirementInterpreter,
 } from '@agora/runtime-executor';
 import { JsonTaskStateStore, type TaskScope } from '@agora/runtime-state';
 
@@ -79,6 +87,26 @@ export interface LeaderPreemptionPort {
   abort(receipt: PauseReceipt): Promise<void>;
 }
 
+export interface RequirementProposalAction {
+  proposalId: string;
+  action: 'confirm' | 'dismiss';
+}
+export interface LeaderMessageInput {
+  msgId: string;
+  channelId: string;
+  display: string;
+  ts: number;
+  requirementProposal?: RequirementProposalAction;
+}
+export class RequirementInputError extends Error {
+  constructor(
+    message: string,
+    readonly status = 409,
+  ) {
+    super(message);
+  }
+}
+
 export class MessageRuntime {
   readonly root: string;
   readonly store: JsonTaskStateStore;
@@ -101,6 +129,7 @@ export class MessageRuntime {
   };
   readonly #initialRoster: readonly RosterEntry[];
   readonly #channelContext = new DerivedChannelContextBuilder();
+  #requirementInterpreter: RequirementInterpreter | undefined;
   readonly #leaderQueues = new Map<string, Promise<void>>();
 
   constructor(
@@ -250,24 +279,19 @@ export class MessageRuntime {
 
   async commitLeaderMessage(
     scope: TaskScope,
-    input: {
-      msgId: string;
-      channelId: string;
-      display: string;
-      ts: number;
-    },
+    input: LeaderMessageInput,
   ): Promise<MessageCommitResult & { action: LeaderActionStatus }> {
+    if (input.msgId.startsWith('requirement-proposal:'))
+      throw new RequirementInputError(
+        'This message ID prefix is reserved for server proposals.',
+        400,
+      );
     return this.#enqueueLeader(scope, () => this.#commitLeaderMessage(scope, input));
   }
 
   async #commitLeaderMessage(
     scope: TaskScope,
-    input: {
-      msgId: string;
-      channelId: string;
-      display: string;
-      ts: number;
-    },
+    input: LeaderMessageInput,
   ): Promise<MessageCommitResult & { action: LeaderActionStatus }> {
     const current = await this.store.load(scope);
     if (current === undefined) {
@@ -275,8 +299,80 @@ export class MessageRuntime {
         `task state is not initialized for projectId "${scope.projectId}" and taskId "${scope.taskId}"`,
       );
     }
-    const incomingIntent = parseLeaderIntent(input.display);
     const existing = current.messages.find((message) => message.msgId === input.msgId);
+    let incomingIntent = parseLeaderIntent(input.display);
+    if (input.requirementProposal) {
+      if (input.channelId !== 'main')
+        throw new RequirementInputError('Requirement proposals can only be confirmed in main.');
+      const ref = input.requirementProposal;
+      const saved = current.messages.find((m) => m.msgId === ref.proposalId);
+      if (!saved) throw new RequirementInputError('Requirement proposal not found.');
+      const proposal = readRequirementInterpretation(current, saved);
+      if (proposal.result.kind !== 'proposal')
+        throw new RequirementInputError('This message is not a requirement proposal.');
+      if (existing) {
+        if (
+          existing.payload.requirementProposalId !== ref.proposalId ||
+          existing.payload.requirementProposalAction !== ref.action ||
+          existing.display !== input.display ||
+          existing.channelId !== input.channelId
+        )
+          throw new RequirementInputError('Proposal action conflicts with its first submission.');
+        if (requirementProposalResolution(current, saved)?.msgId !== existing.msgId)
+          throw new RequirementInputError('Invalid proposal resolution receipt.');
+        if (ref.action === 'dismiss')
+          return {
+            state: current,
+            published: false,
+            message: existing,
+            action: actionFrom(existing),
+          };
+        incomingIntent = { kind: 'requirements_change', changes: proposal.result.changes };
+      } else if (ref.action === 'dismiss') {
+        if (
+          latestRequirementInterpretation(current)?.msgId !== ref.proposalId ||
+          requirementProposalResolution(current, saved)
+        )
+          throw new RequirementInputError('This proposal is no longer current.');
+        const result = await this.#service.commitPlannedMessage(scope, input.msgId, () => ({
+          message: {
+            msgId: input.msgId,
+            channelId: 'main',
+            fromRole: 'leader',
+            type: 'chat',
+            display: input.display,
+            ts: input.ts,
+            payload: {
+              kind: 'leader_intent',
+              intent: { kind: 'chat', text: input.display },
+              action: { status: 'none' },
+              requirementProposalId: ref.proposalId,
+              requirementProposalAction: 'dismiss',
+            },
+          },
+          mutations: [],
+        }));
+        return { ...result, action: { status: 'none' } };
+      } else {
+        try {
+          incomingIntent = confirmedRequirementIntent(current, ref.proposalId);
+        } catch (error) {
+          throw new RequirementInputError(
+            error instanceof Error ? error.message : 'Proposal is no longer current.',
+          );
+        }
+      }
+    } else if (existing?.payload.requirementProposalId !== undefined) {
+      throw new RequirementInputError(
+        'Proposal confirmation reference is required for this retry.',
+      );
+    }
+    if (
+      incomingIntent.kind === 'chat' &&
+      this.#requirementInterpreter &&
+      input.display.length > 4000
+    )
+      throw new RequirementInputError('Please keep this message within 4000 characters.', 400);
     if (existing !== undefined) {
       assertOnboardingReplay(current, existing, input.channelId, incomingIntent);
       const persistedPhase9 = phase9IntentFrom(existing);
@@ -369,7 +465,17 @@ export class MessageRuntime {
                 },
         };
       }
-      return { state: current, published: false, message: existing, action: actionFrom(existing) };
+      if (incomingIntent.kind === 'chat' && this.#requirementInterpreter) {
+        if (existing.display !== input.display || existing.channelId !== input.channelId)
+          throw new RequirementInputError('Message conflicts with its first submission.');
+        await this.#interpretLeaderInput(scope, existing);
+      }
+      return {
+        state: (await this.store.load(scope)) ?? current,
+        published: false,
+        message: existing,
+        action: actionFrom(existing),
+      };
     }
     await this.#summaryReconciler.reconcile(scope);
     const collaboration = await this.collaboration.load(scope.projectId);
@@ -403,6 +509,15 @@ export class MessageRuntime {
       let completionStarted = false;
       try {
         const result = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
+          if (input.requirementProposal) {
+            try {
+              confirmedRequirementIntent(state, input.requirementProposal.proposalId);
+            } catch (error) {
+              throw new RequirementInputError(
+                error instanceof Error ? error.message : 'Proposal is no longer current.',
+              );
+            }
+          }
           const plan = planPhase9LeaderAction(state, {
             actionId: input.msgId,
             intent,
@@ -418,6 +533,12 @@ export class MessageRuntime {
                 kind: 'leader_intent',
                 intent: plan.intent,
                 action: { status: 'applied' },
+                ...(input.requirementProposal
+                  ? {
+                      requirementProposalId: input.requirementProposal.proposalId,
+                      requirementProposalAction: 'confirm',
+                    }
+                  : {}),
               },
               display: input.display,
               ts: input.ts,
@@ -635,7 +756,83 @@ export class MessageRuntime {
       return { message, mutations };
     });
 
-    return { ...result, action: actionFrom(result.message) };
+    if (intent.kind === 'chat') await this.#interpretLeaderInput(scope, result.message);
+    return {
+      ...result,
+      state: (await this.store.load(scope)) ?? result.state,
+      action: actionFrom(result.message),
+    };
+  }
+
+  bindRequirementInterpreter(interpreter: RequirementInterpreter): void {
+    this.#requirementInterpreter = interpreter;
+  }
+
+  async waitForLeaderInputs(): Promise<void> {
+    await Promise.all([...this.#leaderQueues.values()]);
+  }
+
+  async #interpretLeaderInput(scope: TaskScope, source: Message): Promise<void> {
+    if (!this.#requirementInterpreter || source.channelId !== 'main') return;
+    const current = await this.store.load(scope);
+    if (!current) throw new RequirementInputError('Task not found.', 404);
+    const proposalId = `requirement-proposal:${source.msgId}`;
+    const existing = current.messages.find((m) => m.msgId === proposalId);
+    if (existing) {
+      readRequirementInterpretation(current, existing);
+      return;
+    }
+    if (current.phase === 'done' || current.humanGate) return;
+    const previousMessage = latestRequirementInterpretation(current);
+    const previousRead = previousMessage
+      ? readRequirementInterpretation(current, previousMessage)
+      : undefined;
+    const previous =
+      previousRead?.basis === requirementBasis(current) &&
+      previousMessage &&
+      !requirementProposalResolution(current, previousMessage)
+        ? previousRead
+        : undefined;
+    const input: RequirementInterpretationInput & TaskScope = {
+      ...scope,
+      sourceMsgId: source.msgId,
+      text: source.display,
+      goal: current.goal,
+      requirements: structuredClone(current.requirements),
+      decisions: structuredClone(current.decisionLedger),
+      ...(previous
+        ? { previous: { request: previous.source.display, result: previous.result } }
+        : {}),
+    };
+    let result: ReturnType<typeof normalizeRequirementInterpretation>;
+    try {
+      result = normalizeRequirementInterpretation(
+        await this.#requirementInterpreter.interpret(input),
+      );
+    } catch {
+      throw new RequirementInputError(
+        'Could not interpret this message. It is saved; retry the same message to continue. No requirements were changed.',
+        503,
+      );
+    }
+    const basis = requirementBasis(current);
+    await this.#service.commitPlannedMessage(scope, proposalId, () => ({
+      message: {
+        msgId: proposalId,
+        channelId: 'main',
+        fromRole: 'COORDINATOR',
+        type: 'chat',
+        display: result.kind === 'proposal' ? result.summary : result.text,
+        ts: Date.now(),
+        payload: {
+          kind: 'leader_requirement_interpretation',
+          sourceMsgId: source.msgId,
+          basis,
+          result,
+        },
+      },
+      mutations: [],
+    }));
   }
 
   async handleWorkerOutput(
@@ -756,6 +953,7 @@ function isPhase9LeaderIntent(
   intent: ReturnType<typeof parseLeaderIntent>,
 ): intent is Phase9LeaderIntent {
   return (
+    intent.kind === 'requirements_change' ||
     intent.kind === 'requirement_change' ||
     intent.kind === 'decision_change' ||
     intent.kind === 'priority_change'
@@ -766,7 +964,10 @@ function phase9IntentFrom(message: Message): Phase9LeaderIntent | undefined {
   const intent = message.payload.intent;
   if (typeof intent !== 'object' || intent === null || Array.isArray(intent)) return undefined;
   const kind = (intent as Record<string, unknown>).kind;
-  return kind === 'requirement_change' || kind === 'decision_change' || kind === 'priority_change'
+  return kind === 'requirements_change' ||
+    kind === 'requirement_change' ||
+    kind === 'decision_change' ||
+    kind === 'priority_change'
     ? (intent as Phase9LeaderIntent)
     : undefined;
 }

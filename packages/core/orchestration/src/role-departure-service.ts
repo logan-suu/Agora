@@ -11,6 +11,7 @@ import {
   completeRoleDeparture,
   type HandoffPacket,
   type HumanGateRequest,
+  isFileRef,
   type Message,
   mergeByIdMutation,
   normalizeRoleId,
@@ -509,7 +510,9 @@ function buildDepartureHandoff(
   ]);
   const fileRefs = [
     ...new Set(
-      state.testResults?.failures.map((failure) => `${failure.file}:${String(failure.line)}`) ?? [],
+      state.testResults?.failures
+        .map((failure) => `${failure.file}:${String(failure.line)}`)
+        .filter(isFileRef) ?? [],
     ),
   ].sort();
   return {

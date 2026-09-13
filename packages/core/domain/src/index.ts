@@ -11,5 +11,6 @@ export * from './objection-resolution';
 export * from './onboarding';
 export * from './parallel-execution';
 export * from './reducer';
+export * from './requirement-proposal';
 export * from './roster';
 export * from './state';

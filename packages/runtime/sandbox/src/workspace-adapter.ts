@@ -26,6 +26,7 @@ export interface WorkspaceGitCapability {
   parentsOf(commit: string): Promise<readonly string[]>;
   retireWorktree(path: string, branch: string): Promise<void>;
   resetWorktree(path: string, commit: string): Promise<void>;
+  recoverTaskWorktreesForDisposal(taskId: string): Promise<void>;
   dispose(): Promise<void>;
 }
 
@@ -259,6 +260,7 @@ export class WorkspaceAdapter implements RecoverableSandboxManager {
     // persisted state, sessions, or archived artifact out of `.data`.
     const disposing = (async () => {
       await this.#execution.suspend(taskId);
+      await this.#git.recoverTaskWorktreesForDisposal(taskId);
       await this.#git.dispose();
       this.#disposed = true;
     })();

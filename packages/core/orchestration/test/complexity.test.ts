@@ -31,6 +31,17 @@ describe('evaluateComplexity (task 4.1, spec §3 tier classification)', () => {
     expect(result.signals.matchedTier2Keywords).toEqual(expect.arrayContaining(['rest', 'api']));
   });
 
+  it.each([
+    'Build separate ticket and venue modules, then combine them in a quote module.',
+    'Build a MODULE for each independently owned part of the application.',
+  ])('recognizes English module goals as the existing multi-module tier: %s', (goal) => {
+    const result = evaluateComplexity(input({ goal }));
+    expect(result.tier).toBe(2);
+    expect(result.signals.rule).toBe('tier2.multi_module');
+    expect(result.signals.matchedTier2Keywords).toContain('module');
+    expect(result.tier).toBe(evaluateComplexity(input({ goal: '分别实现票价与场地模块' })).tier);
+  });
+
   it('R1 beats R3: a mixed goal naming both a cache and an API module stays Tier 2', () => {
     const result = evaluateComplexity(input({ goal: '实现一个缓存服务的 API 模块' }));
     expect(result.tier).toBe(2);
