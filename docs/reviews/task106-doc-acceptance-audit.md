@@ -25,7 +25,7 @@
 
 `tests/integration/phase10/phase10-exit.test.ts`尚不存在；10.7仍pending，依赖10.6开发交付。滚轮、滑块、键盘、阅读位置、作用域切换和异步草稿等浏览器行为不能靠SSR标记断言替代，应在出口计划中安排实际交互验证。现有1,246项全量回归、合成自然语言真实Go、录制与归档检查属于各自记录的实测，不冒称本轮重跑或已经完成出口。
 
-新版已接受视频、候选、裁决、源码清单与媒体hash见[演示说明](../demo/task106-natural-chat-demo.md)，自然语言实测见[功能证据](../demo/task106-natural-language-evidence.md)，失败/修复与回归链见[正式录制证据](../demo/task106-english-recording-evidence.md)。10.5冻结结果和DEF-016/017没有修改。
+新版已接受视频、候选、裁决、源码清单与媒体hash见[演示说明](../demo/task106-natural-chat-demo.md)，自然语言实测见[功能证据](https://github.com/logan-suu/Agora/blob/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo/task106-natural-language-evidence.md)，失败/修复与回归链见[正式录制证据](https://github.com/logan-suu/Agora/blob/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo/task106-english-recording-evidence.md)。10.5冻结结果和DEF-016/017没有修改。
 
 ## 本轮验证
 

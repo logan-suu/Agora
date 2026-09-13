@@ -2,6 +2,20 @@
 
 ### A human-led, group-chat workspace where AI agents plan, code, test, and review together.
 
+## Contents
+
+- [Current product](#current-product)
+- [Product demo](#product-demo)
+- [What is Agora?](#what-is-agora)
+- [Evidence and limits](#evidence-and-limits)
+- [Architecture](#architecture)
+- [Quick Start (macOS)](#quick-start-macos)
+- [Tech Stack](#tech-stack)
+- [Repository Layout](#repository-layout)
+- [Roadmap](#roadmap)
+- [Design Documents](#design-documents)
+- [Project Status and Scope](#project-status-and-scope)
+
 **Current scope: local use.** Run Agora on your own computer and open its local address in your browser. The backend, Docker sandboxes, and Git worktrees run on that machine, and application data is stored locally. Cloud hosting is outside the current product scope. Model requests go to your chosen online API or local model service; local operation does not mean offline operation. The product installation and startup commands currently support macOS. The Linux product launcher and automatic credential setup are outside that task’s current scope; existing Linux sandbox support is separate.
 
 **Credential setup on macOS.** The local launcher creates a random encryption key in your macOS Keychain on first use and reuses it after restart. In the model settings dialog, enter your service's Base URL, API key, and model name, either for one Agent or the whole team. Keychain access may require macOS authorization. Existing encrypted connections remain unavailable when the original key cannot be accessed; the application shows recovery instructions and never silently replaces it.
@@ -25,11 +39,11 @@ Agora runs a six-role coding team on your Mac. Independent Coder workers can exe
 - **Choose models:** configure an OpenAI-compatible service for the whole team or individual roles. New verified DeepSeek V4 connections default to a 1M context window and 384K maximum output with automatic Harness history compaction; custom limits remain independently editable.
 - **Keep artifacts:** completed code and tests remain available after execution resources are released.
 
-Start with [Quick Start](#quick-start-macos). See the [final benchmark report](docs/evals/phase10-opencode-go-final-report.md), [engineering interview notes](docs/portfolio/engineering-notes.md), and [historical Phase 5 recording](#historical-phase-5-demo). The [current recording status](docs/demo/task106-evidence.md) records Task 10.6 attempts, repairs and verification; Phase 10 final acceptance remains separate.
+Start with [Quick Start](#quick-start-macos). See the [final benchmark report](docs/evals/phase10-opencode-go-final-report.md), [engineering interview notes](docs/portfolio/engineering-notes.md), and [current product demo](#product-demo). Task 10.6 is complete; Phase 10 final acceptance remains separate.
 
 ## Product demo
 
-[![Watch the English product demo](docs/demo/Agora-Natural-Chat-Demo-2026-09-12.poster.png)](docs/demo/Agora-Natural-Chat-Demo-2026-09-12.webm)
+https://github.com/user-attachments/assets/d24f4192-8353-43b8-b164-0cbcf700abc2
 
 One real task: describe a goal, change the ticket price in plain English, review and confirm the proposal, repair issues found in verification, then approve completion and keep the artifact. The English recording includes real rework and cuts waiting periods. Rework and final approval use the existing gate command; no JSON is pasted into chat. See the [recording evidence, editing notes and downloadable artifact](docs/demo/task106-natural-chat-demo.md). The archived output passes 18 project tests plus 8 independent checks.
 
@@ -246,15 +260,7 @@ Agora/
 | 9 | True parallel workers and cooperative preemption | ✅ Complete |
 | 10 | Unified Harness agents, macOS setup and startup, hardening, final benchmark, and portfolio demo | In progress |
 
-The detailed task graph and current evidence live in [`docs/task-status.json`](docs/task-status.json). Tasks 10.2–10.5 are complete; Task 10.6 prepares the current documentation and recording. Task 10.7 independently verifies the final product exit criteria.
-
-## Historical Phase 5 Demo
-
-![Historical Agora Phase 5 TTL LRU coding demo](docs/demo/Agora-Phase5-TTL-LRU-Live-Demo-2026-09-01.gif)
-
-This September 1, 2026 recording shows a real browser-triggered TTL-aware LRU task through Coder, Tester and Reviewer, with persisted SSE progress, successful tests, archived output and refresh recovery. It used Harness, MCP, Docker and Git.
-
-It documents the sequential Phase 5 baseline. The later Leader completion gate, subchannels and parallel workers are outside that recording's scope; its earlier completion flow does not describe the current product.
+The detailed task graph and current evidence live in [`docs/task-status.json`](docs/task-status.json). Tasks 10.2–10.6 are complete. Task 10.7 is ready and will independently verify the final product exit criteria.
 
 ## Design Documents
 

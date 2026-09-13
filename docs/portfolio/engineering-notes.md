@@ -2,7 +2,7 @@
 
 日期：2026-09-11。依据：已合并的10.2–10.5实现与验证记录、T10.6工作区实测、蓝图§18和详细设计§11.9。当前任务状态以[任务索引](../task-status.json)为准；本文不宣称10.7最终出口已通过。
 
-当前已接受演示：[全英文自然语言交互视频与证据](../demo/task106-natural-chat-demo.md)（quote-en-take-9）。同一真实任务展示并行Coder、自然语言改价与显式确认、累计测试、Reviewer→Leader终审、归档和刷新；归档18+8项检查通过。真实返工与剪辑均披露，单次演示不作为可靠性/性能结论，不宣称本场景触发历史压缩或暂停worker真Fork。旧录制6仅作[历史诊断索引](../demo/task106-product-demo.md)。
+当前已接受演示：[全英文自然语言交互视频与证据](../demo/task106-natural-chat-demo.md)（quote-en-take-9）。同一真实任务展示并行Coder、自然语言改价与显式确认、累计测试、Reviewer→Leader终审、归档和刷新；归档18+8项检查通过。真实返工与剪辑均披露，单次演示不作为可靠性/性能结论，不宣称本场景触发历史压缩或暂停worker真Fork。旧录制6仅作[历史诊断索引](https://github.com/logan-suu/Agora/blob/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo/task106-product-demo.md)。
 
 ## 30秒介绍
 
@@ -16,7 +16,7 @@ Agora是一个在Mac本机运行的群聊式AI编码协作产品。用户作为L
 - 交付macOS安装/启动入口、系统钥匙串主密钥管理，以及逐Agent或全员模型连接配置。
 - 建立可审计工程评测：固定公开JavaScript四题与两个内部协作任务，每task×variant三次独立attempt，保留失败、版本与成本限制。
 
-这些条目描述已实现机制，不应追加“完全自主”“永不崩溃”“无限扩展”或“普遍提速”等结论。旧录屏已按Leader要求撤下，新版quote-en-take-9已获接受并提供成片。此前尝试、修复和验证仍见[演示索引](../demo/task106-evidence.md)，历史记录不改写为本轮成功，视频接受也不等于10.7出口通过。
+这些条目描述已实现机制，不应追加“完全自主”“永不崩溃”“无限扩展”或“普遍提速”等结论。旧录屏已按Leader要求撤下，新版quote-en-take-9已获接受并提供成片。此前尝试、修复和验证仍见[演示索引](https://github.com/logan-suu/Agora/blob/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo/task106-evidence.md)，历史记录不改写为本轮成功，视频接受也不等于10.7出口通过。
 
 ## 问题、取舍与证据
 
@@ -45,4 +45,4 @@ Agora是一个在Mac本机运行的群聊式AI编码协作产品。用户作为L
 
 ## 演示解说边界
 
-后续优化全部完成后，再按[任务10.6录制计划](../demo/task106-recording-plan.md)执行；媒体、版本、任务、实际结果和后续清理修复在[证据索引](../demo/task106-evidence.md)中分别记录。演示是一条可审计功能链，不是新的统计样本。遇到产品缺陷先定位和修复；不剪掉失败后宣称一次稳定成功，不让Agent代替Leader做最终裁决。
+后续优化全部完成后，再按[任务10.6录制计划](https://github.com/logan-suu/Agora/blob/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo/task106-recording-plan.md)执行；媒体、版本、任务、实际结果和后续清理修复在[证据索引](https://github.com/logan-suu/Agora/blob/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo/task106-evidence.md)中分别记录。演示是一条可审计功能链，不是新的统计样本。遇到产品缺陷先定位和修复；不剪掉失败后宣称一次稳定成功，不让Agent代替Leader做最终裁决。

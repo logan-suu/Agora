@@ -1,12 +1,12 @@
 # Agora: natural-language product demo
 
-**Leader accepted this video on 2026-09-12 (local time).** The accepted 202-second cut has SHA-256 `dfd8f4fa545f858f60d092b2e18aaa6c5388419c0a707302ace512345aa03e72`. This records video acceptance; the T10.6 development delivery and human PR process remain separate.
+**Leader accepted this video on 2026-09-12 (local time).** The accepted 202-second cut has SHA-256 `dfd8f4fa545f858f60d092b2e18aaa6c5388419c0a707302ace512345aa03e72`. This is the original accepted WebM master hash; the GitHub MP4 distribution is a re-encode of the same frames and edit. T10.6 subsequently completed through human merge of PR #73; Phase 10 exit acceptance remains separate.
 
 This English recording follows one real local task, `quote-en-take-9`, from a plain-language goal through a confirmed requirement change, repairs, verification, human completion approval and archive. It includes real rework; it is a selected demonstration, not a benchmark or a reliability estimate.
 
-[![Watch the English demo](Agora-Natural-Chat-Demo-2026-09-12.poster.png)](Agora-Natural-Chat-Demo-2026-09-12.webm)
+https://github.com/user-attachments/assets/d24f4192-8353-43b8-b164-0cbcf700abc2
 
-[Video](Agora-Natural-Chat-Demo-2026-09-12.webm) · [Editing timeline](Agora-Natural-Chat-Demo-2026-09-12.timeline.json) · [Six-file artifact](Agora-Natural-Chat-Artifact-2026-09-12.zip)
+[Watch video](https://github.com/user-attachments/assets/d24f4192-8353-43b8-b164-0cbcf700abc2) · [MP4 file](Agora-Natural-Chat-Demo-2026-09-12.mp4) · [Editing timeline](Agora-Natural-Chat-Demo-2026-09-12.timeline.json) · [Six-file artifact](Agora-Natural-Chat-Artifact-2026-09-12.zip)
 
 ## The interaction
 
@@ -41,4 +41,11 @@ The video uses English editorial chapter panels around actual 1440 × 1000 brows
 
 When the Leader scrolls through the requirement proposal, automatic following pauses and new-message counts accumulate. The retained frames preserve this real behavior. The Architect still emitted a test-only node despite role guidance; the guidance is not a deterministic plan validator. Inherited test paths and assertions were preserved in the final repair. The demonstration does not establish automatic history compaction or a paused worker's true Fork: those need their separate execution evidence.
 
-The withdrawn JSON-input recording and failed earlier takes were deleted as requested; their canonical task records remain private. The earlier approved artifact remains separate. T10.6 stays `in_progress` until its normal delivery and human PR process completes. Phase 10 final acceptance and [benchmark results](../evals/phase10-opencode-go-final-report.md) remain separate.
+The withdrawn JSON-input recording and failed earlier takes were deleted as requested; their canonical task records remain private. Historical materials are available at their pinned Git revision rather than kept in this directory. T10.6 is complete; Task 10.7 is ready and has not run. Phase 10 final acceptance and [benchmark results](../evals/phase10-opencode-go-final-report.md) remain separate.
+
+
+## GitHub playback distribution
+
+The MP4 distribution preserves the accepted 202-second edit at 1920 × 1080 and 12 fps, without audio. It uses H.264, yuv420p and fast start, and is 8681621 bytes (below the 10 MB video attachment limit). SHA-256: `29764a6f2083cee1ffd67d0c8da32034ce2495f5e89b4524de0a8f8aa5fd1f9b`. The timeline retains the original accepted WebM hash and records the separate distribution hash. Historical source and verification documents are pinned to [revision 83fe416](https://github.com/logan-suu/Agora/tree/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo); the active directory contains only this current demo package.
+
+The GitHub attachment player was verified in a signed-out browser: metadata loaded as 202 seconds / 1920 × 1080, playback advanced, pause/resume worked, and no media error occurred. The player URL is the stable GitHub attachment address; temporary signed delivery URLs are not stored.

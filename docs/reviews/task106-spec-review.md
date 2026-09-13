@@ -58,7 +58,7 @@ Leader拒绝录制6输入框中的`/requirement ... JSON`，明确选择自然�
 
 歧义实测按证据排序的假设：①提示未具体界定代词加数值的澄清阈值；②错误准入已处理的上一草案/原始聊天导致推断；③解析器把澄清误转为草案。检查确认已处理草案不进入previous、原始聊天不进入解释输入；解析器按kind原样校验，真实输出本身为proposal。因此修正①：对象和单位必须由当前输入或明确传入的未处理草案/澄清上下文定位；旧目标不能覆盖当前需求，也不能用二者差异猜测缺失指代。相同“Make it 850.”复验返回澄清，不产生新需求。第一次猜测草案已显式取消，历史仍保留。
 
-完整测试、真实模型与界面证据见[自然语言验证](../demo/task106-natural-language-evidence.md)。
+完整测试、真实模型与界面证据见[自然语言验证](https://github.com/logan-suu/Agora/blob/83fe416c1015d86616acdead7af2ebbad82e8384/docs/demo/task106-natural-language-evidence.md)。
 
 
 ## 2026-09-12 英文模块入口漏识别
