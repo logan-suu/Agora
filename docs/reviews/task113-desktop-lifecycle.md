@@ -46,6 +46,12 @@ G5隔离接缝说明：`validate.cjs`/`validate-host.cjs`由官方Electron启动
 - 本机产物：`/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-dhyl3o/output/app/Agora-darwin-arm64/Agora.app`。同级output保留完整资源manifest及trace审查，build根保留输入manifest。
 - 可追溯摘要、完整检查名称与排除明细：[results.json](task113-evidence/results.json)；真实窗口截图：[preview.png](task113-evidence/preview.png)。所有结果为研发验证，不改写后续任务和发布状态。
 
+### 提交交付核验
+
+Leader随后显式调用agora-commit，完成提交前重新检查：typecheck/lint通过，Node7项与Vitest178文件1301项通过（106.13秒），相同真实模型配置不变。功能提交`e8294f596d0f06b3fae6a081f52f7d98c1f2ef20`已推送并创建[PR #81](https://github.com/logan-suu/Agora/pull/81)，base为dev-1.0.0。
+
+从该固定提交重新构建成功，输入为`fixed-commit`、333文件，生产资源10163文件/323583844字节；fuses/嵌套签名及真实服务23项、主进程9项再次通过。固定提交产物与完整检查名称见[delivery.json](task113-evidence/delivery.json)。后续证据提交仅改文档，应用/构建输入保持该已验证提交内容；PR和任务仍待人工合并，不表示发布或11.4/11.5验收完成。
+
 ### 失败与修复（保留失败，不用重试覆盖）
 
 1. 首批TDD缺模块失败后逐项实现；本机listen在工具沙箱EPERM，正常授权权限下真实监听通过。
@@ -60,7 +66,7 @@ G5隔离接缝说明：`validate.cjs`/`validate-host.cjs`由官方Electron启动
 
 ## 后续交付边界
 
-- 当前构建为`development-working-tree`，有基线commit与每输入文件hash。提交获批后用`pnpm build:desktop <verified-download-directory> --revision <git-commit>`生成最终固定提交候选并核对；不擅自commit。
+- 初始研发构建为`development-working-tree`并保留hash；交付授权后已通过`--revision e8294f5`生成并核验固定提交构建，详见上方提交交付核验。该应用仍不是Phase11安装发布出口产物。
 - 本轮只在arm64/macOS26.5开发机验证，应用标记最低15.0；Intel、最低系统和干净Mac安装未完成，不缩减平台承诺。
 - 11.4负责受管Git/pnpm及完整工具链、两架构安装介质、签名/Keychain升级连续性和迁移事务故障验证；11.5负责干净目标环境与累计出口及发布候选。
 - 不提供Developer ID签名、公证或Gatekeeper验收承诺；不修改Gatekeeper或quarantine。新格式1/未闭合升级拒绝不等于已完成升级事务。
