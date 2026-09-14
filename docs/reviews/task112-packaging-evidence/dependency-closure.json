@@ -1,0 +1,35 @@
+{
+  "packages": 303,
+  "missing": [
+    {
+      "package": "next",
+      "name": "@playwright/test",
+      "type": "peer"
+    },
+    {
+      "package": "next",
+      "name": "babel-plugin-react-compiler",
+      "type": "peer"
+    },
+    {
+      "package": "next",
+      "name": "sass",
+      "type": "peer"
+    },
+    {
+      "package": "ws",
+      "name": "bufferutil",
+      "type": "peer"
+    },
+    {
+      "package": "ws",
+      "name": "utf-8-validate",
+      "type": "peer"
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "name": "@cfworker/json-schema",
+      "type": "peer"
+    }
+  ]
+}

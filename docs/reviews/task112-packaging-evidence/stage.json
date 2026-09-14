@@ -1,0 +1,11 @@
+{
+  "copied": 3889,
+  "traces": 15,
+  "rejected": 0,
+  "sourceCommit": "58ef611e91ed27e7d05aebbcd9024190f50d99f3",
+  "buildId": "brBN3KnuO2SnEyjK_lB8R",
+  "packagerCandidate": "20.3.0",
+  "packagerEngines": {
+    "node": ">= 22.12.0"
+  }
+}
