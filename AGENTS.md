@@ -1,15 +1,17 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.14
-**生效日期**：2026-09-12
+**版本**：v2.19
+**生效日期**：2026-09-13
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
-**任务追踪**：`docs/task-status.json` 记录全部任务执行状态、依赖关系与常驻决策（standing_decisions）
+**任务追踪**：`docs/task-status.json` 是全部任务当前状态、依赖与常驻决策摘要的唯一索引；`docs/task-history/<taskId>.md` 保存完整执行证据。初始化运行 `node scripts/task-status.mjs summary`，按需读取，禁止默认整文件/全历史输出。维护规范见 [docs/task-tracking.md](docs/task-tracking.md)。
 **决策记录**：蓝图为主要决策定稿处——重大架构决策集中于 §21「已定决策」，个别按章节落位（如 §16 实时通信 / §17 阶段路线），均带 `[YYYY-MM-DD 架构决策更新]` 标记。**真相源层级**：每条决策的完整定义以其来源文档章节为准；`docs/task-status.json` 的 `standing_decisions` 是唯一的摘要索引（ID / 一句话规则 / source 指针）；本文档只按 ID 引用。决策变更时必须经 `$agora-sync-docs` 一并更新，不得只改其一
 
 ---
 
 ## 0. 项目文档与快速索引
+
+**后续演进入口（D18）**：后续产品规则见项目蓝图 §22，契约设计见详细设计 §12，Phase11–14全部任务、按任务决策规则及逐项覆盖见开发计划 §18。既有阶段实现规则与后续目标按 D18 分阶段适用；现在即拆分全部功能与后置候选；未定细则先列设计任务，不等对应批次开工才拆，也不在受影响契约未定稿前绕过既有执行保护或跨阶段出口门禁。
 
 所有规格、架构、实现规范与计划均存放于 `docs/` 目录。Agent 在执行任何编码任务前，**必须**先查阅相关文档并引用原文。
 
@@ -17,13 +19,14 @@
 
 | 文档 | 文件路径 | 角色 |
 |---|---|---|
-| **项目蓝图** | `docs/项目蓝图.md` | 唯一主文档：定位/架构/分阶段路线/§21 已定决策定稿 |
-| **详细设计方案** | `docs/详细设计方案.md` | 落码规格：§0 工程结构与 Harness 约定 / §1 State schema / §2 角色 / §3 编排 / §4 抢占 / §5 通信 / §6 执行器沙箱 / §7 投影 / §8 多租户与 KB / §9 阶段 0 切片 / §10 校验 / §11 工程 Eval |
+| **项目蓝图** | `docs/项目蓝图.md` | 唯一主文档：定位/架构/分阶段路线/§21 决策/§22 后续产品规则 |
+| **详细设计方案** | `docs/详细设计方案.md` | 落码规格：§0 工程结构与 Harness 约定 / §1 State schema / §2 角色 / §3 编排 / §4 抢占 / §5 通信 / §6 执行器沙箱 / §7 投影 / §8 多租户与 KB / §9 阶段 0 切片 / §10 校验 / §11 工程 Eval / §12 后续契约 |
 | **系统架构设计文档** | `docs/系统架构设计文档.md` | L1-L4 分层 / Monorepo 映射 / 关键路径（§4）/ 一致性模型（§5）/ 韧性表（§6）/ 扩展点（§7）/ 权衡（§8）/ 部署（§9） |
 | **技术选型文档** | `docs/技术选型文档.md` | 版本锁定（§12）/ 备选方案排除（§4）/ MCP 工具清单（§6）/ 沙箱（§7）/ SSE（§9）/ 持久化（§10）/ 决策记录（§13） |
-| **开发计划安排** | `docs/开发计划安排.md` | Phase 0-10 任务分解 / 里程碑 M0-M10 / 风险 / 秋招 Demo 检查点（§17） |
+| **开发计划安排** | `docs/开发计划安排.md` | Phase 0-10 既有任务 / §18 四批交付与 Phase 11–14全部任务 / 风险 / 秋招 Demo 检查点（§17） |
 | **框架调研与借鉴决策** | `docs/框架调研与借鉴决策.md` | AutoGen/AgentScope 源码级结论 / 8 个借鉴模式 / 借鉴-拒绝矩阵 |
-| **任务状态** | `docs/task-status.json` | 11 phase / 61 活动任务（原 10.1 已取消） / 依赖图 / standing_decisions——每个任务开工前必读 |
+| **任务状态** | `docs/task-status.json` | 全部任务当前状态/依赖/出口及短决策索引；通过 summary/task/phase/decisions 按需读取 |
+| **任务历史** | `docs/task-history/<taskId>.md` | 完整执行/失败/修复/门禁/交付时点记录，按需追读，不维护第二份当前状态 |
 | **延期项台账** | `docs/deferred-items.json` | 全阶段延期项统一台账（DEF-NNN，格式对齐 iTestAgent）；常驻决策 DEF 的唯一数据源，阶段出口检查时逐条核对 |
 
 ### 0.2 任务类型 → 文档快速索引（Agent 必读）
@@ -32,7 +35,7 @@
 
 | 任务类型 | 应读取的文档 | 重点章节 |
 |---|---|---|
-| 初次启动/建立全局认知 | 本文件 + `task-status.json` + 蓝图 §21 | 全文阅读，建立决策与进度地图 |
+| 初次启动/建立全局认知 | 本文件 + 查询工具 summary + 按任务选择 decisions/source | 建立当前进度地图；不默认读全部任务、历史或蓝图 §21 全文 |
 | State/reducer/schema/合并函数 | 详细设计 §1 + 架构 §5 | D17 并行 mutation 身份分区；set 仅串行控制面 |
 | 角色 prompt/RoleSpec/权限矩阵 | 详细设计 §2 | 六角色规格 + 工具白名单矩阵 |
 | 编排主循环/coordinator 路由 | 详细设计 §3 + 蓝图 §9 | 4 通用节点 + 条件路由 + 反馈升级 |
@@ -54,13 +57,14 @@
 | Phase 10 出口及 T10.6 优化回归 | 详细设计 §11.10 + 蓝图 §18/§21 + 开发计划 §13 + `docs/reviews/task106-doc-acceptance-audit.md` | E01–E12 当前预期/旧预期边界/验证入口；先按来源校准，不能把历史临时额度、旧展示/滚动行为当当前规格；不豁免真实缺陷或 G1–G7 |
 | Spike/执行链路验证 | 详细设计 §9 + 架构 §4 | 最小闭环链路 |
 | 工程 Benchmark/Eval | 详细设计 §11 + 蓝图 §3/§17/§21 + 选型 §11.3 | D11：成熟任务/Outcome Grader 复用 + Agora 协作语义 Grader；不替代测试/G5 |
+| 后续桌面/本机与跨批次设计 | 蓝图 §21 D18 / §22 + 详细设计 §12 + 架构 §10 + 选型 §14 + 开发计划 §18 | 全量任务按依赖推进；Docker退役前保留适用回归，11.13转为本机替代覆盖 |
 | 决策变更后文档同步 | `$agora-sync-docs` Skill 流程 + 蓝图 §21 | 同步顺序与标记规范 |
 
 > **决策变更同步·浓缩顺序**：① 蓝图（§21 或对应章节，打标记）→ ② 详细设计对应节 → ③ 系统架构 / 技术选型（如涉及）→ ④ 开发计划安排 + `task-status.json`（含 standing_decisions）→ ⑤ AGENTS.md（如涉及红线）。逐步操作清单以 `$agora-sync-docs` Skill 为唯一详版。
 
 ### 0.3 Agent 文档读取规范
 
-1. **启动时**：自动加载本文件，并**必须**读取 `docs/task-status.json` 以确认当前任务状态与常驻决策。
+1. **启动时**：加载本文件，运行 `node scripts/task-status.mjs summary` 确认当前任务状态及决策 ID；选任务后运行 `task <id>`、`decisions <id...>` 并读取对应 source。脚本程序读取完整索引，Agent 只接收所需输出；不默认 `cat` 索引或批量加载历史。
 2. **执行任务时**：根据 §0.2 映射表精准读取相关章节。
 3. **引用原文**：回复中必须**逐字粘贴**相关约束/接口签名/决策规则原文。
 4. **禁止推断**：严禁"根据常规做法，我认为应该…"式推断。文档描述模糊时必须停止编码并向人类提出澄清问题。
@@ -99,13 +103,16 @@ LLM 永不在 token 流中被硬杀；底层循环复用 Harness，编排只有 
 技术选型文档        选型定稿与版本锁定
 开发计划安排        Phase 0-10 分解与里程碑
 框架调研与借鉴决策  外部框架结论快照（带日期）
-task-status.json    进度与常驻决策（standing_decisions）
+task-status.json    唯一当前进度与常驻决策摘要（standing_decisions）
+task-history/       完整任务历史证据，按需读取，不作当前状态来源
 deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数据源）
 ```
 
 ---
 
 ## 2. 硬红线（NEVER，违反必被拒绝）
+
+**阶段适用（D18）**：下列 Docker、KB Write-Block、六角色与现有工作区条款继续约束已交付路径；后续本机授权/稳定成员/知识维护按 D18 和对应任务先定稿再实装验收，不直接覆盖旧规则或关闭保护。R9接口调整也必须在设计任务先明确并同步。第一批不启用Librarian写入；新本机G7边界以获批授权、越界保护与真实验证为准，不将Worktree冒充OS沙箱。D18已批准Phase11退役Agora Docker后端且不兼容旧产品任务；Docker条款仅约束退役前实现，不要求永久保留。11.3定稿退役清单、11.13完成移除与本机回归替代、11.14在无Docker环境验收；研发任务历史保留，不自动删除本机旧数据。
 
 ```
 R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），禁止直接赋值共享 State。D17 下并行 agent step 只可提交具稳定身份的 append；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区生成，这些合法并行 op 必须可交换、幂等。当前 Subtask 全字段均属串行控制面；并行模型输出的 workers merge、set、subtask、他人 worker 分区与 collaboration 写入均禁止，只能走任务串行控制面或 D12 ProjectCollaborationStore revision CAS；禁止合并多个完整 AppState 快照
@@ -269,7 +276,8 @@ agora/
 ├── tests/evals/
 │   ├── phase{N}/                   # D11 渐进式工程 Eval 入口/fixture/grader（非默认 pnpm test）
 │   └── fixtures/                   # 小型自有任务；公开 Benchmark 仅记版本/ID，不复制数据集
-├── docs/                           # 7 份设计文档 + task-status.json（见 §0.1）
+├── scripts/task-status.mjs         # 只读研发任务查询（不属于产品运行时）
+├── docs/                           # 来源规格、紧凑索引、task-history 与证据（见 §0.1）
 ├── .agents/skills/                 # 14 个 Codex 项目级工作流 Skill（主入口）
 ├── .opencode/commands/             # OpenCode 兼容副本（迁移验证后再退役）
 ├── AGENTS.md
@@ -339,12 +347,14 @@ Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 
 
 新会话一律先执行 `$agora-init-session`。
 
+**[2026-09-13 研发工作流同步]** 下列Code/TDD步骤针对实际代码变更。design/code/validation/exit按任务notes及实际产出分流，详细规则见[追踪维护规范](docs/task-tracking.md)；纯设计不虚构运行时测试，必要Spike不能省略。非代码完成沿用§8.1.2；含产品代码、测试或构建/执行脚本仍走代码门禁与PR人工合并，exit仍完整验收。此分流不豁免§3.1.3提交前检查。已获得的同一范围授权不重复索取。
+
 ```text
 Explore  读 documents_required 章节 + 相关代码；逐字粘贴约束原文；文档矛盾先评审并同步修正，未决架构取舍再上报
 Plan     产出实现计划（改哪些文件/接口/schema/测试），等人确认
 Code     小步实现，一次一个可验证单元；TDD：写测试→红→写实现→绿
 Check    pnpm typecheck + pnpm lint + pnpm test
-Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5）；证据留档进 notes
+Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5）；完整证据入任务历史，notes 保留短摘要和引用
 交付     $agora-commit：门禁→功能分支提交→PR(base=dev-1.0.0)；PR 合并后 $agora-pr-merge 标 done→级联翻转→阶段收尾
 ```
 
@@ -369,7 +379,7 @@ G1 规格一致      实现与 8 份文档及 standing_decisions 不冲突
 G3 静态检查      pnpm typecheck + pnpm lint 通过（scripts 未建立前用 pnpm exec 等价命令）
 G4 测试通过      pnpm test 全绿，含既有回归
 G5 执行链路实测  沙箱/Harness/工具能力必须真实跑通验证，不以 mock 规避
-G6 证据留档      task-status.json notes 记录自检结论、关键发现、偏差与延期项引用（延期项本体入 docs/deferred-items.json）
+G6 证据留档      task-status.json notes 保留当前结论及证据引用，完整自检/失败/修复/偏差/交付追加 docs/task-history/<taskId>.md；已有报告只链接，延期项本体仍在 docs/deferred-items.json
 G7 安全合规      无敏感数据落盘明文；agent 产出的代码只在沙箱内执行
 ```
 
@@ -392,7 +402,7 @@ pending -> ready -> in_progress -> done
 | `ready` | 依赖全部 done，等待执行 | Agent 幂等级联 |
 | `in_progress` | 开工确认后 / 执行中 | Agent（经 `$agora-do-task` 等） |
 | `blocked` | 外部阻塞，notes 注明解除条件 | Agent，解除后回 ready |
-| `done` | 门禁 G1-G7 全过 + PR 已合并到 dev-1.0.0 | `$agora-pr-merge` 收尾时 |
+| `done` | 满足适用验收；代码类完成PR人工合并，非代码类产出经人类确认（见§8.1.2） | 按§8.1.2对应流程收尾 |
 
 ### 8.1.2 done 转换规则（PR 合并流）
 
@@ -410,6 +420,8 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 ```
 
 **级联更新（幂等）**：启动或任务完成时，遍历所有 `pending` 任务，`dependencies` 全部 `done` 则翻转为 `ready`。
+
+**[2026-09-13 研发追踪维护]** notes 最多 800 个 Unicode 码点，保存当前结论、下一步/阻塞条件及历史/证据链接；完整执行历史追加 `docs/task-history/<taskId>.md`，不在索引累积日志。standing_decisions.rule 最多 500 码点，ID/source 保留，完整规则读 source。字段白名单不变，历史路径按 ID 派生；已完成任务保留。旧文档“任务 notes/门禁证据”指短摘要及其历史引用。`history` 默认末页并明确省略范围，恢复、验收、提交/收尾必须继续追读相关证据。`check` 校验索引和迁移原文哈希，不替代 G1–G7。查询全部只读，级联仍由工作流执行。详见 [维护规范](docs/task-tracking.md)。
 
 ### 8.1.4 跨阶段阻断规则
 
@@ -503,7 +515,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D17/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D18/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 

@@ -1,0 +1,186 @@
+{
+  "description": "2026-09-13 迁移前摘要原文，仅供历史审计；当前规则回来源章节，当前摘要只在 task-status.json。",
+  "sourceCommit": "fa3efafed328bdfeb5b0f575b4e57bbd248a45fd",
+  "sha256": "ac50bf4596fbb92b3f397d8cd3b0c9765432b8efc6c37e2eff18c49ddf05168a",
+  "decisions": [
+    {
+      "id": "D1",
+      "rule": "当前完整 project(state, role) 投影经 agent-scoped 官方 SystemPrompt.section/variable 每次请求刷新；pre-step 仅过滤新 claim 的 inbox，角色 turn 只一次固定启动消息，工具 Step 不重复注入投影 user 消息；官方 loop 保留工具历史并委托 compaction 压缩；初始、重投影及 D4 Fork 同路，禁止原始群聊。",
+      "source": "docs/项目蓝图.md §21 D1；docs/详细设计方案.md §7"
+    },
+    {
+      "id": "D2",
+      "rule": "所有阶段、所有角色统一使用基于 DeepSeek Harness 的自研 Agent/HarnessExecutor；复用官方 loop、会话持久化、inbox 与压缩，自研角色、投影、编排及并发/抢占控制。不接入外部编码 Agent、不实现薄/厚切换；external/externalCmd 仅为旧兼容表示。原任务 10.1 取消，活动图移除并保留历史编号；D1/D4/D15/D17 与冻结端口保持，D11 Benchmark 任务/环境/Grader 适配不受影响；10.3允许用户逐Agent配置OpenAI兼容模型API的Base URL/API Key/模型名，这不是外部编码Agent接入，范围见蓝图§21的2026-09-09更新；10.3同时提供当前项目全部Agent统一模型配置快捷入口，保留逐Agent覆盖 [2026-09-12 容量验收索引] 已知V4新配置正常容量与旧绑定/自定义值/历史Eval分别验收；官方压缩继续复用，临时费用限制不成为产品上限，具体见详细设计§3/§11.10与选型§4.1。",
+      "source": "docs/项目蓝图.md §21；docs/详细设计方案.md §6；docs/开发计划安排.md §13"
+    },
+    {
+      "id": "D3",
+      "rule": "KnowledgeBase 写入全局禁用（Write-Block），Librarian 为空桩；启用需双重门控（测试全绿 + /approve-kb）；阶段 0 的 sliceKB 返回空对象",
+      "source": "docs/详细设计方案.md §8"
+    },
+    {
+      "id": "D4",
+      "rule": "humanGate 采用持久 suspend→Leader resolve→真 Fork resume：gate 生产者只给瞬态请求，安全边界的 Step 先 canonical commit，再 flush session 并由 WorkerRuntime 写自身 safePoint，全部成功后一次提交稳定 gateId + opaque safePointRefs，禁写半成品 gate。Phase 9 完整 gate 落盘后先释放已静止 worker lease，再 suspend executable composition；清理失败保留 admission/needs_attention 但不占已静止 worker 执行额度。Leader 经 D9 单入口幂等裁决，canonical resolution receipt 复制 gateId/option/argument/safePointRefs；Phase 8 单 resumeSessionId 兼容保留，Phase 9 增加按 workerId 排序的 {workerId,sourceSafePointRef,resumeSessionId} 恢复计划。resume 与 suspend 收尾按 task 线性化；全新 context 为每个 paused worker 从 source completed-turn prefix 经公开 Agent factory 创建/接管 lineage child，既有 child 校验完整 seed 前缀，worktree 校验当前 task identity，暂存 D1 投影并提交稳定 resumed 事实后恢复，各 worker 执行前重新排队取得新 lease，旧 lease 不跨 Fork。done/failed 不重开，pending 不伪造 lineage；8.1 不新建重复 TerminationCondition 框架；9.4 SafePointExecutor companion 在当前 Step 自然结束后的下一原生 pre-step 拒绝 proposal，由官方 loop 闭合 turn 后才 flush，不取消 token 流；9.4 原生 pre-step 消费后清除暂停请求，abort 经 companion cancelSafePoint 取消尚未消费请求，不注入未提交指令",
+      "source": "docs/项目蓝图.md §13/§14/§20/§21；docs/详细设计方案.md §1/§4/§5/§6/§8；docs/系统架构设计文档.md §4.2/§9；docs/技术选型文档.md §4.1/§9.2/§10"
+    },
+    {
+      "id": "D5",
+      "rule": "阶段 0 沙箱 = LocalTempSandbox（fs.mkdtempSync + child_process.spawn），不依赖容器与真实 Git 分支；dockerode/simple-git 为 optionalDependencies；Docker 自阶段 1 接入",
+      "source": "docs/详细设计方案.md §6/§9"
+    },
+    {
+      "id": "D6",
+      "rule": "消息提交与投递分离：应用服务先经 applyMutations + TaskStateStore 提交并持久化任务 State，成功后才发布 MessageCommitted；MessageBus 只投递已提交事件，SSE/UI 只接收不含 payload 的展示信封",
+      "source": "docs/项目蓝图.md §10/§21；docs/详细设计方案.md §5"
+    },
+    {
+      "id": "D7",
+      "rule": "Project.channels 是 Channel 注册表唯一真相源，项目级 JSON 原子快照可重启恢复；旧任务 State 缺 Channel 快照时幂等补 main，legacy sub 确定性迁移，其他损坏 fail-fast。participants 是集合并按 leader+enabled roster 标准化；sub 持久化 taskId/threadId/topic/createdBy，同 task+thread 幂等唯一。AppState.messages 保存任务级消息；inbox 与 ChannelContext 从 Channel 快照 + 任务 State 按成员资格读时派生，Channel 不存消息索引；每群动态消息切片在 4000 字符内以 omittedRefCount 显式记录被截断规模。closed sub 经 L3 生成器端口对完整 entry/结构化 fragment 分块并有界多轮归并，结构化 channel_summary 以稳定 msgId 先写 main，Channel 只存 bubbledSummaryRef；D6 first-write-stays + revision CAS 保证可恢复冒泡",
+      "source": "docs/项目蓝图.md §11/§20/§21；docs/详细设计方案.md §1/§5/§7/§8"
+    },
+    {
+      "id": "D8",
+      "rule": "当前产品仅面向用户本机单用户、单后端实例：浏览器、本机后端/Harness/MCP/Git/Docker 与 .data 持久化；10.4 本轮仅适配 macOS 的本地安装/启动/配置及自动主密钥管理（Linux 后续适配见 DEF-017，不阻塞本轮出口）：首次生成并保存到系统安全存储（macOS 钥匙串）、重启复用；普通用户不配置 AGORA_CREDENTIALS_KEY，仅保留高级兼容入口；原密钥缺失/存储异常不得静默换钥或明文回退。当前不部署云端，不提供 Vercel/云服务器/云沙箱/Serverless/水平扩展；可调用用户选择的在线或本地模型 API，不要求离线。未来范围变更须 Leader 另行确认并重新评审存储/权限/事件传输边界",
+      "source": "docs/项目蓝图.md §21；docs/详细设计方案.md §3；docs/系统架构设计文档.md §9；docs/技术选型文档.md §9/§10"
+    },
+    {
+      "id": "D9",
+      "rule": "Leader 发言与指令统一经 POST /api/messages，服务端从 display 解析意图；浏览器 msgId 必须满足 [A-Za-z0-9][A-Za-z0-9._:-]* 并在任何副作用前校验。planned AppState 动作保持单主消息+非 messages mutations 原子提交。Phase 6 /channel、Phase 7 /role remove/onboard、Phase 8 /resolve-gate 沿用既有分阶段协议。Phase 9 解锁三条仅限 main、task 非 done、无 active humanGate 的主动指挥命令：/requirement <id> <JSON> 完整 upsert story/acceptance/nonGoals 且拒绝复活已撤回项；/decision <topic> <JSON> append decision/rationale/supersedes?，已有 topic 必须显式 supersede 唯一 current Decision；/priority <subtaskId> <0-100> 只更新存在且未 done 的 subtask。三者复用 msgId=actionId，先预校验单主消息+控制 mutations，再等待 task-scoped cohort 安全点并在 canonical queue 一次提交；空 cohort 立即提交，非重放才投递/reproject。同 ID 重放交叉验证消息与 State 效果，异参数或事实漂移冲突；所有角色从 canonical applied action 取得不含 display/raw log 的结构化 leaderDirective，不走临时 command 旁路；9.4 已采纳 parallelExecution 后，缺 wave/subtask 绑定的 @ROLE 与 /role onboard 明确 rejected，旧顺序任务保持原协议 [2026-09-11] 最新leaderDirective不代替完整需求；所有角色另获currentRequirements当前有效结构化需求系统切片，当前需求优先于旧架构复制值，不改变assignment权限；定义见蓝图D9。 [2026-09-12] 主界面支持自然语言需求变更→Harness工具隔离解释→持久可读草案→Leader显式确认；浏览器只传草案引用，服务端复核当前事实指纹和未处理状态，单requirements_change动作原子应用关联需求，陈旧/gate/done拒绝，原始聊天不投普通worker；兼容旧命令，不在正常输入框要求JSON。定义见蓝图D9及详细设计§11.9。 [2026-09-12 验收澄清] 自然语言免命令/JSON限定需求变更，返工和完成等控制仍允许既有用户命令；未提供通用gate按钮。出口对照见详细设计§11.10。",
+      "source": "docs/项目蓝图.md §10/§11/§13/§17/§21；docs/详细设计方案.md §1/§4/§5/§7；docs/系统架构设计文档.md §4.2/§5；docs/技术选型文档.md §9.2；docs/详细设计方案.md §11.9/§11.10"
+    },
+    {
+      "id": "D10",
+      "rule": "Phase 5 新任务创建/启动是生命周期操作；单实例组合根复用既有 runOrchestration/Harness/沙箱。Phase 5–8 全实例最多一个活动 run；D17/Phase 9 起不同 task 可同时 running，但所有生产组合共享唯一 GlobalScheduler lease，相同 scope 幂等且不同 goal 冲突。Coordinator/Worker 进展先持久化 State 再经 MessageBus→SSE；终态产物归档到任务 .data/artifacts 并持久化引用后释放 Harness/MCP/Git/Docker，刷新不依赖活容器；活动 run 重启自动恢复延期，静态消息不得充当 Web 真实闭环证据",
+      "source": "docs/项目蓝图.md §10/§21；docs/详细设计方案.md §5；docs/系统架构设计文档.md §4.2/§9；docs/开发计划安排.md §8/§17"
+    },
+    {
+      "id": "D11",
+      "rule": "自 Phase 6 建立渐进式工程 Eval：版本化任务与 canonical fingerprint 保证可重跑、可追溯，不承诺模型输出逐字节确定；deterministic/model profile 分开汇总。复用成熟 Benchmark 的任务/环境/Outcome Grader，自建 Agora Process/Efficiency/Safety Grader；每次 run 隔离于规范 .data/evals/<runId>，不触碰用户产品 State/KB。核心 check fail-closed，pass 只来自实际证据，iterations 与 repairIterations 分离；结果 provisional→cleanup→final，执行配置与审计元数据同源。Benchmark 不替代测试/G5，未实测指标不得对外宣称，外部工具不进入默认产品运行时；9.5 按详细设计 §11.7 分开出口/G5/对照：相同 D17 DAG 仅切换 cap=1/2/3，主任务至少4个独立模块及依赖后继，model每组至少3次独立attempt，固定配置/预算/轮换顺序、保留全部失败，分段计时及资源观察留Eval artifact，不设必须提速门槛；10.5按详细设计§11.8先预检至少一种成熟基准兼容子集，四组对照逐组固定非目标变量，结构化上下文保留策略不突破R2/assignment；单Agent为Harness Eval driver，官方Outcome/D16/协作检查分开。新holdout与开发集分离，每task×variant至少3次独立model attempt，冻结总预算并保留失败，未触达机制不宣称效果；10.5新组以不可执行的.spec.txt提供原上游公开测试契约，避免被生产Node收集器执行；参考解/holdout验证/独立verifier配置隔离；group/seed/费用身份版本化，旧组与操作暂停记录保留，仍受原总预算约束；评测wrapper须暴露有效contextWindow供官方Harness压力压缩，摘要请求同一预算；修复后验证与原冻结结果分列；后续Eval采用OpenCode Go DeepSeek API（Harness执行器不变），Go额度与历史官方账本隔离；新付费请求保持暂停，连续异常先止损排查，不将剩余预算当续跑授权 [2026-09-10 模型组合调整] Leader指定mixed使用deepseek-flash/deepseek-v4-flash：PM/ARCHITECT/REVIEWER用deepseek-flash，其余角色及全部非mixed组用deepseek-v4-flash。 [2026-09-10 恢复与分组] 普通工具恢复按独立session/失败步骤计数，首步多工具不重复扣次；独立对照可分版本冻结并引用已完整公开组，禁止跨版本混算或复制attempt，排查用内部任务转开发后另冻新holdout，原总费用上限不变。",
+      "source": "docs/项目蓝图.md §3/§17/§21；docs/详细设计方案.md §11（含 §11.7/§11.8）；docs/系统架构设计文档.md §7；docs/技术选型文档.md §11.3；docs/开发计划安排.md §9-§13；docs/项目蓝图.md §18；docs/详细设计方案.md §11.9（作品集证据引用）"
+    },
+    {
+      "id": "D12",
+      "rule": "项目 roster 是唯一成员真相源且不复制进 AppState；RoleSpec 与 RosterEntry 生命周期分离，departure 元数据为跨 collaboration/Task State 离职 saga 的恢复锚点。roster+channels 同 revision CAS，ProjectChannelStore 签名不变。离职顺序=departing CAS→目标 Worker 当前 step/end drain→确定性交接与责任提交→departed CAS；普通工作只允许 enabled，departing 仅允许已登记活动 handle 的当前在途 Step 经 role-bound 接缝提交后停。派生 handoff id 只能命中完整匹配的规范 Message+packet，冲突或责任后置条件不成立时 fail-closed。未完成责任无 enabled 接任者时写 humanGate、subtask blocked 且保持 awaiting_replacement，不得先 departed；完成后保留身份与 handoffRef。Coordinator 恒 enabled；完整 Preemptor 留 Phase 9；legacy 迁移规则与 DEF-016 边界不变",
+      "source": "docs/项目蓝图.md §6/§10/§12/§13/§20/§21；docs/详细设计方案.md §1/§2/§4/§5/§8；docs/系统架构设计文档.md §4.2/§5.4/§9；docs/技术选型文档.md §9/§10；docs/开发计划安排.md §10"
+    },
+    {
+      "id": "D13",
+      "rule": "项目 addRole 与任务 onboard 分离：前者只改 D12 collaboration；后者要求目标 role enabled，并经 POST /api/messages 的 D9 安全稳定 msgId 在一次 Task State commit 中提交 Leader 主消息、nextRole 与既有 leader_intent payload 内的 onboarding receipt/handoff refs。只允许同任务未认领的规范 role-departure handoff Message：toRole=目标角色自动选择，toRole=leader 仅接受 Leader 显式 from 引用；Message/packet/handoffPackets/actionId 交叉校验，跨任务/冲突/重复认领 fail-closed；同 ID applied 重放返回前必须复核既存 canonical 消息、完整 receipt 与当前引用事实。project() 从最新 applied onboarding 事实派生系统级 onboardingContext，不投原始群聊且可重启恢复；消费前角色失效进入既有 unavailable-role humanGate。Phase 7 不实现模板目录/任意 RoleSpec 编辑 UI，也不猜测无稳定 Message 的普通 handoff packet",
+      "source": "docs/项目蓝图.md §12/§21；docs/详细设计方案.md §1/§2/§5/§7；docs/系统架构设计文档.md §5.4；docs/技术选型文档.md §9.2；docs/开发计划安排.md §10"
+    },
+    {
+      "id": "D14",
+      "rule": "objections 是稳定消息 id 标识的 append-only 不可变事实；目标区分 decision/requirement，contradiction=blocking、concern/不确定项=advisory，未知或失效引用 fail-fast。blocking 经绑定 gate 的 /resolve-gate 裁决，advisory 可经 /resolve-objection 直接裁决；两者原子追加规范 Leader 消息与确定性最高权威 resolution Decision，rationale 必填。accept blocking 必须撤回目标：Decision 用 supersedes，Requirement 用 withdrawnByDecisionId；resolution Decision 继承目标 topic，且任何 supersedes 只允许指向同 topic 的 current Decision，跨 topic、未知或已失效引用一律 fail-fast。reject 与 advisory 裁决不自动改目标。未决视图和同 actionId 重放交叉验证消息、Decision、receipt 与 target effect，缺失/冲突/漂移 fail-closed；旧 Requirement 缺撤回字段视为 active；所有角色从已验证的结构化 objectionResolutions 系统切片读取裁决，不读原始 Leader 消息。普通目标变更与多 worker 抢占仍属 Phase 9；当前REVIEWER规范advisory缺verdict时经事实复核创建新dispatch，计入8轮上限，保留验证绑定且不重开done worker 普通实现缺陷走测试/评审返工；阻塞异议质疑需求或决策本身，提示须说明接受会撤回目标，不在解析器中猜测重分类。",
+      "source": "docs/项目蓝图.md §14/§21；docs/详细设计方案.md §1/§5；docs/系统架构设计文档.md §5；docs/开发计划安排.md §11"
+    },
+    {
+      "id": "D15",
+      "rule": "Trace 只从当前任务锁定版本官方 Harness JSONL 读时派生，不复制进 AppState/Message/MessageBus/第二份日志。DTO 严格白名单 role/session lineage、turn/step 时间状态与工具名/状态/错误码，禁止 projection/prompt/assistant/reasoning/工具 arguments/results/环境变量/文件正文。child 只投 seedLength 后 native 事件并保留 parent 引用，parent 图无环；官方格式读取后仍校验 turn/step/tool 跨事件生命周期，合法开放尾部可见，闭合父节点/未闭合子项/序号漂移 fail-closed；独立有界 GET 快照显式报告 omittedEventCount；Phase 8 短轮询顺序时间线，9.4 以根 sessionId/lineage 分同 role 泳道，真实 turn/step 时间呈现并行与 Fork，不复制 State 为 Trace 真相；10.2 按详细设计 §6.1 增同 open Step 的最小 retries 白名单，链内 retryId+retry 标识等待，started 仅退避完成，状态 waiting/backoff_completed/closed_without_start；两个官方事件都计入原响应上限/lineage 去重，禁止原始 failure 文本。实测证据见 docs/evals/phase10-resilience-evidence.md",
+      "source": "docs/项目蓝图.md §16/§21；docs/详细设计方案.md §6；docs/系统架构设计文档.md §4.4/§9；docs/开发计划安排.md §11；docs/开发计划安排.md §12；docs/详细设计方案.md §6.1；docs/reviews/task102-spec-review.md"
+    },
+    {
+      "id": "D16",
+      "rule": "TESTER pass 与 REVIEWER approved 只形成 completionCandidate；Coordinator 只接受当前 REVIEWER dispatch 后恰一个、满足 [A-Za-z0-9][A-Za-z0-9._:-]* 且未跨轮复用的 verdict id，并打开 D4 completion_confirmation gate。Leader 经 D9 /resolve-gate 选择 approve_completion 或 request_changes，并原子写 canonical Leader Message、最高权威 task-completion-resolution:<actionId> Decision、D4 receipt 与清 gate。真 Fork resume 后重读并交叉验证 Message/Decision/receipt/current review：approve 才置 isRequestSatisfied=true 并 finalize；request_changes 保持 false、保守重开工作并回 CODER；任何漂移或冲突 fail-closed。正常阶段推进不逐段审批，被动 gate 只用于确定性阻塞与最终完成终审；9.4 completionEvidence 额外绑定当前 validation receipt/累计 HEAD/控制指纹；有效 REVIEWER subtaskIds 返工重开目标及全部传递后继（含 done），无 refs 才显式 degraded 全量，坏 refs fail-closed；Leader request_changes 仍全量重开 [2026-09-12 投影索引补齐] completionFeedback按历史review及规范Message/Decision/receipt/resumed验证后向所有角色投影最新裁决理由；新review未裁决时保留上一轮返工要求，不改D16权威。定义见蓝图D16投影修复、详细设计§3.1/§7，验收见§11.10。",
+      "source": "docs/项目蓝图.md §9/§14/§21；docs/详细设计方案.md §3/§5/§11；docs/系统架构设计文档.md §4.2/§5/§9；docs/开发计划安排.md §11"
+    },
+    {
+      "id": "D17",
+      "rule": "Phase 9 真并行使用 GlobalScheduler 稳定 lease 作为跨项目唯一 worker 执行额度（默认 cap=3、按项目轮转排队），lease/assignment 逻辑身份为 {projectId,taskId,workerId}；同进程同 capability 重复释放 no-op，克隆/伪造/错配 fail-closed且不保留永久强引用 tombstone。runParallel 处理全部合法 assignment，不 slice 丢尾部；同 role 可并行多个独立薄 HarnessExecutor/Context/Agent/session，锁定版本 one-shot ctx.subagents.start 不作为顶层 worker。Phase 9 复合 workspace adapter 对逻辑 workerId 做确定性 Git-safe 编码，从 .data 内 task-owned canonical repo 创建真实 linked worktree，并把同一路径挂入 Docker；恢复必须以 Git common-dir + canonical `git worktree list --porcelain -z` 的唯一 path/branch/HEAD 记录证明 linked-worktree 身份并拒绝主工作区，禁止 Git/Docker 双目录、用户 checkout 写入或自动 push。State 以结构化 WorktreeRef 和可恢复 Integration 保存 base/head/有序分支/进度/冲突/resultCommit，删除 pendingPatch/branchOrPatch；merged progress 必须是 pending 的完整身份前缀，丢失回执只补记一个精确 fast-forward/双亲 merge 步骤，目标含后续分支或额外提交即 fail-closed。创建/bind/回收失败必须补偿 worktree metadata 与临时 branch；冲突只有在 abort 成功且真实 Git metadata 无 MERGE_HEAD 后才可打开 integration_conflict:<integrationId> gate。TESTER/REVIEWER 的分支明细只投当前 Integration 波次，9.4 最终审阅另给已验证累计产物与全计划任务索引；无 Integration 的顺序兼容只允许候选收敛到同一 WorktreeRef，并发归档使用直接 code-unit 稳定排序且不得依赖 worker 完成顺序；首次 artifact 映射写不可变 receipt，重试只校验/复用首次 source→archived 映射，receipt 缺失/损坏或引用不存在 fail-closed。Phase 9 仅允许 request_rework <workerId> 并从原 base 重建。模型/工具调用并行，但 step 输出处理与 TaskStateStore 写入进入 per-task canonical commit queue：重读最新 State、校验 enabled roster/subtask 可执行状态/依赖/persisted WorkerState assignment/写所有权后原子提交；ownerRole 是责任归属而非独占执行门禁。并行 agent step 只可 append 稳定身份事实；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区提交。task-scoped pause 以稳定 actionId 建立 epoch 并固定 active cohort，同参数重放、异参数冲突；排队 acquire 取消后保持 pending，已启动 Step 先提交再 flush，done/failed 不被 paused 覆盖。非阻塞 reproject 保留原 context/lease/admission；humanGate 在完整 gate 落盘后释放已静止 worker lease，composition 清理失败仅保留 admission/needs_attention，resume 用 per-worker lineage 计划并重新排队新 lease，旧 lease 不跨 Fork。join 等全部已启动 worker settled 和提交队列排空后 reload canonical State；失败不硬杀同批 LLM、不回滚成功事实。active executable composition 另受默认 3 个 admission cap，满载在重资源初始化前返回可重试 429；当前 Subtask 全字段（含可选 0–100 整数 priority）、并行全局 set/他人 worker/collaboration 写入属串行控制面。旧 priority 缺省为 0；依赖满足优先，同一就绪集合按 priority 降序、稳定 id 破平局。禁止 mergeStates(AppState[]) 与 Promise.all fail-fast 猜最终状态；正式文件安全契约见详细设计§6/§11.7及DEF台账；9.4 严格 executionPlan DAG + parallelExecution 固定 wave/attempt/base/assignment，legacy modules 只显式退化为顺序链；新 wave 从上一 accepted validation HEAD 开工，模型投影按 assignment 隔离。preparation 只读计划；Integration.resultCommit 冻结，TESTER 在独立 validation worktree 提交测试并由可信服务绑定真实命令/dispatch/HEAD/需求决策指纹的不可变 receipt，测试通过才闭合 wave 并推进累计基线。TESTER/REVIEWER 不覆盖 Subtask.worktree；最终 artifact 取 accepted 验证产物，历史 receipt 不改写。旧结果/历史 worker 不越 wave 重放，失败有界返工；具体契约见详细设计 §3.1；canonical 初始化必须检查指定目录本身为 Git root，禁止继承 .data 上层用户 checkout；9.4 preparation 固定关闭，可信 Node/TAP 验证及单条 Leader integrationRework receipt 见详细设计 §3.1；D9/D14 指纹失效复验用规范 dispatch.sourceReceiptId 绑定更早的同 wave/attempt/Integration 验证 HEAD，保留全部累计测试并复核源证据；首次验证才从 Integration.resultCommit 开工；9.4 root-cause修复仅重写所需CODER，保留贡献经规范来源派生的累计验收范围通过后才闭合；验证证据先落盘而State回执丢失时严格复用首次执行，合法测试文件全集与suite叶测试计数不降级，失败反馈绑定当前返工身份；PR #66 修复：CODER/validation 均拒绝移除输入提交中的累计测试路径，CODER 忽略缓存不等于未提交改动，validation 仍严格拒绝 ignored。无 gate 并行错误收敛后 suspend 可执行资源、保留 State/worktree/JSONL/证据，成功释放 admission；失败保留 pendingSuspension 供 start 重试清理，不终态归档或自动重跑业务；9.5 按详细设计 §11.7 独立出口矩阵验收，worker lease/admission不代表持久worktree或容器总数上限；DEF-004默认须正式文件入口及后台进程竞态修复证据，后续支持边界需Leader另行明确接受、可强制实测并保留open，不能由本次规格评审推导豁免；9.5生产Docker逐worktree单挂载，正式文件入口固定根身份并用受信POSIX目录句柄helper，Git固定可信metadata并关闭全局配置，宿主Git及验证HEAD至归档复制全程冻结同目录容器后台进程，窗口内同根正式宿主写入口拒绝写入且别名共享固定根身份，停止成功后才回收Git工作树，失败可重试；平台与构建部署边界见蓝图§13/§21及详细设计§6；10.2 韧性规则：provider 耗尽/永久失败不借 worker 重派重置预算；有身份的失败、failed 提交与 lease/清理错误分别保留，不按 workerId 去重丢原因；并行未验证失败 suspend 保留，顺序 failed 可归档诊断但不等于 D16 成功；进程退出不承诺临终写 State 或自动续跑，见详细设计 §6.1（实测证据见 docs/evals/phase10-resilience-evidence.md） [2026-09-12 验收索引补齐] CODER activeWave缩到自身assignment；validationScope划分当前/完成/后续任务，完整需求不扩大本波次验收或写权限。ARCHITECT不建测试专用节点属于角色指导而非新增节点语义拒绝规则，累计测试保留仍强制。定义见蓝图§21及详细设计§3.1，验收见§11.10。",
+      "source": "docs/项目蓝图.md §6/§13/§21；docs/详细设计方案.md §1/§2/§3/§4/§5/§6/§7/§8；docs/系统架构设计文档.md §4.1/§4.2/§5/§9；docs/技术选型文档.md §7/§8/§10；docs/开发计划安排.md §12"
+    },
+    {
+      "id": "C4",
+      "rule": "Phase 0 采用 Coordinator → Coder → Tester 三角色闭环（采纳《开发计划安排》，已同步蓝图/详细设计）",
+      "source": "docs/开发计划安排.md §3"
+    },
+    {
+      "id": "FE",
+      "rule": "实时通信 = SSE + HTTP POST（取代 WebSocket）；浏览器通过本机界面连接本机单实例后端，当前不提供 Vercel 或云端部署，运行边界按 D8",
+      "source": "docs/技术选型文档.md §9"
+    },
+    {
+      "id": "WO",
+      "rule": "写所有权不变量：结构化切片只读投影，agent 只写自己私有区（消除写-写冲突）；KB 只读即其具体化",
+      "source": "docs/框架调研与借鉴决策.md 模式⑥"
+    },
+    {
+      "id": "DEF",
+      "rule": "延期项统一记录于 docs/deferred-items.json（DEF-xxx 编号，含 source/pr/task/severity/detail/target_phase/status/notes/resolved_at）；任务 notes 只保留指向该文件的引用，不再内嵌 [DEF] 条目。阶段出口检查时逐条核对（$agora-pr-review）。",
+      "source": "docs/deferred-items.json"
+    },
+    {
+      "id": "GIT-DEV",
+      "rule": "$agora-pr-merge 收尾时，纯 docs/task-status.json 任务状态记录允许直接在 dev-1.0.0 提交并推送（不走功能分支/PR）；代码变更仍强制走功能分支+PR+人类合并，Agent 不自动合并",
+      "source": "AGENTS.md §3.1.1"
+    },
+    {
+      "id": "DOC-CONFLICT",
+      "rule": "文档冲突先评审合理性，再直接修正来源章节并同步受影响文档，不创建或发布GitHub Issue；仍无法确定的实质架构取舍才向Leader澄清并暂停依赖编码，不增设任务冲突台账，历史Issue记录保留",
+      "source": "docs/项目蓝图.md §21；AGENTS.md R12/§7/§8.1.3"
+    }
+  ],
+  "notesSha256": {
+    "0.1": "e5fe2595f35c5c0c6bf51981993e804120faf59fcc129b57861e8e1c31aae6ad",
+    "0.2": "2b34754ff1898e950f1bf83ffce4e67543ec233740ed3d2fdf55983d4cab815d",
+    "0.3": "75d99937917a14cc5a288ec847cdc0c45b71c8060c0277fe18ebcd85a4ee59c0",
+    "0.4": "a0212f4e398dc54f901f1991f7ee8f4fc0e2fbbb7e769325f718227796ff7396",
+    "0.5": "6878ab4827662c100b39452aae6251f18f15e2eadc8d513183603c16cf0bdaa7",
+    "0.6": "1cdf38c16863726561e8c21409f619e0cae2e145cc34d95f48316e9f3819fa50",
+    "0.7": "e5c8fb438fbe30dd145b15fa6daf158567f568973b1f1a25e7b86457c9ac61fe",
+    "1.1": "0339786c0c3b0400a42b89cae45593815dc5ba23998f288b02f12b9544f623b0",
+    "1.2": "d80dde8aef74f10a217bba1934a3f202c3f36779088a74c61a7cc89661175666",
+    "1.3": "bb762e8318c9198aac0fd333e569ce9a0b2d4ea35f288de17584976be8236ba2",
+    "1.4": "9f99f097c22c39b58061bd69b79bb51ebca588a7c0b9a80da7a7e3a5258f5cdc",
+    "1.5": "f58ffbeb19f4e6e1f3c7586b0291470e7d5d14c2ab10dd597a22affb48044b7b",
+    "1.6": "f13bf65a79e7ed627bd092f58a6072c3d012f73777248c7f670d8c866cad02b0",
+    "2.1": "eeabf26d1205d3d39273669e400d6006290d4aa4557e332e014b90782872c389",
+    "2.2": "871d1d1f01ac364184a5f3cfd9ee7becbbdee303fa6d5787b7136515c6e5e830",
+    "2.3": "c4cf20b0ace889a0ee958e3edd4cfae6723630063447d8308d1effc3f9a09950",
+    "2.4": "15967a318269fb416b0212f36e8238609d6655c2487a31ac875c66852c8f19c4",
+    "2.5": "45b1bbc1109092418eda54ada9ac0dc6e24ec46d2c14234bb159a05ba58b7f8d",
+    "3.1": "7d8c98d19a62af59d527af466ab0dd80edc5c4d1a20e81a13358c3440a3dc428",
+    "3.2": "6fa60ac131fc8f92304ba9474a58bf6e1a49a00781ea71fb5ead31817486e226",
+    "3.3": "9a2c0aa14a0cfb205b7c7a5c6c886b0ec97c43cb2cb0803b4a30fc743f281cd5",
+    "3.4": "3281b9d3e59eb911e7480ac0c038381a7f8037563334fb910f83986413a3349d",
+    "3.5": "5f9e2f1f2e52094dd7d1cc4082d4edaece8d32a962add9d7642654dca0f77588",
+    "4.1": "ab74492e0f20cb805d758ca753b3545a8e03b3cdf8a36f0e3868eed25c28b22d",
+    "4.2": "a7cb2e659790d1851a0a4a1a97f84e5d70acbdbf7d35bce7191a2e16b7240af4",
+    "4.3": "a5aa887b74436e671e84de6a46636bc8146ebc130cb0983485f4fd1f880d08c3",
+    "4.4": "c96ae87d1811fbbc91d11e781a99b5ccb4903695e5d3e1afa902105e464e34c5",
+    "4.5": "9a928bca68969a48a23d387b4fe9877afb0a5ab251256d9153aa3e54128a109f",
+    "4.6": "32556ff9fe8caac1c264ddcd62cf56964f6a83e0172b2692ded57b0a309f20e3",
+    "5.1": "67cd5a88099db38d820af6a635e8ff1578f91698ac3b60b01999aa1b6f3a01c2",
+    "5.2": "b20636dff9ed155e927b26de5d08ddb4c7d754a51278a33d3f75d3d893471ffb",
+    "5.3": "6b57385ec4ce65979790448716e4f80a945329d1e02741cb4906417e888304a9",
+    "5.4": "fd542ef7d11ca0e5eb136ef46d8bdaa26d331c6fea72c70e6923a773cc07d2c5",
+    "5.5": "aebdde2d9943a8f4bc03e5a04ad44ca9105df1ad3996d7f7264d8408a0f4eb38",
+    "5.6": "f833381d1043712dcf626422a21da4a1594684682cac85dfd3ea855723ae0d96",
+    "6.1": "18fb24c419c1ec81edb5bfff098cd2c08a9e455345ac988433813cdfb766a2ee",
+    "6.2": "f351957d250d2b4c862f48391574abb9245aed913d5c51d3d1f39bb570566980",
+    "6.3": "a07ed6638f1dd9c6daa640cb8861829ed50762e72ed927b36bef458cc9a69de7",
+    "6.4": "598e6383de799848f1a632b80c7ecefa6b28872e88f5930af401acfe8c1db785",
+    "6.5": "ee07608c0fbb5d7d1a8bb8d644de08817c7c1cd1882105fe332f776ea812ffde",
+    "7.1": "8a223357ffee2f2ed3f50a69855429ff63e9faa5bf5cf1ad48970a04f95e8229",
+    "7.2": "9229af9dd5c23103e5c5c51868db0c31a5a5f173372406739aed636f18e86471",
+    "7.3": "a6b1f5b114626a38784f172d8e8c518b9da3fed3108f0865d358dec3a569f5ca",
+    "7.4": "b1cfe280be7ceed355df573997809ef2febb281919bdf5fb234936e543eda5e8",
+    "7.5": "3ceed0190ed2c50c4f36b8b2f3ae9c8d1be0d1e41d905a30f69c926e725089eb",
+    "8.1": "2456446f1815f64bf6f6651a10e6af77788558c616f43d490e0bce9b2123865f",
+    "8.2": "32f124f4e2912303d4fe6837c445305ef8c058628eb5216c544e07e6e93c009b",
+    "8.3": "e6594fde5991b92acab029d41d4adf1bdb6b71308bcc0cb644f3e77ef7bde970",
+    "8.4": "174a5b5fbffefa6f969122712fc049ffc0b5d367774d0aea732583235f79687a",
+    "8.5": "d493364ab2a99173e06e744593681598a42b17b8a5fe0d455b08de17176368c3",
+    "9.1": "05d9e78a19e985c0023a52b3d7b632eda233cd79b43f4a9d6263a4270b2b52de",
+    "9.2": "41db08dfd99868c6c8626cc32827cdcd9bf53db08c8dcfab5acbc565bf8fd63a",
+    "9.3": "674e3a85c11318a1cb7968b3ae9d729033d66917574b180782fa0b2f4106d452",
+    "9.4": "51cfe6a95fe3f0f2d14383965cf76efd8e541fb8bc575d7f44e996b5462c4fb4",
+    "9.5": "cb70c83789c9e81798974098f50b6dec09e16d988392c457d9a52a39d5ebab50",
+    "10.2": "1cda9204545b65017965f77134b1ee48d90ebfcf0f17ab71ab6e596b0bca67bb",
+    "10.3": "d29dacb03901dbefa2b1d968969aea6438af9624d1b5c3cb34bab3e40863c655",
+    "10.4": "49960bf1e49547064176c09eed0789be0985afd508d19825693058d02fe21997",
+    "10.5": "01818c01cd541831a64b65f35f45cc6ed847889478850be0ba26cfa9b442cb04",
+    "10.6": "9c3683a0f5d1b43ad3c3662e439d7e950f884a8a2c37db42ac47730472856967",
+    "10.7": "8a8e1cbc3c949926fd900f85d10e20c625402f7ecec8c4083a0257b1ad1e8c76"
+  },
+  "notesManifestSha256": "b0c62ebf663e6fad97d1ceaa8640d85bd1a6027bd54f5ec448a60c63758dfe94"
+}
