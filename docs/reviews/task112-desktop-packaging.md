@@ -177,3 +177,22 @@ Spike 为验证采用宽松的完整依赖包复制，约 2.2 GiB，含未裁剪
 修复P2“复现材料仅存于本机”：6份原始材料纳入版本控制、保留原hash，补充固定下载来源/源码/锁文件和全新目录复现入口。设计内容未变；本PR已包含验证/构建脚本，11.2交付状态改为in_progress等待人工合并，11.3回pending。原§9的纯文档检查是接受时点记录；最新修复门禁和复现实测见[任务历史](../task-history/11.2.md)。
 
 复现实测：固定提交的干净源码在新目录安装锁定依赖并重新构建，16项检查再次通过、临时Keychain已清理、签名和资源边界审计通过；见[reproduction-result.json](task112-packaging-evidence/reproduction-result.json)。只复制仓库证据目录即可完成19项hash校验；缺文件、坏hash与越界引用均明确拒绝。
+
+
+## 12. 新增评审：输入证据范围与启动中断
+
+CodeRabbit两条评论已核实：历史结果16份输入与后来19份清单的时点缺乏说明；启动未完成时停止可能关闭未初始化HTTP并遗留Node子进程。原结果字节见[historical-reproduction-result.json](task112-packaging-evidence/historical-reproduction-result.json)，16份范围与后补3项说明见[historical-reproduction-scope.json](task112-packaging-evidence/historical-reproduction-scope.json)。当前结果冻结实际输入manifest/hash/file列表，不将后产出的结果自身计入输入。
+
+原始两份运行脚本保存在reproduction/historical/，当前入口修复启动/停止互斥与检查，超时只回收独立的非模型验证进程组，且记录为失败。三项真实子进程单元回归通过，fixture用于可控启动等待，不冒充真实Next/Keychain；原16项真实G5断言保留。完整回归、最新G5和逐条英文回复证据见[任务历史](../task-history/11.2.md)。
+
+
+## 13. 2026-09-14测试提供方调整后的复验状态
+
+Leader指定后续真实测试优先OpenCode Go，并明确V4.1当前ID为`deepseek-v4.1-flash`。已同步测试路由、原生reasoning兼容识别及当前Eval配置，保留官方凭据、历史模型绑定和原测试断言/期限。45项相关离线回归、typecheck/lint通过；两项真实Go回归及一次脱敏时序诊断均120秒超时。时序证明请求使用正确Go地址/模型并返回HTTP200，尚无有效完成回复，具体原因未定。当前G4仍未通过，修改保留本地、未commit/push，评审会话待交付后关闭；详情见[本轮记录](task112-go-test-routing.json)及[任务历史](../task-history/11.2.md)。这次Go调用失败不修改前述已完成的桌面16项实测结果，也不把历史官方超时改判为Go模型更名造成。
+
+
+## 14. Leader暂定Go V4 Flash后的复验
+
+当前通用真实回归固定为`opencode-go/deepseek-v4-flash`，缺Go凭据明确失败；测试断言、原生思考/容量及期限保持。首次全量运行暴露Go工具后续流片段清空身份的问题，测试adapter现复用既有`normalizeGoToolStream`处理公开stream与prepareCall两入口；离线回归先红后绿，真实LRU单独通过（186.742s），12项benchmark集成及typecheck/lint通过。更名涉及的V4.1离线fixture修复不启动V4.1实网或正式Benchmark。
+
+随后完整默认并行回归仍有频道摘要120秒及LRU600秒超时；频道摘要单独复验10.147秒通过。关闭测试文件并发后，LRU仍在600秒超时，故不能只归因于文件并发，也不承诺换模型即可解决所有停滞。供应商内部排队/调度/容量尚无服务端证据；完整结果、源文件与日志hash见[本轮V4回归记录](task112-v4-regression.json)。G4未通过，停止追加实网重试，PR修复保留本地，未提交推送或关闭评审会话。

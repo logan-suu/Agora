@@ -1,14 +1,12 @@
 import type { SubChannel } from '@agora/core-domain';
 import { describe, expect, it } from 'vitest';
+import { resolveLiveTestModel } from '../../../../tests/helpers/live-model';
 
 import { HarnessChannelSummaryGenerator } from '../src/index';
 
-/**
- * G5 real chain for task 6.3. No test double: this traverses the production
- * tool-less HarnessExecutor and live DeepSeek provider. CI without credentials
- * skips; task verification records whether the local run actually executed.
- */
-const hasKey = process.env.DEEPSEEK_API_KEY !== undefined && process.env.DEEPSEEK_API_KEY !== '';
+/** Real tool-less Harness summary regression, using the Leader-selected OpenCode Go V4 Flash route. */
+const liveModel = await resolveLiveTestModel();
+const liveLabel = `${liveModel.options.provider}/${liveModel.model}`;
 
 const channel: SubChannel = {
   channelId: 'sub-g5-summary',
@@ -21,11 +19,11 @@ const channel: SubChannel = {
   closed: true,
 };
 
-describe.skipIf(!hasKey)('G5 real-chain: closed-channel summary over live thin Harness', () => {
+describe(`G5 real-chain: closed-channel summary over live thin Harness (${liveLabel})`, () => {
   it('returns a strictly validated source-scoped summary without tools', async () => {
     const generator = new HarnessChannelSummaryGenerator({
-      deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY' },
-      model: 'deepseek-v4-flash',
+      ...liveModel.options,
+      model: liveModel.model,
     });
 
     const summary = await generator.generate({

@@ -251,7 +251,7 @@ class RoutedWideFixture extends WideFixtureAdapter {
   override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     const role: string = JSON.parse(projectedInputText(options)).role;
     const expected = ['PM', 'ARCHITECT', 'REVIEWER'].includes(role)
-      ? 'deepseek-flash'
+      ? 'deepseek-v4.1-flash'
       : 'deepseek-v4-flash';
     expect(options.model).toBe(expected);
     this.routes.add(`${role}:${options.model}`);
@@ -273,10 +273,10 @@ it('benchmark mixed roster routes the real production Harness requests by their 
     });
     expect(flow.evidence.completed).toBe(true);
     expect([...adapter.routes].sort()).toEqual([
-      'ARCHITECT:deepseek-flash',
+      'ARCHITECT:deepseek-v4.1-flash',
       'CODER:deepseek-v4-flash',
-      'PM:deepseek-flash',
-      'REVIEWER:deepseek-flash',
+      'PM:deepseek-v4.1-flash',
+      'REVIEWER:deepseek-v4.1-flash',
       'TESTER:deepseek-v4-flash',
     ]);
   } finally {

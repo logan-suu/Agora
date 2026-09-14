@@ -1542,7 +1542,7 @@
           "id": "11.2",
           "title": "验证 Electron 打包与受管工具链方案",
           "story": null,
-          "status": "in_progress",
+          "status": "blocked",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1554,7 +1554,7 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design，PR修复新增构建/验证脚本，按实际产出转代码交付，待PR #79人工合并。2026-09-14设计接受事实保留，正式来源详细设计§12.3/选型§12。修复提交79ca4d6已补齐本机独有材料P2：6份原始材料保hash入库，19份证据可校验；固定源码/锁文件在全新目录重建，原16项G5通过。typecheck/lint和完整7项追踪+1282项Vitest通过，无跳过；缺文件/坏hash/越界拒绝。11.3保持pending。证据入口docs/reviews/task112-packaging-evidence/reproduction/README.md；完整历史docs/task-history/11.2.md；PR https://github.com/logan-suu/Agora/pull/79。",
+          "notes": "任务类型：design，含构建/验证脚本，按代码交付。PR #79已合并至2a8b3ea，仅含旧280f24e；后续两项review修复、Go V4 Flash测试路由与诊断由Leader明确授权“先提交推送”，在codex/fix-desktop-review-go-tests交付。typecheck/lint、3项生命周期回归、27份证据及16项桌面G5通过；两次带观测LRU通过，但此前完整G4的LRU600秒超时未闭合，根因仍inconclusive。本次授权不等于G4通过或任务done。11.2保持blocked、11.3 pending，后续补齐完整G4并经修复PR人工合并再收尾。历史docs/task-history/11.2.md；诊断docs/reviews/task112-lru-timeout-diagnosis.md。",
           "last_updated": "2026-09-14"
         },
         {

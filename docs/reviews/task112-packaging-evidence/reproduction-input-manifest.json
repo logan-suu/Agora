@@ -102,18 +102,6 @@
     {
       "file": "historical-reproduction-scope.json",
       "sha256": "8e4c4b741e5669e28a196d714c54c71e47b9a431e681741c2bc177e65525e47e"
-    },
-    {
-      "file": "reproduction-input-manifest.json",
-      "sha256": "8caeef6a2c727f1e263b884d3cad8ee1d43260e191d990995f624d11c2b6edfe"
-    },
-    {
-      "file": "reproduction-result.json",
-      "sha256": "c74c584903371cb0d9e6069b9bd9bc870907dd0a41426a5e60bdf3f7326d2629"
-    },
-    {
-      "file": "review-gate-blocker.json",
-      "sha256": "de257a3a1c0185448a69044ebdbe7f74fa0b274c28c9fea2df1204669bcd2b11"
     }
   ]
 }

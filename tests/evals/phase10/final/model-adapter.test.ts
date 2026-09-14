@@ -26,7 +26,7 @@ it('honors the frozen role model on every request and persists all charges', asy
   );
   const provider = new Provider();
   const meter = new MeteredAdapter(ledger, 'trial', 'formal', provider);
-  for (const model of ['deepseek-v4-flash', 'deepseek-flash', 'deepseek-flash']) {
+  for (const model of ['deepseek-v4-flash', 'deepseek-v4.1-flash', 'deepseek-v4.1-flash']) {
     for await (const _chunk of meter.stream({
       model,
       messages: [],
@@ -35,12 +35,16 @@ it('honors the frozen role model on every request and persists all charges', asy
       /* Consume the real wrapper. */
     }
   }
-  expect(provider.models).toEqual(['deepseek-v4-flash', 'deepseek-flash', 'deepseek-flash']);
+  expect(provider.models).toEqual([
+    'deepseek-v4-flash',
+    'deepseek-v4.1-flash',
+    'deepseek-v4.1-flash',
+  ]);
   expect(meter.calls).toHaveLength(3);
   expect(ledger.spent).toBeGreaterThan(0);
   expect(
     fixedRoster('mixed')
-      .filter((r) => r.model === 'deepseek-flash')
+      .filter((r) => r.model === 'deepseek-v4.1-flash')
       .map((r) => r.role),
   ).toEqual(['PM', 'ARCHITECT', 'REVIEWER']);
   for (const variant of ['single', 'multi', 'parallel', 'sparse'] as const)
@@ -77,9 +81,9 @@ it('refuses unknown models and oversized context before provider I/O', async () 
   expect(provider.models).toEqual([]);
   expect(ledger.spent).toBe(0);
   expect(
-    costOf('deepseek-flash', { inputTokens: -1, outputTokens: 0, cacheReadTokens: 0 }, true),
+    costOf('deepseek-v4.1-flash', { inputTokens: -1, outputTokens: 0, cacheReadTokens: 0 }, true),
   ).toBeUndefined();
-  expect(costOf('deepseek-flash', { inputTokens: 1, outputTokens: 0 }, true)).toBeUndefined();
+  expect(costOf('deepseek-v4.1-flash', { inputTokens: 1, outputTokens: 0 }, true)).toBeUndefined();
 });
 it('does not confuse serialized bytes with the configured Harness token estimate', async () => {
   const ledger = new BudgetLedger(
@@ -90,14 +94,14 @@ it('does not confuse serialized bytes with the configured Harness token estimate
   const provider = new Provider(),
     meter = new MeteredAdapter(ledger, 'trial', 'formal', provider);
   const options = {
-    model: 'deepseek-flash',
+    model: 'deepseek-v4.1-flash',
     sessionId: 'meter-test',
     system: 'system',
     messages: [{ content: [{ type: 'text', text: 'x'.repeat(90000) }] }],
   } as unknown as GenerateOptions;
   for await (const _chunk of meter.stream(options)) {
   }
-  expect(provider.models).toEqual(['deepseek-flash']);
+  expect(provider.models).toEqual(['deepseek-v4.1-flash']);
   expect(meter.calls[0]?.inputBytes).toBeGreaterThan(65536);
   expect(meter.calls[0]?.inputTokenEstimate).toBeLessThan(65536);
 });
@@ -110,7 +114,7 @@ it('advertises the effective evaluation context capacity to official Harness com
   );
   const provider = new Provider();
   const meter = new MeteredAdapter(ledger, 'trial', 'formal', provider);
-  for (const model of ['deepseek-v4-flash', 'deepseek-flash']) {
+  for (const model of ['deepseek-v4-flash', 'deepseek-v4.1-flash']) {
     expect(await meter.resolveModel('deepseek', model)).toMatchObject({
       provider: 'deepseek',
       id: model,

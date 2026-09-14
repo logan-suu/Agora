@@ -214,7 +214,7 @@ it('phase10 run final model benchmark', async () => {
       }
       if (!registry.pending().includes(trial.id)) continue;
       const rates =
-        CONFIG.peakRates[trial.variant === 'mixed' ? 'deepseek-flash' : 'deepseek-v4-flash'];
+        CONFIG.peakRates[trial.variant === 'mixed' ? 'deepseek-v4.1-flash' : 'deepseek-v4-flash'];
       const minimum =
         (CONFIG.contextLimit * rates.input + CONFIG.maxTokens * rates.output) / 1_000_000;
       if (

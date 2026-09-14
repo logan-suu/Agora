@@ -57,8 +57,8 @@ export interface Phase0RuntimeOptions {
   deepseek?: HarnessExecutorOptions['deepseek'];
   model?: string;
   /**
-   * Scripted LLM adapter for deterministic tests (R11: mock only the external
-   * LLM dependency; the agent loop, tools, and sandbox stay real). Registered
+   * Official live adapter or scripted adapter for deterministic tests (R11:
+   * only external LLM responses may be mocked). Registered
    * under `provider` (defaults to `agora`). Mutually exclusive intent with
    * `deepseek` — pass one or the other, never both.
    */
@@ -108,7 +108,7 @@ export interface Phase0Runtime {
  */
 export async function createPhase0Runtime(options: Phase0RuntimeOptions): Promise<Phase0Runtime> {
   // `adapter` and `deepseek` are mutually exclusive (see the options JSDoc):
-  // passing both would register the fake adapter under the `deepseek-official`
+  // passing both would register the supplied adapter under the `deepseek-official`
   // provider name and silently shadow the real DeepSeek route. Fail fast before
   // any worktree/sandbox resource is created.
   if (

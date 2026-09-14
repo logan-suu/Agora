@@ -1,0 +1,3 @@
+# Preserve the original diagnostic log bytes and their recorded hashes.
+run1-vitest.log -text whitespace=-blank-at-eof
+run2-vitest.log -text whitespace=-blank-at-eof

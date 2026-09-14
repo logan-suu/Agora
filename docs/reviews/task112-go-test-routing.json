@@ -1,0 +1,100 @@
+{
+  "date": "2026-09-14",
+  "scope": "Local PR #79 review fixes and Leader-authorized OpenCode Go test preference; not committed or pushed",
+  "provider": "opencode-go",
+  "model": "deepseek-v4.1-flash",
+  "officialSource": "https://opencode.ai/docs/go/#models",
+  "offline": {
+    "filesPassed": 9,
+    "testsPassed": 45,
+    "typecheck": true,
+    "lint": true,
+    "desktopLifecycleUnitTestsPassed": 3,
+    "packagingManifestVerified": 27
+  },
+  "live": {
+    "pair": {
+      "filesFailed": 2,
+      "testsFailed": 2,
+      "timeoutMs": 120000,
+      "durationSeconds": 120.56
+    },
+    "instrumentedSingle": {
+      "testsFailed": 1,
+      "timeoutMs": 120000,
+      "durationSeconds": 120.52,
+      "events": [
+        {
+          "at": 1789413563197,
+          "stage": "request",
+          "destination": "https://opencode.ai/zen/go/v1/chat/completions",
+          "model": "deepseek-v4.1-flash",
+          "tools": 0,
+          "sessionHeaderNames": [
+            "x-deepseek-harness-session-id"
+          ],
+          "userAgentPresent": true
+        },
+        {
+          "at": 1789413563769,
+          "stage": "headers",
+          "status": 200
+        },
+        {
+          "at": 1789413575777,
+          "stage": "first-chunk",
+          "done": false,
+          "bytes": 14
+        }
+      ]
+    },
+    "readOnlyModels": {
+      "status": 200,
+      "elapsedMs": 108,
+      "listedCurrentV41": true,
+      "listedLegacyV41": true
+    }
+  },
+  "conclusion": "The selected Go endpoint receives the current model ID and the native Harness session header, and returns HTTP 200 before the test deadline. The test still times out without a completed valid reply. Exact provider/stream/Harness cause is inconclusive; the model rename alone does not explain earlier official-provider timeouts.",
+  "fullRegression": "Not rerun after the failed targeted live gate; no skips or assertions/deadlines weakened. LRU has not yet been revalidated on the new route.",
+  "usage": "No complete usage record was obtained; unknown, not zero. No further model attempts or formal benchmark runs started.",
+  "next": "Recover the live generation path, pass the two targeted tests and full pnpm test, then deliver the local PR fixes and resolve handled reviews.",
+  "sourceFiles": [
+    {
+      "file": "tests/helpers/live-model.ts",
+      "sha256": "026cc04a67cdfe41ed23fc79a1887b82f0348b4e606fbe3e553f1e91be5bfd49"
+    },
+    {
+      "file": "tests/helpers/live-model.test.ts",
+      "sha256": "7226b17ea844ad55b370add4cc4a943d56b43c7af1f36fc900e68edb179e7dd4"
+    },
+    {
+      "file": "packages/runtime/executor/src/compatible-model.ts",
+      "sha256": "3831293694abebd72b81054b280755a844da96a132b898bb5a59842ab0a64612"
+    },
+    {
+      "file": "packages/runtime/executor/test/compatible-reasoning.test.ts",
+      "sha256": "99f4ce6443cb15dfaf1ca2d0e84b1ee293f3a288247c896aacc9b148b7956706"
+    },
+    {
+      "file": "packages/runtime/executor/test/g5-real-chain.test.ts",
+      "sha256": "dea9bf7d28ff9720ee21182d6b92ba84565356f7b1999d8e56a5bcc5de801114"
+    },
+    {
+      "file": "packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts",
+      "sha256": "ac477b7618716e1fd766ba18257e836d881510f44d6ae3e720dc779382b2b054"
+    },
+    {
+      "file": "packages/core/__tests__/e2e/lru-cache.test.ts",
+      "sha256": "7b054b869f84323afa8e1056d9d9df543b6540d12c76850b57a9301643e12c9c"
+    },
+    {
+      "file": "tests/evals/phase10/final/model-adapter.ts",
+      "sha256": "15ae510c9b453cacf8451282529662e5a8c21931b8733724177ecbe76138d74f"
+    },
+    {
+      "file": "tests/evals/phase10/final/model-profile.ts",
+      "sha256": "ba2b901685da01afde7be75f744c5f0ea38b321acbd2aae621a10032c4580848"
+    }
+  ]
+}

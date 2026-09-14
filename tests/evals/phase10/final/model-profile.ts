@@ -33,9 +33,9 @@ export const CONFIG = {
   accountingMetric: 'subscription-quota-equivalent-usd',
   modelRequestsEnabled: false,
   pricingSource: 'https://opencode.ai/docs/go/#usage-limits',
-  pricingChecked: '2026-09-10',
+  pricingChecked: '2026-09-14',
   peakRates: {
     'deepseek-v4-flash': { input: 0.3, cacheRead: 0.006, output: 1.2 },
-    'deepseek-flash': { input: 0.3, cacheRead: 0.006, output: 1.2 },
+    'deepseek-v4.1-flash': { input: 0.3, cacheRead: 0.006, output: 1.2 },
   },
 };

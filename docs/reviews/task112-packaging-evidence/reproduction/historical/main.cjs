@@ -1,4 +1,3 @@
-const {stopChild}=require('./stop-child.cjs');
 const {app,BrowserWindow,session}=require('electron');
 const fs=require('node:fs'),p=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto'),assert=require('node:assert/strict');
 const base=p.dirname(p.dirname(p.dirname(process.resourcesPath))),res=process.resourcesPath,probe=fs.mkdtempSync(base+'/probe-run-');
@@ -20,7 +19,7 @@ app.whenReady().then(async()=>{
  const fd=fs.openSync(worktree,fs.constants.O_RDONLY|fs.constants.O_DIRECTORY);const helper=res+'/native/secure-files-arm64';let safe;
  try{safe=cp.spawnSync(helper,['write',worktree,'helper.txt',worktree],{input:'secure-helper\n',stdio:['pipe','pipe','pipe',fd],env});check('native helper write',safe.status===0);safe=cp.spawnSync(helper,['read',worktree,'helper.txt',worktree],{stdio:['ignore','pipe','pipe',fd],env});check('native helper read',safe.status===0&&safe.stdout.toString()==='secure-helper\n');safe=cp.spawnSync(helper,['read',worktree,'../repo/evidence.txt',worktree],{stdio:['ignore','pipe','pipe',fd],env});check('native helper rejects escape',safe.status!==0);}finally{fs.closeSync(fd);}
  const password=crypto.randomBytes(24).toString('hex');exec('/usr/bin/security',['create-keychain','-p',password,keychain]);keychainCreated=true;exec('/usr/bin/security',['unlock-keychain','-p',password,keychain]);
- const token=crypto.randomBytes(32).toString('hex');const out=fs.openSync(probe+'/service.log','w');child=cp.fork(res+'/service/desktop-spike.mjs',[],{execPath:res+'/node/bin/node',cwd:res+'/service/apps/web',env,detached:true,stdio:['ignore',out,out,'ipc']});child.on('error',error=>{report.childError=error.code;});const ready=message('ready');child.send({type:'start',token,dataRoot:probe+'/state',helper:res+'/native/keychain-arm64',keychain});const started=await ready;report.backend=started;check('production instrumentation and real Keychain',started.credentials==='ready');
+ const token=crypto.randomBytes(32).toString('hex');const out=fs.openSync(probe+'/service.log','w');child=cp.fork(res+'/service/desktop-spike.mjs',[],{execPath:res+'/node/bin/node',cwd:res+'/service/apps/web',env,stdio:['ignore',out,out,'ipc']});child.on('error',error=>{report.childError=error.code;});const ready=message('ready');child.send({type:'start',token,dataRoot:probe+'/state',helper:res+'/native/keychain-arm64',keychain});const started=await ready;report.backend=started;check('production instrumentation and real Keychain',started.credentials==='ready');
  const url=`http://127.0.0.1:${started.port}`;check('unauthenticated request denied',(await fetch(url)).status===403);
  const headers={'x-agora-spike':token};const settings=await fetch(url+'/api/model-settings?projectId=spike',{headers});check('real dynamic settings API',settings.status===200);report.settingsKeys=Object.keys(await settings.json());check('cross origin denied',(await fetch(url,{headers:{...headers,origin:'https://example.invalid'}})).status===403);check('product writes unavailable in spike',(await fetch(url+'/api/tasks',{method:'POST',headers})).status===405);
  session.defaultSession.setPermissionRequestHandler((_w,_p,callback)=>callback(false));session.defaultSession.webRequest.onBeforeSendHeaders({urls:[url+'/*']},(details,callback)=>callback({requestHeaders:{...details.requestHeaders,'x-agora-spike':token}}));
@@ -28,18 +27,5 @@ app.whenReady().then(async()=>{
  const readKey=()=>cp.execFileSync(res+'/native/keychain-arm64',['read','com.agora.spike.112','spike',keychain],{env,timeout:20000});const before=readKey();const stopped=message('stopped');child.send({type:'stop'});await stopped;backendStopped=true;check('backend graceful stop',true);check('Keychain key stable after service stop',before.equals(readKey()));before.fill(0);win.destroy();win=undefined;
  report.status='passed';
  }catch(error){report.status='failed';report.error=String(error.message);}
- finally{
-   if(win)win.destroy();
-   let terminated=false;
-   try{
-     const cleanup=await stopChild(child,{sendStop:!backendStopped});
-     terminated=true;
-     report.forcedTermination=cleanup.forced;
-     if(cleanup.forced){report.cleanupError='probe exceeded graceful shutdown deadline';report.status='failed';}
-   }catch{report.cleanupError='probe termination failed';report.status='failed';}
-   if(keychainCreated&&terminated){try{exec('/usr/bin/security',['delete-keychain',keychain]);report.keychainRemoved=true;}catch{report.cleanupError='temporary Keychain cleanup failed';report.status='failed';}}
-   fs.writeFileSync(probe+'/result.json',JSON.stringify(report,null,2)+'\n');
-   fs.writeFileSync(base+'/last-probe.txt',probe);
-   app.exit(report.status==='passed'?0:1);
- }
+ finally{if(win)win.destroy();if(child?.connected&&!backendStopped){await new Promise(r=>child.send({type:'stop'},()=>r()));}if(child&&child.exitCode===null){await Promise.race([new Promise(r=>child.once('exit',r)),new Promise(r=>setTimeout(r,3000))]);}if(child&&child.exitCode===null){report.cleanupError='backend still running';report.status='failed';}if(keychainCreated){try{exec('/usr/bin/security',['delete-keychain',keychain]);report.keychainRemoved=true;}catch(e){report.cleanupError=String(e.message);report.status='failed';}}fs.writeFileSync(probe+'/result.json',JSON.stringify(report,null,2)+'\n');fs.writeFileSync(base+'/last-probe.txt',probe);app.exit(report.status==='passed'?0:1);}
 });
