@@ -1,0 +1,1182 @@
+{
+  "version": 1,
+  "sourcePath": "docs/后续规划蓝图草案.md",
+  "sourceSha256": "0d651fdbb108ad79bd404c9fed974e7dbbc7be7a8fb2e04d1452dc6546dd3a39",
+  "sourcePrefix": "# Agora 后续规划蓝图（讨论草案）\n\n版本：v0.14\n\n记录日期：2026-09-13\n\n状态：主要产品选择已逐项确认；技术细则持续讨论，尚未转为正式开发计划\n\n阅读导航：定位与现状见 §1–§3；建议路线见 §4；按实现顺序排列的能力见 §5–§11；竞品依据、未决问题、定稿流程与修订历史见 §12–§15。\n\n",
+  "sourceBytes": 104765,
+  "sections": [
+    {
+      "sourceSection": 1,
+      "destination": "docs/reviews/post-phase10-planning-migration.md",
+      "section": "2",
+      "sourceSha256": "099e5c3ad6b86c9129370651d26939f83ce79219eae920a6f5d309ce1ccea367",
+      "migratedSha256": "e035c36a5d95eb4f1115228795e1eccb823b747562190adee24233332146b7bf",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 1 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 1 -->",
+      "changes": [
+        {
+          "old": "§5",
+          "new": "[§22.3](../项目蓝图.md#future-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12",
+          "new": "[§7.2](../框架调研与借鉴决策.md#future-12)",
+          "kind": "reference"
+        },
+        {
+          "old": "§13",
+          "new": "[§18.4](../开发计划安排.md#future-13)",
+          "kind": "reference"
+        },
+        {
+          "old": "§14",
+          "new": "[§18.5](../开发计划安排.md#future-14)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 1. 文档用途与效力",
+          "new": "<a id=\"future-1\"></a>\n## 2 文档用途与效力"
+        },
+        {
+          "old": "](项目蓝图.md)",
+          "new": "](../项目蓝图.md)"
+        },
+        {
+          "old": "](详细设计方案.md)",
+          "new": "](../详细设计方案.md)"
+        },
+        {
+          "old": "](task-status.json)",
+          "new": "](../task-status.json)"
+        },
+        {
+          "old": "](../AGENTS.md)",
+          "new": "](../../AGENTS.md)"
+        }
+      ]
+    },
+    {
+      "sourceSection": 2,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.1",
+      "sourceSha256": "10123f754442dd82d4e9b1a8b23a7638894ee26742bb1c11391c148670c41096",
+      "migratedSha256": "4fd8e1b1f271dcf84362162b1db482b01d1ff220de6a157b1d60cbda0d6cde15",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 2 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 2 -->",
+      "changes": [
+        {
+          "old": "§7",
+          "new": "[§22.5](项目蓝图.md#future-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9",
+          "new": "[§22.7](项目蓝图.md#future-9)",
+          "kind": "reference"
+        },
+        {
+          "old": "§11",
+          "new": "[§22.9](项目蓝图.md#future-11)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12",
+          "new": "[§7.2](框架调研与借鉴决策.md#future-12)",
+          "kind": "reference"
+        },
+        {
+          "old": "§3",
+          "new": "[§7.1](框架调研与借鉴决策.md#future-3)",
+          "kind": "reference"
+        },
+        {
+          "old": "§5",
+          "new": "[§22.3](项目蓝图.md#future-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 2. 产品方向与原始诉求",
+          "new": "<a id=\"future-2\"></a>\n#### 22.1 产品方向与原始诉求"
+        },
+        {
+          "old": "### 2.1 用户提出的五个方向",
+          "new": "<a id=\"future-2-1\"></a>\n##### 22.1.1 用户提出的五个方向"
+        }
+      ]
+    },
+    {
+      "sourceSection": 3,
+      "destination": "docs/框架调研与借鉴决策.md",
+      "section": "7.1",
+      "sourceSha256": "e8ebc99d042e482612ef7f2c459ba82934cdfd73f54b9cf92cbf175ddda966be",
+      "migratedSha256": "7c942f383955d98b76a50abdf21ac9e877aca58e732da6a4be486c66e9ba397c",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 3 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 3 -->",
+      "changes": [
+        {
+          "old": "§10",
+          "new": "[§22.8](项目蓝图.md#future-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§4",
+          "new": "[§22.2](项目蓝图.md#future-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§13",
+          "new": "[§18.4](开发计划安排.md#future-13)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 3. 现状基线：真实团队能力与缺口",
+          "new": "<a id=\"future-3\"></a>\n### 7.1 现状基线：真实团队能力与缺口"
+        },
+        {
+          "old": "### 3.1 目标及当前判断",
+          "new": "<a id=\"future-3-1\"></a>\n#### 7.1.1 目标及当前判断"
+        },
+        {
+          "old": "### 3.2 六项特征对照",
+          "new": "<a id=\"future-3-2\"></a>\n#### 7.1.2 六项特征对照"
+        },
+        {
+          "old": "### 3.3 关键证据与容易误解的边界",
+          "new": "<a id=\"future-3-3\"></a>\n#### 7.1.3 关键证据与容易误解的边界"
+        },
+        {
+          "old": "### 3.4 值得继续讨论的三个主要缺口",
+          "new": "<a id=\"future-3-4\"></a>\n#### 7.1.4 值得继续讨论的三个主要缺口"
+        }
+      ]
+    },
+    {
+      "sourceSection": 4,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.2",
+      "sourceSha256": "5aa2a8c51b4c52ff1ed5b986756118b43618c68feea015c21d47271dc402a07a",
+      "migratedSha256": "d21e583a7b12dc1c2336cab9ef4ca7302f2de37d46aac13e4e977e1c2cc58838",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 4 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 4 -->",
+      "changes": [
+        {
+          "old": "以下是本次重排后的统一实现建议，替代先前按讨论批次给出的局部优先级。",
+          "new": "以下七组用于表达技术依赖；交付安排采用开发计划 §18.1 的四批方案。"
+        },
+        {
+          "old": "分组用于说明依赖和逐步交付顺序，**不是已批准的 Phase 编号、任务清单、工期或严格串行排期**；正式范围仍按 §14 定稿。",
+          "new": "七组不等于七个交付批次；首批登记为 Phase 11，其余批次暂保留目标与入口，不预先拆全部任务或承诺工期。"
+        },
+        {
+          "old": "§5",
+          "new": "[§22.3](项目蓝图.md#future-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6",
+          "new": "[§22.4](项目蓝图.md#future-6)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7",
+          "new": "[§22.5](项目蓝图.md#future-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8",
+          "new": "[§22.6](项目蓝图.md#future-8)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9",
+          "new": "[§22.7](项目蓝图.md#future-9)",
+          "kind": "reference"
+        },
+        {
+          "old": "§10",
+          "new": "[§22.8](项目蓝图.md#future-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§11",
+          "new": "[§22.9](项目蓝图.md#future-11)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.2",
+          "new": "[§22.7.2](项目蓝图.md#future-9-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12",
+          "new": "[§7.2](框架调研与借鉴决策.md#future-12)",
+          "kind": "reference"
+        },
+        {
+          "old": "§13",
+          "new": "[§18.4](开发计划安排.md#future-13)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.1",
+          "new": "[§22.5.1](项目蓝图.md#future-7-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.5",
+          "new": "[§22.6.5](项目蓝图.md#future-8-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.6",
+          "new": "[§22.6.6](项目蓝图.md#future-8-6)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.7",
+          "new": "[§22.6.7](项目蓝图.md#future-8-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.9",
+          "new": "[§22.6.9](项目蓝图.md#future-8-9)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.10",
+          "new": "[§22.6.10](项目蓝图.md#future-8-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 4. 按实现依赖组织的建议路线",
+          "new": "<a id=\"future-4\"></a>\n#### 22.2 按实现依赖组织的建议路线"
+        },
+        {
+          "old": "以下七组用于表达技术依赖；交付安排采用开发计划 §18.1 的四批方案。七组不等于七个交付批次；首批登记为 Phase 11，其余批次暂保留目标与入口，不预先拆全部任务或承诺工期。",
+          "new": "以下七组用于表达技术依赖；交付安排采用开发计划 §18.1 的四批方案。七组不等于七个交付批次；四批现均拆为 Phase 11–14 具体任务，分别见 §18.2、§18.6–§18.8，逐项覆盖见 §18.9。细则在对应设计任务定稿，不承诺工期。",
+          "kind": "2026-09-13 Leader decision: decompose all planned capabilities now"
+        }
+      ]
+    },
+    {
+      "sourceSection": 5,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.3",
+      "sourceSha256": "f454cd969ec2da02a76c82bd0ca1bd7c4f2b4629333c4f331e1c20b227c297d2",
+      "migratedSha256": "9d4c64f1be52b32e914cd00866ca06e4eceeff25b83fba9e0753e5484453cc03",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 5 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 5 -->",
+      "changes": [
+        {
+          "old": "§9.5",
+          "new": "[§22.7.5](项目蓝图.md#future-9-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6.5",
+          "new": "[§22.4.5](项目蓝图.md#future-6-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.6",
+          "new": "[§22.7.6](项目蓝图.md#future-9-6)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.2",
+          "new": "[§22.5.2](项目蓝图.md#future-7-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12.3",
+          "new": "[§7.2.3](框架调研与借鉴决策.md#future-12-3)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 5. 第一组：本机开发与首次使用",
+          "new": "<a id=\"future-5\"></a>\n#### 22.3 第一组：本机开发与首次使用"
+        },
+        {
+          "old": "### 5.1 本机项目开发",
+          "new": "<a id=\"future-5-1\"></a>\n##### 22.3.1 本机项目开发"
+        },
+        {
+          "old": "### 5.2 新用户首次使用",
+          "new": "<a id=\"future-5-2\"></a>\n##### 22.3.2 新用户首次使用"
+        },
+        {
+          "old": "普通本机 Web/Node 开发不要求安装 Docker。保留 Docker 为可选隔离方式、以及兼容用户自身 Docker 依赖的具体方案仍需设计。",
+          "new": "**[2026-09-13 架构决策更新 · D18]** 新版本只提供本机执行，不保留 Agora Docker 后端、可选隔离模式或自动回退，不兼容旧产品任务；首批标准 Web/Node 开发在未安装 Docker 的 Mac 上验收。用户项目自身的 Docker 依赖不属于 Agora 执行后端，也不作为首批必需环境。具体退役清单由 11.3 定稿、11.13 实施；此处不宣称当前代码已移除。",
+          "kind": "2026-09-13 Leader decision: retire Agora Docker backend without legacy task compatibility"
+        },
+        {
+          "old": "以及既有 Docker 任务兼容。",
+          "new": "以及 Docker 后端退役的工程清单与回归替代覆盖；旧任务兼容不再属于待决范围。",
+          "kind": "2026-09-13 Leader decision: retire Agora Docker backend without legacy task compatibility"
+        }
+      ]
+    },
+    {
+      "sourceSection": 6,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.4",
+      "sourceSha256": "3a6441f56c9c7d0e05461a386418b52b242653384be9b269f1c71084fbed91fe",
+      "migratedSha256": "c0e41686a109027aef7f4960224ace09a4cacfdc8ebc5386e1ce29efad57d90e",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 6 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 6 -->",
+      "changes": [
+        {
+          "old": "本次只更新讨论草案，不新增阶段或开发任务。",
+          "new": "已迁入正式产品规格；实施依赖及待决事项以开发计划 §18 和任务索引为准。"
+        },
+        {
+          "old": "§8",
+          "new": "[§22.6](项目蓝图.md#future-8)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7",
+          "new": "[§22.5](项目蓝图.md#future-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6.5",
+          "new": "[§22.4.5](项目蓝图.md#future-6-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.2",
+          "new": "[§22.6.2](项目蓝图.md#future-8-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.4",
+          "new": "[§22.6.4](项目蓝图.md#future-8-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§5.2",
+          "new": "[§22.3.2](项目蓝图.md#future-5-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§10",
+          "new": "[§22.8](项目蓝图.md#future-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§14",
+          "new": "[§18.5](开发计划安排.md#future-14)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 6. 第二组：项目、会话与文件输入",
+          "new": "<a id=\"future-6\"></a>\n#### 22.4 第二组：项目、会话与文件输入"
+        },
+        {
+          "old": "### 6.1 多项目管理",
+          "new": "<a id=\"future-6-1\"></a>\n##### 22.4.1 多项目管理"
+        },
+        {
+          "old": "### 6.2 已确认的方向与讨论状态",
+          "new": "<a id=\"future-6-2\"></a>\n##### 22.4.2 已确认的方向与讨论状态"
+        },
+        {
+          "old": "### 6.3 项目、会话与群聊的关系",
+          "new": "<a id=\"future-6-3\"></a>\n##### 22.4.3 项目、会话与群聊的关系"
+        },
+        {
+          "old": "### 6.4 跨会话共享与单成员私聊",
+          "new": "<a id=\"future-6-4\"></a>\n##### 22.4.4 跨会话共享与单成员私聊"
+        },
+        {
+          "old": "### 6.5 文件上传与材料范围",
+          "new": "<a id=\"future-6-5\"></a>\n##### 22.4.5 文件上传与材料范围"
+        },
+        {
+          "old": "### 6.6 与当前规格的衔接",
+          "new": "<a id=\"future-6-6\"></a>\n##### 22.4.6 与当前规格的衔接"
+        }
+      ]
+    },
+    {
+      "sourceSection": 7,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.5",
+      "sourceSha256": "7b3ccf92f2b5901e9e79c298ca77fb091a1252d953cd70b8dcf96b92183f36c5",
+      "migratedSha256": "a0df41563ec35ca7d0a36256253090b776faf68d9b4364ffd2843602efe08f02",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 7 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 7 -->",
+      "changes": [
+        {
+          "old": "本次只记录方向，不新增正式角色类型或启用任意角色自主路由。",
+          "new": "产品方向已确认；角色类型与自主路由的实装以对应任务定稿及验收为准。"
+        },
+        {
+          "old": "§7.1",
+          "new": "[§22.5.1](项目蓝图.md#future-7-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.5",
+          "new": "[§22.6.5](项目蓝图.md#future-8-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.7",
+          "new": "[§22.6.7](项目蓝图.md#future-8-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.7",
+          "new": "[§22.5.7](项目蓝图.md#future-7-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12.1",
+          "new": "[§7.2.1](框架调研与借鉴决策.md#future-12-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.6",
+          "new": "[§22.5.6](项目蓝图.md#future-7-6)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.2",
+          "new": "[§22.5.2](项目蓝图.md#future-7-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§3",
+          "new": "[§7.1](框架调研与借鉴决策.md#future-3)",
+          "kind": "reference"
+        },
+        {
+          "old": "§10",
+          "new": "[§22.8](项目蓝图.md#future-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 7. 第三组：团队成员、招募与能力配置",
+          "new": "<a id=\"future-7\"></a>\n#### 22.5 第三组：团队成员、招募与能力配置"
+        },
+        {
+          "old": "### 7.1 成员身份、工作指派与招募去向",
+          "new": "<a id=\"future-7-1\"></a>\n##### 22.5.1 成员身份、工作指派与招募去向"
+        },
+        {
+          "old": "### 7.2 模板招募与自然语言自定义岗位",
+          "new": "<a id=\"future-7-2\"></a>\n##### 22.5.2 模板招募与自然语言自定义岗位"
+        },
+        {
+          "old": "### 7.3 开发中途调整团队并完成交接",
+          "new": "<a id=\"future-7-3\"></a>\n##### 22.5.3 开发中途调整团队并完成交接"
+        },
+        {
+          "old": "### 7.4 按成员配置能力的用户要求",
+          "new": "<a id=\"future-7-4\"></a>\n##### 22.5.4 按成员配置能力的用户要求"
+        },
+        {
+          "old": "### 7.5 能力分类与使用示例",
+          "new": "<a id=\"future-7-5\"></a>\n##### 22.5.5 能力分类与使用示例"
+        },
+        {
+          "old": "### 7.6 首版配置流程",
+          "new": "<a id=\"future-7-6\"></a>\n##### 22.5.6 首版配置流程"
+        },
+        {
+          "old": "### 7.7 执行中的变更与生命周期",
+          "new": "<a id=\"future-7-7\"></a>\n##### 22.5.7 执行中的变更与生命周期"
+        },
+        {
+          "old": "### 7.8 与现有能力及其他规划的关系",
+          "new": "<a id=\"future-7-8\"></a>\n##### 22.5.8 与现有能力及其他规划的关系"
+        },
+        {
+          "old": "具体 schema 与旧数据迁移方案待定。",
+          "new": "具体 schema 与跨批次身份演进契约待定；按 D18，不要求兼容或迁移既有 Docker 产品任务。",
+          "kind": "2026-09-13 Leader decision: no legacy product task migration"
+        },
+        {
+          "old": "本节未确定插件标准、兼容产品、分发渠道或新依赖；市场已确定后置。",
+          "new": "本节未确定插件标准、兼容产品、分发渠道或新依赖；市场保持后置，但现已登记 14.20–14.23 的设计及实现任务，先定稿包与来源契约再实装。",
+          "kind": "2026-09-13 Leader decision: decompose all planned capabilities now"
+        }
+      ]
+    },
+    {
+      "sourceSection": 8,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.6",
+      "sourceSha256": "8e98fb0c5e602aee01622813de81d159820e1223d2390d55a3f3a7d9a20e0b3f",
+      "migratedSha256": "2393155e7a305f09c8a8f33ae62853e9ac1ba67323e0919341604c285caffbc2",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 8 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 8 -->",
+      "changes": [
+        {
+          "old": "本轮没有指定金额或授权执行付费实验。",
+          "new": "尚未指定金额或授权执行付费实验。"
+        },
+        {
+          "old": "§8.2",
+          "new": "[§22.6.2](项目蓝图.md#future-8-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.4",
+          "new": "[§22.6.4](项目蓝图.md#future-8-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§13",
+          "new": "[§18.4](开发计划安排.md#future-13)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.4",
+          "new": "[§22.7.4](项目蓝图.md#future-9-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.3",
+          "new": "[§22.7.3](项目蓝图.md#future-9-3)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.1",
+          "new": "[§22.5.1](项目蓝图.md#future-7-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.5",
+          "new": "[§22.6.5](项目蓝图.md#future-8-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.9",
+          "new": "[§22.6.9](项目蓝图.md#future-8-9)",
+          "kind": "reference"
+        },
+        {
+          "old": "§4",
+          "new": "[§22.2](项目蓝图.md#future-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§14",
+          "new": "[§18.5](开发计划安排.md#future-14)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 8. 第四组：执行编排、配额与协作响应",
+          "new": "<a id=\"future-8\"></a>\n#### 22.6 第四组：执行编排、配额与协作响应"
+        },
+        {
+          "old": "### 8.1 多会话、多项目并行与资源限制",
+          "new": "<a id=\"future-8-1\"></a>\n##### 22.6.1 多会话、多项目并行与资源限制"
+        },
+        {
+          "old": "### 8.2 项目上限与全局总上限",
+          "new": "<a id=\"future-8-2\"></a>\n##### 22.6.2 项目上限与全局总上限"
+        },
+        {
+          "old": "### 8.3 完成后接单与等待期间的责任",
+          "new": "<a id=\"future-8-3\"></a>\n##### 22.6.3 完成后接单与等待期间的责任"
+        },
+        {
+          "old": "### 8.4 安全点短暂回应，随后返回原工作",
+          "new": "<a id=\"future-8-4\"></a>\n##### 22.6.4 安全点短暂回应，随后返回原工作"
+        },
+        {
+          "old": "### 8.5 成员主动求助的完整执行链路",
+          "new": "<a id=\"future-8-5\"></a>\n##### 22.6.5 成员主动求助的完整执行链路"
+        },
+        {
+          "old": "### 8.6 保留角色投影，允许按需补充上下文",
+          "new": "<a id=\"future-8-6\"></a>\n##### 22.6.6 保留角色投影，允许按需补充上下文"
+        },
+        {
+          "old": "### 8.7 更灵活的任务组织与受约束的模型建议",
+          "new": "<a id=\"future-8-7\"></a>\n##### 22.6.7 更灵活的任务组织与受约束的模型建议"
+        },
+        {
+          "old": "### 8.8 优化任务粒度与波次等待",
+          "new": "<a id=\"future-8-8\"></a>\n##### 22.6.8 优化任务粒度与波次等待"
+        },
+        {
+          "old": "### 8.9 基于失败证据的定向返工",
+          "new": "<a id=\"future-8-9\"></a>\n##### 22.6.9 基于失败证据的定向返工"
+        },
+        {
+          "old": "### 8.10 优化顺序、保留边界与效果衡量",
+          "new": "<a id=\"future-8-10\"></a>\n##### 22.6.10 优化顺序、保留边界与效果衡量"
+        },
+        {
+          "old": "### 8.11 项目与全局费用预算",
+          "new": "<a id=\"future-8-11\"></a>\n##### 22.6.11 项目与全局费用预算"
+        },
+        {
+          "old": "与 [§22.2](项目蓝图.md#future-4) 的实现依赖保持一致，未形成正式阶段或工期承诺。",
+          "new": "与 [§22.2](项目蓝图.md#future-4) 的实现依赖保持一致；现已登记 Phase 12 的编排任务及 Phase 14 的增量集成/准备任务，不承诺工期。",
+          "kind": "2026-09-13 Leader decision: decompose all planned capabilities now"
+        }
+      ]
+    },
+    {
+      "sourceSection": 9,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.7",
+      "sourceSha256": "b131c35f3f44b21648ad958e0cc0326ec29e13fb703de5771128fb4e8a9c5245",
+      "migratedSha256": "0156e34f90e81da6f2a6c07fe608a7e66267d3766d712f81343314cc6fdadf18",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 9 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 9 -->",
+      "changes": [
+        {
+          "old": "§6.4",
+          "new": "[§22.4.4](项目蓝图.md#future-6-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6.3",
+          "new": "[§22.4.3](项目蓝图.md#future-6-3)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.4",
+          "new": "[§22.6.4](项目蓝图.md#future-8-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.3",
+          "new": "[§22.7.3](项目蓝图.md#future-9-3)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6",
+          "new": "[§22.4](项目蓝图.md#future-6)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7",
+          "new": "[§22.5](项目蓝图.md#future-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8",
+          "new": "[§22.6](项目蓝图.md#future-8)",
+          "kind": "reference"
+        },
+        {
+          "old": "§10",
+          "new": "[§22.8](项目蓝图.md#future-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.6",
+          "new": "[§22.6.6](项目蓝图.md#future-8-6)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.5",
+          "new": "[§22.6.5](项目蓝图.md#future-8-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§5.2",
+          "new": "[§22.3.2](项目蓝图.md#future-5-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12.2",
+          "new": "[§7.2.2](框架调研与借鉴决策.md#future-12-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 9. 第五组：日常协作、人工接手与恢复",
+          "new": "<a id=\"future-9\"></a>\n#### 22.7 第五组：日常协作、人工接手与恢复"
+        },
+        {
+          "old": "### 9.1 单 Agent 对话与实时执行",
+          "new": "<a id=\"future-9-1\"></a>\n##### 22.7.1 单 Agent 对话与实时执行"
+        },
+        {
+          "old": "### 9.2 可操作的团队工作地图",
+          "new": "<a id=\"future-9-2\"></a>\n##### 22.7.2 可操作的团队工作地图"
+        },
+        {
+          "old": "### 9.3 成员上下文透明面板",
+          "new": "<a id=\"future-9-3\"></a>\n##### 22.7.3 成员上下文透明面板"
+        },
+        {
+          "old": "### 9.4 Agent 主动拉小群",
+          "new": "<a id=\"future-9-4\"></a>\n##### 22.7.4 Agent 主动拉小群"
+        },
+        {
+          "old": "### 9.5 用户临时接手，再交还给 Agent",
+          "new": "<a id=\"future-9-5\"></a>\n##### 22.7.5 用户临时接手，再交还给 Agent"
+        },
+        {
+          "old": "### 9.6 整支团队暂停，之后继续工作",
+          "new": "<a id=\"future-9-6\"></a>\n##### 22.7.6 整支团队暂停，之后继续工作"
+        },
+        {
+          "old": "**[2026-09-13 产品规划确认] 交付顺序：** 首批先做工作地图与成员实时详情，展示责任、依赖、阻塞、工具状态和实际改动，提供暂停、接管及私聊入口；虚拟办公室随后基于这些真实状态建设。",
+          "new": "**[2026-09-13 产品规划确认] 交付顺序：** 展示能力先做工作地图与成员实时详情，再建设虚拟办公室。按 D18 四批安排，基础实时详情为 11.11/12.17，完整工作地图为 14.3，虚拟办公室为 14.18–14.19；展示责任、依赖、阻塞、工具状态和实际改动，提供暂停、接管及私聊入口。",
+          "kind": "2026-09-13 Leader decision: decompose all planned capabilities now"
+        }
+      ]
+    },
+    {
+      "sourceSection": 10,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.8",
+      "sourceSha256": "9f7842aeb53e6eb20b1cf713631fea81fc7918984c000cf9d848a991d664efdf",
+      "migratedSha256": "a407c59eafc3a5f6261c6e565a98a0fe27d91372b5731871421bba58df7b1e38",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 10 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 10 -->",
+      "changes": [
+        {
+          "old": "不构成已批准的实现规格或解除 D3 写入限制。",
+          "new": "不代替精确接口定稿或解除 D3 写入限制。"
+        },
+        {
+          "old": "本次记录想法不等于执行启用命令或解除该约束。",
+          "new": "产品路线定稿不等于执行启用命令或解除该约束。"
+        },
+        {
+          "old": "§7.2",
+          "new": "[§22.5.2](项目蓝图.md#future-7-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§10",
+          "new": "[§22.8](项目蓝图.md#future-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12.2",
+          "new": "[§7.2.2](框架调研与借鉴决策.md#future-12-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 10. 第六组：项目知识库与持续维护",
+          "new": "<a id=\"future-10\"></a>\n#### 22.8 第六组：项目知识库与持续维护"
+        },
+        {
+          "old": "### 10.1 用户提出的要求",
+          "new": "<a id=\"future-10-1\"></a>\n##### 22.8.1 用户提出的要求"
+        },
+        {
+          "old": "### 10.2 建议积累的内容",
+          "new": "<a id=\"future-10-2\"></a>\n##### 22.8.2 建议积累的内容"
+        },
+        {
+          "old": "### 10.3 统一权威与确认边界",
+          "new": "<a id=\"future-10-3\"></a>\n##### 22.8.3 统一权威与确认边界"
+        },
+        {
+          "old": "### 10.4 Librarian 的职责与维护规则",
+          "new": "<a id=\"future-10-4\"></a>\n##### 22.8.4 Librarian 的职责与维护规则"
+        },
+        {
+          "old": "### 10.5 防遗忘也要防过期",
+          "new": "<a id=\"future-10-5\"></a>\n##### 22.8.5 防遗忘也要防过期"
+        },
+        {
+          "old": "### 10.6 当前基础与实施前提",
+          "new": "<a id=\"future-10-6\"></a>\n##### 22.8.6 当前基础与实施前提"
+        },
+        {
+          "old": "### 10.7 随代码变化维护知识有效性",
+          "new": "<a id=\"future-10-7\"></a>\n##### 22.8.7 随代码变化维护知识有效性"
+        },
+        {
+          "old": "后续需先明确知识模型、权威与失效规则、维护角色生命周期及可验证的读取/更新流程，再同步正式规格并安排开发任务。",
+          "new": "Phase 13 任务现已登记；13.1 先定稿知识模型、权威与失效规则、维护角色生命周期及可验证的读取/更新流程，再按依赖实现并同步精确规格。",
+          "kind": "2026-09-13 Leader decision: decompose all planned capabilities now"
+        }
+      ]
+    },
+    {
+      "sourceSection": 11,
+      "destination": "docs/项目蓝图.md",
+      "section": "22.9",
+      "sourceSha256": "ab7158f88b2234adc888b55dfac17899a97453a0bb7a1845b2af61af10444b45",
+      "migratedSha256": "c8cd3ae09a03445d70cf709268ebe7befbb45dc605109b3d459e31fd172a4f7d",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 11 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 11 -->",
+      "changes": [
+        {
+          "old": "§11.1",
+          "new": "[§22.9.1](项目蓝图.md#future-11-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.4",
+          "new": "[§22.7.4](项目蓝图.md#future-9-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12.2",
+          "new": "[§7.2.2](框架调研与借鉴决策.md#future-12-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 11. 第七组：交付追溯与进阶工程能力",
+          "new": "<a id=\"future-11\"></a>\n#### 22.9 第七组：交付追溯与进阶工程能力"
+        },
+        {
+          "old": "### 11.1 从需求到验收的可追溯交付",
+          "new": "<a id=\"future-11-1\"></a>\n##### 22.9.1 从需求到验收的可追溯交付"
+        },
+        {
+          "old": "### 11.2 成员间接口约定与理解冲突预警",
+          "new": "<a id=\"future-11-2\"></a>\n##### 22.9.2 成员间接口约定与理解冲突预警"
+        },
+        {
+          "old": "### 11.3 团队主动提出有证据的问题报告",
+          "new": "<a id=\"future-11-3\"></a>\n##### 22.9.3 团队主动提出有证据的问题报告"
+        },
+        {
+          "old": "### 11.4 重要方案先实验再决策",
+          "new": "<a id=\"future-11-4\"></a>\n##### 22.9.4 重要方案先实验再决策"
+        },
+        {
+          "old": "### 11.5 按需求及依赖撤回改动",
+          "new": "<a id=\"future-11-5\"></a>\n##### 22.9.5 按需求及依赖撤回改动"
+        },
+        {
+          "old": "其他候选能力继续保留，不以此优先级直接确定所有高级能力的详细排期。",
+          "new": "其他候选能力也已拆为 Phase 14 的设计、实现及验收任务；该优先级与任务依赖约束实施顺序，不承诺工期。",
+          "kind": "2026-09-13 Leader decision: decompose all planned capabilities now"
+        }
+      ]
+    },
+    {
+      "sourceSection": 12,
+      "destination": "docs/框架调研与借鉴决策.md",
+      "section": "7.2",
+      "sourceSha256": "6eed7af53fe6c05e03b53a0b4f12958c39316bb4e532f1991ec5fb201fc285d0",
+      "migratedSha256": "ecc59246b3c2d4d6430f0ea9005a9c13fcf388a82dc7dc95b1b1a3ad2c053d59",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 12 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 12 -->",
+      "changes": [
+        {
+          "old": "§7",
+          "new": "[§22.5](项目蓝图.md#future-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9",
+          "new": "[§22.7](项目蓝图.md#future-9)",
+          "kind": "reference"
+        },
+        {
+          "old": "§11",
+          "new": "[§22.9](项目蓝图.md#future-11)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.2",
+          "new": "[§22.7.2](项目蓝图.md#future-9-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§11.1",
+          "new": "[§22.9.1](项目蓝图.md#future-11-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§4",
+          "new": "[§22.2](项目蓝图.md#future-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§14",
+          "new": "[§18.5](开发计划安排.md#future-14)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 12. 竞品依据与差异化验证",
+          "new": "<a id=\"future-12\"></a>\n### 7.2 竞品依据与差异化验证"
+        },
+        {
+          "old": "### 12.1 讨论背景与证据边界",
+          "new": "<a id=\"future-12-1\"></a>\n#### 7.2.1 讨论背景与证据边界"
+        },
+        {
+          "old": "### 12.2 研究边界与补充证据",
+          "new": "<a id=\"future-12-2\"></a>\n#### 7.2.2 研究边界与补充证据"
+        },
+        {
+          "old": "### 12.3 差异化验证与优先级说明",
+          "new": "<a id=\"future-12-3\"></a>\n#### 7.2.3 差异化验证与优先级说明"
+        },
+        {
+          "old": "正式开发前按 [§18.5](开发计划安排.md#future-14) 同步来源规格并登记任务。",
+          "new": "后续能力现已登记为Phase11–14任务，竞品复核与综合效果验证由14.24承接；各任务内的方案定稿继续按 [§18.5](开发计划安排.md#future-14) 同步来源规格，不重复创建任务。",
+          "kind": "2026-09-13 documentation audit: current plan versus historical research scope"
+        }
+      ]
+    },
+    {
+      "sourceSection": 13,
+      "destination": "docs/开发计划安排.md",
+      "section": "18.4",
+      "sourceSha256": "ab17285aa1a177cdb2078ba952d13b0b3eda2d54a406ce179a20e13d322fd117",
+      "migratedSha256": "1df05c08f43aa5670a33af2e38c4c95d51ef2f5dbe57fedf4c2159da059628f4",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 13 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 13 -->",
+      "changes": [
+        {
+          "old": "本轮已确认的产品默认值和行为已回写所属章节；",
+          "new": "已确认的产品默认值和行为已迁入正式来源章节；"
+        },
+        {
+          "old": "§4 仍是按依赖分组的建议路线，不是正式 Phase 11 或之后阶段的排期。首版方向不等于上述全部能力必须一次发布；正式开发前需要明确各阶段范围、技术方案与可验证出口。",
+          "new": "七组能力依赖不等于交付批次；四批路线、Phase 11 任务和按任务定稿机制见开发计划 §18.1–§18.3。不要求全部细则定完才排任务。"
+        },
+        {
+          "old": "§5.1",
+          "new": "[§22.3.1](项目蓝图.md#future-5-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§5.2",
+          "new": "[§22.3.2](项目蓝图.md#future-5-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6.1",
+          "new": "[§22.4.1](项目蓝图.md#future-6-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6.5",
+          "new": "[§22.4.5](项目蓝图.md#future-6-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.1",
+          "new": "[§22.5.1](项目蓝图.md#future-7-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.7",
+          "new": "[§22.5.7](项目蓝图.md#future-7-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.1",
+          "new": "[§22.6.1](项目蓝图.md#future-8-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.4",
+          "new": "[§22.6.4](项目蓝图.md#future-8-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.11",
+          "new": "[§22.6.11](项目蓝图.md#future-8-11)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.5",
+          "new": "[§22.6.5](项目蓝图.md#future-8-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.10",
+          "new": "[§22.6.10](项目蓝图.md#future-8-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6.4",
+          "new": "[§22.4.4](项目蓝图.md#future-6-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9",
+          "new": "[§22.7](项目蓝图.md#future-9)",
+          "kind": "reference"
+        },
+        {
+          "old": "§10",
+          "new": "[§22.8](项目蓝图.md#future-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§11",
+          "new": "[§22.9](项目蓝图.md#future-11)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12",
+          "new": "[§7.2](框架调研与借鉴决策.md#future-12)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 13. 按依赖顺序继续讨论的问题",
+          "new": "<a id=\"future-13\"></a>\n### 18.4 按依赖顺序继续讨论的问题"
+        },
+        {
+          "old": "端口、进程与 Docker 兼容 |",
+          "new": "端口、进程与 Docker 退役工程清单（不保留后端和旧任务兼容已定） |",
+          "kind": "2026-09-13 Leader decision: retire Agora Docker backend without legacy task compatibility"
+        },
+        {
+          "old": "七组能力依赖不等于交付批次；四批路线、Phase 11 任务和按任务定稿机制见开发计划 §18.1–§18.3。不要求全部细则定完才排任务。",
+          "new": "七组能力依赖不等于交付批次；四批路线与按任务定稿机制见开发计划 §18.1–§18.3，Phase 11–14全部任务见§18.2、§18.6–§18.8。上表问题已绑定设计任务，具体对应见任务来源及§18.9；不要求全部细则定完才排任务。",
+          "kind": "2026-09-13 Leader decision: decompose all planned capabilities now"
+        }
+      ]
+    },
+    {
+      "sourceSection": 14,
+      "destination": "docs/开发计划安排.md",
+      "section": "18.5",
+      "sourceSha256": "2d291b6e4f0263c2bf12a5e477080ed75f12aa47306930c461f66a1c78663968",
+      "migratedSha256": "ba186b853d2d1a9e2e216376840e1c0e7a5f24d073e079d4c6e69ced5c7b9577",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 14 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 14 -->",
+      "changes": [
+        {
+          "old": "## 14. 定稿后如何进入开发",
+          "new": "## 14. 文档同步与正常开发入口"
+        },
+        {
+          "old": "需求与边界达成一致后，按以下顺序转换：",
+          "new": "产品方向已迁入正式规格；后续任务内决策采用以下同步顺序："
+        },
+        {
+          "old": "## 14. 文档同步与正常开发入口",
+          "new": "<a id=\"future-14\"></a>\n### 18.5 文档同步与正常开发入口"
+        }
+      ]
+    },
+    {
+      "sourceSection": 15,
+      "destination": "docs/框架调研与借鉴决策.md",
+      "section": "7.3",
+      "sourceSha256": "20cd059720b8179b3a308ce654ec679c14efb707e1f6b34fc50ac98e4401bedd",
+      "migratedSha256": "19566ebf5f179a987727550aaab4fa1e6a27942f2c4c689d77443690ad650a3b",
+      "begin": "<!-- BEGIN PLANNING-MIGRATION 15 -->\n",
+      "end": "<!-- END PLANNING-MIGRATION 15 -->",
+      "changes": [
+        {
+          "old": "§5",
+          "new": "[§22.3](项目蓝图.md#future-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§12",
+          "new": "[§7.2](框架调研与借鉴决策.md#future-12)",
+          "kind": "reference"
+        },
+        {
+          "old": "§4",
+          "new": "[§22.2](项目蓝图.md#future-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§10",
+          "new": "[§22.8](项目蓝图.md#future-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7",
+          "new": "[§22.5](项目蓝图.md#future-7)",
+          "kind": "reference"
+        },
+        {
+          "old": "§11",
+          "new": "[§22.9](项目蓝图.md#future-11)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9",
+          "new": "[§22.7](项目蓝图.md#future-9)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8",
+          "new": "[§22.6](项目蓝图.md#future-8)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.2",
+          "new": "[§22.6.2](项目蓝图.md#future-8-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.4",
+          "new": "[§22.6.4](项目蓝图.md#future-8-4)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.2",
+          "new": "[§22.7.2](项目蓝图.md#future-9-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§9.3",
+          "new": "[§22.7.3](项目蓝图.md#future-9-3)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.1",
+          "new": "[§22.5.1](项目蓝图.md#future-7-1)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.5",
+          "new": "[§22.6.5](项目蓝图.md#future-8-5)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.9",
+          "new": "[§22.6.9](项目蓝图.md#future-8-9)",
+          "kind": "reference"
+        },
+        {
+          "old": "§8.10",
+          "new": "[§22.6.10](项目蓝图.md#future-8-10)",
+          "kind": "reference"
+        },
+        {
+          "old": "§7.2",
+          "new": "[§22.5.2](项目蓝图.md#future-7-2)",
+          "kind": "reference"
+        },
+        {
+          "old": "§6",
+          "new": "[§22.4](项目蓝图.md#future-6)",
+          "kind": "reference"
+        },
+        {
+          "old": "§13",
+          "new": "[§18.4](开发计划安排.md#future-13)",
+          "kind": "reference"
+        },
+        {
+          "old": "## 15. 讨论记录与修订历史",
+          "new": "<a id=\"future-15\"></a>\n### 7.3 讨论记录与修订历史"
+        },
+        {
+          "old": "以下保留各轮当时的讨论状态。早期记录中的“待讨论”不覆盖后续确认；当前产品规则以 [§22.3](项目蓝图.md#future-5)–[§7.2](框架调研与借鉴决策.md#future-12) 的确认标记及其引用为准。",
+          "new": "以下保留各轮当时的讨论状态。早期记录中的“待讨论”“未新增任务”仅描述当时，不覆盖后续确认；当前产品规则以项目蓝图§21 D18/§22为准，完整任务以开发计划§18及task-status.json为准。这里保留研究依据和讨论经过，不维护第二份当前规划。",
+          "kind": "2026-09-13 documentation audit: current plan versus historical research scope"
+        },
+        {
+          "old": "当前产品规则以项目蓝图§21 D18/§22为准，完整任务以开发计划§18及task-status.json为准。",
+          "new": "当前产品规则以[项目蓝图§21 D18/§22](项目蓝图.md)为准，完整任务以[开发计划§18](开发计划安排.md)及task-status.json为准。",
+          "kind": "current authoritative source navigation"
+        }
+      ]
+    }
+  ],
+  "status": "verified migration; obsolete draft removed; original source reconstructable from formal documents and reversible changes"
+}

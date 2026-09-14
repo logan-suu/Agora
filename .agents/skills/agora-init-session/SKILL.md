@@ -14,3 +14,5 @@ Read task context through `node scripts/task-status.mjs summary`, then `task <id
 5. Quote the controlling constraints verbatim, report dependency state and any specification conflict, then wait for explicit approval before changing the task to `in_progress` or writing code.
 
 Do not infer current phase or task status from `AGENTS.md`; `docs/task-status.json` is authoritative.
+
+Identify the selected task's type and actual scope from its notes and source plan; design tasks need contract work, not automatically product implementation. Use the task-type rules in [task tracking maintenance](../../../docs/task-tracking.md), and preserve authorization already given in this session for the same scope.

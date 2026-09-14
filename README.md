@@ -18,6 +18,8 @@
 
 **Current scope: local use.** Run Agora on your own computer and open its local address in your browser. The backend, Docker sandboxes, and Git worktrees run on that machine, and application data is stored locally. Cloud hosting is outside the current product scope. Model requests go to your chosen online API or local model service; local operation does not mean offline operation. The product installation and startup commands currently support macOS. The Linux product launcher and automatic credential setup are outside that task’s current scope; existing Linux sandbox support is separate.
 
+**Planned next release.** Phase 10 is complete. Phase 11 will introduce an Electron app with a managed development toolchain and native Mac execution, retire Agora's Docker backend, and omit legacy task migration. These features are planned, not available in the current source build. The instructions below still apply to the existing Docker-based implementation. See the [roadmap](#roadmap) for all four planned delivery phases.
+
 **Credential setup on macOS.** The local launcher creates a random encryption key in your macOS Keychain on first use and reuses it after restart. In the model settings dialog, enter your service's Base URL, API key, and model name, either for one Agent or the whole team. Keychain access may require macOS authorization. Existing encrypted connections remain unavailable when the original key cannot be accessed; the application shows recovery instructions and never silently replaces it.
 
 **Agora** takes its name from the ancient Greek *agorá*: the public gathering place where people met to exchange ideas and make decisions. This project brings that idea to software development—specialized AI agents work in a shared, visible space, while the human Leader remains present and makes the final call.
@@ -26,7 +28,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![MCP](https://img.shields.io/badge/MCP-Tool_Protocol-6C47FF)](https://modelcontextprotocol.io/)
-[![Status](https://img.shields.io/badge/Status-Phase_10_%E2%80%A2_Product_Demo-orange)](https://github.com/logan-suu/Agora)
+[![Status](https://img.shields.io/badge/Status-Phase_10_Complete_%E2%80%A2_Phase_11_Planned-blue)](https://github.com/logan-suu/Agora)
 
 ## Current product
 
@@ -39,7 +41,7 @@ Agora runs a six-role coding team on your Mac. Independent Coder workers can exe
 - **Choose models:** configure an OpenAI-compatible service for the whole team or individual roles. New verified DeepSeek V4 connections default to a 1M context window and 384K maximum output with automatic Harness history compaction; custom limits remain independently editable.
 - **Keep artifacts:** completed code and tests remain available after execution resources are released.
 
-Start with [Quick Start](#quick-start-macos). See the [final benchmark report](docs/evals/phase10-opencode-go-final-report.md), [engineering interview notes](docs/portfolio/engineering-notes.md), and [current product demo](#product-demo). Task 10.6 is complete; Phase 10 final acceptance remains separate.
+Start with [Quick Start](#quick-start-macos). See the [final benchmark report](docs/evals/phase10-opencode-go-final-report.md), [engineering interview notes](docs/portfolio/engineering-notes.md), and [current product demo](#product-demo). Phase 10 final acceptance is complete; its [acceptance evidence](docs/evals/phase10-exit-evidence.md) is separate from the demo and frozen benchmark.
 
 ## Product demo
 
@@ -275,9 +277,13 @@ Agora/
 | 7 | Role recruitment, hot-swapping, and mandatory handoff | ✅ Complete |
 | 8 | HumanGate, blocking/advisory objections, and arbitration UI | ✅ Complete |
 | 9 | True parallel workers and cooperative preemption | ✅ Complete |
-| 10 | Unified Harness agents, macOS setup and startup, hardening, final benchmark, and portfolio demo | In progress |
+| 10 | Unified Harness agents, macOS setup and startup, hardening, final benchmark, and portfolio demo | ✅ Complete |
+| 11 | Electron, managed toolchain, native Mac development, and Docker retirement | Planned |
+| 12 | Multiple projects and conversations, stable members, collaboration, attachments, budgets, and team recovery | Planned |
+| 13 | Project knowledge, Librarian, skills/MCP, and custom-role participation | Planned |
+| 14 | Work map, delivery evidence, engineering workflows, virtual office, and plugin distribution | Planned |
 
-The detailed task graph and current evidence live in [`docs/task-status.json`](docs/task-status.json). Tasks 10.2–10.6 are complete. Task 10.7 is ready and will independently verify the final product exit criteria.
+The [development plan](docs/开发计划安排.md) contains all 94 planned tasks across Phases 11–14, including design tasks for unresolved details and a feature-to-task coverage map. Current status and dependencies live only in [`docs/task-status.json`](docs/task-status.json); start with `node scripts/task-status.mjs summary`, then query `task <id>` or `phase <id>` as needed. Full execution evidence is kept in per-task history files. Planning does not claim that a feature has been implemented or accepted.
 
 ## Design Documents
 
@@ -285,8 +291,8 @@ The detailed task graph and current evidence live in [`docs/task-status.json`](d
 - [Detailed Design](docs/详细设计方案.md) — state schemas, role contracts, orchestration, execution, projection, and validation
 - [System Architecture](docs/系统架构设计文档.md) — layers, dependency direction, consistency, resilience, and deployment
 - [Technology Decisions](docs/技术选型文档.md) — locked stack, rejected alternatives, sandboxing, SSE, and persistence
-- [Development Plan](docs/开发计划安排.md) — Phase 0–10 task breakdown and exit criteria
-- [Framework Research](docs/框架调研与借鉴决策.md) — dated AutoGen and AgentScope source-level research
+- [Development Plan](docs/开发计划安排.md) — Phase 0–14 task breakdown, dependencies, exit criteria, and future-feature coverage
+- [Framework Research](docs/框架调研与借鉴决策.md) — dated AutoGen/AgentScope source research and product-comparison evidence
 
 ## Project Status and Scope
 

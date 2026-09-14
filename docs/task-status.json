@@ -3,7 +3,7 @@
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
   "last_updated": "2026-09-13",
-  "current_phase": 10,
+  "current_phase": 11,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
     {
@@ -18,7 +18,7 @@
     },
     {
       "id": "D3",
-      "rule": "KB 全局 Write-Block、Librarian 空桩；启用写入须相关测试全绿且 Leader 显式 /approve-kb，阶段 0 sliceKB 返回空对象。",
+      "rule": "KB 全局 Write-Block、Librarian 空桩；启用写入须相关测试全绿且 Leader 显式 /approve-kb，阶段 0 sliceKB 返回空对象。 后续第三批知识写入按D18定稿与验收，不因路线批准自动解锁。",
       "source": "docs/详细设计方案.md §8"
     },
     {
@@ -43,7 +43,7 @@
     },
     {
       "id": "D8",
-      "rule": "当前产品为 macOS 本机单用户单后端，自动钥匙串主密钥不可静默换新或明文回退；可调用在线/本地模型但不提供云端部署，Linux 产品适配查 DEF-017。",
+      "rule": "当前产品为 macOS 本机单用户单后端，自动钥匙串主密钥不可静默换新或明文回退；可调用在线/本地模型但不提供云端部署，Linux 产品适配查 DEF-017。 后续Electron交付见D18；未实装前仍按当前本地启动契约。",
       "source": "docs/项目蓝图.md §21；docs/详细设计方案.md §3；docs/系统架构设计文档.md §9；docs/技术选型文档.md §9/§10"
     },
     {
@@ -88,7 +88,7 @@
     },
     {
       "id": "D17",
-      "rule": "全局 lease 控制真实 worker 并发，稳定身份的可交换写入与串行控制面分离；task pause cohort、安全点与 Fork、同路径 Git/Docker 独立工作区、累计 DAG 波次验证及不可变证据/归档回执均须规范身份复核，异常 fail-closed，禁止用户 checkout 写入或自动 push。",
+      "rule": "全局 lease 控制真实 worker 并发，稳定身份的可交换写入与串行控制面分离；task pause cohort、安全点与 Fork、同路径 Git/Docker 独立工作区、累计 DAG 波次验证及不可变证据/归档回执均须规范身份复核，异常 fail-closed，禁止用户 checkout 写入或自动 push。 后续本机backend的阶段适用边界见D18，旧路径退役前仍受约束，Phase11按D18移除Docker后端。",
       "source": "docs/项目蓝图.md §6/§13/§21；docs/详细设计方案.md §1/§2/§3/§4/§5/§6/§7/§8；docs/系统架构设计文档.md §4.1/§4.2/§5/§9；docs/技术选型文档.md §7/§8/§10；docs/开发计划安排.md §12"
     },
     {
@@ -120,6 +120,11 @@
       "id": "DOC-CONFLICT",
       "rule": "文档冲突先评审合理性，再修正来源及同步受影响文档；不发布 Issue 或增加冲突台账，仅未决实质架构取舍向 Leader 澄清。",
       "source": "docs/项目蓝图.md §21；AGENTS.md R12/§7/§8.1.3"
+    },
+    {
+      "id": "D18",
+      "rule": "四批对应Phase11–14，全部功能和后置候选现在拆为具体设计/实现/验收任务，覆盖见开发计划§18.9；细则随设计任务定稿，不等开工才拆，也不提前启用或跨阶段。Phase11为Electron本机闭环，退役Agora Docker且不兼容旧产品任务；11.3清单、11.13移除、11.14无Docker验收。后续会话人力/知识能力经契约及实测门禁启用，D3保持；研发历史保留，不自动删除本机旧数据。 任务按实际产出分流，非代码完成规则见AGENTS §8.1.2；提交门禁不变。",
+      "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18"
     }
   ],
   "baseline": {
@@ -223,6 +228,30 @@
       "deliverable": "Phase 10 完成：产品化 + 最终 Benchmark 报告",
       "target": "Week 14",
       "status": "done"
+    },
+    {
+      "id": "M11",
+      "deliverable": "首批 Electron 本机开发闭环及干净 Mac 验收",
+      "target": "待设计任务评估，不承诺工期",
+      "status": "pending"
+    },
+    {
+      "id": "M12",
+      "deliverable": "第二批多项目会话与团队协作及阶段出口验收",
+      "target": "待设计任务评估，不承诺工期",
+      "status": "pending"
+    },
+    {
+      "id": "M13",
+      "deliverable": "第三批项目知识与成员能力体系及阶段出口验收",
+      "target": "待设计任务评估，不承诺工期",
+      "status": "pending"
+    },
+    {
+      "id": "M14",
+      "deliverable": "第四批协作展示与进阶工程能力及阶段出口验收",
+      "target": "待设计任务评估，不承诺工期",
+      "status": "pending"
     }
   ],
   "phases": [
@@ -1384,6 +1413,1769 @@
           ],
           "test_file": "tests/integration/phase10/phase10-exit.test.ts",
           "notes": "完成状态沿用迁移前索引；完整实现、修复、G1–G7 与合并记录见 docs/task-history/10.7.md。历史仅描述记录时点；延期项当前状态查 docs/deferred-items.json。",
+          "last_updated": "2026-09-13"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Electron 与本机开发闭环（首批交付，无工期承诺）",
+      "status": "not_started",
+      "integration_test": "11.14",
+      "exit_criteria": "受支持干净 Mac 上安装 Electron 应用，自带基础工具链并由用户配置模型；沿用现有可执行团队完成标准 Web/Node 本机开发、直接/Worktree隔离、未提交修改和基础接管保护、真实测试评审与Leader交付、后台运行及安全退出后用户主动恢复；未安装Docker也能完成全链路，产品不含Docker执行后端或回退入口，不要求旧任务兼容。累计G1–G7与实测证据完整；不把后续多会话人力体系、知识写入或完整地图视为已实现。",
+      "tasks": [
+        {
+          "id": "11.1",
+          "title": "定稿后续基础身份与跨批次契约",
+          "story": null,
+          "status": "ready",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.1/§22.4.3/§22.5.1",
+            "docs/详细设计方案.md §12.1",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "10.7"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。区分项目/会话/工作项/成员/assignment/execution/workspace/Harness session；列出所有权、阶段适配和冻结接口影响，形成可审阅契约；不实现全部后续功能。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.2",
+          "title": "验证 Electron 打包与受管工具链方案",
+          "story": null,
+          "status": "ready",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.2",
+            "docs/详细设计方案.md §12.3",
+            "docs/开发计划安排.md §18.2 / §18.3",
+            "docs/技术选型文档.md §14"
+          ],
+          "dependencies": [
+            "10.7"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。决定机型/最低系统、Electron/Node/Git/包管理器版本、Next 服务托管及原生 helper 签名矩阵；保留真实最小验证证据，更新选型表后才引入依赖。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.3",
+          "title": "定稿 Docker 执行后端退役与本机切换清单",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.6",
+            "docs/详细设计方案.md §12.3",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.1"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。按已批准的无 Docker、无旧任务兼容方向，清点后端、专用依赖、配置、安装/启动/恢复入口；定稿新状态入口与保留契约的本机回归替代清单，不再比较兼容策略。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.4",
+          "title": "定稿本机执行授权与工作区保护契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.5",
+            "docs/详细设计方案.md §12.2",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.1"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。确定目录/命令授权、工具链访问、凭据隔离、直接/Worktree、未提交修改和接管协议；明确受信强制边界、失败语义、接口与G5用例后才启用宿主执行。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.5",
+          "title": "实现 Electron 应用壳与本地服务生命周期",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.2",
+            "docs/详细设计方案.md §12.3",
+            "docs/开发计划安排.md §18.2 / §18.3",
+            "docs/技术选型文档.md §14"
+          ],
+          "dependencies": [
+            "11.1",
+            "11.2"
+          ],
+          "test_file": "tests/integration/phase11/phase11-5.test.ts",
+          "notes": "任务类型：code。复用现有 UI/后端/Harness，应用启动无需命令行；验证进程边界、重复启动、状态目录、凭据保护及后端故障可见。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.6",
+          "title": "交付受管 Node Git 包管理器与原生辅助程序",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.2",
+            "docs/详细设计方案.md §12.3",
+            "docs/开发计划安排.md §18.2 / §18.3",
+            "docs/技术选型文档.md §14"
+          ],
+          "dependencies": [
+            "11.2",
+            "11.5"
+          ],
+          "test_file": "tests/integration/phase11/phase11-6.test.ts",
+          "notes": "任务类型：code。标准项目免预装工具，尊重项目版本且不替换全局环境；实测签名安装产物、受管PATH、依赖获取和失败反馈。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.7",
+          "title": "实现受控本机执行与普通目录工作区",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.1",
+            "docs/详细设计方案.md §12.2",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.4",
+            "11.6"
+          ],
+          "test_file": "tests/integration/phase11/phase11-7.test.ts",
+          "notes": "任务类型：code。实现经端口校验的文件/命令工具；普通非Git目录可开始；G5实测编辑/构建/测试、越界拒绝、凭据隔离，切换前维持既有回归，11.13完成本机替代覆盖并退役Docker路径。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.8",
+          "title": "实现本机 Worktree 并行与验证集成",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.1",
+            "docs/详细设计方案.md §12.1/§12.2",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.1",
+            "11.7"
+          ],
+          "test_file": "tests/integration/phase11/phase11-8.test.ts",
+          "notes": "任务类型：code。独立编码工作用本机worktree，维护身份、清理/冲突和累计验证；提供打开目录与应用改动入口，用户确认后交付，不自动push。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.9",
+          "title": "保护已有修改并实现基础人工接管交还",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.5",
+            "docs/详细设计方案.md §12.2",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.7",
+            "11.8"
+          ],
+          "test_file": "tests/integration/phase11/phase11-9.test.ts",
+          "notes": "任务类型：code。记录未提交修改基线，验证外部编辑、冲突、撤销范围和安全点接管；相关工作暂停，独立工作继续，交还重新读取，不覆盖用户工作。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.10",
+          "title": "打通首次配置与项目开发入口",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.2/§22.5.2",
+            "docs/详细设计方案.md §12.3",
+            "docs/开发计划安排.md §18.2 / §18.3",
+            "docs/技术选型文档.md §14"
+          ],
+          "dependencies": [
+            "11.5",
+            "11.6",
+            "11.7"
+          ],
+          "test_file": "tests/integration/phase11/phase11-10.test.ts",
+          "notes": "任务类型：code。单次用户模型配置可供当前六角色团队开工，可逐角色调整；打开/新建项目、渐进识别结构与运行方法，无需配置Librarian/插件市场。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.11",
+          "title": "交付基础执行详情与本机验收证据",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.1/§22.9.1",
+            "docs/详细设计方案.md §12.5",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.8",
+            "11.9",
+            "11.10"
+          ],
+          "test_file": "tests/integration/phase11/phase11-11.test.ts",
+          "notes": "任务类型：code。展示真实工具状态、当前工作目录和受控差异/测试证据；验证版本失效与Leader终审，新增展示来源不泄漏D15禁止内容；完整地图后置。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.12",
+          "title": "实现后台运行 安全退出与用户主动恢复",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.2/§22.7.6",
+            "docs/详细设计方案.md §12.3",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.7",
+            "11.11"
+          ],
+          "test_file": "tests/integration/phase11/phase11-12.test.ts",
+          "notes": "任务类型：code。关闭窗口后台继续，明确退出到安全点保存；用户下次选择恢复；决定自启服务停止/重建策略，验证外部改动和不确定副作用，不复用旧lease。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.13",
+          "title": "移除 Docker 执行路径并验收本机单一路径",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.6",
+            "docs/详细设计方案.md §12.3",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.3",
+            "11.12"
+          ],
+          "test_file": "tests/integration/phase11/phase11-13.test.ts",
+          "notes": "任务类型：code。按11.3清单移除 Docker 后端及专用依赖、配置和入口，交付新本机运行状态，不提供旧任务迁移/只读兼容/恢复或 Docker fallback；完成保留契约的真实本机回归，不自动删除旧数据和用户代码。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "11.14",
+          "title": "Phase 11 干净 Mac 本机开发出口验收",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3.2/§22.9.1",
+            "docs/详细设计方案.md §12.5",
+            "docs/开发计划安排.md §18.2 / §18.3"
+          ],
+          "dependencies": [
+            "11.6",
+            "11.9",
+            "11.10",
+            "11.11",
+            "11.12",
+            "11.13"
+          ],
+          "test_file": "tests/integration/phase11/phase11-14.test.ts",
+          "notes": "任务类型：exit。在受支持干净Mac跑通安装、自配模型、标准Web/Node开发、并行工作区与人工修改保护、实际测试/评审/Leader验收和退出恢复；在未安装Docker的环境累计回归，确认无Docker后端/回退/旧任务兼容入口，不宣称后续批次已交付。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "last_updated": "2026-09-13"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "多项目会话与团队协作（无工期承诺）",
+      "status": "not_started",
+      "integration_test": "12.34",
+      "exit_criteria": "真实多项目多会话并行覆盖招募/交接、满额互问、私聊变更、小群结论、附件/视觉缺失、费用暂停与整队恢复；逐项核对本阶段功能及累计G1–G7，无Docker、原始聊天隔离和Leader终审不退化。",
+      "tasks": [
+        {
+          "id": "12.1",
+          "title": "定稿项目会话与工作项生命周期契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.1、§22.4.3、§22.4.4、§22.4.6",
+            "docs/详细设计方案.md §12.6.1",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "11.14"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。在11.1基础上定稿会话主讨论归属、工作项队列、补充与独立需求分类、取消/归档/删除、配置继承和通知范围；定义持久所有权、控制入口、失败恢复及接口变更，不迁移旧Docker任务。 来源与完整任务表：docs/开发计划安排.md §18.6。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.2",
+          "title": "实现多项目管理与设置继承",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.1",
+            "docs/详细设计方案.md §12.6.1",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.1"
+          ],
+          "test_file": "tests/integration/phase12/phase12-2.test.ts",
+          "notes": "任务类型：code。打开/新建单根项目，支持普通目录及monorepo；独立保存团队与模型设置、返回上次位置，按已定语义归档/移除并保护原始项目文件；验证跨项目隔离及设置覆盖。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.3",
+          "title": "实现持久会话与独立工作项队列",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.2、§22.4.3、§22.4.6",
+            "docs/详细设计方案.md §12.6.1",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.1",
+            "12.2"
+          ],
+          "test_file": "tests/integration/phase12/phase12-3.test.ts",
+          "notes": "任务类型：code。会话可先咨询、持续承接工作，每会话一个主讨论及关联小群；主工作串行、内部允许并行，独立需求排队或转新会话；验证刷新、取消、归档与幂等重放，切换视图不暂停工作。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.4",
+          "title": "实现需求准入与按影响确认",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.3、§22.6.7",
+            "docs/详细设计方案.md §12.6.1",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.3"
+          ],
+          "test_file": "tests/integration/phase12/phase12-4.test.ts",
+          "notes": "任务类型：code。区分当前需求补充和独立工作，展示分类及影响供纠正；清晰局部授权需求推进，歧义/跨模块/既定方案变化先确认；需求修改统一经D9安全点提交，保留D16终审与过期拒绝。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.5",
+          "title": "定稿稳定成员与指派交接契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.1、§22.5.2、§22.5.3",
+            "docs/详细设计方案.md §12.6.2",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "11.14"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。明确成员/模板/assignment/execution/worker/session映射、单成员占用和责任保存、首次指派、复制及离职交接状态；并发指派和恢复不能复制身份，定义配置版本与职责重叠处理。 来源与完整任务表：docs/开发计划安排.md §18.6。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.6",
+          "title": "实现稳定成员与执行占用登记",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.1、§22.6.1",
+            "docs/详细设计方案.md §12.6.2",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.3",
+            "12.5"
+          ],
+          "test_file": "tests/integration/phase12/phase12-6.test.ts",
+          "notes": "任务类型：code。项目roster作为成员真相源，绑定每次执行和会话工作；原子认领与释放，保留暂停责任，拒绝双重派发、跨项目占用和伪造恢复；同岗位多成员保持身份独立。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.7",
+          "title": "实现模板招募与首项工作指派",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.1、§22.5.2",
+            "docs/详细设计方案.md §12.6.2",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.6"
+          ],
+          "test_file": "tests/integration/phase12/phase12-7.test.ts",
+          "notes": "任务类型：code。提供模板、复制与基本职责/模型编辑；会话入口预选首项工作，团队入口可待命；校验失效目标、依赖、权限，复制不复制责任/历史；交接投影包含目标、验收及文件引用。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.8",
+          "title": "实现全员增员建议与用户批准",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.2",
+            "docs/详细设计方案.md §12.6.2",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.7"
+          ],
+          "test_file": "tests/integration/phase12/phase12-8.test.ts",
+          "notes": "任务类型：code。每位成员可提交带理由、岗位、会话和首项工作的建议；Coordinator检查可调配人力并合并重复建议，原始建议始终可见；用户批准才招募，批准不绕过执行条件。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.9",
+          "title": "实现工作中招募替换与可恢复交接",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.3",
+            "docs/详细设计方案.md §12.6.2",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.7"
+          ],
+          "test_file": "tests/integration/phase12/phase12-9.test.ts",
+          "notes": "任务类型：code。中途加入或离开时在安全点收敛，移交未完成责任和有效事实；缺接任者明确等待，重试不重复认领；保留同一会话与有效产物，验证用户无需重述全部背景。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.10",
+          "title": "定稿两层额度公平调度与短回应契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.1、§22.6.2、§22.6.3、§22.6.4",
+            "docs/详细设计方案.md §12.6.3",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "12.1",
+            "12.5"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义全局6/项目3可调上限、成员责任与lease/admission差异、项目轮转/优先级/等待加权、降额行为及资源限制；短回应有界插队不预留名额，定稿释放重取与D4恢复协议。 来源与完整任务表：docs/开发计划安排.md §18.6。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.11",
+          "title": "实现项目与全局执行额度及公平队列",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.1、§22.6.2",
+            "docs/详细设计方案.md §12.6.3",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.6",
+            "12.10"
+          ],
+          "test_file": "tests/integration/phase12/phase12-11.test.ts",
+          "notes": "任务类型：code。所有实际成员模型执行计入两层上限，项目额度不预占；实现项目轮转、依赖优先、用户优先级及防饥饿，验证调额、取消、重试和admission资源约束，系统消息不占模型名额。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.12",
+          "title": "实现自动接单与等待责任保留",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.3",
+            "docs/详细设计方案.md §12.6.3",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.9",
+            "12.11"
+          ],
+          "test_file": "tests/integration/phase12/phase12-12.test.ts",
+          "notes": "任务类型：code。Coordinator从本项目已授权、职责匹配且依赖满足的工作中调配，用户可指定或暂停自动调配；无可继续工作释放执行额度并保存责任；验证接单记录、失效目标和无工作待命。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.13",
+          "title": "定稿协作请求与按需上下文协议",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.5、§22.6.6、§22.7.1、§22.7.4",
+            "docs/详细设计方案.md §12.6.4",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "12.1",
+            "12.5",
+            "12.10"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义请求/答复/取消/过期/去重及结论生效回执、受控串行提交、上下文类型/来源/预算和循环依赖处理；并行worker只提请求，不能直接写共享collaboration。 来源与完整任务表：docs/开发计划安排.md §18.6。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.14",
+          "title": "实现成员求助收件箱与答复闭环",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.5",
+            "docs/详细设计方案.md §12.6.4",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.11",
+            "12.13"
+          ],
+          "test_file": "tests/integration/phase12/phase12-14.test.ts",
+          "notes": "任务类型：code。请求绑定对象、工作、阻塞状态和期望结果，登记送达/排队/实际答复/消费事实；无成员、取消、过期及循环等待可见；结论进入受控投影后原工作继续，不用消息展示冒充消费成功。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.15",
+          "title": "实现满载安全点短回应与返回",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.4",
+            "docs/详细设计方案.md §12.6.3",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.12",
+            "12.14"
+          ],
+          "test_file": "tests/integration/phase12/phase12-15.test.ts",
+          "notes": "任务类型：code。当前Step自然结束后保存现场，按契约串行切换且校验lease身份；只读核查有时长/工具/连续回应预算，大请求转正式工作；回答后复核原工作并恢复，实测满额互问无双重执行或永久等待。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.16",
+          "title": "实现有来源的按需上下文补充",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.6",
+            "docs/详细设计方案.md §12.6.4",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.14",
+            "12.15"
+          ],
+          "test_file": "tests/integration/phase12/phase12-16.test.ts",
+          "notes": "任务类型：code。成员可请求有效决策、接口依据及文件片段，系统校验角色/assignment/项目范围、预算与版本；资料经投影和安全点生效并留消费依据，缺失过期明确提示，不广播原始聊天或提升资料权威。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.17",
+          "title": "实现具名成员私聊与实时执行入口",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.4、§22.7.1",
+            "docs/详细设计方案.md §12.6.4",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.4",
+            "12.15",
+            "12.16"
+          ],
+          "test_file": "tests/integration/phase12/phase12-17.test.ts",
+          "notes": "任务类型：code。会话内定向讨论、团队页新会话均关联准确成员与工作；普通询问不重规划，共享变更先展示影响和摘要供用户确认，再走统一控制入口；详情展示真实工具/差异/等待状态且保持D15边界。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.18",
+          "title": "实现成员主动小群与总结折叠",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.4",
+            "docs/详细设计方案.md §12.6.4",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.14",
+            "12.15",
+            "12.16"
+          ],
+          "test_file": "tests/integration/phase12/phase12-18.test.ts",
+          "notes": "任务类型：code。所有成员可为当前会话明确问题创建/复用小群并邀请已有成员，Leader恒在；调度实际回应，受轮次与费用预算限制；结论依据责任回传主讨论，折叠可展开/重新激活，未决审批持续可见。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.19",
+          "title": "定稿附件解析访问与保留契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.5",
+            "docs/详细设计方案.md §12.6.5",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "12.1"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义图片/文本代码/PDF的大小、版本、存储、来源及解析状态，区分本机文件引用；视觉模型/OCR能力探测、费用和授权，归档/删除引用影响与失败行为；Office和ZIP不擅自加入首版。 来源与完整任务表：docs/开发计划安排.md §18.6。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.20",
+          "title": "实现附件上传文本解析与文件引用",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.5",
+            "docs/详细设计方案.md §12.6.5",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.3",
+            "12.19"
+          ],
+          "test_file": "tests/integration/phase12/phase12-20.test.ts",
+          "notes": "任务类型：code。图片/文本代码/PDF保存到当前会话，提供文本型PDF提取、分片和文件引用；实际解析失败可见，材料不自动跨会话或进入权威KB；验证版本更新、路径访问和大文件边界。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.21",
+          "title": "实现可选视觉分析与扫描材料处理",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.5",
+            "docs/详细设计方案.md §12.6.5",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.20",
+            "12.24"
+          ],
+          "test_file": "tests/integration/phase12/phase12-21.test.ts",
+          "notes": "任务类型：code。模型支持图像时直接提供，不支持时仅使用用户已配置的视觉辅助模型；无视觉仍可保存展示并继续文本工作；OCR标明文字提取，扫描PDF能力不足明确提示；区分上传/提取/提供状态并计费。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.22",
+          "title": "实现附件证据保留与显式清理",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.5",
+            "docs/详细设计方案.md §12.6.5",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.20"
+          ],
+          "test_file": "tests/integration/phase12/phase12-22.test.ts",
+          "notes": "任务类型：code。归档保留附件与交付证据，展示占用、版本及受影响引用，用户明确删除后处理悬空引用；不定期自动清理或删原始项目文件；后续KB引用接入13.7，先覆盖已存在的会话/交接/证据。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.23",
+          "title": "定稿项目全局预算与用量账本契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.11",
+            "docs/详细设计方案.md §12.6.6",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "12.10"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。明确价格来源、币种/周期、未知价格/usage、在途估算、提醒/暂停阈值及继续授权；覆盖成员、协调、视觉等调用并为KB/实验留接口，费用统计与人数上限独立。 来源与完整任务表：docs/开发计划安排.md §18.6。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.24",
+          "title": "实现统一计量预算提醒与调用门控",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.11",
+            "docs/详细设计方案.md §12.6.6",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.11",
+            "12.23"
+          ],
+          "test_file": "tests/integration/phase12/phase12-24.test.ts",
+          "notes": "任务类型：code。所有模型调用在发起前检查项目/全局预算，达到阈值停新调用、保留在途费用和未知值；用户决定继续，持久账本防重复累计；验证多会话竞争、辅助模型绕行和恢复，不宣称供应商硬封顶。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.25",
+          "title": "实现跨项目工作总览与待办通知",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4.1、§22.6.1、§22.6.2、§22.7.1",
+            "docs/详细设计方案.md §12.6.4",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.2",
+            "12.17",
+            "12.18",
+            "12.24"
+          ],
+          "test_file": "tests/integration/phase12/phase12-25.test.ts",
+          "notes": "任务类型：code。显示运行、等待成员/额度/依赖/冲突/用户决定的准确原因及占用，聚合通知并定位目标会话；单项审批不阻塞独立工作；刷新与事件尾流一致，重复通知不触发重复动作。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.26",
+          "title": "扩展多会话按文件人工接管交还",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.5",
+            "docs/详细设计方案.md §12.6.7",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.9",
+            "12.11",
+            "12.18"
+          ],
+          "test_file": "tests/integration/phase12/phase12-26.test.ts",
+          "notes": "任务类型：code。沿用11.9文件保护，跨成员/会话传播责任和受影响依赖；安全点后才显示可编辑，独立工作继续；交还重读用户修改并使旧验证失效，测试同文件竞争、接管中取消及重启。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.27",
+          "title": "定稿整队暂停异常退出与重启恢复协议",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.6",
+            "docs/详细设计方案.md §12.6.7",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "12.10",
+            "12.13"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。区分主动暂停、正常退出、崩溃和机器重启；定义成员/工作/讨论/租约/模型现场/服务/副作用的耐久边界和恢复核验，不复用旧进程或旧lease，不承诺任意外部副作用自动重放。 来源与完整任务表：docs/开发计划安排.md §18.6。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.28",
+          "title": "实现整队暂停及异常恢复",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.6",
+            "docs/详细设计方案.md §12.6.7",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.15",
+            "12.18",
+            "12.24",
+            "12.26",
+            "12.27"
+          ],
+          "test_file": "tests/integration/phase12/phase12-28.test.ts",
+          "notes": "任务类型：code。持久保存有效进展、决定与未决责任，用户选择恢复前核对实际工作区和资源；通过真实进程中断/重启注入验证关键边界，不重复已确认副作用；不确定操作明确待处理，独立项目仍可推进。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.29",
+          "title": "定稿任务组织波次与失败归属优化契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.7、§22.6.8、§22.6.9、§22.6.10",
+            "docs/详细设计方案.md §12.6.8",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "12.13"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义有限调查和模型计划建议、程序校验与调整边界；波次按依赖/范围/成本组织，失败责任需可信证据；保留累计验证与保守回退，设计同条件基准，增量集成及preparation另由14.14/14.16定稿。 来源与完整任务表：docs/开发计划安排.md §18.6。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.30",
+          "title": "实现受约束的工作计划与动态调整",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.7",
+            "docs/详细设计方案.md §12.6.8",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.4",
+            "12.12",
+            "12.16",
+            "12.24",
+            "12.29"
+          ],
+          "test_file": "tests/integration/phase12/phase12-30.test.ts",
+          "notes": "任务类型：code。有限了解项目后生成可校验产出、职责、依赖及失败策略；程序检查权限/成员/预算/工作区，重大调整经Leader确认，不凭关键词强制扩编或丢弃有效工作；先覆盖现有岗位，自动自定义参与见13.19。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.31",
+          "title": "优化任务拆分与可验证波次划分",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.8",
+            "docs/详细设计方案.md §12.6.8",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.30"
+          ],
+          "test_file": "tests/integration/phase12/phase12-31.test.ts",
+          "notes": "任务类型：code。优先解除关键依赖并考虑预估成本，防止长短工作不合理同波及饥饿；完整保留batch，后继只基于已验证结果；Tester可提前参与验收讨论，preparation保持关闭至14.17验收。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.32",
+          "title": "实现证据驱动的定向测试返工",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.9",
+            "docs/详细设计方案.md §12.6.8",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.30"
+          ],
+          "test_file": "tests/integration/phase12/phase12-32.test.ts",
+          "notes": "任务类型：code。关联失败、责任、版本和传递依赖，可靠定位才缩小修改范围，未知归属保守处理；保留无关有效产物并完整重验累计版本，区分测试错误/环境失败，验证恢复幂等及漏判场景。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.33",
+          "title": "验证协作效率与编排优化效果",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.10",
+            "docs/详细设计方案.md §12.6.8",
+            "docs/开发计划安排.md §18.6 / §18.9",
+            "docs/详细设计方案.md §11（D11工程Eval边界）",
+            "docs/框架调研与借鉴决策.md §7"
+          ],
+          "dependencies": [
+            "12.28",
+            "12.31",
+            "12.32"
+          ],
+          "test_file": "tests/evals/phase12/collaboration-efficiency.eval.ts",
+          "notes": "任务类型：validation。固定任务/模型/额度/环境，对比求助延迟、阻塞时间、重复返工、总时长、费用和质量并重复观察波动；用真实链路证据验证基准，实验计划明确预算与权限，结果无提升也如实记录，不以聊天量代替效能。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "12.34",
+          "title": "Phase 12 多项目团队协作出口验收",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.4、§22.5.1、§22.5.2、§22.5.3、§22.6、§22.7.1、§22.7.4、§22.7.5、§22.7.6",
+            "docs/详细设计方案.md §12.6.8",
+            "docs/开发计划安排.md §18.6 / §18.9"
+          ],
+          "dependencies": [
+            "12.8",
+            "12.21",
+            "12.22",
+            "12.25",
+            "12.33"
+          ],
+          "test_file": "tests/integration/phase12/phase12-exit.test.ts",
+          "notes": "任务类型：exit。真实多项目多会话并行覆盖招募/交接、满额互问、私聊变更、小群结论、附件/视觉缺失、费用暂停与整队恢复；逐项核对本阶段功能及累计G1–G7，无Docker、原始聊天隔离和Leader终审不退化。 来源与完整任务表：docs/开发计划安排.md §18.6。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "项目知识与成员能力体系（无工期承诺）",
+      "status": "not_started",
+      "integration_test": "13.21",
+      "exit_criteria": "验收可读KB、分级权威、Librarian、有效性传播、显式复用、技能/MCP、模板升级及自定义参与；验证D3门禁和Leader决定、累计回归与真实链路，插件市场按Phase14登记但不冒充本阶段已交付。",
+      "tasks": [
+        {
+          "id": "13.1",
+          "title": "定稿项目知识模型权威与写入门禁",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8",
+            "docs/详细设计方案.md §12.7.1",
+            "docs/开发计划安排.md §18.7 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "12.34"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义项目内可读正文、索引/来源/确认版本、分支作用域、并发提交、直接编辑核验和存储接口；划分事实自动维护与规则提案、必要收尾和异步整理，明确D3测试及Leader显式启用，禁止默认向量库。 来源与完整任务表：docs/开发计划安排.md §18.7。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.2",
+          "title": "实现可读知识正文与一致性存储",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8.1、§22.8.2、§22.8.5",
+            "docs/详细设计方案.md §12.7.1",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.1"
+          ],
+          "test_file": "tests/integration/phase13/phase13-2.test.ts",
+          "notes": "任务类型：code。实现各知识类别正文及版本/来源索引的原子一致性，保留撤销/替代/待核实状态和理由；外部编辑不自动获权威，失败可恢复；生产写入口保持D3门控，真实隔离目录测试不等于全局解锁。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.3",
+          "title": "实现全员知识建议与Leader确认",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8.3",
+            "docs/详细设计方案.md §12.7.1",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.2"
+          ],
+          "test_file": "tests/integration/phase13/phase13-3.test.ts",
+          "notes": "任务类型：code。所有成员可提线索/纠错，Librarian核对去重并形成提案；已确认事实与新规则分流，冲突保留证据由Leader裁决；用户确认绑定版本和作用域，拒绝过期/重复批准或整理代替决策。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.4",
+          "title": "接入有效知识切片与来源查询",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8.4、§22.8.5",
+            "docs/详细设计方案.md §12.7.1",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.2",
+            "13.3"
+          ],
+          "test_file": "tests/integration/phase13/phase13-4.test.ts",
+          "notes": "任务类型：code。角色按当前工作读取已确认有效版本及理由引用，按需询问维护者；绑定实际提供版本，不全量广播KB；跨分支/过期/缺失内容明确，用户直接编辑后必须核验才替换有效内容。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.5",
+          "title": "实现Librarian成员与事件维护队列",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.2、§22.8.4",
+            "docs/详细设计方案.md §12.7.1",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.3",
+            "13.4"
+          ],
+          "test_file": "tests/integration/phase13/phase13-5.test.ts",
+          "notes": "任务类型：code。默认团队具备实际知识维护成员；确认决策、验收、代码变化、过期报告及人工整理触发合并工作，按成员占用/两层配额/预算排队；失败追补，非每条聊天空转，未启用前不写知识。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.6",
+          "title": "完成知识写入真实验收与显式启用流程",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8.6",
+            "docs/详细设计方案.md §12.7.1",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.5"
+          ],
+          "test_file": "tests/integration/phase13/phase13-6.test.ts",
+          "notes": "任务类型：validation。在明确授权的测试项目验证写入、确认、读取、冲突和恢复；证明门禁关闭时不能写、相关测试通过后仍须Leader显式/approve-kb，启用范围可追溯；本任务登记不执行批准，不以mock解锁生产。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.7",
+          "title": "实现知识过期传播与引用影响处理",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8.5、§22.8.7、§22.4.5",
+            "docs/详细设计方案.md §12.7.1",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.6"
+          ],
+          "test_file": "tests/integration/phase13/phase13-7.test.ts",
+          "notes": "任务类型：code。代码/需求变化标记相关知识和消费任务待核验，修正后传播有效版本；附件删除显示KB依赖并保留失效依据；实测重构、并发编辑、误报/遗漏及读取旧版本场景，不自动改写权威规则。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.8",
+          "title": "实现必要记录与异步知识整理分级收尾",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8.4",
+            "docs/详细设计方案.md §12.7.1",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.6",
+            "13.7"
+          ],
+          "test_file": "tests/integration/phase13/phase13-8.test.ts",
+          "notes": "任务类型：code。验收检查必要决策/证据/交接完整性，非关键维护独立排队并显示未完成/失败及重试；开发终审不冒充知识已同步，必要记录未齐不能完成；验证重放、退出恢复和预算阻塞。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.9",
+          "title": "定稿跨项目知识显式复用边界",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8.5",
+            "docs/详细设计方案.md §12.7.2",
+            "docs/开发计划安排.md §18.7 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "13.1"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。确定可复用内容、来源授权、项目规则冲突、脱敏与版本绑定；明确复制/引用/更新失效语义，不默认共享团队私聊或未确认资料，设计可审阅入口及越权验收用例。 来源与完整任务表：docs/开发计划安排.md §18.7。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.10",
+          "title": "实现受控跨项目知识复用",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.8.5",
+            "docs/详细设计方案.md §12.7.2",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.7",
+            "13.9"
+          ],
+          "test_file": "tests/integration/phase13/phase13-10.test.ts",
+          "notes": "任务类型：code。按13.9定稿范围由用户显式选择来源与目标，展示内容/权限/冲突并确认；目标保留来源和确认边界，源变化提示核验，不自动覆盖目标规则；验证跨项目隔离和撤销访问。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.11",
+          "title": "定稿成员能力分配与外部连接契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.4、§22.5.5、§22.5.6、§22.5.7、§22.5.8",
+            "docs/详细设计方案.md §12.7.3",
+            "docs/开发计划安排.md §18.7 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "12.34"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。区分Skill/MCP/插件、项目接入与成员分配、配置继承/复用/版本和权限能力；定义凭据、调用时校验、撤销与在途收尾、MCP生命周期/恢复、来源与兼容限制，不由技能文本授予权限。 来源与完整任务表：docs/开发计划安排.md §18.7。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.12",
+          "title": "实现图形化技能导入与按成员加载",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.4、§22.5.5、§22.5.6",
+            "docs/详细设计方案.md §12.7.3",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.11"
+          ],
+          "test_file": "tests/integration/phase13/phase13-12.test.ts",
+          "notes": "任务类型：code。用户选择本地技能目录，查看用途/来源后在项目安装并分配成员；按工作加载相关内容，校验路径/版本和权限，提供常用示例；未分配成员不能取得能力，导入不自动执行指令。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.13",
+          "title": "实现MCP连接管理与成员工具授权",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.4、§22.5.5、§22.5.6",
+            "docs/详细设计方案.md §12.7.3",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.11"
+          ],
+          "test_file": "tests/integration/phase13/phase13-13.test.ts",
+          "notes": "任务类型：code。图形化添加连接、认证与能力发现，按成员/资源/操作分配；管理启动、复用、故障、停用与退出，系统安全存储保护凭据；真实协议/服务验证隔离，工具不支持细粒度时不能伪称具备。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.14",
+          "title": "实现能力安全点更新与即时撤权校验",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.7",
+            "docs/详细设计方案.md §12.7.3",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.12",
+            "13.13"
+          ],
+          "test_file": "tests/integration/phase13/phase13-14.test.ts",
+          "notes": "任务类型：code。普通配置更新记录版本并在安全点生效，显示待生效/生效；撤权立即阻止新的未授权调用，在途按契约收敛；恢复核对技能/工具版本、认证和可用性，禁止跨项目连接泄漏。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.15",
+          "title": "实现模板版本差异与选择性升级",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.2、§22.5.6",
+            "docs/详细设计方案.md §12.7.3",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.14"
+          ],
+          "test_file": "tests/integration/phase13/phase13-15.test.ts",
+          "notes": "任务类型：code。新成员用新版模板，已有成员保留配置；展示三方差异、保留个人覆盖，用户选择成员后按安全点应用；冲突具体可处理，模板变更不静默修改正在工作的成员或复制身份。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.16",
+          "title": "定稿自然语言岗位与可执行参与规则",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.2、§22.5.8、§22.6.7",
+            "docs/详细设计方案.md §12.7.4",
+            "docs/开发计划安排.md §18.7 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14",
+            "docs/deferred-items.json DEF-016"
+          ],
+          "dependencies": [
+            "13.11"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义职责生成的可编辑结构、受控指派/咨询及自动参与事件、优先级、输出mutation契约和失败回退；说明缺失能力/职责重叠处理，核对DEF-016，不因岗位提示词开放任意路由或裁决权。 来源与完整任务表：docs/开发计划安排.md §18.7。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.17",
+          "title": "实现自然语言岗位配置与招募",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.2",
+            "docs/详细设计方案.md §12.7.4",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.14",
+            "13.16"
+          ],
+          "test_file": "tests/integration/phase13/phase13-17.test.ts",
+          "notes": "任务类型：code。将用户职责整理为名称/范围/模型/能力/产出/参与方式/首项工作配置卡，允许编辑确认再创建；校验不支持能力和权限，基础使用无需YAML；生成不得自动安装工具或招募成员。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.18",
+          "title": "实现自定义成员指派咨询与交接",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.2、§22.5.3",
+            "docs/详细设计方案.md §12.7.4",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.17"
+          ],
+          "test_file": "tests/integration/phase13/phase13-18.test.ts",
+          "notes": "任务类型：code。按已定产出契约执行真实工作和受控咨询，纳入相同占用、工具、上下文和交接流程；错误输出显式失败，安全检查等报告不能代替Tester/Reviewer或Leader终审。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.19",
+          "title": "实现自定义岗位受控自动参与",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.2、§22.5.8、§22.6.7",
+            "docs/详细设计方案.md §12.7.4",
+            "docs/开发计划安排.md §18.7 / §18.9",
+            "docs/deferred-items.json DEF-016"
+          ],
+          "dependencies": [
+            "13.18"
+          ],
+          "test_file": "tests/integration/phase13/phase13-19.test.ts",
+          "notes": "任务类型：code。明确事件触发和优先级后，Coordinator提出合法参与计划，程序校验依赖/预算/权限/占用；去重、取消和失败回退不丢责任，实测后按证据核对DEF-016解除范围，不提前标记延期项完成。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.20",
+          "title": "验证知识与成员能力协作闭环",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5、§22.8",
+            "docs/详细设计方案.md §12.7.4",
+            "docs/开发计划安排.md §18.7 / §18.9"
+          ],
+          "dependencies": [
+            "13.8",
+            "13.10",
+            "13.15",
+            "13.19"
+          ],
+          "test_file": "tests/integration/phase13/phase13-20.test.ts",
+          "notes": "任务类型：validation。已有项目迭代中加入自定义成员，通过当前知识接手、MCP/技能完成任务，模拟规则更改、权限撤销、知识过期及恢复；核对真实提供版本、费用和必要记录，覆盖默认七成员且不超执行上限。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "13.21",
+          "title": "Phase 13 知识与能力体系出口验收",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.4、§22.5.5、§22.5.6、§22.5.7、§22.5.8、§22.8",
+            "docs/详细设计方案.md §12.7.4",
+            "docs/开发计划安排.md §18.7 / §18.9",
+            "docs/deferred-items.json DEF-016"
+          ],
+          "dependencies": [
+            "13.20"
+          ],
+          "test_file": "tests/integration/phase13/phase13-exit.test.ts",
+          "notes": "任务类型：exit。验收可读KB、分级权威、Librarian、有效性传播、显式复用、技能/MCP、模板升级及自定义参与；验证D3门禁和Leader决定、累计回归与真实链路，插件市场按Phase14登记但不冒充本阶段已交付。 来源与完整任务表：docs/开发计划安排.md §18.7。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "协作展示与进阶工程能力（无工期承诺）",
+      "status": "not_started",
+      "integration_test": "14.25",
+      "exit_criteria": "对照§18.9每项蓝图功能及设计决定逐条核验证据、未实现项与限制，累计G1–G7和真实桌面闭环通过才收尾；确认无Docker、统一Harness、权限/投影/预算及Leader裁决，不能靠登记任务宣称全部功能完成。",
+      "tasks": [
+        {
+          "id": "14.1",
+          "title": "定稿工作地图上下文与交付证据契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.1、§22.7.2、§22.7.3、§22.9.1",
+            "docs/详细设计方案.md §12.8.1",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "13.21"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义同一权威事实读模型、跨项目布局、请求关联、可展示DTO/来源、截断/失效/敏感信息；区分待提供和实际请求已提供，不暴露原始prompt/projection/reasoning，统一地图操作与控制入口。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.2",
+          "title": "实现需求到验收的可追溯交付",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.1",
+            "docs/详细设计方案.md §12.8.1",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.1"
+          ],
+          "test_file": "tests/integration/phase14/phase14-2.test.ts",
+          "notes": "任务类型：code。关联需求、理由、成员、代码提交、测试与Leader验收；点击完成声明能定位真实版本和验证范围，需求/代码变化使旧证据失效或待核验；保留未知/失败结果，直接编辑同样受控。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.3",
+          "title": "实现可操作团队工作地图",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.2",
+            "docs/详细设计方案.md §12.8.1",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.1",
+            "14.2"
+          ],
+          "test_file": "tests/integration/phase14/phase14-3.test.ts",
+          "notes": "任务类型：code。展示成员、会话、小群、指派、依赖、回应去向、等待原因及额度；暂停/接管/私聊/调优先级/招募走统一控制入口并显示处理状态；刷新与延迟不虚构活动，大团队仍可读且有紧凑视图。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.4",
+          "title": "实现成员上下文透明面板",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.3",
+            "docs/详细设计方案.md §12.8.1",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.1",
+            "14.3"
+          ],
+          "test_file": "tests/integration/phase14/phase14-4.test.ts",
+          "notes": "任务类型：code。展示目标职责、决定理由、文件/KB/交接引用及待答问题；按可信请求回执区分待更新/下次准备/实际已提供，缺证据显示未知；补充资料走正式流程，不直接改提示词或泄漏其他成员上下文。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.5",
+          "title": "定稿接口约定与语义冲突验证范围",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.2",
+            "docs/详细设计方案.md §12.8.2",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "14.2"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。确定首批字段含义/单位/错误行为/兼容性案例、变更订阅和受影响成员/工作关联；设计可执行联合验证与误报/漏报指标，模型仅提示疑似冲突，实质争议走Leader裁决。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.6",
+          "title": "实现接口约定及变更对齐流程",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.2",
+            "docs/详细设计方案.md §12.8.2",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.5"
+          ],
+          "test_file": "tests/integration/phase14/phase14-6.test.ts",
+          "notes": "任务类型：code。保存带来源/版本的简短约定，变化通知相关成员并登记实际接收/待确认；必要时复用小群，结果回写正式事实；成员确认不替代需求或架构裁决，失效约定不能继续作为有效依据。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.7",
+          "title": "实现语义冲突预警与联合验证",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.2",
+            "docs/详细设计方案.md §12.8.2",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.6"
+          ],
+          "test_file": "tests/integration/phase14/phase14-7.test.ts",
+          "notes": "任务类型：code。在金额单位/时区等已定场景发现无Git冲突但有语义差异的风险，给出引用和可运行验证；实测误报/漏报/额外沟通量，跟踪对齐到修复结果，不以模型判断冒充测试结论。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.8",
+          "title": "定稿主动问题报告与有限调查协议",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.3",
+            "docs/详细设计方案.md §12.8.3",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "14.2"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义授权检查触发、排查时长/调用预算、证据/影响/建议、去重及候选待办；区分当前必要修复与额外问题，额外工作须用户排期，不创建未授权后台监控或费用活动。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.9",
+          "title": "实现有证据的问题报告与排期",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.3",
+            "docs/详细设计方案.md §12.8.3",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.8"
+          ],
+          "test_file": "tests/integration/phase14/phase14-9.test.ts",
+          "notes": "任务类型：code。成员在授权范围有限排查并保留复现/已排除原因/影响，合并重复报告；用户确认后创建关联新工作，拒绝自动扩大范围；验证误报、重复、预算终止以及报告到修复证据链。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.10",
+          "title": "定稿多方案实验与比较契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.4",
+            "docs/详细设计方案.md §12.8.4",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "14.2"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。明确目标、评价标准、成员、预算、独立工作区、同条件重复及停止/结果保存；用户批准才专门投入对比，日常必要验证不逐次审批；失败/未知和外部副作用可见，不由模型投票选赢家。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.11",
+          "title": "实现受控多方案实验与人工选案",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.4",
+            "docs/详细设计方案.md §12.8.4",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.10"
+          ],
+          "test_file": "tests/integration/phase14/phase14-11.test.ts",
+          "notes": "任务类型：code。展示并确认实验计划后排队执行独立方案，统一额度/费用及可比验证条件；记录失败、局限、重复结果和产物，用户选择后关联决策与交付，不自动合并或隐藏成本。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.12",
+          "title": "定稿按需求撤回与传递依赖影响协议",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.5",
+            "docs/详细设计方案.md §12.8.5",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "14.2"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。定义代码/测试/决策/KB归属及共享改动处理，生成可审阅保留/重写/撤回方案；保护用户修改，明确不可逆外部效果的补偿边界和确认要求，证据不足时提出具体澄清。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.13",
+          "title": "实现需求级撤回与重新验收",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.9.5",
+            "docs/详细设计方案.md §12.8.5",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.12"
+          ],
+          "test_file": "tests/integration/phase14/phase14-13.test.ts",
+          "notes": "任务类型：code。用户确认影响清单后按精确基线撤回相关改动，保留无关功能和共享责任；同步撤销/失效知识与验证证据，再运行必要测试和Leader终审；覆盖跨需求依赖、外部编辑和失败恢复。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.14",
+          "title": "定稿增量集成与动态调度安全契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.8、§22.6.10",
+            "docs/详细设计方案.md §12.8.6",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "14.2"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。在12.31基础上设计更小验证单元、可信receipt、累计基线、依赖释放与恢复/冲突协议，先评估收益及额外成本；不让后继使用未经验证的结果，精确接口同步后才进入实现。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.15",
+          "title": "实现已验证单元驱动的增量推进",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.8",
+            "docs/详细设计方案.md §12.8.6",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.14"
+          ],
+          "test_file": "tests/integration/phase14/phase14-15.test.ts",
+          "notes": "任务类型：code。只有受信验证单元通过才释放后继，保留完整计划和累计最终版本；不同完成顺序、失效重验、崩溃和冲突不会漏任务或使用旧receipt；与12.31基线对比等待及验证开销。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.16",
+          "title": "定稿Tester提前准备的隔离与验收契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.8",
+            "docs/详细设计方案.md §12.8.6",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "14.14"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。明确preparation可执行范围、只读/测试写入权限、分支/版本归属、额度与失败收尾，区分讨论/准备和真正通过；同步D17固定关闭规则的阶段边界，未完成验收前不提供启用入口。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.17",
+          "title": "实现受控Tester准备与版本验证",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.6.8",
+            "docs/详细设计方案.md §12.8.6",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.15",
+            "14.16"
+          ],
+          "test_file": "tests/integration/phase14/phase14-17.test.ts",
+          "notes": "任务类型：code。按定稿能力提前准备验收材料或测试，不覆盖Coder工作区，所有执行占用真实额度；实现变更使准备结果按规则失效，正式测试仍绑定精确版本；真实权限/恢复回归通过后才启用。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.18",
+          "title": "定稿虚拟团队空间交互与性能方案",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.2",
+            "docs/详细设计方案.md §12.8.7",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "14.3",
+            "14.4"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。选择2D/等距/3D及是否化身、布局和性能预算，定义工作室/工位/讨论/待决区的事实映射；键盘、减少动态效果及紧凑替代必须可用，不预先安装引擎或新增模型调用。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.19",
+          "title": "实现可选虚拟办公室视图",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.7.2",
+            "docs/详细设计方案.md §12.8.7",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.18"
+          ],
+          "test_file": "tests/integration/phase14/phase14-19.test.ts",
+          "notes": "任务类型：code。空间复用地图与控制入口，表现真实参与/排队/回应/返回；动画不驱动调度、不复制成员、不触发额外模型调用；保留列表/地图同等操作，验证事件延迟、恢复、键盘和关闭动画。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.20",
+          "title": "定稿通用插件包与生命周期契约",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.5、§22.5.6、§22.5.7、§22.5.8",
+            "docs/详细设计方案.md §12.8.8",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "13.21"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。决定包格式/兼容范围、来源校验、版本和依赖、技能/MCP组合、权限清单与安装/更新/卸载；复用成员分配和撤权保护，不接入外部编码Agent，未知来源或不支持能力明确拒绝。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.21",
+          "title": "实现插件导入更新与卸载管理",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.5、§22.5.6、§22.5.7",
+            "docs/详细设计方案.md §12.8.8",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.20"
+          ],
+          "test_file": "tests/integration/phase14/phase14-21.test.ts",
+          "notes": "任务类型：code。按获批格式导入并显示能力/权限/依赖，项目接入后按成员分配；版本更新经确认且保留个人配置，停用/卸载处理在途调用和恢复依赖；真实Skill/MCP组合验证，不默认安装即全员授权。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.22",
+          "title": "定稿插件市场来源与分发边界",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.6、§22.5.8",
+            "docs/详细设计方案.md §12.8.8",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/系统架构设计文档.md §10",
+            "docs/技术选型文档.md §12 / §14"
+          ],
+          "dependencies": [
+            "14.20"
+          ],
+          "test_file": null,
+          "notes": "任务类型：design。确定首版目录/分发方式、来源和兼容验证、更新提示及撤回处理；明确是否需要自建服务及责任，保持本机产品边界、不擅自加入账号SaaS或支付；规划实际来源与验收入口后才实现。 来源与完整任务表：docs/开发计划安排.md §18.8。设计尚未开工，需产出精确契约并经确认后进入依赖实现。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.23",
+          "title": "实现插件发现与确认安装入口",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.6、§22.5.8",
+            "docs/详细设计方案.md §12.8.8",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.21",
+            "14.22"
+          ],
+          "test_file": "tests/integration/phase14/phase14-23.test.ts",
+          "notes": "任务类型：code。基于获批来源展示用途/发布者/版本/兼容/资源权限，用户选择后进入同一安装管理流程；处理离线、失效来源、更新/撤回，不自动安装或向成员静默扩权，不将目录收录当安全保证。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.24",
+          "title": "验证完整团队产品与差异化证据",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.3、§22.4、§22.5、§22.6.10、§22.7、§22.8、§22.9",
+            "docs/详细设计方案.md §12.8.9",
+            "docs/开发计划安排.md §18.8 / §18.9",
+            "docs/详细设计方案.md §11（D11工程Eval边界）",
+            "docs/框架调研与借鉴决策.md §7"
+          ],
+          "dependencies": [
+            "14.4",
+            "14.7",
+            "14.9",
+            "14.11",
+            "14.13",
+            "14.17",
+            "14.19",
+            "14.23"
+          ],
+          "test_file": "tests/integration/phase14/phase14-24.test.ts",
+          "notes": "任务类型：validation。干净Mac首次使用与已有Web前后端迭代分别验收，覆盖中途改需求、交接、KB更新、实验/撤回和插件；固定条件重复测量质量/等待/费用，复核竞品官方依据与可实测路径，差异声明不把未发现等同没有。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
+          "last_updated": "2026-09-13"
+        },
+        {
+          "id": "14.25",
+          "title": "Phase 14 完整规划能力出口验收",
+          "story": null,
+          "status": "pending",
+          "documents_required": [
+            "docs/项目蓝图.md §21 D18 / §22.5.5、§22.5.6、§22.6.8、§22.7.2、§22.7.3、§22.9",
+            "docs/详细设计方案.md §12.8.9",
+            "docs/开发计划安排.md §18.8 / §18.9"
+          ],
+          "dependencies": [
+            "14.24"
+          ],
+          "test_file": "tests/integration/phase14/phase14-exit.test.ts",
+          "notes": "任务类型：exit。对照§18.9每项蓝图功能及设计决定逐条核验证据、未实现项与限制，累计G1–G7和真实桌面闭环通过才收尾；确认无Docker、统一Harness、权限/投影/预算及Leader裁决，不能靠登记任务宣称全部功能完成。 来源与完整任务表：docs/开发计划安排.md §18.8。测试路径为规划入口，尚未实现或验收；实测计划须明确适用权限与费用范围。",
           "last_updated": "2026-09-13"
         }
       ]
