@@ -1,0 +1,249 @@
+{
+  "date": "2026-09-14",
+  "buildRoot": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-dhyl3o",
+  "source": {
+    "base": "6c8a7888f5d6d6cccdab11bf9403a17e7d693ad0",
+    "kind": "development-working-tree",
+    "files": 333,
+    "inputSha256": "b15e2805d60a45e7d5441e1c30a218fe0c493871d26dbca6996346ad4d013999",
+    "workspaceMismatchCount": 0
+  },
+  "package": {
+    "app": "/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-dhyl3o/output/app/Agora-darwin-arm64/Agora.app",
+    "arch": "arm64",
+    "minimumSystem": "15.0",
+    "signing": "ad-hoc-validation-only",
+    "fuses": {
+      "0": 48,
+      "1": 49,
+      "2": 48,
+      "3": 48,
+      "4": 49,
+      "5": 49,
+      "6": 48,
+      "7": 48,
+      "8": 49,
+      "version": "1"
+    },
+    "resources": 10163,
+    "bytes": 323583839
+  },
+  "resourceManifestSha256": "993126549bc9cccddf248e82c61c0f526c429be74da071928699d55cd8d793df",
+  "traceReview": {
+    "excluded": [
+      {
+        "path": "node_modules/.pnpm/ssh2@1.17.0/node_modules/ssh2/util/pagent.exe",
+        "reason": "other-platform"
+      },
+      {
+        "path": "apps/web/next-env.d.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/scripts/local-diagnostics.d.mts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/scripts/local-process.d.mts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/app/chat-history.tsx",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/app/chat-model.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/app/message-content.tsx",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/app/message-markdown.tsx",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/app/model-settings-dialog.tsx",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/app/requirement-proposal-card.tsx",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/app/trace-lanes.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/lib/model-capacity.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/src/lib/model-settings.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/channel-stream.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/chat-ui.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/local-diagnostics.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/local-drain.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/local-process.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/message-content.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/message-flow.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/message-markdown.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/model-capacity.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/model-settings.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/orchestration-flow-docker.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/orchestration-flow.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/parallel-failure-lifecycle.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/project-roster-g5-chain.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/project-roster-runtime.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/requirement-input.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/requirement-proposal-card.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/run-error.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/task-composition.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/task-overview.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/trace-flow.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/trace-lanes.test.ts",
+        "reason": "development"
+      },
+      {
+        "path": "apps/web/test/wave-validation.test.ts",
+        "reason": "development"
+      }
+    ]
+  },
+  "runtime": {
+    "status": "passed",
+    "checks": [
+      "production Next instrumentation and isolated native Keychain",
+      "reject unauthenticated HTTP",
+      "reject cross-origin HTTP",
+      "block product endpoint tasks",
+      "block product endpoint messages",
+      "block product endpoint commands",
+      "block product endpoint channels",
+      "block product endpoint traces",
+      "block product endpoint model-settings",
+      "block product endpoint stream",
+      "React hydration and authenticated EventSource",
+      "preview content and no project controls",
+      "isolated renderer and limited preload",
+      "validated top-frame IPC",
+      "external windows denied",
+      "external navigation denied",
+      "untrusted window IPC rejected",
+      "CSP blocks inline handler and emits violation",
+      "retired session denies new connections",
+      "graceful stop and actual process exit",
+      "Keychain identity retained after stop",
+      "state format persisted",
+      "production service entry refuses future format before credential initialization"
+    ],
+    "keychainRemoved": true,
+    "expectedCspViolationCount": 1
+  },
+  "host": {
+    "status": "passed",
+    "checks": [
+      "production host readiness",
+      "production preload status",
+      "production renderer isolation",
+      "closing window preserves background service",
+      "native duplicate launch cannot spawn service",
+      "native second launch focuses current window",
+      "production host waits for process exit",
+      "fresh session after explicit restart",
+      "crash replaces project surface with failure UI"
+    ],
+    "keychainRemoved": true
+  },
+  "tests": {
+    "node": {
+      "passed": 7
+    },
+    "vitest": {
+      "files": 178,
+      "passed": 1301,
+      "durationSeconds": 116.58
+    },
+    "desktop": {
+      "files": 7,
+      "passed": 17
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "realProvider": "opencode-go",
+    "realModel": "deepseek-v4-flash"
+  },
+  "limitations": [
+    "arm64 macOS 26.5 development host only",
+    "ad-hoc integrity, no Developer ID/notarization or clean installation acceptance",
+    "working-tree input, no fixed-commit release candidate",
+    "11.4/11.5 toolchain, migration and installation gates remain"
+  ]
+}

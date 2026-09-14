@@ -1561,7 +1561,7 @@
           "id": "11.3",
           "title": "实现 Electron 应用壳与本地服务生命周期",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1575,7 +1575,7 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-3.test.ts",
-          "notes": "任务类型：code。复用现有 UI/后端/Harness，应用启动无需命令行；验证进程边界、重复启动、状态目录、凭据保护及后端故障可见。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "notes": "任务类型：code。Leader已调用agora-commit授权交付；应用壳/独立Next服务/预览双层门禁/认证CSP与IPC/正式Packager及fuses已实现。提交前typecheck/lint通过，pnpm test为Node7项+178文件1301项全过（Go/deepseek-v4-flash），真实服务23项+主进程9项通过。证据：docs/reviews/task113-desktop-lifecycle.md及docs/task-history/11.3.md。进入功能提交及固定提交构建核验，保持in_progress待人工PR合并；11.4/11.5工具链/升级/Intel与最低系统干净安装仍待验收。",
           "last_updated": "2026-09-14"
         },
         {

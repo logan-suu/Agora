@@ -1,0 +1,247 @@
+import { type ChildProcess, spawn } from 'node:child_process';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { lstat, mkdir, realpath } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { app, BrowserWindow, ipcMain, Menu, session } from 'electron';
+import { appId, desktopEnvironment, protocolVersion } from './protocol.js';
+import { ServiceLifecycle } from './service-lifecycle.js';
+import { secureSession, secureWindow, trustedFrame } from './window-security.js';
+
+export interface DesktopHostOptions {
+  resourcesRoot?: string;
+  applicationData?: string;
+  spawnService?: (node: string, entry: string, cwd: string, env: NodeJS.ProcessEnv) => ChildProcess;
+}
+export async function runDesktop(options: DesktopHostOptions = {}) {
+  const resourcesRoot = options.resourcesRoot ?? process.resourcesPath;
+  const ownRoot = dirname(fileURLToPath(import.meta.url));
+  const statusFile = join(ownRoot, '../ui/status.html');
+  const localFiles = new Set(
+    ['status.html', 'status.js', 'status.css'].map(
+      (name) => pathToFileURL(join(ownRoot, '../ui', name)).href,
+    ),
+  );
+  const dataDirectory = join(options.applicationData ?? app.getPath('appData'), appId);
+  app.setPath('userData', dataDirectory);
+  app.setPath('sessionData', join(dataDirectory, 'profiles'));
+  app.commandLine.appendSwitch('disk-cache-dir', join(dataDirectory, 'cache'));
+  let window: BrowserWindow | undefined;
+  let lifecycle: ServiceLifecycle | undefined;
+  let disposeSession: (() => Promise<void>) | undefined;
+  let capability: string | undefined;
+  let quitting = false;
+  let quitComplete = false;
+  let restarting = false;
+  let startupFailure: string | undefined;
+  let trustedUrls = new Set([pathToFileURL(statusFile).href]);
+  let presentation = Promise.resolve();
+
+  function status() {
+    return {
+      state: startupFailure ? 'failed' : (lifecycle?.state ?? 'starting'),
+      code: startupFailure ?? lifecycle?.failure ?? null,
+      canRestart: !restarting && (!lifecycle || lifecycle.exited),
+    };
+  }
+
+  function show(origin?: string) {
+    presentation = presentation.catch(() => {}).then(() => present(origin));
+    return presentation;
+  }
+
+  async function present(origin?: string) {
+    const old = window;
+    window = undefined;
+    if (old && !old.isDestroyed()) old.destroy();
+    await disposeSession?.();
+    const partition = session.fromPartition(`agora-${randomUUID()}`, { cache: false });
+    disposeSession = secureSession(partition, origin, capability, localFiles);
+    trustedUrls = new Set([
+      pathToFileURL(statusFile).href,
+      ...(origin ? [`${origin}/desktop`] : []),
+    ]);
+    window = new BrowserWindow({
+      width: 1080,
+      height: 760,
+      minWidth: 660,
+      minHeight: 520,
+      title: 'Agora',
+      backgroundColor: '#090d14',
+      show: false,
+      webPreferences: {
+        session: partition,
+        preload: join(ownRoot, 'preload.cjs'),
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        webSecurity: true,
+        devTools: false,
+        webviewTag: false,
+      },
+    });
+    secureWindow(window, trustedUrls);
+    window.on('close', (event) => {
+      if (!quitting) {
+        event.preventDefault();
+        window?.hide();
+      }
+    });
+    window.once('ready-to-show', () => window?.show());
+    if (origin) await window.loadURL(`${origin}/desktop`);
+    else await window.loadFile(statusFile);
+  }
+
+  async function executable(path: string) {
+    const resolved = await realpath(path);
+    const resources = await realpath(resourcesRoot);
+    const info = await lstat(path);
+    if (
+      !resolved.startsWith(`${resources}/`) ||
+      !info.isFile() ||
+      info.isSymbolicLink() ||
+      !(info.mode & 0o111)
+    )
+      throw new Error('invalid_installation');
+    return resolved;
+  }
+
+  async function start() {
+    if (restarting || (lifecycle && !lifecycle.exited)) return;
+    restarting = true;
+    startupFailure = undefined;
+    try {
+      await show();
+      if (quitting) return;
+      await mkdir(dataDirectory, { recursive: true, mode: 0o700 });
+      const tools = join(resourcesRoot, 'toolchains', `darwin-${process.arch}`);
+      const node = await executable(join(tools, 'node/bin/node'));
+      const helper = await executable(join(tools, 'keychain'));
+      if (quitting) return;
+      capability = randomBytes(32).toString('hex');
+      const webRoot = join(resourcesRoot, 'service/apps/web');
+      const entry = join(resourcesRoot, 'service/apps/desktop/dist/service-entry.js');
+      const child = options.spawnService
+        ? options.spawnService(node, entry, webRoot, desktopEnvironment())
+        : spawn(node, [entry], {
+            cwd: webRoot,
+            env: desktopEnvironment(),
+            stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+          });
+      lifecycle = new ServiceLifecycle(child, {
+        type: 'start',
+        version: protocolVersion,
+        config: { stateRoot: join(dataDirectory, 'state'), webRoot, helper, capability },
+      });
+      lifecycle.on('ready', () => {
+        void show(lifecycle?.origin).catch(() => {
+          startupFailure = 'window_failed';
+          void show();
+        });
+      });
+      let failureShown = false;
+      lifecycle.on('changed', () => {
+        if (lifecycle?.state === 'failed' && !failureShown) {
+          failureShown = true;
+          capability = undefined;
+          void show().catch(() => {});
+          if (!lifecycle.exited) void lifecycle.stop().catch(() => {});
+        }
+      });
+    } catch {
+      startupFailure = 'invalid_installation';
+      await show();
+    } finally {
+      restarting = false;
+    }
+  }
+
+  async function quit() {
+    if (quitting) return;
+    quitting = true;
+    try {
+      await lifecycle?.stop();
+      await disposeSession?.();
+      quitComplete = true;
+      app.quit();
+    } catch {
+      if (lifecycle?.exited) {
+        quitComplete = true;
+        app.quit();
+        return;
+      }
+      quitting = false;
+      await show();
+    }
+  }
+
+  if (!app.requestSingleInstanceLock()) app.quit();
+  else {
+    app.on('second-instance', () => {
+      window?.show();
+      window?.focus();
+    });
+    app.on('activate', () => {
+      if (window) window.show();
+    });
+    app.on('window-all-closed', () => {});
+    app.on('before-quit', (event) => {
+      if (!quitComplete) {
+        event.preventDefault();
+        void quit();
+      }
+    });
+    await app.whenReady();
+    Menu.setApplicationMenu(
+      Menu.buildFromTemplate([
+        {
+          label: 'Agora',
+          submenu: [
+            { label: 'Show Agora', click: () => window?.show() },
+            {
+              label: 'Restart Local Service',
+              click: () => {
+                void start();
+              },
+            },
+            { type: 'separator' },
+            {
+              label: 'Quit Agora',
+              accelerator: 'Cmd+Q',
+              click: () => {
+                void quit();
+              },
+            },
+          ],
+        },
+        { role: 'editMenu' },
+        { role: 'windowMenu' },
+      ]),
+    );
+    for (const [channel, handler] of [
+      ['agora:status', () => status()],
+      [
+        'agora:restart',
+        () => {
+          void start();
+          return null;
+        },
+      ],
+      [
+        'agora:quit',
+        () => {
+          void quit();
+          return null;
+        },
+      ],
+    ] as const)
+      ipcMain.handle(channel, (event, ...args: unknown[]) => {
+        if (args.length || !window || !trustedFrame(window, event, trustedUrls))
+          throw new Error('invalid_ipc_sender');
+        return handler();
+      });
+    await start();
+  }
+
+  return { status, getWindow: () => window, stop: () => lifecycle?.stop(), restart: start };
+}
