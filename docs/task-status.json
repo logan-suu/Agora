@@ -1554,7 +1554,7 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design，PR修复新增构建/验证脚本，按实际产出转代码交付，待PR #79人工合并。2026-09-14设计接受事实保留，正式来源详细设计§12.3/选型§12。修复提交79ca4d6已补齐本机独有材料P2：6份原始材料保hash入库，19份证据可校验；固定源码/锁文件在全新目录重建，原16项G5通过。typecheck/lint和完整7项追踪+1282项Vitest通过，无跳过；缺文件/坏hash/越界拒绝。11.3保持pending。证据入口docs/reviews/task112-packaging-evidence/reproduction/README.md；完整历史docs/task-history/11.2.md；PR https://github.com/logan-suu/Agora/pull/79。",
+          "notes": "任务类型：design，含构建/验证脚本，按代码交付。后续修复PR #80：https://github.com/logan-suu/Agora/pull/80，base dev-1.0.0，分支codex/fix-desktop-review-go-tests；修复068480d、G4证据b3f4401已推送。完整G4通过：Node7/7、Vitest171文件1284/1284、0跳过；Go V4 Flash三项实网均通过（LRU200.198秒），typecheck/lint、3项生命周期回归、27份打包证据校验通过，源码与验证提交cd9e99a一致。历史超时未复现，根因仍inconclusive。保持in_progress，待PR #80人工合并后收尾；11.3仍pending。报告docs/reviews/task112-g4-review.md；历史docs/task-history/11.2.md。",
           "last_updated": "2026-09-14"
         },
         {

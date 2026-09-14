@@ -1,0 +1,1526 @@
+{
+  "stage": "finished",
+  "elapsedMs": 201405,
+  "requests": [
+    {
+      "id": 1,
+      "startMs": 427,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 2,
+      "tools": 3,
+      "requestBytes": 6821,
+      "comments": 0,
+      "dataFrames": 62,
+      "reasoningChars": 560,
+      "textChars": 0,
+      "toolArgumentChars": 172,
+      "toolDeltas": 19,
+      "emptyToolIds": 0,
+      "wireBytes": 23593,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 1719,
+      "status": 200,
+      "lastBytesMs": 4064,
+      "firstDataMs": 1723,
+      "lastDataMs": 4064,
+      "usage": {
+        "prompt_tokens": 1840,
+        "completion_tokens": 284,
+        "total_tokens": 2124
+      },
+      "firstReasoningMs": 1723,
+      "firstToolMs": 2883,
+      "finishMs": 4063,
+      "doneMs": 4064,
+      "abortMs": 4074
+    },
+    {
+      "id": 2,
+      "startMs": 4093,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 4,
+      "tools": 3,
+      "requestBytes": 8174,
+      "comments": 0,
+      "dataFrames": 30,
+      "reasoningChars": 102,
+      "textChars": 0,
+      "toolArgumentChars": 245,
+      "toolDeltas": 21,
+      "emptyToolIds": 0,
+      "wireBytes": 13334,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 4986,
+      "status": 200,
+      "lastBytesMs": 7020,
+      "firstDataMs": 4988,
+      "lastDataMs": 7020,
+      "usage": {
+        "prompt_tokens": 2268,
+        "completion_tokens": 160,
+        "total_tokens": 2428
+      },
+      "firstReasoningMs": 4988,
+      "firstToolMs": 5320,
+      "finishMs": 7019,
+      "doneMs": 7020,
+      "abortMs": 7021
+    },
+    {
+      "id": 3,
+      "startMs": 7157,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 6,
+      "tools": 3,
+      "requestBytes": 8934,
+      "comments": 0,
+      "dataFrames": 1156,
+      "reasoningChars": 10080,
+      "textChars": 289,
+      "toolArgumentChars": 8936,
+      "toolDeltas": 483,
+      "emptyToolIds": 0,
+      "wireBytes": 491101,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 7612,
+      "status": 200,
+      "lastBytesMs": 63118,
+      "firstDataMs": 7613,
+      "lastDataMs": 63104,
+      "usage": {
+        "prompt_tokens": 2491,
+        "completion_tokens": 5305,
+        "total_tokens": 7796
+      },
+      "firstReasoningMs": 7614,
+      "firstTextMs": 36274,
+      "firstToolMs": 36807,
+      "finishMs": 63093,
+      "doneMs": 63118,
+      "abortMs": 63121
+    },
+    {
+      "id": 4,
+      "startMs": 63157,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 9,
+      "tools": 3,
+      "requestBytes": 29720,
+      "comments": 0,
+      "dataFrames": 29,
+      "reasoningChars": 103,
+      "textChars": 0,
+      "toolArgumentChars": 154,
+      "toolDeltas": 18,
+      "emptyToolIds": 0,
+      "wireBytes": 12506,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 64072,
+      "status": 200,
+      "lastBytesMs": 66343,
+      "firstDataMs": 64074,
+      "lastDataMs": 66342,
+      "usage": {
+        "prompt_tokens": 7841,
+        "completion_tokens": 143,
+        "total_tokens": 7984
+      },
+      "firstReasoningMs": 64074,
+      "firstToolMs": 64460,
+      "finishMs": 66341,
+      "doneMs": 66343,
+      "abortMs": 66345
+    },
+    {
+      "id": 5,
+      "startMs": 66854,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 11,
+      "tools": 3,
+      "requestBytes": 31938,
+      "comments": 0,
+      "dataFrames": 183,
+      "reasoningChars": 1704,
+      "textChars": 272,
+      "toolArgumentChars": 412,
+      "toolDeltas": 24,
+      "emptyToolIds": 0,
+      "wireBytes": 71071,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 67452,
+      "status": 200,
+      "lastBytesMs": 77490,
+      "firstDataMs": 67453,
+      "lastDataMs": 77490,
+      "usage": {
+        "prompt_tokens": 8535,
+        "completion_tokens": 759,
+        "total_tokens": 9294
+      },
+      "firstReasoningMs": 67453,
+      "firstTextMs": 74342,
+      "firstToolMs": 75404,
+      "finishMs": 77489,
+      "doneMs": 77490,
+      "abortMs": 77492
+    },
+    {
+      "id": 6,
+      "startMs": 77511,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 13,
+      "tools": 3,
+      "requestBytes": 34721,
+      "comments": 0,
+      "dataFrames": 25,
+      "reasoningChars": 220,
+      "textChars": 2,
+      "toolArgumentChars": 29,
+      "toolDeltas": 4,
+      "emptyToolIds": 0,
+      "wireBytes": 9388,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 78328,
+      "status": 200,
+      "lastBytesMs": 82779,
+      "firstDataMs": 78330,
+      "lastDataMs": 82777,
+      "usage": {
+        "prompt_tokens": 9319,
+        "completion_tokens": 99,
+        "total_tokens": 9418
+      },
+      "firstReasoningMs": 78330,
+      "firstTextMs": 81636,
+      "firstToolMs": 81655,
+      "finishMs": 82776,
+      "doneMs": 82779,
+      "abortMs": 82781
+    },
+    {
+      "id": 7,
+      "startMs": 82798,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 15,
+      "tools": 3,
+      "requestBytes": 35628,
+      "comments": 0,
+      "dataFrames": 283,
+      "reasoningChars": 145,
+      "textChars": 101,
+      "toolArgumentChars": 5477,
+      "toolDeltas": 265,
+      "emptyToolIds": 0,
+      "wireBytes": 139581,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 86497,
+      "status": 200,
+      "lastBytesMs": 102437,
+      "firstDataMs": 86498,
+      "lastDataMs": 102437,
+      "usage": {
+        "prompt_tokens": 9553,
+        "completion_tokens": 1654,
+        "total_tokens": 11207
+      },
+      "firstReasoningMs": 86498,
+      "firstTextMs": 86825,
+      "firstToolMs": 87015,
+      "finishMs": 102432,
+      "doneMs": 102437,
+      "abortMs": 102437
+    },
+    {
+      "id": 8,
+      "startMs": 102450,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 17,
+      "tools": 3,
+      "requestBytes": 42136,
+      "comments": 0,
+      "dataFrames": 20,
+      "reasoningChars": 0,
+      "textChars": 0,
+      "toolArgumentChars": 154,
+      "toolDeltas": 17,
+      "emptyToolIds": 0,
+      "wireBytes": 9154,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 104064,
+      "status": 200,
+      "lastBytesMs": 104209,
+      "firstDataMs": 104065,
+      "lastDataMs": 104205,
+      "usage": {
+        "prompt_tokens": 11232,
+        "completion_tokens": 115,
+        "total_tokens": 11347
+      },
+      "firstToolMs": 104070,
+      "finishMs": 104204,
+      "doneMs": 104209,
+      "abortMs": 104211
+    },
+    {
+      "id": 9,
+      "startMs": 104708,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 19,
+      "tools": 3,
+      "requestBytes": 43751,
+      "comments": 0,
+      "dataFrames": 136,
+      "reasoningChars": 1301,
+      "textChars": 114,
+      "toolArgumentChars": 444,
+      "toolDeltas": 35,
+      "emptyToolIds": 0,
+      "wireBytes": 54823,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 105315,
+      "status": 200,
+      "lastBytesMs": 114402,
+      "firstDataMs": 105315,
+      "lastDataMs": 114401,
+      "usage": {
+        "prompt_tokens": 11721,
+        "completion_tokens": 547,
+        "total_tokens": 12268
+      },
+      "firstReasoningMs": 105316,
+      "firstTextMs": 111435,
+      "firstToolMs": 111703,
+      "finishMs": 114400,
+      "doneMs": 114402,
+      "abortMs": 114404
+    },
+    {
+      "id": 10,
+      "startMs": 114677,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 21,
+      "tools": 3,
+      "requestBytes": 46269,
+      "comments": 0,
+      "dataFrames": 79,
+      "reasoningChars": 684,
+      "textChars": 220,
+      "toolArgumentChars": 196,
+      "toolDeltas": 18,
+      "emptyToolIds": 0,
+      "wireBytes": 31819,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 115307,
+      "status": 200,
+      "lastBytesMs": 121248,
+      "firstDataMs": 115308,
+      "lastDataMs": 121248,
+      "usage": {
+        "prompt_tokens": 12378,
+        "completion_tokens": 331,
+        "total_tokens": 12709
+      },
+      "firstReasoningMs": 115308,
+      "firstTextMs": 119267,
+      "firstToolMs": 119861,
+      "finishMs": 121243,
+      "doneMs": 121248,
+      "abortMs": 121249
+    },
+    {
+      "id": 11,
+      "startMs": 121297,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 23,
+      "tools": 3,
+      "requestBytes": 47767,
+      "comments": 0,
+      "dataFrames": 26,
+      "reasoningChars": 0,
+      "textChars": 0,
+      "toolArgumentChars": 251,
+      "toolDeltas": 23,
+      "emptyToolIds": 0,
+      "wireBytes": 12141,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 122235,
+      "status": 200,
+      "lastBytesMs": 123223,
+      "firstDataMs": 122235,
+      "lastDataMs": 123213,
+      "usage": {
+        "prompt_tokens": 12763,
+        "completion_tokens": 141,
+        "total_tokens": 12904
+      },
+      "firstToolMs": 122376,
+      "finishMs": 123212,
+      "doneMs": 123223,
+      "abortMs": 123225
+    },
+    {
+      "id": 12,
+      "startMs": 123305,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 25,
+      "tools": 3,
+      "requestBytes": 48582,
+      "comments": 0,
+      "dataFrames": 253,
+      "reasoningChars": 1500,
+      "textChars": 1901,
+      "toolArgumentChars": 0,
+      "toolDeltas": 0,
+      "emptyToolIds": 0,
+      "wireBytes": 100084,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "stop"
+      ],
+      "headersMs": 123789,
+      "status": 200,
+      "lastBytesMs": 136565,
+      "firstDataMs": 123790,
+      "lastDataMs": 136565,
+      "usage": {
+        "prompt_tokens": 13015,
+        "completion_tokens": 879,
+        "total_tokens": 13894
+      },
+      "firstReasoningMs": 123791,
+      "firstTextMs": 129581,
+      "finishMs": 136564,
+      "doneMs": 136565,
+      "abortMs": 136566
+    },
+    {
+      "id": 13,
+      "startMs": 136590,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 2,
+      "tools": 3,
+      "requestBytes": 7112,
+      "comments": 0,
+      "dataFrames": 86,
+      "reasoningChars": 1046,
+      "textChars": 0,
+      "toolArgumentChars": 93,
+      "toolDeltas": 11,
+      "emptyToolIds": 0,
+      "wireBytes": 31062,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 137189,
+      "status": 200,
+      "lastBytesMs": 144300,
+      "firstDataMs": 137190,
+      "lastDataMs": 144291,
+      "usage": {
+        "prompt_tokens": 1910,
+        "completion_tokens": 366,
+        "total_tokens": 2276
+      },
+      "firstReasoningMs": 137190,
+      "firstToolMs": 143534,
+      "finishMs": 144290,
+      "doneMs": 144300,
+      "abortMs": 144302
+    },
+    {
+      "id": 14,
+      "startMs": 144340,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 5,
+      "tools": 3,
+      "requestBytes": 12758,
+      "comments": 0,
+      "dataFrames": 25,
+      "reasoningChars": 187,
+      "textChars": 0,
+      "toolArgumentChars": 131,
+      "toolDeltas": 10,
+      "emptyToolIds": 0,
+      "wireBytes": 10202,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 144855,
+      "status": 200,
+      "lastBytesMs": 145767,
+      "firstDataMs": 144870,
+      "lastDataMs": 145766,
+      "usage": {
+        "prompt_tokens": 3501,
+        "completion_tokens": 149,
+        "total_tokens": 3650
+      },
+      "firstReasoningMs": 144873,
+      "firstToolMs": 145465,
+      "finishMs": 145764,
+      "doneMs": 145767,
+      "abortMs": 145767
+    },
+    {
+      "id": 15,
+      "startMs": 145872,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 8,
+      "tools": 3,
+      "requestBytes": 19545,
+      "comments": 0,
+      "dataFrames": 54,
+      "reasoningChars": 649,
+      "textChars": 2,
+      "toolArgumentChars": 56,
+      "toolDeltas": 6,
+      "emptyToolIds": 0,
+      "wireBytes": 20408,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 146554,
+      "status": 200,
+      "lastBytesMs": 149539,
+      "firstDataMs": 146556,
+      "lastDataMs": 149539,
+      "usage": {
+        "prompt_tokens": 5624,
+        "completion_tokens": 224,
+        "total_tokens": 5848
+      },
+      "firstReasoningMs": 146560,
+      "firstTextMs": 149303,
+      "firstToolMs": 149369,
+      "finishMs": 149537,
+      "doneMs": 149539,
+      "abortMs": 149540
+    },
+    {
+      "id": 16,
+      "startMs": 150030,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 10,
+      "tools": 3,
+      "requestBytes": 21792,
+      "comments": 0,
+      "dataFrames": 745,
+      "reasoningChars": 5316,
+      "textChars": 219,
+      "toolArgumentChars": 7019,
+      "toolDeltas": 343,
+      "emptyToolIds": 0,
+      "wireBytes": 320514,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 150711,
+      "status": 200,
+      "lastBytesMs": 188641,
+      "firstDataMs": 150711,
+      "lastDataMs": 188641,
+      "usage": {
+        "prompt_tokens": 6222,
+        "completion_tokens": 3420,
+        "total_tokens": 9642
+      },
+      "firstReasoningMs": 150712,
+      "firstTextMs": 174478,
+      "firstToolMs": 174860,
+      "finishMs": 188639,
+      "doneMs": 188641,
+      "abortMs": 188643
+    },
+    {
+      "id": 17,
+      "startMs": 188669,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 12,
+      "tools": 3,
+      "requestBytes": 35469,
+      "comments": 0,
+      "dataFrames": 12,
+      "reasoningChars": 18,
+      "textChars": 0,
+      "toolArgumentChars": 56,
+      "toolDeltas": 7,
+      "emptyToolIds": 0,
+      "wireBytes": 4951,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 189517,
+      "status": 200,
+      "lastBytesMs": 190034,
+      "firstDataMs": 189518,
+      "lastDataMs": 190031,
+      "usage": {
+        "prompt_tokens": 9667,
+        "completion_tokens": 67,
+        "total_tokens": 9734
+      },
+      "firstReasoningMs": 189518,
+      "firstToolMs": 189950,
+      "finishMs": 190027,
+      "doneMs": 190034,
+      "abortMs": 190036
+    },
+    {
+      "id": 18,
+      "startMs": 190645,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 14,
+      "tools": 3,
+      "requestBytes": 37368,
+      "comments": 0,
+      "dataFrames": 48,
+      "reasoningChars": 493,
+      "textChars": 51,
+      "toolArgumentChars": 110,
+      "toolDeltas": 8,
+      "emptyToolIds": 0,
+      "wireBytes": 18639,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "headersMs": 191765,
+      "status": 200,
+      "lastBytesMs": 194000,
+      "firstDataMs": 191767,
+      "lastDataMs": 194000,
+      "usage": {
+        "prompt_tokens": 10200,
+        "completion_tokens": 221,
+        "total_tokens": 10421
+      },
+      "firstReasoningMs": 191767,
+      "firstTextMs": 193448,
+      "firstToolMs": 193751,
+      "finishMs": 193999,
+      "doneMs": 194000,
+      "abortMs": 194002
+    },
+    {
+      "id": 19,
+      "startMs": 194017,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 16,
+      "tools": 3,
+      "requestBytes": 38355,
+      "comments": 0,
+      "dataFrames": 207,
+      "reasoningChars": 1149,
+      "textChars": 1444,
+      "toolArgumentChars": 0,
+      "toolDeltas": 0,
+      "emptyToolIds": 0,
+      "wireBytes": 81749,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "stop"
+      ],
+      "headersMs": 194839,
+      "status": 200,
+      "lastBytesMs": 201364,
+      "firstDataMs": 194841,
+      "lastDataMs": 201364,
+      "usage": {
+        "prompt_tokens": 10443,
+        "completion_tokens": 700,
+        "total_tokens": 11143
+      },
+      "firstReasoningMs": 194841,
+      "firstTextMs": 196719,
+      "finishMs": 201362,
+      "doneMs": 201364,
+      "abortMs": 201366
+    }
+  ],
+  "events": [
+    {
+      "atMs": 0,
+      "stage": "observer-start"
+    },
+    {
+      "atMs": 422,
+      "stage": "executor-start",
+      "role": "CODER"
+    },
+    {
+      "atMs": 427,
+      "stage": "request",
+      "request": 1,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 2,
+      "requestBytes": 6821,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 1719,
+      "stage": "headers",
+      "request": 1,
+      "status": 200
+    },
+    {
+      "atMs": 4063,
+      "stage": "finish-reason",
+      "request": 1,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 4064,
+      "stage": "sse-done",
+      "request": 1
+    },
+    {
+      "atMs": 4074,
+      "stage": "request-abort",
+      "request": 1
+    },
+    {
+      "atMs": 4079,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 4091,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 12
+    },
+    {
+      "atMs": 4093,
+      "stage": "request",
+      "request": 2,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 4,
+      "requestBytes": 8174,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 4986,
+      "stage": "headers",
+      "request": 2,
+      "status": 200
+    },
+    {
+      "atMs": 7019,
+      "stage": "finish-reason",
+      "request": 2,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 7020,
+      "stage": "sse-done",
+      "request": 2
+    },
+    {
+      "atMs": 7021,
+      "stage": "request-abort",
+      "request": 2
+    },
+    {
+      "atMs": 7025,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 7156,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 131
+    },
+    {
+      "atMs": 7157,
+      "stage": "request",
+      "request": 3,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 6,
+      "requestBytes": 8934,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 7612,
+      "stage": "headers",
+      "request": 3,
+      "status": 200
+    },
+    {
+      "atMs": 63093,
+      "stage": "finish-reason",
+      "request": 3,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 63118,
+      "stage": "sse-done",
+      "request": 3
+    },
+    {
+      "atMs": 63121,
+      "stage": "request-abort",
+      "request": 3
+    },
+    {
+      "atMs": 63157,
+      "stage": "request",
+      "request": 4,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 9,
+      "requestBytes": 29720,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 64072,
+      "stage": "headers",
+      "request": 4,
+      "status": 200
+    },
+    {
+      "atMs": 66341,
+      "stage": "finish-reason",
+      "request": 4,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 66343,
+      "stage": "sse-done",
+      "request": 4
+    },
+    {
+      "atMs": 66345,
+      "stage": "request-abort",
+      "request": 4
+    },
+    {
+      "atMs": 66348,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 66851,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 503
+    },
+    {
+      "atMs": 66854,
+      "stage": "request",
+      "request": 5,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 11,
+      "requestBytes": 31938,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 67452,
+      "stage": "headers",
+      "request": 5,
+      "status": 200
+    },
+    {
+      "atMs": 77489,
+      "stage": "finish-reason",
+      "request": 5,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 77490,
+      "stage": "sse-done",
+      "request": 5
+    },
+    {
+      "atMs": 77492,
+      "stage": "request-abort",
+      "request": 5
+    },
+    {
+      "atMs": 77511,
+      "stage": "request",
+      "request": 6,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 13,
+      "requestBytes": 34721,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 78328,
+      "stage": "headers",
+      "request": 6,
+      "status": 200
+    },
+    {
+      "atMs": 82776,
+      "stage": "finish-reason",
+      "request": 6,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 82779,
+      "stage": "sse-done",
+      "request": 6
+    },
+    {
+      "atMs": 82781,
+      "stage": "request-abort",
+      "request": 6
+    },
+    {
+      "atMs": 82798,
+      "stage": "request",
+      "request": 7,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 15,
+      "requestBytes": 35628,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 86497,
+      "stage": "headers",
+      "request": 7,
+      "status": 200
+    },
+    {
+      "atMs": 102432,
+      "stage": "finish-reason",
+      "request": 7,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 102437,
+      "stage": "sse-done",
+      "request": 7
+    },
+    {
+      "atMs": 102437,
+      "stage": "request-abort",
+      "request": 7
+    },
+    {
+      "atMs": 102450,
+      "stage": "request",
+      "request": 8,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 17,
+      "requestBytes": 42136,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 104064,
+      "stage": "headers",
+      "request": 8,
+      "status": 200
+    },
+    {
+      "atMs": 104205,
+      "stage": "finish-reason",
+      "request": 8,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 104209,
+      "stage": "sse-done",
+      "request": 8
+    },
+    {
+      "atMs": 104211,
+      "stage": "request-abort",
+      "request": 8
+    },
+    {
+      "atMs": 104214,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 104706,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 492
+    },
+    {
+      "atMs": 104708,
+      "stage": "request",
+      "request": 9,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 19,
+      "requestBytes": 43751,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 105315,
+      "stage": "headers",
+      "request": 9,
+      "status": 200
+    },
+    {
+      "atMs": 114400,
+      "stage": "finish-reason",
+      "request": 9,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 114402,
+      "stage": "sse-done",
+      "request": 9
+    },
+    {
+      "atMs": 114404,
+      "stage": "request-abort",
+      "request": 9
+    },
+    {
+      "atMs": 114409,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 114675,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 266
+    },
+    {
+      "atMs": 114677,
+      "stage": "request",
+      "request": 10,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 21,
+      "requestBytes": 46269,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 115307,
+      "stage": "headers",
+      "request": 10,
+      "status": 200
+    },
+    {
+      "atMs": 121243,
+      "stage": "finish-reason",
+      "request": 10,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 121248,
+      "stage": "sse-done",
+      "request": 10
+    },
+    {
+      "atMs": 121249,
+      "stage": "request-abort",
+      "request": 10
+    },
+    {
+      "atMs": 121250,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 121295,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 45
+    },
+    {
+      "atMs": 121297,
+      "stage": "request",
+      "request": 11,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 23,
+      "requestBytes": 47767,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 122235,
+      "stage": "headers",
+      "request": 11,
+      "status": 200
+    },
+    {
+      "atMs": 123212,
+      "stage": "finish-reason",
+      "request": 11,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 123223,
+      "stage": "sse-done",
+      "request": 11
+    },
+    {
+      "atMs": 123225,
+      "stage": "request-abort",
+      "request": 11
+    },
+    {
+      "atMs": 123229,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 123303,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 74
+    },
+    {
+      "atMs": 123305,
+      "stage": "request",
+      "request": 12,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 25,
+      "requestBytes": 48582,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 123789,
+      "stage": "headers",
+      "request": 12,
+      "status": 200
+    },
+    {
+      "atMs": 136564,
+      "stage": "finish-reason",
+      "request": 12,
+      "reason": "stop"
+    },
+    {
+      "atMs": 136565,
+      "stage": "sse-done",
+      "request": 12
+    },
+    {
+      "atMs": 136566,
+      "stage": "request-abort",
+      "request": 12
+    },
+    {
+      "atMs": 136567,
+      "stage": "executor-end",
+      "role": "CODER",
+      "kind": "done"
+    },
+    {
+      "atMs": 136588,
+      "stage": "executor-start",
+      "role": "TESTER"
+    },
+    {
+      "atMs": 136590,
+      "stage": "request",
+      "request": 13,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 2,
+      "requestBytes": 7112,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 137189,
+      "stage": "headers",
+      "request": 13,
+      "status": 200
+    },
+    {
+      "atMs": 144290,
+      "stage": "finish-reason",
+      "request": 13,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 144300,
+      "stage": "sse-done",
+      "request": 13
+    },
+    {
+      "atMs": 144302,
+      "stage": "request-abort",
+      "request": 13
+    },
+    {
+      "atMs": 144306,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 144332,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 26
+    },
+    {
+      "atMs": 144340,
+      "stage": "request",
+      "request": 14,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 5,
+      "requestBytes": 12758,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 144855,
+      "stage": "headers",
+      "request": 14,
+      "status": 200
+    },
+    {
+      "atMs": 145764,
+      "stage": "finish-reason",
+      "request": 14,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 145767,
+      "stage": "sse-done",
+      "request": 14
+    },
+    {
+      "atMs": 145767,
+      "stage": "request-abort",
+      "request": 14
+    },
+    {
+      "atMs": 145772,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 145871,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 99
+    },
+    {
+      "atMs": 145872,
+      "stage": "request",
+      "request": 15,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 8,
+      "requestBytes": 19545,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 146554,
+      "stage": "headers",
+      "request": 15,
+      "status": 200
+    },
+    {
+      "atMs": 149537,
+      "stage": "finish-reason",
+      "request": 15,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 149539,
+      "stage": "sse-done",
+      "request": 15
+    },
+    {
+      "atMs": 149540,
+      "stage": "request-abort",
+      "request": 15
+    },
+    {
+      "atMs": 149544,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 150029,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 485
+    },
+    {
+      "atMs": 150030,
+      "stage": "request",
+      "request": 16,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 10,
+      "requestBytes": 21792,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 150711,
+      "stage": "headers",
+      "request": 16,
+      "status": 200
+    },
+    {
+      "atMs": 188639,
+      "stage": "finish-reason",
+      "request": 16,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 188641,
+      "stage": "sse-done",
+      "request": 16
+    },
+    {
+      "atMs": 188643,
+      "stage": "request-abort",
+      "request": 16
+    },
+    {
+      "atMs": 188669,
+      "stage": "request",
+      "request": 17,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 12,
+      "requestBytes": 35469,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 189517,
+      "stage": "headers",
+      "request": 17,
+      "status": 200
+    },
+    {
+      "atMs": 190027,
+      "stage": "finish-reason",
+      "request": 17,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 190034,
+      "stage": "sse-done",
+      "request": 17
+    },
+    {
+      "atMs": 190036,
+      "stage": "request-abort",
+      "request": 17
+    },
+    {
+      "atMs": 190038,
+      "stage": "sandbox-start",
+      "operation": "run"
+    },
+    {
+      "atMs": 190642,
+      "stage": "sandbox-end",
+      "operation": "run",
+      "elapsedMs": 604
+    },
+    {
+      "atMs": 190645,
+      "stage": "request",
+      "request": 18,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 14,
+      "requestBytes": 37368,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 191765,
+      "stage": "headers",
+      "request": 18,
+      "status": 200
+    },
+    {
+      "atMs": 193999,
+      "stage": "finish-reason",
+      "request": 18,
+      "reason": "tool_calls"
+    },
+    {
+      "atMs": 194000,
+      "stage": "sse-done",
+      "request": 18
+    },
+    {
+      "atMs": 194002,
+      "stage": "request-abort",
+      "request": 18
+    },
+    {
+      "atMs": 194017,
+      "stage": "request",
+      "request": 19,
+      "model": "deepseek-v4-flash",
+      "tools": 3,
+      "messages": 16,
+      "requestBytes": 38355,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 194840,
+      "stage": "headers",
+      "request": 19,
+      "status": 200
+    },
+    {
+      "atMs": 201362,
+      "stage": "finish-reason",
+      "request": 19,
+      "reason": "stop"
+    },
+    {
+      "atMs": 201364,
+      "stage": "sse-done",
+      "request": 19
+    },
+    {
+      "atMs": 201366,
+      "stage": "request-abort",
+      "request": 19
+    },
+    {
+      "atMs": 201368,
+      "stage": "sandbox-start",
+      "operation": "read"
+    },
+    {
+      "atMs": 201375,
+      "stage": "sandbox-end",
+      "operation": "read",
+      "elapsedMs": 7
+    },
+    {
+      "atMs": 201375,
+      "stage": "executor-end",
+      "role": "TESTER",
+      "kind": "done"
+    },
+    {
+      "atMs": 201405,
+      "stage": "observer-end"
+    }
+  ]
+}

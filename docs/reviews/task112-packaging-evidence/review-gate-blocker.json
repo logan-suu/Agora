@@ -1,0 +1,49 @@
+{
+  "date": "2026-09-14",
+  "pr": "https://github.com/logan-suu/Agora/pull/79",
+  "publishedHead": "280f24e5295105e82072e1c7cfae33cb87dc3716",
+  "scope": "The two new review fixes are local and have not been committed or pushed.",
+  "passed": {
+    "typecheck": true,
+    "lint": true,
+    "lifecycleUnitTests": 3,
+    "packagedRealChainChecks": 16,
+    "forcedTerminationOnNormalRun": false,
+    "temporaryKeychainRemoved": true
+  },
+  "blockedGate": "G4 full regression",
+  "fullRun": {
+    "exitCode": 130,
+    "reason": "Stopped after two existing live-model tests reached their unchanged 120000 ms deadlines."
+  },
+  "isolatedRecheck": {
+    "exitCode": 1,
+    "filesFailed": 2,
+    "testsFailed": 2,
+    "durationSeconds": 120.68,
+    "tests": [
+      "packages/runtime/executor/test/g5-real-chain.test.ts",
+      "packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts"
+    ],
+    "timeoutMs": 120000
+  },
+  "readOnlyDiagnostics": {
+    "unauthenticatedModelsHttpStatus": 401,
+    "authenticatedModelsHttpStatus": 200,
+    "listedModels": [
+      "deepseek-flash",
+      "deepseek-v4-pro"
+    ]
+  },
+  "minimalGenerationDiagnostic": {
+    "endpoint": "https://api.deepseek.com/chat/completions",
+    "model": "deepseek-v4-flash",
+    "maxOutputTokens": 16,
+    "thinking": "disabled",
+    "outcome": "TimeoutError",
+    "elapsedMs": 20009
+  },
+  "officialAliasSource": "https://www.deepseek.com/en/news/deepseek-v4-1-flash/",
+  "conclusion": "Generation requests time out in this environment even without Harness or build load. The exact upstream/network cause remains inconclusive; omission of the legacy alias from the model list does not prove it is invalid.",
+  "resumeCondition": "Re-run the unchanged live tests and full pnpm test after generation requests recover. Do not skip tests, change model bindings, raise timeouts, or resolve review threads before delivery."
+}

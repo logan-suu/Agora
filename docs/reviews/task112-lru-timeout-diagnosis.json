@@ -1,0 +1,170 @@
+{
+  "date": "2026-09-14",
+  "question": "Locate the cause of the prior Go V4 Flash LRU 600-second test timeouts",
+  "conclusion": "Inconclusive for the historical failure: both observed runs passed. About 98 percent of observed time was in model requests; tools and role handoff completed. Long active generation was observed, not a stalled transport, on run2 request3. Historical failures lacked the request-level observations needed to distinguish active generation, keep-alive-only waiting, or another failure.",
+  "provider": "opencode-go",
+  "model": "deepseek-v4-flash",
+  "command": "pnpm exec vitest run --config .data/diagnostics/agora112-lru-timeout/vitest.config.mjs",
+  "unchanged": {
+    "testDeadlineMs": 600000,
+    "nativeMaxTokens": 256000,
+    "thinking": "enabled",
+    "functionalAssertions": true,
+    "realHarnessAndTools": true,
+    "sourceFilesMatchPreviousRegression": true
+  },
+  "runs": [
+    {
+      "id": "run1",
+      "passed": true,
+      "testMs": 201191,
+      "observerElapsedMs": 201405,
+      "requestCount": 19,
+      "allHttp200": true,
+      "allDone": true,
+      "modelTotalMs": 197946,
+      "longestRequestMs": 55961,
+      "headersMaxMs": 3699,
+      "comments": 0,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "sandboxRunCount": 11,
+      "sandboxRunTotalMs": 2737,
+      "sandboxRunMaxMs": 604,
+      "usage": {
+        "promptTokens": 150523,
+        "completionTokens": 15564
+      },
+      "sessionHeaderObservation": "not collected"
+    },
+    {
+      "id": "run2",
+      "passed": true,
+      "testMs": 191657,
+      "observerElapsedMs": 191933,
+      "requestCount": 14,
+      "allHttp200": true,
+      "allDone": true,
+      "modelTotalMs": 188142,
+      "longestRequestMs": 117867,
+      "headersMaxMs": 3893,
+      "comments": 0,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "sandboxRunCount": 9,
+      "sandboxRunTotalMs": 3039,
+      "sandboxRunMaxMs": 677,
+      "usage": {
+        "promptTokens": 97872,
+        "completionTokens": 14020
+      },
+      "sessionHeaderObservation": {
+        "presentOnAllRequests": true,
+        "uniqueSessionHashes": 2,
+        "responseModels": [
+          "deepseek-v4-flash"
+        ]
+      }
+    }
+  ],
+  "run2LongestRequest": {
+    "request": 3,
+    "totalMs": 117867,
+    "headersMs": 1522,
+    "firstReasoningToFirstToolMs": 91463,
+    "reasoningChars": 23200,
+    "toolArgumentChars": 10165,
+    "comments": 0,
+    "completedWithDone": true
+  },
+  "failedSerialWorkspace": {
+    "created": "2026-09-14T20:09:54.363Z",
+    "gitHead": "a7c4e90459be754303d688e751ae3988ebe29b36",
+    "indexLockPresent": false,
+    "nonGitFiles": 0
+  },
+  "sourceFiles": [
+    {
+      "file": "tests/helpers/live-model.ts",
+      "sha256": "e22c73bc45e87227021ef95cb90368f80a9831545919e18a58162cd1a357a84c"
+    },
+    {
+      "file": "tests/helpers/live-model.test.ts",
+      "sha256": "32a3519e13c6dd2237b23f8c177389b0d83fdc2b73ac8c81ca3410dfea001058"
+    },
+    {
+      "file": "tests/evals/phase10/final/go-tool-stream.ts",
+      "sha256": "2b2c1c0ff57fe3ab60d2bc7b7e5c1dfdedbce2d4e8e23ab8456863b423b1a85a"
+    },
+    {
+      "file": "tests/evals/phase10/final/opencode-go.ts",
+      "sha256": "457c130cdf198a27fef3ac34edcc05e48824b8bf78ac49fecfac4eff324496f9"
+    },
+    {
+      "file": "packages/runtime/executor/src/compatible-model.ts",
+      "sha256": "3831293694abebd72b81054b280755a844da96a132b898bb5a59842ab0a64612"
+    },
+    {
+      "file": "packages/runtime/executor/test/g5-real-chain.test.ts",
+      "sha256": "b1cdb2e943bd7f15dd1d3f54fb75c34d7faf0300327240f86ce2afa5961a5339"
+    },
+    {
+      "file": "packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts",
+      "sha256": "85608fd856c76036d3c61dee112e07215dabe1495c8be72a70bf56982f19c8f1"
+    },
+    {
+      "file": "packages/core/__tests__/e2e/lru-cache.test.ts",
+      "sha256": "48c7d40be43d22bc5a99c2cff228e913b1de2e65361e77eb47002d8f9e87d4f4"
+    },
+    {
+      "file": "tests/integration/phase10/phase10-benchmark.test.ts",
+      "sha256": "4699b3faa34b9159be7f5a2c0be58ec39a090ce028d860c11e8832a24c4dea19"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/README.md",
+      "sha256": "985639a5f5a2989eecf5173ff5aeb29ec80c111a356a64301cd52bbd6d75f2fa"
+    },
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/observer-v1.setup.ts",
+      "sha256": "ace160d8b8ad8397d4d69f9d820ba2b213fa4f64bcd085db5cf3327e69a59493"
+    },
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/observer-v2.setup.ts",
+      "sha256": "2326773505dbad3d966e0f6d0abd4792d3455748c143f069cd8b2f13db9b27c8"
+    },
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/run1-vitest.log",
+      "sha256": "ed6dd2040096a55de9c87b986dbbcacbec5d375b68ae26f1976e6f722d2cf2cc"
+    },
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/run1.json",
+      "sha256": "1ea8a81a3e8a309729fb1695faee6354b6cfcb69a098e27db3d0e3399867838d"
+    },
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/run2-vitest.log",
+      "sha256": "ebb4f65972ac3a89e142daffe776bf27af9cec17a871b29996d299e91723c06e"
+    },
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/run2.json",
+      "sha256": "5c2da064e68d923b169b120f0d52d7620697bb012bf6a1fef7b089090ebd69a3"
+    },
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/vitest.config.mjs",
+      "sha256": "6ad067be71b8074e9580e7bf08942a2f5e03a48af4514cfbfc37ba97e0653004"
+    },
+    {
+      "file": "docs/reviews/task112-lru-timeout-evidence/.gitattributes",
+      "sha256": "8588c9ddd2aa06f68f0982b52eb750ef18d4365ed892e9a5c7077bdb944f51e8"
+    }
+  ],
+  "sdkSources": [
+    {
+      "file": "node_modules/@deepseek-ai/dsh-llm-deepseek/lib/index.js",
+      "sha256": "eed9492246cc6451f060de211768d3128388046478deae7f1959de7cde56ea82"
+    }
+  ],
+  "externalSource": "https://opencode.ai/docs/go/#known-problematic-clients",
+  "next": "Retain the diagnostic for the next authorized run; do not mark the old G4 failures passed or change limits without evidence. No more requests or full-suite reruns were started in this investigation."
+}

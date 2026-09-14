@@ -110,7 +110,8 @@ export function installCompatibleModel(ctx: Context, options: CompatibleModelOpt
   assertCompatibleModelURL(options.baseURL);
   installTransportPolicy();
   const isGo = new URL(options.baseURL).hostname === 'opencode.ai';
-  const goDeepSeek = isGo && ['deepseek-v4-flash', 'deepseek-v4-pro'].includes(options.model);
+  const goDeepSeek =
+    isGo && ['deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-v4.1-flash'].includes(options.model);
   const provider = `agora-model-${options.id}`;
   const credentials = ctx.plugin(ConnectionCredentials, options);
   const plugin = ctx.plugin(PiAi, {

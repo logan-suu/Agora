@@ -82,8 +82,8 @@ it('serializes Go model and compaction requests with the native stable session h
   for (const [model, purpose] of [
     ['deepseek-v4-flash', undefined],
     ['deepseek-v4-flash', 'compaction'],
-    ['deepseek-flash', undefined],
-    ['deepseek-flash', 'compaction'],
+    ['deepseek-v4.1-flash', undefined],
+    ['deepseek-v4.1-flash', 'compaction'],
   ]) {
     const options = {
       model,
@@ -121,8 +121,8 @@ it('serializes Go model and compaction requests with the native stable session h
   expect(requests.map((r) => r.body.model)).toEqual([
     'deepseek-v4-flash',
     'deepseek-v4-flash',
-    'deepseek-flash',
-    'deepseek-flash',
+    'deepseek-v4.1-flash',
+    'deepseek-v4.1-flash',
   ]);
   for (const index of [1, 3])
     expect(requests[index]?.headers.get('x-deepseek-harness-compact')).toBe('1');
@@ -137,8 +137,8 @@ it('keeps official cost accounting separate and rejects missing sessions before 
   const usage = { inputTokens: 1_000_000, outputTokens: 1_000_000, cacheReadTokens: 1_000_000 };
   expect(costOf('deepseek-v4-flash', usage, true, OFFICIAL_CONFIG)).toBeCloseTo(1.774);
   expect(costOf('deepseek-v4-flash', usage, true)).toBeCloseTo(1.506);
-  expect(costOf('deepseek-flash', usage, true)).toBeCloseTo(1.506);
-  expect(costOf('deepseek-flash', usage, false)).toBeCloseTo(0.753);
+  expect(costOf('deepseek-v4.1-flash', usage, true)).toBeCloseTo(1.506);
+  expect(costOf('deepseek-v4.1-flash', usage, false)).toBeCloseTo(0.753);
   expect(costOf('deepseek-v4-pro', usage, true)).toBeUndefined();
   expect(costOf('deepseek-v4-pro', usage, true, OFFICIAL_CONFIG)).toBeCloseTo(5.324);
   expect(CONFIG.modelRequestsEnabled).toBe(false);

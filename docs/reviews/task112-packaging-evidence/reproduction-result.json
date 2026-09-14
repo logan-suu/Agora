@@ -1,7 +1,110 @@
 {
   "sourceCommit": "58ef611e91ed27e7d05aebbcd9024190f50d99f3",
-  "evidenceFilesVerified": 16,
-  "resourceFiles": 36865,
+  "evidenceFilesVerified": 24,
+  "evidenceVerification": {
+    "phase": "Before building the app",
+    "manifestSha256": "8caeef6a2c727f1e263b884d3cad8ee1d43260e191d990995f624d11c2b6edfe",
+    "files": [
+      {
+        "file": "result.json",
+        "sha256": "7fb7f1a09d7738c790b08875687879ffd7648fcc22b6cfe66f6635af0a298816"
+      },
+      {
+        "file": "stage.json",
+        "sha256": "2f8691b38e84f9f5a61d4aad753d3b7397c7f50113866f3a3f14f8c322079dc9"
+      },
+      {
+        "file": "downloads.json",
+        "sha256": "aa0c8e3803c88f67ce9973d730c1f12c31e1aa80c338a8d0ef11f3b6e9801df3"
+      },
+      {
+        "file": "path-audit.json",
+        "sha256": "809253be98f85558626d64d188c28c359ccc1a050a64d542d93741939294a579"
+      },
+      {
+        "file": "dependency-closure.json",
+        "sha256": "2dccd56d146d49ab067c20a2cea0a5506d6140f0401bcbbe0ea037c1cb501fa6"
+      },
+      {
+        "file": "attempt1.json",
+        "sha256": "aee27c6548e6de24dfe18697baa8862862c771f46c7abd5fb47bef4accbe82a6"
+      },
+      {
+        "file": "attempt2.json",
+        "sha256": "549425b94a777bce5976bf8297ac85be0cae5ba1e3a079de4a612b8d24460d65"
+      },
+      {
+        "file": "window.png",
+        "sha256": "52965119dfa783c960059522ac842ff76be3d5e6f14a675cd7933861876780de"
+      },
+      {
+        "sha256": "b35147ef2c6e659c56b4f2ec49567f5e4e2112fe213e9d9c75fd498c26a866ed",
+        "file": "reproduction/prepare.cjs"
+      },
+      {
+        "sha256": "f52f986c9dfaf31400f64e71e8e34e347fc15416aad1d81bcba64da030b67579",
+        "file": "reproduction/close-dependencies.cjs"
+      },
+      {
+        "sha256": "a09825112e3443ef70a84df2bd92ebfd545f3fc6080f71ca11d0d5a465e7536e",
+        "file": "reproduction/historical/main.cjs"
+      },
+      {
+        "sha256": "c04fd17f7528c52591d72c3ac4d20b111189b00e70024303eea2f603589b7448",
+        "file": "reproduction/historical/desktop-spike.mjs"
+      },
+      {
+        "sha256": "f82e8a9412d7a363e555b389b2610a0126c89a286a3a40977f6033158d0e1aad",
+        "file": "reproduction/build.log"
+      },
+      {
+        "sha256": "100381e4c439e9be9d0fe224d0a7211e3ba7735cc345408daa77e870371a6d50",
+        "file": "reproduction/attempt3-sample.txt"
+      },
+      {
+        "file": "environment.json",
+        "sha256": "93baef5d553ac778781e340b64a78017e8bc5c6745ab3c4f9c2dda2f3ff3803f"
+      },
+      {
+        "file": "delivery-result.json",
+        "sha256": "0df1a9d8106e06ab389d416897bb2417752c599ab3dbb31b518a0851e2af1c1b"
+      },
+      {
+        "file": "reproduction/reproduce.mjs",
+        "sha256": "a69775226534e27fcc8407e42ff89d14ff60d77b0d7b6b50e062252936eeede1"
+      },
+      {
+        "file": "reproduction/README.md",
+        "sha256": "7d6944b570eb7776525f1ed9e348075879f537764eb590e8b6adfc0b45272dc2"
+      },
+      {
+        "file": "historical-reproduction-result.json",
+        "sha256": "19277030bd9e8381e1e8f00d2cb12205b5d942b13cf0fea664b09d7304cf9fb1"
+      },
+      {
+        "file": "reproduction/main.cjs",
+        "sha256": "a92571489e02550204edd254ee9a4ca1774c62e6273f64d76d6beed65bf23ffe"
+      },
+      {
+        "file": "reproduction/desktop-spike.mjs",
+        "sha256": "fb14bc6312e11fbc896fd33e1cba1f14751804bb9a569594510f4836bc376dc6"
+      },
+      {
+        "file": "reproduction/stop-child.cjs",
+        "sha256": "9ded8fca25499d6a765a2b58971233fb1b4c9e66bb5f22e69cdf356aa16110b7"
+      },
+      {
+        "file": "reproduction/test/startup-stop.test.cjs",
+        "sha256": "efe1ae90ef8d042c62fae024eee5c2ca1416118820195106d13dea355dff5526"
+      },
+      {
+        "file": "historical-reproduction-scope.json",
+        "sha256": "8e4c4b741e5669e28a196d714c54c71e47b9a431e681741c2bc177e65525e47e"
+      }
+    ],
+    "scope": "All entries in the input manifest snapshot were verified. This generated result is a later output, not one of its own verified inputs; subsequent manifest additions do not change this count."
+  },
+  "resourceFiles": 36866,
   "externalLinks": 0,
   "forbidden": 0,
   "adHocBundleVerification": "passed",
@@ -37,7 +140,7 @@
     "git": "git version 2.53.0",
     "backend": {
       "type": "ready",
-      "port": 52185,
+      "port": 52628,
       "node": "v24.20.0",
       "credentials": "ready"
     },
@@ -53,6 +156,7 @@
       "text": "Agora\n#main\nIdle\nCHANNELS\n#\nmain\nTEAM\nSet model for all Agents\nL\nLeader (You)\nOnline\nC\nCoordinator\nOnline\nModel\nP\nPM\nAway\nModel\nA\nArchitect\nOnline\nModel\nCO\nCoder\nOnline\nModel\nT\nTester\nOnline\nModel\nR\nR"
     },
     "status": "passed",
+    "forcedTermination": false,
     "keychainRemoved": true
   }
 }

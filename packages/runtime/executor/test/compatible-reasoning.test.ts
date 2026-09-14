@@ -38,6 +38,7 @@ it('replays empty and nonempty DeepSeek reasoning through tool steps and later t
   const cases = [
     { baseURL: 'https://opencode.ai/zen/go/v1', model: 'deepseek-v4-flash', required: true },
     { baseURL: 'https://opencode.ai/zen/go/v1', model: 'deepseek-v4-pro', required: true },
+    { baseURL: 'https://opencode.ai/zen/go/v1', model: 'deepseek-v4.1-flash', required: true },
     { baseURL: 'https://other.example/v1', model: 'deepseek-v4-flash', required: false },
     { baseURL: 'https://opencode.ai/zen/go/v1', model: 'other-model', required: false },
   ];
@@ -99,7 +100,7 @@ it('replays empty and nonempty DeepSeek reasoning through tool steps and later t
         ),
       ).toBe(false);
     }
-    expect(toolExecutions).toBe(8);
+    expect(toolExecutions).toBe(10);
   } finally {
     globalThis.fetch = original;
   }

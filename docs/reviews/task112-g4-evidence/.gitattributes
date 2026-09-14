@@ -1,0 +1,2 @@
+# Preserve the exact captured compiler log and its recorded SHA-256.
+typecheck.log -text whitespace=-blank-at-eof

@@ -1,0 +1,156 @@
+{
+  "date": "2026-09-14",
+  "scope": "Leader-selected live regression route and local PR #79 repair validation; this record does not assert delivery or merge",
+  "provider": "opencode-go",
+  "model": "deepseek-v4-flash",
+  "route": "Go credentials only; missing or invalid credentials and failed requests fail explicitly; no official or V4.1 fallback",
+  "preserved": [
+    "Existing functional assertions",
+    "120000/600000 ms live-test deadlines",
+    "Native thinking and 256000 maxTokens default",
+    "Real Harness and LocalTempSandbox tools",
+    "Official credentials and frozen benchmark records"
+  ],
+  "repairs": [
+    "Reuse existing Go tool-stream normalization on native stream and prepareCall entry points; the regression failed before the repair and passed after it",
+    "Correct stale scripted mixed-role benchmark expectations to the current V4.1 identifier; this does not invoke V4.1 online"
+  ],
+  "targeted": {
+    "offlineIdentityTestsPassed": 4,
+    "benchmarkIntegrationTestsPassed": 12,
+    "benchmarkDurationSeconds": 57.7,
+    "liveLruPassedMs": 186742,
+    "liveSummaryIsolatedPassedMs": 10147,
+    "typecheckPassed": true,
+    "lintPassed": true,
+    "desktopLifecycleTestsPassed": 3,
+    "desktopReconstructionChecksPassed": 16,
+    "desktopManifestEntriesVerified": 27
+  },
+  "defaultParallelFullSuite": {
+    "command": "pnpm test",
+    "exitCode": 1,
+    "trackingTestsPassed": 7,
+    "filesPassed": 169,
+    "filesFailed": 2,
+    "testsPassed": 1282,
+    "testsFailed": 2,
+    "testsSkipped": 0,
+    "durationSeconds": 601,
+    "failures": [
+      {
+        "test": "channel-summary-g5-real-chain",
+        "kind": "test-timeout",
+        "elapsedMs": 120020
+      },
+      {
+        "test": "lru-cache",
+        "kind": "test-timeout",
+        "elapsedMs": 600017
+      }
+    ],
+    "liveSingleTurnPassedMs": 7679
+  },
+  "serialFullSuite": {
+    "command": "pnpm run test --no-file-parallelism",
+    "scope": "All files and assertions retained; parallel-worker behavior inside individual tests remains enabled",
+    "trackingTestsPassed": 7,
+    "liveLruTimeoutMs": 600017,
+    "exitCode": 1,
+    "filesPassed": 170,
+    "filesFailed": 1,
+    "testsPassed": 1283,
+    "testsFailed": 1,
+    "testsSkipped": 0,
+    "durationSeconds": 1004.77,
+    "liveSummaryPassedMs": 4471,
+    "liveSingleTurnPassedMs": 21903,
+    "summaries": [
+      "Test Files  1 failed | 170 passed (171)",
+      "Tests  1 failed | 1283 passed (1284)",
+      "Duration  1004.77s (transform 1.14s, setup 0ms, collect 19.59s, tests 968.02s, environment 11ms, prepare 4.18s)"
+    ],
+    "failureLines": [
+      "→ Test timed out in 600000ms.",
+      "Error: Test timed out in 600000ms."
+    ]
+  },
+  "conclusion": "V4 Flash can complete the real tool chain in isolated runs, but LRU also times out with test-file concurrency disabled. File-level concurrency alone cannot explain all observed timeouts. Serial results do not rewrite earlier failures. Provider-side scheduling, queueing, and capacity are not established without service-side evidence.",
+  "usage": "Complete aggregate usage was not obtained; unknown, not zero. Formal paid benchmarks were not enabled.",
+  "sourceFiles": [
+    {
+      "file": "tests/helpers/live-model.ts",
+      "sha256": "e22c73bc45e87227021ef95cb90368f80a9831545919e18a58162cd1a357a84c"
+    },
+    {
+      "file": "tests/helpers/live-model.test.ts",
+      "sha256": "32a3519e13c6dd2237b23f8c177389b0d83fdc2b73ac8c81ca3410dfea001058"
+    },
+    {
+      "file": "tests/evals/phase10/final/go-tool-stream.ts",
+      "sha256": "2b2c1c0ff57fe3ab60d2bc7b7e5c1dfdedbce2d4e8e23ab8456863b423b1a85a"
+    },
+    {
+      "file": "tests/evals/phase10/final/opencode-go.ts",
+      "sha256": "457c130cdf198a27fef3ac34edcc05e48824b8bf78ac49fecfac4eff324496f9"
+    },
+    {
+      "file": "packages/runtime/executor/src/compatible-model.ts",
+      "sha256": "3831293694abebd72b81054b280755a844da96a132b898bb5a59842ab0a64612"
+    },
+    {
+      "file": "packages/runtime/executor/test/g5-real-chain.test.ts",
+      "sha256": "b1cdb2e943bd7f15dd1d3f54fb75c34d7faf0300327240f86ce2afa5961a5339"
+    },
+    {
+      "file": "packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts",
+      "sha256": "85608fd856c76036d3c61dee112e07215dabe1495c8be72a70bf56982f19c8f1"
+    },
+    {
+      "file": "packages/core/__tests__/e2e/lru-cache.test.ts",
+      "sha256": "48c7d40be43d22bc5a99c2cff228e913b1de2e65361e77eb47002d8f9e87d4f4"
+    },
+    {
+      "file": "tests/integration/phase10/phase10-benchmark.test.ts",
+      "sha256": "4699b3faa34b9159be7f5a2c0be58ec39a090ce028d860c11e8832a24c4dea19"
+    }
+  ],
+  "localLogs": [
+    {
+      "file": "/private/tmp/agora112-go-identity-red.log",
+      "sha256": "41c981d3f11b179621ccc11fb04dbac8a152fe409a91cc40274c6eb39d88c37f"
+    },
+    {
+      "file": "/private/tmp/agora112-go-identity-green.log",
+      "sha256": "faabd1947709e4c46578e7f7e17aa53ae4304910b62d9de023787a86bd2453b9"
+    },
+    {
+      "file": "/private/tmp/agora112-v4-lru-recheck.log",
+      "sha256": "c827f7ee2de960c9459aa35aeb52f6e34f630a9c2cc73290b19b2f0c0c1cdcc8"
+    },
+    {
+      "file": "/private/tmp/agora112-benchmark-model-name-recheck.log",
+      "sha256": "987dc27a62eefe4d66d36efd7f049ac851d0266de29ecb4148125347f99b1dc9"
+    },
+    {
+      "file": "/private/tmp/agora112-v4-final-typecheck.log",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+    },
+    {
+      "file": "/private/tmp/agora112-v4-final-lint.log",
+      "sha256": "28cfaff203b8791a3376ecb2399ded8c8c2a21bf560ff721948f705c2141532d"
+    },
+    {
+      "file": "/private/tmp/agora112-v4-full-final.log",
+      "sha256": "38547fa399bd76815f6de68f3b032a145d1de0b434dbb9575fe7901e79ea7e0d"
+    },
+    {
+      "file": "/private/tmp/agora112-v4-summary-isolated-final.log",
+      "sha256": "057dc39086782697b565fdfd7124a3083148caf5cdcf1b193cbd1fd04bb88836"
+    },
+    {
+      "file": "/private/tmp/agora112-v4-full-serial.log",
+      "sha256": "9f5bf2841969d440a1650c402227bc1aae3cc20886c61c3cef6028cfda47da3d"
+    }
+  ]
+}

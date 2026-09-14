@@ -20,7 +20,7 @@ import { normalizeGoToolStream } from './go-tool-stream';
 import { CONFIG } from './model-profile';
 import { resolveOpenCodeGoApiKey } from './opencode-go';
 
-export const MODELS = ['deepseek-v4-flash', 'deepseek-flash'] as const;
+export const MODELS = ['deepseek-v4-flash', 'deepseek-v4.1-flash'] as const;
 type Model = (typeof MODELS)[number];
 
 export { CONFIG } from './model-profile';

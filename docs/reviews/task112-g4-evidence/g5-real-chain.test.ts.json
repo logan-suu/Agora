@@ -1,0 +1,104 @@
+{
+  "stage": "finished",
+  "elapsedMs": 14421,
+  "requests": [
+    {
+      "id": 1,
+      "startMs": 63,
+      "model": "deepseek-v4-flash",
+      "maxTokens": 256000,
+      "thinking": "enabled",
+      "messages": 2,
+      "tools": 0,
+      "requestBytes": 3834,
+      "nativeSessionHeaderPresent": true,
+      "sessionHash": "6edd3dd24f048034bb5ca7cf12a2f8e3fdc8a2fd11c223f26c0252b11093f442",
+      "userAgentPresent": true,
+      "responseModels": [
+        "deepseek-v4-flash"
+      ],
+      "comments": 0,
+      "dataFrames": 408,
+      "reasoningChars": 6242,
+      "textChars": 326,
+      "toolArgumentChars": 0,
+      "toolDeltas": 0,
+      "emptyToolIds": 0,
+      "wireBytes": 142527,
+      "parseErrors": 0,
+      "oversizedLines": 0,
+      "done": true,
+      "finishReasons": [
+        "stop"
+      ],
+      "headersMs": 778,
+      "status": 200,
+      "lastBytesMs": 14411,
+      "firstDataMs": 780,
+      "lastDataMs": 14408,
+      "usage": {
+        "prompt_tokens": 794,
+        "completion_tokens": 1303,
+        "total_tokens": 2097
+      },
+      "firstReasoningMs": 781,
+      "firstTextMs": 14218,
+      "finishMs": 14406,
+      "doneMs": 14411,
+      "abortMs": 14417
+    }
+  ],
+  "events": [
+    {
+      "atMs": 0,
+      "stage": "observer-start"
+    },
+    {
+      "atMs": 45,
+      "stage": "executor-start",
+      "role": "CODER"
+    },
+    {
+      "atMs": 63,
+      "stage": "request",
+      "request": 1,
+      "model": "deepseek-v4-flash",
+      "tools": 0,
+      "messages": 2,
+      "requestBytes": 3834,
+      "maxTokens": 256000
+    },
+    {
+      "atMs": 778,
+      "stage": "headers",
+      "request": 1,
+      "status": 200
+    },
+    {
+      "atMs": 14406,
+      "stage": "finish-reason",
+      "request": 1,
+      "reason": "stop"
+    },
+    {
+      "atMs": 14411,
+      "stage": "sse-done",
+      "request": 1
+    },
+    {
+      "atMs": 14417,
+      "stage": "request-abort",
+      "request": 1
+    },
+    {
+      "atMs": 14418,
+      "stage": "executor-end",
+      "role": "CODER",
+      "kind": "done"
+    },
+    {
+      "atMs": 14421,
+      "stage": "observer-end"
+    }
+  ]
+}

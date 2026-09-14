@@ -49,11 +49,11 @@
     },
     {
       "sha256": "a09825112e3443ef70a84df2bd92ebfd545f3fc6080f71ca11d0d5a465e7536e",
-      "file": "reproduction/main.cjs"
+      "file": "reproduction/historical/main.cjs"
     },
     {
       "sha256": "c04fd17f7528c52591d72c3ac4d20b111189b00e70024303eea2f603589b7448",
-      "file": "reproduction/desktop-spike.mjs"
+      "file": "reproduction/historical/desktop-spike.mjs"
     },
     {
       "sha256": "f82e8a9412d7a363e555b389b2610a0126c89a286a3a40977f6033158d0e1aad",
@@ -73,15 +73,47 @@
     },
     {
       "file": "reproduction/reproduce.mjs",
-      "sha256": "c00b3a1caa79a0750369ab792ed05d66021fbc3df35a693bb7b43c647dc3a160"
+      "sha256": "a69775226534e27fcc8407e42ff89d14ff60d77b0d7b6b50e062252936eeede1"
     },
     {
       "file": "reproduction/README.md",
-      "sha256": "33aeed4574afb40633a8fc0376d0daa709952aed3899792ff3bc2d508e9167f0"
+      "sha256": "7d6944b570eb7776525f1ed9e348075879f537764eb590e8b6adfc0b45272dc2"
+    },
+    {
+      "file": "historical-reproduction-result.json",
+      "sha256": "19277030bd9e8381e1e8f00d2cb12205b5d942b13cf0fea664b09d7304cf9fb1"
+    },
+    {
+      "file": "reproduction/main.cjs",
+      "sha256": "a92571489e02550204edd254ee9a4ca1774c62e6273f64d76d6beed65bf23ffe"
+    },
+    {
+      "file": "reproduction/desktop-spike.mjs",
+      "sha256": "fb14bc6312e11fbc896fd33e1cba1f14751804bb9a569594510f4836bc376dc6"
+    },
+    {
+      "file": "reproduction/stop-child.cjs",
+      "sha256": "9ded8fca25499d6a765a2b58971233fb1b4c9e66bb5f22e69cdf356aa16110b7"
+    },
+    {
+      "file": "reproduction/test/startup-stop.test.cjs",
+      "sha256": "efe1ae90ef8d042c62fae024eee5c2ca1416118820195106d13dea355dff5526"
+    },
+    {
+      "file": "historical-reproduction-scope.json",
+      "sha256": "8e4c4b741e5669e28a196d714c54c71e47b9a431e681741c2bc177e65525e47e"
+    },
+    {
+      "file": "reproduction-input-manifest.json",
+      "sha256": "8caeef6a2c727f1e263b884d3cad8ee1d43260e191d990995f624d11c2b6edfe"
     },
     {
       "file": "reproduction-result.json",
-      "sha256": "19277030bd9e8381e1e8f00d2cb12205b5d942b13cf0fea664b09d7304cf9fb1"
+      "sha256": "c74c584903371cb0d9e6069b9bd9bc870907dd0a41426a5e60bdf3f7326d2629"
+    },
+    {
+      "file": "review-gate-blocker.json",
+      "sha256": "de257a3a1c0185448a69044ebdbe7f74fa0b274c28c9fea2df1204669bcd2b11"
     }
   ]
 }

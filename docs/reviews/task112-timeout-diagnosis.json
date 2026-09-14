@@ -1,0 +1,178 @@
+{
+  "date": "2026-09-14",
+  "request": "Investigate the Go live regression timeouts",
+  "status": "failure localized to V4.1 service response; internal provider cause unconfirmed",
+  "experiments": {
+    "bareFetchV41": {
+      "model": "deepseek-v4.1-flash",
+      "client": "bare Node fetch (no Harness or application)",
+      "maxTokens": 64,
+      "thinking": "enabled",
+      "events": [
+        {
+          "stage": "headers",
+          "elapsedMs": 1109,
+          "status": 200,
+          "contentType": "text/event-stream"
+        },
+        {
+          "stage": "first-comment",
+          "elapsedMs": 13100,
+          "keepAlive": true
+        },
+        {
+          "stage": "error",
+          "elapsedMs": 65005,
+          "name": "AbortError",
+          "meaning": "65 seconds without model content"
+        }
+      ],
+      "counts": {
+        "comments": 5,
+        "data": 0,
+        "content": 0,
+        "reasoning": 0,
+        "tools": 0,
+        "malformed": 0,
+        "done": 0
+      },
+      "usage": null,
+      "elapsedMs": 65005
+    },
+    "bareFetchV4": {
+      "model": "deepseek-v4-flash",
+      "client": "bare Node fetch (no Harness or application)",
+      "maxTokens": 64,
+      "thinking": "enabled",
+      "events": [
+        {
+          "stage": "headers",
+          "elapsedMs": 1086,
+          "status": 200,
+          "contentType": "text/event-stream"
+        },
+        {
+          "stage": "first-reasoning",
+          "elapsedMs": 1089
+        },
+        {
+          "stage": "first-content",
+          "elapsedMs": 1403
+        },
+        {
+          "stage": "finish",
+          "elapsedMs": 1405,
+          "reason": "stop"
+        },
+        {
+          "stage": "done",
+          "elapsedMs": 1407
+        },
+        {
+          "stage": "stream-closed",
+          "elapsedMs": 1454
+        }
+      ],
+      "counts": {
+        "comments": 0,
+        "data": 11,
+        "content": 1,
+        "reasoning": 5,
+        "tools": 0,
+        "malformed": 0,
+        "done": 1
+      },
+      "usage": {
+        "promptTokens": 101,
+        "completionTokens": 16
+      },
+      "elapsedMs": 1454
+    },
+    "harnessV4": {
+      "passed": true,
+      "durationMs": 45430,
+      "model": "deepseek-v4-flash",
+      "baselineAssertions": [
+        "done",
+        "safe boundary reached",
+        "nonempty reply",
+        "one messages append mutation"
+      ],
+      "events": [
+        {
+          "elapsedMs": 13,
+          "data": {
+            "stage": "request",
+            "model": "deepseek-v4-flash",
+            "maxTokens": 256000,
+            "thinking": {
+              "type": "enabled"
+            },
+            "reasoningEffort": "high",
+            "tools": 0,
+            "sessionHeader": true
+          }
+        },
+        {
+          "elapsedMs": 3445,
+          "data": {
+            "stage": "headers",
+            "status": 200
+          }
+        },
+        {
+          "elapsedMs": 45424,
+          "data": {
+            "stage": "harness-complete",
+            "kind": "done",
+            "reachedSafeBoundary": true
+          }
+        }
+      ],
+      "usage": null
+    }
+  },
+  "controls": {
+    "bareFetch": {
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "prompt": "In JavaScript, what does 2+2 evaluate to? Reply with the number only.",
+      "thinking": "enabled",
+      "reasoningEffort": "high",
+      "maxTokens": 64,
+      "stream": true,
+      "includeUsage": true,
+      "client": "Agora-Diagnostics/0.1",
+      "sessionIdentity": "fresh random UUID per request; x-opencode-session",
+      "credential": "same configured Go credential, not recorded",
+      "idleDeadlineMs": 65000,
+      "idleDeadlineReset": "only on model content/reasoning/tool data, not comments; both runs completed or were cancelled before any active V4.1 token stream"
+    },
+    "harness": "Same production HarnessExecutor, Go DeepSeekAdapter, Coder projection and synthetic 2+2 State as the baseline single-turn test, with V4 Flash selected only in the separate diagnostic. Original tests and default V4.1 route remain unchanged."
+  },
+  "findings": [
+    "V4.1 returned HTTP 200 and five keep-alive comments, but no data frames, reasoning, content, finish marker, or usage within 65 seconds, even without Harness.",
+    "The same bare-fetch Go setup completed V4 Flash in 1454 ms; this is a sequential control, not a statistical latency benchmark.",
+    "The existing Harness path also completed V4 Flash with its native 256000-token output ceiling in 45430 ms and reached a safe boundary. Large ceiling or broken client parsing is not a necessary cause of the observed failure.",
+    "The actual failing tests use an outer 120000 ms Vitest deadline. The native adapter treats SSE comments as transport activity and resets its 300000 ms idle watchdog. Receiving heartbeats therefore does not mean inference has started or a test can finish."
+  ],
+  "limits": [
+    "Service-side queueing, Go routing, account-specific upstream scheduling and DeepSeek capacity cannot be distinguished without provider evidence.",
+    "HTTP 200/model-list success and overall status-page health do not establish successful inference for this route.",
+    "The current default V4.1 live tests and full G4 remain unpassed; no automatic model fallback, retry batch, timeout increase, commit, push, or review resolution occurred.",
+    "A proposed additional bare-fetch 256000-token control was rejected by automatic approval review for potential cost/resource expansion and did not execute. It became unnecessary after the already-authorized native Harness control passed.",
+    "V4.1 and Harness-control usage are unknown, not zero; only the bare-fetch V4 control returned promptTokens=101/completionTokens=16."
+  ],
+  "sources": {
+    "providerKeepAliveSemantics": "https://api-docs.deepseek.com/quick_start/rate_limit/",
+    "goModels": "https://opencode.ai/docs/go/#models",
+    "adapterPackage": "@deepseek-ai/dsh-llm-deepseek@0.1.1-rc.2",
+    "adapterSha256": "eed9492246cc6451f060de211768d3128388046478deae7f1959de7cde56ea82",
+    "adapterLocations": {
+      "parseSseCommentCallback": 886,
+      "watchdogPulse": 1405,
+      "defaultIdleTimeout": 1151
+    },
+    "watchdogPackage": "@deepseek-ai/dsh-timeout@0.1.1-rc.2",
+    "watchdogPulseLocation": 113
+  }
+}

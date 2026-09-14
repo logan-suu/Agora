@@ -1,0 +1,58 @@
+{
+  "sourceCommit": "58ef611e91ed27e7d05aebbcd9024190f50d99f3",
+  "evidenceFilesVerified": 16,
+  "resourceFiles": 36865,
+  "externalLinks": 0,
+  "forbidden": 0,
+  "adHocBundleVerification": "passed",
+  "dependencyInstall": "pnpm install --frozen-lockfile in clean git archive",
+  "transformations": [
+    "Two historical build-script base paths relocated to this new temporary directory",
+    "prepare.cjs sourceCommit fixed to the archived commit"
+  ],
+  "result": {
+    "electron": "44.3.0",
+    "electronNode": "24.20.0",
+    "packaged": true,
+    "checks": [
+      "packaged app",
+      "single instance lock",
+      "managed versions",
+      "real managed Git worktree",
+      "native helper write",
+      "native helper read",
+      "native helper rejects escape",
+      "production instrumentation and real Keychain",
+      "unauthenticated request denied",
+      "real dynamic settings API",
+      "cross origin denied",
+      "product writes unavailable in spike",
+      "existing React page rendered",
+      "renderer has no Node",
+      "backend graceful stop",
+      "Keychain key stable after service stop"
+    ],
+    "node": "v24.20.0",
+    "pnpm": "9.15.9",
+    "git": "git version 2.53.0",
+    "backend": {
+      "type": "ready",
+      "port": 52185,
+      "node": "v24.20.0",
+      "credentials": "ready"
+    },
+    "settingsKeys": [
+      "revision",
+      "credentialsAvailable",
+      "roles"
+    ],
+    "renderer": {
+      "title": "Agora",
+      "requireType": "undefined",
+      "nodeType": "undefined",
+      "text": "Agora\n#main\nIdle\nCHANNELS\n#\nmain\nTEAM\nSet model for all Agents\nL\nLeader (You)\nOnline\nC\nCoordinator\nOnline\nModel\nP\nPM\nAway\nModel\nA\nArchitect\nOnline\nModel\nCO\nCoder\nOnline\nModel\nT\nTester\nOnline\nModel\nR\nR"
+    },
+    "status": "passed",
+    "keychainRemoved": true
+  }
+}

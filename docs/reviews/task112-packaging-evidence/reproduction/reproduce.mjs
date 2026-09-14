@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const evidence = path.dirname(here);
 const repo = path.resolve(here, '../../../..');
-const manifest = JSON.parse(fs.readFileSync(path.join(evidence, 'manifest.json')));
+const manifestBytes = fs.readFileSync(path.join(evidence, 'manifest.json'));
+const manifest = JSON.parse(manifestBytes);
 for (const entry of manifest.files) {
   assert(entry.file && !entry.localFile, 'Evidence must be available in the checkout');
   const file = path.resolve(evidence, entry.file);
@@ -90,6 +91,7 @@ try {
   const bundle = path.join(base, 'Agora Spike.app');
   const resources = path.join(bundle, 'Contents/Resources');
   fs.copyFileSync(path.join(here, 'main.cjs'), path.join(resources, 'app/main.cjs'));
+  fs.copyFileSync(path.join(here, 'stop-child.cjs'), path.join(resources, 'app/stop-child.cjs'));
   fs.copyFileSync(path.join(here, 'desktop-spike.mjs'), path.join(resources, 'service/desktop-spike.mjs'));
   fs.renameSync(path.join(bundle, 'Contents/MacOS/Electron'), path.join(bundle, 'Contents/MacOS/AgoraSpike'));
   const plist = path.join(bundle, 'Contents/Info.plist');
@@ -120,6 +122,12 @@ try {
   assert.equal(result.keychainRemoved, true);
   fs.writeFileSync(path.join(base, 'reproduction-result.json'), JSON.stringify({
     sourceCommit: manifest.sourceCommit, evidenceFilesVerified: manifest.files.length,
+    evidenceVerification: {
+      phase: 'Before building the app',
+      manifestSha256: createHash('sha256').update(manifestBytes).digest('hex'),
+      files: manifest.files,
+      scope: 'All entries in the input manifest snapshot were verified. This generated result is a later output, not one of its own verified inputs; subsequent manifest additions do not change this count.',
+    },
     resourceFiles: files, externalLinks: 0, forbidden: 0, adHocBundleVerification: 'passed',
     dependencyInstall: 'pnpm install --frozen-lockfile in clean git archive',
     transformations: ['Two historical build-script base paths relocated to this new temporary directory', 'prepare.cjs sourceCommit fixed to the archived commit'],

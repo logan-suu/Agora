@@ -1,0 +1,11 @@
+✔ stop during prepare prevents late readiness and exits (95.618792ms)
+✔ stop during credentials prevents late readiness and exits (70.352ms)
+✔ the owner terminates and reaps a probe that never handles stop (103.528625ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 327.908667
