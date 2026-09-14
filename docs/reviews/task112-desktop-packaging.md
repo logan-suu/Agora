@@ -196,3 +196,8 @@ Leader指定后续真实测试优先OpenCode Go，并明确V4.1当前ID为`deeps
 当前通用真实回归固定为`opencode-go/deepseek-v4-flash`，缺Go凭据明确失败；测试断言、原生思考/容量及期限保持。首次全量运行暴露Go工具后续流片段清空身份的问题，测试adapter现复用既有`normalizeGoToolStream`处理公开stream与prepareCall两入口；离线回归先红后绿，真实LRU单独通过（186.742s），12项benchmark集成及typecheck/lint通过。更名涉及的V4.1离线fixture修复不启动V4.1实网或正式Benchmark。
 
 随后完整默认并行回归仍有频道摘要120秒及LRU600秒超时；频道摘要单独复验10.147秒通过。关闭测试文件并发后，LRU仍在600秒超时，故不能只归因于文件并发，也不承诺换模型即可解决所有停滞。供应商内部排队/调度/容量尚无服务端证据；完整结果、源文件与日志hash见[本轮V4回归记录](task112-v4-regression.json)。G4未通过，停止追加实网重试，PR修复保留本地，未提交推送或关闭评审会话。
+
+
+## 15. 全面审查后的完整 G4 通过
+
+2026-09-14在修复分支cd9e99a完整运行原测试集合及默认并发：Node7/7、Vitest171文件1284/1284，0失败/跳过；三个Go V4 Flash实网用例均通过，LRU200.198秒。typecheck/lint及3项启动关闭回归通过，27份打包manifest哈希一致。本轮没有修改源码、断言、思考/容量或期限。详细审查、逐层统计及限制见[完整G4报告](task112-g4-review.md)。历史超时仍未确定根因，不改写此前失败；11.2恢复in_progress，后续修复PR人工合并及Phase11出口仍待完成。

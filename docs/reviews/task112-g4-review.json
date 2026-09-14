@@ -1,0 +1,297 @@
+{
+  "date": "2026-09-14",
+  "sourceCommit": "cd9e99aa4be92320ea3abc5bbf768b14ae9c2060",
+  "baseCommit": "2a8b3ea4116a29f3d7707890ef859dc8d4956784",
+  "sourceTreeCleanDuringRun": true,
+  "command": "pnpm run test --config .data/diagnostics/agora112-full-g4-review/vitest.config.mjs",
+  "configuration": "Original Vitest include, setup and default file parallelism inherited unchanged; metadata observer enabled only for three live files; default and JSON reporters. No timeout, assertion, model capacity, thinking, retry, tool, or production source changes.",
+  "result": {
+    "passed": true,
+    "nodeTests": 7,
+    "vitestFiles": 171,
+    "vitestTests": 1284,
+    "failed": 0,
+    "skipped": 0,
+    "combinedTests": 1291,
+    "durationSeconds": 201.86,
+    "supplementalStartupStopTests": 3
+  },
+  "layers": {
+    "apps": {
+      "files": 25,
+      "passed": 204,
+      "failed": 0,
+      "skipped": 0
+    },
+    "packages": {
+      "files": 86,
+      "passed": 827,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests": {
+      "files": 1,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/evals (offline fixtures)": {
+      "files": 29,
+      "passed": 139,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/cross-phase": {
+      "files": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase0": {
+      "files": 1,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase1": {
+      "files": 1,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase10": {
+      "files": 7,
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase2": {
+      "files": 1,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase3": {
+      "files": 1,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase4": {
+      "files": 2,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase5": {
+      "files": 1,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase6": {
+      "files": 1,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase7": {
+      "files": 4,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase8": {
+      "files": 4,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests/integration/phase9": {
+      "files": 6,
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "live": [
+    {
+      "file": "channel-summary-g5-real-chain.test.ts",
+      "testMs": 9427.258334,
+      "requestCount": 1,
+      "allHttp200": true,
+      "allDone": true,
+      "models": [
+        "deepseek-v4-flash"
+      ],
+      "maxTokens": [
+        256000
+      ],
+      "thinking": [
+        "enabled"
+      ],
+      "nativeSessionHeadersPresent": true,
+      "modelTotalMs": 9398,
+      "longestRequestMs": 9398,
+      "comments": 0,
+      "parseErrors": 0,
+      "sandboxRuns": 0,
+      "sandboxRunTotalMs": 0,
+      "sandboxRunMaxMs": 0,
+      "usage": {
+        "promptTokens": 773,
+        "completionTokens": 614
+      }
+    },
+    {
+      "file": "g5-real-chain.test.ts",
+      "testMs": 14387.363417,
+      "requestCount": 1,
+      "allHttp200": true,
+      "allDone": true,
+      "models": [
+        "deepseek-v4-flash"
+      ],
+      "maxTokens": [
+        256000
+      ],
+      "thinking": [
+        "enabled"
+      ],
+      "nativeSessionHeadersPresent": true,
+      "modelTotalMs": 14348,
+      "longestRequestMs": 14348,
+      "comments": 0,
+      "parseErrors": 0,
+      "sandboxRuns": 0,
+      "sandboxRunTotalMs": 0,
+      "sandboxRunMaxMs": 0,
+      "usage": {
+        "promptTokens": 794,
+        "completionTokens": 1303
+      }
+    },
+    {
+      "file": "lru-cache.test.ts",
+      "testMs": 200197.55670800002,
+      "requestCount": 17,
+      "allHttp200": true,
+      "allDone": true,
+      "models": [
+        "deepseek-v4-flash"
+      ],
+      "maxTokens": [
+        256000
+      ],
+      "thinking": [
+        "enabled"
+      ],
+      "nativeSessionHeadersPresent": true,
+      "modelTotalMs": 196190,
+      "longestRequestMs": 79033,
+      "comments": 0,
+      "parseErrors": 0,
+      "sandboxRuns": 11,
+      "sandboxRunTotalMs": 3365,
+      "sandboxRunMaxMs": 609,
+      "usage": {
+        "promptTokens": 136217,
+        "completionTokens": 18073
+      }
+    }
+  ],
+  "static": {
+    "typecheck": "passed",
+    "lint": "passed"
+  },
+  "review": {
+    "newActionableFindings": 0,
+    "reviewedDiffFiles": 50,
+    "existingFindings": "PR 79 manifest-scope and startup/termination fixes verified in current branch; PR 79 contains the old implementation, so its threads remain unresolved pending follow-up delivery.",
+    "packagingManifestVerified": 27,
+    "credentialMatchesInChangedFiles": 0,
+    "configuredCredentialsChecked": 2
+  },
+  "limitations": [
+    "Historical 600-second LRU and 120-second summary timeouts did not recur; their exact cause remains inconclusive. This run establishes a passing complete G4, not proof that intermittent provider latency is eliminated.",
+    "Phase 11 product/exit suite is not implemented; this is cumulative existing Phase 0-10 coverage plus the 11.2 Spike checks, not Phase 11 release acceptance.",
+    "No formal Benchmark or V4.1/official-model requests were started.",
+    "No implementation changes were needed in this review; evidence and task tracking are updated after the verified run."
+  ],
+  "rawLocalArtifacts": [
+    {
+      "file": ".data/diagnostics/agora112-full-g4-review/results.json",
+      "sha256": "73f8357b4056ac487293fc21430d11a8b4595fc6b7a9d7fa0c49f694b8f65ff5"
+    },
+    {
+      "file": ".data/diagnostics/agora112-full-g4-review/full.log",
+      "sha256": "7cba2c6806faeaf08b133ab998b3f236cbe1db724f810bed58210c770b53ff72"
+    }
+  ],
+  "evidenceFiles": [
+    {
+      "file": "docs/reviews/task112-g4-evidence/.gitattributes",
+      "sha256": "924746346bb05eb5e74db164c701eb3808f151b53fe9c942c36c704a9ff55b62"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/README.md",
+      "sha256": "7524774e2dabed837cf480fb367118a0371ca83d0644d43b87151522de8447f8"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/channel-summary-g5-real-chain.test.ts.json",
+      "sha256": "42e41224164cbbf4484353e7ee2e013dc00ad567676b097ff78420c6a6913d59"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/full-summary.log",
+      "sha256": "ca7148543325c5647f34fb1a3814d95c7c03532422ea40ac95eedd1e24a72d22"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/g5-real-chain.test.ts.json",
+      "sha256": "3e22bf9ca7766801ec37555325b5e588e1f617579637b5dc85bb74b6c0e882a9"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/lint.log",
+      "sha256": "71c3245ea9ed46f47a80dcd889babb9799de16ee921df447a0e72c8092651c74"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/lru-cache.test.ts.json",
+      "sha256": "1a2cf379b66b43df7241bbaec4222ea88a81714bdaa0316f197dac9527927804"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/observe.setup.ts",
+      "sha256": "c1ce4dfb0d2db1066deb6598597adec9cadb886979568cad1b626a31fed9f9e3"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/select.setup.ts",
+      "sha256": "5d61a1108463f9568135ae681592a39aa169cb05454117a3dc251531a0c3d9b6"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/startup-stop.log",
+      "sha256": "5685335f999b20a39fbc3c094ccf77c6411e92e1020ead937587fe993963b514"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/test-files.json",
+      "sha256": "26900a20c6a3c9d7942da32b329f683368d0eca5a0e44134205d6b8ac8b2bd52"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/typecheck.log",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+    },
+    {
+      "file": "docs/reviews/task112-g4-evidence/vitest.config.mjs",
+      "sha256": "2e57f4effb7611ecc96f93a1b0af9e5b4841fd0a9da32613be053dadf9e519e3"
+    }
+  ],
+  "testDiscovery": {
+    "originalConfigPatterns": [
+      "packages/**/test/**/*.test.ts",
+      "packages/**/__tests__/**/*.test.ts",
+      "apps/**/test/**/*.test.ts",
+      "tests/**/*.test.ts"
+    ],
+    "discoveredFiles": 171,
+    "executedFiles": 171,
+    "missing": [],
+    "extra": []
+  }
+}

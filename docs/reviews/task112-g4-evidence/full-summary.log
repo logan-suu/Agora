@@ -1,0 +1,15 @@
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 131.820625
+ ✓ packages/runtime/executor/test/g5-real-chain.test.ts (1 test) 14390ms
+ ✓ packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts (1 test) 9429ms
+ ✓ packages/core/__tests__/e2e/lru-cache.test.ts (1 test) 200199ms
+ Test Files  171 passed (171)
+      Tests  1284 passed (1284)
+   Start at  17:13:41
+   Duration  201.86s (transform 2.67s, setup 3.62s, collect 42.61s, tests 640.62s, environment 23ms, prepare 8.78s)

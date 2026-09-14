@@ -1542,7 +1542,7 @@
           "id": "11.2",
           "title": "验证 Electron 打包与受管工具链方案",
           "story": null,
-          "status": "blocked",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1554,7 +1554,7 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design，含构建/验证脚本，按代码交付。PR #79已合并至2a8b3ea，仅含旧280f24e。后续两项review修复、Go V4 Flash测试路由与诊断由Leader授权先提交推送，内容提交068480d，分支codex/fix-desktop-review-go-tests。typecheck/lint、3项生命周期回归、27份打包证据及16项桌面G5通过；两次带观测LRU通过，但此前完整G4的LRU600秒超时未闭合，根因仍inconclusive。11.2保持blocked、11.3 pending；下一步补齐完整G4并经后续修复PR人工合并再收尾。历史docs/task-history/11.2.md；诊断docs/reviews/task112-lru-timeout-diagnosis.md。",
+          "notes": "任务类型：design，含构建/验证脚本，按代码交付。PR #79仅合并旧280f24e至2a8b3ea；后续修复内容068480d已推送codex/fix-desktop-review-go-tests。2026-09-14全面审查无新增必修问题，cd9e99a完整G4通过：Node7/7、Vitest171文件1284/1284、0跳过；Go V4 Flash三项实网均通过（LRU200.198秒），typecheck/lint、3项生命周期回归、27份证据校验通过。历史600秒超时未复现，根因仍inconclusive。G4阻塞解除；下一步将修复和新增证据经后续PR人工合并再收尾，11.3仍pending。报告docs/reviews/task112-g4-review.md；历史docs/task-history/11.2.md。",
           "last_updated": "2026-09-14"
         },
         {

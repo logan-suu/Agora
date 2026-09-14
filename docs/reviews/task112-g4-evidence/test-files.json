@@ -1,0 +1,1199 @@
+[
+  {
+    "file": "apps/web/test/channel-stream.test.ts",
+    "sha256": "1ae899e36f475028efc5e842f2dbcd9e0d4f5f93a10c24189353e3936feb9f06",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 2.166
+  },
+  {
+    "file": "apps/web/test/chat-ui.test.ts",
+    "sha256": "16312e02c44e26911294600d73e5f7604bc1ac2696452638fb4e7b3e8fa7fb17",
+    "tests": 13,
+    "status": "passed",
+    "durationMs": 63.089
+  },
+  {
+    "file": "apps/web/test/intent.test.ts",
+    "sha256": "c59acec4ff9cb087e5815c6d0b69b8a2d000cf507817b9a860dedc11fbf43b3b",
+    "tests": 44,
+    "status": "passed",
+    "durationMs": 7.378
+  },
+  {
+    "file": "apps/web/test/local-diagnostics.test.ts",
+    "sha256": "7a69449a13bb8f6f6eb0cc59325f918d51980a2ad3eb899b04a821d14451ce17",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 5.168
+  },
+  {
+    "file": "apps/web/test/local-drain.test.ts",
+    "sha256": "e220e909ebb1cb3c15e378af98b47852ef2db590129cbce0d45ed0b4df80f5eb",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 13.947
+  },
+  {
+    "file": "apps/web/test/local-process.test.ts",
+    "sha256": "54b6eda729fbb4d87fab3ade22038040a71a54528ba05d069ff132fabf7df029",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 3.454
+  },
+  {
+    "file": "apps/web/test/message-content.test.ts",
+    "sha256": "557c03353e5750d8ace6aad788c09a97d810fd464881701eb43ab4cd412a75b4",
+    "tests": 15,
+    "status": "passed",
+    "durationMs": 159.177
+  },
+  {
+    "file": "apps/web/test/message-flow.test.ts",
+    "sha256": "7cfd74c1a6bc6ef8a9dc0874e597940e7053062421dafc906362114328d60c09",
+    "tests": 29,
+    "status": "passed",
+    "durationMs": 666.672
+  },
+  {
+    "file": "apps/web/test/message-markdown.test.ts",
+    "sha256": "fbde39bda44ba16300c5f342642e5816f0350721b01c06eedf176f68de1e32e9",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 47.126
+  },
+  {
+    "file": "apps/web/test/model-capacity.test.ts",
+    "sha256": "d3274205390132be4fb29ce916e49d42ad14319a07a5494e26c6a2279ef24278",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 2.139
+  },
+  {
+    "file": "apps/web/test/model-settings.test.ts",
+    "sha256": "e92886a87a2c99e6270177e08fe9942743a8286ec5445f72307578ddf263918e",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 474.154
+  },
+  {
+    "file": "apps/web/test/orchestration-flow-docker.test.ts",
+    "sha256": "51063f35e4deb299037969cd8abc22de41b166b0b90b357b7c7cffba99de5849",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 1733.147
+  },
+  {
+    "file": "apps/web/test/orchestration-flow.test.ts",
+    "sha256": "129823e1624209fe1a75cc9b9285c8681c130272186a8453754ea068224fa0db",
+    "tests": 17,
+    "status": "passed",
+    "durationMs": 644.293
+  },
+  {
+    "file": "apps/web/test/parallel-failure-lifecycle.test.ts",
+    "sha256": "015405d798f6c0579e2e5b65a59c90e0008f41e926420a0d3054253977116b4d",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 79.332
+  },
+  {
+    "file": "apps/web/test/project-roster-g5-chain.test.ts",
+    "sha256": "d4e8e0921571b8050802dc207d8540a915b3ffabd82a76a97f407f4c9594a131",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 105.749
+  },
+  {
+    "file": "apps/web/test/project-roster-runtime.test.ts",
+    "sha256": "f6f6289e3b0cc4b382d3dc15186c85d77510e136cb64739d680082c505af6600",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 85.351
+  },
+  {
+    "file": "apps/web/test/requirement-input.test.ts",
+    "sha256": "d22a433c6978cf869401ef552ab27fd8d818c810a7048c4731631fb691b18a70",
+    "tests": 7,
+    "status": "passed",
+    "durationMs": 494.118
+  },
+  {
+    "file": "apps/web/test/requirement-proposal-card.test.ts",
+    "sha256": "e59041d65bfd2f5c7b9b8c019a9c099cda403da8118aa1282c5f3bd5e7cc72f1",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 6.285
+  },
+  {
+    "file": "apps/web/test/routes.test.ts",
+    "sha256": "c33da40afdf21d27269e859a5edad5d7f475b0098c1a520c7404ec293e811bc4",
+    "tests": 12,
+    "status": "passed",
+    "durationMs": 195.429
+  },
+  {
+    "file": "apps/web/test/run-error.test.ts",
+    "sha256": "da4713732deea70123813cecd4f129eef35f209bd30c8b0a670ad939eed4468e",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 2.256
+  },
+  {
+    "file": "apps/web/test/task-composition.test.ts",
+    "sha256": "ca4ec53bf09bfe8eeb168073e6c8a4d1261c799c681fd365256f50bd6c56cf0d",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 824.677
+  },
+  {
+    "file": "apps/web/test/task-overview.test.ts",
+    "sha256": "4d90ddfdf5b6a30db200d5c31dbb34e35f6239ef808dee568c888afef2204040",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 19.156
+  },
+  {
+    "file": "apps/web/test/trace-flow.test.ts",
+    "sha256": "201b72e63a3b9b81ac607a6c8a744679f4acff19ad15ee516cfff42b977c58c3",
+    "tests": 8,
+    "status": "passed",
+    "durationMs": 50.119
+  },
+  {
+    "file": "apps/web/test/trace-lanes.test.ts",
+    "sha256": "c4b93e252209a16414cfc1c4f7873df8f3959a4f64f4f5488d3b8072993bb708",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 1.612
+  },
+  {
+    "file": "apps/web/test/wave-validation.test.ts",
+    "sha256": "effde8e76abfa67fc264fa23e63bec3f3e300aff71c83d5cf7316051d617a0af",
+    "tests": 10,
+    "status": "passed",
+    "durationMs": 11419.586
+  },
+  {
+    "file": "packages/comm/bus/test/message-bus.test.ts",
+    "sha256": "9e1b5dec219ad3dd69eb7f95da6feb6b5ab06db4debdb1bf3f9ed793208f86f5",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 1.417
+  },
+  {
+    "file": "packages/comm/channels/test/base.test.ts",
+    "sha256": "653ebd9f3c4e9c79950f3459e8c50f2456126dd88ec4e7c25be9bcde22f60476",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 1.19
+  },
+  {
+    "file": "packages/comm/channels/test/channel-context.test.ts",
+    "sha256": "f95bb5c0e13b5e952afd43c6408efa1f2bf91a3a66554e3310d0c6e7d64f4d76",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 6.134
+  },
+  {
+    "file": "packages/comm/channels/test/inbox.test.ts",
+    "sha256": "884297862cd66685c5efb1c72baefe898a5a90208b19d8de9f7d90470d885dab",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 1.426
+  },
+  {
+    "file": "packages/comm/channels/test/json-project-channel-store.test.ts",
+    "sha256": "51d3d194ac6c704ebd65ddfef68704941db67fedd537ae8a25092776e7e5ee67",
+    "tests": 10,
+    "status": "passed",
+    "durationMs": 122.655
+  },
+  {
+    "file": "packages/comm/channels/test/json-project-collaboration-store.test.ts",
+    "sha256": "43bf7b0733a54857be07a6b99450239de4c3506c5574d2c637ee8b31fe6c0b56",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 85.915
+  },
+  {
+    "file": "packages/comm/channels/test/message-policy.test.ts",
+    "sha256": "94104aafc3bc08b2ca76674bf2e151b7a81d5d614431780ee4fbba23094d01a8",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 3.458
+  },
+  {
+    "file": "packages/core/__tests__/e2e/lru-cache.test.ts",
+    "sha256": "48c7d40be43d22bc5a99c2cff228e913b1de2e65361e77eb47002d8f9e87d4f4",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 200197.557
+  },
+  {
+    "file": "packages/core/domain/test/channel-summary.test.ts",
+    "sha256": "e822cfa06962d9b2d75b2ae00031a9d5710135f3c5ea935c05e1eaf5ef26cd03",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 2.296
+  },
+  {
+    "file": "packages/core/domain/test/channel.test.ts",
+    "sha256": "2e29ec54f6e62ed74492710d4e49c420be3c51a8859483634e732ea9944523b7",
+    "tests": 16,
+    "status": "passed",
+    "durationMs": 9.193
+  },
+  {
+    "file": "packages/core/domain/test/completion-resolution.test.ts",
+    "sha256": "23ce8919e92128e896f65dad3e8dcdf7b47b49e3a00988b8b04ab6aedbf74dae",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 3.374
+  },
+  {
+    "file": "packages/core/domain/test/handoff.test.ts",
+    "sha256": "ba8af7fc3e71156042054e47041de25142944dc91a5819e811f25c7821be6509",
+    "tests": 10,
+    "status": "passed",
+    "durationMs": 7.094
+  },
+  {
+    "file": "packages/core/domain/test/leader-directive.test.ts",
+    "sha256": "f50a1f200f9444f69d97311a74977b24e90a89da28f97abf31f89c14ea47fb44",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 4.347
+  },
+  {
+    "file": "packages/core/domain/test/ledger.test.ts",
+    "sha256": "271141079dc466f66d4c2a5855ce16211b78337e51bb6b0c42ee2d1f1ff21a77",
+    "tests": 13,
+    "status": "passed",
+    "durationMs": 4.21
+  },
+  {
+    "file": "packages/core/domain/test/model-settings.test.ts",
+    "sha256": "5ea02fb7eb1ccfddadbe81e684c88cc3777d518ab00b3cbbd900ace1153b89fe",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 2.667
+  },
+  {
+    "file": "packages/core/domain/test/objection-resolution.test.ts",
+    "sha256": "775f5e439f9362dc97792735b64f2bd834834c211e21abbc32c4559484322cee",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 4.466
+  },
+  {
+    "file": "packages/core/domain/test/objection.test.ts",
+    "sha256": "4722a7f03822c77dd29abb0d8914485791f2ec455280d8af867a088b71889b6b",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 2.534
+  },
+  {
+    "file": "packages/core/domain/test/onboarding.test.ts",
+    "sha256": "e2b2c03e5f27a4754d307ee6519f58d4e0e5bf7d6c0802d2c468013b3b2b6ed7",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 4.468
+  },
+  {
+    "file": "packages/core/domain/test/parallel-execution.test.ts",
+    "sha256": "576dc0625cf9d728f7ab52387b6555b5a45f8a0b30a5c926829b8e57c58a674e",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 8.074
+  },
+  {
+    "file": "packages/core/domain/test/project-roster.test.ts",
+    "sha256": "cefc90267cf8f99884f80a1247e696da605b309af50419466487b0ac11de4ac0",
+    "tests": 11,
+    "status": "passed",
+    "durationMs": 14.415
+  },
+  {
+    "file": "packages/core/domain/test/reducer.test.ts",
+    "sha256": "92c33671bc00ce4ae2cc6b79ea5c071f4e73c1dff617623a48ef8c7ab500abd6",
+    "tests": 69,
+    "status": "passed",
+    "durationMs": 25.241
+  },
+  {
+    "file": "packages/core/domain/test/requirement-proposal.test.ts",
+    "sha256": "e1d31c08b0688ae1ef1fce5109df3493063d18ffa5965b483de391e4bb5c8f22",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 14.359
+  },
+  {
+    "file": "packages/core/domain/test/roster.test.ts",
+    "sha256": "98444793584036d3f9a2d30e149b2a21382b3e5a456b20f32177fa2f45566307",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 2.186
+  },
+  {
+    "file": "packages/core/domain/test/state.test.ts",
+    "sha256": "43b08b3a8b67550b6a0950f4479e1e46ff3aa0e06a97d9cd6f844bff8f56f2ab",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 11.67
+  },
+  {
+    "file": "packages/core/orchestration/test/channel-lifecycle.test.ts",
+    "sha256": "43a5b3ee59e31d7ea847dab305a2ab98bc30b954cae6c181eec6074321bb8a44",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 159.273
+  },
+  {
+    "file": "packages/core/orchestration/test/channel-summary-reconciler.test.ts",
+    "sha256": "34e3d404f1951ec773ce9d448653c425fa14ba89009edc4bebf430b77ee44963",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 101.387
+  },
+  {
+    "file": "packages/core/orchestration/test/complexity.test.ts",
+    "sha256": "d9704c0e1cb8e6c77a5e0bc1e7fef62a42afc65eb52488a94608c957681fae9d",
+    "tests": 15,
+    "status": "passed",
+    "durationMs": 3.248
+  },
+  {
+    "file": "packages/core/orchestration/test/coordinator.test.ts",
+    "sha256": "be929360637f43de17c945882a0cd913d8e3a6528fe4769a8e8c4277d7eec040",
+    "tests": 62,
+    "status": "passed",
+    "durationMs": 23.815
+  },
+  {
+    "file": "packages/core/orchestration/test/global-scheduler.test.ts",
+    "sha256": "2e529b6935dc65cca81f6fff0666a4ba3260274c67af90dfc0b41fca43e19d75",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 5.186
+  },
+  {
+    "file": "packages/core/orchestration/test/human-gate.test.ts",
+    "sha256": "1adaa821bfa824f11d50d36ffe89fb5d94fc948e42fa21a151eb9d2760c2c668",
+    "tests": 11,
+    "status": "passed",
+    "durationMs": 15.305
+  },
+  {
+    "file": "packages/core/orchestration/test/integrate.test.ts",
+    "sha256": "a39df3381b43f799014097cb8457894f9cf3145a2bf1e9cf69c33d4673459128",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 14.734
+  },
+  {
+    "file": "packages/core/orchestration/test/message-service.test.ts",
+    "sha256": "afa4d8b0db9e4427f8773b6ea4631c739de5a20cc8e5926d9210013142336ccc",
+    "tests": 13,
+    "status": "passed",
+    "durationMs": 191.597
+  },
+  {
+    "file": "packages/core/orchestration/test/objection.test.ts",
+    "sha256": "a7847436a9573de069ff0f7e35027922ff1812fbbfc26a47f97fda7fc0979e85",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 2.657
+  },
+  {
+    "file": "packages/core/orchestration/test/orchestrator.test.ts",
+    "sha256": "1ee395d175d495a87f9c89c3731ae072eae9519b36a0b0d675849a06e2250fc1",
+    "tests": 15,
+    "status": "passed",
+    "durationMs": 63.102
+  },
+  {
+    "file": "packages/core/orchestration/test/parallel-coordinator.test.ts",
+    "sha256": "2764f422444ef8c402b6d53c5c4d1836aabbc6d912db535aacf10dd90c41c271",
+    "tests": 17,
+    "status": "passed",
+    "durationMs": 54.722
+  },
+  {
+    "file": "packages/core/orchestration/test/progress-ledger.test.ts",
+    "sha256": "6eac0c720b3f272a7523a8253969af906874871669141123a9cc9015b9fa1a14",
+    "tests": 12,
+    "status": "passed",
+    "durationMs": 6.285
+  },
+  {
+    "file": "packages/core/orchestration/test/project-roster-service.test.ts",
+    "sha256": "c94b75150499b5f3cd2de6c8e0d0aa5f96189e83525eaba8fde4418260d9ef98",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 74.92
+  },
+  {
+    "file": "packages/core/orchestration/test/role-departure-service.test.ts",
+    "sha256": "92673393ca42804451aa42ceee03034fdc6f366d3a7673b45bef9b5d2ff1c1cf",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 189.774
+  },
+  {
+    "file": "packages/core/orchestration/test/route-conditions.test.ts",
+    "sha256": "134d0994829593b214233622bf14418c3c3f078d345e12cef015d32e1227c35b",
+    "tests": 10,
+    "status": "passed",
+    "durationMs": 3.152
+  },
+  {
+    "file": "packages/core/orchestration/test/worker-failure.test.ts",
+    "sha256": "f99715f08587c994cb4f13b60b6930d774f1730fbeda1ac60eb4d02151ffcf22",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 13.813
+  },
+  {
+    "file": "packages/core/orchestration/test/worker-runtime.test.ts",
+    "sha256": "38bb30461c79a755763c9f8f5713b7be805cd8c4eb4cfd3ac632f8bc9280fc6b",
+    "tests": 41,
+    "status": "passed",
+    "durationMs": 1299.377
+  },
+  {
+    "file": "packages/core/preemption/test/preemptor.test.ts",
+    "sha256": "35f6dd579aa21d1b23676d9d771e32fd640e1714195b537e786f2302f9ca8314",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 6.346
+  },
+  {
+    "file": "packages/roles/definitions/test/roster.test.ts",
+    "sha256": "7e6f4587b69c74a1fb5043daf402bb4b25998fccb65bd1816237e2dec801eeab",
+    "tests": 13,
+    "status": "passed",
+    "durationMs": 5.071
+  },
+  {
+    "file": "packages/roles/definitions/test/runtime-contracts.test.ts",
+    "sha256": "dbe92f3ac7f09324a45cfb36ab3117341e3da25b3f63a2db85ddb6fa6b98d2dc",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 3.106
+  },
+  {
+    "file": "packages/runtime/executor/test/assignment-project.test.ts",
+    "sha256": "672cf19119b4a26c289b77cbe7827d9e979e5cdc00829ccaaf221f7a1efeb9f5",
+    "tests": 11,
+    "status": "passed",
+    "durationMs": 9.368
+  },
+  {
+    "file": "packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts",
+    "sha256": "85608fd856c76036d3c61dee112e07215dabe1495c8be72a70bf56982f19c8f1",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 9427.258
+  },
+  {
+    "file": "packages/runtime/executor/test/channel-summary-generator.test.ts",
+    "sha256": "bc4151a0eae45bc003bcd8da9a52e23acfe18321a84d06dd9e696ac3f3b7af17",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 93.096
+  },
+  {
+    "file": "packages/runtime/executor/test/compatible-cancellation.test.ts",
+    "sha256": "3c200b2916ddb14aa9bd434c6bfb3855ca1c9c8bf8353cb1e54a23ca3b6fa6d7",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 30542.909
+  },
+  {
+    "file": "packages/runtime/executor/test/compatible-model.test.ts",
+    "sha256": "341ac17c3070aba9ad955d60ce0e6530e15fe6c753750d45b856b63c10eb2c98",
+    "tests": 14,
+    "status": "passed",
+    "durationMs": 1675.22
+  },
+  {
+    "file": "packages/runtime/executor/test/compatible-reasoning.test.ts",
+    "sha256": "99f4ce6443cb15dfaf1ca2d0e84b1ee293f3a288247c896aacc9b148b7956706",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 220.938
+  },
+  {
+    "file": "packages/runtime/executor/test/compatible-session.test.ts",
+    "sha256": "648cc2ec3097f10de688a8f4d403d543a72883fdf6bc3dc5a7c9d06abc8ad3b0",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 147.853
+  },
+  {
+    "file": "packages/runtime/executor/test/compatible-timeout.test.ts",
+    "sha256": "2c594c495e51d2070efadd4e1ceda20f86a94e67d59dfb510846789f303a96e7",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 220.797
+  },
+  {
+    "file": "packages/runtime/executor/test/completion-feedback.test.ts",
+    "sha256": "ebb441d1d3f3c2360c9003844ce56703086c452ef4aafcded48d78cc85a61e50",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 6.038
+  },
+  {
+    "file": "packages/runtime/executor/test/g5-real-chain.test.ts",
+    "sha256": "b1cdb2e943bd7f15dd1d3f54fb75c34d7faf0300327240f86ce2afa5961a5339",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 14387.364
+  },
+  {
+    "file": "packages/runtime/executor/test/harness-executor.test.ts",
+    "sha256": "8c25909405956f69c548535ce5882f94e187d8ca6ac2f60d143921b6d67566f7",
+    "tests": 27,
+    "status": "passed",
+    "durationMs": 501.704
+  },
+  {
+    "file": "packages/runtime/executor/test/output-repair.test.ts",
+    "sha256": "b82028dd18f46de07bade75b4d3b4e1e6d74065d96679b3796660396ccb35a79",
+    "tests": 12,
+    "status": "passed",
+    "durationMs": 194.821
+  },
+  {
+    "file": "packages/runtime/executor/test/project.test.ts",
+    "sha256": "d95a0af1ece514b70abb36106aed65c03393e711cddf9e5e6b18ac3fb142c6a4",
+    "tests": 32,
+    "status": "passed",
+    "durationMs": 11.387
+  },
+  {
+    "file": "packages/runtime/executor/test/projection-input.test.ts",
+    "sha256": "5d8556dd8f7ccbdbc457e83dc2ad48304006676b0c98b6cbc6fb7ff9201ff619",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 80.905
+  },
+  {
+    "file": "packages/runtime/executor/test/request-retry.test.ts",
+    "sha256": "97bff45f81f89204a01cf61dcddccdbc6adca4f849630174e62419c022554aa4",
+    "tests": 15,
+    "status": "passed",
+    "durationMs": 517.675
+  },
+  {
+    "file": "packages/runtime/executor/test/requirement-interpreter.test.ts",
+    "sha256": "075db509217cfde2339b3bc90d75ed43d31ef30ea5cbe6172675b87f57769d17",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 161.459
+  },
+  {
+    "file": "packages/runtime/executor/test/slice-compression.test.ts",
+    "sha256": "be92ac029d808dd5e9cdef64069182aa449a53e576ebb9a14afa195afa48595b",
+    "tests": 11,
+    "status": "passed",
+    "durationMs": 3.059
+  },
+  {
+    "file": "packages/runtime/executor/test/tool-governance.test.ts",
+    "sha256": "8ef88da24584f85537cc88592dcf92b86d534bc7b71ad3e0fb8ae9c1c71554f1",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 105.309
+  },
+  {
+    "file": "packages/runtime/executor/test/trace.test.ts",
+    "sha256": "154da1a7692f7f6f67806a89ca8f04d87ecad917f809f0270769a7f776000a97",
+    "tests": 25,
+    "status": "passed",
+    "durationMs": 7.173
+  },
+  {
+    "file": "packages/runtime/sandbox/test/docker-isolation.test.ts",
+    "sha256": "15723b52f79f473ed93a0714a5e350b7bc465c9f38ac968e6532c6a96b9c59eb",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 1159.035
+  },
+  {
+    "file": "packages/runtime/sandbox/test/docker-sandbox.test.ts",
+    "sha256": "ac6ca856b6f3a70d8e36869b4c07dfecf69b4cb5a12077a6bf2c09e2f5c1ed5b",
+    "tests": 16,
+    "status": "passed",
+    "durationMs": 39771.101
+  },
+  {
+    "file": "packages/runtime/sandbox/test/factory.test.ts",
+    "sha256": "ac60be34028a3225bea31dfbb473ede77291e0697f8a0932e4327715d4a54400",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 3.072
+  },
+  {
+    "file": "packages/runtime/sandbox/test/local-temp-sandbox.test.ts",
+    "sha256": "e5e6c21de4bb1c537af46ec3248f10de2fd66123f934fa481387161f96b1f810",
+    "tests": 17,
+    "status": "passed",
+    "durationMs": 499.331
+  },
+  {
+    "file": "packages/runtime/sandbox/test/path-guard.test.ts",
+    "sha256": "e200a647b3ef857a4f36e0256eaf88db35e104e2baf0cc15423d8e1453353f02",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 6.98
+  },
+  {
+    "file": "packages/runtime/sandbox/test/phase0-tools.test.ts",
+    "sha256": "1750ad290e286f8a9ab7f37c7fda800ceec773f1e0fad573c217e38c4475d395",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 95.044
+  },
+  {
+    "file": "packages/runtime/sandbox/test/secure-files.test.ts",
+    "sha256": "b80c59028c04618ad77c2be11d14f1d65c7a513105b76440d262afadbdbb3a21",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 2735.724
+  },
+  {
+    "file": "packages/runtime/sandbox/test/workspace-adapter.test.ts",
+    "sha256": "f73f1541ff84c64988753b1844aab252b4aead239e3e788a51dd9776ceccd62b",
+    "tests": 7,
+    "status": "passed",
+    "durationMs": 4262.761
+  },
+  {
+    "file": "packages/runtime/state/test/json-task-state-store.test.ts",
+    "sha256": "df6377b7bbbc4c8c6aa1a84c895abc9ec40dc30a4a693cf17abd03ee56e39db7",
+    "tests": 13,
+    "status": "passed",
+    "durationMs": 115.343
+  },
+  {
+    "file": "packages/runtime/state/test/local-credentials.test.ts",
+    "sha256": "47fde45c9d5d5694c789e8cf81ec65eae626e778d4c3b8645f155d01bc570a8b",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 134.368
+  },
+  {
+    "file": "packages/runtime/state/test/model-config-store.test.ts",
+    "sha256": "15f0d42914e7f44327ac5dc2f567972f98602cf8ee0181fde75ca3253c027493",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 75.702
+  },
+  {
+    "file": "packages/shared/test/smoke.test.ts",
+    "sha256": "bc42c1c26cf01b6f1e86065d543088c75f2ad9f2a4f49f9d299e9958672b7a0c",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 1.217
+  },
+  {
+    "file": "packages/tools/bridge/test/bridge.test.ts",
+    "sha256": "979fdbd2039aaa130545dce65920136ca8f9b8fc82db89937e5d1db51c33ab69",
+    "tests": 8,
+    "status": "passed",
+    "durationMs": 1351.075
+  },
+  {
+    "file": "packages/tools/bridge/test/loader.test.ts",
+    "sha256": "9123fec482204307b95f8fee90f5e27d108bcc393f285cdf0d7ef625e958b77e",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 2.096
+  },
+  {
+    "file": "packages/tools/fs/test/fs-server.test.ts",
+    "sha256": "1c685d0705a64f814b6e77e083151889afed92d07f16cd3150da3979df4b2df0",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 50.049
+  },
+  {
+    "file": "packages/tools/fs/test/fs-service.test.ts",
+    "sha256": "008256237c6ed06abda503749175eaa8c9f0092a041635c6a588c8ca45322295",
+    "tests": 13,
+    "status": "passed",
+    "durationMs": 228.979
+  },
+  {
+    "file": "packages/tools/git/test/git-metadata-isolation.test.ts",
+    "sha256": "4fba616e4bc6c42d4c489dd1640dacd4836770f81d24cfd1f79a743be1c2876f",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 1421.703
+  },
+  {
+    "file": "packages/tools/git/test/git-server.test.ts",
+    "sha256": "c4ae45d7a71bfdd14bc09e6060bd9b2f13f5de8745096cea131d9769abbdb0df",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 1847.364
+  },
+  {
+    "file": "packages/tools/git/test/git-service.test.ts",
+    "sha256": "49323f303e4d519d2e3944d73f7f357028e99767efb74a87b69c495dc5543350",
+    "tests": 29,
+    "status": "passed",
+    "durationMs": 14894.433
+  },
+  {
+    "file": "packages/tools/lint/test/lint-service.test.ts",
+    "sha256": "bbf3802f50a26fcd80393117bf336190f72421cbe7f27985f9f84debe0bd929c",
+    "tests": 12,
+    "status": "passed",
+    "durationMs": 404.204
+  },
+  {
+    "file": "packages/tools/test/test/tap.test.ts",
+    "sha256": "297939c03f18f7369948aa901aa89c909be2615b631bff7bd4477f6cb4d0d731",
+    "tests": 14,
+    "status": "passed",
+    "durationMs": 7.12
+  },
+  {
+    "file": "packages/tools/test/test/test-server.test.ts",
+    "sha256": "d69a4d1c8978302601958cbe31d306cae3a0af87cd6e0e6cd9889b10ab536b4a",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 187.231
+  },
+  {
+    "file": "packages/tools/test/test/test-service.test.ts",
+    "sha256": "51ed536e02daf3dbeb2bfa05299abf5f183e87c6f0c4b6598ba88de36486c351",
+    "tests": 7,
+    "status": "passed",
+    "durationMs": 1019.718
+  },
+  {
+    "file": "tests/evals/core/contracts.test.ts",
+    "sha256": "e052d6f7848f737dadf3b56d29b3a610c646b24f39f818c757016aaf78394814",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 5.354
+  },
+  {
+    "file": "tests/evals/core/runner.test.ts",
+    "sha256": "0dd402aed7c91677292fd090b720fef1d308514abcfe23bc74f6119dd2a69ca5",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 81.534
+  },
+  {
+    "file": "tests/evals/phase10/final/accounting.test.ts",
+    "sha256": "cb0cbb19fac30d47cf96e066ae4b3b247d85aff68b235e2dd55b23af8e18adb1",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 22.359
+  },
+  {
+    "file": "tests/evals/phase10/final/benchmark-image.test.ts",
+    "sha256": "35dab0bff2a2c3d9e4156971d001db4ec2ff541c2ebb0963230741392b3c8456",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 4.008
+  },
+  {
+    "file": "tests/evals/phase10/final/context-policy.test.ts",
+    "sha256": "4b605a08cb9f6a67de50e949d1fdba9a61dfd940fd03e675b4e1c8365de708ac",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 1.433
+  },
+  {
+    "file": "tests/evals/phase10/final/flow-tool-policy.test.ts",
+    "sha256": "ab492bce465fd1f07c9a6efc65a608114eb3ef7c63507edac90f2a605eb454d0",
+    "tests": 8,
+    "status": "passed",
+    "durationMs": 3.169
+  },
+  {
+    "file": "tests/evals/phase10/final/formal-guard.test.ts",
+    "sha256": "2f4fa6251a95efaecccc15a12145a9fa9ce9c1224bb082b935360a3601a73122",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 20.36
+  },
+  {
+    "file": "tests/evals/phase10/final/go-diagnostic.test.ts",
+    "sha256": "79bcf3a19e72214859a8d594cc80eb39f10e2ca3723dcf6256c96e203649f109",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 45.813
+  },
+  {
+    "file": "tests/evals/phase10/final/go-tool-stream.test.ts",
+    "sha256": "5a22e4735e64db6f0b1e3a16c7add1abb30af0ac3c4623bcc400b0f23c0f814e",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 2.907
+  },
+  {
+    "file": "tests/evals/phase10/final/manifest.test.ts",
+    "sha256": "fef304bd0e7eac34db00ea8852ddc29f75c1ffd1fb0f976cf34e7cc74947159a",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 4.518
+  },
+  {
+    "file": "tests/evals/phase10/final/model-adapter.test.ts",
+    "sha256": "6ec72734f1098f493020a6cf56ba65a75140d02c2eec29e6463c4f8731b48fd8",
+    "tests": 8,
+    "status": "passed",
+    "durationMs": 60.715
+  },
+  {
+    "file": "tests/evals/phase10/final/opencode-go.test.ts",
+    "sha256": "efb6d5f6539c629f4e95d1fcd3eeec5b01b029e79bed4c156c404091b29c4c4c",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 40.557
+  },
+  {
+    "file": "tests/evals/phase10/final/projection-wire.test.ts",
+    "sha256": "8482aba4db58d0917d9e991a1ce78d27ad5fec9085eff55f59a6d8ed575cdb30",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 119.992
+  },
+  {
+    "file": "tests/evals/phase10/final/protocol.test.ts",
+    "sha256": "c1369f5f79d55e1e9cddec8f20d07efbe651dc33572d72caa6514dc46c009055",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 9.375
+  },
+  {
+    "file": "tests/evals/phase10/final/public-adapter.test.ts",
+    "sha256": "b6814ec26a895621fb31462bee4ab451cbf18875be473e2c1485f318a7afc600",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 2.881
+  },
+  {
+    "file": "tests/evals/phase10/final/public-contracts.test.ts",
+    "sha256": "a0991fb7efaabce7792b1c9175367abf882411c7d615407f0b33ba0cd7bba5a5",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 6.317
+  },
+  {
+    "file": "tests/evals/phase10/final/task-container.test.ts",
+    "sha256": "20f49e8a381f12b18275ae913946d8257effdd16722b330b3a2b7a9e6cf445f5",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 1.12
+  },
+  {
+    "file": "tests/evals/phase10/final/tasks.test.ts",
+    "sha256": "6b19ccf2741856ca8a40df469e9733a8556b791a56569cf50c6cae591e5f40f2",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 28.108
+  },
+  {
+    "file": "tests/evals/phase10/final/wire-usage.test.ts",
+    "sha256": "2d4920d3a1f4e5a6d819521135e78aad8ea252f8fc9a35ad178269fcf61d7da8",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 5.97
+  },
+  {
+    "file": "tests/evals/phase10/natural-input-checks.test.ts",
+    "sha256": "3b9b335823810817e0a6b7df55e49fa0645cf7f97e29389adc7205983eaaa0a0",
+    "tests": 15,
+    "status": "passed",
+    "durationMs": 7.282
+  },
+  {
+    "file": "tests/evals/phase6/tasks.test.ts",
+    "sha256": "9a5966c6036aa257f901cb731591fec494d07e47a152a6638d298522edd85619",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 7.032
+  },
+  {
+    "file": "tests/evals/phase7/scenarios.test.ts",
+    "sha256": "09fbe0239e3ffc975b9b33ee072733036fef2834c8144aaacfbe15de9171c502",
+    "tests": 9,
+    "status": "passed",
+    "durationMs": 471.343
+  },
+  {
+    "file": "tests/evals/phase7/tasks.test.ts",
+    "sha256": "cedd2241d0388cb4f78d83483b23e9ccc431ec4e40fb8da4651889c4b4fe3410",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 6.051
+  },
+  {
+    "file": "tests/evals/phase8/scenarios.test.ts",
+    "sha256": "71bc751dbcde1b5a80207b697620a184934e5525b4b75f860f4596e07a45dc03",
+    "tests": 8,
+    "status": "passed",
+    "durationMs": 373.559
+  },
+  {
+    "file": "tests/evals/phase8/tasks.test.ts",
+    "sha256": "f21ac7747a247643b83969b8d1b70374b2a2d7d0f94d8e9e41f20d04d14bf4e6",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 10.413
+  },
+  {
+    "file": "tests/evals/phase9/metrics.test.ts",
+    "sha256": "a9bbd1ca239d7764138913c92427672bf090cdd03f5774c41725d865128bd445",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 2.211
+  },
+  {
+    "file": "tests/evals/phase9/model-adapter.test.ts",
+    "sha256": "86bb909ba62d056bfc5bcb894dc82112779455c46012fbe94ca3dcdfef9c80d4",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 3.481
+  },
+  {
+    "file": "tests/evals/phase9/repair-budget.test.ts",
+    "sha256": "90955a0b0a008fbb534ab39357f5974777880462ef54e5e7f92008b9211c914b",
+    "tests": 7,
+    "status": "passed",
+    "durationMs": 42.112
+  },
+  {
+    "file": "tests/evals/phase9/wide-grader.test.ts",
+    "sha256": "b5539b9eddc9ec742a895fb180ea6f7eac4d73c399cfa09b1c3d1a9ffcfd09a0",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 1.144
+  },
+  {
+    "file": "tests/helpers/live-model.test.ts",
+    "sha256": "32a3519e13c6dd2237b23f8c177389b0d83fdc2b73ac8c81ca3410dfea001058",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 43.56
+  },
+  {
+    "file": "tests/integration/cross-phase/phase4-coordination-ledger.test.ts",
+    "sha256": "3b8c0f0355d663c5aea444c2fc8884bf4cd0a8f0675eb7cedf91a59c97e3e44b",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 3.923
+  },
+  {
+    "file": "tests/integration/phase0/phase0-exit.test.ts",
+    "sha256": "899bbb6ab4264807e0170c8f7b6a9a5558b62af426a5928ee7966dbc8182b39e",
+    "tests": 7,
+    "status": "passed",
+    "durationMs": 1171.484
+  },
+  {
+    "file": "tests/integration/phase1/phase1-exit.test.ts",
+    "sha256": "a4d9098f3c5cb82606daca0fd0852ff2ea0cad37f5628c8343d09703795a9576",
+    "tests": 13,
+    "status": "passed",
+    "durationMs": 1389.206
+  },
+  {
+    "file": "tests/integration/phase10/exit-wait.test.ts",
+    "sha256": "b1f088d3bf8c3d07dc81115a778f7b7bb8d97b1f57f1ca4734bc10109d07529b",
+    "tests": 6,
+    "status": "passed",
+    "durationMs": 82.387
+  },
+  {
+    "file": "tests/integration/phase10/phase10-benchmark.test.ts",
+    "sha256": "4699b3faa34b9159be7f5a2c0be58ec39a090ce028d860c11e8832a24c4dea19",
+    "tests": 12,
+    "status": "passed",
+    "durationMs": 76209.309
+  },
+  {
+    "file": "tests/integration/phase10/phase10-cleanup.test.ts",
+    "sha256": "1b4f3e9f935cbbef0294ca4c6efa31302cbad85d6fdfcf07e175c0cb95936d79",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 2.733
+  },
+  {
+    "file": "tests/integration/phase10/phase10-exit.test.ts",
+    "sha256": "601a34f1073218ddbeae6312114526bb7bb1cf0804d276cb54cee2137df50f71",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 33815.964
+  },
+  {
+    "file": "tests/integration/phase10/phase10-local-startup.test.ts",
+    "sha256": "c2d7ad5613887df2e77a40f358ae99d0485bc0c27f4e6f4c75b72f7deb5b41f4",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 576.851
+  },
+  {
+    "file": "tests/integration/phase10/phase10-model-settings.test.ts",
+    "sha256": "6f68380324d4a79386db50aa68855e7818b3fb2c1cba6395c81b6f92e330d488",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 2817.17
+  },
+  {
+    "file": "tests/integration/phase10/phase10-resilience.test.ts",
+    "sha256": "b7ca6f2c34fc2bcef495ae4c5ade1b71954838599da1af8ddb110fecacbf16ae",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 3829.464
+  },
+  {
+    "file": "tests/integration/phase2/phase2-exit.test.ts",
+    "sha256": "e96c73827204914943031986de5f47433e8fe3fcd5c669711296880f3a6f4c0b",
+    "tests": 16,
+    "status": "passed",
+    "durationMs": 7114.107
+  },
+  {
+    "file": "tests/integration/phase3/phase3-exit.test.ts",
+    "sha256": "76320d8743c5b2d959d3bfcb163da4320f421014847053dd462a829c0a75dbdf",
+    "tests": 5,
+    "status": "passed",
+    "durationMs": 891.835
+  },
+  {
+    "file": "tests/integration/phase4/phase4-adaptive-routing.test.ts",
+    "sha256": "c3bf711566e0453e4d00fa4d205299d82125ca23b4cc1a16254517a977f26978",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 1430.308
+  },
+  {
+    "file": "tests/integration/phase4/phase4-exit.test.ts",
+    "sha256": "9d73ae3c7962f0ae9ce2fad45d43224575c9f0bb6894c0640decbd44a5740576",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 6.369
+  },
+  {
+    "file": "tests/integration/phase5/phase5-exit.test.ts",
+    "sha256": "c9d221a470d4c91eb5db63f3a2e957f610bbd0558a014025defa4032db04c4a9",
+    "tests": 4,
+    "status": "passed",
+    "durationMs": 6285.999
+  },
+  {
+    "file": "tests/integration/phase6/phase6-exit.test.ts",
+    "sha256": "c6d608381e5b637a3934a885069711398272ff39e2c55e38f770b937f66f259a",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 162.441
+  },
+  {
+    "file": "tests/integration/phase7/phase7-exit.test.ts",
+    "sha256": "3201d9b8b1195bc41a003f4959c28cb0537b6998d733fce242f17fd67d5c6570",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 358.886
+  },
+  {
+    "file": "tests/integration/phase7/phase7-guardrails.test.ts",
+    "sha256": "b0713a8b14128999bddd419f075b06761c4eda5ea027bb4054675fa290b8a1ac",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 328.178
+  },
+  {
+    "file": "tests/integration/phase7/phase7-role-departure.test.ts",
+    "sha256": "ffb95aa8d6ae778991d0ec3f482da154dd8d00cdec70acce5cf07a812f7a10fa",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 210.334
+  },
+  {
+    "file": "tests/integration/phase7/phase7-role-onboarding.test.ts",
+    "sha256": "1cd23e66cf33f3e6fda0486daf3797a0992d6bc4c842aa4511ec70aca6036359",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 140.767
+  },
+  {
+    "file": "tests/integration/phase8/human-gate-lifecycle.test.ts",
+    "sha256": "f560f1f94f63445b73364f881b6472d47ac224dfed7b9fbaac00f7e61695f620",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 925.473
+  },
+  {
+    "file": "tests/integration/phase8/objection-dual-track.test.ts",
+    "sha256": "14ed8223161967780eba012a30c6bc39980b5e1d623c954dd55e7768ef930ed1",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 769.862
+  },
+  {
+    "file": "tests/integration/phase8/phase8-exit.test.ts",
+    "sha256": "32004eed02bd0278fe26752b09aff32000d084d894802f7e03f22f60442c7110",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 1515.516
+  },
+  {
+    "file": "tests/integration/phase8/trace-panel.test.ts",
+    "sha256": "74d892db531a1764e4d36350367df7690b0e93978f8887dc4679abe2719840e9",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 106.273
+  },
+  {
+    "file": "tests/integration/phase9/phase9-exit.test.ts",
+    "sha256": "55b5ce6e0035b21fbb16b1cef15c30059996338bf38644c57ba39328ef7d2d70",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 15156.148
+  },
+  {
+    "file": "tests/integration/phase9/phase9-filesystem-boundary.test.ts",
+    "sha256": "3a5f651fcf9aba7a898088b3c11f0ff87f21e885da7c6f46d89a70a4b9e6b29a",
+    "tests": 3,
+    "status": "passed",
+    "durationMs": 5075.883
+  },
+  {
+    "file": "tests/integration/phase9/phase9-parallel-flow.test.ts",
+    "sha256": "960783dee59848d15de1b40a2e3435182f23bd8b5d3fdabae12a7e7b44868a2a",
+    "tests": 11,
+    "status": "passed",
+    "durationMs": 122258.828
+  },
+  {
+    "file": "tests/integration/phase9/phase9-preemption.test.ts",
+    "sha256": "baac0f5346c6ccf16b2fe750750c3498efb6e99651a8fb619a32ecb6cc7087c3",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 1049.376
+  },
+  {
+    "file": "tests/integration/phase9/phase9-worker-pool.test.ts",
+    "sha256": "2abab4bbd89405ab9655cdf602dc905fd9c7f05b8312b9ee92a07ba32b766f1e",
+    "tests": 1,
+    "status": "passed",
+    "durationMs": 117.336
+  },
+  {
+    "file": "tests/integration/phase9/phase9-worktree-integration.test.ts",
+    "sha256": "2837eed7ef3649e139cb53253ae4a758152322fd19a8a5ad6bed68064d35ef34",
+    "tests": 2,
+    "status": "passed",
+    "durationMs": 3210.541
+  }
+]
