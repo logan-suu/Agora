@@ -1542,7 +1542,7 @@
           "id": "11.2",
           "title": "验证 Electron 打包与受管工具链方案",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1554,14 +1554,14 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design，含构建/验证脚本，按代码交付。后续修复PR #80：https://github.com/logan-suu/Agora/pull/80，base dev-1.0.0，分支codex/fix-desktop-review-go-tests；修复068480d、G4证据b3f4401已推送。完整G4通过：Node7/7、Vitest171文件1284/1284、0跳过；Go V4 Flash三项实网均通过（LRU200.198秒），typecheck/lint、3项生命周期回归、27份打包证据校验通过，源码与验证提交cd9e99a一致。历史超时未复现，根因仍inconclusive。保持in_progress，待PR #80人工合并后收尾；11.3仍pending。报告docs/reviews/task112-g4-review.md；历史docs/task-history/11.2.md。",
+          "notes": "任务类型：design，含构建/验证脚本，按代码交付。设计经Leader确认，原PR #79及后续修复PR #80均已人工合并；#80于2026-09-14合并至d99e202a25f60b3c31eda44b8c67d07d141daf55，https://github.com/logan-suu/Agora/pull/80。适用G1–G7通过：typecheck/lint；完整G4为Node7/7、Vitest171文件1284/1284、0跳过；Go V4 Flash三项实网通过（LRU200.198秒），桌面Electron/Next/Keychain真实G5为16/16、3项生命周期回归通过，27份打包证据hash一致。源码与验证提交cd9e99a一致；历史超时根因仍inconclusive，不宣称延迟已消除。11.2完成，11.3就绪；Phase11产品/发布出口仍待11.5。完整证据docs/task-history/11.2.md；docs/reviews/task112-g4-review.md及docs/reviews/task112-desktop-packaging.md。",
           "last_updated": "2026-09-14"
         },
         {
           "id": "11.3",
           "title": "实现 Electron 应用壳与本地服务生命周期",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
