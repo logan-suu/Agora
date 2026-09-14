@@ -1535,7 +1535,7 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design。2026-09-14 Leader接受并按非代码规则完成；正式契约见详细设计§12.1.1–§12.1.9，蓝图D18/架构/选型/计划已同步，I01–I14为后续实测要求。交付提交b1c05c4；PR https://github.com/logan-suu/Agora/pull/78（base=dev-1.0.0，待人工合并，保持done）。typecheck/lint/native build通过；完整pnpm test为Node 7项、Vitest 170文件/1282项全通过，无跳过，含真实Harness/沙箱回归；敏感数据检查通过。纯设计无新增G5对象。完整证据：docs/task-history/11.1.md；接受快照：docs/reviews/task111-identity-contract.md。",
+          "notes": "任务类型：design。2026-09-14 Leader接受并按非代码规则完成。PR https://github.com/logan-suu/Agora/pull/78 已人工合并到dev-1.0.0，merge=9e0aef4ea1cd7ad774780b3a89df893911a42622；合并树与已验证PR末次提交516797b一致，本地已同步。正式契约见详细设计§12.1，蓝图D18/架构/选型/计划已同步。typecheck/lint/native build通过；完整回归Node 7项、Vitest 170文件/1282项全通过无跳过，含真实Harness/沙箱链路；G7通过。纯设计无新增G5对象，I01–I14仍由后续任务实测。接受与完整门禁证据：docs/task-history/11.1.md；审阅快照：docs/reviews/task111-identity-contract.md。保持done；Phase11继续，下一ready为11.2。",
           "last_updated": "2026-09-14"
         },
         {
