@@ -2,7 +2,7 @@
   "version": "1.5",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-13",
+  "last_updated": "2026-09-14",
   "current_phase": 11,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
@@ -88,7 +88,7 @@
     },
     {
       "id": "D17",
-      "rule": "全局 lease 控制真实 worker 并发，稳定身份的可交换写入与串行控制面分离；task pause cohort、安全点与 Fork、同路径 Git/Docker 独立工作区、累计 DAG 波次验证及不可变证据/归档回执均须规范身份复核，异常 fail-closed，禁止用户 checkout 写入或自动 push。 后续本机backend的阶段适用边界见D18，旧路径退役前仍受约束，Phase11按D18移除Docker后端。",
+      "rule": "全局 lease 控制真实 worker 并发，稳定身份的可交换写入与串行控制面分离；task pause cohort、安全点与 Fork、同路径 Git/Docker 独立工作区、累计 DAG 波次验证及不可变证据/归档回执均须规范身份复核，异常 fail-closed，禁止用户 checkout 写入或自动 push。 后续本机backend的阶段适用边界见D18，旧路径退役前仍受约束，Phase13的13.3按D18移除Docker后端，13.4验收。",
       "source": "docs/项目蓝图.md §6/§13/§21；docs/详细设计方案.md §1/§2/§3/§4/§5/§6/§7/§8；docs/系统架构设计文档.md §4.1/§4.2/§5/§9；docs/技术选型文档.md §7/§8/§10；docs/开发计划安排.md §12"
     },
     {
@@ -123,7 +123,7 @@
     },
     {
       "id": "D18",
-      "rule": "四批拆为Phase11–30共20个发布阶段，每阶段3–7任务且最后一项为集成测试与发布验收；110项后续任务保留全部原94项范围，旧新ID见开发计划§18.12。所有任务依赖前阶段出口，细则随设计定稿。Phase11/12为限定预览，13完成本机闭环并退役Docker，无旧产品任务兼容；12.1清单、13.3移除、13.4无Docker验收。阶段完成不等于已发布，dev→main人工合并后经授权tag/Release，见§18.11。D3等保护和提交门禁不变；已完成研发历史保留，不自动删除旧数据。",
+      "rule": "四批拆为Phase11–30共20个发布阶段，每阶段3–7任务且最后一项为集成测试与发布验收；110项后续任务保留全部原94项范围，旧新ID见开发计划§18.12。所有任务依赖前阶段出口，细则随设计定稿。Phase11/12为限定预览，13完成本机闭环并退役Docker，无旧产品任务兼容；12.1清单、13.3移除、13.4无Docker验收。阶段完成不等于已发布，dev→main人工合并后经授权tag/Release，见§18.11。D3等保护和提交门禁不变；已完成研发历史保留，不自动删除旧数据。 11.1已定taskId工作项、conversationId会话、memberId成员、assignmentId责任和workerId执行；项目控制事实同revision CAS，跨TaskState用持久回执闭合，D4保身份真Fork重取lease。完整契约见详细设计§12.1，依阶段实装。",
       "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18"
     }
   ],
@@ -1516,7 +1516,7 @@
     {
       "id": 11,
       "name": "Electron 安装与受管工具链",
-      "status": "not_started",
+      "status": "in_progress",
       "integration_test": "11.5",
       "exit_criteria": "预览版：在干净受支持Mac安装并双击启动应用，托管本地服务和Node/Git/包管理器/helper；验证单实例、钥匙串、受管PATH、异常反馈及正常关闭。本阶段只开放安装与环境检查，不开放未验收的本机编码入口，也不向新桌面产品提供Docker模式。 阶段出口须包含真实集成测试、累计G1–G7及§18.11发布候选证据；通过后可发布对应范围的版本，是否已经发布另以Git tag/GitHub Release为准。",
       "tasks": [
@@ -1524,7 +1524,7 @@
           "id": "11.1",
           "title": "定稿后续基础身份与跨批次契约",
           "story": null,
-          "status": "ready",
+          "status": "done",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.4.1/§22.4.3/§22.5.1",
             "docs/详细设计方案.md §12.1",
@@ -1535,8 +1535,8 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design。区分项目/会话/工作项/成员/assignment/execution/workspace/Harness session；列出所有权、阶段适配和冻结接口影响，形成可审阅契约；不实现全部后续功能。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。",
-          "last_updated": "2026-09-13"
+          "notes": "任务类型：design。2026-09-14 Leader接受并按非代码规则完成；正式契约见详细设计§12.1.1–§12.1.9，蓝图D18/架构/选型/计划已同步，I01–I14为后续实测要求。已获agora-commit交付授权：typecheck/lint/native build通过；完整pnpm test为Node 7项、Vitest 170文件/1282项全通过，无跳过，含既有真实Harness/沙箱回归；敏感数据检查通过。纯设计无新增G5执行对象。正在提交并创建PR，保持done。证据：docs/task-history/11.1.md；接受快照：docs/reviews/task111-identity-contract.md。",
+          "last_updated": "2026-09-14"
         },
         {
           "id": "11.2",
