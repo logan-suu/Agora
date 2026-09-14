@@ -1554,7 +1554,7 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design，含构建/验证脚本，按代码交付。PR #79已合并至2a8b3ea，仅含旧280f24e；后续两项review修复、Go V4 Flash测试路由与诊断由Leader明确授权“先提交推送”，在codex/fix-desktop-review-go-tests交付。typecheck/lint、3项生命周期回归、27份证据及16项桌面G5通过；两次带观测LRU通过，但此前完整G4的LRU600秒超时未闭合，根因仍inconclusive。本次授权不等于G4通过或任务done。11.2保持blocked、11.3 pending，后续补齐完整G4并经修复PR人工合并再收尾。历史docs/task-history/11.2.md；诊断docs/reviews/task112-lru-timeout-diagnosis.md。",
+          "notes": "任务类型：design，含构建/验证脚本，按代码交付。PR #79已合并至2a8b3ea，仅含旧280f24e。后续两项review修复、Go V4 Flash测试路由与诊断由Leader授权先提交推送，内容提交068480d，分支codex/fix-desktop-review-go-tests。typecheck/lint、3项生命周期回归、27份打包证据及16项桌面G5通过；两次带观测LRU通过，但此前完整G4的LRU600秒超时未闭合，根因仍inconclusive。11.2保持blocked、11.3 pending；下一步补齐完整G4并经后续修复PR人工合并再收尾。历史docs/task-history/11.2.md；诊断docs/reviews/task112-lru-timeout-diagnosis.md。",
           "last_updated": "2026-09-14"
         },
         {
