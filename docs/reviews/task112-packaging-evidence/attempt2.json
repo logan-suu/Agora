@@ -1,0 +1,20 @@
+{
+  "electron": "44.3.0",
+  "electronNode": "24.20.0",
+  "packaged": true,
+  "checks": [
+    "packaged app",
+    "single instance lock",
+    "managed versions",
+    "real managed Git worktree",
+    "native helper write",
+    "native helper read",
+    "native helper rejects escape"
+  ],
+  "node": "v24.20.0",
+  "pnpm": "9.15.9",
+  "git": "git version 2.53.0",
+  "status": "failed",
+  "error": "ready timeout",
+  "keychainRemoved": true
+}

@@ -1,0 +1,8 @@
+{
+  "electron": "44.3.0",
+  "electronNode": "24.20.0",
+  "packaged": false,
+  "checks": [],
+  "status": "failed",
+  "error": "packaged app"
+}

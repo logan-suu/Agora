@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-14",
+  "macOS": "26.5",
+  "build": "25F71",
+  "arch": "arm64",
+  "node": "24.20.0",
+  "npm": "11.19.0",
+  "pnpm": "9.15.9",
+  "git": "2.53.0",
+  "electron": "44.3.0",
+  "clang": "21.0.0 (clang-2100.1.1.101)",
+  "helperSdk": "26.5",
+  "helperDeploymentTarget": "13.5",
+  "validDeveloperIdIdentities": 0,
+  "remainingSpikeProcesses": 0,
+  "remainingTestKeychains": 0,
+  "adHocBundleVerification": "passed",
+  "productRegression": "not run; documentation-only repository changes",
+  "paidModelRequests": 0
+}

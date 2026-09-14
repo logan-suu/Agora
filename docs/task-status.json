@@ -123,7 +123,7 @@
     },
     {
       "id": "D18",
-      "rule": "四批拆为Phase11–30共20个发布阶段，每阶段3–7任务且最后一项为集成测试与发布验收；110项后续任务保留全部原94项范围，旧新ID见开发计划§18.12。所有任务依赖前阶段出口，细则随设计定稿。Phase11/12为限定预览，13完成本机闭环并退役Docker，无旧产品任务兼容；12.1清单、13.3移除、13.4无Docker验收。阶段完成不等于已发布，dev→main人工合并后经授权tag/Release，见§18.11。D3等保护和提交门禁不变；已完成研发历史保留，不自动删除旧数据。 11.1已定taskId工作项、conversationId会话、memberId成员、assignmentId责任和workerId执行；项目控制事实同revision CAS，跨TaskState用持久回执闭合，D4保身份真Fork重取lease。完整契约见详细设计§12.1，依阶段实装。",
+      "rule": "四批拆为Phase11–30共20阶段、110项任务，每阶段3–7项且末项为集成测试与发布验收；旧新ID见开发计划§18.12，全部任务依赖前阶段出口。Phase11/12限定预览，13完成本机闭环并退役Docker；12.1清单、13.3移除、13.4无Docker验收。不兼容旧产品任务、不自动删除旧数据，研发历史保留，D3等保护及提交门禁不变。阶段完成不等于发布，dev→main人工合并后经授权tag/Release，见§18.11。11.1已定工作项/会话/成员/责任/执行身份、项目revision CAS及跨聚合回执，D4保身份真Fork重取lease，详见详细设计§12.1。11.2已定Electron+独立受管Node、macOS15+两架构、打包签名及手动升级；稳定state/workspace/凭据身份和配置证据保留，持久迁移失败可恢复，详见详细设计§12.3及选型§12。设计接受不代替分阶段实装验收。",
       "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18"
     }
   ],
@@ -1542,7 +1542,7 @@
           "id": "11.2",
           "title": "验证 Electron 打包与受管工具链方案",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1554,8 +1554,8 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design。决定机型/最低系统、Electron/Node/Git/包管理器版本、Next 服务托管及原生 helper 签名矩阵；保留真实最小验证证据，更新选型表后才引入依赖。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。 同时定稿新桌面版本安装升级、配置/状态保留及失败语义，作为每阶段发布验证输入。",
-          "last_updated": "2026-09-13"
+          "notes": "任务类型：design，PR修复新增构建/验证脚本，按实际产出转代码交付，待PR #79人工合并。2026-09-14设计接受事实保留，正式来源详细设计§12.3/选型§12。修复提交79ca4d6已补齐本机独有材料P2：6份原始材料保hash入库，19份证据可校验；固定源码/锁文件在全新目录重建，原16项G5通过。typecheck/lint和完整7项追踪+1282项Vitest通过，无跳过；缺文件/坏hash/越界拒绝。11.3保持pending。证据入口docs/reviews/task112-packaging-evidence/reproduction/README.md；完整历史docs/task-history/11.2.md；PR https://github.com/logan-suu/Agora/pull/79。",
+          "last_updated": "2026-09-14"
         },
         {
           "id": "11.3",
@@ -1576,7 +1576,7 @@
           ],
           "test_file": "tests/integration/phase11/phase11-3.test.ts",
           "notes": "任务类型：code。复用现有 UI/后端/Harness，应用启动无需命令行；验证进程边界、重复启动、状态目录、凭据保护及后端故障可见。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
-          "last_updated": "2026-09-13"
+          "last_updated": "2026-09-14"
         },
         {
           "id": "11.4",

@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.20
-**生效日期**：2026-09-13
+**版本**：v2.21
+**生效日期**：2026-09-14
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 是全部任务当前状态、依赖与常驻决策摘要的唯一索引；`docs/task-history/<taskId>.md` 保存完整执行证据。初始化运行 `node scripts/task-status.mjs summary`，按需读取，禁止默认整文件/全历史输出。维护规范见 [docs/task-tracking.md](docs/task-tracking.md)。
@@ -233,6 +233,7 @@ L4 基础设施层   runtime/executor/harness-executor.ts   基于 DeepSeek Harn
 数据与配置      packages/comm/channels                 D12 项目协作 JSON 适配器 + ProjectChannelStore 兼容视图 + Channel/Inbox 管理
                 packages/roles/definitions             RoleSpec YAML/TS；packages/shared 类型常量
 交互层          apps/web                               Next.js 群聊前端（P5+）
+                apps/desktop                           Electron 组合根（11.2已定，11.3实现；详设§12.3）
 ```
 
 Harness 边界（薄执行器职责，详见详细设计 §0/§6）：
@@ -270,6 +271,7 @@ agora/
 │   ├── roles/definitions/
 │   └── shared/
 ├── apps/web/                       # Next.js 群聊前端（Phase 5+）
+├── apps/desktop/                   # Electron 组合根（11.2获批目录，11.3创建）
 ├── tests/integration/
 │   ├── phase{N}/                   # Phase N 跨包集成测试（出口验收级）
 │   └── cross-phase/                # 跨 Phase 联调（累进回归，N 不破坏 N-1）
