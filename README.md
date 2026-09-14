@@ -18,7 +18,7 @@
 
 **Current scope: local use.** Run Agora on your own computer and open its local address in your browser. The backend, Docker sandboxes, and Git worktrees run on that machine, and application data is stored locally. Cloud hosting is outside the current product scope. Model requests go to your chosen online API or local model service; local operation does not mean offline operation. The product installation and startup commands currently support macOS. The Linux product launcher and automatic credential setup are outside that task’s current scope; existing Linux sandbox support is separate.
 
-**Planned next release.** Phase 10 is complete. Phase 11 will introduce an Electron app with a managed development toolchain and native Mac execution, retire Agora's Docker backend, and omit legacy task migration. These features are planned, not available in the current source build. The instructions below still apply to the existing Docker-based implementation. See the [roadmap](#roadmap) for all four planned delivery phases.
+**Planned releases.** Phase 10 is complete. Phases 11–13 will introduce Electron, a managed toolchain, and native Mac development, retiring Agora's Docker backend without legacy task migration. Phases 11 and 12 are limited previews; Phase 13 accepts the complete native workflow. These features are planned, not available in the current source build. The instructions below apply to the existing Docker-based implementation. See the [roadmap](#roadmap) for the smaller release milestones.
 
 **Credential setup on macOS.** The local launcher creates a random encryption key in your macOS Keychain on first use and reuses it after restart. In the model settings dialog, enter your service's Base URL, API key, and model name, either for one Agent or the whole team. Keychain access may require macOS authorization. Existing encrypted connections remain unavailable when the original key cannot be accessed; the application shows recovery instructions and never silently replaces it.
 
@@ -278,12 +278,12 @@ Agora/
 | 8 | HumanGate, blocking/advisory objections, and arbitration UI | ✅ Complete |
 | 9 | True parallel workers and cooperative preemption | ✅ Complete |
 | 10 | Unified Harness agents, macOS setup and startup, hardening, final benchmark, and portfolio demo | ✅ Complete |
-| 11 | Electron, managed toolchain, native Mac development, and Docker retirement | Planned |
-| 12 | Multiple projects and conversations, stable members, collaboration, attachments, budgets, and team recovery | Planned |
-| 13 | Project knowledge, Librarian, skills/MCP, and custom-role participation | Planned |
-| 14 | Work map, delivery evidence, engineering workflows, virtual office, and plugin distribution | Planned |
+| 11–13 | Electron/toolchain preview → protected native execution preview → complete native workflow and Docker retirement | Planned |
+| 14–20 | Projects/sessions → recruitment → scheduling/budgets → collaboration → attachments/overview → recovery → orchestration | Planned |
+| 21–24 | Knowledge/Librarian → knowledge validity/reuse → skills/MCP → custom roles | Planned |
+| 25–30 | Evidence/map → interfaces/reports → experiments/withdrawal → incremental validation → virtual office → plugins/full acceptance | Planned |
 
-The [development plan](docs/开发计划安排.md) contains all 94 planned tasks across Phases 11–14, including design tasks for unresolved details and a feature-to-task coverage map. Current status and dependencies live only in [`docs/task-status.json`](docs/task-status.json); start with `node scripts/task-status.mjs summary`, then query `task <id>` or `phase <id>` as needed. Full execution evidence is kept in per-task history files. Planning does not claim that a feature has been implemented or accepted.
+The [development plan](docs/开发计划安排.md) contains 110 planned tasks across 20 phases (11–30), with 3–7 tasks per phase. All 94 original tasks are retained, with 16 additional integration exits. Each phase ends with integration tests and release acceptance; the next phase depends on that exit. Release candidates include installer checks and evidence; publishing follows a human-reviewed dev-to-main PR and separately authorized tag/GitHub Release. Unresolved details have design tasks, and a feature-to-task map preserves coverage. Current status and dependencies live only in [`docs/task-status.json`](docs/task-status.json); start with `node scripts/task-status.mjs summary`, then query `task <id>` or `phase <id>` as needed. Full execution evidence is kept in per-task history files. Planning does not claim that a feature has been implemented or accepted.
 
 ## Design Documents
 
@@ -291,7 +291,7 @@ The [development plan](docs/开发计划安排.md) contains all 94 planned tasks
 - [Detailed Design](docs/详细设计方案.md) — state schemas, role contracts, orchestration, execution, projection, and validation
 - [System Architecture](docs/系统架构设计文档.md) — layers, dependency direction, consistency, resilience, and deployment
 - [Technology Decisions](docs/技术选型文档.md) — locked stack, rejected alternatives, sandboxing, SSE, and persistence
-- [Development Plan](docs/开发计划安排.md) — Phase 0–14 task breakdown, dependencies, exit criteria, and future-feature coverage
+- [Development Plan](docs/开发计划安排.md) — Phase 0–30 task breakdown, dependencies, exit criteria, and future-feature coverage
 - [Framework Research](docs/框架调研与借鉴决策.md) — dated AutoGen/AgentScope source research and product-comparison evidence
 
 ## Project Status and Scope

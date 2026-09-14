@@ -1,6 +1,6 @@
 # Install Agora on a new Mac
 
-**Applies to the current source build.** This guide covers the existing browser-and-local-service product. The planned Phase 11 Electron app will bundle its basic toolchain and use native execution without Agora's Docker backend. Until that implementation and acceptance are complete, use the requirements below. The guide remains an active installation reference and will be updated with the Phase 11 release; see the [development plan](开发计划安排.md).
+**Applies to the current source build.** This guide covers the existing browser-and-local-service product. The planned Phases 11–13 Electron rollout will bundle its basic toolchain and use native execution without Agora's Docker backend. Until that implementation and acceptance are complete, use the requirements below. The guide remains an active installation reference and will be updated with the complete Phase 13 native release; see the [development plan](开发计划安排.md).
 
 This guide starts before any development tools are installed. Agora currently runs locally on macOS and requires Docker Desktop for isolated code execution. Installing Agora does not install or start those system tools for you. You do not need Homebrew, a paid IDE, or a GitHub account to clone this public repository.
 
