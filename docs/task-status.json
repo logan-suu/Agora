@@ -1554,7 +1554,7 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design，含构建/验证脚本，按代码交付。PR #79仅合并旧280f24e至2a8b3ea；后续修复内容068480d已推送codex/fix-desktop-review-go-tests。2026-09-14全面审查无新增必修问题，cd9e99a完整G4通过：Node7/7、Vitest171文件1284/1284、0跳过；Go V4 Flash三项实网均通过（LRU200.198秒），typecheck/lint、3项生命周期回归、27份证据校验通过。历史600秒超时未复现，根因仍inconclusive。G4阻塞解除；下一步将修复和新增证据经后续PR人工合并再收尾，11.3仍pending。报告docs/reviews/task112-g4-review.md；历史docs/task-history/11.2.md。",
+          "notes": "任务类型：design，含构建/验证脚本，按代码交付。后续修复PR #80：https://github.com/logan-suu/Agora/pull/80，base dev-1.0.0，分支codex/fix-desktop-review-go-tests；修复068480d、G4证据b3f4401已推送。完整G4通过：Node7/7、Vitest171文件1284/1284、0跳过；Go V4 Flash三项实网均通过（LRU200.198秒），typecheck/lint、3项生命周期回归、27份打包证据校验通过，源码与验证提交cd9e99a一致。历史超时未复现，根因仍inconclusive。保持in_progress，待PR #80人工合并后收尾；11.3仍pending。报告docs/reviews/task112-g4-review.md；历史docs/task-history/11.2.md。",
           "last_updated": "2026-09-14"
         },
         {
