@@ -40,28 +40,28 @@
       "sha256": "52965119dfa783c960059522ac842ff76be3d5e6f14a675cd7933861876780de"
     },
     {
-      "localFile": ".data/spikes/task112-20260914/prepare.cjs",
-      "sha256": "b35147ef2c6e659c56b4f2ec49567f5e4e2112fe213e9d9c75fd498c26a866ed"
+      "sha256": "b35147ef2c6e659c56b4f2ec49567f5e4e2112fe213e9d9c75fd498c26a866ed",
+      "file": "reproduction/prepare.cjs"
     },
     {
-      "localFile": ".data/spikes/task112-20260914/close-dependencies.cjs",
-      "sha256": "f52f986c9dfaf31400f64e71e8e34e347fc15416aad1d81bcba64da030b67579"
+      "sha256": "f52f986c9dfaf31400f64e71e8e34e347fc15416aad1d81bcba64da030b67579",
+      "file": "reproduction/close-dependencies.cjs"
     },
     {
-      "localFile": ".data/spikes/task112-20260914/main.cjs",
-      "sha256": "a09825112e3443ef70a84df2bd92ebfd545f3fc6080f71ca11d0d5a465e7536e"
+      "sha256": "a09825112e3443ef70a84df2bd92ebfd545f3fc6080f71ca11d0d5a465e7536e",
+      "file": "reproduction/main.cjs"
     },
     {
-      "localFile": ".data/spikes/task112-20260914/desktop-spike.mjs",
-      "sha256": "c04fd17f7528c52591d72c3ac4d20b111189b00e70024303eea2f603589b7448"
+      "sha256": "c04fd17f7528c52591d72c3ac4d20b111189b00e70024303eea2f603589b7448",
+      "file": "reproduction/desktop-spike.mjs"
     },
     {
-      "localFile": ".data/spikes/task112-20260914/build.log",
-      "sha256": "f82e8a9412d7a363e555b389b2610a0126c89a286a3a40977f6033158d0e1aad"
+      "sha256": "f82e8a9412d7a363e555b389b2610a0126c89a286a3a40977f6033158d0e1aad",
+      "file": "reproduction/build.log"
     },
     {
-      "localFile": ".data/spikes/task112-20260914/attempt3-sample.txt",
-      "sha256": "100381e4c439e9be9d0fe224d0a7211e3ba7735cc345408daa77e870371a6d50"
+      "sha256": "100381e4c439e9be9d0fe224d0a7211e3ba7735cc345408daa77e870371a6d50",
+      "file": "reproduction/attempt3-sample.txt"
     },
     {
       "file": "environment.json",
@@ -70,6 +70,18 @@
     {
       "file": "delivery-result.json",
       "sha256": "0df1a9d8106e06ab389d416897bb2417752c599ab3dbb31b518a0851e2af1c1b"
+    },
+    {
+      "file": "reproduction/reproduce.mjs",
+      "sha256": "c00b3a1caa79a0750369ab792ed05d66021fbc3df35a693bb7b43c647dc3a160"
+    },
+    {
+      "file": "reproduction/README.md",
+      "sha256": "33aeed4574afb40633a8fc0376d0daa709952aed3899792ff3bc2d508e9167f0"
+    },
+    {
+      "file": "reproduction-result.json",
+      "sha256": "19277030bd9e8381e1e8f00d2cb12205b5d942b13cf0fea664b09d7304cf9fb1"
     }
   ]
 }

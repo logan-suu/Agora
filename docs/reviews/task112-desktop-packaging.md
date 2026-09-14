@@ -149,15 +149,15 @@ Spike 为验证采用宽松的完整依赖包复制，约 2.2 GiB，含未裁剪
 2. 仅按 Next trace 复制导致 custom server 无法解析 `next`；补入口依赖闭包及内部相对链接。便携 Git template 前缀同时显式修正。原始 [attempt2.json](task112-packaging-evidence/attempt2.json) 保留；不是放宽断言。
 3. 第三轮已到渲染，清理分支重复发 stop 造成 `EPIPE` 与 Electron 错误弹窗。查看弹窗确认原因后关闭。UI 工具检查期间发生额外启动，共用旧证据目录的结果被该启动覆盖，因此**第三轮不计完整通过**；其堆栈采样和截图仅作诊断。改为每次独立目录、逐检查点记录、区分 stopped 和 exit，并捕获 IPC 错误；最终新一轮全部 16 项通过、进程退出码 0、临时钥匙串删除。未伪造丢失的第三轮完整报告。
 
-可复核的本地工作材料保存在 `.data/spikes/task112-20260914/`，只含临时验证脚本、构建日志和诊断采样，hash 已写入 manifest；不进入生产依赖或默认测试。原始包仍在 `/private/tmp/agora-112-spike/Agora Spike.app`，不是交付产品。没有修改仓库产品代码、测试或构建脚本；临时脚本不是已交付的生产能力。
+原始四个验证/构建脚本、构建日志与第三轮故障采样已随PR归档于[reproduction/](task112-packaging-evidence/reproduction/README.md)，字节与历史hash保持一致。manifest不再依赖gitignored本地路径；新checkout可完整校验全部证据。它们是实验材料，不作为生产实现，但因实际新增可执行脚本，交付按代码门禁等待人工合并，设计接受事实保持。
 
-复现步骤：以该提交 `git archive` 建立无 `.data`/`.env` 的输入，复制已有锁定依赖；用下载 Node 运行既有两个 helper 构建脚本及 `pnpm --filter @agora/web build`；按保留的 `prepare.cjs` / `close-dependencies.cjs` 装配应用内资源；使用保留的 `main.cjs` / `desktop-spike.mjs` 验证外壳；构建两架构 helper、修正 bundle 元数据、ad-hoc 签名；在不含开发 Node/Git/pnpm 的 PATH 中启动 `.app`，读取该轮 result；最后验证签名和资源回收。独立机器须先在构建机安装锁定依赖；这一步不能被误称为最终用户免预装验收。
+复现步骤和构建机要求见[复现说明](task112-packaging-evidence/reproduction/README.md)。运行`reproduce.mjs`从固定Git提交导出干净源码、用下载的受管Node/pnpm安装锁定依赖并重新构建；在新临时根运行历史验证外壳，保留全部16项断言，不依赖开发者原node_modules或旧应用包。独立机器的构建工具要求不等于最终用户免预装验收。
 
 ## 9. 接受条件与后续任务
 
 | 任务/门禁 | 本稿提供的输入 | 仍须执行 |
 | --- | --- | --- |
-| 11.2 design | 版本/平台、服务边界、目录/工具链、签名矩阵、升级/故障协议、真实最小 Spike | Leader已接受，正式来源已同步；完成纯设计收尾，不替代后续产品验收 |
+| 11.2 design | 版本/平台、服务边界、目录/工具链、签名矩阵、升级/故障协议、真实最小 Spike | Leader已接受，正式来源已同步；PR修复新增脚本后按代码交付等待人工合并，不替代后续产品验收 |
 | 11.3 code | Electron + Node 组合根、认证连接、单实例/故障与预览能力范围 | 正式 Packager、生产依赖闭包、所有启用 API/资源、CSP/fuses/IPC、重复启动与停服失败测试 |
 | 11.4 code | 版本化工具链、helper 预构建与签名、PATH、介质及升级协议 | 两目标架构安装产物、项目准备成功/失败、无全局工具环境、签名钥匙串连续性、升级事务与配置保留 |
 | 11.5 exit | 本阶段预览范围、平台/版本/提交/产物/兼容清单 | 干净最低系统及当前系统实际安装、跨包集成、全部适用累计 G1–G7、发布候选记录；不以 Spike 代替 |
@@ -170,3 +170,10 @@ Spike 为验证采用宽松的完整依赖包复制，约 2.2 GiB，含未裁剪
 ## 10. 提交时复验
 
 2026-09-14用户调用agora-commit后，在正常桌面权限下重新运行同一隔离应用包，16项检查通过、进程exit0、临时钥匙串清理完成，ad-hoc签名完整性再次通过。新增结果见[delivery-result.json](task112-packaging-evidence/delivery-result.json)；完整提交门禁及首次工具沙箱失败记录见[任务历史](../task-history/11.2.md)。复验不扩大§8的支持平台或正式安装验收范围。
+
+
+## 11. PR审查修复：交付完整复现材料
+
+修复P2“复现材料仅存于本机”：6份原始材料纳入版本控制、保留原hash，补充固定下载来源/源码/锁文件和全新目录复现入口。设计内容未变；本PR已包含验证/构建脚本，11.2交付状态改为in_progress等待人工合并，11.3回pending。原§9的纯文档检查是接受时点记录；最新修复门禁和复现实测见[任务历史](../task-history/11.2.md)。
+
+复现实测：固定提交的干净源码在新目录安装锁定依赖并重新构建，16项检查再次通过、临时Keychain已清理、签名和资源边界审计通过；见[reproduction-result.json](task112-packaging-evidence/reproduction-result.json)。只复制仓库证据目录即可完成19项hash校验；缺文件、坏hash与越界引用均明确拒绝。

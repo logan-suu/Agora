@@ -1542,7 +1542,7 @@
           "id": "11.2",
           "title": "验证 Electron 打包与受管工具链方案",
           "story": null,
-          "status": "done",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1554,14 +1554,14 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design。2026-09-14 Leader接受，保持done；正式规格见详细设计§12.3/选型§12，蓝图/架构/计划已同步。Electron+独立Node、macOS15+双架构、工具链/签名及持久升级协议定稿。提交门禁typecheck/lint通过，完整测试7项追踪+1282项Vitest全通过无跳过；arm64打包G5复验16项通过。Intel/最低系统/干净Mac/正式签名与升级仍归11.3–11.5。已提交d8b80b7并创建PR https://github.com/logan-suu/Agora/pull/79（待人工合并）；未改产品代码或依赖。证据：docs/reviews/task112-desktop-packaging.md及task112-packaging-evidence/；历史：docs/task-history/11.2.md。",
+          "notes": "任务类型：design，PR修复新增构建/验证脚本，按实际产出转代码交付，待PR #79人工合并。2026-09-14设计接受事实保留，正式来源详细设计§12.3/选型§12。已修复本机独有材料P2：6份原始材料保hash入库，19份证据可校验；固定源码/锁文件在全新目录重建，原16项G5通过。typecheck/lint和完整7项追踪+1282项Vitest通过，无跳过；缺文件/坏hash/越界拒绝。11.3保持pending。证据入口docs/reviews/task112-packaging-evidence/reproduction/README.md；完整历史docs/task-history/11.2.md；PR https://github.com/logan-suu/Agora/pull/79。",
           "last_updated": "2026-09-14"
         },
         {
           "id": "11.3",
           "title": "实现 Electron 应用壳与本地服务生命周期",
           "story": null,
-          "status": "ready",
+          "status": "pending",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",

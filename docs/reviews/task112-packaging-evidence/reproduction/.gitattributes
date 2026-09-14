@@ -1,0 +1,2 @@
+# Preserve the original terminal log bytes and its previously recorded hash.
+build.log -text whitespace=-blank-at-eol,-blank-at-eof

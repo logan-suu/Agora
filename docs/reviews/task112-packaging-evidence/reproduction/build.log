@@ -1,0 +1,40 @@
+(node:44709) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+> @agora/web@0.0.0 build /private/tmp/agora-112-spike/source/apps/web
+> next build
+
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+   ▲ Next.js 15.5.24
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.5s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/6) ...
+   Generating static pages (1/6) 
+   Generating static pages (2/6) 
+   Generating static pages (4/6) 
+ ✓ Generating static pages (6/6)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    60.4 kB         163 kB
+├ ○ /_not-found                            996 B         104 kB
+├ ƒ /api/channels                          140 B         103 kB
+├ ƒ /api/commands                          140 B         103 kB
+├ ƒ /api/messages                          140 B         103 kB
+├ ƒ /api/model-settings                    140 B         103 kB
+├ ƒ /api/stream                            140 B         103 kB
+├ ƒ /api/tasks                             140 B         103 kB
+└ ƒ /api/traces                            140 B         103 kB
++ First Load JS shared by all             103 kB
+  ├ chunks/89752131-3518ff954ffe3f27.js  54.2 kB
+  ├ chunks/936-f803ed4c49d28fd9.js       46.5 kB
+  └ other shared chunks (total)           1.9 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
