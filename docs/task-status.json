@@ -1554,7 +1554,7 @@
             "10.7"
           ],
           "test_file": null,
-          "notes": "任务类型：design。2026-09-14 Leader接受，保持done；正式规格见详细设计§12.3/选型§12，蓝图/架构/计划已同步。Electron+独立Node、macOS15+双架构、工具链/签名及持久升级协议定稿。提交门禁typecheck/lint通过，完整测试7项追踪+1282项Vitest全通过无跳过；arm64打包G5复验16项通过。Intel/最低系统/干净Mac/正式签名与升级仍归11.3–11.5。正在按agora-commit交付；未改产品代码或依赖。证据：docs/reviews/task112-desktop-packaging.md及task112-packaging-evidence/；历史：docs/task-history/11.2.md。",
+          "notes": "任务类型：design。2026-09-14 Leader接受，保持done；正式规格见详细设计§12.3/选型§12，蓝图/架构/计划已同步。Electron+独立Node、macOS15+双架构、工具链/签名及持久升级协议定稿。提交门禁typecheck/lint通过，完整测试7项追踪+1282项Vitest全通过无跳过；arm64打包G5复验16项通过。Intel/最低系统/干净Mac/正式签名与升级仍归11.3–11.5。已提交d8b80b7并创建PR https://github.com/logan-suu/Agora/pull/79（待人工合并）；未改产品代码或依赖。证据：docs/reviews/task112-desktop-packaging.md及task112-packaging-evidence/；历史：docs/task-history/11.2.md。",
           "last_updated": "2026-09-14"
         },
         {
