@@ -3,7 +3,7 @@
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
   "last_updated": "2026-09-15",
-  "current_phase": 11,
+  "current_phase": 12,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
     {
@@ -238,7 +238,7 @@
       "id": "M11",
       "deliverable": "Electron 安装与受管工具链：集成测试与发布候选验收（11.5）",
       "target": "按依赖推进，无工期承诺；发布规则见开发计划§18.11",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "M12",
@@ -1521,7 +1521,7 @@
     {
       "id": 11,
       "name": "Electron 安装与受管工具链",
-      "status": "in_progress",
+      "status": "done",
       "integration_test": "11.5",
       "exit_criteria": "预览版：在当前受支持Apple Silicon Mac实际安装并双击启动应用（本次干净macOS15验收获批忽略，DEF-018保留未验证），托管本地服务和Node/Git/包管理器/helper；验证单实例、钥匙串、受管PATH、异常反馈及正常关闭。本阶段只开放安装与环境检查，不开放未验收的本机编码入口，也不向新桌面产品提供Docker模式。 阶段出口须包含真实集成测试、累计G1–G7及§18.11发布候选证据；通过后可发布对应范围的版本，是否已经发布另以Git tag/GitHub Release为准。",
       "tasks": [
@@ -1608,7 +1608,7 @@
           "id": "11.5",
           "title": "Phase 11 集成测试与发布验收：Electron 安装与受管工具链",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "last_updated": "2026-09-15",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22",
@@ -1623,7 +1623,7 @@
             "11.4"
           ],
           "test_file": "tests/integration/phase11/phase11-exit.test.ts",
-          "notes": "任务类型：exit。PR #83已创建：https://github.com/logan-suu/Agora/pull/83；审查修正验收矩阵旧计数与Downloads路径脱敏，保持in_progress待人工合并。Go空reasoning_content修复后原LRU及完整回归通过：Node7/7、Vitest189文件1340/1340；G3/G5/G7通过，历史失败与红绿证据保留。本轮文档修正复核源码/产物输入hash并复用G4/G5，详见docs/reviews/task115-evidence/pr-review.json。干净macOS15本次获批忽略，DEF-018未验证；测试下载已清理，版本/发布未授权。详情docs/task-history/11.5.md；docs/reviews/task115-phase11-exit.md。"
+          "notes": "任务类型：exit。PR #83已人工合并：https://github.com/logan-suu/Agora/pull/83；merge=b41702dd9f4d99d0405b6f4e832a292c31c7b328。G1/G3/G4/G5/G6/G7齐备：Node7/7、Vitest189文件1340/1340，真实Go模型保持；原生服务23、主进程12、工具15、介质3及隔离安装通过，升级证据按字节一致性复用。合并树与已审查HEAD一致，5份测试源码及354项构建输入hash匹配。Phase11完成，发布未授权且当前无tag/Release；候选已按TEST-CLEANUP删除，发布需重建复验。DEF-018干净macOS15本次获批忽略但未验证。完整证据：docs/task-history/11.5.md；docs/reviews/task115-phase11-exit.md；docs/reviews/task115-evidence/pr-review.json。"
         }
       ]
     },
@@ -1638,7 +1638,7 @@
           "id": "12.1",
           "title": "定稿 Docker 执行后端退役与本机切换清单",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.6",
             "docs/详细设计方案.md §12.3",
@@ -1651,13 +1651,13 @@
           ],
           "test_file": null,
           "notes": "任务类型：design。按已批准的无 Docker、无旧任务兼容方向，清点后端、专用依赖、配置、安装/启动/恢复入口；定稿新状态入口与保留契约的本机回归替代清单，不再比较兼容策略。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。",
-          "last_updated": "2026-09-13"
+          "last_updated": "2026-09-15"
         },
         {
           "id": "12.2",
           "title": "定稿本机执行授权与工作区保护契约",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.5",
             "docs/详细设计方案.md §12.2",
@@ -1670,7 +1670,7 @@
           ],
           "test_file": null,
           "notes": "任务类型：design。确定目录/命令授权、工具链访问、凭据隔离、直接/Worktree、未提交修改和接管协议；明确受信强制边界、失败语义、接口与G5用例后才启用宿主执行。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。",
-          "last_updated": "2026-09-13"
+          "last_updated": "2026-09-15"
         },
         {
           "id": "12.3",
