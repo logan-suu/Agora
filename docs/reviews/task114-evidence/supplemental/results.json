@@ -1,6 +1,6 @@
 {
   "date": "2026-09-14",
-  "status": "current-mac-installation-and-regression-passed-other-platform-and-keychain-reauthorization-incomplete",
+  "status": "current-mac-installation-and-keychain-recovery-passed-clean-platform-unverified",
   "host": {
     "os": "macOS 26.5",
     "build": "25F71",
@@ -2362,8 +2362,6 @@
     }
   },
   "remaining": [
-    "Cross-build isolated Keychain reauthorization ACL step awaits explicit permission after automatic approval rejection",
-    "Human Keychain denial/reauthorization prompt validation",
     "Clean Apple Silicon macOS 15 environment unavailable; user requested current Mac only",
     "Fixed-commit release candidate and human PR merge"
   ],
@@ -2377,5 +2375,12 @@
     "temporaryDownloadServersStopped": true,
     "repairedDmgUnmounted": true,
     "installedApplicationPreserved": true
+  },
+  "keychainRecovery": {
+    "status": "passed",
+    "evidence": "keychain-recovery.json",
+    "crossBuildChecks": 36,
+    "independentLockChecks": 19,
+    "humanSystemAuthorizationConfirmed": true
   }
 }
