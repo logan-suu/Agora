@@ -1669,7 +1669,7 @@
             "11.5"
           ],
           "test_file": null,
-          "notes": "任务类型：design。Leader已确认12.2契约及限制；正式定义见docs/详细设计方案.md §12.2。已交付PR #85：https://github.com/logan-suu/Agora/pull/85（base=dev-1.0.0），功能提交49618dd；纯设计保持done。提交门禁：typecheck/lint通过，Node7+Vitest1340全绿，既有真实Go/Docker/Git/Harness链通过；L01–L18本机G5仍待后续实装。完整证据：docs/task-history/12.2.md及docs/reviews/task122-delivery-evidence/。",
+          "notes": "任务类型：design。Leader已确认12.2契约及限制；正式定义见docs/详细设计方案.md §12.2。PR #85已合并至dev-1.0.0：https://github.com/logan-suu/Agora/pull/85；merge=eadcf2c2677f9f9c2defc52553d48cbdf260fbde，与已验证PR提交b9ce53d内容一致。纯设计保持done，12.3仅ready未开工。门禁：typecheck/lint通过，Node7+Vitest1340全绿；真实opencode-go/deepseek-v4-flash及既有Docker/Git/MCP/Harness回归通过。L01–L18本机G5待后续实装。完整证据：docs/task-history/12.2.md及docs/reviews/task122-delivery-evidence/。",
           "last_updated": "2026-09-15"
         },
         {
