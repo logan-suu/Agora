@@ -123,8 +123,8 @@
     },
     {
       "id": "D18",
-      "rule": "四批为Phase11–30共20阶段110任务；每阶段3–7项，末项为集成/发布验收，全部任务依赖前阶段出口，旧新ID见计划§18.12。11/12限定预览，13完成本机闭环并退役Docker（12.1已定清单、13.3移除、13.4无Docker验收）；不兼容旧任务、不自动删数据，研发历史及D3等保护保留。G1–G7/人工PR合并不变，阶段done不等于发布，dev→main人工合并后经授权tag/Release，见§18.11。身份/项目CAS/跨聚合回执及D4保身份真Fork重取lease见详设§12.1。桌面Electron+独立Node，仅Apple Silicon/macOS15+；GitHub Releases交付ad-hoc DMG、校验和及未公证安装说明，不要求Developer ID/公证。保留真实隔离安装、目标系统实测（11.5干净macOS15项获批忽略但未验证，DEF-018）、升级Keychain及state/workspace/配置证据连续性和持久迁移恢复，详设§12.3、蓝图§22.3.2、选型§12。设计接受不替代实装验收。",
-      "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18；12.1退役清单：docs/详细设计方案.md §12.3.11"
+      "rule": "Phase11–30共20阶段110任务，末项集成/发布，下一阶段依赖前出口，旧ID见计划§18.12。11/12限定预览；13退役Docker且不兼容旧任务，不自动删数据；12.1清单、13.3移除、13.4无Docker验收。G1–G7/人工PR合并不变；阶段done不等于发布，dev→main人工合并后经授权tag/Release。身份/CAS/跨聚合回执与D4真Fork见详设§12.1。12.2已接受Seatbelt候选及弃用风险/失败关闭、本机APFS、版本事务/固定输入验证/接管保全，冻结方法不变，L01–L18待实测。Electron+独立Node，仅Apple Silicon/macOS15+；GitHub ad-hoc DMG/校验和/未公证说明，不要求Developer ID/公证。真实安装、升级Keychain与state/workspace/配置证据连续性及迁移恢复保留；11.5干净macOS15获批忽略但未验证，DEF-018。D3等保护保留，设计接受不替代实装验收；来源详设§12、蓝图§22.3.2、选型§12、计划§18.11。",
+      "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18；12.1退役清单：docs/详细设计方案.md §12.3.11；12.2本机契约：docs/详细设计方案.md §12.2"
     },
     {
       "id": "TEST-CLEANUP",
@@ -1657,7 +1657,7 @@
           "id": "12.2",
           "title": "定稿本机执行授权与工作区保护契约",
           "story": null,
-          "status": "ready",
+          "status": "done",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.5",
             "docs/详细设计方案.md §12.2",
@@ -1669,14 +1669,14 @@
             "11.5"
           ],
           "test_file": null,
-          "notes": "任务类型：design。确定目录/命令授权、工具链访问、凭据隔离、直接/Worktree、未提交修改和接管协议；明确受信强制边界、失败语义、接口与G5用例后才启用宿主执行。 详细范围与验收：docs/开发计划安排.md §18.2。设计任务尚未开工；文档与契约审阅不代替后续运行时验收。",
+          "notes": "任务类型：design。Leader已确认12.2契约及限制；正式定义见docs/详细设计方案.md §12.2。已交付PR #85：https://github.com/logan-suu/Agora/pull/85（base=dev-1.0.0），功能提交49618dd；纯设计保持done。提交门禁：typecheck/lint通过，Node7+Vitest1340全绿，既有真实Go/Docker/Git/Harness链通过；L01–L18本机G5仍待后续实装。完整证据：docs/task-history/12.2.md及docs/reviews/task122-delivery-evidence/。",
           "last_updated": "2026-09-15"
         },
         {
           "id": "12.3",
           "title": "实现受控本机执行与普通目录工作区",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1",
             "docs/详细设计方案.md §12.2",
@@ -1690,7 +1690,7 @@
           ],
           "test_file": "tests/integration/phase12/phase12-3.test.ts",
           "notes": "任务类型：code。实现经端口校验的文件/命令工具；普通非Git目录可开始；G5实测编辑/构建/测试、越界拒绝、凭据隔离，切换前维持既有回归，13.3完成本机替代覆盖并退役Docker路径。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
-          "last_updated": "2026-09-13"
+          "last_updated": "2026-09-15"
         },
         {
           "id": "12.4",
