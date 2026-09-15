@@ -1,0 +1,2164 @@
+{
+  "at": "2026-09-15T21:04:26.230Z",
+  "basis": "New entries relative to pre-test root snapshot; exact test source prefixes and root dev/inode/uid; full log and tree manifests hashed before deletion; lsof and container mounts checked",
+  "activity": {
+    "testCommandExited": true,
+    "mounts": 0,
+    "relatedContainers": 0,
+    "retainedHolder": "com.apple.Virtualization.Virtua"
+  },
+  "removed": 99,
+  "retained": 8,
+  "removedLogicalBytes": 933158,
+  "retainedLogicalBytes": 1652127,
+  "availableBefore": 45148016640,
+  "availableAfter": 45152133120,
+  "availableDelta": 4116480,
+  "downloadsCreated": 0,
+  "note": "Retained directories contain test state/evidence, not downloaded installation bundles; no user service was stopped. Filesystem free-space delta includes concurrent APFS activity.",
+  "paths": [
+    {
+      "path": "$TMPDIR/agora-first-sU5SQ0",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:39.859Z",
+      "prefix": "agora-first-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659626,
+      "manifestHash": "c9e48f37ac3c8374c819ef140d8c6ee37a76ab1299b9d5b46e9666c8bc56edce",
+      "entries": 1,
+      "bytes": 1,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-server-dklxwQ",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:47.192Z",
+      "prefix": "agora-fs-server-",
+      "sources": [
+        "packages/tools/fs/test/fs-server.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660428,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-server-f3wLFX",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:47.187Z",
+      "prefix": "agora-fs-server-",
+      "sources": [
+        "packages/tools/fs/test/fs-server.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660425,
+      "manifestHash": "e740b6ba00fa219c3f1226a043480495e21b4e6f39a8e8b196e000ab9f01521e",
+      "entries": 2,
+      "bytes": 19,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-8BDqza",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:39.848Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659612,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-AegmGJ",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:59:39.873Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659635,
+      "manifestHash": "53c388eeca1bb23f8514b09ad129426d23e145514350ee21343038ebdff15d88",
+      "entries": 6,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-OOh0PP",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:39.863Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659631,
+      "manifestHash": "746a46f9f5a56fef09d82c11a5ffbc1a66756e87e562d9ca525a607e2bcce88a",
+      "entries": 1,
+      "bytes": 6,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-Vofnae",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:39.858Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659625,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-XebJ0m",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:39.868Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659633,
+      "manifestHash": "746a46f9f5a56fef09d82c11a5ffbc1a66756e87e562d9ca525a607e2bcce88a",
+      "entries": 1,
+      "bytes": 6,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-aDd9Eh",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:39.852Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659619,
+      "manifestHash": "c9b7daf136e8c77965b57813148a3f98c4adacd31efbdcb4346b79208a002bca",
+      "entries": 1,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-ixJSVa",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:39.845Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659607,
+      "manifestHash": "02e06491daffd9cf6bb524b2f6b8018423683df5b08f76a281eb35cfdbcac2ca",
+      "entries": 3,
+      "bytes": 1,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-lZq8w2",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:39.850Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659613,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-mcEgZN",
+      "directory": true,
+      "symlink": false,
+      "size": 160,
+      "mtime": "2026-09-15T20:59:39.886Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659642,
+      "manifestHash": "958b1133f01a54ccf0cf59a57d1e2852a3a09525dd6e263989667ebe1f61f7d4",
+      "entries": 6,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-nIdCSs",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:59:39.856Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659622,
+      "manifestHash": "49ea829e147f6fc83ab627d87e9286966462abbfd904270dc2fe65fd20f9af17",
+      "entries": 2,
+      "bytes": 6,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-rq30R7",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:39.840Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659604,
+      "manifestHash": "0f5dc31ba21fde6bf4c5b37636c200496777ef2f2fb64f4deacc53beac62fa88",
+      "entries": 2,
+      "bytes": 5,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-rr7sHI",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:39.845Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659611,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-fs-test-yq1N1r",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:39.850Z",
+      "prefix": "agora-fs-test-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659615,
+      "manifestHash": "58a06e7187c80b6c80a5840dc3f1401e746a5604b20b3b5dc2967abfb29bcf0e",
+      "entries": 1,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-10WMs3",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:12.387Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127656285,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-1jhr9y",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:17.205Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127656766,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-2ejAmZ",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:58.114Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647698,
+      "manifestHash": "1e4cae583f1448112c9483677f9e041f9b14ac9f0f3867acf33b3d5fe5b24c6a",
+      "entries": 60,
+      "bytes": 28193,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-3c2quM",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:10.113Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127656039,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-3qQrdS",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:52.048Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127646169,
+      "manifestHash": "18883be40a22408a9ad6efb23df781d37df84500971602ad13b5bdbbac423ada",
+      "entries": 53,
+      "bytes": 27623,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-67D6yV",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:36.498Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127651526,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-8sRpFc",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:59:24.064Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657412,
+      "manifestHash": "1cb0222355303de0f1b8adafeca4d4ecfba4f451551b1965809f46d9bcaa573d",
+      "entries": 66,
+      "bytes": 28558,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-AhPza3",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:23.706Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657405,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-AjGerR",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:44.528Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127652218,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-DfX6Zc",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:13.037Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127656400,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-EKKQVd",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:55.413Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647049,
+      "manifestHash": "a72755adb70d97add572dfa82b2666368966e8c4c66aedd0bdc4cc059454ca37",
+      "entries": 53,
+      "bytes": 27651,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-EUP1oS",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:56.631Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647302,
+      "manifestHash": "68ceb36afb387cf23b2d05168288d1e6724ba2e94095a7a81594484b4373280c",
+      "entries": 53,
+      "bytes": 27629,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-Eqlt1A",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:59:09.518Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127655802,
+      "manifestHash": "d53fe89a2b125c27d7cf1f03b2af47133a3876a371b1a8cd67ec5729a48a13e0",
+      "entries": 65,
+      "bytes": 28686,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-K0nYAo",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:23.720Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657409,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-Lyjgwz",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:35.452Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127651372,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-NC6gQO",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:57.451Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647509,
+      "manifestHash": "05771afbe71c78ad5e80cc1a32a20fa74dd781533117192cc583499485996222",
+      "entries": 60,
+      "bytes": 28197,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-NNYTiO",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:59:08.892Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127655655,
+      "manifestHash": "649b3668df622c31adb16ecd9b3b05b3e2b233d5479fed30a37a3c35d27a2432",
+      "entries": 72,
+      "bytes": 29327,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-PTty7g",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:44.540Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127652222,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-PbSwzs",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:23.699Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657401,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-QEty0v",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:57.827Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647614,
+      "manifestHash": "6d4a79d561aa9c2ffdba83b47d2edbf9a978b76474765996b87cc3eb4a9a685a",
+      "entries": 53,
+      "bytes": 27637,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-RMseHv",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:53.262Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127646460,
+      "manifestHash": "5d765400744aa3372b40dc9a4ddabcbe889dcbf51d0a796a296d656c56af523e",
+      "entries": 53,
+      "bytes": 27623,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-RgDn0i",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:34.480Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127651218,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-SanXzQ",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:57:57.564Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647612,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-T9Vwig",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:58.488Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647801,
+      "manifestHash": "b1d9fc63b1a044ff22a606375313cdb81f73453cb95e0f713c6a1da0f68fbdcf",
+      "entries": 66,
+      "bytes": 28695,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-W4gBKr",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:57:53.591Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127646705,
+      "manifestHash": "6f692c36175fb4c19bf91e3d1e34b05daea728975d27c1adb4e4d2e63cabef4f",
+      "entries": 40,
+      "bytes": 26889,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-XaGrHQ",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:38.288Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127651791,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-Yc4RAm",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:23.689Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657399,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-Zvv6Xc",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:44.524Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127652216,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-aPKYSp",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:58:44.899Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127652225,
+      "manifestHash": "becb06f99c28c1e72e5c18eebeac8bedeb3944ceb70861c078a82154fd0c5597",
+      "entries": 69,
+      "bytes": 29281,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-b8r7qi",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:57:56.913Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647384,
+      "manifestHash": "188ec8b576a599562af51bcd09f303114573b7f8e95eaa8b2ccefaf5b90133e6",
+      "entries": 66,
+      "bytes": 28711,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-fVJm5c",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:17.570Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127656851,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-fbzlR5",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:45.124Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127652350,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-k3wyVP",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:37.999Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127651708,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-k96Ml0",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:23.703Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657403,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-kD433w",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:39.689Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659585,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-main-XwU91G-worktrees",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:00.402Z",
+      "prefix": "agora-git-main-XwU91G-wor",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127648324,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-main-dWIu5S-worktrees",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:57:59.119Z",
+      "prefix": "agora-git-main-dWIu5S-wor",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647988,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-main-gs3445-worktrees",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:00.879Z",
+      "prefix": "agora-git-main-gs3445-wor",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127648446,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-main-t3LV6Z-worktrees",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:03.714Z",
+      "prefix": "agora-git-main-t3LV6Z-wor",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127649028,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-main-tgHRq9-worktrees",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:10.113Z",
+      "prefix": "agora-git-main-tgHRq9-wor",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127655987,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-oi1uu1",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:24.250Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657523,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-rcvNdu",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:37.925Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127651703,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-vmILgU",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:57:56.052Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127647242,
+      "manifestHash": "1177822e3e15eeb4314ab9c0e2195a4674ec7c2d2f4ab101c1f0a0e128fad599",
+      "entries": 40,
+      "bytes": 26889,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-wLpZ9V",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:24.287Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657525,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-git-xmKOLA",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:58:33.661Z",
+      "prefix": "agora-git-",
+      "sources": [
+        "packages/tools/git/src/git-service.ts",
+        "packages/tools/git/test/git-server.test.ts",
+        "packages/tools/git/test/git-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127651103,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-link-10950-1cuyijrbub2",
+      "directory": false,
+      "symlink": true,
+      "size": 68,
+      "mtime": "2026-09-15T20:59:39.861Z",
+      "prefix": "agora-link-10950-1cuyi",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "action": "unlink-test-symlink",
+      "uid": 501,
+      "dev": 16777231,
+      "ino": 127659630,
+      "linkTarget": "/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora-second-jaZx3N",
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-1raLbd",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:30.980Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658275,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-3I9gNR",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:30.980Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658276,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-4s1nYx",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:30.981Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658278,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-9FzNdv",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:30.981Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658277,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-9llUBO",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:30.860Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658267,
+      "manifestHash": "6f9cdb6f46612bee76d00e2e42b3947d640d77b4960d90470c625bd792f80ba5",
+      "entries": 1,
+      "bytes": 45,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-DxBbC3",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:30.942Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658271,
+      "manifestHash": "013af95e88cae2ec9d1a85fe0be5ee3d6103cacf76a548e0c97a9298ada73f31",
+      "entries": 2,
+      "bytes": 32,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-KquTcF",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:30.980Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658274,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-O1sqrf",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:30.981Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658279,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-WBAAMt",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:30.899Z",
+      "prefix": "agora-lint-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658269,
+      "manifestHash": "1c0e10b1a0b0d64da81ee630e2c18bead38528fcfd2082dd5c95d15723b6f035",
+      "entries": 1,
+      "bytes": 45,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-lint-server-3xDIii",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:31.011Z",
+      "prefix": "agora-lint-server-",
+      "sources": [
+        "packages/tools/lint/test/lint-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658280,
+      "manifestHash": "8f24be9a3993607b3eea9e0ec8f26e777b8b18c299a4795c443c466bd652135d",
+      "entries": 1,
+      "bytes": 22,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-other-dTMxQt",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:23.365Z",
+      "prefix": "agora-other-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts",
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657394,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-other-iX1xJW",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:39.850Z",
+      "prefix": "agora-other-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts",
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659614,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-outside-TcVrNE",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:39.850Z",
+      "prefix": "agora-outside-",
+      "sources": [
+        "packages/runtime/sandbox/test/path-guard.test.ts",
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659616,
+      "manifestHash": "c270c9d2b0352f5d837531b10b3a8b2b8d65b0e131fd98c93e274980e3792d18",
+      "entries": 1,
+      "bytes": 10,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-outside-ukrOby",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:39.852Z",
+      "prefix": "agora-outside-",
+      "sources": [
+        "packages/runtime/sandbox/test/path-guard.test.ts",
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659620,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-phase8-objection-task-df18fe8b6c37af06-shared-dbHNy3",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:28.887Z",
+      "prefix": "agora-phase8-objection-task-df18fe8b6c37af06-shared-",
+      "sources": [
+        "packages/runtime/sandbox/src/local-temp-sandbox.ts",
+        "tests/evals/phase8/scenarios.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658086,
+      "manifestHash": "ef96c28958b4b17fc87288ff0acc3b4b8cc9aedc46c6900ce9372259986378fd",
+      "entries": 39,
+      "bytes": 26889,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-second-jaZx3N",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:39.858Z",
+      "prefix": "agora-second-",
+      "sources": [
+        "packages/tools/fs/test/fs-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659627,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-task-b-b977da3c7aa32912-CODER-6GFi1j",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:29.413Z",
+      "prefix": "agora-task-b-b977da3c7aa32912-CODER-",
+      "sources": [
+        "packages/runtime/sandbox/test/local-temp-sandbox.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127658181,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-server-DLTYzE",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:33.977Z",
+      "prefix": "agora-test-server-",
+      "sources": [
+        "packages/tools/test/test/test-server.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659128,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-server-ETXjOP",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:33.887Z",
+      "prefix": "agora-test-server-",
+      "sources": [
+        "packages/tools/test/test/test-server.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127659126,
+      "manifestHash": "4ac0593a482e3e3edeee41bf3de57c3dd4975d63be26742c9155fe70c6873705",
+      "entries": 1,
+      "bytes": 47,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-svc-0CPWqp",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:22.819Z",
+      "prefix": "agora-test-svc-",
+      "sources": [
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657386,
+      "manifestHash": "9be4f44195e2b2b2bb62b200c2f93909b0e977e272690f965481f2985f67a9ca",
+      "entries": 1,
+      "bytes": 119,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-svc-1B3UhE",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:23.365Z",
+      "prefix": "agora-test-svc-",
+      "sources": [
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657393,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-svc-1fjZsq",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:22.738Z",
+      "prefix": "agora-test-svc-",
+      "sources": [
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657384,
+      "manifestHash": "e860a679bce055a7193469d5f93152cdd82376e8fb61f484c082d0bde9f0fdfd",
+      "entries": 1,
+      "bytes": 149,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-svc-JBTgDN",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:23.312Z",
+      "prefix": "agora-test-svc-",
+      "sources": [
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657392,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-svc-aBvQ9I",
+      "directory": true,
+      "symlink": false,
+      "size": 128,
+      "mtime": "2026-09-15T20:59:23.040Z",
+      "prefix": "agora-test-svc-",
+      "sources": [
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657389,
+      "manifestHash": "37acf92c377731fe8b5f74a431bc39224e10924fed944f87955538a241cef484",
+      "entries": 2,
+      "bytes": 234,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-svc-qFvs5z",
+      "directory": true,
+      "symlink": false,
+      "size": 64,
+      "mtime": "2026-09-15T20:59:22.900Z",
+      "prefix": "agora-test-svc-",
+      "sources": [
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657388,
+      "manifestHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "entries": 0,
+      "bytes": 0,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora-test-svc-uA5qea",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:23.366Z",
+      "prefix": "agora-test-svc-",
+      "sources": [
+        "packages/tools/test/test/test-service.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127657395,
+      "manifestHash": "b58de1e1d1e829ebe29ab70be3c7a55a216c858b11d80b4eb17278496b0e0fda",
+      "entries": 1,
+      "bytes": 47,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-D3ugYa",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:54:34.382Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127637763,
+      "manifestHash": "8d65bec69e7660650c97a5b95fe8f19bc6d917c57b4bed9e4c4079bf4b2f8ed3",
+      "entries": 155,
+      "bytes": 258604,
+      "action": "retain-open-directory-handles",
+      "holders": [
+        "com.apple.Virtualization.Virtua"
+      ],
+      "result": "retained"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-IiN8tP",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:55:02.918Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127640445,
+      "manifestHash": "eeb364808628fc6e659152d8ee4689a53ff5a1cddcf68ca93a771ad2359e2a06",
+      "entries": 155,
+      "bytes": 256262,
+      "action": "retain-open-directory-handles",
+      "holders": [
+        "com.apple.Virtualization.Virtua"
+      ],
+      "result": "retained"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-N8ARS0",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:55:22.162Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127643289,
+      "manifestHash": "74ccf17abdd4306f77a66473e8b34b01afe311f0e0f3477829ee4cb135c33c40",
+      "entries": 145,
+      "bytes": 149099,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-SathU3",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:55:22.987Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127643528,
+      "manifestHash": "0c9168aa7ae021976eea95e80a988de9b8f14077c5cdbe0728e417a73365ca11",
+      "entries": 145,
+      "bytes": 149330,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-U3VavD",
+      "directory": true,
+      "symlink": false,
+      "size": 224,
+      "mtime": "2026-09-15T20:54:45.110Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127638824,
+      "manifestHash": "c894f29d40672b8cecd34edab60913aef2b124d2d7d8c166fdb046d6ac6bcbf1",
+      "entries": 177,
+      "bytes": 259204,
+      "action": "retain-open-directory-handles",
+      "holders": [
+        "com.apple.Virtualization.Virtua"
+      ],
+      "result": "retained"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-VSWp4I",
+      "directory": true,
+      "symlink": false,
+      "size": 224,
+      "mtime": "2026-09-15T20:55:20.195Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127642124,
+      "manifestHash": "81a17e89014a9832e66ba99d24b31131f56a95b3680ad30cb483f968d8ddf975",
+      "entries": 155,
+      "bytes": 268623,
+      "action": "retain-open-directory-handles",
+      "holders": [
+        "com.apple.Virtualization.Virtua"
+      ],
+      "result": "retained"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-gWjWAv",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:55:21.361Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127643050,
+      "manifestHash": "ec1c5f8eae2ecd529286e0ef657b22b378c54ef1067e68cccc1506c99d7f58b1",
+      "entries": 145,
+      "bytes": 149220,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-gaKO6V",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:54:35.482Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127638531,
+      "manifestHash": "404a812c7d593d931587c5c5423815a3fcef0b8c92e1fee1e73731897c0c0f37",
+      "entries": 67,
+      "bytes": 34415,
+      "action": "retain-open-directory-handles",
+      "holders": [
+        "com.apple.Virtualization.Virtua"
+      ],
+      "result": "retained"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-ioSra5",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:55:11.510Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127641212,
+      "manifestHash": "ee280be8181708ebbe4eb32443804c77f041511bb5ff8ceafdc9d9896678b4b5",
+      "entries": 155,
+      "bytes": 272975,
+      "action": "retain-open-directory-handles",
+      "holders": [
+        "com.apple.Virtualization.Virtua"
+      ],
+      "result": "retained"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-jGzEpf",
+      "directory": true,
+      "symlink": false,
+      "size": 224,
+      "mtime": "2026-09-15T20:55:12.127Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127641989,
+      "manifestHash": "82b30f0f3a27469450455b653c2734bdfdea5186b60b68e42c3230323c9842fa",
+      "entries": 61,
+      "bytes": 33539,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-m4iIjf",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:54:36.328Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127638677,
+      "manifestHash": "0d39115eb2e801db07cb2010de6d9d68a65e2605ce5869181fbe8d17f5721e50",
+      "entries": 68,
+      "bytes": 35208,
+      "action": "retain-open-directory-handles",
+      "holders": [
+        "com.apple.Virtualization.Virtua"
+      ],
+      "result": "retained"
+    },
+    {
+      "path": "$TMPDIR/agora105-driver-wVznkD",
+      "directory": true,
+      "symlink": false,
+      "size": 192,
+      "mtime": "2026-09-15T20:54:54.047Z",
+      "prefix": "agora105-driver-",
+      "sources": [
+        "tests/integration/phase10/phase10-benchmark.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127639676,
+      "manifestHash": "2fe17a2d9e2987dbab86e7cf87502a947791ba0f93a2846514a1841646aad32b",
+      "entries": 154,
+      "bytes": 266836,
+      "action": "retain-open-directory-handles",
+      "holders": [
+        "com.apple.Virtualization.Virtua"
+      ],
+      "result": "retained"
+    },
+    {
+      "path": "$TMPDIR/group-pL1WPT",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:53.836Z",
+      "prefix": "group-",
+      "sources": [
+        "apps/web/src/app/layout.tsx",
+        "packages/tools/test/src/test-service.ts",
+        "tests/evals/phase10/final/manifest.test.ts",
+        "tests/evals/phase10/final/protocol.test.ts",
+        "tests/evals/phase10/run-final-benchmark.eval.ts",
+        "tests/integration/phase2/phase2-exit.test.ts",
+        "tests/integration/phase3/phase3-exit.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660919,
+      "manifestHash": "51a72b89e950a373e70f20ca29193b7db8f81bc7563aebfef83ff4a9b5892ebb",
+      "entries": 1,
+      "bytes": 636,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/meter-LzUYzm",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:43.476Z",
+      "prefix": "meter-",
+      "sources": [
+        "tests/evals/phase10/final/model-adapter.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660040,
+      "manifestHash": "fc565c73d2ff764bade0210766fd2e05a418eebe9bd184162b11f87db536136a",
+      "entries": 1,
+      "bytes": 277,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/meter-go-cache-nIznIr",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:43.494Z",
+      "prefix": "meter-go-cache-",
+      "sources": [
+        "tests/evals/phase10/final/model-adapter.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660062,
+      "manifestHash": "d3011e78f6281703fe04d1b3e5a3664767e4cfab011599a782dd54edd2b8e734",
+      "entries": 1,
+      "bytes": 288,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/meter-ktHSSZ",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:43.476Z",
+      "prefix": "meter-",
+      "sources": [
+        "tests/evals/phase10/final/model-adapter.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660046,
+      "manifestHash": "210481a066c6f666f038abb422b95ebebafc5bbafca5bab40af2478952f0c062",
+      "entries": 1,
+      "bytes": 60,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/meter-pO8NRw",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:43.474Z",
+      "prefix": "meter-",
+      "sources": [
+        "tests/evals/phase10/final/model-adapter.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660038,
+      "manifestHash": "210481a066c6f666f038abb422b95ebebafc5bbafca5bab40af2478952f0c062",
+      "entries": 1,
+      "bytes": 60,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/meter-pressure-XsO7sa",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:43.491Z",
+      "prefix": "meter-pressure-",
+      "sources": [
+        "tests/evals/phase10/final/model-adapter.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660048,
+      "manifestHash": "f5c4cb01a3055ebe58eca0b935794177bdce9d06df49fc1853fb450015794187",
+      "entries": 1,
+      "bytes": 704,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    },
+    {
+      "path": "$TMPDIR/meter-qSsa9j",
+      "directory": true,
+      "symlink": false,
+      "size": 96,
+      "mtime": "2026-09-15T20:59:43.472Z",
+      "prefix": "meter-",
+      "sources": [
+        "tests/evals/phase10/final/model-adapter.test.ts"
+      ],
+      "dev": 16777231,
+      "ino": 127660024,
+      "manifestHash": "7d7438d68f7a08b8b940031d282a4210ead65dc73796e89cbceccad117b8b718",
+      "entries": 1,
+      "bytes": 673,
+      "action": "remove",
+      "holders": [],
+      "result": "removed"
+    }
+  ]
+}

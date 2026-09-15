@@ -1,0 +1,109 @@
+{
+  "task": "12.1",
+  "date": "2026-09-15",
+  "baselineCommit": "e9200f9d06c663bb52c7edb8350a278fecc43ed2",
+  "scope": "Leader-accepted documentation only; no new task-specific runtime G5",
+  "platform": {
+    "os": "macOS",
+    "version": "26.5",
+    "arch": "arm64",
+    "node": "v24.20.0",
+    "pnpm": "9.15.9",
+    "vitest": "3.2.7"
+  },
+  "gates": {
+    "typecheck": {
+      "command": "pnpm typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "command": "pnpm lint",
+      "exitCode": 0,
+      "files": 491
+    },
+    "native": {
+      "command": "pnpm build:sandbox-native",
+      "exitCode": 0
+    },
+    "tests": {
+      "command": "pnpm test",
+      "exitCode": 0,
+      "nodeTests": 7,
+      "vitestFiles": 189,
+      "vitestTests": 1340,
+      "failed": 0,
+      "skipped": 0,
+      "durationSeconds": 554.51
+    },
+    "g5": {
+      "taskSpecific": "not applicable to pure design; native backend and retirement acceptance remain future tasks",
+      "existingLiveRegression": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "lruMs": 107850,
+        "harnessMs": 53499,
+        "channelSummaryMs": 2399
+      },
+      "benchmark": "not run"
+    },
+    "sensitiveScan": {
+      "tool": "gitleaks 8.28.0",
+      "files": 9,
+      "bytes": 1411955,
+      "findings": 0,
+      "final": {
+        "files": 12,
+        "includesUncompressedTestLog": true,
+        "bytes": 1508827,
+        "findings": 0
+      }
+    }
+  },
+  "testLog": {
+    "path": "pnpm-test.log.gz",
+    "sha256": "e728ce288a810bbc3fea349e063570968901016d9f7400f2fd5774c5b38ad904",
+    "uncompressedSha256": "c58ccd728f936e72799083fd7eb2c4c58609d7eea7554f6bbf61422971bb5846",
+    "bytes": 27386
+  },
+  "sourceHashes": [
+    {
+      "path": "package.json",
+      "sha256": "6f4c9019070e5ab169ad8b9fedfa066f2e189f250681927d5cd5b990677bb4aa"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "269bc152808165552a17dcda5b8d06d951a7c80b3dc2ab798b8c483ddb762c39"
+    },
+    {
+      "path": "vitest.config.ts",
+      "sha256": "4c772e8e501a39749bc91fc34becca9142358ba21c8f13dcc2890e8cb763741c"
+    },
+    {
+      "path": "tests/helpers/live-model.ts",
+      "sha256": "efa3beff275ebc2b27743e9ab025421382f8e6eab9a4d9060be1295ab47df3a1"
+    },
+    {
+      "path": "tests/helpers/go-reasoning-transport.ts",
+      "sha256": "5c8b253e4ec3c98ebeb22a7083ff8df8b42564f9e4a1861054250271d1000e01"
+    },
+    {
+      "path": "packages/runtime/sandbox/native/secure-files.c",
+      "sha256": "d6bbe31d85bea5205a8acd556410f6c93271a9457e18a2a6dc5788c8581c8f1d"
+    },
+    {
+      "path": "packages/runtime/sandbox/build/secure-files-darwin-arm64",
+      "sha256": "8b0b86bca1c23059d5bf102196d0a1f8ce924772865f932ce4749335bd0facb3"
+    }
+  ],
+  "cleanup": {
+    "path": "cleanup.json",
+    "removed": 99,
+    "retainedOpenHandleDirectories": 8,
+    "retainedBytes": 1652127,
+    "downloadsCreated": 0
+  },
+  "permissionReview": {
+    "initial": "Full test command rejected before process creation over unspecified external model transfer",
+    "resolved": "Approved after inspection of three synthetic live test inputs, fixed Go endpoint, normal credential authentication and explicit user test instructions; full command then ran unchanged"
+  }
+}
