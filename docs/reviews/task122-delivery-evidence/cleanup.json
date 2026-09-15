@@ -2162,5 +2162,12 @@
       "mounted": false,
       "result": "removed"
     }
-  ]
+  ],
+  "deliveryWorkspace": {
+    "path": "/private/tmp/agora-task122-delivery-20260915",
+    "bytes": 4299177,
+    "result": "removed",
+    "availableDelta": 4816896,
+    "note": "Task-owned scan copies, temporary logs, source snapshots and PR body; permanent results and compressed log remain in repository"
+  }
 }
