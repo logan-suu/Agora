@@ -1582,7 +1582,7 @@
           "id": "11.4",
           "title": "交付受管 Node Git 包管理器与原生辅助程序",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1596,15 +1596,15 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-4.test.ts",
-          "notes": "任务类型：code。PR82已转正式审查，保持in_progress等待人工合并：https://github.com/logan-suu/Agora/pull/82。当前Mac隔离安装与钥匙串升级恢复已通过（跨构建36项、独立锁定19项）；macOS15干净环境按DEF-018暂缓且未验证，11.5复核。修复已推送aed24a5并处理4条审查会话；本轮修复回滚后同ID迁移重试，旧journal/备份原子归档保留；工具hash改流式，双重校验保留；同步旧验收状态。定向18项及G3/G7通过，完整回归Node7/7、187文件1334项全通过，无跳过；真实工具校验峰值266→144MiB。已清理27个重复构建/测试目录，约释放34GiB；验证证据与已安装应用保留。发布候选/阶段出口仍按流程。证据：docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
+          "notes": "任务类型：code。PR82已由人合并至dev-1.0.0，merge=cb09ccaa40a1f1660f1b212a893ac480e14f250b：https://github.com/logan-suu/Agora/pull/82。合并内容与已验证3e55cb2一致；G1/G3/G4/G5/G6/G7具证，Node7/7、187文件1334项通过，无跳过，Go deepseek-v4-flash三项真实模型通过。真实受管工具15项、原生12项及当前Mac隔离安装通过；跨构建钥匙串恢复36项、锁定恢复19项通过。aed24a5修复回滚重试和流式hash，旧journal/备份保留。macOS15干净环境仍按DEF-018获批暂缓且未验证，由11.5出口复核；固定候选、阶段出口和发布不由本次收尾代替。证据：docs/reviews/task114-evidence/supplemental/pr82-review-fixes.json；docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
           "last_updated": "2026-09-15"
         },
         {
           "id": "11.5",
           "title": "Phase 11 集成测试与发布验收：Electron 安装与受管工具链",
           "story": null,
-          "status": "pending",
-          "last_updated": "2026-09-13",
+          "status": "ready",
+          "last_updated": "2026-09-15",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22",
             "docs/详细设计方案.md §12",
