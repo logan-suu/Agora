@@ -96,7 +96,9 @@
         {
           "source": "/private/tmp/agora115-quarantine-hjdflp_a/result.json",
           "archived": "docs/reviews/task115-evidence/cleanup/3-result.json",
-          "sha256": "3beeffc0e51c126bf59f4bb2fe7021d8fb0a4c6d9747910181a7458382bd5cd8"
+          "sha256": "3beeffc0e51c126bf59f4bb2fe7021d8fb0a4c6d9747910181a7458382bd5cd8",
+          "archiveSha256": "5a7cb3f994490a19f9b5a134699f85d4e26c3124ce5ea4233e4681742849b454",
+          "redaction": "Downloads account name replaced with <redacted>; sha256 retains original source identity."
         }
       ],
       "deleted": true
@@ -185,7 +187,7 @@
       "deleted": true
     },
     {
-      "path": "/Users/logansu/Downloads/Agora-darwin-arm64.dmg",
+      "path": "/Users/<redacted>/Downloads/Agora-darwin-arm64.dmg",
       "device": 16777231,
       "inode": 127360493,
       "allocatedBytes": 317284352,

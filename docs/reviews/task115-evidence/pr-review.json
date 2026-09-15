@@ -1,0 +1,64 @@
+{
+  "pr": 83,
+  "reviewedHead": "e2b55535157e0324183a0b0fc6352fe2587ad8b5",
+  "scope": "Documentation-only review corrections; production and test sources unchanged.",
+  "redactions": [
+    {
+      "path": "cleanup/3-result.json",
+      "originalSha256": "3beeffc0e51c126bf59f4bb2fe7021d8fb0a4c6d9747910181a7458382bd5cd8",
+      "archivedSha256": "5a7cb3f994490a19f9b5a134699f85d4e26c3124ce5ea4233e4681742849b454"
+    },
+    {
+      "path": "quarantined-installation.json",
+      "originalSha256": "0391195d02028dc2049f26421e063835e427aae04812c14ee0a431586275f5e9",
+      "archivedSha256": "171d1130b933dae1ae65ec7c96620d84a80801d216dc6401276d8023dd839e82"
+    },
+    {
+      "path": "cleanup/receipt.json",
+      "originalSha256": "1d310f74674078b53cc11970127bb5962c1690d6c6e396a0208841e266e3b33b",
+      "archivedSha256": "1ed56c6d5c2901e4a242167db4f360d0a258ce723ce5cac5a6e23a623f1f6549"
+    }
+  ],
+  "redactionScope": "Only the three Downloads source-path occurrences. Original Git history and compressed raw logs are unchanged; this is not a repository-wide anonymization.",
+  "validation": {
+    "typecheck": "passed; rerun",
+    "lint": "passed; rerun; 491 files",
+    "taskIndex": "passed; 171 tasks, 31 phases, 25 decisions, 66 histories",
+    "diffCheck": "passed",
+    "g7": "gitleaks current PR files including gzip contents: 10.02 MB, zero findings; temporary scan copies removed",
+    "g4": {
+      "kind": "reused exact-source evidence, not rerun",
+      "evidence": "reasoning-fix/results.json",
+      "nodePassed": 7,
+      "vitestFilesPassed": 189,
+      "vitestPassed": 1340,
+      "failed": 0,
+      "skipped": 0,
+      "sourceHashesMatched": 5
+    },
+    "g5": {
+      "kind": "reused exact-input native/installation evidence, not rerun",
+      "evidence": "results.json and commit-gates/results.json",
+      "productionInputHashesMatched": 354
+    },
+    "archives": {
+      "compressedPairsVerified": 31,
+      "cleanupMetadataVerified": 30
+    },
+    "newDownloads": "none"
+  },
+  "findings": [
+    {
+      "severity": "P3",
+      "kind": "acceptance totals",
+      "status": "fixed",
+      "detail": "Labelled 188/1337 as historical and linked the G3/G4 matrix to the final 189/1340 gate; corrected the change-scope description."
+    },
+    {
+      "severity": "P3",
+      "kind": "Downloads source identifiers",
+      "status": "fixed",
+      "detail": "Redacted the three repeated account segments, retained original identity hashes, and recorded current archive hashes. No Git history rewrite."
+    }
+  ]
+}
