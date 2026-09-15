@@ -133,6 +133,7 @@ app.whenReady().then(async () => {
         )),
     );
     await host.stop();
+    report.afterStop = { ...host.status(), exitCode: child.exitCode, signalCode: child.signalCode };
     check(
       'production host waits for process exit',
       host.status().state === 'stopped' && child.exitCode === 0,

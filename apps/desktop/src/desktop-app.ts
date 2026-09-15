@@ -2,10 +2,12 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { lstat, mkdir, realpath } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, ipcMain, Menu, session } from 'electron';
 import { appId, desktopEnvironment, protocolVersion } from './protocol.js';
-import { ServiceLifecycle } from './service-lifecycle.js';
+import { observeServiceNavigation, ServiceLifecycle } from './service-lifecycle.js';
+import { statusAssets } from './status-assets.js';
+import { verifyToolchain } from './toolchain-installation.js';
 import { secureSession, secureWindow, trustedFrame } from './window-security.js';
 
 export interface DesktopHostOptions {
@@ -16,12 +18,7 @@ export interface DesktopHostOptions {
 export async function runDesktop(options: DesktopHostOptions = {}) {
   const resourcesRoot = options.resourcesRoot ?? process.resourcesPath;
   const ownRoot = dirname(fileURLToPath(import.meta.url));
-  const statusFile = join(ownRoot, '../ui/status.html');
-  const localFiles = new Set(
-    ['status.html', 'status.js', 'status.css'].map(
-      (name) => pathToFileURL(join(ownRoot, '../ui', name)).href,
-    ),
-  );
+  const assets = statusAssets(join(ownRoot, '../ui'));
   const dataDirectory = join(options.applicationData ?? app.getPath('appData'), appId);
   app.setPath('userData', dataDirectory);
   app.setPath('sessionData', join(dataDirectory, 'profiles'));
@@ -36,7 +33,7 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
   let startupOperation: Promise<void> | undefined;
   let restartOperation: Promise<void> | undefined;
   let startupFailure: string | undefined;
-  let trustedUrls = new Set([pathToFileURL(statusFile).href]);
+  let trustedUrls = new Set([assets.page]);
   let presentation = Promise.resolve();
 
   function status() {
@@ -62,11 +59,10 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
     if (old && !old.isDestroyed()) old.destroy();
     await disposeSession?.();
     const partition = session.fromPartition(`agora-${randomUUID()}`, { cache: false });
-    disposeSession = secureSession(partition, origin, capability, localFiles);
-    trustedUrls = new Set([
-      pathToFileURL(statusFile).href,
-      ...(origin ? [`${origin}/desktop`] : []),
-    ]);
+    // Explicitly serve only packaged status assets with file privileges disabled.
+    partition.protocol.handle('file', assets.handle);
+    disposeSession = secureSession(partition, origin, capability, assets.urls);
+    trustedUrls = new Set([assets.page, ...(origin ? [`${origin}/desktop`] : [])]);
     window = new BrowserWindow({
       width: 1080,
       height: 760,
@@ -95,7 +91,7 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
     });
     window.once('ready-to-show', () => window?.show());
     if (origin) await window.loadURL(`${origin}/desktop`);
-    else await window.loadFile(statusFile);
+    else await window.loadURL(assets.page);
   }
 
   async function executable(path: string) {
@@ -150,6 +146,7 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
       if (quitting) return;
       await mkdir(dataDirectory, { recursive: true, mode: 0o700 });
       const tools = join(resourcesRoot, 'toolchains', `darwin-${process.arch}`);
+      await verifyToolchain(tools);
       const node = await executable(join(tools, 'node/bin/node'));
       const helper = await executable(join(tools, 'keychain'));
       if (quitting) return;
@@ -166,25 +163,40 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
       lifecycle = new ServiceLifecycle(child, {
         type: 'start',
         version: protocolVersion,
-        config: { stateRoot: join(dataDirectory, 'state'), webRoot, helper, capability },
+        config: {
+          stateRoot: join(dataDirectory, 'state'),
+          webRoot,
+          helper,
+          capability,
+          toolchainRoot: tools,
+        },
       });
-      lifecycle.on('ready', () => {
-        void show(lifecycle?.origin).catch(() => {
-          startupFailure = 'window_failed';
-          void show();
-        });
+      const active = lifecycle;
+      active.on('ready', () => {
+        void observeServiceNavigation(
+          active,
+          show(active.origin),
+          () => lifecycle === active && !quitting,
+          async () => {
+            startupFailure = 'window_failed';
+            await show().catch(() => {});
+          },
+        );
       });
       let failureShown = false;
-      lifecycle.on('changed', () => {
-        if (lifecycle?.state === 'failed' && !failureShown) {
+      active.on('changed', () => {
+        if (active === lifecycle && active.state === 'failed' && !failureShown) {
           failureShown = true;
           capability = undefined;
           void show().catch(() => {});
           if (!lifecycle.exited) void lifecycle.stop().catch(() => {});
         }
       });
-    } catch {
-      startupFailure = 'invalid_installation';
+    } catch (error) {
+      startupFailure =
+        error instanceof Error && /^toolchain_[a-z_]+$/.test(error.message)
+          ? error.message
+          : 'invalid_installation';
       await show();
     } finally {
       restarting = false;

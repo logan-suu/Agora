@@ -1,0 +1,2393 @@
+{
+  "date": "2026-09-14",
+  "status": "current-mac-validation-passed-clean-macos15-deferred-by-leader",
+  "host": {
+    "os": "macOS 26.5",
+    "build": "25F71",
+    "arch": "arm64",
+    "cleanEnvironment": false
+  },
+  "input": {
+    "kind": "fixed-commit",
+    "commit": "a8b9081346625f4d419f68213f2e3907ddde8af8",
+    "files": 351,
+    "manifestSha256": "ac11593a5fd2f419b278bc99ec6c7309d72db6d8db916c903f875ef3367b1f11"
+  },
+  "media": {
+    "arch": "arm64",
+    "minimumSystem": "15.0",
+    "signing": {
+      "mode": "ad-hoc-validation-only",
+      "plan": [
+        {
+          "target": "Contents/Frameworks/Agora Helper (GPU).app/Contents/MacOS/Agora Helper (GPU)",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Agora Helper (Plugin).app/Contents/MacOS/Agora Helper (Plugin)",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Agora Helper (Renderer).app/Contents/MacOS/Agora Helper (Renderer)",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Agora Helper.app/Contents/MacOS/Agora Helper",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvk_swiftshader.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Mantle.framework/Versions/A/Mantle",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/ReactiveObjC.framework/Versions/A/ReactiveObjC",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Squirrel.framework/Versions/A/Squirrel",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/MacOS/Agora",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/service/node_modules/.pnpm/@img+sharp-darwin-arm64@0.35.4/node_modules/@img/sharp-darwin-arm64/lib/sharp-darwin-arm64-0.35.4.node",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/service/node_modules/.pnpm/@img+sharp-libvips-darwin-arm64@1.3.3/node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.18.6.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/bin/git",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/bin/scalar",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/createdump",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-credential-manager",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-daemon",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-http-backend",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-http-fetch",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-http-push",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-imap-send",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-lfs",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-remote-http",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-sh-i18n--envsubst",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-shell",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libAvaloniaNative.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libHarfBuzzSharp.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSkiaSharp.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.Globalization.Native.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.IO.Compression.Native.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.Native.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.Net.Security.Native.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.Security.Cryptography.Native.Apple.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libclrgc.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libclrgcexp.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libclrjit.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libcoreclr.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libhostfxr.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libhostpolicy.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libmscordaccore.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libmscordbi.dylib",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/scalar",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/keychain",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/node/bin/node",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/pnpm/dist/reflink.darwin-arm64-MYEHQQCP.node",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/pnpm/dist/reflink.darwin-x64-CDTBYYIZ.node",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/toolchains/darwin-arm64/secure-files",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Agora Helper (GPU).app",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Agora Helper (Plugin).app",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Agora Helper (Renderer).app",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Agora Helper.app",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Electron Framework.framework",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Mantle.framework",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/ReactiveObjC.framework",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Frameworks/Squirrel.framework",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "",
+          "jit": true,
+          "hardenedRuntime": false
+        }
+      ]
+    },
+    "notarization": "not-run",
+    "files": [
+      {
+        "name": "Agora-darwin-arm64.zip",
+        "bytes": 296192274,
+        "sha256": "6ed5d5a1f99d351f1b2c7630b2938625be6927890884176673c4b7b52b6112e1"
+      },
+      {
+        "name": "Agora-darwin-arm64.dmg",
+        "bytes": 317259485,
+        "sha256": "fcb48b2eb516fc8f2814aff461bb22f85d506e0a856b51efb86b1499e4d54b45"
+      }
+    ]
+  },
+  "download": {
+    "browser": "Safari",
+    "url": "http://127.0.0.1:61513/Agora-11.4-a8b9081-arm64.dmg",
+    "path": "/Users/logansu/Downloads/Agora-11.4-a8b9081-arm64.dmg",
+    "bytes": 317259485,
+    "sha256": "fcb48b2eb516fc8f2814aff461bb22f85d506e0a856b51efb86b1499e4d54b45",
+    "quarantine": "0083;6aa8ba30;Safari;F94342BC-1AE5-43AE-89CD-4B12D5E6A64F",
+    "finderMountedAt": "/Volumes/Agora",
+    "gatekeeperAssessment": "rejected",
+    "gatekeeperExitCode": 3,
+    "scope": "Actual Safari loopback download; does not verify GitHub Release hosting. No quarantine deletion or Gatekeeper exception applied."
+  },
+  "upgradeAttempts": [
+    {
+      "status": "failed",
+      "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+      "newApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-dRTl68/output/app/Agora-darwin-arm64/Agora.app",
+      "checks": [
+        "old: production credentials ready",
+        "old: packaged preview responds",
+        "packaged service exits normally",
+        "application builds differ",
+        "packaged service exits normally"
+      ],
+      "phases": [
+        {
+          "label": "old",
+          "credentials": "ready",
+          "httpStatus": 200
+        }
+      ],
+      "oldHelperSha256": "4c63462f60270c07ca3b77153dc3d4601be2e894bf96d04c2558dfaedb54e468",
+      "oldAppAsarSha256": "c649b8b60ac88f25059cd556eac4ce4567b6a5e6ead275401d10a44c4a7315d0",
+      "newHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+      "newAppAsarSha256": "3cf75cc4ea0195a9da58b8163147cdc4032a8fce8a7cabad3396951dc5024b47",
+      "error": "upgraded: production credentials ready",
+      "keychainRemoved": true
+    },
+    {
+      "status": "failed",
+      "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+      "newApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-dRTl68/output/app/Agora-darwin-arm64/Agora.app",
+      "checks": [
+        "old: production credentials ready",
+        "old: packaged preview responds",
+        "packaged service exits normally",
+        "application builds differ",
+        "packaged service exits normally"
+      ],
+      "phases": [
+        {
+          "label": "old",
+          "credentials": "ready"
+        },
+        {
+          "label": "old",
+          "credentials": "ready",
+          "httpStatus": 200
+        },
+        {
+          "label": "upgraded",
+          "credentials": "denied"
+        }
+      ],
+      "oldHelperSha256": "4c63462f60270c07ca3b77153dc3d4601be2e894bf96d04c2558dfaedb54e468",
+      "oldAppAsarSha256": "c649b8b60ac88f25059cd556eac4ce4567b6a5e6ead275401d10a44c4a7315d0",
+      "newHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+      "newAppAsarSha256": "3cf75cc4ea0195a9da58b8163147cdc4032a8fce8a7cabad3396951dc5024b47",
+      "error": "upgraded: production credentials ready",
+      "keychainRemoved": true
+    }
+  ],
+  "logs": [
+    {
+      "path": "/private/tmp/agora114-supplement-build.log",
+      "sha256": "f5148685e1735136d49cb8b662e532dfda27a126f71d073bf5d6cb61c09d0991"
+    },
+    {
+      "path": "/private/tmp/agora114-supplement-media.log",
+      "sha256": "e18e82b1bc1c9995364d26ddf13ceaafcfac1cc191074f8ba67aea53b1a07ba3"
+    },
+    {
+      "path": "/private/tmp/agora114-supplement-tools.log",
+      "sha256": "581d857b55bbacd5b1e2a39f73c61d7510c3051f4552fa42e507de9f60413bd2"
+    },
+    {
+      "path": "/private/tmp/agora114-supplement-upgrade.log",
+      "sha256": "56bc310eeacf4ad2a9a8f4883fb42f57c62291bf58a0ec6fbfc951189cd3c829"
+    },
+    {
+      "path": "/private/tmp/agora114-supplement-upgrade-diagnostic.log",
+      "sha256": "80190cd7f0394146e9900b33149bf47d320c0ab135dc4582c5ffe410d6b97374"
+    },
+    {
+      "path": "/private/tmp/agora114-supplement-gatekeeper.log",
+      "sha256": "7508faadb59811c5f4b4a73a1b9b3443b761c8520cc22467b2d24ee4ec6089b5"
+    }
+  ],
+  "tools": {
+    "status": "passed",
+    "bundle": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-dRTl68/output/app/Agora-darwin-arm64/Agora.app",
+    "arch": "arm64",
+    "checks": [
+      "bundle integrity",
+      "node version",
+      "npm version",
+      "pnpm version",
+      "git version",
+      "npm preparation",
+      "npm dependency and lifecycle",
+      "npm incompatible project blocked",
+      "pnpm preparation",
+      "pnpm dependency and lifecycle",
+      "pnpm incompatible project blocked",
+      "real linked worktree",
+      "worktree cleanup",
+      "signed native helper write/read",
+      "signed native helper rejects traversal"
+    ]
+  },
+  "originalInstall": {
+    "application": "/Applications/Agora.app",
+    "quarantine": "01c3;6aa8ba30;Safari;F94342BC-1AE5-43AE-89CD-4B12D5E6A64F",
+    "userAllowedInSystemSettings": true,
+    "outcome": "Dock bouncing with no window; production ESM ready deadlock confirmed"
+  },
+  "startupRepair": {
+    "causes": [
+      "top-level await prevented Electron ready",
+      "default file protocol could not read status page with extra privileges disabled"
+    ],
+    "security": "production fuses preserved; explicit per-session GET allowlist for exactly three packaged status assets",
+    "focusedTests": {
+      "files": 2,
+      "tests": 2,
+      "passed": true
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "nativeHost": {
+      "status": "passed",
+      "checks": [
+        "production host readiness",
+        "production preload status",
+        "production renderer isolation",
+        "closing window preserves background service",
+        "native duplicate launch cannot spawn service",
+        "native second launch focuses current window",
+        "concurrent restarts share one operation",
+        "restart replaces a running process after its exit",
+        "restart replaces and revokes the old session",
+        "production host waits for process exit",
+        "fresh session after explicit restart",
+        "crash replaces project surface with failure UI"
+      ],
+      "afterStop": {
+        "state": "stopped",
+        "code": null,
+        "canRestart": true,
+        "exitCode": 0,
+        "signalCode": null
+      },
+      "keychainRemoved": true
+    },
+    "actualPackagedEntry": {
+      "passed": true,
+      "window": "Local service Ready; Secure credentials Available; Development tools installed and verified",
+      "normalQuitExitCode": 0,
+      "stderrEmpty": true,
+      "screenshot": "startup-fixed.png"
+    },
+    "input": {
+      "base": "a8b9081346625f4d419f68213f2e3907ddde8af8",
+      "kind": "development-working-tree",
+      "inputs": [
+        {
+          "path": "apps/desktop/package.json",
+          "sha256": "d856ebcb3bc451b4248ea0b039215890b3fc875679291a5be4054fa9c1396df7"
+        },
+        {
+          "path": "apps/desktop/scripts/build.mjs",
+          "sha256": "9314e15203e8026b412bc554f0dd30a24792f45178cdb5487793c84c04d35ac6"
+        },
+        {
+          "path": "apps/desktop/scripts/download-toolchains.mjs",
+          "sha256": "5c7d37cb87a4db14cbf46c26cb4345f4261d89716abc7cfa2d7011d883f29e1c"
+        },
+        {
+          "path": "apps/desktop/scripts/media.mjs",
+          "sha256": "bc9e81a4e96c5f34f029430f4b47a6601c1d355c6bcfe056fe8c997a59175de8"
+        },
+        {
+          "path": "apps/desktop/scripts/package.mjs",
+          "sha256": "9de14d109f994113ca7c1320b13c5320fb7c4c5ee05cb35402168ddd73d2d45b"
+        },
+        {
+          "path": "apps/desktop/scripts/sign.mjs",
+          "sha256": "c042fade3199874e905f6161d2ca64c0a23a603e635d4f9edbace9ad3575fe07"
+        },
+        {
+          "path": "apps/desktop/scripts/toolchain-catalog.mjs",
+          "sha256": "ad7e939fb6bd9aecfbe164e88bb6ea360ef8aceff5af6fbf556b2764dc9da919"
+        },
+        {
+          "path": "apps/desktop/scripts/validate-host.cjs",
+          "sha256": "7b12766adb24ee25d204a36e0a276d972293c6d20337d2f9868abaaf6c1ffa24"
+        },
+        {
+          "path": "apps/desktop/scripts/validate-media.mjs",
+          "sha256": "4aea09cb8db80a735b42578e175e3c4d6d7b9738a9dc986c17b3d1ab78f8eed1"
+        },
+        {
+          "path": "apps/desktop/scripts/validate-tools.mjs",
+          "sha256": "95315e396dda70dc4aed8a020913ff840993b3980f9b2ab8f46b8d8b75254660"
+        },
+        {
+          "path": "apps/desktop/scripts/validate.cjs",
+          "sha256": "3ca9cfed892659da4f9215f5509cb45143fd90e1f32e08d1536ea4b81aa04977"
+        },
+        {
+          "path": "apps/desktop/scripts/validation-cleanup.d.mts",
+          "sha256": "08ebc9cd3ec66fa3d6be1cab47a1f4f4bb1ac67ab95c4c80378cabed30e92535"
+        },
+        {
+          "path": "apps/desktop/scripts/validation-cleanup.mjs",
+          "sha256": "e384203e22dd2c1672617ee9d7e32f8c5890f1a4510748ff5f67e37cc1f10b6f"
+        },
+        {
+          "path": "apps/desktop/src/build-resources.ts",
+          "sha256": "58ac1d89fc3d0cbba5fa9c4ab77261d7adb6ab59aeab085ed4bcd54e1d011ea3"
+        },
+        {
+          "path": "apps/desktop/src/desktop-app.ts",
+          "sha256": "44bf3199aebb33d539d01b94fc44f9722b3c02d25426559372cbc1cfba536ba8"
+        },
+        {
+          "path": "apps/desktop/src/main.ts",
+          "sha256": "4e5f816897097e4e9b69c4a8d6c4f0fc88cea47afe6a999fe19ceba88d4b6edd"
+        },
+        {
+          "path": "apps/desktop/src/preload.cts",
+          "sha256": "788deb81d1c773213e3f42cd20fbcae05caaa6c14342d78c9d463b2e4a0f57fb"
+        },
+        {
+          "path": "apps/desktop/src/preview-server.ts",
+          "sha256": "a4bbf24a564ec6f0b7d5eb6e1915eedbe8f67c744ffb51d0294d3b8a6587e9d7"
+        },
+        {
+          "path": "apps/desktop/src/protocol.ts",
+          "sha256": "92a967b726fca105c5bc641fe6bbb684bdb0784c2a86272773d336b7ca044885"
+        },
+        {
+          "path": "apps/desktop/src/service-entry.ts",
+          "sha256": "e2aca178b63f5f89b452d9fc9dab60036327bfd4718fb3d2d7988f33018e3d23"
+        },
+        {
+          "path": "apps/desktop/src/service-lifecycle.ts",
+          "sha256": "81605fb15f1a644cf5f493096e15681375ecebc3beb7a11811dec61dc02fc9b4"
+        },
+        {
+          "path": "apps/desktop/src/service.ts",
+          "sha256": "87ebd88fb6e12902d3ee8f382479beb1e46f04e82023e6a2607771a257c4a690"
+        },
+        {
+          "path": "apps/desktop/src/status-assets.ts",
+          "sha256": "e4f02b425b505531d72b4a03af18697c630f6335fca2ebd5326670d1d1ad6b9c"
+        },
+        {
+          "path": "apps/desktop/src/storage.ts",
+          "sha256": "56f486294eb9ce68dd7628b02d3d4a2c8ba5d4c716f6eec487e0dcb370db32f2"
+        },
+        {
+          "path": "apps/desktop/src/toolchain-cache.ts",
+          "sha256": "b18d97958056ac03be5c100ab7eb89ea07c84955b29c65b1f33be6f04aa191ad"
+        },
+        {
+          "path": "apps/desktop/src/toolchain-installation.ts",
+          "sha256": "a604b0c712de119173d59ea0f6090347889951b7a9f7561148004b6297f28f1f"
+        },
+        {
+          "path": "apps/desktop/src/toolchains.ts",
+          "sha256": "a723faec53e568afd32511fa13b459a9f907d9141cb29ecca44744f8dab6872e"
+        },
+        {
+          "path": "apps/desktop/src/upgrade-files.ts",
+          "sha256": "6a29028cacf6ca412ac76e0f6a492bec6e7bfdd213657a6a79c2546a91cfe7d5"
+        },
+        {
+          "path": "apps/desktop/src/upgrades.ts",
+          "sha256": "b8996705e977589d91a28bf52e097d3767c4735e73e771a65ecd54f064a390b9"
+        },
+        {
+          "path": "apps/desktop/src/window-security.ts",
+          "sha256": "b44953d0251c470f730a8fce59b30dce6dd40f9c7983d5efd73f61b9c89b0c90"
+        },
+        {
+          "path": "apps/desktop/test/entrypoint.test.ts",
+          "sha256": "594676bcae3dc1f4175cd44b043b78ed227f7673227a7ea6c36ca206fb56ecf5"
+        },
+        {
+          "path": "apps/desktop/test/fixture-stop.test.ts",
+          "sha256": "630880adb6c91006b3e9d742871320ac4f40403c2d98d9ab8751439994547934"
+        },
+        {
+          "path": "apps/desktop/test/fixtures/packaged-service.mjs",
+          "sha256": "d76bebc0379fa7f68be8187051deb494a0a9c693632ac8a8931a77a80960f9db"
+        },
+        {
+          "path": "apps/desktop/test/fixtures/second-instance.cjs",
+          "sha256": "05d0ae272fee16573299f5cbc0b6b66ff9ab4e021427b91fa72d8397f7dabed5"
+        },
+        {
+          "path": "apps/desktop/test/fixtures/service.mjs",
+          "sha256": "66114cc91423253cbb93cc4bc70cf2b65ac3a8e5440b49df064673372793d2ea"
+        },
+        {
+          "path": "apps/desktop/test/lifecycle.test.ts",
+          "sha256": "2d6e248bab9d9ecaed351f1b53f5fe672cec5be6d11f4441de66b4eb7443c90e"
+        },
+        {
+          "path": "apps/desktop/test/preview-server.test.ts",
+          "sha256": "11a9366afb53e6d584b6e2f8185d90cef27a3139429510fcb5d31082a89a067e"
+        },
+        {
+          "path": "apps/desktop/test/protocol.test.ts",
+          "sha256": "91c540bfe43c5c427e6b2f689544f520421daf5ef2cab2f6a5560b51a8abba98"
+        },
+        {
+          "path": "apps/desktop/test/resources.test.ts",
+          "sha256": "0d50c8282e02d8f23f326bdc6cf08b0c3f5f6254f4806854e8765891247d5cc8"
+        },
+        {
+          "path": "apps/desktop/test/service.test.ts",
+          "sha256": "1e6bc0610a5a50fcfcd4fe33d353acfcb22acaf7606c8dda8a0377ed4c637d81"
+        },
+        {
+          "path": "apps/desktop/test/status-assets.test.ts",
+          "sha256": "7b8b79a6dfcfd8c1ef8b56e37c6ccafc90865c31b526d7765437a53fe96a1846"
+        },
+        {
+          "path": "apps/desktop/test/storage.test.ts",
+          "sha256": "82e0188c7726249151ca6c8b472a264f014b9178e93d3b238a9002d854043c95"
+        },
+        {
+          "path": "apps/desktop/test/toolchain-cache.test.ts",
+          "sha256": "562341375230d4e3eba6a927c268fe0b353712b7b6062da6fd776a03d71ce42c"
+        },
+        {
+          "path": "apps/desktop/test/toolchain-installation.test.ts",
+          "sha256": "c70ed2584078bae791b7b84588956d021ce23fb4ea8fcb98f835484e9fb256b6"
+        },
+        {
+          "path": "apps/desktop/test/toolchains.test.ts",
+          "sha256": "2835cad4a02b4b4b58849c7dc2268846884a8b5f015dc6513f04b4dad29ad058"
+        },
+        {
+          "path": "apps/desktop/test/upgrades.test.ts",
+          "sha256": "9b5ddc24f475b3530d03b2a0ca744b4a53eaf91302eb2af7e89ee464d6222382"
+        },
+        {
+          "path": "apps/desktop/test/validation-cleanup.test.ts",
+          "sha256": "81bf78b1a6e643eec5bc4d1a310b7ccb0b108964739cc7425e5de180dfb1e118"
+        },
+        {
+          "path": "apps/desktop/tsconfig.json",
+          "sha256": "00fc5f61a71fbe58243302ab9399e61a93efbf1a35c31fc56336473807adc9a9"
+        },
+        {
+          "path": "apps/desktop/ui/status.css",
+          "sha256": "d726fd60aeedf1f3e63b9b9570282863a26e78bc18366178ef8d64b375e458ad"
+        },
+        {
+          "path": "apps/desktop/ui/status.html",
+          "sha256": "277cdda0075d94347e3fe2d13d6ec697d4b352b321cd8ebd931db518b5e1660a"
+        },
+        {
+          "path": "apps/desktop/ui/status.js",
+          "sha256": "4b6276e53485e5246135741b9492e1d0d32716905b20466a26dfe7ecd6b0c991"
+        },
+        {
+          "path": "apps/web/next-env.d.ts",
+          "sha256": "85ae5aee75f011967cf2d25cbc342f62d69314e9d925f7f4aa3456fc2cffcca6"
+        },
+        {
+          "path": "apps/web/next.config.ts",
+          "sha256": "e0aabe8fc09bce3c51df3b65c8d595b42ec63c51c18f9fcb6329bfdaf3aa421c"
+        },
+        {
+          "path": "apps/web/package.json",
+          "sha256": "b5f360b319f26ad3818e591164671f189e0e1769aa9ac85e137672ce1b23738a"
+        },
+        {
+          "path": "apps/web/scripts/local-diagnostics.d.mts",
+          "sha256": "812d45496137d5fa07e1d285f30f45c75ac02bf1e6ff6ea0fceb9ea7ae102772"
+        },
+        {
+          "path": "apps/web/scripts/local-diagnostics.mjs",
+          "sha256": "8d4a3e5b78b32242382787a9ad64768ad70cd010437a783a6c4246200c8c1e38"
+        },
+        {
+          "path": "apps/web/scripts/local-process.d.mts",
+          "sha256": "26d2760d2a7eb4868f5c0ecd568b4930f611f8ea9edaeae505d568c4dd8c43ca"
+        },
+        {
+          "path": "apps/web/scripts/local-process.mjs",
+          "sha256": "e6a2b3168aa7b393af9bccce8d6f87824cd098c094e9617287b9ace04c74e244"
+        },
+        {
+          "path": "apps/web/scripts/local.mjs",
+          "sha256": "dcf299166cdb59a8bbc397cbd5a6e062f6995d4e1eae43591c273e665c2a900e"
+        },
+        {
+          "path": "apps/web/src/app/api/channels/route.ts",
+          "sha256": "10cf48098e76f6546104c7001ea4ef68be6d85bada582361e0dd0b6027d7772e"
+        },
+        {
+          "path": "apps/web/src/app/api/commands/route.ts",
+          "sha256": "450538f07cc26c64b57a2f9fce53b96419e9ba59f810d021d26cdceb901fea5f"
+        },
+        {
+          "path": "apps/web/src/app/api/messages/route.ts",
+          "sha256": "101f25869b00f0bda492bad9b0ae86387ffca871c4dc7ed2201a0131f1f99849"
+        },
+        {
+          "path": "apps/web/src/app/api/model-settings/route.ts",
+          "sha256": "0b330bdf9e93f9106214d4957273a104b7e2fdab3ebe9ea577786028f259c139"
+        },
+        {
+          "path": "apps/web/src/app/api/stream/route.ts",
+          "sha256": "7f2d206e6144a63f110fb571f534e963b7ee3b88f6b11e1ab4e26b115551f096"
+        },
+        {
+          "path": "apps/web/src/app/api/tasks/route.ts",
+          "sha256": "4b9d4f8b93f406801b8fe626dd82167e5ecad445a9f8063873374363734598f5"
+        },
+        {
+          "path": "apps/web/src/app/api/traces/route.ts",
+          "sha256": "819c3eeccf43bc875d1586d343e34b8e4684043c65387de6a5b96169e9e2d537"
+        },
+        {
+          "path": "apps/web/src/app/chat-history.tsx",
+          "sha256": "0662c1be5a5556acafd5b19b72f39d843064a5518cc54ad14fb8337da043714c"
+        },
+        {
+          "path": "apps/web/src/app/chat-model.ts",
+          "sha256": "a8270696ef99d523bb412e2b97591ce07eaacbe88bc08caf63330384640bf77e"
+        },
+        {
+          "path": "apps/web/src/app/chat-workspace.tsx",
+          "sha256": "3363ea920e20b0c6d7316cc7e783a90ce3808a040acf78a0eb2f05fc09d8bd01"
+        },
+        {
+          "path": "apps/web/src/app/desktop/page.tsx",
+          "sha256": "4b0e252429f0153f68154f0e870c4b6ff1877864c1514027c973dfb621490e17"
+        },
+        {
+          "path": "apps/web/src/app/desktop/preview.css",
+          "sha256": "0691d496772d5246eb95fe5bd10c6e32f46960cc4569635ed78e7736ad75784a"
+        },
+        {
+          "path": "apps/web/src/app/desktop/preview.tsx",
+          "sha256": "927560e7801095c2edffa2aad5c16001224986e686f4f910b74ad495cf3cc9fc"
+        },
+        {
+          "path": "apps/web/src/app/layout.tsx",
+          "sha256": "2b78b22c7edd75a561752e7890115353fed60d40b19cb564e286c1d87a0fbb0a"
+        },
+        {
+          "path": "apps/web/src/app/message-content.tsx",
+          "sha256": "3621e1626e1be164900fab42dcbd9c6a1669a1230273ab999afb374a8c17b36f"
+        },
+        {
+          "path": "apps/web/src/app/message-markdown.tsx",
+          "sha256": "8d6d3f1f703c01e1c86d1ef80ed7f128799ad6c7bd5ab123628d1e6aaa0c5b6c"
+        },
+        {
+          "path": "apps/web/src/app/model-settings-dialog.tsx",
+          "sha256": "1385e2f534d5ad55861d473cfc1e573ba7f1a26ade71d63955a077876e39c3c8"
+        },
+        {
+          "path": "apps/web/src/app/page.tsx",
+          "sha256": "7b77c40218a3de63e2db1ee92a87f08fbc01cb2caf3562406773a4e6d19dcd72"
+        },
+        {
+          "path": "apps/web/src/app/requirement-proposal-card.tsx",
+          "sha256": "d0e7ab808df4813224891c30a094819116e4ae06b8d1574e391f71d102f98264"
+        },
+        {
+          "path": "apps/web/src/app/styles.css",
+          "sha256": "e7688f018a40f2fec7badbabd684ed8154a1e11d4ad57f97a3d15e544c7ceb84"
+        },
+        {
+          "path": "apps/web/src/app/trace-lanes.ts",
+          "sha256": "dd67190de6281a1a414fb811eccdf7433b1ba1846cde1134bc8bd98b3bf76dc3"
+        },
+        {
+          "path": "apps/web/src/index.ts",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "apps/web/src/instrumentation.ts",
+          "sha256": "3eafbd5a4e49f9274a9326309f0d332edfd4321e6782eba6c3d75548b5e8c90d"
+        },
+        {
+          "path": "apps/web/src/lib/intent.ts",
+          "sha256": "f486f62947c424f1cc91b6dd6eae69d68506145e679a6a08e71102d11f7a1760"
+        },
+        {
+          "path": "apps/web/src/lib/model-capacity.ts",
+          "sha256": "608e5799614384286d146f5b81d9260e7df7a7f8f875282fb3cacff2b705fe17"
+        },
+        {
+          "path": "apps/web/src/lib/model-settings.ts",
+          "sha256": "25e451eecbe9259c4f4167af5413c1b882ab1c6c503ec8fe4db203cfb93278cd"
+        },
+        {
+          "path": "apps/web/src/server/channel-stream.ts",
+          "sha256": "5a170a769dac4f4b9e03ef59c3333778881a02d87433c9308cd432b544550208"
+        },
+        {
+          "path": "apps/web/src/server/http.ts",
+          "sha256": "9d6be9fd69f20478233425c54c477bf2e8f88f83649366b5afaeb1f7d994d5a2"
+        },
+        {
+          "path": "apps/web/src/server/local-startup.ts",
+          "sha256": "b84313943704b0ed2da667efe00753405fe16326879ddd2cfec19f0fb9233fe8"
+        },
+        {
+          "path": "apps/web/src/server/message-handlers.ts",
+          "sha256": "f91b6d8451a84a4d4650b332a58f534bf840a04d6d56cfbe65786b313fc707a0"
+        },
+        {
+          "path": "apps/web/src/server/message-runtime.ts",
+          "sha256": "6e748f174af9244766ae37575a7269ac5f341f5b196838d1a3ac44a236e27ff9"
+        },
+        {
+          "path": "apps/web/src/server/model-settings.ts",
+          "sha256": "85bc772a202bac37ec6661ab00049955f9fde3b5300ef46bdd8f80eba6dae345"
+        },
+        {
+          "path": "apps/web/src/server/run-error.ts",
+          "sha256": "89cff8d0118339310d77cb8c2539db5e2bee6fd96860543e41a18f34c6959b18"
+        },
+        {
+          "path": "apps/web/src/server/task-composition.ts",
+          "sha256": "afcc9e904608bf7594d729191282c9fccc9fdb765a9bfc7e575e537d79f0da5f"
+        },
+        {
+          "path": "apps/web/src/server/task-handlers.ts",
+          "sha256": "3fb2ecdac2eab3f2cbd7c86a9e6213e13966815e016a241db11860236c6a42a1"
+        },
+        {
+          "path": "apps/web/src/server/task-orchestration-runtime.ts",
+          "sha256": "97d4766487d396577eb9d9728bc317a3068d5487744562d6c4413d4c354dc82e"
+        },
+        {
+          "path": "apps/web/src/server/task-runtime.ts",
+          "sha256": "1743b7746ab3bb9ac326a8c03d36859c7a48608b05ffc77665f7c3b2237ce004"
+        },
+        {
+          "path": "apps/web/src/server/trace-handlers.ts",
+          "sha256": "e67f8c6200475b2ff0b9ecdedd9fe4e3326ae717feeb34e465625a692c413c8f"
+        },
+        {
+          "path": "apps/web/src/server/wave-validation.ts",
+          "sha256": "40ca19fba6a21b3caf30218817e3c58f7ef178d3d388809effe57dd37e4fefde"
+        },
+        {
+          "path": "apps/web/test/channel-stream.test.ts",
+          "sha256": "1ae899e36f475028efc5e842f2dbcd9e0d4f5f93a10c24189353e3936feb9f06"
+        },
+        {
+          "path": "apps/web/test/chat-ui.test.ts",
+          "sha256": "16312e02c44e26911294600d73e5f7604bc1ac2696452638fb4e7b3e8fa7fb17"
+        },
+        {
+          "path": "apps/web/test/intent.test.ts",
+          "sha256": "c59acec4ff9cb087e5815c6d0b69b8a2d000cf507817b9a860dedc11fbf43b3b"
+        },
+        {
+          "path": "apps/web/test/local-diagnostics.test.ts",
+          "sha256": "7a69449a13bb8f6f6eb0cc59325f918d51980a2ad3eb899b04a821d14451ce17"
+        },
+        {
+          "path": "apps/web/test/local-drain.test.ts",
+          "sha256": "e220e909ebb1cb3c15e378af98b47852ef2db590129cbce0d45ed0b4df80f5eb"
+        },
+        {
+          "path": "apps/web/test/local-process.test.ts",
+          "sha256": "54b6eda729fbb4d87fab3ade22038040a71a54528ba05d069ff132fabf7df029"
+        },
+        {
+          "path": "apps/web/test/message-content.test.ts",
+          "sha256": "557c03353e5750d8ace6aad788c09a97d810fd464881701eb43ab4cd412a75b4"
+        },
+        {
+          "path": "apps/web/test/message-flow.test.ts",
+          "sha256": "7cfd74c1a6bc6ef8a9dc0874e597940e7053062421dafc906362114328d60c09"
+        },
+        {
+          "path": "apps/web/test/message-markdown.test.ts",
+          "sha256": "fbde39bda44ba16300c5f342642e5816f0350721b01c06eedf176f68de1e32e9"
+        },
+        {
+          "path": "apps/web/test/model-capacity.test.ts",
+          "sha256": "d3274205390132be4fb29ce916e49d42ad14319a07a5494e26c6a2279ef24278"
+        },
+        {
+          "path": "apps/web/test/model-settings.test.ts",
+          "sha256": "e92886a87a2c99e6270177e08fe9942743a8286ec5445f72307578ddf263918e"
+        },
+        {
+          "path": "apps/web/test/orchestration-flow-docker.test.ts",
+          "sha256": "51063f35e4deb299037969cd8abc22de41b166b0b90b357b7c7cffba99de5849"
+        },
+        {
+          "path": "apps/web/test/orchestration-flow.test.ts",
+          "sha256": "129823e1624209fe1a75cc9b9285c8681c130272186a8453754ea068224fa0db"
+        },
+        {
+          "path": "apps/web/test/parallel-failure-lifecycle.test.ts",
+          "sha256": "015405d798f6c0579e2e5b65a59c90e0008f41e926420a0d3054253977116b4d"
+        },
+        {
+          "path": "apps/web/test/project-roster-g5-chain.test.ts",
+          "sha256": "d4e8e0921571b8050802dc207d8540a915b3ffabd82a76a97f407f4c9594a131"
+        },
+        {
+          "path": "apps/web/test/project-roster-runtime.test.ts",
+          "sha256": "f6f6289e3b0cc4b382d3dc15186c85d77510e136cb64739d680082c505af6600"
+        },
+        {
+          "path": "apps/web/test/requirement-input.test.ts",
+          "sha256": "d22a433c6978cf869401ef552ab27fd8d818c810a7048c4731631fb691b18a70"
+        },
+        {
+          "path": "apps/web/test/requirement-proposal-card.test.ts",
+          "sha256": "e59041d65bfd2f5c7b9b8c019a9c099cda403da8118aa1282c5f3bd5e7cc72f1"
+        },
+        {
+          "path": "apps/web/test/routes.test.ts",
+          "sha256": "c33da40afdf21d27269e859a5edad5d7f475b0098c1a520c7404ec293e811bc4"
+        },
+        {
+          "path": "apps/web/test/run-error.test.ts",
+          "sha256": "da4713732deea70123813cecd4f129eef35f209bd30c8b0a670ad939eed4468e"
+        },
+        {
+          "path": "apps/web/test/task-composition.test.ts",
+          "sha256": "ca4ec53bf09bfe8eeb168073e6c8a4d1261c799c681fd365256f50bd6c56cf0d"
+        },
+        {
+          "path": "apps/web/test/task-overview.test.ts",
+          "sha256": "4d90ddfdf5b6a30db200d5c31dbb34e35f6239ef808dee568c888afef2204040"
+        },
+        {
+          "path": "apps/web/test/trace-flow.test.ts",
+          "sha256": "201b72e63a3b9b81ac607a6c8a744679f4acff19ad15ee516cfff42b977c58c3"
+        },
+        {
+          "path": "apps/web/test/trace-lanes.test.ts",
+          "sha256": "c4b93e252209a16414cfc1c4f7873df8f3959a4f64f4f5488d3b8072993bb708"
+        },
+        {
+          "path": "apps/web/test/wave-validation.test.ts",
+          "sha256": "effde8e76abfa67fc264fa23e63bec3f3e300aff71c83d5cf7316051d617a0af"
+        },
+        {
+          "path": "apps/web/tsconfig.json",
+          "sha256": "2adb886ee5a065624be59f4f26766a3198bc6a12c1d6c584a6d6ff9289f35f98"
+        },
+        {
+          "path": "biome.json",
+          "sha256": "2b5a0d2f1fb8ddf04ca780055a3be84a3517d792993529d8bd3c8cac707ae202"
+        },
+        {
+          "path": "package.json",
+          "sha256": "6f4c9019070e5ab169ad8b9fedfa066f2e189f250681927d5cd5b990677bb4aa"
+        },
+        {
+          "path": "packages/comm/bus/package.json",
+          "sha256": "bbd3559c3d14b8de91f7725a692885b5207e9ce4ffebbb19ffd4a89a775a1de3"
+        },
+        {
+          "path": "packages/comm/bus/src/index.ts",
+          "sha256": "474f021ee09afa7a97f3290d1cfcb120c199d1f971e3c709df6c2bd6209fceba"
+        },
+        {
+          "path": "packages/comm/bus/test/message-bus.test.ts",
+          "sha256": "9e1b5dec219ad3dd69eb7f95da6feb6b5ab06db4debdb1bf3f9ed793208f86f5"
+        },
+        {
+          "path": "packages/comm/bus/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/comm/channels/package.json",
+          "sha256": "d7df49ff99e0352ec0a4d26bae310d25bad13485019aa2f40e11b74b0c4440b2"
+        },
+        {
+          "path": "packages/comm/channels/src/base.ts",
+          "sha256": "f9b5b3cab10926e3dae00a6c3d14c93c2e86d92b2580417d33d9d2e7f1ede33a"
+        },
+        {
+          "path": "packages/comm/channels/src/channel-context.ts",
+          "sha256": "500f4dff5690b60a5ee860aa531d574bd9a2a5b19c02704107ae332d3703f780"
+        },
+        {
+          "path": "packages/comm/channels/src/inbox.ts",
+          "sha256": "dbda38cd346018c338185a12df4a4b8f5902d782205cc8737daf06230deb356e"
+        },
+        {
+          "path": "packages/comm/channels/src/index.ts",
+          "sha256": "cc31660358d72b58ca1457a7bc54ec3ff4491608071703d7f26581615589ce02"
+        },
+        {
+          "path": "packages/comm/channels/src/json-project-channel-store.ts",
+          "sha256": "d0dba609254035e6f0268b16eb495f674a2a48055a1b8aa1cb14f794ca5c9817"
+        },
+        {
+          "path": "packages/comm/channels/src/json-project-collaboration-store.ts",
+          "sha256": "a8a3969d1f1a1d5dc9b1256f5a2333c0e37748ab41137b35a4e40d9e96f0d2b4"
+        },
+        {
+          "path": "packages/comm/channels/src/legacy-channel-migration.ts",
+          "sha256": "ac0d6eb527f8a6bbd7f791c81bade8dc5fc0aba804070a59fb152ec743cbe2a3"
+        },
+        {
+          "path": "packages/comm/channels/src/message-policy.ts",
+          "sha256": "2fd1600f74e68ae50d619ed7a06080fd1c8b6980d6ee1f22454f60540a1a24f5"
+        },
+        {
+          "path": "packages/comm/channels/test/base.test.ts",
+          "sha256": "653ebd9f3c4e9c79950f3459e8c50f2456126dd88ec4e7c25be9bcde22f60476"
+        },
+        {
+          "path": "packages/comm/channels/test/channel-context.test.ts",
+          "sha256": "f95bb5c0e13b5e952afd43c6408efa1f2bf91a3a66554e3310d0c6e7d64f4d76"
+        },
+        {
+          "path": "packages/comm/channels/test/inbox.test.ts",
+          "sha256": "884297862cd66685c5efb1c72baefe898a5a90208b19d8de9f7d90470d885dab"
+        },
+        {
+          "path": "packages/comm/channels/test/json-project-channel-store.test.ts",
+          "sha256": "51d3d194ac6c704ebd65ddfef68704941db67fedd537ae8a25092776e7e5ee67"
+        },
+        {
+          "path": "packages/comm/channels/test/json-project-collaboration-store.test.ts",
+          "sha256": "43bf7b0733a54857be07a6b99450239de4c3506c5574d2c637ee8b31fe6c0b56"
+        },
+        {
+          "path": "packages/comm/channels/test/message-policy.test.ts",
+          "sha256": "94104aafc3bc08b2ca76674bf2e151b7a81d5d614431780ee4fbba23094d01a8"
+        },
+        {
+          "path": "packages/comm/channels/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/core/__tests__/e2e/lru-cache.test.ts",
+          "sha256": "48c7d40be43d22bc5a99c2cff228e913b1de2e65361e77eb47002d8f9e87d4f4"
+        },
+        {
+          "path": "packages/core/__tests__/e2e/phase0-runtime.ts",
+          "sha256": "49869f81071a88faf0015c31dffe1283234405abcca17be8e431f3a66217f426"
+        },
+        {
+          "path": "packages/core/__tests__/e2e/phase1-runtime.ts",
+          "sha256": "8f4be4ed3b173ee5a7f6a04a1950851709c68b7001a25b4b025d3cde352a472c"
+        },
+        {
+          "path": "packages/core/__tests__/e2e/phase2-runtime.ts",
+          "sha256": "02226eff77d1a9e59f3a75b4995ba341499ef0d893df75dd49543450928a5a85"
+        },
+        {
+          "path": "packages/core/domain/package.json",
+          "sha256": "494b00c45216b09e09696b7b556016974966ee37a1f15d3a781fa54d0bbd9989"
+        },
+        {
+          "path": "packages/core/domain/src/channel-summary.ts",
+          "sha256": "c6257ac5dfa2226a3c0786c5d9fd1532cb639d07c345930dc566a8c0d8bb4dc8"
+        },
+        {
+          "path": "packages/core/domain/src/channel.ts",
+          "sha256": "0a66b672cf2fa00d7bd35767e48b4c4291eae281743ece7718cf7f94ba433d0c"
+        },
+        {
+          "path": "packages/core/domain/src/completion-resolution.ts",
+          "sha256": "853b071f4b75da22b9ba94389f951fc4be89c4e8bd1fb11f3c0c96392f2d1f69"
+        },
+        {
+          "path": "packages/core/domain/src/coordination-ledger.ts",
+          "sha256": "4085bf89c666d802c5f09ad709cbd8e61f94da2290b667f7f9ebbf4b5e995e4d"
+        },
+        {
+          "path": "packages/core/domain/src/handoff.ts",
+          "sha256": "f969318e51ae4f5dc4d15def457949dec7174014b75c7087b0a74a2995c6eea8"
+        },
+        {
+          "path": "packages/core/domain/src/index.ts",
+          "sha256": "27a9fcde779d5d5784ceb4f30b37b21817958248946cffe20c01cf979630f940"
+        },
+        {
+          "path": "packages/core/domain/src/leader-directive.ts",
+          "sha256": "5db06c66b5bce7d2c939c33cbd24466f6a8d3b3a02aa8999ac61640d9d4474fb"
+        },
+        {
+          "path": "packages/core/domain/src/ledger.ts",
+          "sha256": "cba861904efc2481dd78126e6395dc21bf0b4887508c2219030712bb7edc9caf"
+        },
+        {
+          "path": "packages/core/domain/src/model-settings.ts",
+          "sha256": "44912f58ec15ac284c7761de0707ae834f700d2bdb11b085a4c284325fc6448e"
+        },
+        {
+          "path": "packages/core/domain/src/objection-resolution.ts",
+          "sha256": "fa1bc75a2dfa55f37784dec23980b0cad794d2c6f4e398cac85d77906cb2d69b"
+        },
+        {
+          "path": "packages/core/domain/src/objection.ts",
+          "sha256": "cd0ab78a296df199285d33a3caa05341bb3e1c43c9f2201233bdfff36012a6f0"
+        },
+        {
+          "path": "packages/core/domain/src/onboarding.ts",
+          "sha256": "db7cf29c22143def2edba4ed3922f193c2dfdf2d11e858d2073fdee3cd968b34"
+        },
+        {
+          "path": "packages/core/domain/src/parallel-execution.ts",
+          "sha256": "c263a42dbd7dccc549ba993c37583efa15bd1dd2a4023fe599f3a39875392d30"
+        },
+        {
+          "path": "packages/core/domain/src/reducer.ts",
+          "sha256": "0434888ca2c40dfec17b331e9ca5b2c1db5a091c1d30e279fe72539bcae4e1c6"
+        },
+        {
+          "path": "packages/core/domain/src/requirement-proposal.ts",
+          "sha256": "4067da48126f15834834e9aa43d5aa9b3b94b8e03045616b1cda2f422b85e198"
+        },
+        {
+          "path": "packages/core/domain/src/roster.ts",
+          "sha256": "9f8093647895fd66d920f58fc79e6378fc534f0f3d955c36e73c09af2f6395d2"
+        },
+        {
+          "path": "packages/core/domain/src/state.ts",
+          "sha256": "ae99a18c860ff5a1f5c5cb280385e6665abb8594bc5ccd27ccb80d1ab988e89e"
+        },
+        {
+          "path": "packages/core/domain/test/channel-summary.test.ts",
+          "sha256": "e822cfa06962d9b2d75b2ae00031a9d5710135f3c5ea935c05e1eaf5ef26cd03"
+        },
+        {
+          "path": "packages/core/domain/test/channel.test.ts",
+          "sha256": "2e29ec54f6e62ed74492710d4e49c420be3c51a8859483634e732ea9944523b7"
+        },
+        {
+          "path": "packages/core/domain/test/completion-resolution.test.ts",
+          "sha256": "23ce8919e92128e896f65dad3e8dcdf7b47b49e3a00988b8b04ab6aedbf74dae"
+        },
+        {
+          "path": "packages/core/domain/test/handoff.test.ts",
+          "sha256": "ba8af7fc3e71156042054e47041de25142944dc91a5819e811f25c7821be6509"
+        },
+        {
+          "path": "packages/core/domain/test/leader-directive.test.ts",
+          "sha256": "f50a1f200f9444f69d97311a74977b24e90a89da28f97abf31f89c14ea47fb44"
+        },
+        {
+          "path": "packages/core/domain/test/ledger.test.ts",
+          "sha256": "271141079dc466f66d4c2a5855ce16211b78337e51bb6b0c42ee2d1f1ff21a77"
+        },
+        {
+          "path": "packages/core/domain/test/model-settings.test.ts",
+          "sha256": "5ea02fb7eb1ccfddadbe81e684c88cc3777d518ab00b3cbbd900ace1153b89fe"
+        },
+        {
+          "path": "packages/core/domain/test/objection-resolution.test.ts",
+          "sha256": "775f5e439f9362dc97792735b64f2bd834834c211e21abbc32c4559484322cee"
+        },
+        {
+          "path": "packages/core/domain/test/objection.test.ts",
+          "sha256": "4722a7f03822c77dd29abb0d8914485791f2ec455280d8af867a088b71889b6b"
+        },
+        {
+          "path": "packages/core/domain/test/onboarding.test.ts",
+          "sha256": "e2b2c03e5f27a4754d307ee6519f58d4e0e5bf7d6c0802d2c468013b3b2b6ed7"
+        },
+        {
+          "path": "packages/core/domain/test/parallel-execution.test.ts",
+          "sha256": "576dc0625cf9d728f7ab52387b6555b5a45f8a0b30a5c926829b8e57c58a674e"
+        },
+        {
+          "path": "packages/core/domain/test/project-roster.test.ts",
+          "sha256": "cefc90267cf8f99884f80a1247e696da605b309af50419466487b0ac11de4ac0"
+        },
+        {
+          "path": "packages/core/domain/test/reducer.test.ts",
+          "sha256": "92c33671bc00ce4ae2cc6b79ea5c071f4e73c1dff617623a48ef8c7ab500abd6"
+        },
+        {
+          "path": "packages/core/domain/test/requirement-proposal.test.ts",
+          "sha256": "e1d31c08b0688ae1ef1fce5109df3493063d18ffa5965b483de391e4bb5c8f22"
+        },
+        {
+          "path": "packages/core/domain/test/roster.test.ts",
+          "sha256": "98444793584036d3f9a2d30e149b2a21382b3e5a456b20f32177fa2f45566307"
+        },
+        {
+          "path": "packages/core/domain/test/state.test.ts",
+          "sha256": "43b08b3a8b67550b6a0950f4479e1e46ff3aa0e06a97d9cd6f844bff8f56f2ab"
+        },
+        {
+          "path": "packages/core/domain/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/core/orchestration/package.json",
+          "sha256": "8d5d14ee6b09c4a6f07931ecaab31a8c23b7e712e2c4f4066d0cb5346895ee7d"
+        },
+        {
+          "path": "packages/core/orchestration/src/channel-lifecycle.ts",
+          "sha256": "4e37b0f3bd7bb819e58d61c4d37bddb1fc81b86fbed9dadcb508c2b85009a86f"
+        },
+        {
+          "path": "packages/core/orchestration/src/channel-summary-reconciler.ts",
+          "sha256": "b56a37761e83c02182abe70ba9ab7bbd05c4a721686d3f8285937d8b7d0862be"
+        },
+        {
+          "path": "packages/core/orchestration/src/complexity.ts",
+          "sha256": "5c9052931f8b76a53d2133b4c2ab38c9c1c8cdfb3dd2e3d64209d81ed997a1b7"
+        },
+        {
+          "path": "packages/core/orchestration/src/coordinator.ts",
+          "sha256": "d96fedad05e674a0297561eb0c07ae1ccbeddfa7ca24d2340ef30a03757b92f4"
+        },
+        {
+          "path": "packages/core/orchestration/src/global-scheduler.ts",
+          "sha256": "d7606a123a73ee4866ccb9cc66e2c6383b020c708f6b531f6d88f473609a15da"
+        },
+        {
+          "path": "packages/core/orchestration/src/human-gate.ts",
+          "sha256": "39567bdb850b39187b52a10036b9ade6fc4dcb8fa897cddde4900954c6bf0e56"
+        },
+        {
+          "path": "packages/core/orchestration/src/index.ts",
+          "sha256": "ecaa1b4a072c4e90d9dbee85ce5c44c67545124288ba1951cb838a4f070be5c7"
+        },
+        {
+          "path": "packages/core/orchestration/src/integrate.ts",
+          "sha256": "07d12af1f6dec02876b6b22119d8cb02d1948aeee6fe151d089924c5ed17d7ef"
+        },
+        {
+          "path": "packages/core/orchestration/src/message-service.ts",
+          "sha256": "f699e57755c4efbed2ef9727605ce9d4f623b3ac67e8e4ea20a40ea2458f36bb"
+        },
+        {
+          "path": "packages/core/orchestration/src/objection.ts",
+          "sha256": "42833bf3c7627dd0b99269dc21fa30f78eb88b34cc3fc3028762f9f768bdcc78"
+        },
+        {
+          "path": "packages/core/orchestration/src/orchestrator.ts",
+          "sha256": "66c95593df6d4af00cef874f3445eb971bf6e79d03f8427b4010c2cba7a26b58"
+        },
+        {
+          "path": "packages/core/orchestration/src/parallel-coordinator.ts",
+          "sha256": "b357df882007026d38195c77626dd2fef8fe15c4d466919ef25acfd85b776d81"
+        },
+        {
+          "path": "packages/core/orchestration/src/progress-ledger.ts",
+          "sha256": "f43bd506260bb813ad29ecf348bde436fe6ddaf38aa179eb557acdc34f24f41d"
+        },
+        {
+          "path": "packages/core/orchestration/src/project-roster-service.ts",
+          "sha256": "ff032ae0becbb68abb4a1845d42a850903c509b1856086ba72d421a486fb3d20"
+        },
+        {
+          "path": "packages/core/orchestration/src/review-continuation.ts",
+          "sha256": "31908ece98fc894c6a51fa51015fa724a61abee79fb3c30e0d2aa5947c358011"
+        },
+        {
+          "path": "packages/core/orchestration/src/role-departure-service.ts",
+          "sha256": "0954f9550c24d289035fcd22864ab07b1ecae0ea2a6c115ac33258a9daba9c66"
+        },
+        {
+          "path": "packages/core/orchestration/src/route-conditions.ts",
+          "sha256": "517f908f291dc9dd791295f9fb1b4d8723299609a6ce5ecc3ed7b08d25f4b977"
+        },
+        {
+          "path": "packages/core/orchestration/src/worker-runtime.ts",
+          "sha256": "824b8dab78f28b667b3e6f003c1e34c095ac1168a2b316a53ff47d52491e48bb"
+        },
+        {
+          "path": "packages/core/orchestration/test/channel-lifecycle.test.ts",
+          "sha256": "43a5b3ee59e31d7ea847dab305a2ab98bc30b954cae6c181eec6074321bb8a44"
+        },
+        {
+          "path": "packages/core/orchestration/test/channel-summary-reconciler.test.ts",
+          "sha256": "34e3d404f1951ec773ce9d448653c425fa14ba89009edc4bebf430b77ee44963"
+        },
+        {
+          "path": "packages/core/orchestration/test/complexity.test.ts",
+          "sha256": "d9704c0e1cb8e6c77a5e0bc1e7fef62a42afc65eb52488a94608c957681fae9d"
+        },
+        {
+          "path": "packages/core/orchestration/test/coordinator.test.ts",
+          "sha256": "be929360637f43de17c945882a0cd913d8e3a6528fe4769a8e8c4277d7eec040"
+        },
+        {
+          "path": "packages/core/orchestration/test/global-scheduler.test.ts",
+          "sha256": "2e529b6935dc65cca81f6fff0666a4ba3260274c67af90dfc0b41fca43e19d75"
+        },
+        {
+          "path": "packages/core/orchestration/test/human-gate.test.ts",
+          "sha256": "1adaa821bfa824f11d50d36ffe89fb5d94fc948e42fa21a151eb9d2760c2c668"
+        },
+        {
+          "path": "packages/core/orchestration/test/integrate.test.ts",
+          "sha256": "a39df3381b43f799014097cb8457894f9cf3145a2bf1e9cf69c33d4673459128"
+        },
+        {
+          "path": "packages/core/orchestration/test/message-service.test.ts",
+          "sha256": "afa4d8b0db9e4427f8773b6ea4631c739de5a20cc8e5926d9210013142336ccc"
+        },
+        {
+          "path": "packages/core/orchestration/test/objection.test.ts",
+          "sha256": "a7847436a9573de069ff0f7e35027922ff1812fbbfc26a47f97fda7fc0979e85"
+        },
+        {
+          "path": "packages/core/orchestration/test/orchestrator.test.ts",
+          "sha256": "1ee395d175d495a87f9c89c3731ae072eae9519b36a0b0d675849a06e2250fc1"
+        },
+        {
+          "path": "packages/core/orchestration/test/parallel-coordinator.test.ts",
+          "sha256": "2764f422444ef8c402b6d53c5c4d1836aabbc6d912db535aacf10dd90c41c271"
+        },
+        {
+          "path": "packages/core/orchestration/test/progress-ledger.test.ts",
+          "sha256": "6eac0c720b3f272a7523a8253969af906874871669141123a9cc9015b9fa1a14"
+        },
+        {
+          "path": "packages/core/orchestration/test/project-roster-service.test.ts",
+          "sha256": "c94b75150499b5f3cd2de6c8e0d0aa5f96189e83525eaba8fde4418260d9ef98"
+        },
+        {
+          "path": "packages/core/orchestration/test/role-departure-service.test.ts",
+          "sha256": "92673393ca42804451aa42ceee03034fdc6f366d3a7673b45bef9b5d2ff1c1cf"
+        },
+        {
+          "path": "packages/core/orchestration/test/route-conditions.test.ts",
+          "sha256": "134d0994829593b214233622bf14418c3c3f078d345e12cef015d32e1227c35b"
+        },
+        {
+          "path": "packages/core/orchestration/test/worker-failure.test.ts",
+          "sha256": "f99715f08587c994cb4f13b60b6930d774f1730fbeda1ac60eb4d02151ffcf22"
+        },
+        {
+          "path": "packages/core/orchestration/test/worker-runtime.test.ts",
+          "sha256": "38bb30461c79a755763c9f8f5713b7be805cd8c4eb4cfd3ac632f8bc9280fc6b"
+        },
+        {
+          "path": "packages/core/orchestration/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/core/preemption/package.json",
+          "sha256": "3dbd0cabd08f070f5f01cc3837651b4b7aadf9bef0e93d53e2dee9b8a3dec6ef"
+        },
+        {
+          "path": "packages/core/preemption/src/index.ts",
+          "sha256": "d21ed1021790dde8e7abd577ab714130f7077d6d5a312f78aeb8afae031dc4c4"
+        },
+        {
+          "path": "packages/core/preemption/src/preemptor.ts",
+          "sha256": "92517f2de4788a55e2a8957b55d40d1456274f81ac430baf00d836c2d005f4df"
+        },
+        {
+          "path": "packages/core/preemption/test/preemptor.test.ts",
+          "sha256": "35f6dd579aa21d1b23676d9d771e32fd640e1714195b537e786f2302f9ca8314"
+        },
+        {
+          "path": "packages/core/preemption/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/roles/definitions/package.json",
+          "sha256": "eb8f1979eb98a6f711bea160a24fdf89684c8cc42fc96332f5accb8a6932b195"
+        },
+        {
+          "path": "packages/roles/definitions/src/index.ts",
+          "sha256": "26bcc6077b4bc9100dc144ae4990e2f2d85b4eb4de855b34425810a3778ca5e9"
+        },
+        {
+          "path": "packages/roles/definitions/src/roles.ts",
+          "sha256": "764df8ef70a87cf61f274887c70faeeb70b893de3307f5fbae6e2886fed2e315"
+        },
+        {
+          "path": "packages/roles/definitions/src/roster.ts",
+          "sha256": "19f960903eecb17801afc4e6abdbef08fc640171f07b0a167938c42972f2349b"
+        },
+        {
+          "path": "packages/roles/definitions/src/runtime-contracts.ts",
+          "sha256": "4153c9d3246ff3b0dbe90ba88fe8ad36aaad96f275ee43a41608cb855bc3e56f"
+        },
+        {
+          "path": "packages/roles/definitions/test/roster.test.ts",
+          "sha256": "7e6f4587b69c74a1fb5043daf402bb4b25998fccb65bd1816237e2dec801eeab"
+        },
+        {
+          "path": "packages/roles/definitions/test/runtime-contracts.test.ts",
+          "sha256": "dbe92f3ac7f09324a45cfb36ab3117341e3da25b3f63a2db85ddb6fa6b98d2dc"
+        },
+        {
+          "path": "packages/roles/definitions/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/runtime/executor/package.json",
+          "sha256": "f8a98014fccbdae3150c19976a9f447069dbc648167fd0e9ba20bd05419df863"
+        },
+        {
+          "path": "packages/runtime/executor/src/base.ts",
+          "sha256": "20235869003a28362d203948d54457dc6d526704eb24dfbdba3f62428832daf3"
+        },
+        {
+          "path": "packages/runtime/executor/src/channel-summary-generator.ts",
+          "sha256": "d2368d2cca9bc4c2e367823d8ce6e743077a4e798cbec45d2a8623e67ae646fd"
+        },
+        {
+          "path": "packages/runtime/executor/src/compatible-model.ts",
+          "sha256": "3831293694abebd72b81054b280755a844da96a132b898bb5a59842ab0a64612"
+        },
+        {
+          "path": "packages/runtime/executor/src/harness-executor.ts",
+          "sha256": "8d61a402a3302754e9c4fb65f54be531ba5606748332a2c849aca7bd4e7c6b58"
+        },
+        {
+          "path": "packages/runtime/executor/src/index.ts",
+          "sha256": "15d2c34318b6e36879c173ad764d9ebf5153684ae02a5390bb482a89987a37dc"
+        },
+        {
+          "path": "packages/runtime/executor/src/project.ts",
+          "sha256": "05fc2cc6eb8ffab07d008e0769472d4c99c4e33def5eb5d7d782d9418edef3c7"
+        },
+        {
+          "path": "packages/runtime/executor/src/requirement-interpreter.ts",
+          "sha256": "5bcccf40761531498fcb9626607d1a0543ac10517c5521aad7f990c7e20ce686"
+        },
+        {
+          "path": "packages/runtime/executor/src/slice-compression.ts",
+          "sha256": "cf31d51534879a0eb72e08d31a5a1b93aa8e24b62654e1db3584d34a2f107d65"
+        },
+        {
+          "path": "packages/runtime/executor/src/trace-retry.ts",
+          "sha256": "63cdfad19cceb19b42989bf0bfff60057d32eb02912859d7a43f3efb38e50450"
+        },
+        {
+          "path": "packages/runtime/executor/src/trace.ts",
+          "sha256": "fc3332885d223a895db789bb2b317b0e01224f159babdad6fa210a44c33fe4ce"
+        },
+        {
+          "path": "packages/runtime/executor/test/assignment-project.test.ts",
+          "sha256": "672cf19119b4a26c289b77cbe7827d9e979e5cdc00829ccaaf221f7a1efeb9f5"
+        },
+        {
+          "path": "packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts",
+          "sha256": "85608fd856c76036d3c61dee112e07215dabe1495c8be72a70bf56982f19c8f1"
+        },
+        {
+          "path": "packages/runtime/executor/test/channel-summary-generator.test.ts",
+          "sha256": "bc4151a0eae45bc003bcd8da9a52e23acfe18321a84d06dd9e696ac3f3b7af17"
+        },
+        {
+          "path": "packages/runtime/executor/test/compatible-cancellation.test.ts",
+          "sha256": "3c200b2916ddb14aa9bd434c6bfb3855ca1c9c8bf8353cb1e54a23ca3b6fa6d7"
+        },
+        {
+          "path": "packages/runtime/executor/test/compatible-model.test.ts",
+          "sha256": "341ac17c3070aba9ad955d60ce0e6530e15fe6c753750d45b856b63c10eb2c98"
+        },
+        {
+          "path": "packages/runtime/executor/test/compatible-reasoning.test.ts",
+          "sha256": "99f4ce6443cb15dfaf1ca2d0e84b1ee293f3a288247c896aacc9b148b7956706"
+        },
+        {
+          "path": "packages/runtime/executor/test/compatible-session.test.ts",
+          "sha256": "648cc2ec3097f10de688a8f4d403d543a72883fdf6bc3dc5a7c9d06abc8ad3b0"
+        },
+        {
+          "path": "packages/runtime/executor/test/compatible-timeout.test.ts",
+          "sha256": "2c594c495e51d2070efadd4e1ceda20f86a94e67d59dfb510846789f303a96e7"
+        },
+        {
+          "path": "packages/runtime/executor/test/completion-feedback.test.ts",
+          "sha256": "ebb441d1d3f3c2360c9003844ce56703086c452ef4aafcded48d78cc85a61e50"
+        },
+        {
+          "path": "packages/runtime/executor/test/g5-real-chain.test.ts",
+          "sha256": "b1cdb2e943bd7f15dd1d3f54fb75c34d7faf0300327240f86ce2afa5961a5339"
+        },
+        {
+          "path": "packages/runtime/executor/test/harness-executor.test.ts",
+          "sha256": "8c25909405956f69c548535ce5882f94e187d8ca6ac2f60d143921b6d67566f7"
+        },
+        {
+          "path": "packages/runtime/executor/test/output-repair.test.ts",
+          "sha256": "b82028dd18f46de07bade75b4d3b4e1e6d74065d96679b3796660396ccb35a79"
+        },
+        {
+          "path": "packages/runtime/executor/test/project.test.ts",
+          "sha256": "d95a0af1ece514b70abb36106aed65c03393e711cddf9e5e6b18ac3fb142c6a4"
+        },
+        {
+          "path": "packages/runtime/executor/test/projection-input.test.ts",
+          "sha256": "5d8556dd8f7ccbdbc457e83dc2ad48304006676b0c98b6cbc6fb7ff9201ff619"
+        },
+        {
+          "path": "packages/runtime/executor/test/request-retry.test.ts",
+          "sha256": "97bff45f81f89204a01cf61dcddccdbc6adca4f849630174e62419c022554aa4"
+        },
+        {
+          "path": "packages/runtime/executor/test/requirement-interpreter.test.ts",
+          "sha256": "075db509217cfde2339b3bc90d75ed43d31ef30ea5cbe6172675b87f57769d17"
+        },
+        {
+          "path": "packages/runtime/executor/test/slice-compression.test.ts",
+          "sha256": "be92ac029d808dd5e9cdef64069182aa449a53e576ebb9a14afa195afa48595b"
+        },
+        {
+          "path": "packages/runtime/executor/test/tool-governance.test.ts",
+          "sha256": "8ef88da24584f85537cc88592dcf92b86d534bc7b71ad3e0fb8ae9c1c71554f1"
+        },
+        {
+          "path": "packages/runtime/executor/test/trace.test.ts",
+          "sha256": "154da1a7692f7f6f67806a89ca8f04d87ecad917f809f0270769a7f776000a97"
+        },
+        {
+          "path": "packages/runtime/executor/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/runtime/sandbox/native/secure-files.c",
+          "sha256": "d6bbe31d85bea5205a8acd556410f6c93271a9457e18a2a6dc5788c8581c8f1d"
+        },
+        {
+          "path": "packages/runtime/sandbox/package.json",
+          "sha256": "1af7df4e99403b4b9858cfde81b68717286affc0d150db92984426a7ec76dc62"
+        },
+        {
+          "path": "packages/runtime/sandbox/scripts/build-native.mjs",
+          "sha256": "835b94f7303586302e1a33536c5d4e681cad7f5825cda2360685ef3554f27115"
+        },
+        {
+          "path": "packages/runtime/sandbox/scripts/verify-native.mjs",
+          "sha256": "8990996808b4a393ca229bca022cc745e46e2118b1fea0de733fc3669749e4e8"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/docker-sandbox.ts",
+          "sha256": "0759b6360fb383a42f161cb4c6315ebb97f1af5df86b2b44edfc09ac5d8f05d8"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/factory.ts",
+          "sha256": "622217ac8d2589b437a9764f950cfb77a0b0a7c0c8ab1578288aeda6e364b8aa"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/index.ts",
+          "sha256": "8264cf1f71f53c1920c4509cca3365019704800feac267be5b48a2d2f5da4975"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/local-temp-sandbox.ts",
+          "sha256": "7d1619175cc8a7fee7a8d924aa466c98e7bb3334bf37c1dd581ebeb0942949cf"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/path-guard.ts",
+          "sha256": "85f97c22175dcfa30fac5f2825c0404a1895b060692771860733be6b9a25c2a9"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/phase0-tools.ts",
+          "sha256": "53ec30a538a7429630899ffbd98c15c1691367e157fb0706b27cf55021e84975"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/recoverable-sandbox-manager.ts",
+          "sha256": "55420b7f8c7e238bf46abc205fad3337fd54edeb95fdffcfc2561e39586fef20"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/root-file-index.ts",
+          "sha256": "1bb0e308e4f18d98e67717a323d46e819febe5cab0c6117bdd6f259f55d7e4e8"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/sandbox-manager.ts",
+          "sha256": "0be21bd0b0b29672adea15c1890e00a3895057c4cd3e0532ff2a30b4040bba09"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/secure-files.ts",
+          "sha256": "1a3041df4029eba62febc8f4dd08cb73a3d5ac22c38852db419694bb321ca4f7"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/types.ts",
+          "sha256": "2379ece3865cf144856d8879be9bd1965ed66e392bef55ca0f67496af924071f"
+        },
+        {
+          "path": "packages/runtime/sandbox/src/workspace-adapter.ts",
+          "sha256": "fcce62fcd21daa452ed85a76907fafd6da403b06700b6ec67904039164e38edc"
+        },
+        {
+          "path": "packages/runtime/sandbox/test/docker-isolation.test.ts",
+          "sha256": "15723b52f79f473ed93a0714a5e350b7bc465c9f38ac968e6532c6a96b9c59eb"
+        },
+        {
+          "path": "packages/runtime/sandbox/test/docker-sandbox.test.ts",
+          "sha256": "ac6ca856b6f3a70d8e36869b4c07dfecf69b4cb5a12077a6bf2c09e2f5c1ed5b"
+        },
+        {
+          "path": "packages/runtime/sandbox/test/factory.test.ts",
+          "sha256": "ac60be34028a3225bea31dfbb473ede77291e0697f8a0932e4327715d4a54400"
+        },
+        {
+          "path": "packages/runtime/sandbox/test/local-temp-sandbox.test.ts",
+          "sha256": "e5e6c21de4bb1c537af46ec3248f10de2fd66123f934fa481387161f96b1f810"
+        },
+        {
+          "path": "packages/runtime/sandbox/test/path-guard.test.ts",
+          "sha256": "e200a647b3ef857a4f36e0256eaf88db35e104e2baf0cc15423d8e1453353f02"
+        },
+        {
+          "path": "packages/runtime/sandbox/test/phase0-tools.test.ts",
+          "sha256": "1750ad290e286f8a9ab7f37c7fda800ceec773f1e0fad573c217e38c4475d395"
+        },
+        {
+          "path": "packages/runtime/sandbox/test/secure-files.test.ts",
+          "sha256": "b80c59028c04618ad77c2be11d14f1d65c7a513105b76440d262afadbdbb3a21"
+        },
+        {
+          "path": "packages/runtime/sandbox/test/workspace-adapter.test.ts",
+          "sha256": "f73f1541ff84c64988753b1844aab252b4aead239e3e788a51dd9776ceccd62b"
+        },
+        {
+          "path": "packages/runtime/sandbox/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/runtime/state/native/keychain.c",
+          "sha256": "0d0e18a9be5abee182e491c6f2cc890a4908feed08eae8874ab169f39368fb89"
+        },
+        {
+          "path": "packages/runtime/state/package.json",
+          "sha256": "a4c8efbe3971ff6fce4448967a12340afcf7df17eff381fa6a6247b9f5ee19af"
+        },
+        {
+          "path": "packages/runtime/state/scripts/build-keychain.mjs",
+          "sha256": "23c024aa3260712170842817c4a3b305b28f41df4bc060a04200281f077df2e4"
+        },
+        {
+          "path": "packages/runtime/state/src/base.ts",
+          "sha256": "fb39114a7753a8a66dfe65263c0217cbd0ef27adda0a8fac8e9a07d42aab4656"
+        },
+        {
+          "path": "packages/runtime/state/src/index.ts",
+          "sha256": "37a5e064478a2db9e6a4eb0627bc411360ce1c2b70999fff762de59d0d4c89e1"
+        },
+        {
+          "path": "packages/runtime/state/src/json-task-state-store.ts",
+          "sha256": "32dfca037a63d7f30efdc300335c417339d8c473b0c5caa370b0df36661bce8d"
+        },
+        {
+          "path": "packages/runtime/state/src/local-credentials.ts",
+          "sha256": "2b1d99a08de293b2a4af8673d7afb99098949bc0c5e14c8ce5d4cf1ebcd60415"
+        },
+        {
+          "path": "packages/runtime/state/src/model-config-store.ts",
+          "sha256": "3a6019b3895f83438e88e69c81799e569a4dfcb369feb1a1b8fd87449b02b007"
+        },
+        {
+          "path": "packages/runtime/state/test/json-task-state-store.test.ts",
+          "sha256": "df6377b7bbbc4c8c6aa1a84c895abc9ec40dc30a4a693cf17abd03ee56e39db7"
+        },
+        {
+          "path": "packages/runtime/state/test/local-credentials.test.ts",
+          "sha256": "47fde45c9d5d5694c789e8cf81ec65eae626e778d4c3b8645f155d01bc570a8b"
+        },
+        {
+          "path": "packages/runtime/state/test/model-config-store.test.ts",
+          "sha256": "15f0d42914e7f44327ac5dc2f567972f98602cf8ee0181fde75ca3253c027493"
+        },
+        {
+          "path": "packages/runtime/state/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/shared/package.json",
+          "sha256": "84a51446e81ee95454c2378692653f9f23930c61a38fa39445244e17cc97b741"
+        },
+        {
+          "path": "packages/shared/src/index.ts",
+          "sha256": "6e67eb8b3366872f5a815c2bf3e187e1b83f38460a847e3cb361a000229366df"
+        },
+        {
+          "path": "packages/shared/test/smoke.test.ts",
+          "sha256": "bc42c1c26cf01b6f1e86065d543088c75f2ad9f2a4f49f9d299e9958672b7a0c"
+        },
+        {
+          "path": "packages/shared/tsconfig.json",
+          "sha256": "902aedcca69381b282b4bfb47a017b7729458c3a65238bb580f5e1146f30d956"
+        },
+        {
+          "path": "packages/tools/bridge/package.json",
+          "sha256": "d7887463ee869f51315ca8b2a2030a50308982ee3d138a499a7404facb5a219e"
+        },
+        {
+          "path": "packages/tools/bridge/src/index.ts",
+          "sha256": "bee796744478a0364935cb18b7ab11c7f29e4b570c5a64887a9a09a594c25c89"
+        },
+        {
+          "path": "packages/tools/bridge/src/loader.ts",
+          "sha256": "67799681bbbdde01413129a2dbce2bc098f6a6311fa37ed2b6e6fc5e28959cb2"
+        },
+        {
+          "path": "packages/tools/bridge/src/mcp-bridge.ts",
+          "sha256": "c83641332027077c295ab3add1d005e885265497c35b630398d124c5bb202a06"
+        },
+        {
+          "path": "packages/tools/bridge/test/bridge.test.ts",
+          "sha256": "979fdbd2039aaa130545dce65920136ca8f9b8fc82db89937e5d1db51c33ab69"
+        },
+        {
+          "path": "packages/tools/bridge/test/loader.test.ts",
+          "sha256": "9123fec482204307b95f8fee90f5e27d108bcc393f285cdf0d7ef625e958b77e"
+        },
+        {
+          "path": "packages/tools/bridge/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/tools/fs/package.json",
+          "sha256": "55fcdc6743cd95bffebdf0b5943628a23fa84469267c185edefbe63f2576e8ac"
+        },
+        {
+          "path": "packages/tools/fs/src/fs-server.ts",
+          "sha256": "4b1aac976e613b86bccf1f976bc3d108bf956fe49571550180396b9e19370076"
+        },
+        {
+          "path": "packages/tools/fs/src/fs-service.ts",
+          "sha256": "e7b35469f141388c5f55c40865d7cd6aaee8feda487a151e3cbc3b8a17716731"
+        },
+        {
+          "path": "packages/tools/fs/src/index.ts",
+          "sha256": "2c397b8ef5341d4bfd24fd1108362873b23233c3118fdb758edc82369585e108"
+        },
+        {
+          "path": "packages/tools/fs/src/worktree-registry.ts",
+          "sha256": "46ac02f027c7aee85e33d7792684602a592eefb79f8356205c2d062c16fc61fe"
+        },
+        {
+          "path": "packages/tools/fs/test/fs-server.test.ts",
+          "sha256": "1c685d0705a64f814b6e77e083151889afed92d07f16cd3150da3979df4b2df0"
+        },
+        {
+          "path": "packages/tools/fs/test/fs-service.test.ts",
+          "sha256": "008256237c6ed06abda503749175eaa8c9f0092a041635c6a588c8ca45322295"
+        },
+        {
+          "path": "packages/tools/fs/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/tools/git/package.json",
+          "sha256": "793ee3806ab50ba6b002e4426876585aad0cab04b7f53afb5f02d0055a4dfafc"
+        },
+        {
+          "path": "packages/tools/git/src/git-server.ts",
+          "sha256": "4e38b7bb5f95f1ad56986ca53e308964593518cff67fad1fee381a88ad7f366e"
+        },
+        {
+          "path": "packages/tools/git/src/git-service.ts",
+          "sha256": "806d95649cf0368324b79a5cb48bb31f2ced4baadf91c70c935ae6fe3cae7a7c"
+        },
+        {
+          "path": "packages/tools/git/src/index.ts",
+          "sha256": "295d1ba7d53242d0d81702609b2718257130f3a6cdcaddaa098c4070feb47c56"
+        },
+        {
+          "path": "packages/tools/git/test/git-metadata-isolation.test.ts",
+          "sha256": "4fba616e4bc6c42d4c489dd1640dacd4836770f81d24cfd1f79a743be1c2876f"
+        },
+        {
+          "path": "packages/tools/git/test/git-server.test.ts",
+          "sha256": "c4ae45d7a71bfdd14bc09e6060bd9b2f13f5de8745096cea131d9769abbdb0df"
+        },
+        {
+          "path": "packages/tools/git/test/git-service.test.ts",
+          "sha256": "49323f303e4d519d2e3944d73f7f357028e99767efb74a87b69c495dc5543350"
+        },
+        {
+          "path": "packages/tools/git/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/tools/lint/package.json",
+          "sha256": "79acb70ea029129f723100565f74f97fb6f3b89a801db3fd687552f93710eebd"
+        },
+        {
+          "path": "packages/tools/lint/src/index.ts",
+          "sha256": "d8eca5b3c11765a5a1ed55a647d5ed3eb1da66f335f703eaf651e7e8b65c6429"
+        },
+        {
+          "path": "packages/tools/lint/src/lint-server.ts",
+          "sha256": "f1ffef943179f9fc78a626089bde54ba76634795c81e5c3c0084d7ead82534d8"
+        },
+        {
+          "path": "packages/tools/lint/src/lint-service.ts",
+          "sha256": "b20520dc41670d30123ac9f120f1bc70ebf5596473ce46183da166635147f2a2"
+        },
+        {
+          "path": "packages/tools/lint/test/lint-service.test.ts",
+          "sha256": "bbf3802f50a26fcd80393117bf336190f72421cbe7f27985f9f84debe0bd929c"
+        },
+        {
+          "path": "packages/tools/lint/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/tools/sandbox/package.json",
+          "sha256": "4ca6b34d4cd0afdff35fd0623b5bdc9b0f9ae69745c8166e8d9374aacdc08a4c"
+        },
+        {
+          "path": "packages/tools/sandbox/src/index.ts",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "packages/tools/sandbox/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "packages/tools/test/package.json",
+          "sha256": "40e999943fbf2a1038d31f489f5bc5ddd621e8005813c2b8e53a157e4ace884a"
+        },
+        {
+          "path": "packages/tools/test/src/index.ts",
+          "sha256": "75bd8ec9625c73370efd7a1e619b318ff2a2c9f7cad191fe3434dbcfff467f60"
+        },
+        {
+          "path": "packages/tools/test/src/tap.ts",
+          "sha256": "fd531fb932b8a8a9cbc6362358e987bf0569d1fea52d1a33e52a1a2842f7fc50"
+        },
+        {
+          "path": "packages/tools/test/src/test-server.ts",
+          "sha256": "b32fd10ad95db1fc7df6eff7e37fc5bc4c200ea1c0ae776816b0d4cda31febc8"
+        },
+        {
+          "path": "packages/tools/test/src/test-service.ts",
+          "sha256": "9fb27627f12d993f10232dacef3f444a4b74fef8449511783052fa38b51b8750"
+        },
+        {
+          "path": "packages/tools/test/test/tap.test.ts",
+          "sha256": "297939c03f18f7369948aa901aa89c909be2615b631bff7bd4477f6cb4d0d731"
+        },
+        {
+          "path": "packages/tools/test/test/test-server.test.ts",
+          "sha256": "d69a4d1c8978302601958cbe31d306cae3a0af87cd6e0e6cd9889b10ab536b4a"
+        },
+        {
+          "path": "packages/tools/test/test/test-service.test.ts",
+          "sha256": "51ed536e02daf3dbeb2bfa05299abf5f183e87c6f0c4b6598ba88de36486c351"
+        },
+        {
+          "path": "packages/tools/test/tsconfig.json",
+          "sha256": "f6438ac9b87bbda6055f2c1770acd25ff0ade9889deb700d09af67aa967cfe62"
+        },
+        {
+          "path": "pnpm-lock.yaml",
+          "sha256": "269bc152808165552a17dcda5b8d06d951a7c80b3dc2ab798b8c483ddb762c39"
+        },
+        {
+          "path": "pnpm-workspace.yaml",
+          "sha256": "e17a5362021baccb60aa6ff5603214af6be1679b37ddd821e0631bb41dee5de9"
+        },
+        {
+          "path": "scripts/task-status.mjs",
+          "sha256": "0ffde79bf1ce80fc19ff8c963ce812234b206ceade16be63cc2d8ae3e3fc47e4"
+        },
+        {
+          "path": "scripts/test/task-status.test.mjs",
+          "sha256": "c197f38ea8a6f3376c76adb6cb8b9718425c556d02932668b327757d78770d17"
+        },
+        {
+          "path": "tsconfig.base.json",
+          "sha256": "800c92a4637c6f4b1e256e60c0161afdce595f0e87c28a20739eb5c59724b2e2"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "cb9fc1b5fe613af777406e5a0be419526c2d60bf7d9506567c0be688ababe6e0"
+        }
+      ]
+    },
+    "media": {
+      "arch": "arm64",
+      "minimumSystem": "15.0",
+      "signing": {
+        "mode": "ad-hoc-validation-only",
+        "plan": [
+          {
+            "target": "Contents/Frameworks/Agora Helper (GPU).app/Contents/MacOS/Agora Helper (GPU)",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Agora Helper (Plugin).app/Contents/MacOS/Agora Helper (Plugin)",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Agora Helper (Renderer).app/Contents/MacOS/Agora Helper (Renderer)",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Agora Helper.app/Contents/MacOS/Agora Helper",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvk_swiftshader.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Mantle.framework/Versions/A/Mantle",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/ReactiveObjC.framework/Versions/A/ReactiveObjC",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Squirrel.framework/Versions/A/Squirrel",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/MacOS/Agora",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/service/node_modules/.pnpm/@img+sharp-darwin-arm64@0.35.4/node_modules/@img/sharp-darwin-arm64/lib/sharp-darwin-arm64-0.35.4.node",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/service/node_modules/.pnpm/@img+sharp-libvips-darwin-arm64@1.3.3/node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.18.6.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/bin/git",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/bin/scalar",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/createdump",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-credential-manager",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-daemon",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-http-backend",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-http-fetch",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-http-push",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-imap-send",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-lfs",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-remote-http",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-sh-i18n--envsubst",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/git-shell",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libAvaloniaNative.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libHarfBuzzSharp.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSkiaSharp.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.Globalization.Native.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.IO.Compression.Native.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.Native.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.Net.Security.Native.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libSystem.Security.Cryptography.Native.Apple.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libclrgc.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libclrgcexp.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libclrjit.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libcoreclr.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libhostfxr.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libhostpolicy.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libmscordaccore.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/libmscordbi.dylib",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/git/libexec/git-core/scalar",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/keychain",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/node/bin/node",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/pnpm/dist/reflink.darwin-arm64-MYEHQQCP.node",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/pnpm/dist/reflink.darwin-x64-CDTBYYIZ.node",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Resources/toolchains/darwin-arm64/secure-files",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Agora Helper (GPU).app",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Agora Helper (Plugin).app",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Agora Helper (Renderer).app",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Agora Helper.app",
+            "jit": true,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Electron Framework.framework",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Mantle.framework",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/ReactiveObjC.framework",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "Contents/Frameworks/Squirrel.framework",
+            "jit": false,
+            "hardenedRuntime": false
+          },
+          {
+            "target": "",
+            "jit": true,
+            "hardenedRuntime": false
+          }
+        ]
+      },
+      "notarization": "not-run",
+      "files": [
+        {
+          "name": "Agora-darwin-arm64.zip",
+          "bytes": 296192713,
+          "sha256": "03c6fbdcabd50457b9da07c312ebd17eacb42e43532a65496f1e5fb2b9c4def8"
+        },
+        {
+          "name": "Agora-darwin-arm64.dmg",
+          "bytes": 317319401,
+          "sha256": "26a95b155b3a857e668faa54754f41ddc4fcc825c621d06dd0f39c3401def1f9"
+        }
+      ]
+    },
+    "buildRoot": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7",
+    "fullRegression": {
+      "command": "pnpm test",
+      "exitCode": 0,
+      "nodeTests": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      "vitest": {
+        "files": 187,
+        "passed": 1330,
+        "failed": 0,
+        "skipped": 0,
+        "durationSeconds": 599.86
+      },
+      "provider": "opencode-go",
+      "model": "deepseek-v4-flash",
+      "realModelTests": {
+        "lruMs": 163208,
+        "harnessMs": 40638,
+        "closedChannelSummaryMs": 5155
+      },
+      "formalBenchmarkRun": false,
+      "log": "/private/tmp/agora114-startup-regression.log",
+      "logSha256": "08904c3b0d4f5b5b835463f694f9f1b8cf3cf9fc298b67467105c6e54ebf606c"
+    },
+    "logs": [
+      {
+        "path": "/private/tmp/agora114-entrypoint-red.log",
+        "sha256": "eb121dd3f08b6323aa2a59234a344f8b64696fe638c395c03fe5270608ca6e9a"
+      },
+      {
+        "path": "/private/tmp/agora114-startup-focused.log",
+        "sha256": "9c0a217d3dd3c89141e643f6cce8647082eb3c9d653efa7570b3059bf7ea7cda"
+      },
+      {
+        "path": "/private/tmp/agora114-startup-typecheck.log",
+        "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+      },
+      {
+        "path": "/private/tmp/agora114-startup-lint.log",
+        "sha256": "ef81964ba82d44fac5a3ea259c07a1b7cfc82a3b6e46f46b1d5c23ec21507484"
+      },
+      {
+        "path": "/private/tmp/agora114-startup-app.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "/private/tmp/agora114-startup-host.log",
+        "sha256": "94e2d86cff43f48d01c3a1dc0332f08f77d4d3a4233cb4db2102a60f2d49e439"
+      },
+      {
+        "path": "/private/tmp/agora114-startup-build.log",
+        "sha256": "cca6b8ea4e0029a996e6074aad251e9a1554f86762faa394bcb6176ec75db1e1"
+      },
+      {
+        "path": "/private/tmp/agora114-startup-media.log",
+        "sha256": "e17d00f393d77c0ddf34c56471dfd4de4c591a7af68668e872f91f76c775a1bd"
+      },
+      {
+        "path": "/private/tmp/agora114-file-protocol-probe-lifecycle.log",
+        "sha256": "ad27c05e8d5e0d28d5be863d5d6a672b7c7ec454c385c277eabb0321cdb955e5"
+      }
+    ],
+    "inputComparison": {
+      "total": 354,
+      "matching": 353,
+      "differences": [
+        "apps/desktop/src/status-assets.ts"
+      ],
+      "note": "status-assets.ts received only Biome whitespace formatting after the build snapshot; this working-tree validation bundle is not a fixed-commit release candidate.",
+      "differenceVerification": {
+        "method": "TypeScript scanner token kinds and exact token text, skipping trivia",
+        "identical": true,
+        "tokenSha256": "18a7cd8c26057bd6d399eccaef00f3cce297e4707dbbbab54b6e4bedd96c74cd"
+      }
+    },
+    "sensitiveDataReview": {
+      "changedAndNewFiles": 13,
+      "privateKeyProviderTokenCredentialAssignmentFindings": 0,
+      "screenshots": "Only the Agora environment preview window"
+    }
+  },
+  "repairedDownload": {
+    "url": "http://127.0.0.1:62265/Agora-11.4-startup-fix-arm64.dmg",
+    "file": "/Users/logansu/Downloads/Agora-11.4-startup-fix-arm64.dmg",
+    "sha256": "26a95b155b3a857e668faa54754f41ddc4fcc825c621d06dd0f39c3401def1f9",
+    "quarantine": "0083;6aa8c12c;Safari;0DDF71A0-27B1-4200-A236-025702AA6A40",
+    "finderMounted": "/Volumes/Agora",
+    "actualGitHubDownload": false,
+    "installedStartup": {
+      "passed": true,
+      "userConfirmed": "已打开",
+      "window": "Local service Ready; secure credentials available; bundled tools verified",
+      "bundleComparison": [
+        {
+          "path": "/Applications/Agora.app",
+          "asarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+          "quarantine": "01c3;6aa8c12c;Safari;0DDF71A0-27B1-4200-A236-025702AA6A40"
+        },
+        {
+          "path": "/Volumes/Agora/Agora.app",
+          "asarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+          "quarantine": null
+        }
+      ],
+      "codesignDeepStrict": "passed",
+      "screenshot": "installed-startup-fixed.png"
+    }
+  },
+  "remaining": [
+    "DEF-018: Leader deferred clean macOS15 validation for task11.4; unverified, reassess at task11.5 exit.",
+    "Fixed-commit release candidate and human PR merge"
+  ],
+  "initialPending": [
+    "User installation and per-app system authorization",
+    "Explicit permission for native ACL recovery in disposable test Keychain",
+    "Human prompt refusal/authorization behavior",
+    "Clean supported macOS environment; user reports none available"
+  ],
+  "cleanup": {
+    "temporaryDownloadServersStopped": true,
+    "repairedDmgUnmounted": true,
+    "installedApplicationPreserved": true
+  },
+  "keychainRecovery": {
+    "status": "passed",
+    "evidence": "keychain-recovery.json",
+    "crossBuildChecks": 36,
+    "independentLockChecks": 19,
+    "humanSystemAuthorizationConfirmed": true
+  },
+  "approvedDeferral": {
+    "id": "DEF-018",
+    "source": "docs/deferred-items.json",
+    "instruction": "先跳过macOS 15 干净环境",
+    "blocksCurrentSupplement": false,
+    "verified": false
+  }
+}

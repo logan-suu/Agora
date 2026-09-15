@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "checks": [
+    "production host readiness",
+    "production preload status",
+    "production renderer isolation",
+    "closing window preserves background service",
+    "native duplicate launch cannot spawn service",
+    "native second launch focuses current window",
+    "concurrent restarts share one operation",
+    "restart replaces a running process after its exit",
+    "restart replaces and revokes the old session",
+    "production host waits for process exit",
+    "fresh session after explicit restart",
+    "crash replaces project surface with failure UI"
+  ],
+  "afterStop": {
+    "state": "stopped",
+    "code": null,
+    "canRestart": true,
+    "exitCode": 0,
+    "signalCode": null
+  },
+  "keychainRemoved": true
+}

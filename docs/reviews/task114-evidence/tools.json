@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "bundle": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-XlVNqk/output/app/Agora-darwin-arm64/Agora.app",
+  "arch": "arm64",
+  "checks": [
+    "bundle integrity",
+    "node version",
+    "npm version",
+    "pnpm version",
+    "git version",
+    "npm preparation",
+    "npm dependency and lifecycle",
+    "npm incompatible project blocked",
+    "pnpm preparation",
+    "pnpm dependency and lifecycle",
+    "pnpm incompatible project blocked",
+    "real linked worktree",
+    "worktree cleanup",
+    "signed native helper write/read",
+    "signed native helper rejects traversal"
+  ]
+}

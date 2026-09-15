@@ -1,0 +1,441 @@
+{
+  "date": "2026-09-14",
+  "host": {
+    "os": "macOS 26.5",
+    "build": "25F71",
+    "arch": "arm64"
+  },
+  "status": "passed",
+  "userAuthorization": "授权钥匙串升级恢复补验；现在可以配合",
+  "scope": "Only disposable isolated Keychain and synthetic project credential. No login Keychain, real API keys or global protection changes.",
+  "result": {
+    "status": "passed",
+    "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+    "newApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7/output/app/Agora-darwin-arm64/Agora.app",
+    "checks": [
+      "old: production credentials ready",
+      "old: packaged preview responds",
+      "old: actual Electron renders credential recovery state",
+      "old: exact credential guidance visible",
+      "packaged service exits normally",
+      "application builds differ",
+      "denied: production credentials denied",
+      "denied: packaged preview responds",
+      "denied: actual Electron renders credential recovery state",
+      "denied: exact credential guidance visible",
+      "denied startup preserves encrypted config",
+      "denied startup preserves existing item creation date",
+      "packaged service exits normally",
+      "authorization preserves item creation date",
+      "upgraded: production credentials ready",
+      "upgraded: packaged preview responds",
+      "upgraded: actual Electron renders credential recovery state",
+      "upgraded: exact credential guidance visible",
+      "same service/account retains original master key",
+      "encrypted project config bytes preserved",
+      "saved synthetic credential decrypts after upgrade",
+      "packaged service exits normally",
+      "locked: production credentials locked",
+      "locked: packaged preview responds",
+      "locked: actual Electron renders credential recovery state",
+      "locked: exact credential guidance visible",
+      "locked startup preserves encrypted config",
+      "packaged service exits normally",
+      "failed access did not replace master key",
+      "recovered: production credentials ready",
+      "recovered: packaged preview responds",
+      "recovered: actual Electron renders credential recovery state",
+      "recovered: exact credential guidance visible",
+      "recovery preserves encrypted config",
+      "recovery decrypts original synthetic credential",
+      "packaged service exits normally"
+    ],
+    "phases": [
+      {
+        "label": "old",
+        "credentials": "ready"
+      },
+      {
+        "label": "old",
+        "credentials": "ready",
+        "httpStatus": 200
+      },
+      {
+        "label": "denied",
+        "credentials": "denied"
+      },
+      {
+        "label": "denied",
+        "credentials": "denied",
+        "httpStatus": 200
+      },
+      {
+        "label": "upgraded",
+        "credentials": "ready"
+      },
+      {
+        "label": "upgraded",
+        "credentials": "ready",
+        "httpStatus": 200
+      },
+      {
+        "label": "locked",
+        "credentials": "locked"
+      },
+      {
+        "label": "locked",
+        "credentials": "locked",
+        "httpStatus": 200
+      },
+      {
+        "label": "recovered",
+        "credentials": "ready"
+      },
+      {
+        "label": "recovered",
+        "credentials": "ready",
+        "httpStatus": 200
+      }
+    ],
+    "oldHelperSha256": "4c63462f60270c07ca3b77153dc3d4601be2e894bf96d04c2558dfaedb54e468",
+    "oldAppAsarSha256": "c649b8b60ac88f25059cd556eac4ce4567b6a5e6ead275401d10a44c4a7315d0",
+    "newHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+    "newAppAsarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+    "authorization": {
+      "method": "Human authorizes system security -U -T for this isolated test item; no item password data supplied during ACL update",
+      "scope": "isolated temporary Keychain item only",
+      "userApproved": true,
+      "humanPromptCovered": true,
+      "humanConfirmation": "Leader confirmed entering the temporary test password and allowing the system prompt."
+    },
+    "configSha256": "ab19dfb1ad4c71b0eff25ecdf865ee58dae17d03ece2505a01a8b0518203dcec",
+    "keychainRemoved": true
+  },
+  "independentLockRecovery": {
+    "status": "passed",
+    "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7/output/app/Agora-darwin-arm64/Agora.app",
+    "checks": [
+      "old: production credentials ready",
+      "old: packaged preview responds",
+      "old: actual Electron renders credential recovery state",
+      "old: exact credential guidance visible",
+      "packaged service exits normally",
+      "locked: production credentials locked",
+      "locked: packaged preview responds",
+      "locked: actual Electron renders credential recovery state",
+      "locked: exact credential guidance visible",
+      "locked startup preserves encrypted config",
+      "packaged service exits normally",
+      "failed access did not replace master key",
+      "recovered: production credentials ready",
+      "recovered: packaged preview responds",
+      "recovered: actual Electron renders credential recovery state",
+      "recovered: exact credential guidance visible",
+      "recovery preserves encrypted config",
+      "recovery decrypts original synthetic credential",
+      "packaged service exits normally"
+    ],
+    "phases": [
+      {
+        "label": "old",
+        "credentials": "ready"
+      },
+      {
+        "label": "old",
+        "credentials": "ready",
+        "httpStatus": 200
+      },
+      {
+        "label": "locked",
+        "credentials": "locked"
+      },
+      {
+        "label": "locked",
+        "credentials": "locked",
+        "httpStatus": 200
+      },
+      {
+        "label": "recovered",
+        "credentials": "ready"
+      },
+      {
+        "label": "recovered",
+        "credentials": "ready",
+        "httpStatus": 200
+      }
+    ],
+    "oldHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+    "oldAppAsarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+    "scope": "Independent same-build Keychain lock/unlock recovery; cross-build ACL authorization is not covered by this run.",
+    "configSha256": "0bdd7b8cb8823650bcd1e635bb7f6323c1b5ce08cd12aa9b701e2a75a1ef8e0d",
+    "keychainRemoved": true
+  },
+  "previousAttempts": [
+    {
+      "status": "failed",
+      "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+      "newApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7/output/app/Agora-darwin-arm64/Agora.app",
+      "checks": [
+        "old: production credentials ready",
+        "old: packaged preview responds",
+        "packaged service exits normally",
+        "application builds differ",
+        "denied: production credentials denied",
+        "denied: packaged preview responds",
+        "denied Keychain has visible authorization guidance",
+        "denied startup preserves encrypted config",
+        "denied startup preserves existing item creation date",
+        "packaged service exits normally"
+      ],
+      "phases": [
+        {
+          "label": "old",
+          "credentials": "ready"
+        },
+        {
+          "label": "old",
+          "credentials": "ready",
+          "httpStatus": 200
+        },
+        {
+          "label": "denied",
+          "credentials": "denied"
+        },
+        {
+          "label": "denied",
+          "credentials": "denied",
+          "httpStatus": 200
+        }
+      ],
+      "oldHelperSha256": "4c63462f60270c07ca3b77153dc3d4601be2e894bf96d04c2558dfaedb54e468",
+      "oldAppAsarSha256": "c649b8b60ac88f25059cd556eac4ce4567b6a5e6ead275401d10a44c4a7315d0",
+      "newHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+      "newAppAsarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+      "error": "spawnSync /usr/bin/security ETIMEDOUT",
+      "keychainRemoved": true
+    },
+    {
+      "status": "failed",
+      "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+      "newApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7/output/app/Agora-darwin-arm64/Agora.app",
+      "checks": [
+        "old: production credentials ready",
+        "old: packaged preview responds",
+        "packaged service exits normally",
+        "application builds differ",
+        "denied: production credentials denied",
+        "denied: packaged preview responds",
+        "packaged service exits normally"
+      ],
+      "phases": [
+        {
+          "label": "old",
+          "credentials": "ready"
+        },
+        {
+          "label": "old",
+          "credentials": "ready",
+          "httpStatus": 200
+        },
+        {
+          "label": "denied",
+          "credentials": "denied"
+        }
+      ],
+      "oldHelperSha256": "4c63462f60270c07ca3b77153dc3d4601be2e894bf96d04c2558dfaedb54e468",
+      "oldAppAsarSha256": "c649b8b60ac88f25059cd556eac4ce4567b6a5e6ead275401d10a44c4a7315d0",
+      "newHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+      "newAppAsarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+      "error": "denied Keychain has visible authorization guidance",
+      "keychainRemoved": true
+    },
+    {
+      "status": "failed",
+      "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+      "newApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7/output/app/Agora-darwin-arm64/Agora.app",
+      "checks": [
+        "old: production credentials ready",
+        "old: packaged preview responds",
+        "old: actual Electron renders credential recovery state",
+        "old: exact credential guidance visible",
+        "packaged service exits normally",
+        "application builds differ",
+        "denied: production credentials denied",
+        "denied: packaged preview responds",
+        "denied: actual Electron renders credential recovery state",
+        "denied: exact credential guidance visible",
+        "denied Keychain has visible authorization guidance",
+        "denied startup preserves encrypted config",
+        "denied startup preserves existing item creation date",
+        "packaged service exits normally"
+      ],
+      "phases": [
+        {
+          "label": "old",
+          "credentials": "ready"
+        },
+        {
+          "label": "old",
+          "credentials": "ready",
+          "httpStatus": 200
+        },
+        {
+          "label": "denied",
+          "credentials": "denied"
+        },
+        {
+          "label": "denied",
+          "credentials": "denied",
+          "httpStatus": 200
+        }
+      ],
+      "oldHelperSha256": "4c63462f60270c07ca3b77153dc3d4601be2e894bf96d04c2558dfaedb54e468",
+      "oldAppAsarSha256": "c649b8b60ac88f25059cd556eac4ce4567b6a5e6ead275401d10a44c4a7315d0",
+      "newHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+      "newAppAsarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+      "error": "Command failed: /private/tmp/agora114-authorize-test-item /private/tmp/agora114-upgrade-probe-kFhLPI/isolated.keychain-db logansu /private/tmp/agora114-upgrade-probe-kFhLPI/installed/Agora.app/Contents/Resources/toolchains/darwin-arm64/keychain\ntest_item_authorization_status=-25293\n",
+      "keychainRemoved": true
+    },
+    {
+      "status": "failed",
+      "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+      "newApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7/output/app/Agora-darwin-arm64/Agora.app",
+      "checks": [
+        "old: production credentials ready",
+        "old: packaged preview responds",
+        "old: actual Electron renders credential recovery state",
+        "old: exact credential guidance visible",
+        "packaged service exits normally",
+        "application builds differ",
+        "denied: production credentials denied",
+        "denied: packaged preview responds",
+        "denied: actual Electron renders credential recovery state",
+        "denied: exact credential guidance visible",
+        "denied startup preserves encrypted config",
+        "denied startup preserves existing item creation date",
+        "packaged service exits normally"
+      ],
+      "phases": [
+        {
+          "label": "old",
+          "credentials": "ready"
+        },
+        {
+          "label": "old",
+          "credentials": "ready",
+          "httpStatus": 200
+        },
+        {
+          "label": "denied",
+          "credentials": "denied"
+        },
+        {
+          "label": "denied",
+          "credentials": "denied",
+          "httpStatus": 200
+        }
+      ],
+      "oldHelperSha256": "4c63462f60270c07ca3b77153dc3d4601be2e894bf96d04c2558dfaedb54e468",
+      "oldAppAsarSha256": "c649b8b60ac88f25059cd556eac4ce4567b6a5e6ead275401d10a44c4a7315d0",
+      "newHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+      "newAppAsarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+      "error": "Command failed: /private/tmp/agora114-authorize-test-item /private/tmp/agora114-upgrade-probe-c04Gkz/isolated.keychain-db logansu /private/tmp/agora114-upgrade-probe-c04Gkz/installed/Agora.app/Contents/Resources/toolchains/darwin-arm64/keychain\nlookup_status=0\nacl_prepare_status=0\ntest_item_authorization_status=-25293\n",
+      "keychainRemoved": true
+    },
+    {
+      "status": "failed",
+      "oldApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+      "newApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7/output/app/Agora-darwin-arm64/Agora.app",
+      "checks": [
+        "old: production credentials ready",
+        "old: packaged preview responds",
+        "old: actual Electron renders credential recovery state",
+        "old: exact credential guidance visible",
+        "old production helper reads the seeded test key",
+        "packaged service exits normally",
+        "application builds differ",
+        "denied: production credentials denied",
+        "denied: packaged preview responds",
+        "denied: actual Electron renders credential recovery state",
+        "denied: exact credential guidance visible",
+        "denied startup preserves encrypted config",
+        "denied startup preserves existing item creation date",
+        "packaged service exits normally"
+      ],
+      "phases": [
+        {
+          "label": "old",
+          "credentials": "ready"
+        },
+        {
+          "label": "old",
+          "credentials": "ready",
+          "httpStatus": 200
+        },
+        {
+          "label": "denied",
+          "credentials": "denied"
+        },
+        {
+          "label": "denied",
+          "credentials": "denied",
+          "httpStatus": 200
+        }
+      ],
+      "oldHelperSha256": "4c63462f60270c07ca3b77153dc3d4601be2e894bf96d04c2558dfaedb54e468",
+      "oldAppAsarSha256": "c649b8b60ac88f25059cd556eac4ce4567b6a5e6ead275401d10a44c4a7315d0",
+      "fixture": "Real Keychain item seeded by the system security tool, explicitly trusted by the old production helper; application-created item bootstrap is separate existing coverage.",
+      "newHelperSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+      "newAppAsarSha256": "f9dc7c37f1ffd86c6beacf31a5f51eb12cefad767df934e71d42f9bea2fbeb7c",
+      "error": "spawnSync /usr/bin/security ETIMEDOUT",
+      "keychainRemoved": true
+    }
+  ],
+  "diagnosticNotes": [
+    "Initial raw HTML regex did not verify hydrated guidance; replaced with exact text checks in real Electron after production SSE.",
+    "Native test-helper compiler API argument errors were corrected against the local SDK; no product code changed.",
+    "Automatic ACL updates hit system interaction timeout or native -25293 authentication errors; stopped automatic attempts after three consecutive ACL blockers and switched to user-attended system authorization.",
+    "Successful run uses the original app-created Keychain item, not the system-seeded diagnostic fixture. Authorization updates ACL without passing secret data; item creation date, original master key and ciphertext checked."
+  ],
+  "artifacts": [
+    {
+      "path": "/private/tmp/agora114-upgrade-recovery-human.mjs",
+      "sha256": "b1bf52048f913b2dd0da58d73ae875f5b03b5a2663e2d8241d33eb064e186a41"
+    },
+    {
+      "path": "/private/tmp/agora114-recovery-renderer.cjs",
+      "sha256": "be36f297c4526c464f03fad1a89e134f75063f0ed34d9c1727c3bea55147f59f"
+    },
+    {
+      "path": "/private/tmp/agora114-upgrade-recovery-human.log",
+      "sha256": "a0d324ffb52a5965b680749d791c424aeb6b85f2e0ac07accb9b261c63043d50"
+    },
+    {
+      "path": "/private/tmp/agora114-keychain-lock-recovery.mjs",
+      "sha256": "0a4df0843135b821b0e565dbf7a8c9bdbc8a8390b8f55876bdbfa33ba199ab90"
+    },
+    {
+      "path": "/private/tmp/agora114-keychain-lock-recovery.log",
+      "sha256": "9781d4daeef56eb96267471286eac122ade22a385c0786199bc3a4e987058c57"
+    },
+    {
+      "path": "/private/tmp/agora114-authorize-test-item.c",
+      "sha256": "052d58b599035566494cc7a413ae41b82f5020253c1e900258a6927b01619084"
+    }
+  ],
+  "sources": [
+    "https://github.com/apple-oss-distributions/Security/blob/main/SecurityTool/macOS/keychain_add.c",
+    "https://developer.apple.com/documentation/security/seckeychainitemmodifycontent(_:_:_:_:)?language=objc"
+  ],
+  "validationReuse": {
+    "codeCommit": "0a03460",
+    "unchangedSince": "e1c7128",
+    "pnpmTest": "Prior unchanged-code suite: Node7/7; Vitest187 files1330 tests; no skips. This run adds validation evidence only."
+  },
+  "coverageBoundary": "Human allowed the system security ACL prompt. Initial denied state was a real native access refusal, not an observed human Deny-button click. No login Keychain or real model credentials were accessed.",
+  "cleanupVerified": {
+    "temporaryKeychainFilesAbsent": true,
+    "ownedTestApplicationCopiesRemoved": true,
+    "installedUserApplicationUntouched": true
+  }
+}

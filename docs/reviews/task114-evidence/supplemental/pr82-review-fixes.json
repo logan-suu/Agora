@@ -1,0 +1,470 @@
+{
+  "date": "2026-09-15",
+  "status": "修复与门禁通过",
+  "reviewedHead": "8607db1083e23f448c19073fc4b35ab20aca0244",
+  "fixes": [
+    "已回滚尝试原子归档到upgrade-history后允许同ID重试，保留原journal与备份",
+    "流式SHA-256保持两次工具链完整性校验",
+    "同步验收及非草稿PR状态，保留原始英文测试输出"
+  ],
+  "targeted": {
+    "tests": 18,
+    "failed": 0
+  },
+  "realInstalledToolchain": {
+    "before": {
+      "verified": {
+        "state": "ready",
+        "versions": {
+          "node": "24.20.0",
+          "pnpm": "9.15.9",
+          "npm": "11.19.0",
+          "git": "2.53.0"
+        }
+      },
+      "elapsedMs": 1498,
+      "baselineRssMiB": 45,
+      "peakRssMiB": 266,
+      "finalExternalMiB": 2
+    },
+    "after": {
+      "verified": {
+        "state": "ready",
+        "versions": {
+          "node": "24.20.0",
+          "pnpm": "9.15.9",
+          "npm": "11.19.0",
+          "git": "2.53.0"
+        }
+      },
+      "elapsedMs": 1568,
+      "baselineRssMiB": 45,
+      "peakRssMiB": 144,
+      "finalExternalMiB": 47
+    },
+    "scope": "当前源码编译的校验函数读取实际Applications安装工具清单与二进制；不是新固定提交安装包验收。"
+  },
+  "cleanup": {
+    "authorization": "进行修复，并且删除多余的东西，现在的磁盘空间不够了",
+    "freeBeforeGiBApprox": 5.4,
+    "freeAfterGiBApprox": 39,
+    "removed": [
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-FAoMsa",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-KsHKbS",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-cvp8Nn",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-dhyl3o",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-kCPpMN",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-om6EYW",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-r1LU1r",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-3VOUXz",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-DKbu3G",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-XlVNqk",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-bU4asL",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-dRTl68",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-fbIhKL",
+      "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-zBQoYi",
+      "/private/tmp/agora113-package-attempt2",
+      "/private/tmp/agora113-package-attempt3",
+      "/private/tmp/agora113-package-attempt4",
+      "/private/tmp/agora113-package-attempt5",
+      "/private/tmp/agora113-package-attempt6",
+      "/private/tmp/agora113-reviewed-package",
+      "/private/tmp/agora114-install-d492Jp",
+      "/private/tmp/agora114-media",
+      "/private/tmp/agora114-media-final",
+      "/private/tmp/agora114-media-verified",
+      "/private/tmp/agora114-supplement-media",
+      "/private/tmp/agora114-upgrade-probe-CdKiDE",
+      "/private/tmp/agora114-upgrade-probe-Xxxmyc"
+    ],
+    "preservedMetadata": [
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-FAoMsa/input.json",
+        "sha256": "2bf08bd5e6dffd14bf0774076eff4344dead5e5b8cb7aac2a8292e3519887a33"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-KsHKbS/input.json",
+        "sha256": "93f4b398aead09894712ebe419968f26150b2e9e172b3fc1f224dfbf14d49607"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-cvp8Nn/input.json",
+        "sha256": "d5e1e248457c1ea84cfde60b8b1b4daede77b14f84e34c831068920bc2724a76"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-cvp8Nn/output-package-result.json",
+        "sha256": "d96045af518fa9f69d7a1a232bd1e3b6f9b75090292a828c2aeedcbc2e9c12c3"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-cvp8Nn/output-service-manifest.json",
+        "sha256": "69a75f8e36d7cb0d697daa3fc6cc73908b10e84bf5531696acb355430e30426f"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-dhyl3o/input.json",
+        "sha256": "b15e2805d60a45e7d5441e1c30a218fe0c493871d26dbca6996346ad4d013999"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-dhyl3o/output-package-result.json",
+        "sha256": "0b484f09e49a48cc1391244e1acc6be173cc6798bd99da9ff0ff9aeafd22ef0d"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-dhyl3o/output-resource-manifest.json",
+        "sha256": "993126549bc9cccddf248e82c61c0f526c429be74da071928699d55cd8d793df"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-dhyl3o/output-service-manifest.json",
+        "sha256": "dc7498669d86d74241e18e33afe8c3920fae4bd9a09ace06bc5626905250752e"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-dhyl3o/output-trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-kCPpMN/input.json",
+        "sha256": "4706e3036a8675fd317222fcb8abd33c1e4b004fe9fa28c66f00131c2b61c5cb"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-om6EYW/input.json",
+        "sha256": "e22480a3c203f9f7f5834e97d044abc83cdbff610077daa573d886db1b0146bf"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-om6EYW/output-package-result.json",
+        "sha256": "a5862f7888b3ad816d71ec256d08d3ff2e4ded5d9a3b56622bacaf96e205b47d"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-om6EYW/output-resource-manifest.json",
+        "sha256": "d85de987c7d45647fdd9199fa9df104012e6cc7093a3fdd1aa13e88a58f50f59"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-om6EYW/output-service-manifest.json",
+        "sha256": "423a27c08f560c3a6890f4b384560da389a0af87fdb7f573b9f0888914b4bca8"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-om6EYW/output-trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-r1LU1r/input.json",
+        "sha256": "b7527b017627d209a033ad17b1f85e4538ab95b9f6d9168c304db26eb98b86d9"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-r1LU1r/output-package-result.json",
+        "sha256": "2ccf1d7ffa041d36999b526db7238c9c64f361e7ff4af8fe8e6d6eb0e234f1ec"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-r1LU1r/output-resource-manifest.json",
+        "sha256": "2e1b8d4abc52589df462eccd7edca48a9b9c0eb7bc247ec02fcc6379d0dc39f7"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-r1LU1r/output-service-manifest.json",
+        "sha256": "42e7bbe31ce4d707744d6de99e2bf424144dc6b9fc1d76ecc624bc6c8407d571"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-build-r1LU1r/output-trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-package-attempt2/service-manifest.json",
+        "sha256": "5cabfcc2cbc2457c5096cadd01a7ec5793de7fe0f6785e09af2fb13bb6544306"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-package-attempt3/service-manifest.json",
+        "sha256": "5cabfcc2cbc2457c5096cadd01a7ec5793de7fe0f6785e09af2fb13bb6544306"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-package-attempt4/package-result.json",
+        "sha256": "35d43487a077d6847510480c10723f6ce54e2b9ba800c318bf87a4b4f52dc330"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-package-attempt4/service-manifest.json",
+        "sha256": "0ef81e6828165a29c1a99bcae11a35c1ffc105b014bf7d29eee2c3b976862f87"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-package-attempt5/package-result.json",
+        "sha256": "ffca3fbad8b40fff2f9b8a244493fb764279794bd864009de4fc246bc4b91edb"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-package-attempt5/service-manifest.json",
+        "sha256": "d840e8f8ed24f662335e21fa8d3a7f23e35584e827f2cdd8d38246c986472f84"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-package-attempt6/package-result.json",
+        "sha256": "2cd56abc27a73bdd74f3f01f310ef694036102438c18bce625d5d5c52d71d3e6"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-package-attempt6/service-manifest.json",
+        "sha256": "0d555dc6c27603aefce999f6f8e40c30816cabcc50ea6d789f4299399a027f25"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-reviewed-package/package-result.json",
+        "sha256": "e6969e80d634698611855533c00957828b7eecfaade6128c3cd8107a4a4db3df"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-reviewed-package/resource-manifest.json",
+        "sha256": "3d2d2ca8b823039dea3e265cb4ebb24b431ef0e2a32f83f76dd498d8218e17e3"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-reviewed-package/service-manifest.json",
+        "sha256": "6ad5c2e635292a8133a0e145ebefa7f4fa5cbb993b2d636a55e9dcd7ab635904"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora113-reviewed-package/trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-3VOUXz/downloads.json",
+        "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-3VOUXz/input.json",
+        "sha256": "a1973a34a9df7cb01a60626558cc2fcc966bd061857cf1549a2f58ed651fda7f"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-3VOUXz/output-package-result.json",
+        "sha256": "0a506c0509fa4052d1557570c4fc2096e28e520d2d8a263c44a4712b4e5ba874"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-3VOUXz/output-resource-manifest.json",
+        "sha256": "6c93465c82fab126e036ea05945bcee2ac3513712f0820d4e40463c0120d17e6"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-3VOUXz/output-service-manifest.json",
+        "sha256": "303630e922592d6ce947b9ad0e904dd0d812642a790369c9fbbd9422f8f04008"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-3VOUXz/output-trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-DKbu3G/downloads.json",
+        "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-DKbu3G/input.json",
+        "sha256": "dff96d306faaad97cf96823c088f6e994b0e8437d32b3c6a9a8edd0b45389455"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-XlVNqk/downloads.json",
+        "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-XlVNqk/input.json",
+        "sha256": "4d5343d96177ad0bae47120287ea7651a329e463e2b042dc71fb28452bb9e3cc"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-XlVNqk/output-package-result.json",
+        "sha256": "65a75b2dd5882171426f61f7040d010da94cf87813a2810793fc4cbfaa255b58"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-XlVNqk/output-resource-manifest.json",
+        "sha256": "d02ec1999c50e053a34eb3aec113fb334312aa7ebe8479496c9741132b3615e3"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-XlVNqk/output-service-manifest.json",
+        "sha256": "e35dab4a6be966319db1c79c9efadf39ba03c407d93dc4136a6b6a2a679bbab4"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-XlVNqk/output-trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-bU4asL/downloads.json",
+        "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-bU4asL/input.json",
+        "sha256": "dff96d306faaad97cf96823c088f6e994b0e8437d32b3c6a9a8edd0b45389455"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-bU4asL/output-package-result.json",
+        "sha256": "192691fef414e9943c3b8672115b7c0ad7861aa4b69d95442f26ba8c96ca173c"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-bU4asL/output-resource-manifest.json",
+        "sha256": "3516296cde9cc5d4863c8d8de765d11f6ed2b9f08df692068d8771a2d37a3fc4"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-bU4asL/output-service-manifest.json",
+        "sha256": "33f7276b5757bf391e46ae6e28cf1015f3f694d753306d4c20635245b7b8d5ff"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-bU4asL/output-trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-dRTl68/downloads.json",
+        "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-dRTl68/input.json",
+        "sha256": "ac11593a5fd2f419b278bc99ec6c7309d72db6d8db916c903f875ef3367b1f11"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-dRTl68/output-package-result.json",
+        "sha256": "403b34c97633b33f1d2b20b6d87b4156b7bb64e0be8d8e6058b7286e9aee930b"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-dRTl68/output-resource-manifest.json",
+        "sha256": "ca2d15bbd658413453b73a2261f266387bcaa5f2abb4ee57f63ab1459522033d"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-dRTl68/output-service-manifest.json",
+        "sha256": "ec31ff10880e41bed5ffb2e1f5ca32a6926fe68c1221244574e0624a93a55663"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-dRTl68/output-trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-fbIhKL/downloads.json",
+        "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-fbIhKL/input.json",
+        "sha256": "7baefc43f71d57e83fbff9a0e082f2c40c9d4e0323aa2caf794917f652d3b025"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-fbIhKL/output-package-result.json",
+        "sha256": "a5a45bd8bb6b00a4462d3e849b228bbdec7000f10dfb33a6ef303a306f79bd45"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-fbIhKL/output-resource-manifest.json",
+        "sha256": "513d82309f195b005d9a60ee620ad191fe7c30b93b105c83028842c149f528ca"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-fbIhKL/output-service-manifest.json",
+        "sha256": "e14d476e616099ac84ec045bcf6d795183d2254f28080bfdef16a4922abf07ae"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-fbIhKL/output-trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-zBQoYi/downloads.json",
+        "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-build-zBQoYi/input.json",
+        "sha256": "36748a456905e35ddefc339b2197d2f96538452f00c84be99553fbc8b03bc8a5"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-install-d492Jp/result.json",
+        "sha256": "46cf340064ed6350f846ac15e087891e61670f9af25729bf9fd8ed72029f4bf4"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-media/SHA256SUMS",
+        "sha256": "252e0ffe0727e287a3b5a720ed44fa72c600be61a2f0dfedaec7d80c9ec64c25"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-media/media.json",
+        "sha256": "3ecea104a0e0be1c86732f923df3a6e780d5b7e35bf9322335694ce1f979940f"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-media-final/SHA256SUMS",
+        "sha256": "dddbac752bb2fa48e2fb49bca1a0c82d87a1dd0db2bcedb408e185d20627123c"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-media-final/media.json",
+        "sha256": "21c2693a39ca7c6d1b850d7383250454876c3d5cb701218ec2eece079a3fc459"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-media-verified/SHA256SUMS",
+        "sha256": "3b4fb3398147cd4308dd831136382235565ab8021fea15494f3ae8bb6a6fcb48"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-media-verified/media.json",
+        "sha256": "1c3743c09dc808933fba4b782f3b2a85c6839082ffd43260281348fe835b812b"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-supplement-media/SHA256SUMS",
+        "sha256": "f513e31597c5869dcc4769ad7b1eda3083c558e5f88f0a4fe840ac421c18c112"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-supplement-media/media.json",
+        "sha256": "9f51e1ed97665cdd20eaa5642ba705f59c75964f8fe0567ab8331193a063bfa5"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-upgrade-probe-CdKiDE/result.json",
+        "sha256": "e57ff9f88937f0bf83eac3a1523b7152030a8d32168d6748a4518281c4db5e26"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/agora114-upgrade-probe-Xxxmyc/result.json",
+        "sha256": "1a8c70b0bd7a8a282788647a53d06f91ac2ba8aa080fa26e2ccbe952d6913474"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/removed.json",
+        "sha256": "d37a3670ed44e8890ad1b2007b69af8aff04982a3f9dc3d1ef0ccf869e7ca833"
+      },
+      {
+        "path": "/private/tmp/agora82-cleanup-evidence/targets.json",
+        "sha256": "d37a3670ed44e8890ad1b2007b69af8aff04982a3f9dc3d1ef0ccf869e7ca833"
+      }
+    ],
+    "retained": [
+      "/Applications/Agora.app",
+      "用户数据与钥匙串",
+      "代表性旧/新构建与当前DMG",
+      "仓库证据与原始日志"
+    ],
+    "finalFreeGiBApprox": 17.3,
+    "finalCheck": "清理后曾观察到39GiB可用；完整回归/交付结束后约17GiB。目标目录未重新生成，仓库.data约540MiB、测试trash合计约698MiB、Docker镜像约528MB；系统VM卷约14GiB，无初始对照，其他占用变化原因未确定。未清理OS交换区或其他项目。"
+  },
+  "regression": {
+    "command": "pnpm test",
+    "exitCode": 0,
+    "nodeTests": 7,
+    "vitestFiles": 187,
+    "vitestTests": 1334,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 543.76,
+    "provider": "opencode-go",
+    "model": "deepseek-v4-flash",
+    "highlights": [
+      "   ✓ G5 e2e: LRU cache task over live Harness provider (Phase 0 exit baseline) (opencode-go/deepseek-v4-flash) > runs Coordinator → CODER → TESTER to done with passing testResults and sandbox output  123369ms",
+      "   ✓ G5 real-chain: HarnessExecutor over live Harness provider (opencode-go/deepseek-v4-flash) > runs one real turn, returns a done StepResult with the model reply as a messages mutation  16213ms",
+      "   ✓ G5 real-chain: closed-channel summary over live thin Harness (opencode-go/deepseek-v4-flash) > returns a strictly validated source-scoped summary without tools  4534ms",
+      " Test Files  187 passed (187)",
+      "      Tests  1334 passed (1334)"
+    ]
+  },
+  "gates": {
+    "typecheck": "通过",
+    "lint": "通过",
+    "taskIndex": "通过",
+    "gitleaks": "通过，11个变更文件",
+    "g5": "实际安装工具清单通过新hash实现校验；真实文件系统迁移故障恢复通过。未生成新的固定提交发布候选。"
+  },
+  "logs": [
+    {
+      "path": "/private/tmp/agora82-fix-red.log",
+      "sha256": "881e6a4ff52a0d6e4aae02f021248a0b23069a05387738a13eb28f8c7a77e0ba"
+    },
+    {
+      "path": "/private/tmp/agora82-fix-targeted.log",
+      "sha256": "8857f8f5aa835310be9ac3662b589c12e629ad766ee6093c08530245a4326920"
+    },
+    {
+      "path": "/private/tmp/agora82-fix-regression.log",
+      "sha256": "8793c069e4695ffab2f86e49df9067db9b76a12fd120a5b20d91a5e9fda042d4"
+    },
+    {
+      "path": "/private/tmp/agora82-fix-typecheck.log",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+    },
+    {
+      "path": "/private/tmp/agora82-fix-lint-final.log",
+      "sha256": "8aed6242fc93a6cb108f03250cd0cf62f62531d24855ed9a5eda1b2fe3c5ad6c"
+    },
+    {
+      "path": "/private/tmp/agora82-fix-gitleaks.log",
+      "sha256": "173172f0993a69d0257c7685a36200a5073a84c456ce8f4e608904ad6dbdf22c"
+    }
+  ],
+  "delivery": {
+    "commit": "aed24a537871df66cb5859bcc04a03264882cbe7",
+    "pr": "https://github.com/logan-suu/Agora/pull/82",
+    "pushed": true,
+    "reviewThreadsHandled": 4,
+    "merged": false
+  }
+}

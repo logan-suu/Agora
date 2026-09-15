@@ -1,15 +1,26 @@
-import { cp, lstat, mkdir, readdir, readFile, realpath, writeFile } from 'node:fs/promises';
+import {
+  cp,
+  lstat,
+  mkdir,
+  readdir,
+  readFile,
+  realpath,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join, relative, resolve } from 'node:path';
 import { FuseV1Options, FuseVersion, flipFuses, getCurrentFuseWire } from '@electron/fuses';
 import { packager } from '@electron/packager';
 import { auditResources, copyTracedFile, reviewTraceFile } from '../dist/build-resources.js';
+import { inventoryToolchain } from '../dist/toolchain-installation.js';
+import { toolVersions } from '../dist/toolchains.js';
 import { signValidationBundle } from './sign.mjs';
 
-const [sourceArg, nodeArg, zipArg, outputArg] = process.argv.slice(2);
-if (!outputArg)
+const [sourceArg, nodeArg, zipArg, outputArg, gitArg, pnpmArg, arch] = process.argv.slice(2);
+if (!outputArg || !gitArg || !pnpmArg || !['arm64', 'x64'].includes(arch) || arch !== process.arch)
   throw new Error(
-    'Usage: package.mjs <clean-source> <node-distribution> <electron-zip-directory> <new-output>',
+    'Usage: package.mjs <clean-source> <node-distribution> <electron-zip-directory> <new-output> <git-distribution> <pnpm-distribution> <native-arch>',
   );
 const source = await realpath(resolve(sourceArg)),
   node = resolve(nodeArg),
@@ -99,6 +110,10 @@ for (const name of [
   'protocol.js',
   'preview-server.js',
   'storage.js',
+  'upgrades.js',
+  'upgrade-files.js',
+  'toolchain-installation.js',
+  'toolchains.js',
 ])
   await copyTracedFile(source, service, join(dist, name));
 await copyTracedFile(source, service, join(source, 'apps/desktop/package.json'));
@@ -111,6 +126,9 @@ for (const name of [
   'protocol.js',
   'service-lifecycle.js',
   'window-security.js',
+  'status-assets.js',
+  'toolchain-installation.js',
+  'toolchains.js',
 ])
   await cp(join(dist, name), join(appSource, 'dist', name));
 await cp(join(source, 'apps/desktop/ui'), join(appSource, 'ui'), { recursive: true });
@@ -118,10 +136,50 @@ await writeFile(
   join(appSource, 'package.json'),
   JSON.stringify({ name: 'agora-desktop', version: '0.0.0', type: 'module', main: 'dist/main.js' }),
 );
-const tools = join(stage, 'toolchains/darwin-arm64');
+const tools = join(stage, `toolchains/darwin-${arch}`);
 await mkdir(tools, { recursive: true });
 await cp(node, join(tools, 'node'), { recursive: true, verbatimSymlinks: true });
-await cp(join(source, 'packages/runtime/state/build/keychain-arm64'), join(tools, 'keychain'));
+await cp(join(source, `packages/runtime/state/build/keychain-${arch}`), join(tools, 'keychain'));
+await cp(
+  join(source, `packages/runtime/sandbox/build/secure-files-darwin-${arch}`),
+  join(tools, 'secure-files'),
+);
+await cp(resolve(gitArg), join(tools, 'git'), { recursive: true, verbatimSymlinks: true });
+await cp(resolve(pnpmArg), join(tools, 'pnpm'), { recursive: true, verbatimSymlinks: true });
+await mkdir(join(tools, 'bin'));
+await symlink('../node/bin/node', join(tools, 'bin/node'));
+for (const [name, script] of [
+  ['pnpm', 'pnpm/bin/pnpm.cjs'],
+  ['npm', 'node/lib/node_modules/npm/bin/npm-cli.js'],
+  ['npx', 'node/lib/node_modules/npm/bin/npx-cli.js'],
+]) {
+  // A relative launcher selects the bundled Node even under an empty host PATH.
+  await writeFile(
+    join(tools, 'bin', name),
+    `#!/bin/sh
+base="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+exec "$base/node/bin/node" "$base/${script}" "$@"
+`,
+    { mode: 0o755 },
+  );
+}
+await writeFile(
+  join(tools, 'SOURCES.json'),
+  JSON.stringify(
+    {
+      node: 'https://nodejs.org/dist/v24.20.0/',
+      git: 'https://github.com/desktop/dugite-native/tree/4098283',
+      pnpm: 'https://github.com/pnpm/pnpm/tree/v9.15.9',
+      helperSource: [
+        'packages/runtime/sandbox/native/secure-files.c',
+        'packages/runtime/state/native/keychain.c',
+      ],
+    },
+    null,
+    2,
+  ),
+);
+
 await writeFile(
   join(output, 'service-manifest.json'),
   JSON.stringify(await auditResources(service), null, 2),
@@ -131,7 +189,7 @@ const apps = await packager({
   dir: appSource,
   out: join(output, 'app'),
   platform: 'darwin',
-  arch: 'arm64',
+  arch,
   name: 'Agora',
   executableName: 'Agora',
   appBundleId: 'com.agora.desktop',
@@ -162,7 +220,23 @@ await flipFuses(app, {
   [FuseV1Options.GrantFileProtocolExtraPrivileges]: false,
 });
 // Ad-hoc validation only; signed release media and notarization belong to 11.4/11.5.
-await signValidationBundle(app);
+await signValidationBundle(app, async () => {
+  const root = join(app, 'Contents/Resources/toolchains', `darwin-${arch}`);
+  await writeFile(
+    join(root, 'manifest.json'),
+    JSON.stringify(
+      {
+        format: 1,
+        platform: 'darwin',
+        arch,
+        versions: toolVersions,
+        files: await inventoryToolchain(root),
+      },
+      null,
+      2,
+    ),
+  );
+});
 const manifest = await auditResources(join(app, 'Contents/Resources'));
 await writeFile(join(output, 'resource-manifest.json'), JSON.stringify(manifest, null, 2));
 await writeFile(
@@ -170,7 +244,7 @@ await writeFile(
   JSON.stringify(
     {
       app,
-      arch: 'arm64',
+      arch,
       minimumSystem: '15.0',
       signing: 'ad-hoc-validation-only',
       fuses: await getCurrentFuseWire(app),

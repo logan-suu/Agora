@@ -2,7 +2,7 @@
   "version": "1.5",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-14",
+  "last_updated": "2026-09-15",
   "current_phase": 11,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
@@ -123,7 +123,7 @@
     },
     {
       "id": "D18",
-      "rule": "四批拆为Phase11–30共20阶段、110项任务，每阶段3–7项且末项为集成测试与发布验收；旧新ID见开发计划§18.12，全部任务依赖前阶段出口。Phase11/12限定预览，13完成本机闭环并退役Docker；12.1清单、13.3移除、13.4无Docker验收。不兼容旧产品任务、不自动删除旧数据，研发历史保留，D3等保护及提交门禁不变。阶段完成不等于发布，dev→main人工合并后经授权tag/Release，见§18.11。11.1已定工作项/会话/成员/责任/执行身份、项目revision CAS及跨聚合回执，D4保身份真Fork重取lease，详见详细设计§12.1。11.2已定Electron+独立受管Node、macOS15+两架构、打包签名及手动升级；稳定state/workspace/凭据身份和配置证据保留，持久迁移失败可恢复，详见详细设计§12.3及选型§12。设计接受不代替分阶段实装验收。",
+      "rule": "四批为Phase11–30共20阶段110任务；每阶段3–7项，末项为集成/发布验收，全部任务依赖前阶段出口，旧新ID见计划§18.12。11/12限定预览，13完成本机闭环并退役Docker（12.1清单、13.3移除、13.4无Docker验收）；不兼容旧任务、不自动删数据，研发历史及D3等保护保留。G1–G7/人工PR合并不变，阶段done不等于发布，dev→main人工合并后经授权tag/Release，见§18.11。身份/项目CAS/跨聚合回执及D4保身份真Fork重取lease见详设§12.1。桌面Electron+独立Node，仅Apple Silicon/macOS15+；GitHub Releases交付ad-hoc DMG、校验和及未公证安装说明，不要求Developer ID/公证。保留真实隔离安装、干净目标系统（11.4暂缓项见DEF-018）、升级Keychain及state/workspace/配置证据连续性和持久迁移恢复，详设§12.3、蓝图§22.3.2、选型§12。设计接受不替代实装验收。",
       "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18"
     }
   ],
@@ -1518,7 +1518,7 @@
       "name": "Electron 安装与受管工具链",
       "status": "in_progress",
       "integration_test": "11.5",
-      "exit_criteria": "预览版：在干净受支持Mac安装并双击启动应用，托管本地服务和Node/Git/包管理器/helper；验证单实例、钥匙串、受管PATH、异常反馈及正常关闭。本阶段只开放安装与环境检查，不开放未验收的本机编码入口，也不向新桌面产品提供Docker模式。 阶段出口须包含真实集成测试、累计G1–G7及§18.11发布候选证据；通过后可发布对应范围的版本，是否已经发布另以Git tag/GitHub Release为准。",
+      "exit_criteria": "预览版：在干净受支持Apple Silicon Mac安装并双击启动应用，托管本地服务和Node/Git/包管理器/helper；验证单实例、钥匙串、受管PATH、异常反馈及正常关闭。本阶段只开放安装与环境检查，不开放未验收的本机编码入口，也不向新桌面产品提供Docker模式。 阶段出口须包含真实集成测试、累计G1–G7及§18.11发布候选证据；通过后可发布对应范围的版本，是否已经发布另以Git tag/GitHub Release为准。",
       "tasks": [
         {
           "id": "11.1",
@@ -1575,14 +1575,14 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-3.test.ts",
-          "notes": "任务类型：code。PR #81 https://github.com/logan-suu/Agora/pull/81 已人工合并至dev-1.0.0，merge 2bc6fb31c35655e6d2e1fb6746d116cacc008dbe；合并树与已验证PR head 2595e04一致。G1–G7证据完整：typecheck/lint、Node7项及180文件1308项全过（Go/deepseek-v4-flash）；固定修复提交4b8767f构建及G5真实服务23项+主进程12项通过，临时Keychain已清理。完整证据：docs/task-history/11.3.md；docs/reviews/task113-pr81-fixes.md；docs/reviews/task113-evidence/pr81-fixes.json。首次helper错误根因inconclusive、原测试及全量复跑通过；2条构建评论说明保留。11.4/11.5完整工具链、升级、Intel及最低系统安装/发布出口仍独立验收。",
+          "notes": "任务类型：code。PR #81 https://github.com/logan-suu/Agora/pull/81 已人工合并至dev-1.0.0，merge 2bc6fb31c35655e6d2e1fb6746d116cacc008dbe；合并树与已验证PR head 2595e04一致。G1–G7证据完整：typecheck/lint、Node7项及180文件1308项全过（Go/deepseek-v4-flash）；固定修复提交4b8767f构建及G5真实服务23项+主进程12项通过，临时Keychain已清理。完整证据：docs/task-history/11.3.md；docs/reviews/task113-pr81-fixes.md；docs/reviews/task113-evidence/pr81-fixes.json。首次helper错误根因inconclusive、原测试及全量复跑通过；2条构建评论说明保留。11.4/11.5完整工具链、升级、Apple Silicon及最低系统安装/发布出口仍独立验收。",
           "last_updated": "2026-09-14"
         },
         {
           "id": "11.4",
           "title": "交付受管 Node Git 包管理器与原生辅助程序",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1596,8 +1596,8 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-4.test.ts",
-          "notes": "任务类型：code。标准项目免预装工具，尊重项目版本且不替换全局环境；实测签名安装产物、受管PATH、依赖获取和失败反馈。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
-          "last_updated": "2026-09-14"
+          "notes": "任务类型：code。PR82已转正式审查，保持in_progress等待人工合并：https://github.com/logan-suu/Agora/pull/82。当前Mac隔离安装与钥匙串升级恢复已通过（跨构建36项、独立锁定19项）；macOS15干净环境按DEF-018暂缓且未验证，11.5复核。修复已推送aed24a5并处理4条审查会话；本轮修复回滚后同ID迁移重试，旧journal/备份原子归档保留；工具hash改流式，双重校验保留；同步旧验收状态。定向18项及G3/G7通过，完整回归Node7/7、187文件1334项全通过，无跳过；真实工具校验峰值266→144MiB。已清理27个重复构建/测试目录，约释放34GiB；验证证据与已安装应用保留。发布候选/阶段出口仍按流程。证据：docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
+          "last_updated": "2026-09-15"
         },
         {
           "id": "11.5",

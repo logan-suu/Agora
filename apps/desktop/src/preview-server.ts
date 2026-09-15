@@ -5,6 +5,7 @@ import { requestAllowed } from './protocol.js';
 
 export interface PreviewStatus {
   credentials: string;
+  toolchain?: { state: 'ready'; versions: Record<string, string> };
 }
 export function createPreviewServer(
   capability: string,

@@ -37,7 +37,18 @@ process.on('message', (input) => {
     exactKeys(message, ['type', 'version', 'config']);
     if (message.type !== 'start' || service || stopRequested) throw new Error('invalid_protocol');
     const config = record(message.config);
-    exactKeys(config, ['stateRoot', 'webRoot', 'helper', 'capability']);
+    exactKeys(config, [
+      'stateRoot',
+      'webRoot',
+      'helper',
+      'capability',
+      ...(config.toolchainRoot === undefined ? [] : ['toolchainRoot']),
+    ]);
+    if (
+      config.toolchainRoot !== undefined &&
+      (typeof config.toolchainRoot !== 'string' || !isAbsolute(config.toolchainRoot))
+    )
+      throw new Error('invalid_protocol');
     if (
       ['stateRoot', 'webRoot', 'helper'].some(
         (key) => typeof config[key] !== 'string' || !isAbsolute(config[key] as string),
