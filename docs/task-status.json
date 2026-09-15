@@ -1650,7 +1650,7 @@
             "11.5"
           ],
           "test_file": null,
-          "notes": "任务类型：design。Leader已确认详设§12.3.11的R01–R10、新状态/恢复入口及V01–V12，保持done。提交fdcbfcd；PR #84：https://github.com/logan-suu/Agora/pull/84（base=dev-1.0.0，待人工合并）。typecheck/lint通过；Node7/7、Vitest189文件1340项全过、0skip，现有Go/Docker真实链通过，不代表未来本机验收。门禁：docs/reviews/task121-delivery-evidence/results.json；报告：docs/reviews/task121-docker-retirement.md；接受/清理/交付：docs/task-history/12.1.md。13.3移除、13.4验收。",
+          "notes": "任务类型：design。Leader已确认详设§12.3.11的R01–R10、新状态/恢复入口及V01–V12，保持done。PR #84已于2026-09-15人工合并至dev-1.0.0：https://github.com/logan-suu/Agora/pull/84；merge=1e5a65f4f81098790cac5b1a791eaf1663e04030，内容与已评审bb26589一致。typecheck/lint通过；Node7/7、Vitest189文件1340项全过、0skip，现有Go/Docker真实链通过，不代表未来本机验收。门禁：docs/reviews/task121-delivery-evidence/results.json；报告：docs/reviews/task121-docker-retirement.md；接受/清理/交付：docs/task-history/12.1.md。13.3移除、13.4验收。",
           "last_updated": "2026-09-15"
         },
         {
