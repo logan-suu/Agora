@@ -1596,7 +1596,7 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-4.test.ts",
-          "notes": "任务类型：code。PR82已转正式审查，保持in_progress等待人工合并：https://github.com/logan-suu/Agora/pull/82。当前Mac隔离安装与钥匙串升级恢复已通过（跨构建36项、独立锁定19项）；macOS15干净环境按DEF-018暂缓且未验证，11.5复核。本轮修复回滚后同ID迁移重试，旧journal/备份原子归档保留；工具hash改流式，双重校验保留；同步旧验收状态。定向18项及G3/G7通过，完整回归Node7/7、187文件1334项全通过，无跳过；真实工具校验峰值266→144MiB。已清理27个重复构建/测试目录，约释放34GiB；验证证据与已安装应用保留。发布候选/阶段出口仍按流程。证据：docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
+          "notes": "任务类型：code。PR82已转正式审查，保持in_progress等待人工合并：https://github.com/logan-suu/Agora/pull/82。当前Mac隔离安装与钥匙串升级恢复已通过（跨构建36项、独立锁定19项）；macOS15干净环境按DEF-018暂缓且未验证，11.5复核。修复已推送aed24a5并处理4条审查会话；本轮修复回滚后同ID迁移重试，旧journal/备份原子归档保留；工具hash改流式，双重校验保留；同步旧验收状态。定向18项及G3/G7通过，完整回归Node7/7、187文件1334项全通过，无跳过；真实工具校验峰值266→144MiB。已清理27个重复构建/测试目录，约释放34GiB；验证证据与已安装应用保留。发布候选/阶段出口仍按流程。证据：docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
           "last_updated": "2026-09-15"
         },
         {

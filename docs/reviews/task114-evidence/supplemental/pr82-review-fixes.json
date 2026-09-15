@@ -404,7 +404,9 @@
       "用户数据与钥匙串",
       "代表性旧/新构建与当前DMG",
       "仓库证据与原始日志"
-    ]
+    ],
+    "finalFreeGiBApprox": 17.3,
+    "finalCheck": "清理后曾观察到39GiB可用；完整回归/交付结束后约17GiB。目标目录未重新生成，仓库.data约540MiB、测试trash合计约698MiB、Docker镜像约528MB；系统VM卷约14GiB，无初始对照，其他占用变化原因未确定。未清理OS交换区或其他项目。"
   },
   "regression": {
     "command": "pnpm test",
@@ -457,5 +459,12 @@
       "path": "/private/tmp/agora82-fix-gitleaks.log",
       "sha256": "173172f0993a69d0257c7685a36200a5073a84c456ce8f4e608904ad6dbdf22c"
     }
-  ]
+  ],
+  "delivery": {
+    "commit": "aed24a537871df66cb5859bcc04a03264882cbe7",
+    "pr": "https://github.com/logan-suu/Agora/pull/82",
+    "pushed": true,
+    "reviewThreadsHandled": 4,
+    "merged": false
+  }
 }
