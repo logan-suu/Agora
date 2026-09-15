@@ -126,6 +126,7 @@ for (const name of [
   'protocol.js',
   'service-lifecycle.js',
   'window-security.js',
+  'status-assets.js',
   'toolchain-installation.js',
   'toolchains.js',
 ])

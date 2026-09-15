@@ -1596,7 +1596,7 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-4.test.ts",
-          "notes": "任务类型：code。审查修复默认Vitest文件并行导致的共享宿主资源竞争；保留内部并发、原断言/期限及Go deepseek-v4-flash。修复后pnpm test：Node7/7、185文件1328项全绿；G3通过，工具G5 15项、原生12项复验通过，350个包输入匹配，敏感扫描无泄漏。仅Apple Silicon、GitHub DMG/ad-hoc未公证分发；仍需隔离下载安装、干净支持系统及不同ad-hoc构建间Keychain验收，保持in_progress。已提交db31a6e并创建草稿PR：https://github.com/logan-suu/Agora/pull/82；待补验及人工合并。证据：docs/reviews/task114-evidence/commit-gates.json；docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
+          "notes": "任务类型：code。补验用户Safari隔离下载、Applications安装及“仍要打开”后发现Dock弹跳；已修复正式ESM入口ready死锁和生产fuse下状态页加载失败，保留安全开关。修复包实际窗口显示服务Ready/钥匙串可用/工具已验证，正常退出0；针对性2项、G3及原生12项通过，完整默认回归Node7/7、187文件1330项通过（无跳过）。修复DMG经Safari隔离下载/Applications替换后实际启动通过，用户确认且包身份一致；跨ad-hoc构建钥匙串授权恢复待具体ACL批准。用户无干净macOS15环境，仅补验当前arm64 macOS26.5。保持in_progress及草稿PR82：https://github.com/logan-suu/Agora/pull/82；未发布。证据：docs/reviews/task114-evidence/supplemental/results.json；docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
           "last_updated": "2026-09-14"
         },
         {
