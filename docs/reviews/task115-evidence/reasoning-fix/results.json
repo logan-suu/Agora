@@ -1,0 +1,116 @@
+{
+  "task": "11.5",
+  "status": "passed; PR #83 awaits human merge",
+  "fix": "Scoped Go regression transport adds empty reasoning_content only when absent, after native serialization.",
+  "sourceRule": "docs/项目蓝图.md 2026-09-12 reasoning replay rule and §21 2026-09-15 regression compatibility note",
+  "deterministic": {
+    "red": {
+      "failed": 3,
+      "passed": 1
+    },
+    "green": {
+      "passed": 5
+    },
+    "testCorrection": "Direct adapter defaults omit thinking; compare the complete payload with the unwrapped native adapter instead of forcing enabled."
+  },
+  "live": {
+    "provider": "opencode-go",
+    "model": "deepseek-v4-flash",
+    "test": "original LRU",
+    "passed": 1,
+    "durationSeconds": 281.46,
+    "assertionsOrDeadlineChanged": false
+  },
+  "logs": [
+    {
+      "path": "agora115-reasoning-red.log.gz",
+      "sha256": "805ca315b2414362cf20d1eec1f1de61d8efc11cb77875e182d3413ec38ee00b",
+      "compression": "gzip",
+      "archiveSha256": "1ff4bec31e3d03d21564534748eebabf40ff6a5194692fd5840ee459371c32e1"
+    },
+    {
+      "path": "agora115-reasoning-green.log.gz",
+      "sha256": "db13304821daa120fc8cbe85ce43a5b149f399a71021fa7c5a63f83818b08eb0",
+      "compression": "gzip",
+      "archiveSha256": "ee43f8dfb6575928afbd30180cb75baf5bf3bd6382039a83ffcb909ac26058de"
+    },
+    {
+      "path": "agora115-reasoning-green2.log.gz",
+      "sha256": "d7d7e0c1e762d1a11ec88c38f0ecbb45561a71970de6bff36279df4fb98e631a",
+      "compression": "gzip",
+      "archiveSha256": "f033640ee31e9587a15536fb5d9178092ec3182dc07e67e819201b1f40b4f37a"
+    },
+    {
+      "path": "agora115-reasoning-live.log.gz",
+      "sha256": "9647cec3f57eb1593423b4a48c0441089f9dd6988778b21718b3ff0edbcd0a88",
+      "compression": "gzip",
+      "archiveSha256": "0a1fcf13413ad14c47e550a12fd550e8887447a17e4aa78c89f366cb10eebdff"
+    },
+    {
+      "path": "agora115-fixed-typecheck.log.gz",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "archiveSha256": "f75ec57ddcc988a5d820f901f9692276cb5fc8d20b394e628da354c238ce38e7",
+      "compression": "gzip"
+    },
+    {
+      "path": "agora115-fixed-lint.log.gz",
+      "sha256": "622199a78caf80fcbd9acf8a722a2d4982dab703ecc61e0a9cffb8dee0f329e8",
+      "archiveSha256": "1056d5f3418eb23b01d5dcb010c5e2b0f96cae1c56b5e71a8498284ac8006038",
+      "compression": "gzip"
+    },
+    {
+      "path": "agora115-fixed-test.log.gz",
+      "sha256": "6bc68509bd20eb16876d47d4448531a3b7b3e07fa32277b84759bd286ec3fd41",
+      "archiveSha256": "f5264da367c224451ef37eac77a3e99fcd0e23250d39c458c19dad93cb188bb9",
+      "compression": "gzip"
+    }
+  ],
+  "testDownloads": "none; original LRU finally disposes runtime and sandbox; temporary logs archived then removed",
+  "fullRegression": {
+    "exitCode": 0,
+    "nodePassed": 7,
+    "vitestFilesPassed": 189,
+    "vitestPassed": 1340,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 591.8,
+    "provider": "opencode-go",
+    "model": "deepseek-v4-flash",
+    "formalBenchmarkRun": false
+  },
+  "static": {
+    "typecheck": "passed",
+    "lint": "passed; 491 files"
+  },
+  "sourceHashes": [
+    {
+      "path": "tests/helpers/go-reasoning-transport.ts",
+      "sha256": "5c8b253e4ec3c98ebeb22a7083ff8df8b42564f9e4a1861054250271d1000e01"
+    },
+    {
+      "path": "tests/helpers/live-model.ts",
+      "sha256": "efa3beff275ebc2b27743e9ab025421382f8e6eab9a4d9060be1295ab47df3a1"
+    },
+    {
+      "path": "tests/helpers/live-model.test.ts",
+      "sha256": "a59bb73ff316462f08cc5e46ad1558fa72aff0e1a58bdb5fcb47bcc265f34cae"
+    },
+    {
+      "path": "tests/helpers/live-model-wire.test.ts",
+      "sha256": "a95446c0e37cb92330418aba9b0340f0df4e28f871f21293e62ef934f78efc11"
+    },
+    {
+      "path": "tests/integration/phase11/phase11-exit.test.ts",
+      "sha256": "8800ce6e9d6ee675dd76377775033b293c5575d4a6a65c2e3bf58fe798e62e8d"
+    }
+  ],
+  "cleanup": "Test/runtime-owned fixtures disposed by test cleanup; no desktop redownload in this fix run; all temporary verification logs archived losslessly and removed.",
+  "delivery": {
+    "commit": "b433710c4b707c47956a2e296788b10e3744c7d4",
+    "branch": "test/task-11-5-phase-exit",
+    "pr": "https://github.com/logan-suu/Agora/pull/83",
+    "base": "dev-1.0.0",
+    "humanMergePending": true,
+    "releasePublished": false
+  }
+}

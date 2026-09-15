@@ -1,0 +1,37 @@
+import { appendFileSync } from 'node:fs';
+const nativeFetch = globalThis.fetch;
+const log = (value) => appendFileSync('/private/tmp/agora115-reasoning-metadata.jsonl', JSON.stringify(value) + '\n');
+let count = 0;
+globalThis.fetch = async (input, init) => {
+  if (!String(input).startsWith('https://opencode.ai/zen/go/v1/')) return nativeFetch(input, init);
+  const id = ++count;
+  const body = JSON.parse(String(init.body));
+  log({ id, event: 'request', model: body.model, thinking: body.thinking, assistants: body.messages.map((m,index) => m.role === 'assistant' ? { index, reasoningPresent: Object.hasOwn(m,'reasoning_content'), reasoningLength: m.reasoning_content?.length ?? 0, tools: m.tool_calls?.length ?? 0 } : null).filter(Boolean) });
+  const response = await nativeFetch(input, init);
+  log({ id, event: 'response', status: response.status });
+  if (!response.ok || !response.body) return response;
+  const decoder = new TextDecoder();
+  let pending = '', reasoningLength = 0, reasoningFields = 0, toolDeltas = 0, finish = null;
+  const inspect = (line) => {
+    if (!line.startsWith('data: ') || line === 'data: [DONE]') return;
+    const value = JSON.parse(line.slice(6));
+    for (const c of value.choices ?? []) {
+      if (Object.hasOwn(c.delta ?? {}, 'reasoning_content')) { reasoningFields++; reasoningLength += c.delta.reasoning_content?.length ?? 0; }
+      toolDeltas += c.delta?.tool_calls?.length ?? 0;
+      if (c.finish_reason) finish = c.finish_reason;
+    }
+  };
+  const stream = response.body.pipeThrough(new TransformStream({
+    transform(chunk, controller) {
+      controller.enqueue(chunk);
+      pending += decoder.decode(chunk, { stream: true });
+      const lines = pending.split('\n'); pending = lines.pop();
+      for (const line of lines) inspect(line.trimEnd());
+    },
+    flush() {
+      pending += decoder.decode(); if (pending) inspect(pending.trimEnd());
+      log({ id, event: 'streamEnd', reasoningFields, reasoningLength, toolDeltas, finish });
+    }
+  }));
+  return new Response(stream, { status: response.status, statusText: response.statusText, headers: response.headers });
+};

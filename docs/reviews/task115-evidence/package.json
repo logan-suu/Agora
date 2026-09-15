@@ -1,0 +1,20 @@
+{
+  "app": "/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/app/Agora-darwin-arm64/Agora.app",
+  "arch": "arm64",
+  "minimumSystem": "15.0",
+  "signing": "ad-hoc-validation-only",
+  "fuses": {
+    "0": 48,
+    "1": 49,
+    "2": 48,
+    "3": 48,
+    "4": 49,
+    "5": 49,
+    "6": 48,
+    "7": 48,
+    "8": 49,
+    "version": "1"
+  },
+  "resources": 11390,
+  "bytes": 496563932
+}

@@ -8,17 +8,19 @@ import {
 } from '@deepseek-ai/dsh-llm-deepseek';
 import { normalizeGoToolStream } from '../evals/phase10/final/go-tool-stream';
 import { resolveOpenCodeGoApiKey } from '../evals/phase10/final/opencode-go';
+import { withGoReasoning } from './go-reasoning-transport';
 
 /** Reuse the verified Go normalization on both native adapter entry points. */
 class GoRegressionAdapter extends DeepSeekAdapter {
   override async *stream(options: GenerateOptions) {
-    yield* normalizeGoToolStream(super.stream(options));
+    yield* normalizeGoToolStream(withGoReasoning(() => super.stream(options)));
   }
   override async prepareCall(...args: Parameters<DeepSeekAdapter['prepareCall']>) {
     const call = await super.prepareCall(...args);
     return {
       ...call,
-      stream: (options: GenerateOptions) => normalizeGoToolStream(call.stream(options)),
+      stream: (options: GenerateOptions) =>
+        normalizeGoToolStream(withGoReasoning(() => call.stream(options))),
     };
   }
 }

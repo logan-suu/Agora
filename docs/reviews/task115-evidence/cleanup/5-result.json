@@ -1,0 +1,34 @@
+{
+  "checks": [
+    "production Next instrumentation and isolated native Keychain",
+    "reject unauthenticated HTTP",
+    "reject cross-origin HTTP",
+    "block product endpoint tasks",
+    "block product endpoint messages",
+    "block product endpoint commands",
+    "block product endpoint channels",
+    "block product endpoint traces",
+    "block product endpoint model-settings",
+    "block product endpoint stream",
+    "React hydration and authenticated EventSource",
+    "preview content and no project controls",
+    "isolated renderer and limited preload",
+    "validated top-frame IPC",
+    "external windows denied",
+    "external navigation denied",
+    "untrusted window IPC rejected",
+    "CSP blocks inline handler and emits violation",
+    "retired session denies new connections",
+    "graceful stop and actual process exit",
+    "Keychain identity retained after stop",
+    "state format persisted",
+    "production service entry refuses future format before credential initialization"
+  ],
+  "status": "passed",
+  "package": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/app/Agora-darwin-arm64/Agora.app",
+  "csp": "default-src 'none'; script-src 'self' 'nonce-WgQOsUoU+QtQUXM2pE4Bsk3vwhZIAFgh' 'strict-dynamic'; style-src 'self' 'nonce-WgQOsUoU+QtQUXM2pE4Bsk3vwhZIAFgh'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'",
+  "consoleErrors": [
+    "Executing inline event handler violates the following Content Security Policy directive 'script-src 'self' 'nonce-u9uy/qZDjsUt4+/mlxH0fNl2f3pRRn7T' 'strict-dynamic''. Either the 'unsafe-inline' keyword, a hash ('sha256-...'), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked."
+  ],
+  "keychainRemoved": true
+}

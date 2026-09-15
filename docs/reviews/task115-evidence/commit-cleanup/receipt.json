@@ -1,0 +1,117 @@
+{
+  "authorization": "Leader 2026-09-15 test download cleanup",
+  "status": "completed",
+  "beforeFreeBytes": 45108633600,
+  "targets": [
+    {
+      "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-qPb2Hm",
+      "device": 16777231,
+      "inode": 127409054,
+      "allocatedBytes": 2917072896,
+      "logicalBytes": 2621647405,
+      "files": 72810,
+      "metadata": [
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-qPb2Hm/input.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/0-input.json",
+          "sha256": "193ed989ef292280cf0aec6fe8b1f7140fcbb3592bd86d3d741f0991f37eb511"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-qPb2Hm/downloads.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/0-downloads.json",
+          "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-qPb2Hm/output/package-result.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/0-output-package-result.json",
+          "sha256": "8d5fb38a92b70e450c3ab072f3d5402ed4be73303d5fd5651cc8b48ccbb015ec"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-qPb2Hm/output/resource-manifest.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/0-output-resource-manifest.json.gz",
+          "sha256": "98c2dd060668ea9a54ed5a974ffeb41a74806f9ce70d6c9d8281ea9777d42086",
+          "compression": "gzip",
+          "archiveSha256": "8e8bc3fecf78d232cd88808122e7345f9c3205aacfb2b3ab961eecc7becd0cf3"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-qPb2Hm/output/service-manifest.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/0-output-service-manifest.json.gz",
+          "sha256": "9cbbe871781ac68c8c9093c903f7abd9c67dbf2af4a8359bd071a364b7616099",
+          "compression": "gzip",
+          "archiveSha256": "d8c49cf0980f39f42c4833dacc5c670ac593c394c3c006685542c5f33a2f5494"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-qPb2Hm/output/trace-review.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/0-output-trace-review.json",
+          "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora115-commit-downloads",
+      "device": 16777231,
+      "inode": 127409015,
+      "allocatedBytes": 513683456,
+      "logicalBytes": 498526930,
+      "files": 14,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora115-commit-downloads/downloads.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/1-downloads.json",
+          "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora114-tools-9ONJXG",
+      "device": 16777231,
+      "inode": 127504702,
+      "allocatedBytes": 3014656,
+      "logicalBytes": 1593054,
+      "files": 609,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora114-tools-9ONJXG/result.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/2-result.json",
+          "sha256": "0a28717feea068ea326ba86ca9aa89c4db6aec66a868dc50ac4005bc1985cb7c"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora113-validation-5GIem5",
+      "device": 16777231,
+      "inode": 127508238,
+      "allocatedBytes": 327680,
+      "logicalBytes": 259207,
+      "files": 27,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora113-validation-5GIem5/result.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/3-result.json",
+          "sha256": "7e10342f962d7a0fd1dc59bb4c3fe0be30ec0a53a93874e5d56a3d77943fede1"
+        },
+        {
+          "source": "/private/tmp/agora113-validation-5GIem5/checkpoint.json",
+          "archived": "docs/reviews/task115-evidence/commit-cleanup/3-checkpoint.json",
+          "sha256": "6fe84b22bf5b8bc91cb8c7da208bdc69cb5365bb16f95128cd27deb03ee5ea4d"
+        }
+      ],
+      "deleted": true
+    }
+  ],
+  "usage": {
+    "matchingProcesses": 0,
+    "matchingMountedImages": 0,
+    "matchingOpenFiles": 0
+  },
+  "usageAtDeletion": {
+    "matchingProcesses": 0,
+    "matchingMountedImages": 0,
+    "matchingOpenFiles": 0
+  },
+  "afterFreeBytes": 47795335168,
+  "freeSpaceDeltaBytes": 2686701568
+}

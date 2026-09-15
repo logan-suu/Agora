@@ -123,8 +123,13 @@
     },
     {
       "id": "D18",
-      "rule": "四批为Phase11–30共20阶段110任务；每阶段3–7项，末项为集成/发布验收，全部任务依赖前阶段出口，旧新ID见计划§18.12。11/12限定预览，13完成本机闭环并退役Docker（12.1清单、13.3移除、13.4无Docker验收）；不兼容旧任务、不自动删数据，研发历史及D3等保护保留。G1–G7/人工PR合并不变，阶段done不等于发布，dev→main人工合并后经授权tag/Release，见§18.11。身份/项目CAS/跨聚合回执及D4保身份真Fork重取lease见详设§12.1。桌面Electron+独立Node，仅Apple Silicon/macOS15+；GitHub Releases交付ad-hoc DMG、校验和及未公证安装说明，不要求Developer ID/公证。保留真实隔离安装、干净目标系统（11.4暂缓项见DEF-018）、升级Keychain及state/workspace/配置证据连续性和持久迁移恢复，详设§12.3、蓝图§22.3.2、选型§12。设计接受不替代实装验收。",
+      "rule": "四批为Phase11–30共20阶段110任务；每阶段3–7项，末项为集成/发布验收，全部任务依赖前阶段出口，旧新ID见计划§18.12。11/12限定预览，13完成本机闭环并退役Docker（12.1清单、13.3移除、13.4无Docker验收）；不兼容旧任务、不自动删数据，研发历史及D3等保护保留。G1–G7/人工PR合并不变，阶段done不等于发布，dev→main人工合并后经授权tag/Release，见§18.11。身份/项目CAS/跨聚合回执及D4保身份真Fork重取lease见详设§12.1。桌面Electron+独立Node，仅Apple Silicon/macOS15+；GitHub Releases交付ad-hoc DMG、校验和及未公证安装说明，不要求Developer ID/公证。保留真实隔离安装、目标系统实测（11.5干净macOS15项获批忽略但未验证，DEF-018）、升级Keychain及state/workspace/配置证据连续性和持久迁移恢复，详设§12.3、蓝图§22.3.2、选型§12。设计接受不替代实装验收。",
       "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18"
+    },
+    {
+      "id": "TEST-CLEANUP",
+      "rule": "每轮测试结束先归档结果/版本来源/hash/必要日志，确认进程与挂载停用、路径归属后删除测试专用下载、压缩包、解压构建安装副本及专用依赖目录；已确认遗留测试下载同样清理。保留用户明确指定的交付文件；不动用户项目、正常依赖、全局共享缓存、已安装应用、产品状态/钥匙串。记录删除路径及空间变化；已删候选发布前重建并复核，不声称旧附件仍存在。",
+      "source": "docs/项目蓝图.md §21 TEST-CLEANUP；docs/task-tracking.md 写入规范；AGENTS.md §3.1.3"
     }
   ],
   "baseline": {
@@ -1518,7 +1523,7 @@
       "name": "Electron 安装与受管工具链",
       "status": "in_progress",
       "integration_test": "11.5",
-      "exit_criteria": "预览版：在干净受支持Apple Silicon Mac安装并双击启动应用，托管本地服务和Node/Git/包管理器/helper；验证单实例、钥匙串、受管PATH、异常反馈及正常关闭。本阶段只开放安装与环境检查，不开放未验收的本机编码入口，也不向新桌面产品提供Docker模式。 阶段出口须包含真实集成测试、累计G1–G7及§18.11发布候选证据；通过后可发布对应范围的版本，是否已经发布另以Git tag/GitHub Release为准。",
+      "exit_criteria": "预览版：在当前受支持Apple Silicon Mac实际安装并双击启动应用（本次干净macOS15验收获批忽略，DEF-018保留未验证），托管本地服务和Node/Git/包管理器/helper；验证单实例、钥匙串、受管PATH、异常反馈及正常关闭。本阶段只开放安装与环境检查，不开放未验收的本机编码入口，也不向新桌面产品提供Docker模式。 阶段出口须包含真实集成测试、累计G1–G7及§18.11发布候选证据；通过后可发布对应范围的版本，是否已经发布另以Git tag/GitHub Release为准。",
       "tasks": [
         {
           "id": "11.1",
@@ -1603,7 +1608,7 @@
           "id": "11.5",
           "title": "Phase 11 集成测试与发布验收：Electron 安装与受管工具链",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "last_updated": "2026-09-15",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22",
@@ -1618,7 +1623,7 @@
             "11.4"
           ],
           "test_file": "tests/integration/phase11/phase11-exit.test.ts",
-          "notes": "任务类型：exit。预览版：在干净受支持Mac安装并双击启动应用，托管本地服务和Node/Git/包管理器/helper；验证单实例、钥匙串、受管PATH、异常反馈及正常关闭。本阶段只开放安装与环境检查，不开放未验收的本机编码入口，也不向新桌面产品提供Docker模式。 累计G1–G7；安装产物验证与发布证据要求见docs/开发计划安排.md §18.11。尚未开工，不宣称已通过或已发布。"
+          "notes": "任务类型：exit。PR #83已创建：https://github.com/logan-suu/Agora/pull/83；审查修正验收矩阵旧计数与Downloads路径脱敏，保持in_progress待人工合并。Go空reasoning_content修复后原LRU及完整回归通过：Node7/7、Vitest189文件1340/1340；G3/G5/G7通过，历史失败与红绿证据保留。本轮文档修正复核源码/产物输入hash并复用G4/G5，详见docs/reviews/task115-evidence/pr-review.json。干净macOS15本次获批忽略，DEF-018未验证；测试下载已清理，版本/发布未授权。详情docs/task-history/11.5.md；docs/reviews/task115-phase11-exit.md。"
         }
       ]
     },

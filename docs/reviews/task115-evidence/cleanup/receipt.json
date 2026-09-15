@@ -1,0 +1,330 @@
+{
+  "authorization": "Leader 2026-09-15 test download cleanup",
+  "status": "completed",
+  "beforeFreeBytes": 39663132672,
+  "targets": [
+    {
+      "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL",
+      "device": 16777231,
+      "inode": 127186399,
+      "allocatedBytes": 2819178496,
+      "logicalBytes": 2621659526,
+      "files": 72810,
+      "metadata": [
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/input.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/0-input.json",
+          "sha256": "193ed989ef292280cf0aec6fe8b1f7140fcbb3592bd86d3d741f0991f37eb511"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/downloads.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/0-downloads.json",
+          "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/package-result.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/0-output-package-result.json",
+          "sha256": "6f9af5a35cbe5ed4d3ed001dad9490f670049b35674e5ccaa4036d32f56fcbf2"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/resource-manifest.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/0-output-resource-manifest.json.gz",
+          "sha256": "3ba38b20e2432757dc6cd204a55639f80c9c1b30944de77f51f10ddd04860568",
+          "compression": "gzip",
+          "archiveSha256": "469c18f5bc875d82672e52a9853c7ce7d300e047e427491024ee1f6f219dc28c"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/service-manifest.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/0-output-service-manifest.json.gz",
+          "sha256": "67ab1d5117afe2dcc39b2b0ea9cda017d4a28c0bb8f30a8343fe8e9805913760",
+          "compression": "gzip",
+          "archiveSha256": "101e119114ecc35c914f112b616bf7f58026fa1f171e1f0bc214f0b2290d4ef1"
+        },
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/trace-review.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/0-output-trace-review.json",
+          "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora115-media",
+      "device": 16777231,
+      "inode": 127277240,
+      "allocatedBytes": 1444429824,
+      "logicalBytes": 1413771371,
+      "files": 11811,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora115-media/media.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/1-media.json",
+          "sha256": "5f6f0d0fa3dd471fefc86db7f739268588c9ccb9a6af122f9a514d997ebc56db"
+        },
+        {
+          "source": "/private/tmp/agora115-media/SHA256SUMS",
+          "archived": "docs/reviews/task115-evidence/cleanup/1-SHA256SUMS",
+          "sha256": "417cd9449b75c057cb1e81fb51d7e7a801d77a6be9fafda204454825ea79a090"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora114-install-ULhvF3",
+      "device": 16777231,
+      "inode": 127308325,
+      "allocatedBytes": 1661808640,
+      "logicalBytes": 1600567673,
+      "files": 23614,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora114-install-ULhvF3/result.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/2-result.json",
+          "sha256": "d26a7a4549009ae5591b42d6b78cf418b3818c818b917cc7a87dcfb0f4e4dd11"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora115-quarantine-hjdflp_a",
+      "device": 16777231,
+      "inode": 127364774,
+      "allocatedBytes": 830869504,
+      "logicalBytes": 800286919,
+      "files": 11808,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora115-quarantine-hjdflp_a/result.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/3-result.json",
+          "sha256": "3beeffc0e51c126bf59f4bb2fe7021d8fb0a4c6d9747910181a7458382bd5cd8",
+          "archiveSha256": "5a7cb3f994490a19f9b5a134699f85d4e26c3124ce5ea4233e4681742849b454",
+          "redaction": "Downloads account name replaced with <redacted>; sha256 retains original source identity."
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora115-quarantine-wu0ekhct",
+      "device": 16777231,
+      "inode": 127362223,
+      "allocatedBytes": 0,
+      "logicalBytes": 128,
+      "files": 1,
+      "metadata": [],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora113-validation-AU0nK1",
+      "device": 16777231,
+      "inode": 127277070,
+      "allocatedBytes": 327680,
+      "logicalBytes": 259207,
+      "files": 27,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora113-validation-AU0nK1/result.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/5-result.json",
+          "sha256": "eabe6b4e6ced054f8de1f12a0d18f3b5ec6b2e3e3461bc9e09194854ad21ac39"
+        },
+        {
+          "source": "/private/tmp/agora113-validation-AU0nK1/checkpoint.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/5-checkpoint.json",
+          "sha256": "9362873e56a22290d12b25c174b849ae221f4217896712422338fbf5e78978be"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora113-host-JaXBEn",
+      "device": 16777231,
+      "inode": 127299826,
+      "allocatedBytes": 233472,
+      "logicalBytes": 177105,
+      "files": 20,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora113-host-JaXBEn/result.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/6-result.json",
+          "sha256": "c308d5d17759536a73dd5f75fbccf325d14e4d7d2a4a7dc6484bb09e1f4d97d6"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora114-tools-VnPCzD",
+      "device": 16777231,
+      "inode": 127306941,
+      "allocatedBytes": 3014656,
+      "logicalBytes": 1593080,
+      "files": 609,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora114-tools-VnPCzD/result.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/7-result.json",
+          "sha256": "2ffeef63c5bca2a3884c07a1e9fcca7caa2cfc06cf89dba939aeaac4a1532945"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora115-secrets-MKcloq",
+      "device": 16777231,
+      "inode": 127402728,
+      "allocatedBytes": 950272,
+      "logicalBytes": 908839,
+      "files": 19,
+      "metadata": [],
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora115-final-scan-Bx41JL",
+      "device": 16777231,
+      "inode": 127403067,
+      "allocatedBytes": 1052672,
+      "logicalBytes": 959214,
+      "files": 32,
+      "metadata": [],
+      "deleted": true
+    },
+    {
+      "path": "/Users/<redacted>/Downloads/Agora-darwin-arm64.dmg",
+      "device": 16777231,
+      "inode": 127360493,
+      "allocatedBytes": 317284352,
+      "logicalBytes": 317283884,
+      "files": 1,
+      "metadata": [],
+      "sha256": "ff770dd6523d77116bf13a25272099e7c177c5a5df51671c52848e026e6860e0",
+      "deleted": true
+    },
+    {
+      "path": "/private/tmp/agora-112-spike/downloads",
+      "device": 16777231,
+      "inode": 123988233,
+      "allocatedBytes": 249282560,
+      "logicalBytes": 249272362,
+      "files": 9,
+      "metadata": [
+        {
+          "source": "/private/tmp/agora-112-spike/downloads/verified.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/11-verified.json",
+          "sha256": "aa0c8e3803c88f67ce9973d730c1f12c31e1aa80c338a8d0ef11f3b6e9801df3"
+        },
+        {
+          "source": "/private/tmp/agora-112-spike/downloads/pnpm-metadata.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/11-pnpm-metadata.json",
+          "sha256": "f5dd8207afd5188172f56b1f5b072ebee5f0056d5ddf1a750968af44547318f6"
+        },
+        {
+          "source": "/private/tmp/agora-112-spike/downloads/packager-metadata.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/11-packager-metadata.json",
+          "sha256": "f71764a710821a39769b7d6cdd5f757c011b4feb8f1511f694bed695332f71a2"
+        },
+        {
+          "source": "/private/tmp/agora-112-spike/downloads/node-SHASUMS256.txt",
+          "archived": "docs/reviews/task115-evidence/cleanup/11-node-SHASUMS256.txt",
+          "sha256": "c614a913a302d35d1c3a1348d07d84c52e28dceb0b97fd91e4ade05906ca2bd7"
+        }
+      ],
+      "downloadHashes": [
+        {
+          "name": "pnpm.tgz",
+          "sha256": "cf86a7ad764406395d4286a6d09d730711720acc6d93e9dce9ac7ac4dc4a28a7"
+        },
+        {
+          "name": "node.tar.gz",
+          "sha256": "40e5607e5ecb3db9192723776da2d75d966260fc74a7a9e731c1bd67dda96bc8"
+        },
+        {
+          "name": "electron.zip",
+          "sha256": "49b91ef265c603c8888500f807484b63816069c30f87ba2b403e7c87f0f45035"
+        },
+        {
+          "name": "git.tar.gz",
+          "sha256": "f9dc64635a5b62fbd7ad95db73268bbb8912255ac516d65d37bf7af22fcb8ffe"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora112-reproduce-1y7Jda/downloads",
+      "device": 16777231,
+      "inode": 124166546,
+      "allocatedBytes": 249270272,
+      "logicalBytes": 249262583,
+      "files": 6,
+      "metadata": [
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora112-reproduce-1y7Jda/downloads/packager-metadata.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/12-packager-metadata.json",
+          "sha256": "302df8975fc9cec473b3736ad1ecc26cfdaac961333adef1feed91f23f0e85cd"
+        }
+      ],
+      "downloadHashes": [
+        {
+          "name": "pnpm.tgz",
+          "sha256": "cf86a7ad764406395d4286a6d09d730711720acc6d93e9dce9ac7ac4dc4a28a7"
+        },
+        {
+          "name": "node.tar.gz",
+          "sha256": "40e5607e5ecb3db9192723776da2d75d966260fc74a7a9e731c1bd67dda96bc8"
+        },
+        {
+          "name": "electron.zip",
+          "sha256": "49b91ef265c603c8888500f807484b63816069c30f87ba2b403e7c87f0f45035"
+        },
+        {
+          "name": "git.tar.gz",
+          "sha256": "f9dc64635a5b62fbd7ad95db73268bbb8912255ac516d65d37bf7af22fcb8ffe"
+        }
+      ],
+      "deleted": true
+    },
+    {
+      "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora112-reproduce-BSG8Sh/downloads",
+      "device": 16777231,
+      "inode": 124316886,
+      "allocatedBytes": 249270272,
+      "logicalBytes": 249262583,
+      "files": 6,
+      "metadata": [
+        {
+          "source": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora112-reproduce-BSG8Sh/downloads/packager-metadata.json",
+          "archived": "docs/reviews/task115-evidence/cleanup/13-packager-metadata.json",
+          "sha256": "302df8975fc9cec473b3736ad1ecc26cfdaac961333adef1feed91f23f0e85cd"
+        }
+      ],
+      "downloadHashes": [
+        {
+          "name": "pnpm.tgz",
+          "sha256": "cf86a7ad764406395d4286a6d09d730711720acc6d93e9dce9ac7ac4dc4a28a7"
+        },
+        {
+          "name": "node.tar.gz",
+          "sha256": "40e5607e5ecb3db9192723776da2d75d966260fc74a7a9e731c1bd67dda96bc8"
+        },
+        {
+          "name": "electron.zip",
+          "sha256": "49b91ef265c603c8888500f807484b63816069c30f87ba2b403e7c87f0f45035"
+        },
+        {
+          "name": "git.tar.gz",
+          "sha256": "f9dc64635a5b62fbd7ad95db73268bbb8912255ac516d65d37bf7af22fcb8ffe"
+        }
+      ],
+      "deleted": true
+    }
+  ],
+  "usage": {
+    "matchingProcesses": 0,
+    "matchingMountedImages": 0,
+    "matchingOpenFiles": 0
+  },
+  "usageAtDeletion": {
+    "matchingProcesses": 0,
+    "matchingMountedImages": 0,
+    "matchingOpenFiles": 0
+  },
+  "afterFreeBytes": 46811607040,
+  "freeSpaceDeltaBytes": 7148474368
+}
