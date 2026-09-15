@@ -1,4 +1,5 @@
-import { mkdir, readdir } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir, readdir, rename } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import {
   atomicWrite,
@@ -81,6 +82,28 @@ async function save(root: string, journal: Journal) {
   await atomicWrite(join(root, 'journal.json'), Buffer.from(JSON.stringify(journal)));
 }
 
+async function archiveRolledBack(owner: UpgradeOwner, root: string, migration: Migration) {
+  try {
+    await privateDirectory(root);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw error;
+  }
+  const journal = parseJournal(await readRegular(join(root, 'journal.json')));
+  if (journal.id !== migration.id || journal.phase !== 'rolled_back')
+    throw new Error('upgrade_already_closed');
+  const history = join(dirname(owner.root), 'upgrade-history');
+  await mkdir(history, { recursive: true, mode: 0o700 });
+  await privateDirectory(history);
+  await syncDirectory(dirname(history));
+  await owner.assertHeld();
+  // Preserve the complete closed attempt unchanged before reusing its active slot.
+  await rename(root, join(history, `${migration.id}-${randomUUID()}`));
+  await syncDirectory(history);
+  await syncDirectory(dirname(root));
+  return true;
+}
+
 export async function assertClosedUpgrades(state: string) {
   const root = join(dirname(state), 'upgrade');
   try {
@@ -131,6 +154,8 @@ export async function applyUpgrade(
   await privateDirectory(parent);
   await syncDirectory(dirname(parent));
   const root = join(parent, migration.id);
+  if (await archiveRolledBack(owner, root, migration)) checkpoint?.('archived');
+  await owner.assertHeld();
   await mkdir(root, { mode: 0o700 });
   await syncDirectory(parent);
   const journal: Journal = {

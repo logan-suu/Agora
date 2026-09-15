@@ -4,6 +4,8 @@
 
 ## 结论与范围
 
+**2026-09-15 PR82审查修复：** 已回滚迁移支持同ID重试，旧尝试以原子rename完整保留至私有upgrade-history归档；归档后中断仍可重新准备，未闭合尝试与外部链接归档目录拒绝。工具链hash改用流式SHA-256，主进程/服务两次校验保留；实际已安装包的同函数对照峰值内存266→144MiB，单次计时约1.5秒，非性能承诺。定向18项及G3通过；完整回归Node7/7、187文件1334项全通过，0失败/跳过，543.76秒。PR已转正式审查，旧时点草稿记录保留。清理27个重复构建/测试目录，约释放34GiB，原清单及结果已另存；已安装应用、用户状态、钥匙串、代表性构建与DMG保留。详见[本轮证据](task114-evidence/supplemental/pr82-review-fixes.json)。
+
 **钥匙串升级恢复补验通过：** 两个不同ad-hoc构建、真实生产服务与临时Keychain完成旧版建项、新版拒绝访问、Leader系统授权、新版读回原密钥及解密原凭据、锁定和解锁恢复。跨版本36项、独立锁定恢复19项通过；原项创建时间、原密钥及密文保持不变，临时Keychain均已清理。授权不传入新的项密钥数据，未接触登录Keychain或真实API Key。人工动作是系统security工具的ACL提示；原生denied实际验证，未单独观察人类点击Deny。详见[恢复补验证据](task114-evidence/supplemental/keychain-recovery.json)。
 
 **当前安装补验发现并修复启动缺陷：** 用户在macOS26.5完成Safari带quarantine下载、安装及系统“仍要打开”后，旧包仅在Dock弹跳。已确认ESM入口等待ready的死锁，以及生产file协议fuse下状态页无法加载；修复两处且保留全部安全开关。修复后的完整`.app`正式入口实测可显示本地服务Ready、钥匙串可用和工具已验证，正常退出0；针对性2项回归、G3及原生组合根12项已通过。修复版DMG已用Safari重新下载，用户替换Applications应用并确认“已打开”；安装后保留quarantine、ASAR与DMG一致、签名完整性通过，实际窗口三项环境检查均就绪。当前Mac下载安装启动补验通过；修复后完整默认回归退出0：Node7/7、Vitest187文件1330项全通过，无跳过，599.86秒，三项Go真实模型测试均通过。此前ready后加载组合根的验证没有覆盖这两处问题，不再当作实际双击成功的证据。详见[补验证据](task114-evidence/supplemental/results.json)及[实际启动截图](task114-evidence/supplemental/startup-fixed.png)。

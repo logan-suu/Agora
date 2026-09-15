@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 import { lstat, readdir, readFile, readlink, realpath } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { toolVersions } from './toolchains.js';
@@ -16,6 +17,11 @@ export interface ToolFile {
   sha256?: string;
   link?: string;
   executable?: boolean;
+}
+async function hashFile(path: string) {
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  return hash.digest('hex');
 }
 export async function inventoryToolchain(root: string): Promise<ToolFile[]> {
   const canonical = await realpath(root);
@@ -35,9 +41,7 @@ export async function inventoryToolchain(root: string): Promise<ToolFile[]> {
       } else if (entry.isFile()) {
         result.push({
           path: name,
-          sha256: createHash('sha256')
-            .update(await readFile(path))
-            .digest('hex'),
+          sha256: await hashFile(path),
           executable: Boolean((await lstat(path)).mode & 0o111),
         });
       } else throw new Error('toolchain_invalid_file');

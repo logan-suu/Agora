@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -34,6 +34,61 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 describe('durable desktop upgrades', () => {
+  for (const point of ['backup:0', 'file:0']) {
+    it(`retries a rolled back ${point} attempt while preserving its journal and backups`, async () => {
+      const owner = await fixture();
+      const operation = join(roots.at(-1) ?? '', 'upgrade', migration.id);
+      await expect(
+        applyUpgrade(owner, migration, (stage) => {
+          if (stage === point) throw new Error('interrupted');
+        }),
+      ).rejects.toThrow('interrupted');
+      await expect(applyUpgrade(owner, migration)).rejects.toThrow('upgrade_requires_quiescence');
+      await recoverUpgrade(owner, migration, 'rollback');
+      const original = new Map(
+        await Promise.all(
+          (await readdir(operation)).map(
+            async (name) => [name, await readFile(join(operation, name))] as const,
+          ),
+        ),
+      );
+      await expect(
+        applyUpgrade(owner, migration, (stage) => {
+          if (stage === 'archived') throw new Error('retry_interrupted');
+        }),
+      ).rejects.toThrow('retry_interrupted');
+      await initializeFormat(owner.root);
+      expect((await applyUpgrade(owner, migration)).phase).toBe('committed');
+      const history = join(roots.at(-1) ?? '', 'upgrade-history');
+      const archives = await readdir(history);
+      expect(archives).toHaveLength(1);
+      for (const [name, bytes] of original) {
+        expect(await readFile(join(history, archives[0] ?? '', name))).toEqual(bytes);
+      }
+      expect(JSON.parse(await readFile(join(owner.root, 'desktop-format.json'), 'utf8'))).toEqual({
+        version: 2,
+      });
+      await owner.release();
+    });
+  }
+  it('refuses a linked archive directory without moving the closed attempt', async () => {
+    const owner = await fixture();
+    await expect(
+      applyUpgrade(owner, migration, (point) => {
+        if (point === 'prepared') throw new Error('interrupted');
+      }),
+    ).rejects.toThrow('interrupted');
+    await recoverUpgrade(owner, migration, 'rollback');
+    const parent = roots.at(-1) ?? '';
+    const journal = join(parent, 'upgrade', migration.id, 'journal.json');
+    const before = await readFile(journal);
+    await mkdir(join(parent, 'outside'), { mode: 0o700 });
+    await symlink(join(parent, 'outside'), join(parent, 'upgrade-history'));
+    await expect(applyUpgrade(owner, migration)).rejects.toThrow('unsafe_upgrade_directory');
+    expect(await readFile(journal)).toEqual(before);
+    expect(await readdir(join(parent, 'outside'))).toEqual([]);
+    await owner.release();
+  });
   for (const point of ['preparing', 'backup:0']) {
     it(`rolls back incomplete backups at ${point} without touching source state`, async () => {
       const owner = await fixture();

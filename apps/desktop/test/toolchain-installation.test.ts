@@ -1,5 +1,6 @@
 // Synthetic component bytes exercise integrity validation only; packaged G5 executes real tools.
-import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { chmod, mkdir, mkdtemp, open, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
@@ -9,6 +10,24 @@ import { toolVersions } from '../src/toolchains.js';
 const roots: string[] = [];
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+});
+it('hashes multi-chunk binaries without changing the digest or executable metadata', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'agora114-inventory-'));
+  roots.push(root);
+  const file = await open(join(root, 'binary'), 'wx', 0o700);
+  const block = Buffer.alloc(1024 * 1024, 0x5a);
+  const hash = createHash('sha256');
+  try {
+    for (let index = 0; index < 32; index++) {
+      await file.writeFile(block);
+      hash.update(block);
+    }
+  } finally {
+    await file.close();
+  }
+  expect(await inventoryToolchain(root)).toEqual([
+    { path: 'binary', sha256: hash.digest('hex'), executable: true },
+  ]);
 });
 it('rejects corruption, wrong architecture and internal launcher replacement', async () => {
   const root = await mkdtemp(join(tmpdir(), 'agora114-inventory-'));
