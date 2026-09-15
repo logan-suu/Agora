@@ -1,0 +1,327 @@
+{
+  "date": "2026-09-14",
+  "task": "11.4",
+  "branch": "feat/task-11-4-managed-toolchains",
+  "base": "8fb1f9055269e09853d98f265586be9afef994de",
+  "delivery": "gates-passed-pending-draft-pr",
+  "static": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "filesChecked": 485
+  },
+  "tests": {
+    "defaultRuns": [
+      {
+        "command": "pnpm test",
+        "files": 185,
+        "passed": 1325,
+        "failed": 3,
+        "seconds": 203.26,
+        "failures": [
+          "task-composition resume cleanup: 5000ms",
+          "phase8 durable-restart-fork: 5000ms and secondary ENOTEMPTY",
+          "phase9 review rework: 60000ms"
+        ]
+      },
+      {
+        "command": "pnpm test",
+        "files": 185,
+        "passed": 1325,
+        "failed": 3,
+        "seconds": 228.65,
+        "failures": [
+          "phase9 architecture_failure: 60000ms",
+          "Docker teardown: 5000ms",
+          "Git recovery disposal: 5000ms"
+        ]
+      }
+    ],
+    "targeted": {
+      "files": 3,
+      "tests": 28,
+      "status": "passed",
+      "seconds": 127.94
+    },
+    "final": {
+      "command": "pnpm run test --maxWorkers=2",
+      "status": "failed",
+      "finished": true,
+      "files": 185,
+      "passedFiles": 184,
+      "failedFiles": 1,
+      "passed": 1327,
+      "failed": 1,
+      "skipped": 0,
+      "nodeTests": 7,
+      "seconds": 406.57,
+      "failure": {
+        "path": "packages/tools/git/test/git-service.test.ts",
+        "line": 450,
+        "test": "merges in a dedicated linked worktree and aborts a real conflict",
+        "deadlineMs": 5000,
+        "observedMs": 6316
+      },
+      "liveModel": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "harnessMs": 15293,
+        "summaryMs": 6709,
+        "lruMs": 313721,
+        "status": "passed"
+      }
+    },
+    "diagnosis": {
+      "status": "inconclusive",
+      "hypotheses": [
+        "Host and subprocess contention",
+        "Lifecycle wait/cleanup race",
+        "Change-induced regression"
+      ],
+      "observedCpuCores": 8,
+      "observedOneMinuteLoad": 110.97,
+      "mitigation": "Limit concurrent test files to two; preserve internal concurrency, all assertions, deadlines and real-model configuration.",
+      "testCodeChanged": false,
+      "directFailingSourcesMatchHead": true
+    }
+  },
+  "g5": {
+    "tools": {
+      "status": "passed",
+      "bundle": "/private/tmp/agora114-install-d492Jp/installed/Agora.app",
+      "arch": "arm64",
+      "checks": [
+        "bundle integrity",
+        "node version",
+        "npm version",
+        "pnpm version",
+        "git version",
+        "npm preparation",
+        "npm dependency and lifecycle",
+        "npm incompatible project blocked",
+        "pnpm preparation",
+        "pnpm dependency and lifecycle",
+        "pnpm incompatible project blocked",
+        "real linked worktree",
+        "worktree cleanup",
+        "signed native helper write/read",
+        "signed native helper rejects traversal"
+      ]
+    },
+    "host": {
+      "status": "passed",
+      "checks": [
+        "production host readiness",
+        "production preload status",
+        "production renderer isolation",
+        "closing window preserves background service",
+        "native duplicate launch cannot spawn service",
+        "native second launch focuses current window",
+        "concurrent restarts share one operation",
+        "restart replaces a running process after its exit",
+        "restart replaces and revokes the old session",
+        "production host waits for process exit",
+        "fresh session after explicit restart",
+        "crash replaces project surface with failure UI"
+      ],
+      "afterStop": {
+        "state": "stopped",
+        "code": null,
+        "canRestart": true,
+        "exitCode": 0,
+        "signalCode": null
+      },
+      "keychainRemoved": true
+    },
+    "bundleInputComparison": {
+      "checked": 347,
+      "mismatches": []
+    }
+  },
+  "g7": {
+    "scanner": "gitleaks dir --redact",
+    "changedFilesScanned": 50,
+    "leaks": 0,
+    "finalChangedFilesScanned": 51,
+    "finalLeaks": 0
+  },
+  "remaining": [
+    "Quarantined DMG download and actual installation",
+    "Clean supported Apple Silicon macOS environments",
+    "Keychain continuity across different ad-hoc app builds",
+    "Fixed-commit release candidate and phase exit"
+  ],
+  "logs": [
+    {
+      "path": "/private/tmp/agora114-commit-typecheck.log",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-lint.log",
+      "sha256": "c648cd2df86bc7cfb8df282136a6567195fb45ef3565a2950fa827aa5bad8a27"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-test.log",
+      "sha256": "20c5349c490564265e983d344595c1e37bf84c7f5dcaa39d4ed2896dea7658f7"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-reproduce.log",
+      "sha256": "e1d7e06aa40a13d094b6931b9b2d1b4ecaa38850f98df7df2febb3b5d2ca13ae"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-test-recheck.log",
+      "sha256": "9fc116a3be4ed0ba7d08a649cdb176afcc2207f91ecc7c49d17253be8d13cf71"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-test-bounded.log",
+      "sha256": "c562944179669065d5fb6a54907cdfaf4f04b77f07ccece065df59f8e78a62a4"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-tools.log",
+      "sha256": "7e252a3230b1a3d084d844beecc4153be979d0599883498ecaaec9bceb48308b"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-host.log",
+      "sha256": "a367e044523c5844513837b0aa8f4ad65c1bc266b359007e769909d0efc8cba8"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-test-bounded-run.log",
+      "sha256": "630cb454c43212b9daf81b7632eeaed069d5d2a6b10f8ea465a4bf919c47f530"
+    },
+    {
+      "path": "/private/tmp/agora114-commit-final-lint.log",
+      "sha256": "0aa0c19a4b438e4d0948be253194ed8142b798b3564aeb045b089e98ee492b38"
+    },
+    {
+      "path": "/private/tmp/agora114-git-complete-diagnostic.log",
+      "sha256": "b5ad7087725c9add74dac891fb57b4d28e38ad9f868648621b217f46b0b89e40"
+    },
+    {
+      "path": "/private/tmp/agora114-git-complete-trace.json",
+      "sha256": "ad1b7f15fcb95ebc9b90f3bbf35865f8bfeae121875a5ea88fdd890bde8e5ef8"
+    },
+    {
+      "path": "/private/tmp/agora114-repair-typecheck.log",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+    },
+    {
+      "path": "/private/tmp/agora114-repair-lint.log",
+      "sha256": "f64c56959e3779d820bec177282ca206e8984575d41eb6a4c95d2754884a032a"
+    },
+    {
+      "path": "/private/tmp/agora114-repair-test.log",
+      "sha256": "261c2b48029dddf5e247d2b79f152d2ab963e217ccbf2ce6d7213ff0ad68aedd"
+    },
+    {
+      "path": "/private/tmp/agora114-repair-tools.log",
+      "sha256": "ab899e19f20b5216b60b24949db1bfbb912cf573046311bbb9f2f251dab1fa45"
+    },
+    {
+      "path": "/private/tmp/agora114-repair-host.log",
+      "sha256": "22cc46cecf37298062b90973de7b370fa9870c96eb6a2a680c3e542929c3eeca"
+    }
+  ],
+  "repair": {
+    "authorization": "Leader requested review and fixes; existing commit/push/PR authorization remains active.",
+    "change": "Set fileParallelism=false in the root Vitest configuration to isolate test files sharing the host.",
+    "preserved": [
+      "All test files and assertions",
+      "Original test deadlines",
+      "Internal scenario worker concurrency",
+      "OpenCode Go deepseek-v4-flash real-model tests"
+    ],
+    "gitDiagnostic": {
+      "tests": 29,
+      "passed": 29,
+      "seconds": 13.5,
+      "conflictMs": 885,
+      "recoveryMs": 1007,
+      "topLevelCommands": 422,
+      "totalGitSeconds": 1.477809,
+      "slowestGitSeconds": 0.015936,
+      "instrumentation": "Temporary shell wrapper sets GIT_TRACE2_EVENT and execs /usr/bin/git; no simulated results.",
+      "finding": "No Git command stall reproduced. Historical individual timeout locations remain inconclusive."
+    },
+    "static": {
+      "typecheck": "passed",
+      "lint": "passed"
+    },
+    "bundleInputComparison": {
+      "checked": 350,
+      "mismatches": []
+    },
+    "g7": {
+      "changedFilesScanned": 52,
+      "leaks": 0
+    },
+    "fullRegression": {
+      "command": "pnpm test",
+      "status": "passed",
+      "files": 185,
+      "passedFiles": 185,
+      "tests": 1328,
+      "passed": 1328,
+      "failed": 0,
+      "skipped": 0,
+      "nodeTests": 7,
+      "seconds": 783.85,
+      "gitConflictMs": 824,
+      "liveModel": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "harnessMs": 13762,
+        "summaryMs": 13528,
+        "lruMs": 376537,
+        "status": "passed"
+      }
+    },
+    "g5": {
+      "tools": {
+        "status": "passed",
+        "bundle": "/private/tmp/agora114-install-d492Jp/installed/Agora.app",
+        "arch": "arm64",
+        "checks": [
+          "bundle integrity",
+          "node version",
+          "npm version",
+          "pnpm version",
+          "git version",
+          "npm preparation",
+          "npm dependency and lifecycle",
+          "npm incompatible project blocked",
+          "pnpm preparation",
+          "pnpm dependency and lifecycle",
+          "pnpm incompatible project blocked",
+          "real linked worktree",
+          "worktree cleanup",
+          "signed native helper write/read",
+          "signed native helper rejects traversal"
+        ]
+      },
+      "host": {
+        "status": "passed",
+        "checks": [
+          "production host readiness",
+          "production preload status",
+          "production renderer isolation",
+          "closing window preserves background service",
+          "native duplicate launch cannot spawn service",
+          "native second launch focuses current window",
+          "concurrent restarts share one operation",
+          "restart replaces a running process after its exit",
+          "restart replaces and revokes the old session",
+          "production host waits for process exit",
+          "fresh session after explicit restart",
+          "crash replaces project surface with failure UI"
+        ],
+        "afterStop": {
+          "state": "stopped",
+          "code": null,
+          "canRestart": true,
+          "exitCode": 0,
+          "signalCode": null
+        },
+        "keychainRemoved": true
+      }
+    }
+  }
+}

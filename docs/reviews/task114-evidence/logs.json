@@ -1,0 +1,122 @@
+[
+  {
+    "path": "/private/tmp/agora114-tools-red.log",
+    "bytes": 1215,
+    "sha256": "24c0fe86524de20d8797e7e1162aefc09800090b5ae45186e3297ad85778b6b1"
+  },
+  {
+    "path": "/private/tmp/agora114-upgrade-red.log",
+    "bytes": 1252,
+    "sha256": "4ff6b7c1429498a6fad84f47c982ceeb45feed6a9b937ed45ee5272dfccaf43b"
+  },
+  {
+    "path": "/private/tmp/agora114-cache-red.log",
+    "bytes": 1303,
+    "sha256": "e2e3fedb2f191d410ed5bcfe1ad5895fadf43466f894ea5cf57ebfec396635f3"
+  },
+  {
+    "path": "/private/tmp/agora114-npm-config-red.log",
+    "bytes": 1633,
+    "sha256": "9ae9359c421c00e9c48f28e003ab054a83a4a4039caefcca88be7a57f28eb950"
+  },
+  {
+    "path": "/private/tmp/agora114-npm-config-green.log",
+    "bytes": 285,
+    "sha256": "795b95c7d66310ecba96a0380391caca6d6ea02c887dc931a346b52a4e09ddeb"
+  },
+  {
+    "path": "/private/tmp/agora114-partial-range-red.log",
+    "bytes": 1566,
+    "sha256": "0730366a954a27823756c5494b73e54751a6846c7cd6ed0134cc65f476c5b3a7"
+  },
+  {
+    "path": "/private/tmp/agora114-backups-red.log",
+    "bytes": 4086,
+    "sha256": "cccd540feb5b957f92b6d154ff09fd9e0f2b2b05e0f6b0931714d5f36eb9ada2"
+  },
+  {
+    "path": "/private/tmp/agora114-component-red.log",
+    "bytes": 1412,
+    "sha256": "0b614fb111f3732cfb46784ea014b2caacd442f860903c416f2bd92c962b0eef"
+  },
+  {
+    "path": "/private/tmp/agora114-component-green.log",
+    "bytes": 298,
+    "sha256": "92918ddfc5401113e5742c11faa1e0872c73a51817103d7482fa68e654d466ee"
+  },
+  {
+    "path": "/private/tmp/agora114-navigation-red.log",
+    "bytes": 2844,
+    "sha256": "38e12bcefe3dba2a3f0bc330d7ff634b242a6aac406ddb28ba31536afe98bf50"
+  },
+  {
+    "path": "/private/tmp/agora114-navigation-green.log",
+    "bytes": 288,
+    "sha256": "a489c9cce87081ae946d992dea76cc9af4a84aa433b7c192c77db3e8129cda93"
+  },
+  {
+    "path": "/private/tmp/agora114-full-test.log",
+    "bytes": 31039,
+    "sha256": "4ea92e100821cc156497c7d85356e24cedec1f448ed1079f8a87d117d4af0ced"
+  },
+  {
+    "path": "/private/tmp/agora114-full-test-final.log",
+    "bytes": 28411,
+    "sha256": "1ae6fd9561a7f66587ab98e5b7f4bfe637a1ead57e5a8c829d5a1196af760394"
+  },
+  {
+    "path": "/private/tmp/agora114-host-final.log",
+    "bytes": 2324,
+    "sha256": "0fa39cfd5f19fb424406a96c55fac4576394e120fdd4ca3b814133e693f03629"
+  },
+  {
+    "path": "/private/tmp/agora114-host-diagnosis.log",
+    "bytes": 1280,
+    "sha256": "65ce9c5add6a367c66e58b723215c04509508404adf556a26b8a08c9952cef7f"
+  },
+  {
+    "path": "/private/tmp/agora114-build-verified.log",
+    "bytes": 4766,
+    "sha256": "bab63b9da5bca6b842ccac525f0f066c61e102cbb4eb657ed170c636b3f92037"
+  },
+  {
+    "path": "/private/tmp/agora114-host-verified.log",
+    "bytes": 1549,
+    "sha256": "ff794a50dd0fbc2ba9ad937dcc6a17b005574c4ebc4b3189cfeab4a802ddf55f"
+  },
+  {
+    "path": "/private/tmp/agora114-tools-verified.log",
+    "bytes": 918,
+    "sha256": "32797043e9917971a6df7f5638cc7e8681b2a88d9ee6ed3c16189ab9063bd1b4"
+  },
+  {
+    "path": "/private/tmp/agora114-full-test-verified.log",
+    "bytes": 29941,
+    "sha256": "7c37fb77bf62ca18dc49e5326c195776b59e3290fc582076e4a57c68225fa065"
+  },
+  {
+    "path": "/private/tmp/agora114-media-verified.log",
+    "bytes": 50,
+    "sha256": "1609ababa53f25be48f924601b77bbf24489b57d5c3f68f0e68db73001227c8d"
+  },
+  {
+    "path": "/private/tmp/agora114-install-verified.log",
+    "bytes": 280,
+    "sha256": "242909151cdb4a5f13c2fb6b681b7177a5f96610276667fad18aa362fcf66957"
+  },
+  {
+    "path": "/private/tmp/agora114-typecheck-verified.log",
+    "bytes": 76,
+    "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+  },
+  {
+    "path": "/private/tmp/agora114-lint-verified.log",
+    "bytes": 46,
+    "sha256": "fb97ace8dbed479d35d4b76e3930030fe033f946bbbe1e7160e47acb209c97a4"
+  },
+  {
+    "path": "/private/tmp/agora114-installed-host.log",
+    "bytes": 1282,
+    "sha256": "b32a58d20565af362b6155b7181b9ae2ac0e61e2fb981b3bf9e153bcb85455aa"
+  }
+]

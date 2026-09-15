@@ -7,6 +7,7 @@ import { controlPath, keychainStore } from '../../web/scripts/local-process.mjs'
 import { createPreviewServer } from './preview-server.js';
 import { credentialService } from './protocol.js';
 import { acquireState, initializeFormat } from './storage.js';
+import { verifyToolchain } from './toolchain-installation.js';
 
 interface SystemStore {
   read(): Promise<string | undefined>;
@@ -22,6 +23,7 @@ export interface ServiceConfig {
   webRoot: string;
   helper: string;
   capability: string;
+  toolchainRoot?: string;
 }
 interface Dependencies {
   system?: SystemStore;
@@ -77,6 +79,9 @@ export class DesktopService {
   }
 
   async #start() {
+    const toolchain = this.config.toolchainRoot
+      ? await verifyToolchain(this.config.toolchainRoot)
+      : undefined;
     this.#owner = await acquireState(this.config.stateRoot);
     const control = createControlServer((socket) => socket.destroy());
     await new Promise<void>((resolve, reject) => {
@@ -138,7 +143,7 @@ export class DesktopService {
     if (!credentials) throw new Error('credentials_uninitialized');
     this.#preview = createPreviewServer(
       this.config.capability,
-      () => ({ credentials }),
+      () => ({ credentials, ...(toolchain ? { toolchain } : {}) }),
       this.#app.getRequestHandler(),
     );
     await new Promise<void>((resolve, reject) => {

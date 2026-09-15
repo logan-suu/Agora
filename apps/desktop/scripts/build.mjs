@@ -4,13 +4,30 @@ import { cp, lstat, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { catalog } from './toolchain-catalog.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const cache = resolve(process.argv[2] ?? '');
-const revision = process.argv[3] === '--revision' ? process.argv[4] : undefined;
-if (!(process.argv.length === 3 || (process.argv.length === 5 && revision)))
-  throw new Error('Usage: build.mjs <verified-download-directory> [--revision <git-ref>]');
-const build = await mkdtemp(join(tmpdir(), 'agora113-build-'));
+const flags = process.argv.slice(3);
+const option = (name) => {
+  const index = flags.indexOf(name);
+  return index < 0 ? undefined : flags[index + 1];
+};
+if (
+  flags.length % 2 ||
+  flags.some((value, index) => index % 2 === 0 && !['--revision', '--arch'].includes(value)) ||
+  new Set(flags.filter((_, index) => index % 2 === 0)).size !== flags.length / 2 ||
+  !process.argv[2]
+)
+  throw new Error(
+    'Usage: build.mjs <verified-download-directory> [--revision <git-ref>] [--arch arm64|x64]',
+  );
+const revision = option('--revision');
+const arch = option('--arch') ?? process.arch;
+catalog(arch);
+if (process.platform !== 'darwin' || process.arch !== arch)
+  throw new Error('native_target_build_required');
+const build = await mkdtemp(join(tmpdir(), 'agora114-build-'));
 console.log(build);
 const source = join(build, 'source');
 await mkdir(source);
@@ -81,19 +98,15 @@ await writeFile(
     2,
   ),
 );
-for (const [name, hash] of [
-  ['node.tar.gz', '40e5607e5ecb3db9192723776da2d75d966260fc74a7a9e731c1bd67dda96bc8'],
-  ['electron.zip', '49b91ef265c603c8888500f807484b63816069c30f87ba2b403e7c87f0f45035'],
-]) {
+for (const artifact of catalog(arch)) {
+  const bytes = await readFile(join(cache, artifact.name));
   if (
-    createHash('sha256')
-      .update(await readFile(join(cache, name)))
-      .digest('hex') !== hash
+    bytes.length > artifact.maxBytes ||
+    createHash('sha256').update(bytes).digest('hex') !== artifact.sha256
   )
     throw new Error('download_hash_mismatch');
 }
-if (process.platform !== 'darwin' || process.arch !== 'arm64')
-  throw new Error('arm64_validation_build_only');
+await writeFile(join(build, 'downloads.json'), JSON.stringify(catalog(arch), null, 2));
 const tools = join(build, 'tools');
 await mkdir(tools);
 execFileSync('/usr/bin/tar', [
@@ -119,6 +132,9 @@ execFileSync('/usr/bin/tar', [
   '-C',
   pnpmRoot,
 ]);
+const gitRoot = join(build, 'git');
+await mkdir(gitRoot);
+execFileSync('/usr/bin/tar', ['-xzf', join(cache, 'git.tar.gz'), '-C', gitRoot]);
 const env = {
   HOME: process.env.HOME,
   USER: process.env.USER,
@@ -126,6 +142,7 @@ const env = {
   PATH: `${tools}/bin:/usr/bin:/bin:/usr/sbin:/sbin`,
   NEXT_TELEMETRY_DISABLED: '1',
   CI: 'true',
+  MACOSX_DEPLOYMENT_TARGET: '13.5',
 };
 function run(args) {
   execFileSync(node, args, { cwd: source, env, stdio: 'inherit', timeout: 600000 });
@@ -138,6 +155,15 @@ run([pnpm, '--filter', '@agora/desktop', 'build']);
 run([pnpm, '--filter', '@agora/web', 'build']);
 const zipDir = join(build, 'electron');
 await mkdir(zipDir);
-await cp(join(cache, 'electron.zip'), join(zipDir, 'electron-v44.3.0-darwin-arm64.zip'));
-run(['apps/desktop/scripts/package.mjs', source, tools, zipDir, join(build, 'output')]);
+await cp(join(cache, 'electron.zip'), join(zipDir, `electron-v44.3.0-darwin-${arch}.zip`));
+run([
+  'apps/desktop/scripts/package.mjs',
+  source,
+  tools,
+  zipDir,
+  join(build, 'output'),
+  gitRoot,
+  pnpmRoot,
+  arch,
+]);
 console.log(`BUILD_COMPLETE=${build}`);

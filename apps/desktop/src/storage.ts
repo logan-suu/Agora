@@ -9,7 +9,8 @@ import {
   rename,
   unlink,
 } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
+import { assertClosedUpgrades } from './upgrades.js';
 
 export async function acquireState(path: string) {
   await mkdir(path, { recursive: true, mode: 0o700 });
@@ -32,8 +33,30 @@ export async function acquireState(path: string) {
   let released = false;
   return {
     root,
+    async assertHeld() {
+      if (released) throw new Error('state_owner_changed');
+      const rootInfo = await lstat(root);
+      if (
+        !rootInfo.isDirectory() ||
+        rootInfo.isSymbolicLink() ||
+        rootInfo.dev !== info.dev ||
+        rootInfo.ino !== info.ino
+      )
+        throw new Error('state_owner_changed');
+      const current = await lstat(lock);
+      if (current.dev !== identity.dev || current.ino !== identity.ino || current.isSymbolicLink())
+        throw new Error('state_owner_changed');
+    },
     async release() {
       if (released) return;
+      const rootInfo = await lstat(root);
+      if (
+        !rootInfo.isDirectory() ||
+        rootInfo.isSymbolicLink() ||
+        rootInfo.dev !== info.dev ||
+        rootInfo.ino !== info.ino
+      )
+        throw new Error('state_owner_changed');
       const current = await lstat(lock);
       if (current.dev !== identity.dev || current.ino !== identity.ino || current.isSymbolicLink())
         throw new Error('state_owner_changed');
@@ -45,14 +68,7 @@ export async function acquireState(path: string) {
 }
 
 export async function initializeFormat(root: string) {
-  const upgrade = join(dirname(root), 'upgrade');
-  try {
-    const info = await lstat(upgrade);
-    if (!info.isDirectory() || info.isSymbolicLink() || (await readdir(upgrade)).length)
-      throw new Error('upgrade_requires_quiescence');
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-  }
+  await assertClosedUpgrades(root);
   const path = join(root, 'desktop-format.json');
   let file: FileHandle | undefined;
   try {

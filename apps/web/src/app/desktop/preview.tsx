@@ -14,6 +14,7 @@ const credentialMessages: Record<string, string> = {
 
 export function DesktopPreview() {
   const [credentials, setCredentials] = useState('checking');
+  const [toolsReady, setToolsReady] = useState(false);
   const [connected, setConnected] = useState(false);
   useEffect(() => {
     const events = new EventSource('/api/desktop/events');
@@ -27,6 +28,13 @@ export function DesktopPreview() {
           typeof value.credentials === 'string'
         ) {
           setCredentials(value.credentials);
+          setToolsReady(
+            'toolchain' in value &&
+              value.toolchain !== null &&
+              typeof value.toolchain === 'object' &&
+              'state' in value.toolchain &&
+              value.toolchain.state === 'ready',
+          );
           setConnected(true);
         }
       } catch {
@@ -77,6 +85,17 @@ export function DesktopPreview() {
                 (credentials === 'checking'
                   ? 'Checking macOS Keychain…'
                   : 'Keychain needs attention. Saved credentials are retained; restart after recovery.')}
+            </p>
+          </div>
+        </div>
+        <div>
+          <span className={connected && toolsReady ? 'desktop-dot ready' : 'desktop-dot'} />
+          <div>
+            <h2>Development tools</h2>
+            <p>
+              {connected && toolsReady
+                ? 'Node, Git, npm, pnpm and native helpers are installed and verified.'
+                : 'Waiting for bundled tool verification…'}
             </p>
           </div>
         </div>

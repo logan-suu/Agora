@@ -103,3 +103,18 @@ export class ServiceLifecycle extends EventEmitter {
     return this.#stop;
   }
 }
+
+// Navigation can reject after a deliberate drain or after a newer service takes over.
+// Only the current ready service may turn that rejection into a visible failure.
+export async function observeServiceNavigation(
+  lifecycle: ServiceLifecycle,
+  navigation: Promise<unknown>,
+  isCurrent: () => boolean,
+  onFailure: () => Promise<void>,
+) {
+  try {
+    await navigation;
+  } catch {
+    if (lifecycle.state === 'ready' && isCurrent()) await onFailure();
+  }
+}

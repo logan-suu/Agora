@@ -5,7 +5,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { app, BrowserWindow, ipcMain, Menu, session } from 'electron';
 import { appId, desktopEnvironment, protocolVersion } from './protocol.js';
-import { ServiceLifecycle } from './service-lifecycle.js';
+import { observeServiceNavigation, ServiceLifecycle } from './service-lifecycle.js';
+import { verifyToolchain } from './toolchain-installation.js';
 import { secureSession, secureWindow, trustedFrame } from './window-security.js';
 
 export interface DesktopHostOptions {
@@ -150,6 +151,7 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
       if (quitting) return;
       await mkdir(dataDirectory, { recursive: true, mode: 0o700 });
       const tools = join(resourcesRoot, 'toolchains', `darwin-${process.arch}`);
+      await verifyToolchain(tools);
       const node = await executable(join(tools, 'node/bin/node'));
       const helper = await executable(join(tools, 'keychain'));
       if (quitting) return;
@@ -166,25 +168,40 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
       lifecycle = new ServiceLifecycle(child, {
         type: 'start',
         version: protocolVersion,
-        config: { stateRoot: join(dataDirectory, 'state'), webRoot, helper, capability },
+        config: {
+          stateRoot: join(dataDirectory, 'state'),
+          webRoot,
+          helper,
+          capability,
+          toolchainRoot: tools,
+        },
       });
-      lifecycle.on('ready', () => {
-        void show(lifecycle?.origin).catch(() => {
-          startupFailure = 'window_failed';
-          void show();
-        });
+      const active = lifecycle;
+      active.on('ready', () => {
+        void observeServiceNavigation(
+          active,
+          show(active.origin),
+          () => lifecycle === active && !quitting,
+          async () => {
+            startupFailure = 'window_failed';
+            await show().catch(() => {});
+          },
+        );
       });
       let failureShown = false;
-      lifecycle.on('changed', () => {
-        if (lifecycle?.state === 'failed' && !failureShown) {
+      active.on('changed', () => {
+        if (active === lifecycle && active.state === 'failed' && !failureShown) {
           failureShown = true;
           capability = undefined;
           void show().catch(() => {});
           if (!lifecycle.exited) void lifecycle.stop().catch(() => {});
         }
       });
-    } catch {
-      startupFailure = 'invalid_installation';
+    } catch (error) {
+      startupFailure =
+        error instanceof Error && /^toolchain_[a-z_]+$/.test(error.message)
+          ? error.message
+          : 'invalid_installation';
       await show();
     } finally {
       restarting = false;

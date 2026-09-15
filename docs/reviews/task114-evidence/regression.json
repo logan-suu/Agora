@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "command": "pnpm test",
+  "nodeTests": 7,
+  "vitestFiles": 185,
+  "vitestTests": 1328,
+  "failed": 0,
+  "skipped": 0,
+  "provider": "opencode-go",
+  "model": "deepseek-v4-flash",
+  "highlights": [
+    "ℹ tests 7",
+    "ℹ pass 7",
+    "ℹ fail 0",
+    "ℹ skipped 0",
+    "   ✓ G5 real-chain: HarnessExecutor over live Harness provider (opencode-go/deepseek-v4-flash) > runs one real turn, returns a done StepResult with the model reply as a messages mutation  9159ms",
+    "   ✓ G5 real-chain: closed-channel summary over live thin Harness (opencode-go/deepseek-v4-flash) > returns a strictly validated source-scoped summary without tools  15184ms",
+    "   ✓ G5 e2e: LRU cache task over live Harness provider (Phase 0 exit baseline) (opencode-go/deepseek-v4-flash) > runs Coordinator → CODER → TESTER to done with passing testResults and sandbox output  262930ms",
+    " Test Files  185 passed (185)",
+    "      Tests  1328 passed (1328)",
+    "   Start at  20:28:30",
+    "   Duration  264.19s (transform 5.20s, setup 0ms, collect 74.28s, tests 775.98s, environment 24ms, prepare 12.49s)"
+  ]
+}

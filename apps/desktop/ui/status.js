@@ -25,7 +25,9 @@ async function refresh() {
           ? 'Stopping Agora'
           : 'Starting Agora';
     detail.textContent =
-      guidance[status.code] ??
+      (typeof status.code === 'string' && status.code.startsWith('toolchain_')
+        ? `The bundled ${({ node: 'Node', npm: 'npm', pnpm: 'pnpm', git: 'Git', keychain: 'Keychain helper', files: 'file helper' })[status.code.split('_')[1]] ?? 'toolchain'} failed verification. Replace Agora with a complete download for this Mac. Global tools will not be used.`
+        : guidance[status.code]) ??
       (status.state === 'failed'
         ? 'The local service stopped unexpectedly. Your saved data is retained. Try again after it has exited.'
         : 'Preparing your local service…');
