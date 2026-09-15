@@ -1623,7 +1623,7 @@
             "11.4"
           ],
           "test_file": "tests/integration/phase11/phase11-exit.test.ts",
-          "notes": "任务类型：exit。Go通用测试缺失空reasoning_content已按既有规则修复，非空内容/原生配置/取消及并发隔离保持；原LRU和最终完整回归通过：Node7/7、Vitest189文件1340/1340，G3/G5/G7通过。此前两次HTTP400保留历史证据。干净macOS15本次获批忽略，DEF-018保留未验证。测试下载/临时产物已清理，清单/日志无损压缩留证。执行已授权提交/建PR，保持in_progress待人工合并。详情docs/task-history/11.5.md；docs/reviews/task115-phase11-exit.md。"
+          "notes": "任务类型：exit。PR #83已创建：https://github.com/logan-suu/Agora/pull/83（提交b433710），保持in_progress待人工合并。Go空reasoning_content兼容修复后，原LRU及完整回归通过：Node7/7、Vitest189文件1340/1340；G3/G5/G7通过，历史HTTP400与红绿证据保留。干净macOS15本次获批忽略，DEF-018保留未验证。测试下载/临时产物已清理，清单/日志无损压缩留证；版本及发布未授权。详情docs/task-history/11.5.md；docs/reviews/task115-phase11-exit.md。"
         }
       ]
     },

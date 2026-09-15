@@ -4,11 +4,11 @@
 
 ## 当前结论
 
-**修复后提交门禁已通过。** Go空思考字段回传已修复；原LRU实网复验及最终完整回归通过：Node7/7、Vitest189文件1340/1340，0失败/跳过，591.80秒；typecheck/lint通过。当前等待提交/PR人工合并，未发布。最终结果见[修复门禁记录](task115-evidence/reasoning-fix/results.json)；首次1336/1337及原样诊断失败保留在[历史提交门禁](task115-evidence/commit-gates/results.json)，不改写为通过。
+**修复后提交门禁已通过。** Go空思考字段回传已修复；原LRU实网复验及最终完整回归通过：Node7/7、Vitest189文件1340/1340，0失败/跳过，591.80秒；typecheck/lint通过。已创建[PR #83](https://github.com/logan-suu/Agora/pull/83)，等待人工合并，未发布。最终结果见[修复门禁记录](task115-evidence/reasoning-fix/results.json)；首次1336/1337及原样诊断失败保留在[历史提交门禁](task115-evidence/commit-gates/results.json)，不改写为通过。
 
 本轮完成新增出口跨模块测试及固定提交桌面候选构建；真实服务23项、Electron主进程12项、受管工具15项和安装介质3项通过。Safari下载的DMG保留quarantine，复制安装后在macOS App Translocation路径真实启动，界面显示服务、钥匙串和受管工具就绪；菜单退出后无本次应用/服务残留。
 
-完整`pnpm test`退出0：Node7/7，Vitest188文件1337/1337项，0失败/跳过，654.08秒；三项真实Go `deepseek-v4-flash`测试通过。typecheck/lint、索引及diff校验通过，待交付文件gitleaks脱敏扫描0发现。**[2026-09-15 Leader验收调整]** Leader随后明确“当前无干净 macOS 15设备，先忽略这个验收”。此前11.5适用出口实测通过，干净macOS15不再是当前阻塞项；修复后最终门禁以上方记录为准；DEF-018保持open仅表示实际未验证，最低15.0构建目标与对外披露保持。当前macOS26.5实测不冒充干净Mac验证。新增测试尚未提交/人工合并，任务仍in_progress，版本未确认，无tag/Release。
+完整`pnpm test`退出0：Node7/7，Vitest188文件1337/1337项，0失败/跳过，654.08秒；三项真实Go `deepseek-v4-flash`测试通过。typecheck/lint、索引及diff校验通过，待交付文件gitleaks脱敏扫描0发现。**[2026-09-15 Leader验收调整]** Leader随后明确“当前无干净 macOS 15设备，先忽略这个验收”。此前11.5适用出口实测通过，干净macOS15不再是当前阻塞项；修复后最终门禁以上方记录为准；DEF-018保持open仅表示实际未验证，最低15.0构建目标与对外披露保持。当前macOS26.5实测不冒充干净Mac验证。新增测试及Go修复已通过PR #83交付、尚未人工合并，任务仍in_progress，版本未确认，无tag/Release。
 
 ## Go提交回归修复
 
@@ -40,7 +40,7 @@
 | 钥匙串升级及拒绝恢复 | 复用11.4跨构建36项及锁定恢复19项实测；新候选Keychain helper、服务及local-process三文件与该证据目标逐字节相同；本轮另实测候选原生启动 | 未重新生成/改写旧证据；人工Deny点击未单独观察，已有原生denied与人类ACL授权证据 |
 | 干净macOS15设备 | 未验证，DEF-018保持open；当前11.5获批忽略，不再阻塞 | 最低15.0构建目标和实际macOS26.5范围披露不变；后续阶段不自动豁免 |
 | G3/G4 | typecheck、lint通过；完整回归Node7/7，Vitest188文件1337/1337项，0失败/跳过 | 保留所有原断言、期限、凭据及Go deepseek-v4-flash，未启动正式Benchmark |
-| 发布准备 | 英文说明草稿、固定候选验证及checksum已归档；测试二进制已按要求清理；只读查询当前GitHub Releases为空 | 应用内部版本仍0.0.0，发布版本待确认；未commit/push、人工合并、tag或Release |
+| 发布准备 | 英文说明草稿、固定候选验证及checksum已归档；测试二进制已按要求清理；只读查询当前GitHub Releases为空 | 应用内部版本仍0.0.0，发布版本待确认；已提交/推送并创建PR #83；未人工合并、tag或Release |
 
 ## 可复现入口
 
@@ -61,7 +61,7 @@
 
 ## 后续收尾条件
 
-干净macOS15项按Leader明确授权忽略。Go思考字段兼容修复及最终门禁已通过，按已获授权提交/创建PR后等待人工合并；发布版本及发布动作另行确认。按TEST-CLEANUP清理后的历史产物不再作为可下载附件；发布需重建、校验新hash和适用安装证据。
+干净macOS15项按Leader明确授权忽略。Go思考字段兼容修复及最终门禁已通过，已提交并创建PR #83，等待人工合并；发布版本及发布动作另行确认。按TEST-CLEANUP清理后的历史产物不再作为可下载附件；发布需重建、校验新hash和适用安装证据。
 
 ## 测试后清理完成
 

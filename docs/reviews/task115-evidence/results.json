@@ -189,7 +189,7 @@
     "release": false
   },
   "outstanding": [
-    "Test/documentation commit and human PR merge",
+    "Human merge of PR #83",
     "Confirm release version, final candidate identity, human dev-to-main merge and publication authorization"
   ],
   "cleanup": {
@@ -296,5 +296,13 @@
     "status": "passed",
     "evidence": "reasoning-fix/results.json",
     "priorFailureEvidence": "commit-gates/results.json"
+  },
+  "delivery": {
+    "commit": "b433710c4b707c47956a2e296788b10e3744c7d4",
+    "branch": "test/task-11-5-phase-exit",
+    "pr": "https://github.com/logan-suu/Agora/pull/83",
+    "base": "dev-1.0.0",
+    "humanMergePending": true,
+    "releasePublished": false
   }
 }

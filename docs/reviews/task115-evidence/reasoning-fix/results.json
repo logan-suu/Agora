@@ -1,6 +1,6 @@
 {
   "task": "11.5",
-  "status": "passed; awaiting commit and human PR merge",
+  "status": "passed; PR #83 awaits human merge",
   "fix": "Scoped Go regression transport adds empty reasoning_content only when absent, after native serialization.",
   "sourceRule": "docs/项目蓝图.md 2026-09-12 reasoning replay rule and §21 2026-09-15 regression compatibility note",
   "deterministic": {
@@ -104,5 +104,13 @@
       "sha256": "8800ce6e9d6ee675dd76377775033b293c5575d4a6a65c2e3bf58fe798e62e8d"
     }
   ],
-  "cleanup": "Test/runtime-owned fixtures disposed by test cleanup; no desktop redownload in this fix run; all temporary verification logs archived losslessly and removed."
+  "cleanup": "Test/runtime-owned fixtures disposed by test cleanup; no desktop redownload in this fix run; all temporary verification logs archived losslessly and removed.",
+  "delivery": {
+    "commit": "b433710c4b707c47956a2e296788b10e3744c7d4",
+    "branch": "test/task-11-5-phase-exit",
+    "pr": "https://github.com/logan-suu/Agora/pull/83",
+    "base": "dev-1.0.0",
+    "humanMergePending": true,
+    "releasePublished": false
+  }
 }
