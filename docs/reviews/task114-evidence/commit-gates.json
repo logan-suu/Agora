@@ -3,7 +3,7 @@
   "task": "11.4",
   "branch": "feat/task-11-4-managed-toolchains",
   "base": "8fb1f9055269e09853d98f265586be9afef994de",
-  "delivery": "gates-passed-pending-draft-pr",
+  "delivery": "draft-pr-created",
   "static": {
     "typecheck": "passed",
     "lint": "passed",
@@ -323,5 +323,13 @@
         "keychainRemoved": true
       }
     }
+  },
+  "pullRequest": {
+    "number": 82,
+    "url": "https://github.com/logan-suu/Agora/pull/82",
+    "draft": true,
+    "base": "dev-1.0.0",
+    "implementationCommit": "db31a6e",
+    "taskStatus": "in_progress"
   }
 }
