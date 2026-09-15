@@ -1,0 +1,25 @@
+{
+  "source": "docs/reviews/task114-evidence/supplemental/keychain-recovery.json",
+  "sourceScope": "36 cross-build checks and 19 independent lock/recovery checks with isolated native Keychain and explicit human ACL authorization",
+  "previousApp": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-BXVCI7/output/app/Agora-darwin-arm64/Agora.app",
+  "candidateApp": "/private/tmp/agora115-quarantine-hjdflp_a/installed/Agora.app",
+  "comparisons": [
+    {
+      "path": "Contents/Resources/toolchains/darwin-arm64/keychain",
+      "previousSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520",
+      "candidateSha256": "22bd06f6c897d86324616d7ad66a8e023ada6431ac41b5b70f61c8ff49223520"
+    },
+    {
+      "path": "Contents/Resources/service/apps/desktop/dist/service.js",
+      "previousSha256": "d765430aa6904f59a14c2b14ce02660e59ce8f7aa7b4e2947d01ffd65a3e84ab",
+      "candidateSha256": "d765430aa6904f59a14c2b14ce02660e59ce8f7aa7b4e2947d01ffd65a3e84ab"
+    },
+    {
+      "path": "Contents/Resources/service/apps/web/scripts/local-process.mjs",
+      "previousSha256": "e6a2b3168aa7b393af9bccce8d6f87824cd098c094e9617287b9ace04c74e244",
+      "candidateSha256": "e6a2b3168aa7b393af9bccce8d6f87824cd098c094e9617287b9ace04c74e244"
+    }
+  ],
+  "allEqual": true,
+  "boundary": "Reused prior observed denial/authorization/lock/recovery evidence for identical native helper and service bootstrap bytes. Current candidate separately passed native Keychain startup and actual quarantined app startup; human Deny click and a clean OS profile are not claimed."
+}

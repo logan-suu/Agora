@@ -120,6 +120,7 @@ it('retains Go tool identity when continuation frames clear it before the next r
     expect(requests).toHaveLength(2);
     const messages = requests[1]?.messages as {
       role: string;
+      reasoning_content?: string;
       tool_calls?: { id: string; function: { name: string } }[];
       tool_call_id?: string;
     }[];
@@ -127,6 +128,7 @@ it('retains Go tool identity when continuation frames clear it before the next r
       { id: 'call-probe', function: { name: 'probe' } },
     ]);
     expect(messages.find((m) => m.role === 'tool')?.tool_call_id).toBe('call-probe');
+    expect(messages.find((m) => m.role === 'assistant')?.reasoning_content).toBe('');
   } finally {
     await executor.dispose();
     globalThis.fetch = original;

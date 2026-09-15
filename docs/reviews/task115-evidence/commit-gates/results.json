@@ -1,0 +1,126 @@
+{
+  "task": "11.5",
+  "date": "2026-09-15",
+  "status": "failed; no commit, push or PR",
+  "base": "891bc93420b6e7df0e18cae8d930c4d15394c61f",
+  "typecheck": "passed",
+  "lint": "passed",
+  "test": {
+    "exitCode": 1,
+    "nodePassed": 7,
+    "vitestFilesPassed": 187,
+    "vitestFilesFailed": 1,
+    "vitestPassed": 1336,
+    "vitestFailed": 1,
+    "skipped": 0,
+    "durationSeconds": 568.03,
+    "failedTest": "packages/core/__tests__/e2e/lru-cache.test.ts",
+    "provider": "opencode-go",
+    "model": "deepseek-v4-flash",
+    "code": "INVALID_REQUEST",
+    "httpStatus": 400,
+    "reason": "The reasoning_content in the thinking mode must be passed back to the API."
+  },
+  "g5": {
+    "rebuiltFixedCommit": true,
+    "nativeChecksPassed": 23,
+    "toolChecksPassed": 15,
+    "productionKeychainAccessed": false,
+    "temporaryKeychainRemoved": true
+  },
+  "cleanup": {
+    "receipt": "../commit-cleanup/receipt.json",
+    "deletedTargets": 4,
+    "freeSpaceDeltaBytes": 2686701568
+  },
+  "logs": [
+    {
+      "path": "agora115-commit-typecheck.log.gz",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "compression": "gzip",
+      "archiveSha256": "f75ec57ddcc988a5d820f901f9692276cb5fc8d20b394e628da354c238ce38e7"
+    },
+    {
+      "path": "agora115-commit-build.log.gz",
+      "sha256": "ff0b2d9aa2c089b16960aa4cc3b4d41d94dba06042f476fe15fc4914ad1197d1",
+      "compression": "gzip",
+      "archiveSha256": "a20d1a94b5bb1bc89b6fbb017ef6529368e17553c3679a5fdbbd0a1d886ea6be"
+    },
+    {
+      "path": "agora115-commit-native.log.gz",
+      "sha256": "3b44c6730e528055794f6bf3177a6e9b3492308df5588dc66ff18cefe064df17",
+      "compression": "gzip",
+      "archiveSha256": "7967ec1e3cbedfc0252fde39c909498793cd2eb047f3052a5256a4dea4891917"
+    },
+    {
+      "path": "agora115-commit-tools.log.gz",
+      "sha256": "ed4973165f89ea3a7e7b5bbd12e0e113fb1b15abe97e8facdbe228efb1b89516",
+      "compression": "gzip",
+      "archiveSha256": "bf888880a224a719eb86cf2f1574bac500e831915531c3b77607c676966d8767"
+    },
+    {
+      "path": "agora115-commit-test.log.gz",
+      "sha256": "e0e48e3b8a10d221bd4a7fcd908f021a058e3779b021d1a6df068a55d146c478",
+      "compression": "gzip",
+      "archiveSha256": "5ed85d44a6c6a239cb355af829eaa7122b70e88744c64d600bcb34382ceb05d0"
+    },
+    {
+      "path": "agora115-commit-downloads.log.gz",
+      "sha256": "7d5abc8eb0d7bb6b9b3bf8d990f77c9d0f0372015445f79d123657fa7ffa0741",
+      "compression": "gzip",
+      "archiveSha256": "4026152736515a1b322640f4cf8409657c2e85e027140c3743c4ec8a407ef58c"
+    },
+    {
+      "path": "agora115-commit-lint.log.gz",
+      "sha256": "ddbb80bf918c6b6e0178be494c7d413f4e4d731e7736a6248d648e7919fae326",
+      "compression": "gzip",
+      "archiveSha256": "8edc2c509667f77dcfa32797d1a87d4394a11dbeb25b355fe22a00612404278b"
+    }
+  ],
+  "commit": null,
+  "pr": null,
+  "diagnostic": {
+    "status": "failure reproduced; precise trigger inconclusive",
+    "test": "original LRU test with passive fetch metadata observer",
+    "exitCode": 1,
+    "durationSeconds": 326.18,
+    "requests": 20,
+    "http200": 19,
+    "http400": 1,
+    "finalRequestMissingReasoningToolIndices": [
+      16,
+      24,
+      28,
+      33,
+      39
+    ],
+    "code": "INVALID_REQUEST",
+    "observation": "Nonempty reasoning is retained. Several requests containing absent reasoning fields returned 200 before request 20 returned 400. Original failure response metadata was not captured; an empty-field serialization trigger is not yet conclusively isolated.",
+    "rawContentCaptured": false,
+    "modelOrAssertionsChanged": false,
+    "artifacts": [
+      {
+        "source": "/private/tmp/agora115-probe.log",
+        "archived": "docs/reviews/task115-evidence/commit-gates/reasoning-probe.log.gz",
+        "sha256": "339117134d9e3c2b738462526100698d3b10313d96ac387ecc7c47a7eb52b230",
+        "compression": "gzip",
+        "archiveSha256": "840b8fe291d1e308e4ca3d48ae2a3e35467706264809a1fa7d43a62ae5af5fcd"
+      },
+      {
+        "source": "/private/tmp/agora115-reasoning-metadata.jsonl",
+        "archived": "docs/reviews/task115-evidence/commit-gates/reasoning-metadata.jsonl",
+        "sha256": "f3048c02c4bbc226f2a445e03f4ef8b813f444bc83495b58eeb5ef1d552fc73c"
+      },
+      {
+        "source": "/private/tmp/agora115-probe.setup.mjs",
+        "archived": "docs/reviews/task115-evidence/commit-gates/reasoning-probe-setup.txt",
+        "sha256": "ae6df8dde93f3ca6971004801266ec1d8faeef98932f6a21e097a70c0d9a3a06"
+      },
+      {
+        "source": "/private/tmp/agora115-probe.config.mjs",
+        "archived": "docs/reviews/task115-evidence/commit-gates/reasoning-probe-config.txt",
+        "sha256": "cd581d6d0ca456af729396dfd9415a7121fa4c85ce82f3fcbfad5e1d314747bf"
+      }
+    ]
+  }
+}

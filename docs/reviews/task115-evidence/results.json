@@ -1,0 +1,300 @@
+{
+  "task": "11.5",
+  "date": "2026-09-15",
+  "status": "in_progress",
+  "platform": {
+    "arch": "arm64",
+    "os": "macOS",
+    "version": "26.5",
+    "build": "25F71",
+    "cleanMachine": false,
+    "macOS15": "unverified; current Phase 11 acceptance explicitly waived by Leader on 2026-09-15; DEF-018 open"
+  },
+  "candidate": {
+    "commit": "891bc93420b6e7df0e18cae8d930c4d15394c61f",
+    "kind": "fixed-commit",
+    "buildRoot": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL",
+    "inputCount": 354,
+    "inputDifferences": [],
+    "manifests": [
+      {
+        "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/input.json",
+        "sha256": "193ed989ef292280cf0aec6fe8b1f7140fcbb3592bd86d3d741f0991f37eb511",
+        "archivedPath": "docs/reviews/task115-evidence/cleanup/0-input.json"
+      },
+      {
+        "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/downloads.json",
+        "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978",
+        "archivedPath": "docs/reviews/task115-evidence/cleanup/0-downloads.json"
+      },
+      {
+        "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/package-result.json",
+        "sha256": "6f9af5a35cbe5ed4d3ed001dad9490f670049b35674e5ccaa4036d32f56fcbf2",
+        "archivedPath": "docs/reviews/task115-evidence/cleanup/0-output-package-result.json"
+      },
+      {
+        "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/resource-manifest.json",
+        "sha256": "3ba38b20e2432757dc6cd204a55639f80c9c1b30944de77f51f10ddd04860568",
+        "archivedPath": "docs/reviews/task115-evidence/cleanup/0-output-resource-manifest.json.gz",
+        "compression": "gzip",
+        "archiveSha256": "469c18f5bc875d82672e52a9853c7ce7d300e047e427491024ee1f6f219dc28c"
+      },
+      {
+        "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/service-manifest.json",
+        "sha256": "67ab1d5117afe2dcc39b2b0ea9cda017d4a28c0bb8f30a8343fe8e9805913760",
+        "archivedPath": "docs/reviews/task115-evidence/cleanup/0-output-service-manifest.json.gz",
+        "compression": "gzip",
+        "archiveSha256": "101e119114ecc35c914f112b616bf7f58026fa1f171e1f0bc214f0b2290d4ef1"
+      },
+      {
+        "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora114-build-nGfIsL/output/trace-review.json",
+        "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03",
+        "archivedPath": "docs/reviews/task115-evidence/cleanup/0-output-trace-review.json"
+      }
+    ],
+    "availability": "Test binaries removed after evidence archival; publication requires rebuild and verification."
+  },
+  "checks": {
+    "exitIntegration": {
+      "passed": 3,
+      "scope": "real production state/integrity/upgrades/HTTP/SSE; controlled Next readiness and synthetic tool bytes, not G5"
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "fullRegression": {
+      "command": "pnpm test",
+      "exitCode": 0,
+      "node": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      "vitest": {
+        "files": 188,
+        "passed": 1337,
+        "failed": 0,
+        "skipped": 0,
+        "durationSeconds": 654.08
+      },
+      "provider": "opencode-go",
+      "model": "deepseek-v4-flash",
+      "formalBenchmarkRun": false
+    },
+    "service": 23,
+    "host": 12,
+    "tools": 15,
+    "media": 3,
+    "originalAppEntry": {
+      "method": "CUA launched the actual signed app bundle via its path",
+      "origin": "http://127.0.0.1:50810",
+      "visible": [
+        "Local service Ready",
+        "Secure credentials Available",
+        "Development tools verified",
+        "Project development Coming later"
+      ],
+      "quit": "Clicked Agora > Quit Agora; ps confirmed main 57057 and service 57114 both absent",
+      "scope": "existing current macOS profile, not a clean installation"
+    },
+    "quarantinedInstallation": {
+      "status": "passed",
+      "evidence": "quarantined-installation.json",
+      "scope": "Safari loopback download, real quarantine, current-user macOS26.5 App Translocation startup and normal quit; not clean Mac or GitHub hosting"
+    },
+    "keychainUpgrade": {
+      "status": "prior-evidence-reused",
+      "evidence": "keychain-evidence-reuse.json",
+      "helperAndServiceBytesEqual": true
+    },
+    "securityScan": {
+      "tool": "gitleaks dir --redact",
+      "findings": 0,
+      "scope": [
+        "docs/task-status.json",
+        "docs/详细设计方案.md",
+        "docs/reviews/task115-evidence/DMG-SHA256SUMS",
+        "docs/reviews/task115-evidence/SHA256SUMS",
+        "docs/reviews/task115-evidence/build-input.json",
+        "docs/reviews/task115-evidence/host.json",
+        "docs/reviews/task115-evidence/installation.json",
+        "docs/reviews/task115-evidence/keychain-evidence-reuse.json",
+        "docs/reviews/task115-evidence/logs/agora115-build.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-download-server.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-exit-tests-unrestricted.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-exit-tests.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-final-lint.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-full-test.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-media-validation.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-media.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-native-host.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-native-service.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-tools.log.gz",
+        "docs/reviews/task115-evidence/logs/agora115-typecheck.log.gz",
+        "docs/reviews/task115-evidence/media.json",
+        "docs/reviews/task115-evidence/package.json",
+        "docs/reviews/task115-evidence/preview.png",
+        "docs/reviews/task115-evidence/quarantined-installation.json",
+        "docs/reviews/task115-evidence/results.json",
+        "docs/reviews/task115-evidence/service.json",
+        "docs/reviews/task115-evidence/tools.json",
+        "docs/reviews/task115-phase11-exit.md",
+        "docs/reviews/task115-release-notes.md",
+        "docs/task-history/11.5.md",
+        "tests/integration/phase11/phase11-exit.test.ts"
+      ]
+    },
+    "postCleanup": {
+      "lint": "passed; 489 files",
+      "taskStatusCheck": "passed",
+      "diffCheck": "passed",
+      "evidenceSecurityScan": "gitleaks dir --redact; 4.28 MB; zero findings",
+      "archiveHashesVerified": 20,
+      "deletedPathsVerified": 14,
+      "fullRegression": "prior completed results reused; only documentation and cleanup since then"
+    }
+  },
+  "priorKeychainEvidence": "docs/reviews/task114-evidence/supplemental/keychain-recovery.json",
+  "release": {
+    "existingReleases": [],
+    "published": false,
+    "versionConfirmed": false
+  },
+  "failures": [
+    {
+      "stage": "exit tests in tool sandbox",
+      "result": "1 passed / 2 failed; independent Unix socket probe returned EPERM",
+      "resolution": "identical tests passed with local listening permission, assertions unchanged"
+    },
+    {
+      "stage": "quarantine copy verifier first attempt",
+      "result": "system Python lacks hashlib.file_digest; failed before mount/copy",
+      "resolution": "use compatible streaming SHA-256 in verifier"
+    },
+    {
+      "stage": "cleanup preflight permission review",
+      "result": "initial automatic approval review timed out before execution",
+      "resolution": "same authorized scope retried successfully"
+    },
+    {
+      "stage": "cleanup preflight download inventory",
+      "result": "additional checksum and package metadata found; no deletion performed",
+      "resolution": "inspected public metadata, explicitly included and archived it, verified all four archive hashes before deletion"
+    }
+  ],
+  "authorization": {
+    "plan": "Leader confirmed",
+    "macOS15": "Leader explicitly waived the unavailable clean macOS 15 check for current acceptance on 2026-09-15.",
+    "testCleanup": "Leader requested deletion of test downloads after each test to save disk space.",
+    "commitPushPR": true,
+    "release": false
+  },
+  "outstanding": [
+    "Test/documentation commit and human PR merge",
+    "Confirm release version, final candidate identity, human dev-to-main merge and publication authorization"
+  ],
+  "cleanup": {
+    "temporaryKeychainsRemoved": true,
+    "installerTestVolumesDetached": true,
+    "originalAndTranslocatedAppsExited": true,
+    "loopbackDownloadServerStopped": true,
+    "productionCredentials": "only normal preview startup; no secret values read by agent or credential reset",
+    "existingInstalledApp": "not overwritten",
+    "candidateAndDMGRetained": false,
+    "receipt": "cleanup/receipt.json",
+    "deletedTargets": 14,
+    "deletedAllocatedBytes": 7826972672,
+    "observedFreeSpaceDeltaBytes": 7148474368,
+    "status": "completed"
+  },
+  "logs": [
+    {
+      "path": "/private/tmp/agora115-build.log",
+      "sha256": "fb3d529fddce68479ce5e7afbeed3f709b98e5f6aa3d10bf9cf84f34d4aa62c8",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-build.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "b594337f5b5dde64130d51ae8269763efac56d57c30aad1f09034d1f02bd6b7b"
+    },
+    {
+      "path": "/private/tmp/agora115-exit-tests.log",
+      "sha256": "417016935b7e1be9701ff4a0197dcd144cc902f3192d68a370a09a5c0c408590",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-exit-tests.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "2027f118477b51b1341e81b33d0d8872a8f4597854f76a3d984d80d04b6ef64e"
+    },
+    {
+      "path": "/private/tmp/agora115-exit-tests-unrestricted.log",
+      "sha256": "d17d660eac845ec879b9a10cd6125e7841ba00c24ee0065207509cfbaa6d3c53",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-exit-tests-unrestricted.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "f055ceb8c87f7488339676748668ab6bbead8f6db88fb1242f235b9166a38a09"
+    },
+    {
+      "path": "/private/tmp/agora115-typecheck.log",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-typecheck.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "f75ec57ddcc988a5d820f901f9692276cb5fc8d20b394e628da354c238ce38e7"
+    },
+    {
+      "path": "/private/tmp/agora115-final-lint.log",
+      "sha256": "dba1bfec381d07f8b91914039ef3a6a1254644835788fab67bf049fa6b0f5de0",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-final-lint.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "6859ea187a7dc7cf94697b2aee39a7cead63e919191654253f5c234411574c04"
+    },
+    {
+      "path": "/private/tmp/agora115-full-test.log",
+      "sha256": "c6c46a3b5495809548a7e1f6086484140c554db3899419bacf312fb1c95c0fd2",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-full-test.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "d6aa92a0ab76e284df72833b7fd85b6424543461b632ee77da72a1205e675254"
+    },
+    {
+      "path": "/private/tmp/agora115-native-service.log",
+      "sha256": "19bfed5438a74296703cadfe5e9a30b0aeb6a1df2a4c34a79f32fbfc02cdb922",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-native-service.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "c515b170319e0ecf5e87e65ccde14b46dae0af05cd91f05aa1aba8652486afb7"
+    },
+    {
+      "path": "/private/tmp/agora115-native-host.log",
+      "sha256": "fe815f127de2bd4d7bfd67a7817cd494641c8933bb47ee1d20a3ff72770c9257",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-native-host.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "937a1e7f09642ea233288a36b300312e882132f431d8442d46082386fb23f94a"
+    },
+    {
+      "path": "/private/tmp/agora115-tools.log",
+      "sha256": "9b081a63fc989e687763448a2034322ad9d270f4543ea71c4082772d8c768bf1",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-tools.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "d43caefadc17403a112a1e66d6b1e4c75ce6d95e3096bb5048afe86e1abe1911"
+    },
+    {
+      "path": "/private/tmp/agora115-media.log",
+      "sha256": "7f4ab4add03ba2d9c6faf7d293989b719a38295b526cb53417c1cf3b6502e9d5",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-media.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "4f648fdefac1e439e8309ed9ee368b3c59fd73199458dfc1a8472e721336d339"
+    },
+    {
+      "path": "/private/tmp/agora115-media-validation.log",
+      "sha256": "dd53b79bcf686af05e53732f356b10c0493c678ae7bd8a5688ca74b2360e7145",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-media-validation.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "7afa1236adc53616794a075b60b8dffe0fc38ab104d6cf34b182796f647a1626"
+    },
+    {
+      "path": "/private/tmp/agora115-download-server.log",
+      "sha256": "0014ed1aaacc1786fbe4614c756a5b78d22b7fbb97c5ba9715b3b2829a639033",
+      "archivedPath": "docs/reviews/task115-evidence/logs/agora115-download-server.log.gz",
+      "compression": "gzip",
+      "archiveSha256": "16312dba87f637b2dc803c5f8be5827cd24aacaaf8719ea9c1a5af8818d6933a"
+    }
+  ],
+  "latestDeliveryGate": {
+    "status": "passed",
+    "evidence": "reasoning-fix/results.json",
+    "priorFailureEvidence": "commit-gates/results.json"
+  }
+}

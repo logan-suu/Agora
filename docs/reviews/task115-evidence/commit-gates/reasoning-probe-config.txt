@@ -1,0 +1,1 @@
+export default { test: { environment: 'node', fileParallelism: false, setupFiles: ['/private/tmp/agora115-probe.setup.mjs'], include: ['packages/core/__tests__/e2e/lru-cache.test.ts'] } };
