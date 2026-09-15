@@ -1,0 +1,113 @@
+{
+  "task": "12.2",
+  "date": "2026-09-15",
+  "baselineCommit": "4d4930df97fc5dc3f84ec25dc6518cfeaff21343",
+  "scope": "Leader-accepted documentation only; native runtime G5 remains in subsequent implementation tasks",
+  "platform": {
+    "os": "macOS",
+    "version": "26.5",
+    "arch": "arm64",
+    "node": "v24.20.0",
+    "pnpm": "9.15.9",
+    "vitest": "3.2.7"
+  },
+  "gates": {
+    "g1": {
+      "acceptedContractHash": "546904c30182055311083d126b27f21a2dae11b3622436cec9bb6faf38d88b90",
+      "localLinks": 20,
+      "sourceHashesVerified": 15,
+      "documents": 10,
+      "approvedScopeOnly": true
+    },
+    "typecheck": {
+      "command": "pnpm typecheck",
+      "exitCode": 0,
+      "logSha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+    },
+    "lint": {
+      "command": "pnpm lint",
+      "exitCode": 0,
+      "files": 491,
+      "logSha256": "efd82125c92e398a82fe9b85d3c5aea1d77d5f414411c481c8c204a6e21afaae"
+    },
+    "native": {
+      "command": "pnpm build:sandbox-native",
+      "exitCode": 0,
+      "logSha256": "15f0e79d2609c020672b91e2addd7c555a5aab46d34af02a74e31eb7c4700f15"
+    },
+    "tests": {
+      "command": "pnpm test",
+      "exitCode": 0,
+      "nodeTests": 7,
+      "vitestFiles": 189,
+      "vitestTests": 1340,
+      "failed": 0,
+      "skipped": 0,
+      "durationSeconds": 482.89
+    },
+    "g5": {
+      "taskSpecific": "Not applicable to this pure design delivery; L01-L18 are future native runtime acceptance",
+      "existingLiveRegression": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "lruMs": 100234,
+        "harnessMs": 8165,
+        "channelSummaryMs": 4730
+      },
+      "benchmark": "not run"
+    },
+    "sensitiveScan": {
+      "tool": "gitleaks 8.28.0",
+      "findings": 0,
+      "includesFullUncompressedTestLog": true,
+      "final": {
+        "files": 13,
+        "includesUncompressedTestLog": true,
+        "findings": 0
+      }
+    }
+  },
+  "testLog": {
+    "path": "pnpm-test.log.gz",
+    "sha256": "571c5c4d1934b74d13d7a32efdc0e2991716fa2b7cef7530d1c55aa0cb431859",
+    "uncompressedSha256": "b82d5dfb0ed63aa677e0c70f2c8f06fbf4acae827d74d0517c5c7b78fd9f2270",
+    "bytes": 26917
+  },
+  "sourceHashes": [
+    {
+      "path": "package.json",
+      "sha256": "6f4c9019070e5ab169ad8b9fedfa066f2e189f250681927d5cd5b990677bb4aa"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "269bc152808165552a17dcda5b8d06d951a7c80b3dc2ab798b8c483ddb762c39"
+    },
+    {
+      "path": "vitest.config.ts",
+      "sha256": "4c772e8e501a39749bc91fc34becca9142358ba21c8f13dcc2890e8cb763741c"
+    },
+    {
+      "path": "tests/helpers/live-model.ts",
+      "sha256": "efa3beff275ebc2b27743e9ab025421382f8e6eab9a4d9060be1295ab47df3a1"
+    },
+    {
+      "path": "tests/helpers/go-reasoning-transport.ts",
+      "sha256": "5c8b253e4ec3c98ebeb22a7083ff8df8b42564f9e4a1861054250271d1000e01"
+    },
+    {
+      "path": "packages/runtime/sandbox/native/secure-files.c",
+      "sha256": "d6bbe31d85bea5205a8acd556410f6c93271a9457e18a2a6dc5788c8581c8f1d"
+    },
+    {
+      "path": "packages/runtime/sandbox/build/secure-files-darwin-arm64",
+      "sha256": "8b0b86bca1c23059d5bf102196d0a1f8ce924772865f932ce4749335bd0facb3"
+    }
+  ],
+  "cleanup": {
+    "path": "cleanup.json",
+    "removed": 99,
+    "retainedOpenHandleDirectories": 8,
+    "retainedBytes": 1652545,
+    "downloadsCreated": 0
+  }
+}

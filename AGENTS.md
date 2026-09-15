@@ -1,6 +1,6 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.22
+**版本**：v2.23
 **生效日期**：2026-09-15
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
@@ -113,6 +113,8 @@ deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数
 ## 2. 硬红线（NEVER，违反必被拒绝）
 
 **阶段适用（D18）**：下列 Docker、KB Write-Block、六角色与现有工作区条款继续约束已交付路径；后续本机授权/稳定成员/知识维护按 D18 和对应任务先定稿再实装验收，不直接覆盖旧规则或关闭保护。R9接口调整也必须在设计任务先明确并同步。第一批不启用Librarian写入；新本机G7边界以获批授权、越界保护与真实验证为准，不将Worktree冒充OS沙箱。D18已批准Phase13退役Agora Docker后端且不兼容旧产品任务；Docker条款仅约束退役前实现，不要求永久保留。12.1定稿退役清单、13.3完成移除与本机回归替代、13.4在无Docker环境验收；研发任务历史保留，不自动删除本机旧数据。
+
+**[2026-09-15 D18阶段边界同步]** 12.2本机授权与工作区保护设计已获Leader接受，完整定义以[详细设计§12.2](docs/详细设计方案.md#local-execution-contract-122)为准。首版本机APFS、Seatbelt候选及弃用风险/失效关闭、带版本源码事务/固定输入验证和接管保全均按该契约实施；既有冻结方法不变，普通目录不伪造Git身份。设计接受不开放宿主执行、不将候选机制写成已验证；关键保护失败时停止依赖实现，不回退裸跑、LocalTemp或Docker。L01–L18由后续任务实测，现有安全点/投影/Leader终审与代码门禁保持。
 
 ```
 R1  任务共享 State 写入只走合并函数 applyMutations()（append/mergeById/set），禁止直接赋值共享 State。D17 下并行 agent step 只可提交具稳定身份的 append；WorkerState 注册与 status/safePoint 生命周期 merge 只由 WorkerRuntime 内部按当前 worker 分区生成，这些合法并行 op 必须可交换、幂等。当前 Subtask 全字段均属串行控制面；并行模型输出的 workers merge、set、subtask、他人 worker 分区与 collaboration 写入均禁止，只能走任务串行控制面或 D12 ProjectCollaborationStore revision CAS；禁止合并多个完整 AppState 快照

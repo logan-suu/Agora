@@ -1,0 +1,102 @@
+{
+  "recordedOn": "2026-09-15",
+  "taskId": "12.2",
+  "status": "draft-awaiting-leader-acceptance",
+  "sourceCommit": "4d4930df97fc5dc3f84ec25dc6518cfeaff21343",
+  "platform": {
+    "architecture": "arm64",
+    "macOS": "26.5"
+  },
+  "report": {
+    "path": "docs/reviews/task122-local-execution-contract.md",
+    "sha256": "47f19b22f91871f0f2ba66063e52cbb397045f3342d51031a9f6489b37bc9b3d"
+  },
+  "localLinks": [
+    "docs/task-history/12.2.md"
+  ],
+  "sources": [
+    {
+      "path": "packages/runtime/sandbox/src/sandbox-manager.ts",
+      "sha256": "0be21bd0b0b29672adea15c1890e00a3895057c4cd3e0532ff2a30b4040bba09",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/runtime/sandbox/src/recoverable-sandbox-manager.ts",
+      "sha256": "55420b7f8c7e238bf46abc205fad3337fd54edeb95fdffcfc2561e39586fef20",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/runtime/sandbox/src/secure-files.ts",
+      "sha256": "1a3041df4029eba62febc8f4dd08cb73a3d5ac22c38852db419694bb321ca4f7",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/runtime/sandbox/native/secure-files.c",
+      "sha256": "d6bbe31d85bea5205a8acd556410f6c93271a9457e18a2a6dc5788c8581c8f1d",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/runtime/sandbox/src/local-temp-sandbox.ts",
+      "sha256": "7d1619175cc8a7fee7a8d924aa466c98e7bb3334bf37c1dd581ebeb0942949cf",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/runtime/sandbox/src/workspace-adapter.ts",
+      "sha256": "fcce62fcd21daa452ed85a76907fafd6da403b06700b6ec67904039164e38edc",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/runtime/sandbox/src/types.ts",
+      "sha256": "2379ece3865cf144856d8879be9bd1965ed66e392bef55ca0f67496af924071f",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/tools/fs/src/fs-server.ts",
+      "sha256": "4b1aac976e613b86bccf1f976bc3d108bf956fe49571550180396b9e19370076",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/tools/fs/src/fs-service.ts",
+      "sha256": "e7b35469f141388c5f55c40865d7cd6aaee8feda487a151e3cbc3b8a17716731",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/tools/fs/src/worktree-registry.ts",
+      "sha256": "46ac02f027c7aee85e33d7792684602a592eefb79f8356205c2d062c16fc61fe",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/tools/git/src/git-service.ts",
+      "sha256": "806d95649cf0368324b79a5cb48bb31f2ced4baadf91c70c935ae6fe3cae7a7c",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "apps/web/src/server/task-composition.ts",
+      "sha256": "afcc9e904608bf7594d729191282c9fccc9fdb765a9bfc7e575e537d79f0da5f",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/core/domain/src/state.ts",
+      "sha256": "ae99a18c860ff5a1f5c5cb280385e6665abb8594bc5ccd27ccb80d1ab988e89e",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/core/domain/src/reducer.ts",
+      "sha256": "0434888ca2c40dfec17b331e9ca5b2c1db5a091c1d30e279fe72539bcae4e1c6",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "packages/runtime/state/src/json-task-state-store.ts",
+      "sha256": "32dfca037a63d7f30efdc300335c417339d8c473b0c5caa370b0df36661bce8d",
+      "unchangedFromHead": true
+    }
+  ],
+  "checks": {
+    "sourceInspection": "read-only",
+    "productCodeChanged": false,
+    "productTestsRun": false,
+    "runtimeG5": "not-run-design-only",
+    "modelCalls": 0,
+    "testDownloadsCreated": false
+  }
+}
