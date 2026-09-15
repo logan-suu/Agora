@@ -296,18 +296,15 @@ app.whenReady().then(async () => {
   } finally {
     window?.destroy();
     await cleanupSession?.();
-    if (child?.exitCode === null) {
-      if (child.connected) child.send({ type: 'stop', version: 1 }, () => {});
-      await Promise.race([
-        new Promise((resolve) => child.once('exit', resolve)),
-        new Promise((resolve) => setTimeout(resolve, 10000)),
-      ]);
-      if (child.exitCode === null) {
+    try {
+      const { cleanupChild } = await import('./validation-cleanup.mjs');
+      if (await cleanupChild(child)) {
         report.forcedCleanup = true;
         report.status = 'failed';
-        child.kill('SIGKILL');
-        await new Promise((resolve) => child.once('exit', resolve));
       }
+    } catch (error) {
+      report.status = 'failed';
+      report.cleanupError = error.message;
     }
     if (keychainCreated) {
       command('/usr/bin/security', ['delete-keychain', keychain]);

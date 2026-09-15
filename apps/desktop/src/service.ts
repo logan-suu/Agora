@@ -31,6 +31,11 @@ interface Dependencies {
 export class DesktopService {
   stopped = false;
   #stopping = false;
+  #signalStop!: () => void;
+  #stopRequested = new Promise<void>((resolve) => {
+    this.#signalStop = resolve;
+  });
+  #credentialOperations = new Set<Promise<unknown>>();
   #starting: Promise<{ origin: string; credentials: string } | undefined> | undefined;
   #closing: Promise<void> | undefined;
   #owner: Awaited<ReturnType<typeof acquireState>> | undefined;
@@ -58,6 +63,19 @@ export class DesktopService {
     return this.#starting;
   }
 
+  #credentialOperation<T>(operation: () => Promise<T>): Promise<T> {
+    const pending = Promise.resolve().then(() => {
+      if (this.#stopping) throw new Error('service_stopping');
+      return operation();
+    });
+    this.#credentialOperations.add(pending);
+    void pending.then(
+      () => this.#credentialOperations.delete(pending),
+      () => this.#credentialOperations.delete(pending),
+    );
+    return pending;
+  }
+
   async #start() {
     this.#owner = await acquireState(this.config.stateRoot);
     const control = createControlServer((socket) => socket.destroy());
@@ -74,10 +92,13 @@ export class DesktopService {
     const credentialsReady = new Promise<void>((resolve) => {
       complete = resolve;
     });
+    const system =
+      this.dependencies.system ?? keychainStore(this.config.helper, { service: credentialService });
     this.#boot = {
-      system:
-        this.dependencies.system ??
-        keychainStore(this.config.helper, { service: credentialService }),
+      system: {
+        read: () => this.#credentialOperation(() => system.read()),
+        create: (key) => this.#credentialOperation(() => system.create(key)),
+      },
       adopt: false,
       draining: false,
       drains: new Set(),
@@ -104,6 +125,7 @@ export class DesktopService {
     try {
       await Promise.race([
         credentialsReady,
+        this.#stopRequested,
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => reject(new Error('credentials_timeout')), 65000);
         }),
@@ -129,6 +151,8 @@ export class DesktopService {
 
   stop(): Promise<void> {
     this.#stopping = true;
+    this.#signalStop();
+    if (this.#boot) this.#boot.draining = true;
     this.#closing ??= (async () => {
       await this.#starting?.catch(() => {});
       if (this.#boot) {
@@ -140,6 +164,8 @@ export class DesktopService {
       await this.#preview?.close();
       await this.#app?.close();
       this.#app = undefined;
+      // Native operations already issued retain ownership until they have settled.
+      await Promise.allSettled([...this.#credentialOperations]);
       if (this.#control)
         await new Promise<void>((resolve, reject) =>
           this.#control?.close((error) => (error ? reject(error) : resolve())),

@@ -110,6 +110,28 @@ app.whenReady().then(async () => {
       path.join(root, 'window.png'),
       (await window.webContents.capturePage()).toPNG(),
     );
+    const previousChild = child;
+    const oldSession = window.webContents.session;
+    const oldUrl = window.webContents.getURL();
+    const restart = host.restart();
+    check('concurrent restarts share one operation', host.restart() === restart);
+    await restart;
+    await until(() => host.status().state === 'ready' || host.status().state === 'failed');
+    check(
+      'restart replaces a running process after its exit',
+      child.pid !== previousChild.pid &&
+        previousChild.exitCode === 0 &&
+        host.status().state === 'ready',
+    );
+    await until(() => host.getWindow()?.webContents.getURL().endsWith('/desktop'));
+    check(
+      'restart replaces and revokes the old session',
+      host.getWindow().webContents.session !== oldSession &&
+        (await oldSession.fetch(oldUrl).then(
+          () => false,
+          () => true,
+        )),
+    );
     await host.stop();
     check(
       'production host waits for process exit',
@@ -135,11 +157,15 @@ app.whenReady().then(async () => {
   } finally {
     await host?.stop()?.catch(() => {});
     host?.getWindow()?.destroy();
-    if (child?.exitCode === null && child?.signalCode === null) {
-      child.kill('SIGKILL');
-      await new Promise((resolve) => child.once('exit', resolve));
+    try {
+      const { cleanupChild } = await import('./validation-cleanup.mjs');
+      if (await cleanupChild(child)) {
+        report.status = 'failed';
+        report.forcedCleanup = true;
+      }
+    } catch (error) {
       report.status = 'failed';
-      report.forcedCleanup = true;
+      report.cleanupError = error.message;
     }
     if (keychainCreated) {
       execFileSync('/usr/bin/security', ['delete-keychain', keychain], { stdio: 'pipe' });

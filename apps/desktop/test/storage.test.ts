@@ -1,4 +1,14 @@
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -14,6 +24,23 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 describe('desktop state ownership', () => {
+  it('rejects existing non-private directories without acquiring or changing them', async () => {
+    for (const mode of [0o777, 0o750, 0o701]) {
+      const root = await directory();
+      await chmod(root, mode);
+      let error: unknown;
+      try {
+        const owner = await acquireState(root);
+        await owner.release();
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe('unsafe_state_path');
+      expect((await stat(root)).mode & 0o777).toBe(mode);
+      expect(await readdir(root)).toEqual([]);
+    }
+  });
   it('allows exactly one writer and preserves state after release', async () => {
     const root = await directory();
     const owner = await acquireState(root);

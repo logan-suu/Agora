@@ -87,3 +87,7 @@ AGORA_VALIDATION_APP=<absolute-Agora.app> <official-Electron-executable> apps/de
 ```
 
 构建缓存要求`node.tar.gz`、`electron.zip`、`pnpm.tgz`，精确来源版本/校验和在构建脚本和选型§12；构建前强制校验。验证脚本使用仅含系统基本变量的环境，不继承模型凭据。它们不创建发布、全局工具链或生产项目。
+
+## PR #81 后续评审修复
+
+初次交付未覆盖运行中restart、宽权限既存状态目录及启动/停服竞态。后续发现、修复与新增回归见[PR #81修复报告](task113-pr81-fixes.md)；本报告原始结果保留，不用于宣称这些后来发现的问题当时已经验收。

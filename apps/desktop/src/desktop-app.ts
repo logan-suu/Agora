@@ -33,6 +33,8 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
   let quitting = false;
   let quitComplete = false;
   let restarting = false;
+  let startupOperation: Promise<void> | undefined;
+  let restartOperation: Promise<void> | undefined;
   let startupFailure: string | undefined;
   let trustedUrls = new Set([pathToFileURL(statusFile).href]);
   let presentation = Promise.resolve();
@@ -41,7 +43,11 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
     return {
       state: startupFailure ? 'failed' : (lifecycle?.state ?? 'starting'),
       code: startupFailure ?? lifecycle?.failure ?? null,
-      canRestart: !restarting && (!lifecycle || lifecycle.exited),
+      canRestart:
+        !quitting &&
+        !restarting &&
+        !restartOperation &&
+        (!lifecycle || lifecycle.exited || lifecycle.state === 'ready'),
     };
   }
 
@@ -106,7 +112,36 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
     return resolved;
   }
 
-  async function start() {
+  function start(): Promise<void> {
+    startupOperation ??= startService().finally(() => {
+      startupOperation = undefined;
+    });
+    return startupOperation;
+  }
+
+  function restart(): Promise<void> {
+    if (quitting) return Promise.resolve();
+    restartOperation ??= (async () => {
+      await startupOperation;
+      const previous = lifecycle;
+      try {
+        await previous?.stop();
+      } catch (error) {
+        if (!previous?.exited) throw error;
+      }
+      if (!quitting) await start();
+    })()
+      .catch(async () => {
+        startupFailure = lifecycle?.failure ?? 'service_restart_failed';
+        await show();
+      })
+      .finally(() => {
+        restartOperation = undefined;
+      });
+    return restartOperation;
+  }
+
+  async function startService() {
     if (restarting || (lifecycle && !lifecycle.exited)) return;
     restarting = true;
     startupFailure = undefined;
@@ -201,7 +236,7 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
             {
               label: 'Restart Local Service',
               click: () => {
-                void start();
+                void restart();
               },
             },
             { type: 'separator' },
@@ -223,7 +258,7 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
       [
         'agora:restart',
         () => {
-          void start();
+          void restart();
           return null;
         },
       ],
@@ -243,5 +278,5 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
     await start();
   }
 
-  return { status, getWindow: () => window, stop: () => lifecycle?.stop(), restart: start };
+  return { status, getWindow: () => window, stop: () => lifecycle?.stop(), restart };
 }

@@ -1575,7 +1575,7 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-3.test.ts",
-          "notes": "任务类型：code。实现已提交e8294f5并推送，PR #81：https://github.com/logan-suu/Agora/pull/81（base dev-1.0.0），保持in_progress待人工合并。提交前typecheck/lint通过；pnpm test为Node7项+178文件1301项全过（Go/deepseek-v4-flash）。固定提交Packager构建及23项真实服务+9项主进程检查通过，临时Keychain已清理。证据：docs/task-history/11.3.md；docs/reviews/task113-desktop-lifecycle.md及task113-evidence/delivery.json。11.4/11.5的完整工具链/升级/Intel及最低系统干净安装仍待验收。",
+          "notes": "任务类型：code。PR #81：https://github.com/logan-suu/Agora/pull/81（base dev-1.0.0），保持in_progress待人工合并。按Leader要求修复5项评审问题；typecheck/lint通过，完整复跑Node7项+180文件1308项全过（Go/deepseek-v4-flash）。首次既有helper失败根因inconclusive，原测试及全量复跑通过。提交前真实包23项服务+12项主进程检查通过、临时Keychain已清理；将固定提交重建复验。证据：docs/task-history/11.3.md；docs/reviews/task113-pr81-fixes.md。11.4/11.5完整工具链/升级/Intel及最低系统安装仍待验收。",
           "last_updated": "2026-09-14"
         },
         {

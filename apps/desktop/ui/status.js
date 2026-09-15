@@ -2,6 +2,8 @@ const title = document.getElementById('title');
 const detail = document.getElementById('detail');
 const restart = document.getElementById('restart');
 const guidance = {
+  unsafe_state_path:
+    'The saved data directory has unsafe ownership, permissions, or a symbolic link. Restore a private directory owned by your account before retrying; no data was changed.',
   upgrade_requires_quiescence:
     'An upgrade needs recovery before this version can open your data. Use the compatible application to finish or recover the upgrade.',
   state_in_use:

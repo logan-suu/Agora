@@ -14,7 +14,12 @@ import { dirname, join } from 'node:path';
 export async function acquireState(path: string) {
   await mkdir(path, { recursive: true, mode: 0o700 });
   const info = await lstat(path);
-  if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== process.getuid?.())
+  if (
+    !info.isDirectory() ||
+    info.isSymbolicLink() ||
+    info.uid !== process.getuid?.() ||
+    (info.mode & 0o077) !== 0
+  )
     throw new Error('unsafe_state_path');
   const root = await realpath(path);
   const lock = join(root, '.desktop-owner');
