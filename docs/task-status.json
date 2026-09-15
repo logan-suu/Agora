@@ -123,7 +123,7 @@
     },
     {
       "id": "D18",
-      "rule": "四批为Phase11–30共20阶段110任务；每阶段3–7项，末项为集成/发布验收，全部任务依赖前阶段出口，旧新ID见计划§18.12。11/12限定预览，13完成本机闭环并退役Docker（12.1清单、13.3移除、13.4无Docker验收）；不兼容旧任务、不自动删数据，研发历史及D3等保护保留。G1–G7/人工PR合并不变，阶段done不等于发布，dev→main人工合并后经授权tag/Release，见§18.11。身份/项目CAS/跨聚合回执及D4保身份真Fork重取lease见详设§12.1。桌面Electron+独立Node，仅Apple Silicon/macOS15+；GitHub Releases交付ad-hoc DMG、校验和及未公证安装说明，不要求Developer ID/公证。保留真实隔离安装、干净目标系统、升级Keychain及state/workspace/配置证据连续性和持久迁移恢复，详设§12.3、蓝图§22.3.2、选型§12。设计接受不替代实装验收。",
+      "rule": "四批为Phase11–30共20阶段110任务；每阶段3–7项，末项为集成/发布验收，全部任务依赖前阶段出口，旧新ID见计划§18.12。11/12限定预览，13完成本机闭环并退役Docker（12.1清单、13.3移除、13.4无Docker验收）；不兼容旧任务、不自动删数据，研发历史及D3等保护保留。G1–G7/人工PR合并不变，阶段done不等于发布，dev→main人工合并后经授权tag/Release，见§18.11。身份/项目CAS/跨聚合回执及D4保身份真Fork重取lease见详设§12.1。桌面Electron+独立Node，仅Apple Silicon/macOS15+；GitHub Releases交付ad-hoc DMG、校验和及未公证安装说明，不要求Developer ID/公证。保留真实隔离安装、干净目标系统（11.4暂缓项见DEF-018）、升级Keychain及state/workspace/配置证据连续性和持久迁移恢复，详设§12.3、蓝图§22.3.2、选型§12。设计接受不替代实装验收。",
       "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18"
     }
   ],
@@ -1596,7 +1596,7 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-4.test.ts",
-          "notes": "任务类型：code。正式ESM ready死锁及生产fuse状态页加载已修复并推送0a03460，保留安全开关。当前arm64 macOS26.5已通过Safari隔离下载、Applications替换及用户授权启动。跨ad-hoc构建钥匙串恢复36项、独立锁定恢复19项通过；Leader系统ACL授权后，新helper读回原密钥、原密文不变且可解密，临时项已清理。G3、原生12项及完整回归Node7/7、187文件1330项通过（无跳过）；本轮仅证据更新，代码未变。用户无干净macOS15环境，该项及发布候选/阶段出口仍未完成。保持in_progress及草稿PR82：https://github.com/logan-suu/Agora/pull/82。证据：docs/reviews/task114-evidence/supplemental/keychain-recovery.json；docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
+          "notes": "任务类型：code。正式ESM ready死锁及生产fuse状态页加载已修复并推送0a03460，保留安全开关。当前arm64 macOS26.5已通过Safari隔离下载、Applications替换及用户授权启动。跨ad-hoc构建钥匙串恢复36项、独立锁定恢复19项通过；Leader系统ACL授权后，新helper读回原密钥、原密文不变且可解密，临时项已清理。G3、原生12项及完整回归Node7/7、187文件1330项通过（无跳过）；本轮仅证据更新，代码未变。Leader已批准暂缓macOS15干净环境补验（DEF-018），本轮不再等待该环境；保持未验证，11.5出口复核。发布候选/阶段出口仍按流程办理。保持in_progress及草稿PR82：https://github.com/logan-suu/Agora/pull/82。证据：docs/reviews/task114-evidence/supplemental/keychain-recovery.json；docs/reviews/task114-managed-toolchains.md；历史：docs/task-history/11.4.md。",
           "last_updated": "2026-09-14"
         },
         {

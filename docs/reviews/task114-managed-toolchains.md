@@ -49,6 +49,6 @@
 5. 运行`node apps/desktop/scripts/validate-media.mjs <media-directory>`核验ZIP和DMG，检查结果中的mounted=false；输出installedApp可传给`AGORA_VALIDATION_APP=<installedApp> pnpm --filter @agora/desktop exec electron <absolute-path>/apps/desktop/scripts/validate-host.cjs`，使用隔离真实Keychain运行生产组合根。
 6. 门禁命令为`pnpm typecheck`、`pnpm lint`、`pnpm test`；原始日志路径和hash见证据目录。证据快照本身不是可执行工具包，不把本机临时路径当跨机器依赖。
 
-## 未完成条件
+## 未完成条件与获批暂缓
 
-按Leader新决定，不再等待Developer ID/公证权限。当前Mac的隔离下载安装、不同ad-hoc构建钥匙串授权恢复均已通过；仍需Apple Silicon macOS15和干净无开发工具环境证据。未收到可用环境前不能补写通过。旧包安装失败及修复过程保留，修复DMG同一路径启动已通过。阶段出口、固定提交候选及人工PR合并仍按原流程执行。
+按Leader新决定，不再等待Developer ID/公证权限。当前Mac的隔离下载安装、不同ad-hoc构建钥匙串授权恢复均已通过；Leader已批准暂缓macOS15干净环境补验（DEF-018），本轮11.4交付不再等待该环境。该项仍未验证，15.0构建目标不变，11.5出口复核延期处理。旧包安装失败及修复过程保留，修复DMG同一路径启动已通过。阶段出口、固定提交候选及人工PR合并仍按原流程执行。

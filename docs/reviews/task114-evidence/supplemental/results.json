@@ -1,6 +1,6 @@
 {
   "date": "2026-09-14",
-  "status": "current-mac-installation-and-keychain-recovery-passed-clean-platform-unverified",
+  "status": "current-mac-validation-passed-clean-macos15-deferred-by-leader",
   "host": {
     "os": "macOS 26.5",
     "build": "25F71",
@@ -2362,7 +2362,7 @@
     }
   },
   "remaining": [
-    "Clean Apple Silicon macOS 15 environment unavailable; user requested current Mac only",
+    "DEF-018: Leader deferred clean macOS15 validation for task11.4; unverified, reassess at task11.5 exit.",
     "Fixed-commit release candidate and human PR merge"
   ],
   "initialPending": [
@@ -2382,5 +2382,12 @@
     "crossBuildChecks": 36,
     "independentLockChecks": 19,
     "humanSystemAuthorizationConfirmed": true
+  },
+  "approvedDeferral": {
+    "id": "DEF-018",
+    "source": "docs/deferred-items.json",
+    "instruction": "先跳过macOS 15 干净环境",
+    "blocksCurrentSupplement": false,
+    "verified": false
   }
 }
