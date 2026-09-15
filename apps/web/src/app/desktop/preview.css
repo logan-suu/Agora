@@ -1,0 +1,116 @@
+.desktop-preview {
+  max-width: 1056px;
+  min-height: 100vh;
+  margin: auto;
+  padding: 34px 52px 24px;
+  display: flex;
+  flex-direction: column;
+}
+.desktop-preview header,
+.desktop-preview footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.desktop-wordmark {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.06em;
+}
+.desktop-wordmark > span {
+  color: #79aaff;
+}
+.desktop-tag {
+  font-size: 12px;
+  border: 1px solid var(--border);
+  padding: 7px 12px;
+  border-radius: 20px;
+  color: var(--text-secondary);
+}
+.desktop-intro {
+  margin: 54px 0 34px;
+}
+.desktop-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: #79aaff;
+}
+.desktop-intro h1 {
+  font-size: clamp(32px, 4.4vw, 52px);
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  line-height: 1.13;
+  margin: 18px 0;
+}
+.desktop-intro > p:last-child {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-size: 14px;
+}
+.desktop-checks {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.desktop-checks > div {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.desktop-checks > div:last-child {
+  border: 0;
+}
+.desktop-checks h2 {
+  font-size: 14px;
+  margin: 0 0 6px;
+  font-weight: 550;
+}
+.desktop-checks p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+.desktop-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.desktop-dot.ready {
+  background: var(--green);
+  box-shadow: 0 0 0 5px #4ac26b10;
+}
+.desktop-check-label {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.desktop-preview footer {
+  margin-top: auto;
+  padding-top: 40px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+@media (max-width: 700px) {
+  .desktop-preview {
+    padding: 24px;
+  }
+  .desktop-intro {
+    margin-top: 36px;
+  }
+  .desktop-wide {
+    display: none;
+  }
+  .desktop-check-label {
+    display: none;
+  }
+  .desktop-preview footer {
+    flex-wrap: wrap;
+  }
+}

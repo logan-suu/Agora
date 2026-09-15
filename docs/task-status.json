@@ -1561,7 +1561,7 @@
           "id": "11.3",
           "title": "实现 Electron 应用壳与本地服务生命周期",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2",
             "docs/详细设计方案.md §12.3",
@@ -1575,7 +1575,7 @@
             "10.7"
           ],
           "test_file": "tests/integration/phase11/phase11-3.test.ts",
-          "notes": "任务类型：code。复用现有 UI/后端/Harness，应用启动无需命令行；验证进程边界、重复启动、状态目录、凭据保护及后端故障可见。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
+          "notes": "任务类型：code。PR #81：https://github.com/logan-suu/Agora/pull/81（base dev-1.0.0）；修复提交4b8767f已推送，保持in_progress待人工合并。5项有效评审问题已修复；typecheck/lint通过，完整复跑Node7项+180文件1308项全过（Go/deepseek-v4-flash）。首次既有helper错误根因inconclusive，原测试及全量复跑通过。固定提交构建与23项真实服务+12项主进程检查通过，临时Keychain已清理。证据：docs/task-history/11.3.md；docs/reviews/task113-pr81-fixes.md及task113-evidence/pr81-fixes.json。另2条构建评论保留复核说明；11.4/11.5完整工具链/升级/Intel及最低系统安装仍待验收。",
           "last_updated": "2026-09-14"
         },
         {

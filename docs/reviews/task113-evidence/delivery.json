@@ -1,0 +1,87 @@
+{
+  "date": "2026-09-14",
+  "pr": "https://github.com/logan-suu/Agora/pull/81",
+  "sourceCommit": "e8294f596d0f06b3fae6a081f52f7d98c1f2ef20",
+  "inputKind": "fixed-commit",
+  "inputFiles": 333,
+  "inputSha256": "b7527b017627d209a033ad17b1f85e4538ab95b9f6d9168c304db26eb98b86d9",
+  "buildRoot": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-r1LU1r",
+  "package": {
+    "app": "/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-r1LU1r/output/app/Agora-darwin-arm64/Agora.app",
+    "arch": "arm64",
+    "minimumSystem": "15.0",
+    "signing": "ad-hoc-validation-only",
+    "fuses": {
+      "0": 48,
+      "1": 49,
+      "2": 48,
+      "3": 48,
+      "4": 49,
+      "5": 49,
+      "6": 48,
+      "7": 48,
+      "8": 49,
+      "version": "1"
+    },
+    "resources": 10163,
+    "bytes": 323583844
+  },
+  "resourceManifestSha256": "2e1b8d4abc52589df462eccd7edca48a9b9c0eb7bc247ec02fcc6379d0dc39f7",
+  "runtime": {
+    "status": "passed",
+    "checks": [
+      "production Next instrumentation and isolated native Keychain",
+      "reject unauthenticated HTTP",
+      "reject cross-origin HTTP",
+      "block product endpoint tasks",
+      "block product endpoint messages",
+      "block product endpoint commands",
+      "block product endpoint channels",
+      "block product endpoint traces",
+      "block product endpoint model-settings",
+      "block product endpoint stream",
+      "React hydration and authenticated EventSource",
+      "preview content and no project controls",
+      "isolated renderer and limited preload",
+      "validated top-frame IPC",
+      "external windows denied",
+      "external navigation denied",
+      "untrusted window IPC rejected",
+      "CSP blocks inline handler and emits violation",
+      "retired session denies new connections",
+      "graceful stop and actual process exit",
+      "Keychain identity retained after stop",
+      "state format persisted",
+      "production service entry refuses future format before credential initialization"
+    ],
+    "keychainRemoved": true,
+    "expectedCspViolationCount": 1
+  },
+  "host": {
+    "status": "passed",
+    "checks": [
+      "production host readiness",
+      "production preload status",
+      "production renderer isolation",
+      "closing window preserves background service",
+      "native duplicate launch cannot spawn service",
+      "native second launch focuses current window",
+      "production host waits for process exit",
+      "fresh session after explicit restart",
+      "crash replaces project surface with failure UI"
+    ],
+    "keychainRemoved": true
+  },
+  "commitGates": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "nodeTests": 7,
+    "vitestFiles": 178,
+    "vitestTests": 1301,
+    "seconds": 106.13,
+    "realProvider": "opencode-go",
+    "realModel": "deepseek-v4-flash",
+    "secretMatches": 0
+  },
+  "scope": "arm64 macOS 26.5; ad-hoc validation only; 11.4/11.5 installation and release gates remain"
+}
