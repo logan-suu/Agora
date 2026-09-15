@@ -1,0 +1,141 @@
+{
+  "date": "2026-09-14",
+  "pr": "https://github.com/logan-suu/Agora/pull/81",
+  "sourceCommit": "4b8767f24b11a75e89b0a96c8b126118f4062a5f",
+  "inputKind": "fixed-commit",
+  "inputFiles": 337,
+  "inputSha256": "428cec3f1b03914e904efc7a9b9fe6315ee7ab1163557e8ddbd08b891971caf7",
+  "buildRoot": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO",
+  "package": {
+    "app": "/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora113-build-P6msiO/output/app/Agora-darwin-arm64/Agora.app",
+    "arch": "arm64",
+    "minimumSystem": "15.0",
+    "signing": "ad-hoc-validation-only",
+    "fuses": {
+      "0": 48,
+      "1": 49,
+      "2": 48,
+      "3": 48,
+      "4": 49,
+      "5": 49,
+      "6": 48,
+      "7": 48,
+      "8": 49,
+      "version": "1"
+    },
+    "resources": 10163,
+    "bytes": 323586221
+  },
+  "resourceManifestSha256": "8dbdd2cc228a4a5c314e3d28c53bc91ac74ff458302aba719d82bd815e3faaf2",
+  "runtime": {
+    "status": "passed",
+    "checks": [
+      "production Next instrumentation and isolated native Keychain",
+      "reject unauthenticated HTTP",
+      "reject cross-origin HTTP",
+      "block product endpoint tasks",
+      "block product endpoint messages",
+      "block product endpoint commands",
+      "block product endpoint channels",
+      "block product endpoint traces",
+      "block product endpoint model-settings",
+      "block product endpoint stream",
+      "React hydration and authenticated EventSource",
+      "preview content and no project controls",
+      "isolated renderer and limited preload",
+      "validated top-frame IPC",
+      "external windows denied",
+      "external navigation denied",
+      "untrusted window IPC rejected",
+      "CSP blocks inline handler and emits violation",
+      "retired session denies new connections",
+      "graceful stop and actual process exit",
+      "Keychain identity retained after stop",
+      "state format persisted",
+      "production service entry refuses future format before credential initialization"
+    ],
+    "keychainRemoved": true
+  },
+  "host": {
+    "status": "passed",
+    "checks": [
+      "production host readiness",
+      "production preload status",
+      "production renderer isolation",
+      "closing window preserves background service",
+      "native duplicate launch cannot spawn service",
+      "native second launch focuses current window",
+      "concurrent restarts share one operation",
+      "restart replaces a running process after its exit",
+      "restart replaces and revokes the old session",
+      "production host waits for process exit",
+      "fresh session after explicit restart",
+      "crash replaces project surface with failure UI"
+    ],
+    "keychainRemoved": true
+  },
+  "commitGates": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "nodeTests": 7,
+    "vitestFiles": 180,
+    "vitestTests": 1308,
+    "seconds": 132.0,
+    "realProvider": "opencode-go",
+    "realModel": "deepseek-v4-flash",
+    "secretMatches": 0
+  },
+  "firstRegressionFailure": {
+    "file": "tests/integration/phase9/phase9-filesystem-boundary.test.ts",
+    "symptom": "Docker escape assertion received secure file helper unavailable or failed",
+    "result": "1307 passed, 1 failed",
+    "cause": "inconclusive",
+    "unchangedTargetedRerun": "3 passed",
+    "unchangedFullRerun": "1308 passed"
+  },
+  "scope": "arm64 macOS 26.5; ad-hoc validation only; isolated temporary Keychains; 11.4/11.5 installation and release gates remain",
+  "reviewConversations": [
+    {
+      "commentId": 4010713421,
+      "threadId": "PRRT_kwDOUBGzms6iUzCk",
+      "replyUrl": "https://github.com/logan-suu/Agora/pull/81#discussion_r4010869541",
+      "resolved": false
+    },
+    {
+      "commentId": 4010713428,
+      "threadId": "PRRT_kwDOUBGzms6iUzCq",
+      "replyUrl": "https://github.com/logan-suu/Agora/pull/81#discussion_r4010869633",
+      "resolved": true
+    },
+    {
+      "commentId": 4010713446,
+      "threadId": "PRRT_kwDOUBGzms6iUzCy",
+      "replyUrl": "https://github.com/logan-suu/Agora/pull/81#discussion_r4010869771",
+      "resolved": true
+    },
+    {
+      "commentId": 4010713448,
+      "threadId": "PRRT_kwDOUBGzms6iUzCz",
+      "replyUrl": "https://github.com/logan-suu/Agora/pull/81#discussion_r4010869882",
+      "resolved": true
+    },
+    {
+      "commentId": 4010713455,
+      "threadId": "PRRT_kwDOUBGzms6iUzC4",
+      "replyUrl": "https://github.com/logan-suu/Agora/pull/81#discussion_r4010869997",
+      "resolved": true
+    },
+    {
+      "commentId": 4010713468,
+      "threadId": "PRRT_kwDOUBGzms6iUzDA",
+      "replyUrl": "https://github.com/logan-suu/Agora/pull/81#discussion_r4010870098",
+      "resolved": true
+    },
+    {
+      "commentId": 4010713477,
+      "threadId": "PRRT_kwDOUBGzms6iUzDG",
+      "replyUrl": "https://github.com/logan-suu/Agora/pull/81#discussion_r4010870242",
+      "resolved": false
+    }
+  ]
+}

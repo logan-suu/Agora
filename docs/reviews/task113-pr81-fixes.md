@@ -30,7 +30,7 @@
 
 ## 门禁与交付
 
-最终命令、构建提交和评论收尾证据追加在此处及[11.3历史](../task-history/11.3.md)。历史构建数据保持，不用本次结果覆盖旧失败或旧验证范围。
+本次完整证据保存在[pr81-fixes.json](task113-evidence/pr81-fixes.json)及[11.3历史](../task-history/11.3.md)。历史构建数据保持，不用本次结果覆盖旧失败或旧验证范围。
 
 ### 提交前检查
 
@@ -38,3 +38,13 @@
 - 首次完整回归：Node7项通过；Vitest179文件通过、1文件失败，1307项通过、1项失败，171.08秒。失败是既有Phase9 Docker文件边界测试：期待`escapes`，却收到`secure file helper unavailable or failed`。按并发helper执行失败、构建产物异常、边界逻辑回归三个假设排查；未改任何代码、断言、timeout或helper，单独运行原文件3项全过（3.90秒）。首次失败根因仍inconclusive，保留该记录，不以单测复跑替代全量门禁。
 
 - 最终完整复跑通过：Node7项、Vitest180文件1308项全过，132.00秒；保持opencode-go/deepseek-v4-flash，未skip、回退或改变断言/期限。首次helper错误未重现，原因仍inconclusive，不声称已修复该无关路径。typecheck/lint/diff检查及敏感文件/已配置secret扫描通过。进入功能修复提交，随后从固定提交重新构建并复验G5。
+
+### 固定提交交付
+
+- 修复提交`4b8767f24b11a75e89b0a96c8b126118f4062a5f`已推送同一PR。执行`node apps/desktop/scripts/build.mjs /private/tmp/agora-112-spike/downloads --revision 4b8767f`成功；337项输入全部与该提交及当前工作树hash一致。
+- 固定包真实服务23项、主进程12项全过；两个专用临时Keychain清理成功。Resources为10163文件/323586221字节，资源审计、fuses读取和逐层ad-hoc签名通过。输入及资源清单SHA256见JSON；未保存认证capability、CSP nonce或凭据。
+- 证据提交只改docs，不改变已验证应用与构建输入。PR保持开放，11.3保持in_progress，仍需人工合并；范围仅arm64/macOS26.5开发机，11.4/11.5出口不提前完成。
+
+### 评论收尾
+
+已按agora-pr-review以英文回复7条评论，只resolve实际修复的5条。两条构建评论保持open：调用者传入缓存参数不接受修改；Git mode稳健性建议未实现。逐条评论/回复URL及解决状态见JSON。
