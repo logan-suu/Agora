@@ -1,6 +1,6 @@
 # Task 12.3 实现与验收审查
 
-状态：Task 12.3当前明确范围的实现与验收已就绪，G1/G3/G4/G5/G6/G7通过；macOS15仅按本次Leader例外处理。Leader已明确授权提交/推送/建PR，正在交付；人工合并前任务保持in_progress。
+状态：Task 12.3当前明确范围的实现与验收已就绪，G1/G3/G4/G5/G6/G7通过；macOS15仅按本次Leader例外处理。实现提交`f11bde5`已推送，[PR #86](https://github.com/logan-suu/Agora/pull/86)已创建，目标`dev-1.0.0`；人工合并前任务保持in_progress。
 
 ## 交付行为
 
@@ -46,4 +46,4 @@ macOS15未验证，最低15.0构建目标不变。本轮未生成发布DMG，hel
 
 152个已确认停用的测试目录已清理，逻辑字节1523674，APFS可用空间观察增加25567232字节（不是独占回收量）。另31个本轮测试目录仍被PID76991的macOS Virtualization服务持有只读目录句柄，保守保留，不终止该系统/用户服务；清单及未删除原因见final-full-regression-cleanup.json。旧的证明不足目录、用户项目、全局缓存/正常依赖、已安装应用、产品状态/钥匙串不删除。原生夹具内下载/安装副本另由各自留证收尾，补充IPC夹具与临时控制器也已归档删除。
 
-没有新增实现或回归阻塞；Leader已按AGENTS.md §10授权commit/push/PR；仍须按§8.1.2由人类合并。英文PR草稿见[task123-pr-draft.md](task123-pr-draft.md)，目标为dev-1.0.0。未将本任务标done、未推进12.4或普通入口、未发布安装包。
+没有新增实现或回归阻塞；Leader已按AGENTS.md §10授权并完成commit/push/PR交付；仍须按§8.1.2由人类合并PR #86。英文PR草稿见[task123-pr-draft.md](task123-pr-draft.md)，目标为dev-1.0.0。未将本任务标done、未推进12.4或普通入口、未发布安装包。
