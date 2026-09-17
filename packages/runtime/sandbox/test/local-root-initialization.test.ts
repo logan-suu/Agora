@@ -41,7 +41,7 @@ for (const scenario of [
     writeFileSync(join(directory, 'sentinel'), 'fixed source');
     writeFileSync(join(base, 'external-secret'), 'fixed external secret');
     const source = resolve('packages/runtime/sandbox/native/local-root-inspection.c');
-    const folder = resolve('docs/reviews/task123-root-init-evidence');
+    const folder = resolve('test-outputs/reviews/task123-root-init-evidence');
     mkdirSync(folder, { recursive: true });
     const evidence: Record<string, unknown> = {
       base,

@@ -360,7 +360,7 @@ it('runs a fixed LRU task through live Harness and the controlled direct workspa
         'tests/integration/phase12/phase12-3-live-workspace.test.ts',
       ].map((path) => [path, hash(readFileSync(path))]),
     );
-    const folder = resolve('docs/reviews/task123-live-workspace-evidence');
+    const folder = resolve('test-outputs/reviews/task123-live-workspace-evidence');
     mkdirSync(folder, { recursive: true });
     const target = join(folder, `${basename(base)}.json`);
     writeFileSync(target, JSON.stringify(evidence, null, 2));

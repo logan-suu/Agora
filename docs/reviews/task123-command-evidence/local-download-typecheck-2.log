@@ -1,9 +1,0 @@
-
-> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
-> tsc --noEmit
-
-packages/runtime/sandbox/test/local-download.test.ts(33,45): error TS2345: Argument of type '{ address: string; family: number; }[]' is not assignable to parameter of type 'LookupAddress'.
-  Type '{ address: string; family: number; }[]' is missing the following properties from type 'LookupAddress': address, family
-packages/runtime/sandbox/test/local-download.test.ts(49,45): error TS2345: Argument of type '{ address: string; family: number; }[]' is not assignable to parameter of type 'LookupAddress'.
-  Type '{ address: string; family: number; }[]' is missing the following properties from type 'LookupAddress': address, family
- ELIFECYCLE  Command failed with exit code 2.

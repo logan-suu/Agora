@@ -45,7 +45,7 @@ export async function probeLocalCommandStop(scenario: Scenario) {
     throw new Error('Apple Silicon Seatbelt validation required; no fallback.');
   const base = mkdtempSync('/private/tmp/agora-task123-validation-');
   const root = statSync(base);
-  const directory = resolve('docs/reviews/task123-stop-evidence');
+  const directory = resolve('test-outputs/reviews/task123-stop-evidence');
   mkdirSync(directory, { recursive: true });
   const evidencePath = join(directory, `${scenario}-${base.split('-').at(-1)}.json`);
   const paths = [

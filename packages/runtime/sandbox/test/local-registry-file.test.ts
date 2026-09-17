@@ -154,7 +154,7 @@ async function fixture(
   const owner = await acquireState(root);
   const directory = join(root, 'local-workspaces'),
     file = join(directory, 'registry.json');
-  const folder = resolve('docs/reviews/task123-registry-evidence');
+  const folder = resolve('test-outputs/reviews/task123-registry-evidence');
   await mkdir(folder, { recursive: true });
   const evidence: Record<string, unknown> = {
     scenario: name,

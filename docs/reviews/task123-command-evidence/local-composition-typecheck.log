@@ -1,8 +1,0 @@
-
-> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
-> tsc --noEmit
-
-apps/web/src/server/local-task-composition.ts(132,181): error TS2339: Property 'sourceSessionId' does not exist on type 'HarnessSafePointIdentity'.
-apps/web/src/server/local-task-composition.ts(137,117): error TS2739: Type '{ kind: "control"; sessionId: string; }' is missing the following properties from type 'WorkspaceControlSession': checkpoint, close
-apps/web/src/server/local-task-composition.ts(143,81): error TS2739: Type '{ workspace: WorkspaceRefV1; sessionId: string; tools: { inspect: (id: string) => Promise<WorkspaceInspection>; read: (id: string, path: string) => Promise<...>; apply: (id: string, changes: readonly WorkspaceToolChange[], dependencies: readonly WorkspaceReadSetEntry[]) => Promise<...>; run: (id: string, request: Wo...' is missing the following properties from type 'WorkspaceWorkerSession': checkpoint, close
- ELIFECYCLE  Command failed with exit code 2.

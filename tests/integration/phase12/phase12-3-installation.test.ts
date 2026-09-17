@@ -46,7 +46,7 @@ it('installs a pinned tarball with managed pnpm offline and builds/tests in a pr
     sources: Object.fromEntries(sources.map((path) => [path, hash(readFileSync(path))])),
     scope: 'Fixed installation mechanism qualification, not a completed product install port',
   };
-  const initialEvidenceFolder = resolve('docs/reviews/task123-installation-evidence');
+  const initialEvidenceFolder = resolve('test-outputs/reviews/task123-installation-evidence');
   mkdirSync(initialEvidenceFolder, { recursive: true });
   writeFileSync(
     join(initialEvidenceFolder, `${base.split('-').at(-1)}.json`),
@@ -210,7 +210,7 @@ it('installs a pinned tarball with managed pnpm offline and builds/tests in a pr
     }
     inventory(base);
     evidence.files = entries;
-    const directory = resolve('docs/reviews/task123-installation-evidence');
+    const directory = resolve('test-outputs/reviews/task123-installation-evidence');
     mkdirSync(directory, { recursive: true });
     const report = join(directory, `${base.split('-').at(-1)}.json`);
     writeFileSync(report, JSON.stringify(evidence, null, 2));

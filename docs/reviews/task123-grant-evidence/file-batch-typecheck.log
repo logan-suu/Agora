@@ -1,9 +1,0 @@
-
-> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
-> tsc --noEmit
-
-tests/integration/phase12/phase12-3-grant.test.ts(440,47): error TS2322: Type '{ op: "put"; path: string; expected: FileVersionV1; contentRef: string; } | undefined' is not assignable to type 'FileChangeV1'.
-  Type 'undefined' is not assignable to type 'FileChangeV1'.
-tests/integration/phase12/phase12-3-grant.test.ts(440,64): error TS2322: Type '{ op: "put"; path: string; expected: FileVersionV1; contentRef: string; } | undefined' is not assignable to type 'FileChangeV1'.
-  Type 'undefined' is not assignable to type 'FileChangeV1'.
- ELIFECYCLE  Command failed with exit code 2.

@@ -61,7 +61,7 @@ export async function probeLocalCommandStart(scenario: Scenario) {
     throw new Error('Apple Silicon validation required; no fallback.');
   const base = mkdtempSync('/private/tmp/agora-task123-validation-');
   const identity = statSync(base);
-  const folder = resolve('docs/reviews/task123-start-evidence');
+  const folder = resolve('test-outputs/reviews/task123-start-evidence');
   mkdirSync(folder, { recursive: true });
   const evidencePath = join(folder, `${scenario}-${base.split('-').at(-1)}.json`);
   const sources = [

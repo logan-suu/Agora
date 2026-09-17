@@ -104,7 +104,7 @@ async function fixture(
         ].map(async (p) => [p, digest(await readFile(p))]),
       ),
     );
-    const folder = resolve('docs/reviews/task123-state-evidence');
+    const folder = resolve('test-outputs/reviews/task123-state-evidence');
     await mkdir(folder, { recursive: true });
     const target = join(folder, `${name}-${basename(base)}.json`);
     await writeFile(target, JSON.stringify(evidence, null, 2));

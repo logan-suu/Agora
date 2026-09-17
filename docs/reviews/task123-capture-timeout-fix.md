@@ -1,10 +1,12 @@
 # 12.3 helper 冷启动与身份捕获超时修复
 
+> 历史报告：保留架构/故障分析价值，不代表当前任务状态；文中已精简的旧相对证据路径从[固定历史提交](https://github.com/logan-suu/Agora/tree/05987ccbd20e6a55a553750577a900f44bc353d0/docs/reviews)按原路径读取。当前验收见[task123-acceptance.md](task123-acceptance.md)。
+
 日期：2026-09-16。Leader明确要求“审查原因并修复”；沿用固定临时目录及Go固定测试外发授权。使用agora-retry-task恢复、agora-sync-docs同步；未提交或开放产品入口。
 
 ## 原因与证据
 
-原失败发生于bootstrap发ready后、创建项目目标前：第一次control helper调用超时，尚未登记出生身份或调用release撤权检查。原始1477过/1失败、随后原文件12/12通过的记录保留于[上一轮报告](task123-workspace-identity-unit.md)，不能将那次单独重跑视为修复。
+原失败发生于bootstrap发ready后、创建项目目标前：第一次control helper调用超时，尚未登记出生身份或调用release撤权检查。原始1477过/1失败、随后原文件12/12通过的记录保留于[上一轮报告](https://github.com/logan-suu/Agora/blob/05987ccbd20e6a55a553750577a900f44bc353d0/docs/reviews/task123-workspace-identity-unit.md)，不能将那次单独重跑视为修复。
 
 按三假设审查：宿主调度/首次加载迟缓、过早查询/进程身份竞态、workspace改动的间接影响。失败路径11份源码与此前通过版本一致，尚未调用workspace registry。新增真实故障探针后又捕获自然超时：`capture-error-lblbgP.json`第一次超时且没有查询入口记录，第二次才进入探针并返回固定非超时错误；不能把所有超时都归为内核身份查询失败。
 

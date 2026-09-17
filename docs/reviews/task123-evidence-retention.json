@@ -1,0 +1,297 @@
+{
+  "baselineCommit": "05987ccbd20e6a55a553750577a900f44bc353d0",
+  "historicalEvidenceUrl": "https://github.com/logan-suu/Agora/tree/05987ccbd20e6a55a553750577a900f44bc353d0/docs/reviews",
+  "before": {
+    "files": 5489,
+    "bytes": 71383912
+  },
+  "retained": {
+    "files": 251,
+    "bytes": 4540403
+  },
+  "deleted": {
+    "files": 5238,
+    "bytes": 66843509
+  },
+  "groups": {
+    "task123-start-evidence": {
+      "files": 550,
+      "bytes": 14584520
+    },
+    "task123-command-evidence": {
+      "files": 297,
+      "bytes": 3791720
+    },
+    "task123-root-init-evidence": {
+      "files": 494,
+      "bytes": 3572330
+    },
+    "task123-registry-evidence": {
+      "files": 318,
+      "bytes": 1325571
+    },
+    "task123-transaction-evidence": {
+      "files": 575,
+      "bytes": 3581073
+    },
+    "task123-grant-evidence": {
+      "files": 852,
+      "bytes": 10886732
+    },
+    "task123-creation-evidence": {
+      "files": 349,
+      "bytes": 4398883
+    },
+    "task123-discovery-evidence": {
+      "files": 136,
+      "bytes": 2803955
+    },
+    "task123-state-evidence": {
+      "files": 370,
+      "bytes": 1653320
+    },
+    "task123-workspace-evidence": {
+      "files": 41,
+      "bytes": 996412
+    },
+    "task123-root-registration-evidence": {
+      "files": 229,
+      "bytes": 2833828
+    },
+    "task123-managed-node-evidence": {
+      "files": 8,
+      "bytes": 1374834
+    },
+    "task123-binding-evidence": {
+      "files": 246,
+      "bytes": 6475252
+    },
+    "task123-stop-evidence": {
+      "files": 240,
+      "bytes": 1952183
+    },
+    "task123-version-evidence": {
+      "files": 29,
+      "bytes": 91077
+    },
+    "task123-boundary-evidence": {
+      "files": 139,
+      "bytes": 317389
+    },
+    "task123-supervision-evidence": {
+      "files": 158,
+      "bytes": 2057005
+    },
+    "task123-isolation-evidence": {
+      "files": 62,
+      "bytes": 1258122
+    },
+    "task123-composition-evidence": {
+      "files": 13,
+      "bytes": 1316674
+    },
+    "task123-root-evidence": {
+      "files": 33,
+      "bytes": 89179
+    },
+    "task123-capture-evidence": {
+      "files": 39,
+      "bytes": 146517
+    },
+    "task123-result-evidence": {
+      "files": 36,
+      "bytes": 1003155
+    },
+    "task123-live-workspace-evidence": {
+      "files": 4,
+      "bytes": 146751
+    },
+    "task123-download-evidence": {
+      "files": 2,
+      "bytes": 2147
+    },
+    "task123-command-supervision-unit.md": {
+      "files": 1,
+      "bytes": 7484
+    },
+    "task123-command-isolation-unit.md": {
+      "files": 1,
+      "bytes": 5031
+    },
+    "task123-root-and-creation-unit.md": {
+      "files": 1,
+      "bytes": 4999
+    },
+    "task123-installation-evidence": {
+      "files": 4,
+      "bytes": 88775
+    },
+    "task123-command-supervision-review.md": {
+      "files": 1,
+      "bytes": 9970
+    },
+    "task123-local-registry-file-unit.md": {
+      "files": 1,
+      "bytes": 7576
+    },
+    "task123-file-transaction-unit.md": {
+      "files": 1,
+      "bytes": 7274
+    },
+    "task123-command-binding-unit.md": {
+      "files": 1,
+      "bytes": 8545
+    },
+    "task123-command-result-unit.md": {
+      "files": 1,
+      "bytes": 5777
+    },
+    "task123-command-stop-unit.md": {
+      "files": 1,
+      "bytes": 6338
+    },
+    "task123-command-start-unit.md": {
+      "files": 1,
+      "bytes": 7809
+    },
+    "task123-command-discovery-unit.md": {
+      "files": 1,
+      "bytes": 9288
+    },
+    "task123-state-binding-unit.md": {
+      "files": 1,
+      "bytes": 4721
+    },
+    "task123-pr-draft.md": {
+      "files": 1,
+      "bytes": 3062
+    },
+    "task123-workspace-identity-unit.md": {
+      "files": 1,
+      "bytes": 8231
+    }
+  },
+  "deletedPathsSource": "Compare baselineCommit with the cleanup commit for exact deleted paths and original Git blob identities.",
+  "otherTaskExactDuplicates": [
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/0-input.json",
+      "canonical": "docs/reviews/task115-evidence/build-input.json",
+      "sha256": "193ed989ef292280cf0aec6fe8b1f7140fcbb3592bd86d3d741f0991f37eb511",
+      "bytes": 54885
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/commit-cleanup/0-input.json",
+      "canonical": "docs/reviews/task115-evidence/build-input.json",
+      "sha256": "193ed989ef292280cf0aec6fe8b1f7140fcbb3592bd86d3d741f0991f37eb511",
+      "bytes": 54885
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/preview.png",
+      "canonical": "docs/reviews/task114-evidence/window.png",
+      "sha256": "ddc5b1ef7e60e1ac6ce4ec63648ac92d503cbd174b9f558baddfa63f7f07806e",
+      "bytes": 142518
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/2-result.json",
+      "canonical": "docs/reviews/task115-evidence/installation.json",
+      "sha256": "d26a7a4549009ae5591b42d6b78cf418b3818c818b917cc7a87dcfb0f4e4dd11",
+      "bytes": 277
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/host.json",
+      "canonical": "docs/reviews/task114-evidence/host.json",
+      "sha256": "c308d5d17759536a73dd5f75fbccf325d14e4d7d2a4a7dc6484bb09e1f4d97d6",
+      "bytes": 757
+    },
+    {
+      "removed": "docs/reviews/task114-evidence/installed-host.json",
+      "canonical": "docs/reviews/task114-evidence/host.json",
+      "sha256": "c308d5d17759536a73dd5f75fbccf325d14e4d7d2a4a7dc6484bb09e1f4d97d6",
+      "bytes": 757
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/6-result.json",
+      "canonical": "docs/reviews/task114-evidence/host.json",
+      "sha256": "c308d5d17759536a73dd5f75fbccf325d14e4d7d2a4a7dc6484bb09e1f4d97d6",
+      "bytes": 757
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/7-result.json",
+      "canonical": "docs/reviews/task115-evidence/tools.json",
+      "sha256": "2ffeef63c5bca2a3884c07a1e9fcca7caa2cfc06cf89dba939aeaac4a1532945",
+      "bytes": 635
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/5-result.json",
+      "canonical": "docs/reviews/task115-evidence/service.json",
+      "sha256": "eabe6b4e6ced054f8de1f12a0d18f3b5ec6b2e3e3461bc9e09194854ad21ac39",
+      "bytes": 1995
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/0-output-package-result.json",
+      "canonical": "docs/reviews/task115-evidence/package.json",
+      "sha256": "6f9af5a35cbe5ed4d3ed001dad9490f670049b35674e5ccaa4036d32f56fcbf2",
+      "bytes": 408
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/1-media.json",
+      "canonical": "docs/reviews/task115-evidence/media.json",
+      "sha256": "5f6f0d0fa3dd471fefc86db7f739268588c9ccb9a6af122f9a514d997ebc56db",
+      "bytes": 10520
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/1-SHA256SUMS",
+      "canonical": "docs/reviews/task115-evidence/SHA256SUMS",
+      "sha256": "417cd9449b75c057cb1e81fb51d7e7a801d77a6be9fafda204454825ea79a090",
+      "bytes": 178
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/commit-gates/agora115-commit-typecheck.log.gz",
+      "canonical": "docs/reviews/task115-evidence/logs/agora115-typecheck.log.gz",
+      "sha256": "f75ec57ddcc988a5d820f901f9692276cb5fc8d20b394e628da354c238ce38e7",
+      "bytes": 92
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/reasoning-fix/agora115-fixed-typecheck.log.gz",
+      "canonical": "docs/reviews/task115-evidence/logs/agora115-typecheck.log.gz",
+      "sha256": "f75ec57ddcc988a5d820f901f9692276cb5fc8d20b394e628da354c238ce38e7",
+      "bytes": 92
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/0-downloads.json",
+      "canonical": "docs/reviews/task114-evidence/downloads.json",
+      "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978",
+      "bytes": 1105
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/commit-cleanup/0-downloads.json",
+      "canonical": "docs/reviews/task114-evidence/downloads.json",
+      "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978",
+      "bytes": 1105
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/commit-cleanup/1-downloads.json",
+      "canonical": "docs/reviews/task114-evidence/downloads.json",
+      "sha256": "94e57985404346bc6701d03c336fde1d78bb2f08d2ccd9116b771900f02be978",
+      "bytes": 1105
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/commit-cleanup/0-output-trace-review.json",
+      "canonical": "docs/reviews/task115-evidence/cleanup/0-output-trace-review.json",
+      "sha256": "f25f2cd6bd5360aa9cc364436014d6770a3d9c4c7634ae925c90a83d2a43ad03",
+      "bytes": 3575
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/13-packager-metadata.json",
+      "canonical": "docs/reviews/task115-evidence/cleanup/12-packager-metadata.json",
+      "sha256": "302df8975fc9cec473b3736ad1ecc26cfdaac961333adef1feed91f23f0e85cd",
+      "bytes": 52
+    },
+    {
+      "removed": "docs/reviews/task115-evidence/cleanup/11-verified.json",
+      "canonical": "docs/reviews/task112-packaging-evidence/downloads.json",
+      "sha256": "aa0c8e3803c88f67ce9973d730c1f12c31e1aa80c338a8d0ef11f3b6e9801df3",
+      "bytes": 476
+    }
+  ]
+}

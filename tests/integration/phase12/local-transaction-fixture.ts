@@ -68,7 +68,7 @@ export async function exerciseLocalTransaction(scenario: Scenario) {
   const movedParent = join(base, 'moved-parent');
   const source = resolve('packages/runtime/sandbox/native/local-file-transaction.c');
   const helper = join(base, 'local-file-transaction');
-  const evidenceDirectory = resolve('docs/reviews/task123-transaction-evidence');
+  const evidenceDirectory = resolve('test-outputs/reviews/task123-transaction-evidence');
   mkdirSync(evidenceDirectory, { recursive: true });
   const evidencePath = join(evidenceDirectory, `${scenario}-${base.split('-').at(-1)}.json`);
   const evidence: Record<string, unknown> = {

@@ -1,9 +1,0 @@
-
-> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
-> tsc --noEmit
-
-packages/runtime/sandbox/src/local-registry-records.ts(350,9): error TS18046: 'r.workspaces' is of type 'unknown'.
-packages/runtime/sandbox/src/local-registry-records.ts(351,12): error TS7006: Parameter 'w' implicitly has an 'any' type.
-packages/runtime/sandbox/src/local-registry-records.ts(355,9): error TS18046: 'r.workspaces' is of type 'unknown'.
-packages/runtime/sandbox/src/local-registry-records.ts(356,12): error TS7006: Parameter 'w' implicitly has an 'any' type.
- ELIFECYCLE  Command failed with exit code 2.

@@ -1,6 +1,0 @@
-
-> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
-> tsc --noEmit
-
-packages/runtime/sandbox/src/local-binding-coordinator.ts(88,9): error TS2554: Expected 2-4 arguments, but got 5.
- ELIFECYCLE  Command failed with exit code 2.

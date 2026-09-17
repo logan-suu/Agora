@@ -31,7 +31,7 @@ export async function probeCommandIsolation(mode: 'native' | 'node' = 'native') 
   const identity = statSync(base);
   const source = resolve('packages/runtime/sandbox/native/local-command-isolation-probe.c');
   let executable = join(base, 'isolation-probe');
-  const directory = resolve('docs/reviews/task123-isolation-evidence');
+  const directory = resolve('test-outputs/reviews/task123-isolation-evidence');
   mkdirSync(directory, { recursive: true });
   const evidencePath = join(directory, `isolation-${base.split('-').at(-1)}.json`);
   const evidence: Record<string, unknown> = {

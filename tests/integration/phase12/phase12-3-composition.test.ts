@@ -536,7 +536,7 @@ it('runs local composition through a real D4 Fork and D16 fixed artifact', async
         'tests/integration/phase12/phase12-3-composition.test.ts',
       ].map((path) => [path, hash(readFileSync(path))]),
     );
-    const folder = resolve('docs/reviews/task123-composition-evidence');
+    const folder = resolve('test-outputs/reviews/task123-composition-evidence');
     mkdirSync(folder, { recursive: true });
     const target = join(folder, `${basename(base)}.json`);
     writeFileSync(target, JSON.stringify(evidence, null, 2));

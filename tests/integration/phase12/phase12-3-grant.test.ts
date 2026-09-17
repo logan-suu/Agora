@@ -190,7 +190,7 @@ console.log('fixed input build and test passed');
         identity: { dev: identity.dev, ino: identity.ino },
         startedAt: new Date().toISOString(),
       };
-      const initialEvidenceFolder = resolve('docs/reviews/task123-grant-evidence');
+      const initialEvidenceFolder = resolve('test-outputs/reviews/task123-grant-evidence');
       mkdirSync(initialEvidenceFolder, { recursive: true });
       writeFileSync(
         join(initialEvidenceFolder, `${scenario}-${basename(base)}.json`),
@@ -1634,7 +1634,7 @@ console.log('fixed input build and test passed');
           'tests/integration/phase12/phase12-3-grant.test.ts',
         ].map((p) => [p, hash(readFileSync(p))]),
       );
-      const folder = resolve('docs/reviews/task123-grant-evidence');
+      const folder = resolve('test-outputs/reviews/task123-grant-evidence');
       mkdirSync(folder, { recursive: true });
       const target = join(folder, `${scenario}-${basename(base)}.json`);
       writeFileSync(target, JSON.stringify(evidence, null, 2));

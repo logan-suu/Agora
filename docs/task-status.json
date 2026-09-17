@@ -128,7 +128,7 @@
     },
     {
       "id": "TEST-CLEANUP",
-      "rule": "每轮测试结束先归档结果/版本来源/hash/必要日志，确认进程与挂载停用、路径归属后删除测试专用下载、压缩包、解压构建安装副本及专用依赖目录；已确认遗留测试下载同样清理。保留用户明确指定的交付文件；不动用户项目、正常依赖、全局共享缓存、已安装应用、产品状态/钥匙串。记录删除路径及空间变化；已删候选发布前重建并复核，不声称旧附件仍存在。",
+      "rule": "每轮测试结束先归档结果/版本来源/hash/必要日志，确认进程与挂载停用、路径归属后删除测试专用下载、压缩包、解压构建安装副本及专用依赖目录；已确认遗留测试下载同样清理。保留用户明确指定的交付文件；不动用户项目、正常依赖、全局共享缓存、已安装应用、产品状态/钥匙串。记录删除路径及空间变化；已删候选发布前重建并复核，不声称旧附件仍存在。 每次创建/更新PR清理无后续用途的临时/重复/过时产物；原始输出写Git忽略的test-outputs，docs/reviews只留最小充分证据，历史材料用固定提交追溯并更新活动引用，不删唯一验收/未解决故障证据或重写历史。",
       "source": "docs/项目蓝图.md §21 TEST-CLEANUP；docs/task-tracking.md 写入规范；AGENTS.md §3.1.3"
     }
   ],
@@ -1689,7 +1689,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-3.test.ts",
-          "notes": "任务类型：code。当前范围实现/验收就绪：授权与版本MCP、官方Harness/D4真Fork、独立Tester、Leader终审、同版本归档/claim释放，生成候选事务及授权下载→禁网pnpm→固定依赖验证已实测。五helper构建/清单与启动探测完成；typecheck、585文件lint、桌面编译通过。最终7脚本+225文件/1748测试全绿0skip；Phase12为168项，额外IPC 1/1，609源码hash一致。首版仅精确直接/dev包计划，已有lock/config等明确不支持。152测试目录已清理，31个VM只读句柄目录保守保留；用户项目/应用未动。Leader仅跳过本次macOS15，DEF-018保留。提交f11bde5已推送，PR https://github.com/logan-suu/Agora/pull/86 待人工合并，保持in_progress；普通入口关闭。报告docs/reviews/task123-acceptance.md；完整证据docs/task-history/12.3.md。",
+          "notes": "任务类型：code。当前范围实现/验收就绪：授权与版本MCP、官方Harness/D4真Fork、独立Tester、Leader终审、同版本归档/claim释放，生成候选事务及授权下载→禁网pnpm→固定依赖验证已实测。五helper构建/清单与启动探测完成；typecheck、585文件lint、桌面编译通过。最终7脚本+225文件/1748测试全绿0skip；Phase12为168项，额外IPC 1/1，609源码hash一致。首版仅精确直接/dev包计划，已有lock/config等明确不支持。152测试目录已清理，31个VM只读句柄目录保守保留；用户项目/应用未动。Leader仅跳过本次macOS15，DEF-018保留。提交f11bde5已推送，PR https://github.com/logan-suu/Agora/pull/86 待人工合并，保持in_progress；普通入口关闭。已精简5258份证据/重复副本并固化PR清理规则；输出改至test-outputs，重跑7脚本+1748测试及37项/IPC补验全过，产品源码未变。报告docs/reviews/task123-acceptance.md；完整证据docs/task-history/12.3.md。",
           "last_updated": "2026-09-16"
         },
         {

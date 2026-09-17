@@ -46,4 +46,12 @@ macOS15未验证，最低15.0构建目标不变。本轮未生成发布DMG，hel
 
 152个已确认停用的测试目录已清理，逻辑字节1523674，APFS可用空间观察增加25567232字节（不是独占回收量）。另31个本轮测试目录仍被PID76991的macOS Virtualization服务持有只读目录句柄，保守保留，不终止该系统/用户服务；清单及未删除原因见final-full-regression-cleanup.json。旧的证明不足目录、用户项目、全局缓存/正常依赖、已安装应用、产品状态/钥匙串不删除。原生夹具内下载/安装副本另由各自留证收尾，补充IPC夹具与临时控制器也已归档删除。
 
-没有新增实现或回归阻塞；Leader已按AGENTS.md §10授权并完成commit/push/PR交付；仍须按§8.1.2由人类合并PR #86。英文PR草稿见[task123-pr-draft.md](task123-pr-draft.md)，目标为dev-1.0.0。未将本任务标done、未推进12.4或普通入口、未发布安装包。
+没有新增实现或回归阻塞；Leader已按AGENTS.md §10授权并完成commit/push/PR交付；仍须按§8.1.2由人类合并PR #86。英文交付说明见[PR #86](https://github.com/logan-suu/Agora/pull/86)，目标为dev-1.0.0。未将本任务标done、未推进12.4或普通入口、未发布安装包。
+
+## 证据精简与历史路径
+
+2026-09-16按Leader授权删除无后续用途的临时/重复/过时产物，统计见[精简记录](task123-evidence-retention.json)。当前保留最终验收证据；历史段落中的旧短路径/文件名如已删除，应从固定提交`05987ccbd20e6a55a553750577a900f44bc353d0`的原路径读取。测试原始输出已改至Git忽略的test-outputs/reviews，运行结束筛选必要证据，其余确认无用后清理。
+
+### 精简后的验证
+
+仅调整21份默认测试文件的证据输出前缀及独立IPC的输出目录创建；产品/runtime/build源码不变。主回归7脚本+1748测试通过（937.92秒，609输入hash匹配）；随后三个包内入口37项定向补验、IPC 1项通过，最终typecheck/lint通过。分步来源差异见[清理验证](task123-pr-cleanup-evidence/validation.json)。当前轮次的重复原始输出已删除，必要清理事实见同目录fixture-cleanup.json及regression-cleanup.json；31个未证明停用目录保持不动。

@@ -1,7 +1,0 @@
-{
-  "startedAt": "2026-09-16T17:18:18.466Z",
-  "node": "v24.20.0",
-  "provider": "opencode-go",
-  "model": "deepseek-v4-flash",
-  "scope": "Previously authorized fixed arithmetic, fictional chat and LRU regression; no user project or formal Benchmark"
-}

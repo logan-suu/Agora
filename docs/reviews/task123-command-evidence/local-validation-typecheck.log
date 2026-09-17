@@ -1,9 +1,0 @@
-
-> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
-> tsc --noEmit
-
-packages/core/domain/test/local-validation.test.ts(34,20): error TS2739: Type '{ workerId: string; role: "TESTER"; subtaskId: string; status: "done"; }' is missing the following properties from type 'WorkerState': executor, startedTs
-packages/core/domain/test/local-validation.test.ts(47,114): error TS2322: Type 'LocalValidationReceipt' is not assignable to type 'Record<string, unknown>'.
-  Index signature for type 'string' is missing in type 'LocalValidationReceipt'.
-packages/core/domain/test/local-validation.test.ts(91,26): error TS2412: Type 'undefined' is not assignable to type 'TestResults' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
- ELIFECYCLE  Command failed with exit code 2.

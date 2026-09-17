@@ -48,7 +48,7 @@ type Scenario =
 export async function probeLocalCommandBinding(scenario: Scenario) {
   const base = mkdtempSync('/private/tmp/agora-task123-validation-');
   const identity = statSync(base);
-  const folder = resolve('docs/reviews/task123-binding-evidence');
+  const folder = resolve('test-outputs/reviews/task123-binding-evidence');
   mkdirSync(folder, { recursive: true });
   const evidencePath = join(folder, `${scenario}-${base.split('-').at(-1)}.json`);
   const sources = [

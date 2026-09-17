@@ -1,6 +1,0 @@
-
-> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
-> tsc --noEmit
-
-tests/integration/phase12/local-command-discovery-fixture.ts(201,31): error TS2339: Property 'births' does not exist on type 'CommandJournalRecord'.
- ELIFECYCLE  Command failed with exit code 2.

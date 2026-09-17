@@ -45,7 +45,7 @@ for (const scenario of scenarios)
       moved = join(base, 'moved-project'),
       journalRoot = join(base, 'journal'),
       helper = join(base, 'transaction');
-    const folder = resolve('docs/reviews/task123-creation-evidence');
+    const folder = resolve('test-outputs/reviews/task123-creation-evidence');
     mkdirSync(folder, { recursive: true });
     mkdirSync(root);
     mkdirSync(join(root, '.agora-operations'), { mode: 0o700 });

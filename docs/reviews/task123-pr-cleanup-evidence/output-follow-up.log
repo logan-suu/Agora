@@ -1,0 +1,24 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/runtime/sandbox/test/local-root-initialization.test.ts (11 tests) 6709ms
+   ✓ initializes a registered staging directory without adopting existing data: normal  970ms
+   ✓ initializes a registered staging directory without adopting existing data: boundary-probe  538ms
+   ✓ initializes a registered staging directory without adopting existing data: existing  562ms
+   ✓ initializes a registered staging directory without adopting existing data: revoke  574ms
+   ✓ initializes a registered staging directory without adopting existing data: move-before  639ms
+   ✓ initializes a registered staging directory without adopting existing data: move-after  549ms
+   ✓ initializes a registered staging directory without adopting existing data: replay  641ms
+   ✓ initializes a registered staging directory without adopting existing data: missing-receipt  543ms
+   ✓ initializes a registered staging directory without adopting existing data: move-completion  539ms
+   ✓ initializes a registered staging directory without adopting existing data: replace-staging-completion  583ms
+   ✓ initializes a registered staging directory without adopting existing data: revoke-after  569ms
+ ✓ packages/runtime/sandbox/test/local-registry-file.test.ts (25 tests) 4544ms
+ ✓ packages/runtime/sandbox/test/local-root-inspection.test.ts (1 test) 539ms
+   ✓ inspects APFS identity without creating a staging directory or granting access  538ms
+
+ Test Files  3 passed (3)
+      Tests  37 passed (37)
+   Start at  21:46:15
+   Duration  12.32s (transform 123ms, setup 0ms, collect 173ms, tests 11.79s, environment 0ms, prepare 98ms)
+

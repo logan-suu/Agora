@@ -1,7 +1,0 @@
-{
-  "startedAt": "2026-09-16T18:11:19.415Z",
-  "node": "v24.20.0",
-  "provider": "opencode-go",
-  "model": "deepseek-v4-flash",
-  "scope": "Previously authorized fixed regression payloads only; no formal Benchmark"
-}

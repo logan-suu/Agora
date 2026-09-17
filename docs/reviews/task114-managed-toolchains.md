@@ -34,7 +34,7 @@
 | 真实模型 | 原Harness、频道摘要、LRU闭环均使用Go `deepseek-v4-flash`；原断言/期限不变，正式Benchmark未运行 | 同上 |
 | 完整工具链G5 | 15项通过：包内版本/依赖准备、npm/pnpm真实安装和生命周期/测试脚本、版本不兼容拒绝、Git worktree及回收、helper读写与越界拒绝 | [工具结果](task114-evidence/tools.json) |
 | 原生Electron组合根 | 12项通过；正常停服state=stopped、exitCode=0；独立临时Keychain已清理 | [宿主结果](task114-evidence/host.json)、[截图](task114-evidence/window.png) |
-| DMG复制后启动 | 同一复制产物再次通过12项原生组合根检查，临时Keychain清理、exitCode=0 | [安装后宿主](task114-evidence/installed-host.json) |
+| DMG复制后启动 | 同一复制产物再次通过12项原生组合根检查，临时Keychain清理、exitCode=0 | [安装后宿主](task114-evidence/host.json) |
 | 下载失败 | 从同一固定官方pnpm来源获取真实字节，错误预期hash被拒绝；未发布档案，staging清理 | [失败路径](task114-evidence/download-failure.json) |
 | ZIP与DMG | 两介质校验和一致；ZIP解压后签名完整性通过；DMG只读挂载、复制后签名/工具清单通过；本次卷已卸载 | [安装结果](task114-evidence/installation.json)、[介质](task114-evidence/media.json) |
 | 升级与失败回归 | 准备、备份、文件替换、格式提交中断；继续/回滚、坏备份、外部改动、失效owner；新Phase11跨模块回滚保留配置 | `apps/desktop/test/upgrades.test.ts`、`tests/integration/phase11/phase11-4.test.ts`及完整回归 |

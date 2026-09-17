@@ -26,7 +26,7 @@ it('inspects APFS identity without creating a staging directory or granting acce
   writeFileSync(join(directory, 'sentinel'), 'fixed source');
   writeFileSync(join(base, 'external-secret'), 'fixed external secret');
   const source = resolve('packages/runtime/sandbox/native/local-root-inspection.c');
-  const folder = resolve('docs/reviews/task123-root-evidence');
+  const folder = resolve('test-outputs/reviews/task123-root-evidence');
   mkdirSync(folder, { recursive: true });
   const evidence: Record<string, unknown> = {
     base,

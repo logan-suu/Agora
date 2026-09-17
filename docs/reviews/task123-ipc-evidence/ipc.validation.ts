@@ -12,7 +12,9 @@ const hash=(v:Buffer|string)=>createHash('sha256').update(v).digest('hex');
 it('denies the securityd Mach route and Unix connections for native parent and child',async()=>{
  const base=mkdtempSync('/private/tmp/agora-task123-validation-'),identity=lstatSync(base);
  const evidence:Record<string,unknown>={base,identity:{dev:identity.dev,ino:identity.ino},startedAt:new Date().toISOString(),scope:'L03 supplemental actual IPC policy qualification; no Keychain secrets',sources:{}};
- const report=resolve('docs/reviews/task123-ipc-evidence',`${base.split('-').at(-1)}.json`);
+ const folder=resolve('test-outputs/reviews/task123-ipc-evidence');
+ mkdirSync(folder,{recursive:true});
+ const report=resolve(folder,`${base.split('-').at(-1)}.json`);
  writeFileSync(report,JSON.stringify(evidence,null,2));
  let failure:unknown;let server:ReturnType<typeof createServer>|undefined;
  try {

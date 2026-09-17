@@ -33,7 +33,7 @@ export function probeCommandJournal(scenario: Scenario) {
   const output = join(base, 'output');
   mkdirSync(control, { mode: 0o700 });
   mkdirSync(output, { mode: 0o700 });
-  const folder = resolve('docs/reviews/task123-stop-evidence');
+  const folder = resolve('test-outputs/reviews/task123-stop-evidence');
   mkdirSync(folder, { recursive: true });
   const path = join(folder, `journal-${scenario}-${base.split('-').at(-1)}.json`);
   const sources = [

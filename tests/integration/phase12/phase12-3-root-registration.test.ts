@@ -42,7 +42,7 @@ for (const scenario of [
     mkdirSync(root);
     writeFileSync(join(root, 'sentinel'), 'fixed user source');
     const owner = await acquireState(join(base, 'state'));
-    const folder = resolve('docs/reviews/task123-root-registration-evidence');
+    const folder = resolve('test-outputs/reviews/task123-root-registration-evidence');
     mkdirSync(folder, { recursive: true });
     const evidence: Record<string, unknown> = {
       base,

@@ -58,7 +58,7 @@ it('fetches only the pinned public package through the real TLS/DNS broker', asy
       ].map((path) => [path, createHash('sha256').update(readFileSync(path)).digest('hex')]),
     );
     report.cleanup = { downloadOnDisk: false, packageExecuted: false, persistentDownloadCopies: 0 };
-    const folder = resolve('docs/reviews/task123-download-evidence');
+    const folder = resolve('test-outputs/reviews/task123-download-evidence');
     mkdirSync(folder, { recursive: true });
     writeFileSync(resolve(folder, `download-${Date.now()}.json`), JSON.stringify(report, null, 2));
   }

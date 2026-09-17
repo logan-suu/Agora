@@ -156,7 +156,7 @@ for (const scenario of ['normal', 'changed', 'revoke'] as const)
         'tests/integration/phase12/phase12-3-version.test.ts',
       ].map((path) => [path, digest(readFileSync(path))]),
     );
-    const folder = resolve('docs/reviews/task123-version-evidence');
+    const folder = resolve('test-outputs/reviews/task123-version-evidence');
     mkdirSync(folder, { recursive: true });
     const target = join(folder, `${scenario}-${basename(base)}.json`);
     writeFileSync(target, JSON.stringify(evidence, null, 2));

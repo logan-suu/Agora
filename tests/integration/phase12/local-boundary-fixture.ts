@@ -37,7 +37,7 @@ export async function probeLocalFileBoundary(
   writeFileSync(join(root, '.agora-operations/candidate'), 'candidate');
   const source = resolve('packages/runtime/sandbox/native/local-boundary-probe.c');
   const executable = join(base, 'boundary-probe');
-  const evidenceDirectory = resolve('docs/reviews/task123-boundary-evidence');
+  const evidenceDirectory = resolve('test-outputs/reviews/task123-boundary-evidence');
   mkdirSync(evidenceDirectory, { recursive: true });
   const evidencePath = join(evidenceDirectory, `${scenario}-${base.split('-').at(-1)}.json`);
   const evidence: Record<string, unknown> = {
