@@ -24,7 +24,7 @@ const ref = (id: string, session = `source:${id}`, taskId = scope.taskId) =>
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
-async function fixture() {
+async function fixture(workerIds = ['a', 'b']) {
   const root = await mkdtemp(join(tmpdir(), 'agora-gate-replay-'));
   roots.push(root);
   let runtime = createMessageRuntime(root, new ChannelStream());
@@ -44,7 +44,7 @@ async function fixture() {
   await runtime.initializeState(
     scope,
     applyMutations(createInitialAppState(scope.taskId, 'Replay gate', scope.projectId), [
-      ...['a', 'b'].map((id) =>
+      ...workerIds.map((id) =>
         mergeByIdMutation('workers', id, {
           workerId: id,
           role: 'CODER',
@@ -61,7 +61,7 @@ async function fixture() {
         options: ['continue'],
         phase: 'coding',
         openedTs: 1,
-        safePointRefs: [ref('a'), ref('b')],
+        safePointRefs: workerIds.length === 0 ? [ref('legacy')] : workerIds.map((id) => ref(id)),
       }),
     ]),
   );
@@ -308,4 +308,135 @@ it('rejects a restored original gate instead of claiming its clear effect still 
   ]);
   await expect(f.request()).rejects.toThrow(/conflicts/);
   expect(f.calls).toBe(1);
+});
+
+it.each([
+  { workerIds: ['a'], strip: false },
+  { workerIds: ['a'], strip: true },
+  { workerIds: ['a', 'b'], strip: false },
+  { workerIds: ['a', 'b'], strip: true },
+])(
+  'validates original plans after every worker advances twice: %j',
+  async ({ workerIds, strip }) => {
+    const f = await fixture(workerIds);
+    await f.mark();
+    let previous = 'resolve-first';
+    for (const gate of ['second', 'third']) {
+      const refs = workerIds.map((id) => ref(id, `human-gate-resume:${previous}:${id}`));
+      await f.runtime.commitMutations(scope, [
+        ...workerIds.map((id, index) =>
+          mergeByIdMutation('workers', id, {
+            status: 'paused',
+            sessionId: `human-gate-resume:${previous}:${id}`,
+            safePoint: refs[index],
+          }),
+        ),
+        setMutation('humanGate', {
+          gateId: `human-gate:${gate}`,
+          reason: 'iteration_limit',
+          options: ['continue'],
+          phase: 'coding',
+          openedTs: 3,
+          safePointRefs: refs,
+        }),
+      ]);
+      expect((await f.request(`resolve-${gate}`, gate)).status).toBe(202);
+      await f.mark(`resolve-${gate}`);
+      previous = `resolve-${gate}`;
+    }
+    for (const id of workerIds) await f.progress('done', id, previous);
+    if (strip)
+      await f.corrupt((state) => {
+        const first = state.messages.find((m) => m.msgId === 'resolve-first');
+        const marker = state.messages.find((m) => m.msgId === 'human-gate-resumed:resolve-first');
+        if (!first || !marker) throw Error('missing first facts');
+        delete (first.payload.resolution as HumanGateResolutionReceipt).workerResumes;
+        delete marker.payload.workerResumes;
+      });
+    f.restart();
+    const before = await f.get();
+    if (strip) await expect(f.request()).rejects.toThrow(/conflicts/);
+    else expect((await f.request()).status).toBe(202);
+    expect(await f.get()).toEqual(before);
+    expect(f.calls).toBe(3);
+  },
+);
+
+it('keeps genuine legacy receipts compatible after a later per-worker gate', async () => {
+  const f = await fixture([]);
+  await f.mark();
+  const safe = ref('a', 'human-gate-resume:resolve-first');
+  await f.runtime.commitMutations(scope, [
+    mergeByIdMutation('workers', 'a', {
+      workerId: 'a',
+      role: 'CODER',
+      executor: 'harness',
+      status: 'paused',
+      sessionId: 'human-gate-resume:resolve-first',
+      safePoint: safe,
+      startedTs: 3,
+    }),
+    setMutation('humanGate', {
+      gateId: 'human-gate:second',
+      reason: 'iteration_limit',
+      options: ['continue'],
+      phase: 'coding',
+      openedTs: 3,
+      safePointRefs: [safe],
+    }),
+  ]);
+  expect((await f.request('resolve-second', 'second')).status).toBe(202);
+  await f.mark('resolve-second');
+  await f.progress('done', 'a', 'resolve-second');
+  f.restart();
+  const before = await f.get();
+  expect((await f.request()).status).toBe(202);
+  expect(await f.get()).toEqual(before);
+  expect(f.calls).toBe(2);
+});
+
+it('does not combine another worker identity with an unrelated child checkpoint', async () => {
+  const f = await fixture([]);
+  await f.mark();
+  const safe = ref('a', 'human-gate-resume:resolve-first');
+  await f.runtime.commitMutations(scope, [
+    mergeByIdMutation('workers', 'a', {
+      workerId: 'a',
+      role: 'CODER',
+      executor: 'harness',
+      status: 'paused',
+      sessionId: 'human-gate-resume:resolve-first',
+      safePoint: safe,
+      startedTs: 3,
+    }),
+    mergeByIdMutation('workers', 'second:a', {
+      workerId: 'second:a',
+      role: 'CODER',
+      executor: 'harness',
+      status: 'done',
+      sessionId: 'unrelated',
+      startedTs: 3,
+    }),
+    setMutation('humanGate', {
+      gateId: 'human-gate:second',
+      reason: 'iteration_limit',
+      options: ['continue'],
+      phase: 'coding',
+      openedTs: 3,
+      safePointRefs: [safe],
+    }),
+  ]);
+  expect((await f.request('resolve-first:second', 'second')).status).toBe(202);
+  await f.mark('resolve-first:second');
+  await f.progress('done', 'a', 'resolve-first:second');
+  await f.runtime.commitMutations(scope, [
+    mergeByIdMutation('workers', 'a', {
+      safePoint: ref('a', 'human-gate-resume:resolve-first:second:a'),
+    }),
+  ]);
+  f.restart();
+  const before = await f.get();
+  expect((await f.request()).status).toBe(202);
+  expect(await f.get()).toEqual(before);
+  expect(f.calls).toBe(2);
 });

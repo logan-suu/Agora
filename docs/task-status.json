@@ -1700,7 +1700,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-3.test.ts",
-          "notes": "任务类型：code。PR #86已于2026-09-17T03:38:09Z由人类合并至dev-1.0.0，merge 1c0a84c670ac27a8e05137ecc985e07261efe6c1；合并树与已验证2cd3ad4完全一致。G1/G3/G4/G5/G6/G7已核验：42项定向及7脚本/226文件1752项累计回归全过，0失败/skip；原生/桌面构建、typecheck/587文件lint通过。G5含真实Go deepseek-v4-flash→Harness/MCP、本机版本读写/命令、D4真Fork、独立Tester/D16及同版本归档。两项PR修复已验；主动绕过验证按Leader要求未执行。详情docs/reviews/task123-acceptance.md、docs/reviews/task123-pr86-fix-evidence/validation.json、docs/task-history/12.3.md。macOS15仅本任务获准跳过，DEF-018保留；普通入口、后续阶段及发布门禁不变。 2026-09-17后续D9幂等修复及D19方案定稿/Phase14任务登记共同纳入PR #87，待人工合并；https://github.com/logan-suu/Agora/pull/87。原done不重开；新实现均pending。定向57项/完整1768项通过，CodeRabbit0issues仅限六份D9代码；设计与编号核验见docs/reviews/langgraph-registration-20260917.md及本任务历史。",
+          "notes": "任务类型：code。PR #86已于2026-09-17T03:38:09Z人工合并，merge 1c0a84c670ac27a8e05137ecc985e07261efe6c1，原done保持。原验收/macOS15本任务例外见docs/reviews/task123-acceptance.md及docs/task-history/12.3.md，DEF-018及后续阶段门禁不变。后续D9修复与D19定稿/Phase14登记同在PR #87：https://github.com/logan-suu/Agora/pull/87。本轮修复历史来源/合法ID配对、DEF-016和阶段/平台文档；定向63项、最终全量1774项+7脚本、typecheck/lint、适用G5通过，限定CodeRabbit0issues。安装旧失败根因仍inconclusive，诊断已补，失败与清理见docs/reviews/pr87-review-fixes-20260917.md及.json。原状态不重开，新实现均pending，不启动12.4；PR待人工合并。",
           "last_updated": "2026-09-17"
         },
         {

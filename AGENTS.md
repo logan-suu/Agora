@@ -339,6 +339,7 @@ Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复�
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
             Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga 与 /role onboard 单 Task State 接手；Phase 8 解锁绑定 gateId 的 /resolve-gate，并以 resolution receipt 支撑清 gate 后恢复；Phase 9 解锁 main-only `/requirement <id> <JSON>` 完整 upsert 未撤回 Requirement、`/decision <topic> <JSON>` append 显式 current-only supersedes 的 Leader Decision、`/priority <subtaskId> <0-100>` 更新未完成 Subtask；三者先预校验单主消息+控制 mutations，再经 task-scoped cohort 安全点屏障与 canonical commit 原子落盘，随后投递并 reproject，空 cohort 可立即提交；同 actionId 重放交叉验证消息和 State 效果，所有角色只消费结构化 leaderDirective、不读 display/raw log；blocking 则按 D4 suspend/Fork，
             其余能力显式 rejected/deferred，不走临时 command 旁路
+            [2026-09-17 D9重放修正] 已有规范resumed事实时，旧裁决只核验不可变receipt、marker及连续lineage，不再次调用resume或重建执行实例；重启保持interrupted/needs_attention。无per-worker计划的兼容分支核对当前与历史来源证据，不能把删除后的计划冒充Phase8旧格式；首次恢复仍严格paused准入。
             [2026-09-12 D9 更新] 自然语言 main 发言可由无工具 Harness 解释为持久化需求草案/澄清，仅消费本条输入与结构化事实；普通 worker 禁止伪造解释/确认信封。用户在可读前后对照中显式确认，仍走 POST /api/messages 并按规范 proposalId、当前事实指纹和安全点后二次校验原子应用关联需求；草案不自动生效，过期拒绝，D16 完成终审不受替代。完整定义见详细设计 §11.9。
 Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
             Phase 5–8 全实例最多一个活动 run；D17/Phase 9 起不同 task 可并发登记，但所有 WorkerRuntime 共享唯一 GlobalScheduler lease；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，

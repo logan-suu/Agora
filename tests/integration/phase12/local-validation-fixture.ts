@@ -1,5 +1,7 @@
 // Real native files, grant, lease and command evidence. No model is involved in
 // this deterministic trusted-validation fixture; Harness is verified separately.
+// Mock reason (R11): the lifecycle port and encoded cursor model a closed legacy
+// turn only; replay still validates its format and scope before checking files.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { appendMutation, applyMutations, mergeByIdMutation, setMutation } from '@agora/core-domain';
@@ -120,7 +122,19 @@ export async function exerciseLocalValidation(input: {
         options: ['approve_completion', 'request_changes'],
         phase: 'review',
         openedTs: Date.now(),
-        safePointRefs: ['fixed-fixture-safe-point'],
+        safePointRefs: [
+          `agora-safe-point:v1:${Buffer.from(
+            JSON.stringify({
+              version: 1,
+              ...scope,
+              role: 'REVIEWER',
+              sourceSessionId: 'fixture:reviewer',
+              boundary: 0,
+              cwd: input.root,
+              agentPreset: 'agora-role:REVIEWER',
+            }),
+          ).toString('base64url')}`,
+        ],
       }),
     ]);
     const approval = {
