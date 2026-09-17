@@ -1,0 +1,127 @@
+{
+  "scenario": "policy-drift",
+  "base": "/private/tmp/agora-task123-validation-vs5DLy",
+  "startedAt": "2026-09-17T02:02:22.475Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 128567315
+  },
+  "sources": {
+    "packages/runtime/sandbox/native/local-process-control.c": "305da4f928dbf3c68a341c7f4d8c527fa1837e93e8e14ee93d0f3d8a07440f4c",
+    "packages/runtime/sandbox/native/local-command-bootstrap.c": "6a961f682c2cd385072c51c9b5819c13f23760ce39e9169a7937fd1e44ac4416",
+    "packages/runtime/sandbox/native/local-command-start-probe.c": "cd9c6ece3cbaa2aca87bc2c59ef9854315cf2e18d8f7bec019c81293937534c2",
+    "packages/runtime/sandbox/src/local-command-start.ts": "3b4524e7b9a4d8b8f969bfaaef51c647a3d872b8a1b2b2b6bfd1956028b4ff79",
+    "packages/runtime/sandbox/src/local-command-supervisor.ts": "fc8cb05b5fca978fd94f1db0da6c76cc47a953da4e9fd777aa4db57db0a02202",
+    "packages/runtime/sandbox/src/local-command-stop.ts": "ba3b59f1f302b3a5714911302618ec051cd2868e9d5a2b7f5513d0c3504cace7",
+    "packages/runtime/sandbox/src/local-command-policy.ts": "3faffdbc34bff9b9fad94c164b2a6470c25e997a2b9191c8a5053984a7c7ffd1",
+    "tests/integration/phase12/local-command-start-fixture.ts": "6ce6bbb11df9f24e55b433ef9c29888e71d6a7ebc9a1d2e884abd416761befc3",
+    "tests/integration/phase12/phase12-3-command-start.test.ts": "47ec08ca39673d7f891eb8abf714478309edd720cbee9c781f93635090a91b7d",
+    "packages/runtime/sandbox/src/local-command-journal.ts": "ff18b89fa0998572cc2c7a57f2a4711f29d53dbe8489ce0e43a63a7aaf7207fa",
+    "packages/runtime/sandbox/src/local-command-binding.ts": "6a79ae3e5a90108e15030f5b8437ad80f49ea3ce17415011333f64149427a18f",
+    "packages/runtime/sandbox/native/local-command-capture-probe.c": "c48b9ab1f14f000096c73320bbf5c7a2b4f595f7a5ed68cbf9e818c19bead294"
+  },
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "node": "v24.20.0",
+  "availableBefore": 45063954432,
+  "binaries": {
+    "/private/tmp/agora-task123-validation-vs5DLy/control": "ecfcad6f8981c59f149f0de74b854434ba127d51fa19660a8c34d098cf18bf1b",
+    "/private/tmp/agora-task123-validation-vs5DLy/bootstrap": "137255d88a7026217d85eeaec3782d079631fadeee88c8856caa797020289577",
+    "/private/tmp/agora-task123-validation-vs5DLy/payload": "4a5b83f5348b641ea97ee203d2a59cfd16845e2d80e08a305db7689348d4f9c2"
+  },
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-vs5DLy/payload\"))\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-vs5DLy/bootstrap\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-vs5DLy\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-vs5DLy/payload\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-vs5DLy/bootstrap\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/journal\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-vs5DLy/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "result": {
+    "captureInvocations": 0,
+    "result": {
+      "released": false,
+      "payloadResult": null,
+      "observation": null,
+      "startupStop": null,
+      "error": "invalid_command_start",
+      "launchDurable": true,
+      "captureAttempts": [],
+      "controlReady": null
+    },
+    "beforeRelease": false,
+    "afterRelease": false,
+    "registeredAtRelease": 0,
+    "record": {
+      "commandId": "fixture-policy-drift",
+      "workspaceId": "fixed-fixture",
+      "policyHash": "dc71c63891fd371d062388dacb86b84a65897101f54b6b1dd9c5d82c97ee67fb",
+      "inputHash": "94dec3ca07972e3c740034239f18bd702e5f9503d3fba671e4ecfbdae14616bf",
+      "roots": [
+        {
+          "path": "/private/tmp/agora-task123-validation-vs5DLy/output",
+          "identity": "16777231:128567327"
+        }
+      ],
+      "revision": 2,
+      "birthIdentities": [],
+      "birthRelations": [],
+      "observationReceipt": null,
+      "launchReceipt": {
+        "version": 1,
+        "targetIdentity": null,
+        "released": false,
+        "payloadResult": null,
+        "error": "invalid_command_start"
+      },
+      "binding": null,
+      "resourceState": "quarantined",
+      "reason": "control_failure"
+    },
+    "reopenedRecord": {
+      "commandId": "fixture-policy-drift",
+      "workspaceId": "fixed-fixture",
+      "policyHash": "dc71c63891fd371d062388dacb86b84a65897101f54b6b1dd9c5d82c97ee67fb",
+      "inputHash": "94dec3ca07972e3c740034239f18bd702e5f9503d3fba671e4ecfbdae14616bf",
+      "roots": [
+        {
+          "path": "/private/tmp/agora-task123-validation-vs5DLy/output",
+          "identity": "16777231:128567327"
+        }
+      ],
+      "revision": 2,
+      "birthIdentities": [],
+      "birthRelations": [],
+      "observationReceipt": null,
+      "launchReceipt": {
+        "version": 1,
+        "targetIdentity": null,
+        "released": false,
+        "payloadResult": null,
+        "error": "invalid_command_start"
+      },
+      "binding": null,
+      "resourceState": "quarantined",
+      "reason": "control_failure"
+    },
+    "receiptChecks": [],
+    "receiptBytesUnchanged": false,
+    "blocked": true,
+    "payloadReport": null,
+    "sentinelUnchanged": true,
+    "checkpoints": []
+  },
+  "completedAt": "2026-09-17T02:02:22.673Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "output": [
+        null,
+        "",
+        ""
+      ],
+      "pid": 5805,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 45062934528,
+  "spaceDelta": -1019904
+}

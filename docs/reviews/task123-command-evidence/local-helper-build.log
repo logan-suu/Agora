@@ -1,0 +1,4 @@
+
+> agora@0.0.0 build:sandbox-native /Users/logansu/Documents/Dev/Agora
+> node packages/runtime/sandbox/scripts/build-native.mjs
+

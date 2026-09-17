@@ -1,0 +1,40 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/runtime/sandbox/test/local-reserved-path.test.ts (4 tests | 4 failed) 5ms
+   × rejects reserved path spelling before filesystem admission: .ENV 4ms
+     → expected [Function] to throw error including 'invalid_file_change' but got 'root_identity_changed'
+   × rejects reserved path spelling before filesystem admission: .Env.local 0ms
+     → expected [Function] to throw error including 'invalid_file_change' but got 'root_identity_changed'
+   × rejects reserved path spelling before filesystem admission: .GiT/config 0ms
+     → expected [Function] to throw error including 'invalid_file_change' but got 'root_identity_changed'
+   × rejects reserved path spelling before filesystem admission: src/.AGORA-OPERATIONS/item 0ms
+     → expected [Function] to throw error including 'invalid_file_change' but got 'root_identity_changed'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/runtime/sandbox/test/local-reserved-path.test.ts > rejects reserved path spelling before filesystem admission: .ENV
+ FAIL  packages/runtime/sandbox/test/local-reserved-path.test.ts > rejects reserved path spelling before filesystem admission: .Env.local
+ FAIL  packages/runtime/sandbox/test/local-reserved-path.test.ts > rejects reserved path spelling before filesystem admission: .GiT/config
+ FAIL  packages/runtime/sandbox/test/local-reserved-path.test.ts > rejects reserved path spelling before filesystem admission: src/.AGORA-OPERATIONS/item
+AssertionError: expected [Function] to throw error including 'invalid_file_change' but got 'root_identity_changed'
+
+Expected: "invalid_file_change"
+Received: "root_identity_changed"
+
+ ❯ packages/runtime/sandbox/test/local-reserved-path.test.ts:10:7
+      8|     expect(() =>
+      9|       inspectLocalFileBytes({ root: '', chain: [], stagingIdentity: '0…
+     10|     ).toThrow('invalid_file_change');
+       |       ^
+     11|   },
+     12| );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  22:07:32
+   Duration  160ms (transform 29ms, setup 0ms, collect 29ms, tests 5ms, environment 0ms, prepare 37ms)
+

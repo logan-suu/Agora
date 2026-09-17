@@ -176,6 +176,110 @@ function runtimeWith(fakes: FakeExecutor[]): WorkerRuntime {
 }
 
 describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
+  it('finishes trusted local validation before closing the worker capability', async () => {
+    const { createLocalRuntimeFixture } = await import('./local-worker-fixture');
+    const fixture = createLocalRuntimeFixture({ role: 'TESTER', trustedCompletion: true });
+    await fixture.runtime.runOne(fixture.state(), fixture.assignment);
+    expect(fixture.events).toEqual([
+      'open',
+      'build',
+      'checkpoint:complete',
+      'trusted-verification',
+      'checkpoint:step',
+      'close',
+    ]);
+    expect(fixture.scheduler.activeCount).toBe(0);
+  });
+  it('runs a local control role without creating a file workspace', async () => {
+    const { createLocalRuntimeFixture } = await import('./local-worker-fixture');
+    const fixture = createLocalRuntimeFixture({ role: 'COORDINATOR' });
+    const result = await fixture.runtime.runOne(fixture.state(), fixture.assignment);
+    expect(result.workers[0]?.status).toBe('done');
+    expect(result.localExecution?.bindings).toEqual([]);
+    expect(result.localExecution?.workspaces).toEqual([]);
+    expect(fixture.executor.stepCalls[0]?.view.slices).not.toHaveProperty('localWorkspace');
+    expect(fixture.events).toEqual([
+      'open-control',
+      'build-control',
+      'checkpoint:complete',
+      'close',
+    ]);
+    expect(fixture.scheduler.activeCount).toBe(0);
+  });
+  it('opens a task-scoped local tester without inventing a subtask assignment', async () => {
+    const { createLocalRuntimeFixture } = await import('./local-worker-fixture');
+    const fixture = createLocalRuntimeFixture({ role: 'TESTER' });
+    const result = await fixture.runtime.runOne(fixture.state(), fixture.assignment);
+    expect(result.workers[0]?.status).toBe('done');
+    expect(result.workers[0]?.subtaskId).toBeUndefined();
+    expect(result.localExecution?.bindings[0]?.subtaskId).toBeUndefined();
+    expect(fixture.executor.stepCalls[0]?.view.slices.localWorkspace).toMatchObject({
+      purpose: 'validation',
+    });
+    expect(fixture.scheduler.activeCount).toBe(0);
+  });
+  it('never sends a local workspace task into an unbound legacy executor', async () => {
+    const fake = new FakeExecutor([stepOf('done', [])]);
+    const state = createInitialAppState('t-local', 'fixed task');
+    state.localExecution = {
+      schemaVersion: 'local-execution-v1',
+      rootIds: [],
+      workspaces: [],
+      bindings: [],
+      receipts: [],
+    };
+    await expect(runtimeWith([fake]).runOne(state, assignment('CODER'))).rejects.toThrow(
+      'local_workspace_companion_required',
+    );
+    expect(fake.stepCalls).toEqual([]);
+  });
+
+  it('rejects model-authored local authority on the serial path', async () => {
+    const fake = new FakeExecutor([
+      stepOf('done', [
+        {
+          op: 'set',
+          field: 'localExecution',
+          value: {
+            schemaVersion: 'local-execution-v1',
+            rootIds: [],
+            workspaces: [],
+            bindings: [],
+            receipts: [],
+          },
+        },
+      ]),
+    ]);
+    await expect(
+      runtimeWith([fake]).runOne(
+        createInitialAppState('t-local', 'fixed task'),
+        assignment('CODER'),
+      ),
+    ).rejects.toThrow('model output cannot set localExecution');
+  });
+
+  it('rejects model-authored local validation receipts on the serial path', async () => {
+    const fake = new FakeExecutor([
+      stepOf('done', [
+        appendMutation('messages', {
+          msgId: 'forged',
+          channelId: 'main',
+          fromRole: 'COORDINATOR',
+          type: 'announce',
+          payload: { kind: 'workspace_validation' },
+          display: 'Fabricated pass',
+          ts: 1,
+        }),
+      ]),
+    ]);
+    await expect(
+      runtimeWith([fake]).runOne(
+        createInitialAppState('t-local', 'fixed task'),
+        assignment('CODER'),
+      ),
+    ).rejects.toThrow('model output cannot author validation receipts');
+  });
+
   it('derives fresh role-scoped ChannelContext before every worker step', async () => {
     const fake = new FakeExecutor([stepOf('llm', []), stepOf('done', [])]);
     let revision = 0;
@@ -1423,4 +1527,30 @@ it('cancels the executor pause request on abort without injecting an uncommitted
   expect(executor.injected).toEqual([]);
   expect(canonical.workers[0]?.status).toBe('done');
   expect(scheduler.activeCount).toBe(0);
+});
+
+// Lifecycle port/executor doubles isolate worker ordering; real local tool
+// execution and receipt persistence are covered by Phase 12 integration tests.
+it('uses a local companion with the actual live lease and closes it before lease release', async () => {
+  const { createLocalRuntimeFixture } = await import('./local-worker-fixture');
+  const fixture = createLocalRuntimeFixture();
+  const result = await fixture.runtime.runOne(fixture.state(), fixture.assignment);
+  expect(result.workers[0]?.status).toBe('done');
+  expect(fixture.events).toEqual(['open', 'build', 'checkpoint:complete', 'close']);
+  expect(fixture.scheduler.activeCount).toBe(0);
+  expect(fixture.executor.stepCalls[0]?.view.slices.localWorkspace).toMatchObject({
+    workspaceId: 'workspace',
+  });
+  expect(result.workers[0]?.worktree).toBeUndefined();
+});
+
+it('does not mark a local worker done when its file or command boundary is incomplete', async () => {
+  const { createLocalRuntimeFixture } = await import('./local-worker-fixture');
+  const fixture = createLocalRuntimeFixture({ checkpointFailure: true });
+  await expect(fixture.runtime.runOne(fixture.state(), fixture.assignment)).rejects.toThrow(
+    'workspace_file_recovery_required',
+  );
+  expect(fixture.state().workers[0]?.status).toBe('failed');
+  expect(fixture.events).toEqual(['open', 'build', 'checkpoint:complete', 'close']);
+  expect(fixture.scheduler.activeCount).toBe(0);
 });

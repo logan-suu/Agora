@@ -273,3 +273,40 @@ describe('JsonTaskStateStore', () => {
     await expect(store.load(scope())).resolves.toBeUndefined();
   });
 });
+
+describe('local workspace state persistence', () => {
+  it('persists the serial local marker and rejects mixed disk state without migrating it', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const initial = createInitialAppState('task-a', 'fixed local task', 'project-a');
+    await store.initialize(scope(), initial);
+    const local = {
+      schemaVersion: 'local-execution-v1',
+      rootIds: [],
+      workspaces: [],
+      bindings: [],
+      receipts: [],
+    };
+    await store.commit(scope(), [{ op: 'set', field: 'localExecution', value: local }]);
+    expect((await store.load(scope()))?.localExecution).toEqual(local);
+    await expect(
+      store.commit(scope(), [{ op: 'set', field: 'localExecution', value: undefined }]),
+    ).rejects.toThrow();
+    const path = join(root, 'projects/project-a/tasks/task-a/state.json');
+    const before = await readFile(path, 'utf8');
+    const mixed = JSON.parse(before);
+    mixed.subtasks = [
+      {
+        id: 'legacy',
+        title: 'legacy',
+        ownerRole: 'CODER',
+        status: 'todo',
+        dependsOn: [],
+        worktree: '/legacy',
+      },
+    ];
+    await writeFile(path, JSON.stringify(mixed));
+    await expect(store.load(scope())).rejects.toThrow('mixed_workspace_authority');
+    expect(await readFile(path, 'utf8')).toBe(JSON.stringify(mixed));
+  });
+});

@@ -1,0 +1,340 @@
+{
+  "recordedAt": "2026-09-16T02:15:40.083611+00:00",
+  "scope": "Fixed diagnostics only; no production supervisor or completed task G5.",
+  "recordCount": 15,
+  "records": [
+    {
+      "record": "audit-cohort-WqMqNG.json",
+      "source": "audit-cohort-probe-v3.c.txt",
+      "controller": "run-audit-cohort-probe-v3.mjs.txt",
+      "base": "/private/tmp/agora-task123-validation-WqMqNG",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "audit-cohort-bLCYaU.json",
+      "source": "audit-cohort-probe.c.txt",
+      "controller": "run-audit-cohort-probe.mjs",
+      "base": "/private/tmp/agora-task123-validation-bLCYaU",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "audit-cohort-jnvE5A.json",
+      "source": "audit-cohort-probe-v2.c.txt",
+      "controller": "run-audit-cohort-probe-v2.mjs.txt",
+      "base": "/private/tmp/agora-task123-validation-jnvE5A",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "audit-cohort-pOKOq3.json",
+      "source": "audit-cohort-probe-v1.c.txt",
+      "controller": "run-audit-cohort-probe-v1.mjs.txt",
+      "base": "/private/tmp/agora-task123-validation-pOKOq3",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "launchd-session-NxjwWY.json",
+      "source": "security-session-probe.c.txt",
+      "controller": "run-launchd-session-probe.mjs",
+      "base": "/private/tmp/agora-task123-validation-NxjwWY",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "launchd-session-lJCeh8.json",
+      "source": "security-session-probe-v1.c.txt",
+      "controller": "run-launchd-session-probe-v1.mjs.txt",
+      "base": "/private/tmp/agora-task123-validation-lJCeh8",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "node-spawn-SKGXqE.json",
+      "source": "inline in controller",
+      "controller": "run-node-spawn-probe-v1.mjs.txt",
+      "base": "/private/tmp/agora-task123-validation-SKGXqE",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "node-spawn-pbB3vt.json",
+      "source": "inline in controller",
+      "controller": "run-node-spawn-probe.mjs",
+      "base": "/private/tmp/agora-task123-validation-pbB3vt",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "node-spawn-tXVReV.json",
+      "source": "inline in controller",
+      "controller": "run-node-spawn-probe-v2.mjs.txt",
+      "base": "/private/tmp/agora-task123-validation-tXVReV",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "process-group-1mRIFc.json",
+      "source": "process-group-probe.c.txt",
+      "controller": "run-process-group-probe.mjs",
+      "base": "/private/tmp/agora-task123-validation-1mRIFc",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "process-group-UiqBqr.json",
+      "source": "process-group-probe.c.txt",
+      "controller": "run-process-group-probe-v1.mjs.txt",
+      "base": "/private/tmp/agora-task123-validation-UiqBqr",
+      "fixtureAbsentNow": true,
+      "cleanup": "cleanup-retained-fixture.json",
+      "error": null
+    },
+    {
+      "record": "security-session-aOPSG8.json",
+      "source": "security-session-probe-v1.c.txt",
+      "controller": "run-security-session-probe.mjs",
+      "base": "/private/tmp/agora-task123-validation-aOPSG8",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "session-lookup-AVa3pC.json",
+      "source": "session-lookup-probe.c.txt",
+      "controller": "run-session-lookup-probe-v1.mjs.txt",
+      "base": "/private/tmp/agora-task123-validation-AVa3pC",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "session-lookup-u9AUO2.json",
+      "source": "session-lookup-probe.c.txt",
+      "controller": "run-session-lookup-probe.mjs",
+      "base": "/private/tmp/agora-task123-validation-u9AUO2",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    },
+    {
+      "record": "launchd-bootout-9XEfTa.json",
+      "source": "launchd-bootout-probe.c.txt",
+      "controller": "run-launchd-bootout-probe.mjs",
+      "base": "/private/tmp/agora-task123-validation-9XEfTa",
+      "fixtureAbsentNow": true,
+      "cleanup": "in record",
+      "error": null
+    }
+  ],
+  "files": {
+    "apple-descendants-api-review.json": {
+      "sha256": "702a2894080c9544ed0df1b287ed33fdd93e015d261db6ac0ab4726698a7dd22",
+      "bytes": 2456
+    },
+    "audit-cohort-WqMqNG.json": {
+      "sha256": "7ce8e4ffaa5c5ee7175c73efdd63b543261bf08aac011737a1c67ddd16d76e6f",
+      "bytes": 5398
+    },
+    "audit-cohort-bLCYaU.json": {
+      "sha256": "36d560e5c2761ed7e8ebccb5d5f2fe7aecdb866b8bf4791193611f890fdf804c",
+      "bytes": 6164
+    },
+    "audit-cohort-jnvE5A.json": {
+      "sha256": "e8d7e9da0a198ca3a2b16e80dad5193b480521520527f18d9830b3cac894ca5b",
+      "bytes": 9126
+    },
+    "audit-cohort-pOKOq3.json": {
+      "sha256": "cd826dfe8066ac8a850f428a84579fe8335eafbd34ac080d877de1f504ca3387",
+      "bytes": 8718
+    },
+    "audit-cohort-probe-v1.c.txt": {
+      "sha256": "b5e6eff3d7dc66677f18ffae7f7047f48b7bd268fede2046f9ed9e06deff4fd5",
+      "bytes": 3038
+    },
+    "audit-cohort-probe-v2.c.txt": {
+      "sha256": "e8c07c8bb97af253243995c810c447a142982eac64d4ad40a381bf4267bfa238",
+      "bytes": 4171
+    },
+    "audit-cohort-probe-v3.c.txt": {
+      "sha256": "547ddbe3bee8e36b0fdd9c6699832bfb97126494b4c141d70555dc7a78916a1c",
+      "bytes": 4770
+    },
+    "audit-cohort-probe.c.txt": {
+      "sha256": "b69a0e0d1cca1b1742be1f29783a8810508b477da9c242d786a6d48915259dcc",
+      "bytes": 5874
+    },
+    "cleanup-retained-fixture.json": {
+      "sha256": "bf2ff6da982741fdaa10e6f7281bbe28be7312472ba5083919e32f3a5eb0506d",
+      "bytes": 584
+    },
+    "cleanup-retained-fixture.mjs": {
+      "sha256": "dfd5cd971571be561537381c1f0e8b8411f5c3628bd3aa11699d5bb381808d2c",
+      "bytes": 2704
+    },
+    "launchd-bootout-9XEfTa.json": {
+      "sha256": "5bc26967f9fa015931f0ba1aa4a7bf257516d1ebc4447644d55f2342df26b317",
+      "bytes": 5302
+    },
+    "launchd-bootout-probe.c.txt": {
+      "sha256": "1a8f2653dbfa0037ec4e2f0394431676ea37a29a88fe83ef49325bd1b60d4446",
+      "bytes": 3584
+    },
+    "launchd-session-NxjwWY.json": {
+      "sha256": "a915240932815c5d20d3e884c7cbf4a1472df911915ba307053d81ae47be55bb",
+      "bytes": 4712
+    },
+    "launchd-session-lJCeh8.json": {
+      "sha256": "9d66fca7cf33a0baaf63f8b775d24fc48dc8c9008e3105c9285853596c55eabb",
+      "bytes": 4450
+    },
+    "market-source-manifest.json": {
+      "sha256": "34bd6efef3dcef9fdbf961daf71e437746f11f6a0cec375522d3d0c2ef89589a",
+      "bytes": 7108
+    },
+    "node-spawn-SKGXqE.json": {
+      "sha256": "4f9b3a0bd848bcf33d6e4fababd035086a78ba5434b9659276f644249deff516",
+      "bytes": 5215
+    },
+    "node-spawn-pbB3vt.json": {
+      "sha256": "27fe7a8901f7eca05f9e35cc65a6dd4c766eecd21fdc9dc83e538c46901141d1",
+      "bytes": 2298
+    },
+    "node-spawn-tXVReV.json": {
+      "sha256": "65a87d64c29538b2f1bc6c6ea0e1a1606c55a3c965d47057acd994e933e13cb8",
+      "bytes": 3066
+    },
+    "process-group-1mRIFc.json": {
+      "sha256": "53091ed03a717f73c4cc0f36013197466f5589eff6e4652052eae93c63ba0279",
+      "bytes": 6451
+    },
+    "process-group-UiqBqr.json": {
+      "sha256": "f6a05d9314822efc6d583724c088321effb302303969220a27045f3d144a075c",
+      "bytes": 11895
+    },
+    "process-group-probe.c.txt": {
+      "sha256": "c59c1d23b1639c799f9032d546e4caa68a2191df75d4bf4d532623ae19b957f6",
+      "bytes": 1792
+    },
+    "run-audit-cohort-probe-v1.mjs.txt": {
+      "sha256": "f6e9bef2c0c82b5946f75fe0a0786067b78611fdd97eae319e324d10bad1509f",
+      "bytes": 6088
+    },
+    "run-audit-cohort-probe-v2.mjs.txt": {
+      "sha256": "e3b5b83e462f763181117e124b6b997b7aa38e5af0152b513ebe10cdfdfc7d3d",
+      "bytes": 6287
+    },
+    "run-audit-cohort-probe-v3.mjs.txt": {
+      "sha256": "d112ae53d82947361944f92674b49194b885465a7b987e5778f0fb5a61a812a0",
+      "bytes": 6764
+    },
+    "run-audit-cohort-probe.mjs": {
+      "sha256": "b5dc3a2b9761df3be67dc0b760b28e7fa41ddbe7e501fc126456ba6245782edc",
+      "bytes": 7184
+    },
+    "run-launchd-bootout-probe.mjs": {
+      "sha256": "41a3d1181cee689d079a9e96cc2722f027f9d99983e717339514bdd024acf56c",
+      "bytes": 7079
+    },
+    "run-launchd-session-probe-v1.mjs.txt": {
+      "sha256": "ec31ad1b0092ae4fa4a649db929f021c89d3c4052faf6c262ac33ba2873beca3",
+      "bytes": 4686
+    },
+    "run-launchd-session-probe.mjs": {
+      "sha256": "d82eb807f48fc6003af21affda43ab9fb1d90091ddc2ebf51a41f99a664433ee",
+      "bytes": 5022
+    },
+    "run-node-spawn-probe-v1.mjs.txt": {
+      "sha256": "946ad6112242f51d86a834fca210621a653efbd964ff56af6894da63a4d03840",
+      "bytes": 4544
+    },
+    "run-node-spawn-probe-v2.mjs.txt": {
+      "sha256": "6c73bc5a3cecd65409f3f16ea9dbd9f6d5b14812f98744d9651d0dc2e84f4b46",
+      "bytes": 4551
+    },
+    "run-node-spawn-probe.mjs": {
+      "sha256": "3d9fb71e031bd703a9c63d0879b3721248bffae5eaad6ca5990def0ed1a4cb85",
+      "bytes": 4561
+    },
+    "run-process-group-probe-v1.mjs.txt": {
+      "sha256": "1e89d94947afb4e43fa715570129f4d49518924025c8d452d82853bfc61297df",
+      "bytes": 4448
+    },
+    "run-process-group-probe.mjs": {
+      "sha256": "7e91c21b23db5cfd498a7d7cdd6277b0cf175bf23296242ee650143142946528",
+      "bytes": 4486
+    },
+    "run-security-session-probe.mjs": {
+      "sha256": "e228207e4ea39bfd8afaac819247fbc0102c19dba49649e7f11ade89c609de2d",
+      "bytes": 2948
+    },
+    "run-session-lookup-probe-v1.mjs.txt": {
+      "sha256": "8530cb5b87f440f244f324a5fd6ab69a214e4fb2f07ed63743f8d29d72560d57",
+      "bytes": 6730
+    },
+    "run-session-lookup-probe.mjs": {
+      "sha256": "328a430b46a90b2bb83b809e38e87248ba46d63759525194e0e38f2a2ec49df4",
+      "bytes": 7048
+    },
+    "security-session-aOPSG8.json": {
+      "sha256": "868abc466e558f2fa8b88952325679a0268ea020e4cd3f807c3d6fca1668acce",
+      "bytes": 1653
+    },
+    "security-session-probe-v1.c.txt": {
+      "sha256": "658b397353f66fc454331e0056350f043a436d2c2b77b4c06f27aa702d03a221",
+      "bytes": 1302
+    },
+    "security-session-probe.c.txt": {
+      "sha256": "094cc285de294572ae61d48f4cc976fe984fa28ff788ea98c5d25e59f04a6bc8",
+      "bytes": 1662
+    },
+    "session-lookup-AVa3pC.json": {
+      "sha256": "15cedeffdedb0514dcf7428050303c10329986298f69ca1d78f828b01770fbf0",
+      "bytes": 7545
+    },
+    "session-lookup-probe.c.txt": {
+      "sha256": "b7ecae84104f060a3184fd08afe348c1d1835b2bd37645ac154fa7fa81d64c98",
+      "bytes": 4042
+    },
+    "session-lookup-u9AUO2.json": {
+      "sha256": "ab1eeb051b85bcd89abb6992af01af563b62de8b78ccdc1b424a12aabfa154d5",
+      "bytes": 8654
+    },
+    "deployment-source-manifest.json": {
+      "sha256": "a97547922946a69bfb01c2ff87455c9d80a2b06c731215dbe47a684b0c3a86cb",
+      "bytes": 6603
+    },
+    "apple-deployment-api-review.json": {
+      "sha256": "27f11d82d4cc17bdf95c8d4936ad0f3bc53b0b49fcd9012e4756e03a6c094163",
+      "bytes": 1621
+    }
+  },
+  "checks": {
+    "sourceAndControllerHashesResolved": true,
+    "allRecordedFixturePathsAbsent": true,
+    "recordedLaunchdJobsUnloaded": true
+  },
+  "limitations": [
+    "Historical node controls include expected or setup failures; no blanket pass claim.",
+    "Latest production regression predates these standalone probes.",
+    "Other regression fixtures held by user virtualization remain outside this cleanup."
+  ],
+  "researchMetadata": [
+    "market-source-manifest.json",
+    "apple-descendants-api-review.json",
+    "deployment-source-manifest.json",
+    "apple-deployment-api-review.json"
+  ]
+}

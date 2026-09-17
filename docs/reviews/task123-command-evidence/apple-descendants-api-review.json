@@ -1,0 +1,56 @@
+{
+  "scope": "Read-only official Apple DocC metadata; no API invoked, SDK installed, signing grant requested or product integration.",
+  "sources": [
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/endpointsecurity/es_new_descendants_client(_:_:).json",
+      "sha256": "3220247a6975695adb143dc147d1ef90723c4c987900a94493d6bee04ce135af",
+      "bytes": 14820,
+      "metadata": {
+        "title": "es_new_descendants_client(_:_:)",
+        "platforms": [
+          {
+            "beta": false,
+            "deprecated": false,
+            "introducedAt": "27.0",
+            "name": "macOS",
+            "unavailable": false
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/bundleresources/entitlements/com.apple.developer.endpoint-security.client.json",
+      "sha256": "1b348a09411238bbb2ed27aab39934d8ae93fd980d9857415e4ff8a8ee39da0c",
+      "bytes": 9297,
+      "metadata": {
+        "title": "com.apple.developer.endpoint-security.client",
+        "platforms": [
+          {
+            "beta": false,
+            "deprecated": false,
+            "introducedAt": "10.15",
+            "name": "macOS",
+            "unavailable": false
+          }
+        ]
+      }
+    }
+  ],
+  "recordedAt": "2026-09-16T01:56:02.626334+00:00",
+  "review": {
+    "subtreeScope": "Caller notification events and existing/future descendant authorization and notification events; unrelated processes outside scope.",
+    "privileges": "No root or TCC approval; Endpoint Security client entitlement remains required. Apple requires applying for that entitlement.",
+    "availability": "Official DocC metadata introducedAt 27.0. Search-rendered page showed Beta Software while live DocC beta=false; neither proves a released compatible runtime.",
+    "decision": "Future candidate only; no lifecycle-completeness validation or entitlement grant. Current macOS 15+ support and ad-hoc signing remain unchanged."
+  },
+  "host": {
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71",
+    "architecture": "arm64",
+    "header": {
+      "path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/EndpointSecurity/ESClient.h",
+      "sha256": "621b5f7aa5a4f04c645a29f947b25d9210c44fb1411d2fe92bdc093afb7f1f4e",
+      "descendantsSymbolDeclared": false
+    },
+    "runtimeSymbolPresent": false
+  }
+}

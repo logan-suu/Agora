@@ -1,0 +1,67 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts (21 tests | 1 failed) 34438ms
+   ✓ recovers a transient read-only capture timeout without changing launch or call deadlines  1334ms
+   ✓ still rejects release authorization after a transient capture timeout  1014ms
+   ✓ bounds persistent capture timeouts to three attempts and keeps resources quarantined  1505ms
+   ✓ does not retry a failed kernel query that did not time out  745ms
+   ✓ rechecks authority before retrying capture  1023ms
+   ✓ does not execute a replacement helper on a capture retry  1046ms
+   ✓ honors cancellation between capture attempts  1051ms
+   ✓ observes bootstrap exit before another PID capture can be attempted  1040ms
+   ✓ refuses a capture when a control-plane check exhausts the original startup window  5895ms
+   ✓ registers the suspended executable before any constructor or project code runs  762ms
+   ✓ keeps project code suspended when the release authorization is revoked  642ms
+   ✓ does not release the executable when durable registration fails  2360ms
+   × closes the bootstrap control channel and inherited extra descriptors before project code 8179ms
+     → expected false to be true // Object.is equality
+   ✓ records a failed exec without releasing any project code  1663ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  413ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  864ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  1288ms
+   ✓ persists the executable result independently of the bootstrap and survives reopening  969ms
+   ✓ never overwrites a terminal launch fact and rejects stale revisions  785ms
+   ✓ rejects persisted launch facts that contradict identities or release state  965ms
+   ✓ preserves observed process facts without claiming a launch receipt when final persistence is blocked  879ms
+ ✓ tests/integration/phase12/phase12-3-command-binding.test.ts (12 tests) 8906ms
+   ✓ stops registered execution when grant-revision changes  806ms
+   ✓ stops registered execution when worker changes  850ms
+   ✓ stops registered execution when writer-epoch changes  784ms
+   ✓ stops registered execution when authority-error changes  755ms
+   ✓ refuses to release project code after a root is replaced  641ms
+   ✓ stops on ancestor relocation and never follows the moved directory  851ms
+   ✓ rejects tool replacement before any process is launched  379ms
+   ✓ keeps invalidation sticky even when the authority is restored  361ms
+   ✓ rejects command arguments that differ from the captured binding  336ms
+   ✓ rechecks authority at completion instead of accepting a successful process exit  810ms
+   ✓ never executes a replaced process-control helper even during cleanup  1430ms
+   ✓ rejects old journal formats and malformed persisted root bindings  902ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > closes the bootstrap control channel and inherited extra descriptors before project code
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:120:34
+    118| it('closes the bootstrap control channel and inherited extra descripto…
+    119|   const result = await probeLocalCommandStart('descriptors');
+    120|   expect(result.result.released).toBe(true);
+       |                                  ^
+    121|   expect(result.payloadReport).toMatchObject({ extraFds: 0, inheritedS…
+    122|   expect(result.sentinelUnchanged).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 32 passed (33)
+   Start at  13:03:51
+   Duration  43.85s (transform 103ms, setup 0ms, collect 136ms, tests 43.34s, environment 0ms, prepare 66ms)
+

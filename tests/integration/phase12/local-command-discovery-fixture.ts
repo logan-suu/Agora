@@ -1,0 +1,267 @@
+// Trusted controller; fixed payloads always execute inside Seatbelt.
+import {
+  type ChildProcessWithoutNullStreams,
+  execFileSync,
+  spawn,
+  spawnSync,
+} from 'node:child_process';
+import { createHash } from 'node:crypto';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statfsSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { join, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
+import { setTimeout as delay } from 'node:timers/promises';
+import { LocalCommandJournal } from '../../../packages/runtime/sandbox/src/local-command-journal';
+import { captureLocalCommandOutput } from '../../../packages/runtime/sandbox/src/local-command-output';
+import { buildLocalCommandPolicy } from '../../../packages/runtime/sandbox/src/local-command-policy';
+import {
+  captureLocalProcess,
+  checkDiscoveryClosure,
+  discoverLocalProcessCohort,
+  inspectLocalProcess,
+  type LocalProcessDiscovery,
+  type LocalProcessIdentity,
+  prepareLocalProcessControl,
+  stopRegisteredLocalProcesses,
+} from '../../../packages/runtime/sandbox/src/local-command-stop';
+
+type Scenario = 'tree' | 'reparent' | 'wrong-parent' | 'missing-helper';
+const hash = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
+const available = () => {
+  const stat = statfsSync('/private/tmp');
+  return stat.bavail * stat.bsize;
+};
+
+function marker(child: ChildProcessWithoutNullStreams, expected: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let bytes = '';
+    const timer = setTimeout(() => finish(new Error('missing_fixture_marker')), 2000);
+    const data = (chunk: Buffer) => {
+      bytes += chunk.toString();
+      if (bytes === `${expected}\n`) finish();
+      else if (bytes.length > 256 || bytes.includes('\n'))
+        finish(new Error('unexpected_fixture_marker'));
+    };
+    const exit = () => finish(new Error('fixture_exited_before_marker'));
+    const error = (value: Error) => finish(value);
+    function finish(error?: Error) {
+      clearTimeout(timer);
+      child.stdout.off('data', data);
+      child.off('exit', exit);
+      child.off('error', errorHandler);
+      if (error) reject(error);
+      else resolve();
+    }
+    const errorHandler = error;
+    child.stdout.on('data', data);
+    child.once('exit', exit);
+    child.once('error', errorHandler);
+  });
+}
+
+export async function probeLocalCommandDiscovery(scenario: Scenario) {
+  if (process.platform !== 'darwin' || process.arch !== 'arm64')
+    throw new Error('Apple Silicon Seatbelt validation required; no fallback.');
+  const base = mkdtempSync('/private/tmp/agora-task123-validation-');
+  const root = statSync(base);
+  const directory = resolve('test-outputs/reviews/task123-discovery-evidence');
+  mkdirSync(directory, { recursive: true });
+  const evidencePath = join(directory, `${scenario}-${base.split('-').at(-1)}.json`);
+  const paths = [
+    'packages/runtime/sandbox/native/local-process-control.c',
+    'packages/runtime/sandbox/native/local-command-discovery-probe.c',
+    'packages/runtime/sandbox/src/local-command-stop.ts',
+    'packages/runtime/sandbox/src/local-command-policy.ts',
+    'packages/runtime/sandbox/src/local-command-journal.ts',
+    'tests/integration/phase12/local-command-discovery-fixture.ts',
+    'tests/integration/phase12/phase12-3-command-discovery.test.ts',
+  ];
+  const evidence: Record<string, unknown> = {
+    scenario,
+    base,
+    startedAt: new Date().toISOString(),
+    identity: { uid: root.uid, dev: root.dev, ino: root.ino },
+    sources: Object.fromEntries(paths.map((path) => [path, hash(path)])),
+    os: execFileSync('/usr/bin/sw_vers', [], { encoding: 'utf8' }),
+    compiler: execFileSync('/usr/bin/clang', ['--version'], { encoding: 'utf8' }),
+    node: process.version,
+    availableBefore: available(),
+  };
+  const helper = join(base, 'control');
+  const payload = join(base, 'payload');
+  let lastLaunchAt = 0;
+  const known: LocalProcessIdentity[] = [];
+  const outputs: Promise<unknown>[] = [];
+  let fullyStopped = false;
+  try {
+    for (const [source, target] of [
+      [paths[0], helper],
+      [paths[1], payload],
+    ])
+      execFileSync('/usr/bin/clang', [
+        '-std=c11',
+        '-Wall',
+        '-Wextra',
+        '-Werror',
+        '-mmacosx-version-min=15.0',
+        source as string,
+        '-o',
+        target as string,
+      ]);
+    evidence.binaries = { helper: hash(helper), payload: hash(payload) };
+    const controlHash = hash(helper);
+    const controlStarted = performance.now();
+    prepareLocalProcessControl(helper, controlStarted + 5000, () => hash(helper) === controlHash);
+    evidence.controlReadinessMs = performance.now() - controlStarted;
+    for (const name of ['source', 'input', 'output', 'sibling-output', 'journal'])
+      mkdirSync(join(base, name), { mode: 0o700 });
+    const policyFor = (mode: 'tree' | 'sibling') =>
+      buildLocalCommandPolicy({
+        executable: payload,
+        sourceRoot: join(base, 'source'),
+        inputRoot: join(base, 'input'),
+        outputRoot: join(base, mode === 'tree' ? 'output' : 'sibling-output'),
+        deniedRoots: [join(base, 'journal')],
+      });
+    const policies = { tree: policyFor('tree'), sibling: policyFor('sibling') };
+    const launch = async (mode: 'tree' | 'sibling') => {
+      const outputRoot = join(base, mode === 'tree' ? 'output' : 'sibling-output');
+      const policy = policies[mode];
+      evidence[`${mode}Policy`] = policy;
+      lastLaunchAt = Date.now();
+      const child = spawn('/usr/bin/sandbox-exec', ['-p', policy, payload, mode], {
+        cwd: base,
+        env: { NODE_ENV: 'test', HOME: outputRoot, TMPDIR: outputRoot },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      outputs.push(
+        captureLocalCommandOutput(child).then((output) => ({
+          ...output,
+          stdout: { ...output.stdout, bytes: output.stdout.bytes.toString() },
+          stderr: { ...output.stderr, bytes: output.stderr.bytes.toString() },
+        })),
+      );
+      await marker(child, 'ready');
+      const identity = captureLocalProcess(helper, child.pid as number);
+      known.push(identity);
+      return { child, identity };
+    };
+    const journal = new LocalCommandJournal(join(base, 'journal'), true);
+    let record = journal.reserve({
+      commandId: `fixture-${scenario}`,
+      workspaceId: 'fixed-fixture',
+      policyHash: createHash('sha256').update(policies.tree).digest('hex'),
+      inputHash: createHash('sha256').update('empty-fixed-input').digest('hex'),
+      roots: [join(base, 'output')],
+    });
+    const sibling = await launch('sibling');
+    sibling.child.stdin.end('x');
+    const tree = await launch('tree');
+    record = journal.registerBirth(record.commandId, record.revision, tree.identity);
+    const ready = marker(tree.child, 'tree-ready');
+    tree.child.stdin.write('x');
+    await ready;
+    let rejected: LocalProcessDiscovery | undefined;
+    if (scenario === 'wrong-parent') {
+      const wrong = [...tree.identity];
+      wrong[7] = ((wrong[7] ?? 0) + 1) >>> 0;
+      rejected = discoverLocalProcessCohort(helper, [wrong]);
+    }
+    if (scenario === 'missing-helper')
+      rejected = discoverLocalProcessCohort(join(base, 'absent'), [tree.identity]);
+    const treeAliveAfterRejection = inspectLocalProcess(helper, tree.identity).state === 'alive';
+    const discovery = discoverLocalProcessCohort(helper, [tree.identity]);
+    for (const identity of discovery.identities.slice(1)) {
+      known.push(identity);
+      record = journal.registerBirth(record.commandId, record.revision, identity);
+    }
+    let reparented = false;
+    if (scenario === 'reparent') {
+      const parentExit = marker(tree.child, 'reparented');
+      tree.child.stdin.end('r');
+      await parentExit;
+      const parent = discovery.relations[0]?.child;
+      const grandchild = discovery.relations[1]?.child;
+      reparented =
+        !!parent &&
+        !!grandchild &&
+        inspectLocalProcess(helper, parent).state === 'exited' &&
+        inspectLocalProcess(helper, grandchild).state === 'alive';
+    }
+    const stop = await stopRegisteredLocalProcesses(helper, discovery.identities);
+    const afterStop = discoverLocalProcessCohort(helper, [tree.identity]);
+    const closedDiscovery = checkDiscoveryClosure(helper, afterStop, performance.now() + 1000);
+    const rejectedClosure = rejected
+      ? checkDiscoveryClosure(helper, rejected, performance.now() + 1000)
+      : null;
+    const siblingAlive = inspectLocalProcess(helper, sibling.identity).state === 'alive';
+    record = journal.quarantine(record.commandId, record.revision, 'discovery_incomplete');
+    const reopened = new LocalCommandJournal(join(base, 'journal')).snapshot();
+    const result = {
+      discovery,
+      afterStop,
+      closedDiscovery,
+      rejectedClosure,
+      rejected,
+      treeAliveAfterRejection,
+      reparented,
+      stop,
+      siblingAlive,
+      persistedBirths: record.birthIdentities,
+      blocked: reopened.blocked,
+    };
+    evidence.result = result;
+    evidence.resourceRecord = record;
+    fullyStopped =
+      discovery.observationState === 'observed' &&
+      discovery.identities.length === 3 &&
+      stop.registeredState === 'stopped';
+    return result;
+  } catch (error) {
+    evidence.error = error instanceof Error ? error.message : String(error);
+    throw error;
+  } finally {
+    if (known.length) evidence.finalStop = await stopRegisteredLocalProcesses(helper, known);
+    // Only the fixed payload has bounded fork depth and an eight-second alarm.
+    // Its fallback deadline is not evidence for arbitrary project descendants.
+    if (lastLaunchAt && !fullyStopped) await delay(Math.max(0, lastLaunchAt + 10_000 - Date.now()));
+    evidence.outputs = await Promise.all(outputs);
+    evidence.completedAt = new Date().toISOString();
+    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
+    const current = statSync(base);
+    const handles = spawnSync('/usr/sbin/lsof', ['-nP', '+D', base], { encoding: 'utf8' });
+    const mounts = spawnSync('/sbin/mount', [], { encoding: 'utf8' });
+    const removable =
+      current.uid === root.uid &&
+      current.dev === root.dev &&
+      current.ino === root.ino &&
+      realpathSync(base) === base &&
+      handles.status === 1 &&
+      !handles.stdout &&
+      !handles.stderr &&
+      mounts.status === 0 &&
+      !mounts.stdout.includes(base);
+    evidence.cleanup = {
+      removed: false,
+      handles,
+      mountCheckPassed: mounts.status === 0 && !mounts.stdout.includes(base),
+    };
+    if (removable) {
+      rmSync(base, { recursive: true });
+      evidence.cleanup = { ...(evidence.cleanup as object), removed: !existsSync(base) };
+    }
+    evidence.availableAfter = available();
+    evidence.spaceDelta =
+      (evidence.availableAfter as number) - (evidence.availableBefore as number);
+    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
+  }
+}

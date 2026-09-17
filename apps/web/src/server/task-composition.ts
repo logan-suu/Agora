@@ -91,6 +91,8 @@ export interface WebTaskCompositionOptions {
   executorOptions?: Pick<HarnessExecutorOptions, 'adapter' | 'provider' | 'deepseek' | 'approval'>;
   scheduler?: GlobalScheduler;
   modelSettings?: ModelSettingsService;
+  /** Host-provided factory for tasks with a previously confirmed local binding. */
+  localFactory?: TaskCompositionFactory;
 }
 
 /** Production D10 composition: Docker + MCP tools + Harness + six-role roster. */
@@ -98,17 +100,23 @@ export function createWebTaskCompositionFactory(
   options: WebTaskCompositionOptions = {},
 ): TaskCompositionFactory {
   const scheduler = options.scheduler ?? new GlobalScheduler();
-  return async ({
-    scope,
-    goal,
-    loadState,
-    transition,
-    transitionStep,
-    handleOutput,
-    buildChannelContext,
-    loadRoster,
-    resume,
-  }) => {
+  return async (input) => {
+    const {
+      scope,
+      goal,
+      loadState,
+      transition,
+      transitionStep,
+      handleOutput,
+      buildChannelContext,
+      loadRoster,
+      resume,
+    } = input;
+    const persisted = await loadState();
+    if (persisted?.localExecution !== undefined) {
+      if (!options.localFactory) throw Error('local_task_composition_unavailable');
+      return options.localFactory(input);
+    }
     const dataRoot = resolve(options.dataRoot ?? join(process.cwd(), '.data'));
     const modelBinding = await options.modelSettings?.freeze(scope, goal, resume !== undefined);
     const modelRoutes =

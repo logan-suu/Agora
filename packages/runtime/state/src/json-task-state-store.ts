@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import {
   type AppState,
   applyMutations,
+  assertLocalExecutionState,
   assertParallelState,
   isIntegration,
   isMessage,
@@ -183,6 +184,7 @@ export class JsonTaskStateStore implements TaskStateStore {
     }
     try {
       assertParallelState(state);
+      assertLocalExecutionState(state);
     } catch (error) {
       throw new Error(`${prefix}: ${error instanceof Error ? error.message : String(error)}`, {
         cause: error,

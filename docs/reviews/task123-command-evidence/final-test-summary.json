@@ -1,0 +1,95 @@
+{
+  "scripts": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "vitest": {
+    "files": 225,
+    "passed": 1748,
+    "failed": 0,
+    "skipped": 0
+  },
+  "groups": {
+    "packages": {
+      "files": 103,
+      "tests": 1062
+    },
+    "integration-phase9": {
+      "files": 6,
+      "tests": 19
+    },
+    "integration-phase10": {
+      "files": 7,
+      "tests": 27
+    },
+    "integration-phase12": {
+      "files": 18,
+      "tests": 168
+    },
+    "web": {
+      "files": 28,
+      "tests": 213
+    },
+    "integration-phase5": {
+      "files": 1,
+      "tests": 4
+    },
+    "integration-phase2": {
+      "files": 1,
+      "tests": 16
+    },
+    "integration-phase1": {
+      "files": 1,
+      "tests": 13
+    },
+    "desktop": {
+      "files": 14,
+      "tests": 49
+    },
+    "integration-phase3": {
+      "files": 1,
+      "tests": 5
+    },
+    "integration-phase0": {
+      "files": 1,
+      "tests": 7
+    },
+    "integration-phase4": {
+      "files": 2,
+      "tests": 5
+    },
+    "integration-phase8": {
+      "files": 4,
+      "tests": 6
+    },
+    "integration-phase11": {
+      "files": 3,
+      "tests": 5
+    },
+    "eval-support-tests (not Benchmark)": {
+      "files": 29,
+      "tests": 139
+    },
+    "integration-phase7": {
+      "files": 4,
+      "tests": 7
+    },
+    "integration-phase6": {
+      "files": 1,
+      "tests": 2
+    },
+    "cross-phase": {
+      "files": 1,
+      "tests": 1
+    }
+  },
+  "durationSeconds": 912.9,
+  "provider": "opencode-go",
+  "model": "deepseek-v4-flash",
+  "additionalIpcG5": {
+    "passed": 1,
+    "failed": 0,
+    "log": "local-ipc-native-2.log"
+  }
+}

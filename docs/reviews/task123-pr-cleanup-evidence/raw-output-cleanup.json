@@ -1,0 +1,33 @@
+{
+  "rawOutputsDeleted": 443,
+  "rawOutputBytes": 4365853,
+  "rawPathAndHashDigest": "0045fbba4ecb8c462ed90bb3fdb6156fbde7f25ca8cb17a3570ead0d98196ea4",
+  "scopedToCurrentRun": true,
+  "noOpenHandles": true,
+  "fixtureCleanupSummary": "fixture-cleanup.json",
+  "temporaryControllers": [
+    {
+      "path": "/private/tmp/agora-review-prune.py",
+      "sha256": "a89f840937c2909b0a5a8f07c97d06e812e7b4b846bc14d6ed8841fed549bb09",
+      "dev": 16777231,
+      "ino": 128590026,
+      "removed": true
+    },
+    {
+      "path": "/private/tmp/agora-review-prune-selection.json",
+      "sha256": "24198fcab1c925fc9cc03f81be15b4cf4b4b4a95d5ac937015182b0eee53fda6",
+      "dev": 16777231,
+      "ino": 128590028,
+      "removed": true
+    },
+    {
+      "path": "/private/tmp/agora-review-cleanup.mjs",
+      "sha256": "5920d336d4c054a974171c1f8d18edbc7f1076798a4e458d95e3640f0b0477b9",
+      "dev": 16777231,
+      "ino": 128590140,
+      "removed": true
+    }
+  ],
+  "cleanupControllerSource": "https://github.com/logan-suu/Agora/blob/05987ccbd20e6a55a553750577a900f44bc353d0/docs/reviews/task123-command-evidence/final-cleanup-controller-source.txt",
+  "cleanupControllerChange": "Only evidence directory changed from docs/reviews/task123-command-evidence to test-outputs/review-prune."
+}

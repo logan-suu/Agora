@@ -230,6 +230,9 @@ importers:
       '@agora/runtime-executor':
         specifier: workspace:*
         version: link:../../runtime/executor
+      '@agora/runtime-sandbox':
+        specifier: workspace:*
+        version: link:../../runtime/sandbox
       '@agora/runtime-state':
         specifier: workspace:*
         version: link:../../runtime/state

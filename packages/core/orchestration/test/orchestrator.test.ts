@@ -40,6 +40,37 @@ class FakeExecutor implements Executor {
 
 const SUBTASK_ID = 'lru-1-sub-0';
 
+it('does not dispatch another worker when an external pause has persisted a gate', async () => {
+  const state = applyMutations(createInitialAppState('paused', 'Fixed pause'), [
+    setMutation('phase', 'coding'),
+    setMutation('humanGate', {
+      gateId: 'human-gate:pause',
+      reason: 'iteration_limit',
+      options: ['continue'],
+      phase: 'coding',
+      openedTs: 1,
+      safePointRefs: ['fixed-safe-point'],
+    }),
+  ]);
+  const runtime = new WorkerRuntime({
+    roster: PHASE0_ROSTER,
+    buildExecutor: () => {
+      throw Error('must remain paused');
+    },
+  });
+  const transition = vi.fn(
+    async (current: AppState, mutations: Parameters<typeof applyMutations>[1]) =>
+      applyMutations(current, mutations),
+  );
+  const result = await runOrchestration(state, {
+    workerRuntime: runtime,
+    roster: PHASE0_ROSTER,
+    transition,
+  });
+  expect(result).toEqual(state);
+  expect(transition).not.toHaveBeenCalled();
+});
+
 function coderRound(round: number): FakeExecutor {
   return new FakeExecutor([
     {

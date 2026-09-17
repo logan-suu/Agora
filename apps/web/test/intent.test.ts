@@ -387,3 +387,35 @@ describe('planLeaderIntent', () => {
     });
   });
 });
+
+describe('workspace control transport boundary', () => {
+  const command =
+    '/workspace revoke {"projectId":"project","taskId":"task","actionId":"action","expectedRevision":0,"grantId":"grant"}';
+  it('parses a closed workspace action and refuses execution without a bound controller', () => {
+    const intent = parseLeaderIntent(command);
+    expect(intent).toMatchObject({ kind: 'workspace_control', verb: 'revoke', grantId: 'grant' });
+    expect(
+      planLeaderIntent(intent, createInitialAppState('task', 'goal', 'project'), roster),
+    ).toEqual({
+      intent,
+      action: { status: 'rejected', reason: 'workspace_controller_required' },
+      mutations: [],
+    });
+  });
+  it('rejects duplicate scope keys and unknown workspace fields', () => {
+    expect(
+      parseLeaderIntent(
+        command.replace('"projectId":"project"', '"projectId":"project","projectId":"other"'),
+      ),
+    ).toEqual({
+      kind: 'invalid',
+      reason: 'invalid_workspace_control',
+    });
+    expect(
+      parseLeaderIntent(command.replace('"grantId":"grant"', '"grantId":"grant","path":"/tmp"')),
+    ).toEqual({
+      kind: 'invalid',
+      reason: 'invalid_workspace_control',
+    });
+  });
+});

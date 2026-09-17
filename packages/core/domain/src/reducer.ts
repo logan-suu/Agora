@@ -2,6 +2,7 @@ import type { HandoffPacket } from './handoff';
 import { assertAppendableHandoff } from './handoff';
 import type { Decision } from './ledger';
 import { assertAppendableDecision } from './ledger';
+import { assertLocalExecutionState, assertLocalExecutionTransition } from './local-execution';
 import type { Objection } from './objection';
 import { assertAppendableObjection } from './objection';
 import { assertParallelState, isParallelExecution } from './parallel-execution';
@@ -46,6 +47,7 @@ export const SET_FIELDS = [
   'humanGate',
   'integration',
   'parallelExecution',
+  'localExecution',
   'architecture',
   'conventions',
   'complexity',
@@ -72,6 +74,7 @@ export const ENABLED_SET_FIELDS: readonly SetField[] = [
   'humanGate',
   'integration',
   'parallelExecution',
+  'localExecution',
   'architecture',
   'conventions',
   'complexity',
@@ -198,6 +201,15 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
       ) {
         throw new Error('immutable wave_validation receipt conflicts with its canonical message');
       }
+      if (
+        (message.payload?.kind === 'workspace_validation' ||
+          existing?.payload?.kind === 'workspace_validation') &&
+        existing !== undefined &&
+        !deepEqual(existing, message)
+      )
+        throw new Error(
+          'immutable workspace_validation receipt conflicts with its canonical message',
+        );
       return { ...state, messages: deduplicatedAppend(state.messages, value) as Message[] };
     }
     case 'reviewComments':
@@ -383,6 +395,9 @@ function applySet(state: AppState, field: SetField, value: unknown): AppState {
         throw new Error('architecture must be a non-array object');
       }
       return { ...state, architecture: value as Record<string, unknown> };
+    case 'localExecution':
+      assertLocalExecutionTransition(state.localExecution, value);
+      return { ...state, localExecution: structuredClone(value) };
     case 'parallelExecution':
       if (!isParallelExecution(value))
         throw new Error('parallelExecution must be a valid wave control record');
@@ -424,5 +439,6 @@ export function applyMutations(state: AppState, mutations: readonly Mutation[]):
     }
   }
   assertParallelState(current);
+  assertLocalExecutionState(current);
   return current;
 }

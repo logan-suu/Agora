@@ -144,6 +144,17 @@ await cp(
   join(source, `packages/runtime/sandbox/build/secure-files-darwin-${arch}`),
   join(tools, 'secure-files'),
 );
+for (const name of [
+  'local-root-inspection',
+  'local-root-initialization',
+  'local-file-transaction',
+  'local-command-bootstrap',
+  'local-process-control',
+])
+  await cp(
+    join(source, `packages/runtime/sandbox/build/${name}-darwin-${arch}`),
+    join(tools, name),
+  );
 await cp(resolve(gitArg), join(tools, 'git'), { recursive: true, verbatimSymlinks: true });
 await cp(resolve(pnpmArg), join(tools, 'pnpm'), { recursive: true, verbatimSymlinks: true });
 await mkdir(join(tools, 'bin'));
@@ -172,6 +183,13 @@ await writeFile(
       pnpm: 'https://github.com/pnpm/pnpm/tree/v9.15.9',
       helperSource: [
         'packages/runtime/sandbox/native/secure-files.c',
+        ...[
+          'local-root-inspection',
+          'local-root-initialization',
+          'local-file-transaction',
+          'local-command-bootstrap',
+          'local-process-control',
+        ].map((name) => `packages/runtime/sandbox/native/${name}.c`),
         'packages/runtime/state/native/keychain.c',
       ],
     },

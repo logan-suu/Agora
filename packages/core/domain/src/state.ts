@@ -1,5 +1,7 @@
 import type { HandoffPacket } from './handoff';
 import type { Decision } from './ledger';
+import type { LocalExecutionV1 } from './local-execution';
+import type { WorkspaceVersionV1 } from './local-workspace';
 import type { Objection } from './objection';
 import type { ParallelExecution } from './parallel-execution';
 
@@ -107,7 +109,7 @@ function hasGitUnsafeControlChar(value: string): boolean {
   });
 }
 
-function isGitSafeBranch(value: string): boolean {
+export function isGitSafeBranch(value: string): boolean {
   return (
     value.length > 0 &&
     value !== '@' &&
@@ -392,6 +394,7 @@ export function isMessage(value: unknown): value is Message {
 }
 
 export interface TestResults {
+  workspaceVersion?: WorkspaceVersionV1;
   passed: boolean;
   total: number;
   failed: number;
@@ -458,6 +461,7 @@ export interface Complexity {
 }
 
 export interface AppState {
+  localExecution?: LocalExecutionV1;
   projectId: string;
   taskId: string;
   goal: string;

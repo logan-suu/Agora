@@ -1055,3 +1055,25 @@ describe('project slice compression (task 3.4, spec §7 cross-agent slice compre
     }
   });
 });
+
+it('rejects mixed local and legacy workspace state before building model slices', () => {
+  const state = createInitialAppState('local', 'fixed task');
+  state.localExecution = {
+    schemaVersion: 'local-execution-v1',
+    rootIds: [],
+    workspaces: [],
+    bindings: [],
+    receipts: [],
+  };
+  state.subtasks = [
+    {
+      id: 'code',
+      title: 'code',
+      ownerRole: 'CODER',
+      status: 'todo',
+      dependsOn: [],
+      worktree: '/legacy',
+    },
+  ];
+  expect(() => project(state, 'CODER', DEFAULT_ROSTER)).toThrow('mixed_workspace_authority');
+});

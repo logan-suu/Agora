@@ -8,6 +8,7 @@ import {
   type MessageRuntime,
   RequirementInputError,
   type RequirementProposalAction,
+  WorkspaceControlInputError,
 } from './message-runtime';
 
 const HEARTBEAT_INTERVAL_MS = 15_000;
@@ -70,6 +71,7 @@ export function createPostMessage(runtime: MessageRuntime) {
       );
     } catch (error) {
       if (error instanceof RequirementInputError) return jsonError(error.message, error.status);
+      if (error instanceof WorkspaceControlInputError) return jsonError(error.message, 409);
       throw error;
     }
   };

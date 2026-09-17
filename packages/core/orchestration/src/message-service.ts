@@ -65,7 +65,7 @@ export class MessageService {
   async commitPlannedMessage(
     scope: TaskScope,
     msgId: string,
-    plan: (state: AppState) => PlannedMessage,
+    plan: (state: AppState) => PlannedMessage | Promise<PlannedMessage>,
   ): Promise<MessageCommitResult> {
     return this.#enqueue(scope, async () => {
       const current = await this.#store.load(scope);
@@ -80,7 +80,7 @@ export class MessageService {
         return { state: current, published: false, message: existing };
       }
 
-      const planned = plan(current);
+      const planned = await plan(current);
       if (planned.message.msgId !== msgId) {
         throw new Error(
           `planned message msgId "${planned.message.msgId}" does not match requested msgId "${msgId}"`,

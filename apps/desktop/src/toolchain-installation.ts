@@ -104,3 +104,36 @@ export async function verifyToolchain(root: string, arch: string = process.arch)
   }
   return { state: 'ready' as const, versions: toolVersions };
 }
+
+/** Local execution requires the new native boundaries in addition to the
+ * existing installation toolchain. Older previews remain browse-only. */
+export async function verifyLocalExecutionToolchain(root: string, arch: string = process.arch) {
+  const bytes = await readFile(join(root, 'manifest.json'));
+  await verifyToolchain(root, arch);
+  if (!(await readFile(join(root, 'manifest.json'))).equals(bytes))
+    throw Error('toolchain_local_execution_invalid');
+  const manifest = JSON.parse(bytes.toString('utf8'));
+  const files = manifest.files as ToolFile[];
+  function binary(name: string) {
+    const entry = files.find((file) => file.path === name);
+    if (!entry?.sha256 || !entry.executable || entry.link || !/^[a-f0-9]{64}$/.test(entry.sha256))
+      throw Error('toolchain_local_execution_invalid');
+    return { path: join(root, name), sha256: entry.sha256 };
+  }
+  return {
+    inspector: binary('local-root-inspection').path,
+    initializer: binary('local-root-initialization').path,
+    filesHelper: binary('local-file-transaction').path,
+    tools: {
+      manifestHash: createHash('sha256').update(bytes).digest('hex'),
+      node: { ...binary('node/bin/node'), version: toolVersions.node },
+      bootstrap: binary('local-command-bootstrap'),
+      processControl: binary('local-process-control'),
+      pnpm: {
+        root: join(root, 'pnpm'),
+        manifestPath: join(root, 'manifest.json'),
+        version: toolVersions.pnpm,
+      },
+    },
+  };
+}

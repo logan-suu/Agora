@@ -1,0 +1,138 @@
+{
+  "fullSuite": {
+    "scriptTests": 7,
+    "files": 225,
+    "tests": 1748,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 937.92,
+    "frozenInputsMatchedAtCompletion": 609
+  },
+  "followUp": {
+    "outputPathFilesChangedAfterFullRun": 3,
+    "tests": 37,
+    "passed": 37,
+    "seconds": 12.32
+  },
+  "ipc": {
+    "passed": 1,
+    "seconds": 0.582
+  },
+  "typecheck": "passed",
+  "lint": {
+    "passed": true,
+    "files": 585
+  },
+  "productionRuntimeBuildInputsUnchanged": true,
+  "sourceHashBase": "../task123-command-evidence/final-source-checkpoint.json",
+  "sourceDeltas": {
+    "packages/runtime/sandbox/test/local-registry-file.test.ts": {
+      "baseline": "8a0635ba156138cba899efe003c19af8fc6e0e1ff6245e7a6158e1dce95746b0",
+      "fullRegression": "8a0635ba156138cba899efe003c19af8fc6e0e1ff6245e7a6158e1dce95746b0",
+      "final": "1e49ef673ec9d1a584467408628985d38184ac39a0279cf0a8104da9565c72cf"
+    },
+    "packages/runtime/sandbox/test/local-root-initialization.test.ts": {
+      "baseline": "30da65c456556e831c77dc2bbabfb3e76ca982af87189736fb71968323363bc1",
+      "fullRegression": "30da65c456556e831c77dc2bbabfb3e76ca982af87189736fb71968323363bc1",
+      "final": "c35646f25c619f9f6db82a33322ac49a0869c17d05ae6e070355f3ac7e22a16d"
+    },
+    "packages/runtime/sandbox/test/local-root-inspection.test.ts": {
+      "baseline": "922544ac46c4b83a693d682e474339ebb4cf72a36c92d43de3060c5651a7039f",
+      "fullRegression": "922544ac46c4b83a693d682e474339ebb4cf72a36c92d43de3060c5651a7039f",
+      "final": "2094c8b445f2a79e538e55d8006afa592b7e3fa165b76d8f8d54e18fdae3a861"
+    },
+    "tests/integration/phase12/local-boundary-fixture.ts": {
+      "baseline": "4f516302076a280b5f8055daf29846c54631d4e371adf7eb1ff9e1b66e0895fb",
+      "fullRegression": "6ed480704e60dc6f80b669cb3f916c10ffa1df02d0128c8b984bea8ccea39975",
+      "final": "6ed480704e60dc6f80b669cb3f916c10ffa1df02d0128c8b984bea8ccea39975"
+    },
+    "tests/integration/phase12/local-command-binding-fixture.ts": {
+      "baseline": "4973c7bc81af927c8ad9d553ce439876efd6252269e1e8ac6824cfdbf1e8a125",
+      "fullRegression": "1a952281e2daead69bf0fd0572a7566b7b54c13b4d0a8a7420d26054253abd28",
+      "final": "1a952281e2daead69bf0fd0572a7566b7b54c13b4d0a8a7420d26054253abd28"
+    },
+    "tests/integration/phase12/local-command-discovery-fixture.ts": {
+      "baseline": "ee2c6f5b734e590aaa0ec0c9834a9bf9a7864e85c691cb1d5e9c7aeadbcaeba8",
+      "fullRegression": "5283aa09a7a9e1f152212b2e12c31fa60920e4b9d106aeebb9f01469f89a89ca",
+      "final": "5283aa09a7a9e1f152212b2e12c31fa60920e4b9d106aeebb9f01469f89a89ca"
+    },
+    "tests/integration/phase12/local-command-isolation-fixture.ts": {
+      "baseline": "28c4056dbd06bc3217df5e984610904bc358c88a5da40ccff20b79bd11e603a4",
+      "fullRegression": "a4b8c63724497346ecbf48cb3f6fd05c5fc62c073a0feea2f22dd65e45f72cee",
+      "final": "a4b8c63724497346ecbf48cb3f6fd05c5fc62c073a0feea2f22dd65e45f72cee"
+    },
+    "tests/integration/phase12/local-command-journal-fixture.ts": {
+      "baseline": "7d5acf4c1e5850e0710ffe3955064b776548450c9df134fc085114b4f1f16c36",
+      "fullRegression": "bb784d18a019bb99026f711cad719da6fed557355d961d9d71b4862a10a0dbad",
+      "final": "bb784d18a019bb99026f711cad719da6fed557355d961d9d71b4862a10a0dbad"
+    },
+    "tests/integration/phase12/local-command-start-fixture.ts": {
+      "baseline": "6ce6bbb11df9f24e55b433ef9c29888e71d6a7ebc9a1d2e884abd416761befc3",
+      "fullRegression": "5b48a6846f4afcdd0f0041b386c2463771f99689114db8ccc53f24020216f278",
+      "final": "5b48a6846f4afcdd0f0041b386c2463771f99689114db8ccc53f24020216f278"
+    },
+    "tests/integration/phase12/local-command-stop-fixture.ts": {
+      "baseline": "69d422b1fd4856f5d286071c6516ca7221c99c609879736d77fee5a6ba9c8dcf",
+      "fullRegression": "cb78bb27038cc68cbbfa6bc9cad65a28d3cddc47af64a06b1a4094c85ef54112",
+      "final": "cb78bb27038cc68cbbfa6bc9cad65a28d3cddc47af64a06b1a4094c85ef54112"
+    },
+    "tests/integration/phase12/local-command-supervision-fixture.ts": {
+      "baseline": "fc6119dc2663640fd7aa2f69818c5eecc2f50f89b07b047b3a0d594826a450f0",
+      "fullRegression": "9d213fb233bd60fd88a6742f61d7ac5980a02eb6f40f259d7f7b6e5133604ee1",
+      "final": "9d213fb233bd60fd88a6742f61d7ac5980a02eb6f40f259d7f7b6e5133604ee1"
+    },
+    "tests/integration/phase12/local-transaction-fixture.ts": {
+      "baseline": "cfc5898175bde848c9c25b4919807cc23b37068d9d62be06a461e90dc74cfee7",
+      "fullRegression": "e04d58abf085c3d5709a3325b42e80645fae15739aea1c6f2755632f23f737d5",
+      "final": "e04d58abf085c3d5709a3325b42e80645fae15739aea1c6f2755632f23f737d5"
+    },
+    "tests/integration/phase12/phase12-3-composition.test.ts": {
+      "baseline": "46e1f7357e9e94e565c1a2de7578556a0c2c35f6226f8a9611b1b51654e46ff5",
+      "fullRegression": "dd2744a02ea069ec053f76d503aed8a50f7c1d59227a7a23883d27e578d65a33",
+      "final": "dd2744a02ea069ec053f76d503aed8a50f7c1d59227a7a23883d27e578d65a33"
+    },
+    "tests/integration/phase12/phase12-3-creation.test.ts": {
+      "baseline": "d2e279bbed365725156b8d19f9131650a4bde85c3bdb0792bf71add9283e4272",
+      "fullRegression": "87f1f9b263f4ba0df2f67edec98891a652dad6625d17cc03760cc58136119f2d",
+      "final": "87f1f9b263f4ba0df2f67edec98891a652dad6625d17cc03760cc58136119f2d"
+    },
+    "tests/integration/phase12/phase12-3-download.test.ts": {
+      "baseline": "66fe9280325872b033c22d3dfa02c940c390038c13f2bf84d730134716df9a17",
+      "fullRegression": "18d826a9ec9e7aed3329c0466c1158e68c8a7e1f25dc1156970caaf997d4ea48",
+      "final": "18d826a9ec9e7aed3329c0466c1158e68c8a7e1f25dc1156970caaf997d4ea48"
+    },
+    "tests/integration/phase12/phase12-3-grant.test.ts": {
+      "baseline": "3c6aa952c28c0ed2f2ca8352ee1e8b5d596293c3dc3626abb7770122f5cf525b",
+      "fullRegression": "0c48a8db45df67dfca18c305746e4baa240092c1681db2bc01e32965bd5caaf4",
+      "final": "0c48a8db45df67dfca18c305746e4baa240092c1681db2bc01e32965bd5caaf4"
+    },
+    "tests/integration/phase12/phase12-3-installation.test.ts": {
+      "baseline": "e365af60c737c15338008d22b06159d47510a838daaddeac872e0b9951ff0b74",
+      "fullRegression": "090087f7c6ee1b6dbb2f7cace908a7e3bb8aa3a1a7928faec790d2444f82abe8",
+      "final": "090087f7c6ee1b6dbb2f7cace908a7e3bb8aa3a1a7928faec790d2444f82abe8"
+    },
+    "tests/integration/phase12/phase12-3-live-workspace.test.ts": {
+      "baseline": "b107bccd57ff0d6821bef9dc83309c427b952be0bb2f7a30fc193527e7543b66",
+      "fullRegression": "d3daf91f70a1c9fbad0c30c68b056139ad35167ef77c15844132f9de80e97d8d",
+      "final": "d3daf91f70a1c9fbad0c30c68b056139ad35167ef77c15844132f9de80e97d8d"
+    },
+    "tests/integration/phase12/phase12-3-root-registration.test.ts": {
+      "baseline": "14b63d4494f31e96a86ef478b959624c78279adf4239b319d7d355f6ff2f56eb",
+      "fullRegression": "40f688ffd61aa34429b4ef9da682c1eb89853bf89d9cd4532b6ae22ccc3ec54b",
+      "final": "40f688ffd61aa34429b4ef9da682c1eb89853bf89d9cd4532b6ae22ccc3ec54b"
+    },
+    "tests/integration/phase12/phase12-3-state-binding.test.ts": {
+      "baseline": "a5a8fcb746584966a6d7407e4e0dfe0c13d95bf0c2191db6b7ffb3ad5cdfc47f",
+      "fullRegression": "3047d64d1ac5bc922bcebf85677ab98b0bb4d3d51e94ce9c7b015401209565f3",
+      "final": "3047d64d1ac5bc922bcebf85677ab98b0bb4d3d51e94ce9c7b015401209565f3"
+    },
+    "tests/integration/phase12/phase12-3-version.test.ts": {
+      "baseline": "01640970cf765d3f98c948aa73a153a76f754dee5c4d0c612737666ca564e4a3",
+      "fullRegression": "a1d58ab21f6639844eaf68fe9a675b41f7e211862b02fe7a72e681ba11f856f6",
+      "final": "a1d58ab21f6639844eaf68fe9a675b41f7e211862b02fe7a72e681ba11f856f6"
+    }
+  },
+  "provider": "opencode-go",
+  "model": "deepseek-v4-flash",
+  "benchmarkRun": false
+}

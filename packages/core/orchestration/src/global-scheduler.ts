@@ -54,6 +54,14 @@ export class GlobalScheduler {
     return this.#activeByLease.size;
   }
 
+  assertActive(lease: SlotLease): void {
+    if (
+      this.#activeByLease.get(lease.leaseId) !== lease ||
+      this.#activeByWorker.get(workerKey(lease.projectId, lease.taskId, lease.workerId)) !== lease
+    )
+      throw leaseMismatch(lease);
+  }
+
   acquire(
     projectId: string,
     taskId: string,

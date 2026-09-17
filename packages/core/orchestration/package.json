@@ -12,6 +12,7 @@
     "@agora/core-domain": "workspace:*",
     "@agora/core-preemption": "workspace:*",
     "@agora/runtime-executor": "workspace:*",
+    "@agora/runtime-sandbox": "workspace:*",
     "@agora/runtime-state": "workspace:*"
   }
 }

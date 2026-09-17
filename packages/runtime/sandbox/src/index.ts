@@ -7,3 +7,5 @@ export * from './recoverable-sandbox-manager';
 export * from './sandbox-manager';
 export * from './types';
 export * from './workspace-adapter';
+export type * from './workspace-port';
+export type * from './workspace-worker-port';

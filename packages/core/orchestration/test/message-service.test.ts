@@ -60,6 +60,35 @@ afterEach(async () => {
 });
 
 describe('MessageService', () => {
+  it('keeps asynchronous approval verification inside the commit queue and preserves state on rejection', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const bus = new RecordingBus();
+    const service = await createService(store, bus);
+    await service.initialize(scope, 'Validate then commit');
+    let enter!: () => void;
+    let reject!: (error: Error) => void;
+    const entered = new Promise<void>((resolve) => {
+      enter = resolve;
+    });
+    const checked = new Promise<void>((_resolve, fail) => {
+      reject = fail;
+    });
+    const first = service.commitPlannedMessage(scope, 'approval', async () => {
+      enter();
+      await checked;
+      return { message: message({ msgId: 'approval' }), mutations: [] };
+    });
+    const failure = expect(first).rejects.toThrow('version changed');
+    await entered;
+    const second = service.commitMessage(scope, message({ msgId: 'after' }));
+    expect((await store.load(scope))?.messages).toEqual([]);
+    expect(bus.events).toEqual([]);
+    reject(Error('version changed'));
+    await failure;
+    await second;
+    expect((await store.load(scope))?.messages.map((m) => m.msgId)).toEqual(['after']);
+    expect(bus.events.map((e) => e.message.msgId)).toEqual(['after']);
+  });
   it('persists a message before publishing its committed event', async () => {
     const store = new JsonTaskStateStore(await temporaryRoot());
     const bus = new RecordingBus();

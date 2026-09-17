@@ -1,0 +1,288 @@
+// Real owner, registry, TaskState and native initialization. The owner fault wraps
+// the real ownership check after the durable native result to simulate interruption.
+import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statfsSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, join, resolve } from 'node:path';
+import { createInitialAppState, parseWorkspaceControl } from '@agora/core-domain';
+import { JsonTaskStateStore } from '@agora/runtime-state';
+import { expect, it } from 'vitest';
+import { acquireState } from '../../../apps/desktop/src/storage';
+import { LocalBindingCoordinator } from '../../../packages/runtime/sandbox/src/local-binding-coordinator';
+import { localRecordHash } from '../../../packages/runtime/sandbox/src/local-registry-records';
+import { LocalRootCoordinator } from '../../../packages/runtime/sandbox/src/local-root-coordinator';
+import { inspectSelectedLocalRoot } from '../../../packages/runtime/sandbox/src/local-root-inspection';
+
+for (const scenario of [
+  'normal',
+  'interrupted',
+  'unapproved',
+  'wrong-selection',
+  'read-only',
+  'native-result-corrupt',
+  'existing',
+])
+  it(`closes authorized root registration: ${scenario}`, async () => {
+    const base = mkdtempSync('/private/tmp/agora-task123-validation-'),
+      identity = lstatSync(base);
+    const root = join(base, 'project'),
+      inspector = join(base, 'inspect'),
+      initializer = join(base, 'initialize');
+    mkdirSync(root);
+    writeFileSync(join(root, 'sentinel'), 'fixed user source');
+    const owner = await acquireState(join(base, 'state'));
+    const folder = resolve('test-outputs/reviews/task123-root-registration-evidence');
+    mkdirSync(folder, { recursive: true });
+    const evidence: Record<string, unknown> = {
+      base,
+      scenario,
+      identity: { dev: identity.dev, ino: identity.ino },
+      startedAt: new Date().toISOString(),
+    };
+    let error: unknown;
+    try {
+      for (const [name, target] of [
+        ['local-root-inspection.c', inspector],
+        ['local-root-initialization.c', initializer],
+      ])
+        execFileSync('/usr/bin/clang', [
+          '-std=c11',
+          '-Wall',
+          '-Wextra',
+          '-Werror',
+          '-mmacosx-version-min=15.0',
+          resolve('packages/runtime/sandbox/native', name as string),
+          '-o',
+          target as string,
+        ]);
+      const inspection = inspectSelectedLocalRoot(root, inspector);
+      const sourceId = inspection.chain.at(-1)?.identity.split(':');
+      if (!sourceId) throw Error('missing root identity');
+      const scope = { projectId: 'project', taskId: 'task' };
+      const display =
+        '/workspace grant ' +
+        JSON.stringify({
+          ...scope,
+          actionId: 'grant-root',
+          expectedRevision: 0,
+          selectionRef: scenario === 'wrong-selection' ? 'other-selection' : 'selection',
+          policyProposalId: 'proposal',
+          inputHash: 'a'.repeat(64),
+        });
+      const state = createInitialAppState(scope.taskId, 'fixed root registration', scope.projectId);
+      state.messages.push({
+        msgId: 'grant-source',
+        channelId: 'main',
+        fromRole: 'leader',
+        type: 'chat',
+        display,
+        ts: 1,
+        payload: {
+          kind: 'leader_intent',
+          intent: parseWorkspaceControl(display),
+          action: { status: scenario === 'unapproved' ? 'rejected' : 'applied' },
+        },
+      });
+      const tasks = new JsonTaskStateStore(join(owner.root, 'tasks'));
+      await tasks.initialize(scope, state);
+      const control = await LocalBindingCoordinator.open(owner, tasks, true);
+      await control.commitBinding({
+        ...scope,
+        actionId: 'grant-root',
+        sourceMessageId: 'grant-source',
+        expectedRevision: 0,
+        nextLocalExecution: {
+          schemaVersion: 'local-execution-v1',
+          rootIds: ['root'],
+          workspaces: [],
+          bindings: [],
+          receipts: [],
+        },
+        records: {
+          roots: [
+            {
+              rootId: 'root',
+              projectId: 'project',
+              selectionRef: 'selection',
+              path: root,
+              volumeId: inspection.volumeId,
+              dev: sourceId[0] as string,
+              inode: sourceId[1] as string,
+              chain: inspection.chain.map(({ path, identity }) => ({ path, identity })),
+              staging: null,
+              inspectionHash: localRecordHash(inspection),
+            },
+          ],
+          grants: [
+            {
+              grantId: 'grant',
+              projectId: 'project',
+              rootId: 'root',
+              revision: 0,
+              policyVersion: 'fixed-policy',
+              actions: scenario === 'read-only' ? ['read'] : ['read', 'edit'],
+              toolchainHash: 'b'.repeat(64),
+              networkHash: 'c'.repeat(64),
+              policyHash: 'd'.repeat(64),
+              createdActionId: 'grant-root',
+              leaderMessageId: 'grant-source',
+              status: 'active',
+              revocationActionId: null,
+            },
+          ],
+          workspaces: [],
+          claims: [],
+        },
+      });
+      if (scenario === 'existing') {
+        mkdirSync(join(root, '.agora-operations'), { mode: 0o700 });
+        writeFileSync(join(root, '.agora-operations/user'), 'preserve');
+      }
+      let injected = false;
+      const faultOwner = {
+        root: owner.root,
+        assertHeld: async () => {
+          await owner.assertHeld();
+          const parent = join(owner.root, 'local-workspaces', 'initializations');
+          if (
+            scenario === 'interrupted' &&
+            !injected &&
+            existsSync(parent) &&
+            readdirSync(parent).some((p) => existsSync(join(parent, p, 'result.json')))
+          ) {
+            injected = true;
+            throw Error('fixed post-native interruption');
+          }
+        },
+      };
+      const service = await LocalRootCoordinator.open(faultOwner, control, {
+        inspector,
+        initializer,
+      });
+      const request = {
+        ...scope,
+        actionId: 'initialize-root',
+        rootId: 'root',
+        grantId: 'grant',
+        expectedRevision: 2,
+      };
+      if (['unapproved', 'wrong-selection', 'read-only'].includes(scenario)) {
+        await expect(service.initialize(request)).rejects.toThrow(
+          scenario === 'read-only' ? 'workspace_grant_closed' : 'workspace_grant_source_invalid',
+        );
+        expect(existsSync(join(root, '.agora-operations'))).toBe(false);
+        expect((await control.snapshot()).revision).toBe(2);
+      } else {
+        let result: Awaited<ReturnType<typeof service.initialize>>;
+        if (scenario === 'interrupted') {
+          await expect(service.initialize(request)).rejects.toThrow(
+            'fixed post-native interruption',
+          );
+          const inode = lstatSync(join(root, '.agora-operations')).ino;
+          await expect(control.assertClosed(scope)).rejects.toThrow('registry_recovery_required');
+          const recovered = await LocalRootCoordinator.open(owner, control, {
+            inspector,
+            initializer,
+          });
+          result = await recovered.initialize(request);
+          expect(lstatSync(join(root, '.agora-operations')).ino).toBe(inode);
+        } else result = await service.initialize(request);
+        evidence.result = result;
+        if (scenario === 'existing') {
+          expect(result.stage).toBe('prepared');
+          expect(result.nativeReceipt?.stage).toBe('conflict');
+          expect((await control.snapshot()).roots[0]?.staging).toBe(null);
+          expect(readFileSync(join(root, '.agora-operations/user'), 'utf8')).toBe('preserve');
+          await expect(control.assertClosed(scope)).rejects.toThrow('registry_recovery_required');
+        } else {
+          expect(result.stage).toBe('committed');
+          expect(result.nativeReceipt?.created).toBe(true);
+          const after = await control.snapshot();
+          expect(after.roots[0]?.staging?.identity).toBe(
+            `${lstatSync(join(root, '.agora-operations')).dev}:${lstatSync(join(root, '.agora-operations')).ino}`,
+          );
+          expect(await service.initialize(request)).toEqual(result);
+          expect((await control.snapshot()).revision).toBe(after.revision);
+          if (scenario === 'native-result-corrupt') {
+            const nativePath = join(
+              owner.root,
+              'local-workspaces',
+              'initializations',
+              `init-${createHash('sha256').update(request.actionId).digest('hex')}`,
+              'result.json',
+            );
+            evidence.originalNativeReceipt = readFileSync(nativePath, 'utf8');
+            const invalid = JSON.parse(readFileSync(nativePath, 'utf8'));
+            invalid.created = false;
+            unlinkSync(nativePath);
+            writeFileSync(nativePath, JSON.stringify(invalid), { mode: 0o400 });
+            await expect(service.initialize(request)).rejects.toThrow('recovery_required');
+            expect((await control.snapshot()).revision).toBe(after.revision);
+          }
+
+          expect((await control.assertClosed(scope)).localExecution?.rootIds).toEqual(['root']);
+          await expect(service.initialize({ ...request, expectedRevision: 1 })).rejects.toThrow(
+            'operation_conflict',
+          );
+        }
+      }
+      expect(readFileSync(join(root, 'sentinel'), 'utf8')).toBe('fixed user source');
+      evidence.registry = await control.snapshot();
+      evidence.passed = true;
+    } catch (e) {
+      error = e;
+      evidence.error = e instanceof Error ? e.message : String(e);
+    }
+    await owner.release();
+    const sources = [
+      'packages/runtime/sandbox/src/local-root-coordinator.ts',
+      'packages/runtime/sandbox/src/local-registry-records.ts',
+      'packages/runtime/sandbox/src/local-binding-coordinator.ts',
+      'tests/integration/phase12/phase12-3-root-registration.test.ts',
+    ];
+    evidence.sources = Object.fromEntries(
+      sources.map((p, i) => {
+        const bytes = existsSync(p) ? readFileSync(p) : Buffer.from('not implemented');
+        const saved = join(folder, `${basename(base)}-source-${i}.txt`);
+        writeFileSync(saved, bytes);
+        return [p, { sha256: createHash('sha256').update(bytes).digest('hex'), snapshot: saved }];
+      }),
+    );
+    const target = join(folder, `${scenario}-${basename(base)}.json`);
+    writeFileSync(target, JSON.stringify(evidence, null, 2));
+    const now = lstatSync(base),
+      handles = spawnSync('/usr/sbin/lsof', ['-nP', '+D', base], { encoding: 'utf8' }),
+      mounts = spawnSync('/sbin/mount', [], { encoding: 'utf8' });
+    if (
+      now.dev !== identity.dev ||
+      now.ino !== identity.ino ||
+      handles.status !== 1 ||
+      handles.stdout ||
+      handles.stderr ||
+      mounts.status !== 0 ||
+      mounts.stdout.includes(base)
+    )
+      throw Error('root_registration_cleanup_unproven');
+    const before = statfsSync(base);
+    rmSync(base, { recursive: true });
+    const after = statfsSync('/private/tmp');
+    evidence.cleanup = {
+      deleted: true,
+      noOpenHandles: true,
+      noMounts: true,
+      availableBytesDelta: after.bavail * after.bsize - before.bavail * before.bsize,
+    };
+    writeFileSync(target, JSON.stringify(evidence, null, 2));
+    if (error) throw error;
+  }, 30000);

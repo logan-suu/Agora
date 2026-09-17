@@ -1,0 +1,138 @@
+{
+  "recordedAt": "2026-09-16T02:09:42.536985+00:00",
+  "scope": "Read-only public source, no installation, execution, privilege grant or VM creation.",
+  "repositories": [
+    {
+      "repo": "NixOS/nix",
+      "commit": "6f0275142d206cfa291e8176451dc60e7e8cff93",
+      "tree": {
+        "url": "https://api.github.com/repos/NixOS/nix/git/trees/6f0275142d206cfa291e8176451dc60e7e8cff93?recursive=1",
+        "sha256": "4d0eb60f995addeff54be7b5a1a104e5e65a3a72b0c8c82a4b6166e17aaf1c5b",
+        "truncated": false
+      },
+      "candidatePaths": [
+        "packaging/patches/aws-c-io-s2n-darwin.patch",
+        "scripts/create-darwin-volume.sh",
+        "scripts/install-darwin-multi-user.sh",
+        "src/libstore/darwin/build/darwin-derivation-builder.cc",
+        "src/libstore/darwin/build/darwin-derivation-builder.hh",
+        "src/libstore/darwin/build/sandbox-defaults.sb",
+        "src/libstore/darwin/build/sandbox-minimal.sb",
+        "src/libstore/darwin/build/sandbox-network.sb",
+        "src/libstore/darwin/meson.build",
+        "src/libstore/unix/include/nix/store/user-lock.hh",
+        "src/libstore/unix/user-lock.cc"
+      ],
+      "files": [
+        {
+          "path": "src/libstore/unix/user-lock.cc",
+          "url": "https://raw.githubusercontent.com/NixOS/nix/6f0275142d206cfa291e8176451dc60e7e8cff93/src/libstore/unix/user-lock.cc",
+          "sha256": "123991dadea3baa01328afe343a7df22d6a5909b3506c430921a831c5bac457c",
+          "bytes": 7361
+        },
+        {
+          "path": "src/libstore/darwin/build/darwin-derivation-builder.cc",
+          "url": "https://raw.githubusercontent.com/NixOS/nix/6f0275142d206cfa291e8176451dc60e7e8cff93/src/libstore/darwin/build/darwin-derivation-builder.cc",
+          "sha256": "642b0c52b0c5f128c1b7fa04bbd535d4f6f5e929a0ed3b8cf12012612bb49049",
+          "bytes": 10571
+        },
+        {
+          "path": "src/libstore/darwin/build/sandbox-defaults.sb",
+          "url": "https://raw.githubusercontent.com/NixOS/nix/6f0275142d206cfa291e8176451dc60e7e8cff93/src/libstore/darwin/build/sandbox-defaults.sb",
+          "sha256": "3f2b371bf0f24575897cf2f2f28d200d011415a5cc3d582b2b8817423bb6a77a",
+          "bytes": 3787
+        },
+        {
+          "path": "scripts/install-darwin-multi-user.sh",
+          "url": "https://raw.githubusercontent.com/NixOS/nix/6f0275142d206cfa291e8176451dc60e7e8cff93/scripts/install-darwin-multi-user.sh",
+          "sha256": "2af2a2394381ef440e4ab8339c0a216d6df2926b5553c16ee519c552c2c64eee",
+          "bytes": 7770
+        },
+        {
+          "path": "src/libstore/unix/build/unix-derivation-builder.cc",
+          "url": "https://raw.githubusercontent.com/NixOS/nix/6f0275142d206cfa291e8176451dc60e7e8cff93/src/libstore/unix/build/unix-derivation-builder.cc",
+          "sha256": "80460e6236696fc12c3f404ab7318abcde3b003c2d4341647a2f23eb1e269cdb",
+          "bytes": 41300
+        },
+        {
+          "path": "src/libutil/unix/processes.cc",
+          "url": "https://raw.githubusercontent.com/NixOS/nix/6f0275142d206cfa291e8176451dc60e7e8cff93/src/libutil/unix/processes.cc",
+          "sha256": "896a0867204fd1ac3a166b9a61aae563b1946462c1e1bb3fe62234c0d13b4699",
+          "bytes": 12014
+        }
+      ]
+    },
+    {
+      "repo": "cirruslabs/tart",
+      "commit": "9bb2af243480ca4a2c210082e630ae425bd48b31",
+      "tree": {
+        "url": "https://api.github.com/repos/cirruslabs/tart/git/trees/9bb2af243480ca4a2c210082e630ae425bd48b31?recursive=1",
+        "sha256": "6f217833f5ce939937c27e6faa9da1f9a07a74e51f373edfe2a3cbd4e70971ea",
+        "truncated": false
+      },
+      "candidatePaths": [
+        "LICENSE",
+        "Resources/tart-dev.entitlements",
+        "Resources/tart-prod.entitlements",
+        "Sources/tart/Commands/Run.swift",
+        "Sources/tart/Commands/Stop.swift",
+        "Sources/tart/VM.swift"
+      ],
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/LICENSE",
+          "sha256": "27f1c29e91560c0d39ec9c8826734f8c6553b01c144635041fe5427faf45c9e2",
+          "bytes": 3743
+        },
+        {
+          "path": "Resources/tart-dev.entitlements",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/Resources/tart-dev.entitlements",
+          "sha256": "888e4b023c9b94ded2bfd5d5efbf2a762c23c5677587ebc9001c5bf5d357e11b",
+          "bytes": 298
+        },
+        {
+          "path": "Resources/tart-prod.entitlements",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/Resources/tart-prod.entitlements",
+          "sha256": "4c822f249f396b4180697085b1247279116160e5fd690b8a768cdf5dcb7c258b",
+          "bytes": 288
+        },
+        {
+          "path": "Sources/tart/Commands/Run.swift",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/Sources/tart/Commands/Run.swift",
+          "sha256": "b8606cd0b3c2336dc9e3cb6a2761a62012b74514065e4a7f07359017fd7dcde0",
+          "bytes": 51709
+        },
+        {
+          "path": "Sources/tart/Commands/Stop.swift",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/Sources/tart/Commands/Stop.swift",
+          "sha256": "166ee1f3f0d3ed02f6447abdb97afb997a3268e0a1d505120a03db3ae8699093",
+          "bytes": 2379
+        },
+        {
+          "path": "Sources/tart/VM.swift",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/Sources/tart/VM.swift",
+          "sha256": "10b9787bd1e0aca6f5f58e281814369548ead14df55cbfaf897960da690ad7c3",
+          "bytes": 16997
+        },
+        {
+          "path": "Package.swift",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/Package.swift",
+          "sha256": "061dfe6cdf4e6dbf32b51c5e7023c4ae69726dcafb42a35b34e5489b0338c17f",
+          "bytes": 3320
+        },
+        {
+          "path": "Makefile",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/Makefile",
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/cirruslabs/tart/9bb2af243480ca4a2c210082e630ae425bd48b31/README.md",
+          "sha256": "4702b7b83d52207ba4ef307b11bad8a00be7d1b1ae457dbe0a0d057a0a92fd80",
+          "bytes": 2874
+        }
+      ]
+    }
+  ]
+}

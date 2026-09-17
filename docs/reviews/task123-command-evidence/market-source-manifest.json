@@ -1,0 +1,248 @@
+{
+  "at": "2026-09-16T01:49:18.574096+00:00",
+  "scope": "Public source read only; no downloaded code executed or installed; response bodies were held in memory only.",
+  "sources": [
+    {
+      "repo": "actions/runner",
+      "branch": "main",
+      "files": [
+        {
+          "path": "src/Runner.Worker/JobExtension.cs",
+          "url": "https://raw.githubusercontent.com/actions/runner/80bb1fb827fa44d489263061e71ef4adba7ad8cd/src/Runner.Worker/JobExtension.cs",
+          "sha256": "f07c797dd13cc55823a55d2a00ea2381a6ec8de8968774fb1d44897bd37ca910",
+          "bytes": 73085,
+          "hitLines": [
+            590,
+            591,
+            905
+          ]
+        }
+      ],
+      "commit": "80bb1fb827fa44d489263061e71ef4adba7ad8cd"
+    },
+    {
+      "repo": "jenkinsci/jenkins",
+      "branch": "master",
+      "files": [
+        {
+          "path": "core/src/main/java/hudson/util/ProcessTree.java",
+          "url": "https://raw.githubusercontent.com/jenkinsci/jenkins/81dc9a3e13a3ec4c4f74bedb772e3382b8de0760/core/src/main/java/hudson/util/ProcessTree.java",
+          "sha256": "32463f67731bbb1ec7f3d9d78fdf0b5ecdcdfb91460c84d9cd730e70ea06428d",
+          "bytes": 87359,
+          "hitLines": [
+            158,
+            169,
+            171,
+            175,
+            176,
+            180,
+            184,
+            283,
+            333,
+            345,
+            507,
+            528,
+            535,
+            559,
+            566,
+            621,
+            623,
+            632,
+            639,
+            651,
+            694,
+            714,
+            753,
+            756,
+            835,
+            838,
+            841,
+            846,
+            848,
+            930,
+            1174,
+            1454,
+            1613,
+            1899,
+            2043,
+            2044,
+            2077,
+            2078,
+            2089,
+            2090
+          ]
+        }
+      ],
+      "commit": "81dc9a3e13a3ec4c4f74bedb772e3382b8de0760"
+    },
+    {
+      "repo": "bazelbuild/bazel",
+      "branch": "master",
+      "files": [
+        {
+          "path": "src/main/tools/process-wrapper.cc",
+          "url": "https://raw.githubusercontent.com/bazelbuild/bazel/2d7ad551c15a7c3037aeffdc0d7843f6851fbe2b/src/main/tools/process-wrapper.cc",
+          "sha256": "3f7ea330030c1e39bddc5f5a208a3d5fea79ec485bc2c4c06223e0b136dfa6d8",
+          "bytes": 1821,
+          "hitLines": []
+        },
+        {
+          "path": "src/main/tools/process-tools.cc",
+          "url": "https://raw.githubusercontent.com/bazelbuild/bazel/2d7ad551c15a7c3037aeffdc0d7843f6851fbe2b/src/main/tools/process-tools.cc",
+          "sha256": "213a8306fc1da034e05ba96e4c2111b5812d8492de6e6ff75a88ef1827f4ee00",
+          "bytes": 10351,
+          "hitLines": [
+            87,
+            91,
+            94,
+            107,
+            110,
+            139,
+            146,
+            163
+          ]
+        }
+      ],
+      "commit": "2d7ad551c15a7c3037aeffdc0d7843f6851fbe2b"
+    },
+    {
+      "repo": "NixOS/nix",
+      "branch": "master",
+      "files": [
+        {
+          "path": "src/libutil/unix/processes.cc",
+          "url": "https://raw.githubusercontent.com/NixOS/nix/6f0275142d206cfa291e8176451dc60e7e8cff93/src/libutil/unix/processes.cc",
+          "sha256": "896a0867204fd1ac3a166b9a61aae563b1946462c1e1bb3fe62234c0d13b4699",
+          "bytes": 12014,
+          "hitLines": [
+            66,
+            91,
+            100,
+            172,
+            178,
+            189,
+            193,
+            196,
+            254
+          ]
+        }
+      ],
+      "commit": "6f0275142d206cfa291e8176451dc60e7e8cff93"
+    },
+    {
+      "repo": "badlogic/pi-mono",
+      "branch": "main",
+      "files": [
+        {
+          "path": "packages/coding-agent/src/utils/shell.ts",
+          "url": "https://raw.githubusercontent.com/badlogic/pi-mono/60e7e76bd7ea25cad1dd6f3f1ce0d18814a42759/packages/coding-agent/src/utils/shell.ts",
+          "sha256": "7ae7fe532fecdf90af48beeae1f0bb465f2f83123d5326e86a559fef4b1568c2",
+          "bytes": 7512,
+          "hitLines": [
+            208,
+            216,
+            235,
+            237,
+            241
+          ]
+        }
+      ],
+      "commit": "60e7e76bd7ea25cad1dd6f3f1ce0d18814a42759"
+    },
+    {
+      "repo": "aaif-goose/goose",
+      "branch": "main",
+      "files": [
+        {
+          "path": "crates/goose/src/conversation/mod.rs",
+          "url": "https://raw.githubusercontent.com/aaif-goose/goose/abb47465996cd1041c4dbb83decf3f27216d3007/crates/goose/src/conversation/mod.rs",
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "path": "crates/goose/src/subprocess.rs",
+          "url": "https://raw.githubusercontent.com/aaif-goose/goose/abb47465996cd1041c4dbb83decf3f27216d3007/crates/goose/src/subprocess.rs",
+          "sha256": "6b02b324ea696217176f0f1b5a91df1cf89674156cf484bd0b1f03626d7b7738",
+          "bytes": 4548,
+          "hitLines": [
+            72,
+            132
+          ]
+        },
+        {
+          "path": "crates/goose/src/agents/platform_extensions/developer/shell.rs",
+          "url": "https://raw.githubusercontent.com/aaif-goose/goose/abb47465996cd1041c4dbb83decf3f27216d3007/crates/goose/src/agents/platform_extensions/developer/shell.rs",
+          "sha256": "4aaacece2a176c908a54e64e9a64f185f6e8646c78c49f09f8269b89f05b800b",
+          "bytes": 47377,
+          "hitLines": [
+            182,
+            193,
+            196,
+            257,
+            270,
+            280,
+            316,
+            320,
+            366,
+            377,
+            403,
+            418,
+            599,
+            600,
+            601,
+            605,
+            606,
+            611,
+            612,
+            618,
+            619,
+            622,
+            623,
+            635,
+            657,
+            977,
+            999,
+            1017,
+            1038,
+            1094,
+            1100,
+            1115,
+            1119,
+            1295,
+            1324,
+            1325,
+            1338,
+            1342,
+            1385,
+            1393,
+            1397,
+            1404
+          ]
+        },
+        {
+          "path": "crates/goose/tests/subprocess_cleanup.rs",
+          "url": "https://raw.githubusercontent.com/aaif-goose/goose/abb47465996cd1041c4dbb83decf3f27216d3007/crates/goose/tests/subprocess_cleanup.rs",
+          "sha256": "813ee74a48135fbdf0c2e166d861a4751cd85855381ef7f6c9f8bf0b5f8b0ff5",
+          "bytes": 6109,
+          "hitLines": [
+            16,
+            17,
+            18,
+            74,
+            122,
+            160,
+            169,
+            171,
+            174
+          ]
+        }
+      ],
+      "commit": "abb47465996cd1041c4dbb83decf3f27216d3007"
+    }
+  ],
+  "discovery": {
+    "repo": "aaif-goose/goose",
+    "url": "https://api.github.com/repos/aaif-goose/goose/git/trees/abb47465996cd1041c4dbb83decf3f27216d3007?recursive=1",
+    "sha256": "1a23151496ee436a5f923ceab76641b5c32b5fc22c72d81810f292888e2d17df",
+    "truncated": false
+  }
+}
