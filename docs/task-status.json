@@ -2,7 +2,7 @@
   "version": "1.5",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-17",
   "current_phase": 12,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
@@ -48,7 +48,7 @@
     },
     {
       "id": "D9",
-      "rule": "Leader 指令统一经 POST /api/messages，以稳定身份及安全点后二次校验原子提交；自然语言需求只形成待显式确认的持久草案，普通 worker 只读结构化事实，完成终审仍按 D16。",
+      "rule": "Leader 指令统一经 POST /api/messages，以稳定身份及安全点后二次校验原子提交；自然语言需求只形成待显式确认的持久草案，普通 worker 只读结构化事实，完成终审仍按 D16。 已resumed的重复gate裁决核验不可变回执、marker及连续lineage后只确认已应用，不重启worker或清后来的gate；首次恢复仍严格paused准入。",
       "source": "docs/项目蓝图.md §10/§11/§13/§17/§21；docs/详细设计方案.md §1/§4/§5/§7；docs/系统架构设计文档.md §4.2/§5；docs/技术选型文档.md §9.2；docs/详细设计方案.md §11.9/§11.10"
     },
     {
@@ -1689,8 +1689,8 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-3.test.ts",
-          "notes": "任务类型：code。PR #86已于2026-09-17T03:38:09Z由人类合并至dev-1.0.0，merge 1c0a84c670ac27a8e05137ecc985e07261efe6c1；合并树与已验证2cd3ad4完全一致。G1/G3/G4/G5/G6/G7已核验：42项定向及7脚本/226文件1752项累计回归全过，0失败/skip；原生/桌面构建、typecheck/587文件lint通过。G5含真实Go deepseek-v4-flash→Harness/MCP、本机版本读写/命令、D4真Fork、独立Tester/D16及同版本归档。两项PR修复已验；主动绕过验证按Leader要求未执行。详情docs/reviews/task123-acceptance.md、docs/reviews/task123-pr86-fix-evidence/validation.json、docs/task-history/12.3.md。macOS15仅本任务获准跳过，DEF-018保留；普通入口、后续阶段及发布门禁不变。",
-          "last_updated": "2026-09-16"
+          "notes": "任务类型：code。PR #86已于2026-09-17T03:38:09Z由人类合并至dev-1.0.0，merge 1c0a84c670ac27a8e05137ecc985e07261efe6c1；合并树与已验证2cd3ad4完全一致。G1/G3/G4/G5/G6/G7已核验：42项定向及7脚本/226文件1752项累计回归全过，0失败/skip；原生/桌面构建、typecheck/587文件lint通过。G5含真实Go deepseek-v4-flash→Harness/MCP、本机版本读写/命令、D4真Fork、独立Tester/D16及同版本归档。两项PR修复已验；主动绕过验证按Leader要求未执行。详情docs/reviews/task123-acceptance.md、docs/reviews/task123-pr86-fix-evidence/validation.json、docs/task-history/12.3.md。macOS15仅本任务获准跳过，DEF-018保留；普通入口、后续阶段及发布门禁不变。 2026-09-17另有D4/D9重复裁决后续修复，尚未提交/合并；57项定向与7脚本/227文件1768项回归通过。交付证据见docs/reviews/d9-replay-pr-preparation.md及本任务历史；原done保留。 获批范围CodeRabbit审查0issues。",
+          "last_updated": "2026-09-17"
         },
         {
           "id": "12.4",

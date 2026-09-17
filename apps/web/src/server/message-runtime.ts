@@ -48,6 +48,7 @@ import {
   RoleDepartureRejectedError,
   RoleDepartureService,
   type RoleDrainPort,
+  readHumanGateWorkerResumes,
   validateHumanGateWorkerResumes,
 } from '@agora/core-orchestration';
 import type { PauseReceipt, PauseRequest } from '@agora/core-preemption';
@@ -58,9 +59,9 @@ import {
   type RequirementInterpreter,
 } from '@agora/runtime-executor';
 import { JsonTaskStateStore, type TaskScope } from '@agora/runtime-state';
-
 import { type LeaderActionStatus, parseLeaderIntent, planLeaderIntent } from '../lib/intent';
 import { type ChannelAddress, ChannelStream, channelStream } from './channel-stream';
+import { humanGateAlreadyResumed } from './human-gate-replay';
 
 class SseMessageBus implements MessageBus {
   readonly #stream: ChannelStream;
@@ -464,7 +465,7 @@ export class MessageRuntime {
             `humanGate resolution action "${input.msgId}" conflicts with its first write`,
           );
         }
-        const receipt = assertHumanGateResolutionReplay(
+        const { receipt, resumed } = assertHumanGateResolutionReplay(
           current,
           existing,
           input.channelId,
@@ -473,7 +474,7 @@ export class MessageRuntime {
         if (incomingIntent.option === 'approve_completion')
           await this.#verifyLocalCompletion(scope, current);
         await this.#completeDepartureResolution(scope, input.msgId, incomingIntent);
-        await this.#humanGate.resume(scope, input.msgId, receipt);
+        if (!resumed) await this.#humanGate.resume(scope, input.msgId, receipt);
       }
       const existingIsObjectionResolution =
         typeof persistedIntent === 'object' &&
@@ -672,14 +673,14 @@ export class MessageRuntime {
           };
         },
       );
-      const receipt = assertHumanGateResolutionReplay(
+      const { receipt, resumed } = assertHumanGateResolutionReplay(
         resolution.state,
         resolution.message,
         input.channelId,
         intent,
       );
       await this.#completeDepartureResolution(scope, input.msgId, intent);
-      await this.#humanGate.resume(scope, input.msgId, receipt);
+      if (!resumed) await this.#humanGate.resume(scope, input.msgId, receipt);
       return { ...resolution, action: { status: 'applied' } };
     }
     if (intent.kind === 'resolve_objection') {
@@ -1104,7 +1105,7 @@ function assertHumanGateResolutionReplay(
   existing: Message,
   channelId: string,
   incoming: Extract<ReturnType<typeof parseLeaderIntent>, { kind: 'resolve_human_gate' }>,
-): HumanGateResolutionReceipt {
+): { receipt: HumanGateResolutionReceipt; resumed: boolean } {
   const persisted = existing.payload.intent;
   const intent =
     typeof persisted === 'object' && persisted !== null && !Array.isArray(persisted)
@@ -1125,6 +1126,7 @@ function assertHumanGateResolutionReplay(
     (intent?.argument === undefined && incoming.argument === undefined) ||
     intent?.argument === incoming.argument;
   const canonical =
+    channelId === 'main' &&
     existing.payload.kind === 'leader_intent' &&
     existing.fromRole === 'leader' &&
     existing.type === 'chat' &&
@@ -1147,13 +1149,25 @@ function assertHumanGateResolutionReplay(
     );
   }
   let workerResumes: HumanGateResolutionReceipt['workerResumes'];
+  let resumed = false;
   try {
-    workerResumes = validateHumanGateWorkerResumes(
-      state,
+    workerResumes = readHumanGateWorkerResumes(
       existing.msgId,
       safePointRefs as string[],
       receipt.workerResumes,
     );
+    resumed = humanGateAlreadyResumed(state, existing.msgId, {
+      ...receipt,
+      safePointRefs,
+      workerResumes,
+    } as HumanGateResolutionReceipt);
+    if (!resumed)
+      validateHumanGateWorkerResumes(
+        state,
+        existing.msgId,
+        safePointRefs as string[],
+        receipt.workerResumes,
+      );
   } catch {
     throw new Error(
       `humanGate resolution action "${existing.msgId}" conflicts with its first write`,
@@ -1218,17 +1232,20 @@ function assertHumanGateResolutionReplay(
   } else if (integrationRework !== undefined)
     throw new Error('unexpected integration rework receipt');
   return {
-    gateId: incoming.gateId,
-    option: incoming.option,
-    ...(incoming.argument === undefined ? {} : { argument: incoming.argument }),
-    safePointRefs: [...(safePointRefs as string[])],
-    resumeSessionId: receipt.resumeSessionId as string,
-    ...(workerResumes === undefined ? {} : { workerResumes }),
-    ...(isReviewBinding(receipt.completionEvidence) ||
-    isLocalReviewBinding(receipt.completionEvidence)
-      ? { completionEvidence: receipt.completionEvidence }
-      : {}),
-    ...(isIntegration(integrationRework) ? { integrationRework } : {}),
+    resumed,
+    receipt: {
+      gateId: incoming.gateId,
+      option: incoming.option,
+      ...(incoming.argument === undefined ? {} : { argument: incoming.argument }),
+      safePointRefs: [...(safePointRefs as string[])],
+      resumeSessionId: receipt.resumeSessionId as string,
+      ...(workerResumes === undefined ? {} : { workerResumes }),
+      ...(isReviewBinding(receipt.completionEvidence) ||
+      isLocalReviewBinding(receipt.completionEvidence)
+        ? { completionEvidence: receipt.completionEvidence }
+        : {}),
+      ...(isIntegration(integrationRework) ? { integrationRework } : {}),
+    },
   };
 }
 
