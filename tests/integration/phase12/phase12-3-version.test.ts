@@ -33,6 +33,8 @@ for (const scenario of ['normal', 'changed', 'revoke'] as const)
     mkdirSync(root);
     mkdirSync(join(root, '.agora-operations'), { mode: 0o700 });
     mkdirSync(join(root, 'src'));
+    mkdirSync(join(root, '.GiT'));
+    writeFileSync(join(root, '.EnV.fixture'), '');
     writeFileSync(join(root, 'src/main.js'), 'export const value = 42;\n');
     writeFileSync(join(root, 'image.bin'), Buffer.from([0, 255, 128, 42]));
     writeFileSync(join(root, '.env'), 'fixed secret excluded');
@@ -77,7 +79,12 @@ for (const scenario of ['normal', 'changed', 'revoke'] as const)
         const version = await capture;
         const manifest = await versions.read(version, scope);
         expect(manifest.files.map((file) => file.path)).toEqual(['image.bin', 'src/main.js']);
-        expect(manifest.excludedPaths).toEqual(['.agora-operations', '.env']);
+        expect(manifest.excludedPaths).toEqual([
+          '.EnV.fixture',
+          '.GiT',
+          '.agora-operations',
+          '.env',
+        ]);
         expect(manifest.directories.map((entry) => entry.path)).toEqual(['', 'src']);
         const incompleteHash = await objects.put({ ...manifest, files: [] });
         await expect(

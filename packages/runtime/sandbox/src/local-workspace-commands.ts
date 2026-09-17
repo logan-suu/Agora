@@ -102,6 +102,20 @@ function validRequest(value: WorkspaceCommandRequest) {
     value.timeoutMs <= 30000
   );
 }
+function localNodeArguments(inputRoot: string, outputRoot: string, argv: string[]): string[] {
+  return argv.map((arg) => {
+    const match = /^@(input|output)\/(.*)$/.exec(arg);
+    if (!match) return arg;
+    const path = match[2];
+    if (
+      !path ||
+      path.split('/').some((part) => !part || part === '.' || part === '..') ||
+      [...path].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
+    )
+      throw Error('invalid_command_argument');
+    return join(match[1] === 'input' ? inputRoot : outputRoot, path);
+  });
+}
 async function directory(path: string) {
   const stat = await lstat(path);
   if (
@@ -378,6 +392,7 @@ export class LocalWorkspaceCommands {
     localRecordHash({ input, inputRequest });
     if (!isWorkspaceCall(input) || !validRequest(inputRequest))
       throw Error('invalid_workspace_command');
+    if (inputRequest.toolId === 'node') localNodeArguments('/input', '/output', inputRequest.argv);
     if (inputRequest.toolId === 'node-generate')
       localGenerationArguments('/input', '/output', inputRequest.argv);
     const call = structuredClone(input),
@@ -584,18 +599,7 @@ export class LocalWorkspaceCommands {
           )
         : request.toolId === 'node-generate'
           ? localGenerationArguments(executionInput, outputRoot, request.argv)
-          : request.argv.map((arg) => {
-              const match = /^@(input|output)\/(.*)$/.exec(arg);
-              if (!match) return arg;
-              const path = match[2];
-              if (
-                !path ||
-                path.split('/').some((part) => !part || part === '.' || part === '..') ||
-                [...path].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
-              )
-                throw Error('invalid_command_argument');
-              return join(match[1] === 'input' ? executionInput : outputRoot, path);
-            });
+          : localNodeArguments(executionInput, outputRoot, request.argv);
     const commandId = `command:${key}`,
       invocation = {
         commandId,

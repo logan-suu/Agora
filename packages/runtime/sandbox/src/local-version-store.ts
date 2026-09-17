@@ -17,6 +17,7 @@ import {
   type ReplacementBytesBasis,
 } from './local-file-transaction';
 import { localRecordHash } from './local-registry-records';
+import { isLocalReservedName } from './local-reserved-path';
 
 export type LocalVersionScope = {
   projectId: string;
@@ -190,9 +191,7 @@ export class LocalVersionStore {
           throw Error('invalid_workspace_version');
         names.add(entry.name);
         const path = directory.path ? `${directory.path}/${entry.name}` : entry.name;
-        const isExcluded =
-          ['.git', '.agora-operations', '.env'].includes(entry.name) ||
-          entry.name.startsWith('.env.');
+        const isExcluded = isLocalReservedName(entry.name);
         if (isExcluded ? entry.kind !== 'excluded' : !['file', 'directory'].includes(entry.kind))
           throw Error('invalid_workspace_version');
         if (entry.kind === 'excluded') excluded.push(path);

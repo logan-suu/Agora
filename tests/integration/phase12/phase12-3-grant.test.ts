@@ -1159,6 +1159,21 @@ console.log('fixed input build and test passed');
                         networkGrantId: null,
                         timeoutMs: 30000,
                       };
+                      if (scenario === 'command') {
+                        const before = await objects.references();
+                        await expect(
+                          commands.runCommand(
+                            { ...call, actionId: 'invalid-node-argument' },
+                            { ...request, argv: ['@input/'] },
+                          ),
+                        ).rejects.toThrow('invalid_command_argument');
+                        expect(await objects.references()).toEqual(before);
+                        const readable = await files.readFile(
+                          { ...call, actionId: 'read-after-invalid-argument' },
+                          'sentinel',
+                        );
+                        expect(readable.kind).toBe('file');
+                      }
                       let result: Awaited<ReturnType<LocalWorkspaceCommands['runCommand']>>;
                       if (['mcp-command', 'generation', 'installation'].includes(scenario)) {
                         let observed: typeof result | undefined;

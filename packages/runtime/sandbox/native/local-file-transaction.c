@@ -42,6 +42,18 @@ static void failure(const char *reason) { finish("recoveryRequired", reason, 1);
 static int same(const struct stat *a, const struct stat *b) {
   return a->st_dev == b->st_dev && a->st_ino == b->st_ino;
 }
+/* Match the host's locale-independent reserved ASCII names. */
+static int reserved_name(const char *name) {
+  char folded[PATH_CAP];
+  size_t length = strlen(name);
+  if (length >= sizeof(folded)) failure("invalid_request");
+  for (size_t i = 0; i <= length; i++) {
+    unsigned char c = (unsigned char)name[i];
+    folded[i] = c >= 'A' && c <= 'Z' ? (char)(c + ('a' - 'A')) : (char)c;
+  }
+  return !strcmp(folded, ".agora-operations") || !strcmp(folded, ".git") ||
+    !strcmp(folded, ".env") || !strncmp(folded, ".env.", 5);
+}
 static int open_directory(int parent, const char *name) {
   return openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
 }
@@ -116,8 +128,7 @@ static void pin_parents(const char *expected_parents) {
     char *slash = strchr(part_start, '/');
     if (slash) *slash = 0;
     if (!*part_start || !strcmp(part_start, ".") || !strcmp(part_start, "..") ||
-        !strcmp(part_start, ".agora-operations") || !strcmp(part_start, ".git") ||
-        !strcmp(part_start, ".env") || !strncmp(part_start, ".env.", 5)) failure("invalid_request");
+        reserved_name(part_start)) failure("invalid_request");
     if (!slash) break;
     part_start = slash + 1;
   }
@@ -184,8 +195,7 @@ static int list_directory(void) {
     strcpy(entries[count].name, entry->d_name);
     struct stat st;
     if (fstatat(fd, entry->d_name, &st, AT_SYMLINK_NOFOLLOW)) failure("directory_version_conflict");
-    entries[count].kind = !strcmp(entry->d_name, ".agora-operations") || !strcmp(entry->d_name, ".git") ||
-      !strcmp(entry->d_name, ".env") || !strncmp(entry->d_name, ".env.", 5) ? "excluded" :
+    entries[count].kind = reserved_name(entry->d_name) ? "excluded" :
       S_ISDIR(st.st_mode) && !st.st_flags ? "directory" :
       S_ISREG(st.st_mode) && st.st_nlink == 1 && !st.st_flags ? "file" : "unsupported";
     count++;

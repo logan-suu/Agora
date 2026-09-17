@@ -17,6 +17,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, isAbsolute, join, parse, relative } from 'node:path';
+import { isLocalReservedName } from './local-reserved-path';
 
 const byteLimit = 16 * 1024 * 1024;
 type Identity = { path: string; identity: string };
@@ -169,16 +170,7 @@ function validatePath(path: string) {
     hasControlCharacter(path) ||
     path
       .split('/')
-      .some(
-        (part) =>
-          !part ||
-          part === '.' ||
-          part === '..' ||
-          part === '.git' ||
-          part === '.agora-operations' ||
-          part === '.env' ||
-          part.startsWith('.env.'),
-      )
+      .some((part) => !part || part === '.' || part === '..' || isLocalReservedName(part))
   )
     throw new Error('invalid_file_change');
 }

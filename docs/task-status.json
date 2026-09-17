@@ -1689,7 +1689,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-3.test.ts",
-          "notes": "任务类型：code。当前范围实现/验收就绪：授权与版本MCP、官方Harness/D4真Fork、独立Tester、Leader终审、同版本归档/claim释放，生成候选事务及授权下载→禁网pnpm→固定依赖验证已实测。五helper构建/清单与启动探测完成；typecheck、585文件lint、桌面编译通过。最终7脚本+225文件/1748测试全绿0skip；Phase12为168项，额外IPC 1/1，609源码hash一致。首版仅精确直接/dev包计划，已有lock/config等明确不支持。152测试目录已清理，31个VM只读句柄目录保守保留；用户项目/应用未动。Leader仅跳过本次macOS15，DEF-018保留。提交f11bde5已推送，PR https://github.com/logan-suu/Agora/pull/86 待人工合并，保持in_progress；普通入口关闭。清理提交0aeace7已推送PR #86，精简5258份证据/重复副本并固化PR清理规则；输出改至test-outputs，重跑7脚本+1748测试及37项/IPC补验全过，产品源码未变。报告docs/reviews/task123-acceptance.md；完整证据docs/task-history/12.3.md。",
+          "notes": "任务类型：code。PR #86（https://github.com/logan-suu/Agora/pull/86）两项审查问题已按Leader授权修复：TS/原生/manifest统一保留ASCII名称大小写排除；普通Node参数在准备副作用前校验，拒绝后工作区仍可继续。42项定向及7脚本/226文件1752项累计回归全过，0失败/skip，595项源配置hash一致；原生构建、桌面编译、typecheck/587文件lint通过。按要求未执行主动绕过验证；4份必要证据保留，374重复输出/98停用目录已清理，8目录停用证据不足保留。详情docs/reviews/task123-acceptance.md、task123-pr86-fix-evidence/validation.json及docs/task-history/12.3.md。沿用原授权提交推送至PR #86，人工合并前保持in_progress；普通入口关闭，macOS15本次例外及DEF-018不变。",
           "last_updated": "2026-09-16"
         },
         {

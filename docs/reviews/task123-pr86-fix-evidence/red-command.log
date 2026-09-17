@@ -1,0 +1,80 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (35 tests | 1 failed | 34 skipped) 3290ms
+   ↓ confirms a durable grant through the real Leader POST: normal
+   ↓ confirms a durable grant through the real Leader POST: generation
+   ↓ confirms a durable grant through the real Leader POST: installation
+   ↓ confirms a durable grant through the real Leader POST: download
+   ↓ confirms a durable grant through the real Leader POST: file-update
+   ↓ confirms a durable grant through the real Leader POST: file-create
+   ↓ confirms a durable grant through the real Leader POST: file-proof
+   × confirms a durable grant through the real Leader POST: command 3290ms
+     → expected [ { …(2) }, { …(2) }, { …(2) } ] to deeply equal [ { …(2) } ]
+   ↓ confirms a durable grant through the real Leader POST: mcp
+   ↓ confirms a durable grant through the real Leader POST: mcp-partial
+   ↓ confirms a durable grant through the real Leader POST: reader
+   ↓ confirms a durable grant through the real Leader POST: mcp-command
+   ↓ confirms a durable grant through the real Leader POST: trusted-validation
+   ↓ confirms a durable grant through the real Leader POST: terminal-release-before
+   ↓ confirms a durable grant through the real Leader POST: terminal-release-after
+   ↓ confirms a durable grant through the real Leader POST: worker-companion
+   ↓ confirms a durable grant through the real Leader POST: successor-companion
+   ↓ confirms a durable grant through the real Leader POST: missing-closure-companion
+   ↓ confirms a durable grant through the real Leader POST: tester-companion
+   ↓ confirms a durable grant through the real Leader POST: reviewer-companion
+   ↓ confirms a durable grant through the real Leader POST: pm-companion
+   ↓ confirms a durable grant through the real Leader POST: coordinator-companion
+   ↓ confirms a durable grant through the real Leader POST: batch
+   ↓ confirms a durable grant through the real Leader POST: batch-partial
+   ↓ confirms a durable grant through the real Leader POST: batch-read-drift
+   ↓ confirms a durable grant through the real Leader POST: batch-stale
+   ↓ confirms a durable grant through the real Leader POST: before
+   ↓ confirms a durable grant through the real Leader POST: after
+   ↓ confirms a durable grant through the real Leader POST: wrong-hash
+   ↓ confirms a durable grant through the real Leader POST: wrong-selection
+   ↓ confirms a durable grant through the real Leader POST: wrong-scope
+   ↓ confirms a durable grant through the real Leader POST: stale-policy
+   ↓ confirms a durable grant through the real Leader POST: root-drift
+   ↓ confirms a durable grant through the real Leader POST: corrupt-proposal
+   ↓ confirms a durable grant through the real Leader POST: unsupported-action
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: command
+AssertionError: expected [ { …(2) }, { …(2) }, { …(2) } ] to deeply equal [ { …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+      "key": "5e3c9b861e1a96d1b5801aa6b00591fb3119065a282ed6450bfb0d1d6ff5cd7e",
+      "valueHash": "93f83ae72d52fd86d081a7c6effb008ff285fb98069353d9598c297c1629b180",
+    },
++   {
++     "key": "b4ffd77737ad914017e94d320ae9624767dcbbfcb5f3cce22950f9154db0b898",
++     "valueHash": "c636be3ffba17dd231f4e5a0cc37e325c9ca39f4494cf3ea61313b9788a90eec",
++   },
++   {
++     "key": "ba2eb91a71bb97f881929afdc13925cc3e9e0f92311488fe73d077175d097b1e",
++     "valueHash": "f4a61b2589ced875e5d3bf92e99b047511c162ad5dc214df03857cd568f2207e",
++   },
+  ]
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:1170:60
+    1168|                           ),
+    1169|                         ).rejects.toThrow('invalid_command_argument');
+    1170|                         expect(await objects.references()).toEqual(bef…
+       |                                                            ^
+    1171|                         const readable = await files.readFile(
+    1172|                           { ...call, actionId: 'read-after-invalid-arg…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 34 skipped (35)
+   Start at  22:07:46
+   Duration  4.46s (transform 445ms, setup 0ms, collect 1.05s, tests 3.29s, environment 0ms, prepare 29ms)
+
