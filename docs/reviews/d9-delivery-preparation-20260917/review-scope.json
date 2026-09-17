@@ -1,0 +1,68 @@
+{
+  "date": "2026-09-17",
+  "destination": "CodeRabbit service, authenticated US region",
+  "authorization": "User explicitly approved this exact scope on 2026-09-17; scoped review completed with 0 issues.",
+  "rejectedAttempt": "uncommitted plus all untracked files; automatic approval rejected broader external disclosure",
+  "proposedScope": [
+    {
+      "path": "apps/web/src/server/human-gate-replay.ts",
+      "currentBytes": 5601,
+      "currentSha256": "78912a2785923154ffe48864f8248309aed661e9ad1e09621b7bc5b58ffdaf87"
+    },
+    {
+      "path": "apps/web/src/server/message-runtime.ts",
+      "currentBytes": 49277,
+      "currentSha256": "f49425917007549f243177fc65d889d50a6892082086e59cae13e242f1b759fc",
+      "baselineBytes": 48678,
+      "baselineSha256": "cc15dd2b9137c01aadad9b17da9197462f6a02eeec8aaaa85528582c8effda6c"
+    },
+    {
+      "path": "apps/web/src/server/task-orchestration-runtime.ts",
+      "currentBytes": 28572,
+      "currentSha256": "98689b7fe9f562a46010ef1be2adc9e65f35304b435d9e79d04b809fb9512a5b",
+      "baselineBytes": 29823,
+      "baselineSha256": "97d4766487d396577eb9d9728bc317a3068d5487744562d6c4413d4c354dc82e"
+    },
+    {
+      "path": "packages/core/orchestration/src/human-gate.ts",
+      "currentBytes": 18721,
+      "currentSha256": "6afe452fd3b69f8cf3fa9cf48918d117f7eb3d7473bbd472d461635aaf1c1353",
+      "baselineBytes": 17205,
+      "baselineSha256": "dfcbcd79cce6c300aada2baf7edfe62d647d9b62487585fb730f6d7ff0f8b5be"
+    },
+    {
+      "path": "packages/runtime/executor/src/harness-executor.ts",
+      "currentBytes": 46882,
+      "currentSha256": "b3cb7af3a776d3082e2a9bd216f5c18637f6858f21c58e661a1f7c489413bb5b",
+      "baselineBytes": 46806,
+      "baselineSha256": "8d61a402a3302754e9c4fb65f54be531ba5606748332a2c849aca7bd4e7c6b58"
+    },
+    {
+      "path": "apps/web/test/human-gate-replay.test.ts",
+      "currentBytes": 11120,
+      "currentSha256": "442fbec232691062c8fd261278dc7ed896c4544299a8c04092693daf5084d025"
+    },
+    {
+      "path": "AGENTS.md",
+      "currentBytes": 58431,
+      "currentSha256": "3150560dbe27e7766535a360200c981a7f7316ac96980dcb0f135ad02265057f"
+    }
+  ],
+  "pathCount": 7,
+  "baselineCount": 4,
+  "totalSourceBytes": 361116,
+  "credentialPatternHits": [],
+  "scanLimit": "Pattern checks are not proof that source contains no confidential information; source code itself will be disclosed if approved.",
+  "excluded": "All experiment artifacts, all task histories, .env and credentials, product state, user projects, package caches, unrelated files and repository remote metadata.",
+  "method": "After explicit approval, create an isolated minimal review repository containing only listed current/baseline files and AGENTS.md. No changes to the main repository index or branch are required.",
+  "execution": {
+    "reviewDirectory": "/private/tmp/agora-coderabbit-d9-6egoa9iq/review",
+    "remoteConfigured": false,
+    "baseBranch": "review-baseline",
+    "explicitBaseRequired": true,
+    "useCredits": false,
+    "exitCode": 0,
+    "reviewedCodeFiles": 6,
+    "issues": 0
+  }
+}

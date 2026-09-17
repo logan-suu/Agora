@@ -1,0 +1,950 @@
+{
+  "baseline": "55d6385a8387634864886dfdec38a8d9b1fa804e",
+  "branch": "codex/fix-human-gate-replay",
+  "date": "2026-09-17",
+  "provider": "opencode-go",
+  "model": "deepseek-v4-flash",
+  "runs": [
+    {
+      "attempt": "attempt-1",
+      "base": "/private/tmp/agora-langgraph-round2-m1Au0d",
+      "events": [
+        {
+          "event": "process-start",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661261210
+        },
+        {
+          "event": "dispatch-initial",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661262655
+        },
+        {
+          "event": "composition-created",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661263280,
+          "resuming": false,
+          "activeLeases": 0
+        },
+        {
+          "event": "tool-start",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661266934,
+          "name": "workspace_read",
+          "activeLeases": 1
+        },
+        {
+          "event": "pause-requested",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661266935
+        },
+        {
+          "event": "gate-durable",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661268094,
+          "activeLeases": 1,
+          "refs": 1
+        },
+        {
+          "event": "composition-suspended",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661268233,
+          "activeLeases": 0
+        },
+        {
+          "event": "gate-enter",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661268237
+        },
+        {
+          "event": "process-finished",
+          "mode": "initial",
+          "pid": 5349,
+          "at": 1789661268245,
+          "passed": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "inspect",
+          "pid": 5529,
+          "at": 1789661269828
+        },
+        {
+          "event": "process-finished",
+          "mode": "inspect",
+          "pid": 5529,
+          "at": 1789661269919,
+          "passed": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "resolve",
+          "pid": 5543,
+          "at": 1789661271285
+        },
+        {
+          "event": "canonical-resolution-delivered",
+          "mode": "resolve",
+          "pid": 5543,
+          "at": 1789661271379,
+          "workers": 1
+        },
+        {
+          "event": "process-finished",
+          "mode": "resolve",
+          "pid": 5543,
+          "at": 1789661271383,
+          "passed": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "resume-crash",
+          "pid": 5882,
+          "at": 1789661309627
+        },
+        {
+          "event": "canonical-resolution-delivered",
+          "mode": "resume-crash",
+          "pid": 5882,
+          "at": 1789661309728,
+          "workers": 1
+        },
+        {
+          "event": "gate-enter",
+          "mode": "resume-crash",
+          "pid": 5882,
+          "at": 1789661309735
+        },
+        {
+          "event": "dispatch-resumed",
+          "mode": "resume-crash",
+          "pid": 5882,
+          "at": 1789661309738
+        },
+        {
+          "event": "composition-created",
+          "mode": "resume-crash",
+          "pid": 5882,
+          "at": 1789661309973,
+          "resuming": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "tool-start",
+          "mode": "resume-crash",
+          "pid": 5882,
+          "at": 1789661311730,
+          "name": "workspace_read",
+          "activeLeases": 1
+        },
+        {
+          "event": "tool-start",
+          "mode": "resume-crash",
+          "pid": 5882,
+          "at": 1789661312050,
+          "name": "workspace_read",
+          "activeLeases": 1
+        },
+        {
+          "event": "process-finished",
+          "mode": "resume-crash",
+          "pid": 5882,
+          "at": 1789661339499,
+          "passed": false,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "failed-duplicate",
+          "pid": 6176,
+          "at": 1789661387818
+        },
+        {
+          "event": "process-finished",
+          "mode": "failed-duplicate",
+          "pid": 6176,
+          "at": 1789661387954,
+          "passed": true,
+          "activeLeases": 0
+        }
+      ],
+      "reports": [
+        {
+          "mode": "failed-duplicate",
+          "startedAt": "2026-09-17T16:09:47.817Z",
+          "endedAt": "2026-09-17T16:09:47.954Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "failed",
+              "subtaskId": "lru",
+              "sessionId": "human-gate-resume:graph-native-continue:lru-coder",
+              "startedTs": 1789661263281,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NTMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLW0xQXUwZC9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ]
+        },
+        {
+          "mode": "initial",
+          "startedAt": "2026-09-17T16:07:41.209Z",
+          "endedAt": "2026-09-17T16:07:48.245Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "paused",
+              "subtaskId": "lru",
+              "sessionId": "session:lru-coder",
+              "startedTs": 1789661263281,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NTMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLW0xQXUwZC9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ]
+        },
+        {
+          "mode": "inspect",
+          "startedAt": "2026-09-17T16:07:49.828Z",
+          "endedAt": "2026-09-17T16:07:49.919Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "paused",
+              "subtaskId": "lru",
+              "sessionId": "session:lru-coder",
+              "startedTs": 1789661263281,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NTMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLW0xQXUwZC9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ],
+          "pending": [
+            "gate"
+          ]
+        },
+        {
+          "mode": "resolve",
+          "startedAt": "2026-09-17T16:07:51.285Z",
+          "endedAt": "2026-09-17T16:07:51.383Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "paused",
+              "subtaskId": "lru",
+              "sessionId": "session:lru-coder",
+              "startedTs": 1789661263281,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NTMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLW0xQXUwZC9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ]
+        },
+        {
+          "mode": "resume-crash",
+          "startedAt": "2026-09-17T16:08:29.626Z",
+          "endedAt": "2026-09-17T16:08:59.499Z",
+          "failure": "Model request failed after bounded recovery.",
+          "activeLeasesAfter": 0
+        }
+      ]
+    },
+    {
+      "attempt": "attempt-2",
+      "base": "/private/tmp/agora-langgraph-round2-rSB9Vr",
+      "events": [
+        {
+          "event": "process-start",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661407436
+        },
+        {
+          "event": "dispatch-initial",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661408411
+        },
+        {
+          "event": "composition-created",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661408943,
+          "resuming": false,
+          "activeLeases": 0
+        },
+        {
+          "event": "tool-start",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661429121,
+          "name": "workspace_read",
+          "activeLeases": 1
+        },
+        {
+          "event": "pause-requested",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661429122
+        },
+        {
+          "event": "gate-durable",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661430323,
+          "activeLeases": 1,
+          "refs": 1
+        },
+        {
+          "event": "composition-suspended",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661430460,
+          "activeLeases": 0
+        },
+        {
+          "event": "gate-enter",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661430465
+        },
+        {
+          "event": "process-finished",
+          "mode": "initial",
+          "pid": 6240,
+          "at": 1789661430476,
+          "passed": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "inspect",
+          "pid": 6461,
+          "at": 1789661432127
+        },
+        {
+          "event": "process-finished",
+          "mode": "inspect",
+          "pid": 6461,
+          "at": 1789661432256,
+          "passed": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "resolve",
+          "pid": 6475,
+          "at": 1789661433632
+        },
+        {
+          "event": "canonical-resolution-delivered",
+          "mode": "resolve",
+          "pid": 6475,
+          "at": 1789661433727,
+          "workers": 1
+        },
+        {
+          "event": "process-finished",
+          "mode": "resolve",
+          "pid": 6475,
+          "at": 1789661433731,
+          "passed": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661500445
+        },
+        {
+          "event": "canonical-resolution-delivered",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661500593,
+          "workers": 1
+        },
+        {
+          "event": "gate-enter",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661500604
+        },
+        {
+          "event": "dispatch-resumed",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661500607
+        },
+        {
+          "event": "composition-created",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661500890,
+          "resuming": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "tool-start",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661505212,
+          "name": "workspace_read",
+          "activeLeases": 1
+        },
+        {
+          "event": "tool-start",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661505542,
+          "name": "workspace_read",
+          "activeLeases": 1
+        },
+        {
+          "event": "tool-start",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661551062,
+          "name": "workspace_apply",
+          "activeLeases": 1
+        },
+        {
+          "event": "tool-start",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661554217,
+          "name": "workspace_read",
+          "activeLeases": 1
+        },
+        {
+          "event": "tool-start",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661558550,
+          "name": "workspace_run",
+          "activeLeases": 1
+        },
+        {
+          "event": "fault-window-exit",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661571440,
+          "code": 89
+        },
+        {
+          "event": "process-finished",
+          "mode": "resume-crash",
+          "pid": 6710,
+          "at": 1789661571450,
+          "passed": false,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "inspect-crash",
+          "pid": 7370,
+          "at": 1789661599617
+        },
+        {
+          "event": "process-finished",
+          "mode": "inspect-crash",
+          "pid": 7370,
+          "at": 1789661599720,
+          "passed": false,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "crash-reconcile",
+          "pid": 7581,
+          "at": 1789661671553
+        },
+        {
+          "event": "fixture-selects-prior-pending-checkpoint",
+          "mode": "crash-reconcile",
+          "pid": 7581,
+          "at": 1789661671696,
+          "checkpointId": "1f1b2b27-79f7-6de0-8002-bf2a26a335e1"
+        },
+        {
+          "event": "process-finished",
+          "mode": "crash-reconcile",
+          "pid": 7581,
+          "at": 1789661671850,
+          "passed": false,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "crash-reconcile",
+          "pid": 7802,
+          "at": 1789661701158
+        },
+        {
+          "event": "fixture-selects-prior-pending-checkpoint",
+          "mode": "crash-reconcile",
+          "pid": 7802,
+          "at": 1789661701318,
+          "checkpointId": "1f1b2b2d-d9a0-6f20-8003-5cbc11910803"
+        },
+        {
+          "event": "reconciled-completed-dispatch",
+          "mode": "crash-reconcile",
+          "pid": 7802,
+          "at": 1789661701577
+        },
+        {
+          "event": "fault-window-kill",
+          "mode": "crash-reconcile",
+          "pid": 7802,
+          "at": 1789661701579,
+          "signal": "SIGKILL",
+          "boundary": "before graph pending output putWrites"
+        },
+        {
+          "event": "process-start",
+          "mode": "inspect-crash",
+          "pid": 8064,
+          "at": 1789661730633
+        },
+        {
+          "event": "process-start",
+          "mode": "inspect-crash",
+          "pid": 8423,
+          "at": 1789661837769
+        },
+        {
+          "event": "process-finished",
+          "mode": "inspect-crash",
+          "pid": 8423,
+          "at": 1789661837921,
+          "passed": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "reconcile",
+          "pid": 8437,
+          "at": 1789661839349
+        },
+        {
+          "event": "reconciled-completed-dispatch",
+          "mode": "reconcile",
+          "pid": 8437,
+          "at": 1789661839722
+        },
+        {
+          "event": "process-finished",
+          "mode": "reconcile",
+          "pid": 8437,
+          "at": 1789661839970,
+          "passed": true,
+          "activeLeases": 0
+        },
+        {
+          "event": "process-start",
+          "mode": "duplicate",
+          "pid": 8469,
+          "at": 1789661841396
+        },
+        {
+          "event": "process-finished",
+          "mode": "duplicate",
+          "pid": 8469,
+          "at": 1789661841745,
+          "passed": true,
+          "activeLeases": 0
+        }
+      ],
+      "reports": [
+        {
+          "mode": "crash-reconcile",
+          "startedAt": "2026-09-17T16:14:31.552Z",
+          "endedAt": "2026-09-17T16:14:31.850Z",
+          "failure": "root_inspection_failed",
+          "activeLeasesAfter": 0
+        },
+        {
+          "mode": "duplicate",
+          "startedAt": "2026-09-17T16:17:21.396Z",
+          "endedAt": "2026-09-17T16:17:21.745Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "done",
+              "subtaskId": "lru",
+              "sessionId": "human-gate-resume:graph-native-continue:lru-coder",
+              "startedTs": 1789661408944,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjUsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXJTQjlWci9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ],
+          "generatedSourceHash": "4513b636abccc4b93275c4d6f15baf704742e0611f222e82829623d7ee1c13d3"
+        },
+        {
+          "mode": "initial",
+          "startedAt": "2026-09-17T16:10:07.436Z",
+          "endedAt": "2026-09-17T16:10:30.475Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "paused",
+              "subtaskId": "lru",
+              "sessionId": "session:lru-coder",
+              "startedTs": 1789661408944,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjUsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXJTQjlWci9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ]
+        },
+        {
+          "mode": "inspect",
+          "startedAt": "2026-09-17T16:10:32.127Z",
+          "endedAt": "2026-09-17T16:10:32.256Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "paused",
+              "subtaskId": "lru",
+              "sessionId": "session:lru-coder",
+              "startedTs": 1789661408944,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjUsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXJTQjlWci9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ],
+          "pending": [
+            "gate"
+          ]
+        },
+        {
+          "mode": "inspect-crash",
+          "startedAt": "2026-09-17T16:13:19.617Z",
+          "endedAt": "2026-09-17T16:13:19.720Z",
+          "failure": "expected [] to deeply equal [ 'continued' ]",
+          "activeLeasesAfter": 0
+        },
+        {
+          "mode": "inspect-crash",
+          "startedAt": "2026-09-17T16:17:17.768Z",
+          "endedAt": "2026-09-17T16:17:17.920Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "done",
+              "subtaskId": "lru",
+              "sessionId": "human-gate-resume:graph-native-continue:lru-coder",
+              "startedTs": 1789661408944,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjUsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXJTQjlWci9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ],
+          "pending": [
+            "continued"
+          ]
+        },
+        {
+          "mode": "reconcile",
+          "startedAt": "2026-09-17T16:17:19.349Z",
+          "endedAt": "2026-09-17T16:17:19.970Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "done",
+              "subtaskId": "lru",
+              "sessionId": "human-gate-resume:graph-native-continue:lru-coder",
+              "startedTs": 1789661408944,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjUsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXJTQjlWci9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ],
+          "generatedSourceHash": "4513b636abccc4b93275c4d6f15baf704742e0611f222e82829623d7ee1c13d3"
+        },
+        {
+          "mode": "resolve",
+          "startedAt": "2026-09-17T16:10:33.632Z",
+          "endedAt": "2026-09-17T16:10:33.731Z",
+          "passed": true,
+          "activeLeasesAfter": 0,
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "role": "CODER",
+              "executor": "harness",
+              "status": "paused",
+              "subtaskId": "lru",
+              "sessionId": "session:lru-coder",
+              "startedTs": 1789661408944,
+              "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjUsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXJTQjlWci9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ]
+        },
+        {
+          "mode": "resume-crash",
+          "startedAt": "2026-09-17T16:11:40.445Z",
+          "endedAt": "2026-09-17T16:12:51.450Z",
+          "failure": "process.exit unexpectedly called with \"89\"",
+          "activeLeasesAfter": 0
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "attempt": "attempt-1",
+      "path": "state/harness-sessions/--private-tmp-agora-langgraph-round2-m1Au0d-project--/session~003Alru-coder/session.jsonl.zstd",
+      "sha256": "8b194231cef78133cadefa54ad86c5c9e2fd71dc9759ffbe9a5b4b6abecff714",
+      "header": {
+        "type": "session",
+        "version": 0,
+        "id": "session:lru-coder",
+        "createdAt": 1789661264165,
+        "cwd": "/private/tmp/agora-langgraph-round2-m1Au0d/project",
+        "delegationDepth": 0,
+        "agentPreset": "agora-role:CODER"
+      },
+      "nativeStepEnds": 1,
+      "providerReportedUsage": {
+        "inputTokens": 3300,
+        "outputTokens": 144
+      }
+    },
+    {
+      "attempt": "attempt-1",
+      "path": "state/harness-sessions/--private-tmp-agora-langgraph-round2-m1Au0d-project--/human-gate-resume~003Agraph-native-continue~003Alru-coder/session.jsonl.zstd",
+      "sha256": "0247a00f2f67fa84da84d1be55fde6c64c4756fc0badf83189ca6ff63db494ca",
+      "header": {
+        "type": "session",
+        "version": 0,
+        "id": "human-gate-resume:graph-native-continue:lru-coder",
+        "createdAt": 1789661309960,
+        "cwd": "/private/tmp/agora-langgraph-round2-m1Au0d/project",
+        "parentSession": "session:lru-coder",
+        "seedLength": 54,
+        "delegationDepth": 0,
+        "agentPreset": "agora-role:CODER"
+      },
+      "nativeStepEnds": 2,
+      "providerReportedUsage": {
+        "inputTokens": 484,
+        "outputTokens": 95,
+        "cacheReadTokens": 3328
+      }
+    },
+    {
+      "attempt": "attempt-2",
+      "path": "state/harness-sessions/--private-tmp-agora-langgraph-round2-rSB9Vr-project--/session~003Alru-coder/session.jsonl.zstd",
+      "sha256": "cc4c42bfc6c9a29963df9df8c61fbdb2646197ce19bfa77fe500eb934976d8c6",
+      "header": {
+        "type": "session",
+        "version": 0,
+        "id": "session:lru-coder",
+        "createdAt": 1789661409761,
+        "cwd": "/private/tmp/agora-langgraph-round2-rSB9Vr/project",
+        "delegationDepth": 0,
+        "agentPreset": "agora-role:CODER"
+      },
+      "nativeStepEnds": 1,
+      "providerReportedUsage": {
+        "inputTokens": 3296,
+        "outputTokens": 177
+      }
+    },
+    {
+      "attempt": "attempt-2",
+      "path": "state/harness-sessions/--private-tmp-agora-langgraph-round2-rSB9Vr-project--/human-gate-resume~003Agraph-native-continue~003Alru-coder/session.jsonl.zstd",
+      "sha256": "88a6dabd50b55ed53ffc149d3a30a2f47577ed2c0f8acaf6abcfb02f8e943b67",
+      "header": {
+        "type": "session",
+        "version": 0,
+        "id": "human-gate-resume:graph-native-continue:lru-coder",
+        "createdAt": 1789661500874,
+        "cwd": "/private/tmp/agora-langgraph-round2-rSB9Vr/project",
+        "parentSession": "session:lru-coder",
+        "seedLength": 66,
+        "delegationDepth": 0,
+        "agentPreset": "agora-role:CODER"
+      },
+      "nativeStepEnds": 5,
+      "providerReportedUsage": {
+        "inputTokens": 3927,
+        "outputTokens": 3445,
+        "cacheReadTokens": 30464
+      }
+    }
+  ],
+  "providerReportedUsage": {
+    "inputTokens": 11007,
+    "outputTokens": 3861,
+    "cacheReadTokens": 33792
+  },
+  "fault": {
+    "pid": 7802,
+    "signal": "SIGKILL",
+    "boundary": "before graph pending output putWrites",
+    "workers": [
+      {
+        "workerId": "lru-coder",
+        "role": "CODER",
+        "executor": "harness",
+        "status": "done",
+        "subtaskId": "lru",
+        "sessionId": "human-gate-resume:graph-native-continue:lru-coder",
+        "startedTs": 1789661408944,
+        "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjUsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXJTQjlWci9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+      }
+    ],
+    "activeLeases": 0,
+    "compositionDisposed": true
+  },
+  "unchangedEffectEvidence": {
+    "commandReceipts": [
+      {
+        "projectId": "graph-native-project",
+        "taskId": "graph-native-task",
+        "workerId": "lru-coder",
+        "workspaceId": "workspace:295e9595f8a82bc5f2817081e6422cbe4f2b2025f9aec4f212d08e85c4d631ba",
+        "actionId": "tool:4b6b4629b36fc893e6e3daf74c3a96d7f7bd00920ecb92d59df6c3351bb9fdf0",
+        "grantRevision": 0,
+        "writerEpoch": 1,
+        "schemaVersion": "workspace-command-receipt-v1",
+        "receiptId": "run:03b0174838dce66c8075b05e8e587e477aed90f1401019fb0aec8bbee75cf07a",
+        "commandId": "command:03b0174838dce66c8075b05e8e587e477aed90f1401019fb0aec8bbee75cf07a",
+        "inputHash": "0ba7bc1f263161d554ff7be8ec749d19cda905bc8104628cde02822eebee0364",
+        "canonicalSourceRef": "binding:register:295e9595f8a82bc5f2817081e6422cbe4f2b2025f9aec4f212d08e85c4d631ba",
+        "inputVersion": {
+          "kind": "files",
+          "manifestId": "manifest:5a07125d5b1240c3599f58aa452cb7a820a30b2ca082298500e4882bced49561",
+          "manifestHash": "5a07125d5b1240c3599f58aa452cb7a820a30b2ca082298500e4882bced49561"
+        },
+        "policyHash": "534520752dda1dadf6b10fb7178d9037576fe5cd5aa640fbc4407e11fe304d20",
+        "toolVersion": "24.20.0",
+        "stage": "exited",
+        "createdAt": 1789661560850,
+        "startedAt": 1789661559727,
+        "finishedAt": 1789661560850,
+        "exitCode": 0,
+        "timedOut": false,
+        "quiescent": true,
+        "assurance": "bounded",
+        "reason": "none",
+        "stdoutRef": "6ff01aeab2f73fb0ad08bd76c3de24fb2ea406147783d8261caeb07383ac1eed",
+        "stderrRef": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "nativeRecordHash": "66f4436147abcf6440a19afee73ef2cc7415694d7969b9d77345d689c3f3446a",
+        "fixedInputHash": "e3a20a69864b5d0563e3a886bfcb209743ded2111cc2bd07bc3e7749bb37ec08"
+      }
+    ],
+    "commands": [
+      {
+        "inputHash": "0ba7bc1f263161d554ff7be8ec749d19cda905bc8104628cde02822eebee0364",
+        "request": {
+          "toolId": "node",
+          "argv": [
+            "--test",
+            "--test-reporter=tap",
+            "@input/lru-cache.test.cjs"
+          ],
+          "inputVersion": {
+            "kind": "files",
+            "manifestId": "manifest:5a07125d5b1240c3599f58aa452cb7a820a30b2ca082298500e4882bced49561",
+            "manifestHash": "5a07125d5b1240c3599f58aa452cb7a820a30b2ca082298500e4882bced49561"
+          },
+          "timeoutMs": 30000,
+          "outputRoot": "private-per-operation",
+          "networkGrantId": null
+        }
+      }
+    ],
+    "passingRun": {
+      "receipt": {
+        "projectId": "graph-native-project",
+        "taskId": "graph-native-task",
+        "workerId": "lru-coder",
+        "workspaceId": "workspace:295e9595f8a82bc5f2817081e6422cbe4f2b2025f9aec4f212d08e85c4d631ba",
+        "actionId": "tool:4b6b4629b36fc893e6e3daf74c3a96d7f7bd00920ecb92d59df6c3351bb9fdf0",
+        "grantRevision": 0,
+        "writerEpoch": 1,
+        "schemaVersion": "workspace-command-receipt-v1",
+        "receiptId": "run:03b0174838dce66c8075b05e8e587e477aed90f1401019fb0aec8bbee75cf07a",
+        "commandId": "command:03b0174838dce66c8075b05e8e587e477aed90f1401019fb0aec8bbee75cf07a",
+        "inputHash": "0ba7bc1f263161d554ff7be8ec749d19cda905bc8104628cde02822eebee0364",
+        "canonicalSourceRef": "binding:register:295e9595f8a82bc5f2817081e6422cbe4f2b2025f9aec4f212d08e85c4d631ba",
+        "inputVersion": {
+          "kind": "files",
+          "manifestId": "manifest:5a07125d5b1240c3599f58aa452cb7a820a30b2ca082298500e4882bced49561",
+          "manifestHash": "5a07125d5b1240c3599f58aa452cb7a820a30b2ca082298500e4882bced49561"
+        },
+        "policyHash": "534520752dda1dadf6b10fb7178d9037576fe5cd5aa640fbc4407e11fe304d20",
+        "toolVersion": "24.20.0",
+        "stage": "exited",
+        "createdAt": 1789661560850,
+        "startedAt": 1789661559727,
+        "finishedAt": 1789661560850,
+        "exitCode": 0,
+        "timedOut": false,
+        "quiescent": true,
+        "assurance": "bounded",
+        "reason": "none",
+        "stdoutRef": "6ff01aeab2f73fb0ad08bd76c3de24fb2ea406147783d8261caeb07383ac1eed",
+        "stderrRef": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "nativeRecordHash": "66f4436147abcf6440a19afee73ef2cc7415694d7969b9d77345d689c3f3446a",
+        "fixedInputHash": "e3a20a69864b5d0563e3a886bfcb209743ded2111cc2bd07bc3e7749bb37ec08"
+      },
+      "stdout": "TAP version 13\n# Subtest: missing keys return undefined\nok 1 - missing keys return undefined\n  ---\n  duration_ms: 0.40525\n  type: 'test'\n  ...\n# Subtest: get refreshes recency and capacity evicts oldest\nok 2 - get refreshes recency and capacity evicts oldest\n  ---\n  duration_ms: 0.09225\n  type: 'test'\n  ...\n# Subtest: updating a key preserves capacity\nok 3 - updating a key preserves capacity\n  ---\n  duration_ms: 0.052542\n  type: 'test'\n  ...\n# Subtest: delete removes only the chosen key\nok 4 - delete removes only the chosen key\n  ---\n  duration_ms: 0.056375\n  type: 'test'\n  ...\n# Subtest: optional TTL expires entries\nok 5 - optional TTL expires entries\n  ---\n  duration_ms: 60.996875\n  type: 'test'\n  ...\n1..5\n# tests 5\n# suites 0\n# pass 5\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 102.789083\n",
+      "stderr": ""
+    },
+    "generatedSourceSha256": "4513b636abccc4b93275c4d6f15baf704742e0611f222e82829623d7ee1c13d3",
+    "receiptsEqualBeforeCrashAfterReconcileAndDuplicate": true,
+    "resumedExecutions": 1
+  },
+  "fixtureLockReclamation": {
+    "path": "/private/tmp/agora-langgraph-round2-rSB9Vr/state/.desktop-owner",
+    "pid": 7802,
+    "pidExited": true,
+    "lsofExitCode": 1,
+    "device": 16777231,
+    "inode": 128796105,
+    "taskStateSha256Unchanged": "4a811ed922b200236c06053fa51421fcb09ec636ae06d63e7eb35714181a35d5",
+    "scope": "Manual reclamation of known test fixture lock only; not a production recovery implementation"
+  },
+  "limits": [
+    "One real local CODER; not D16 or multi-worker Worktree migration",
+    "The first putWrites-only fault was intercepted by Vitest and a final graph checkpoint still committed; it is not counted as a real crash",
+    "The actual SIGKILL probe selected a recorded earlier pending-dispatch graph checkpoint while retaining the completed real business state; no product time-travel feature was added",
+    "Current desktop owner lock required verified manual test-fixture reclamation; full app cold-start recovery is not proved",
+    "Experimental graph reconciler only verifies this fixed dispatch against existing production receipts; generic durable dispatch receipt schema not implemented"
+  ]
+}

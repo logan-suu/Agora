@@ -1,0 +1,725 @@
+{
+  "date": "2026-09-17",
+  "baseline": "55d6385a8387634864886dfdec38a8d9b1fa804e",
+  "environment": {
+    "os": "26.5",
+    "arch": "arm64",
+    "node": "v24.20.0",
+    "vitest": "3.2.7"
+  },
+  "outcome": "partial: production native suspend/Fork/controlled test and packaging passed; completed-worker D9 duplicate resolution failed",
+  "checks": {
+    "liveModes": [
+      {
+        "mode": "initial",
+        "base": "/private/tmp/agora-langgraph-round2-q53XSo",
+        "startedAt": "2026-09-17T05:00:15.956Z",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "pause": {
+          "scope": {
+            "projectId": "graph-native-project",
+            "taskId": "graph-native-task"
+          },
+          "actionId": "graph-native-pause",
+          "reason": "iteration_limit",
+          "mode": "human_gate",
+          "cohort": [
+            "lru-coder"
+          ],
+          "workers": [
+            {
+              "workerId": "lru-coder",
+              "status": "paused",
+              "safePointRef": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+            }
+          ]
+        },
+        "workers": [
+          {
+            "workerId": "lru-coder",
+            "role": "CODER",
+            "executor": "harness",
+            "status": "paused",
+            "subtaskId": "lru",
+            "sessionId": "session:lru-coder",
+            "startedTs": 1789621218280,
+            "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+          }
+        ],
+        "passed": true,
+        "endedAt": "2026-09-17T05:00:23.244Z",
+        "activeLeasesAfter": 0
+      },
+      {
+        "mode": "inspect",
+        "base": "/private/tmp/agora-langgraph-round2-q53XSo",
+        "startedAt": "2026-09-17T05:00:33.812Z",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "pending": [
+          "gate"
+        ],
+        "workers": [
+          {
+            "workerId": "lru-coder",
+            "role": "CODER",
+            "executor": "harness",
+            "status": "paused",
+            "subtaskId": "lru",
+            "sessionId": "session:lru-coder",
+            "startedTs": 1789621218280,
+            "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+          }
+        ],
+        "passed": true,
+        "endedAt": "2026-09-17T05:00:33.976Z",
+        "activeLeasesAfter": 0
+      },
+      {
+        "mode": "resolve",
+        "base": "/private/tmp/agora-langgraph-round2-q53XSo",
+        "startedAt": "2026-09-17T05:00:34.564Z",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "resolution": {
+          "gateId": "human-gate:graph-native-pause",
+          "option": "continue",
+          "safePointRefs": [
+            "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+          ],
+          "resumeSessionId": "human-gate-resume:graph-native-continue",
+          "workerResumes": [
+            {
+              "workerId": "lru-coder",
+              "sourceSafePointRef": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0",
+              "resumeSessionId": "human-gate-resume:graph-native-continue:lru-coder"
+            }
+          ]
+        },
+        "workers": [
+          {
+            "workerId": "lru-coder",
+            "role": "CODER",
+            "executor": "harness",
+            "status": "paused",
+            "subtaskId": "lru",
+            "sessionId": "session:lru-coder",
+            "startedTs": 1789621218280,
+            "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+          }
+        ],
+        "passed": true,
+        "endedAt": "2026-09-17T05:00:34.671Z",
+        "activeLeasesAfter": 0
+      },
+      {
+        "mode": "resume",
+        "base": "/private/tmp/agora-langgraph-round2-q53XSo",
+        "startedAt": "2026-09-17T05:00:59.002Z",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "toolchain": {
+          "manifestHash": "c3b48e8cf01eaabe76bada629694698ff3af61b26af97af366dd34f1107fd9b9",
+          "nodeHash": "7761de77b52f34365e02e02e582c89bfa98ffb84b5b6a2617ef999e955248aa4",
+          "nodeVersion": "24.20.0"
+        },
+        "resolution": {
+          "gateId": "human-gate:graph-native-pause",
+          "option": "continue",
+          "safePointRefs": [
+            "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+          ],
+          "resumeSessionId": "human-gate-resume:graph-native-continue",
+          "workerResumes": [
+            {
+              "workerId": "lru-coder",
+              "sourceSafePointRef": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0",
+              "resumeSessionId": "human-gate-resume:graph-native-continue:lru-coder"
+            }
+          ]
+        },
+        "commandReceipts": [
+          {
+            "projectId": "graph-native-project",
+            "taskId": "graph-native-task",
+            "workerId": "lru-coder",
+            "workspaceId": "workspace:295e9595f8a82bc5f2817081e6422cbe4f2b2025f9aec4f212d08e85c4d631ba",
+            "actionId": "tool:b0e10ba47300565517ebdb64d9d2821c27a1f942cb4a58495a5b2a403b998ab6",
+            "grantRevision": 0,
+            "writerEpoch": 1,
+            "schemaVersion": "workspace-command-receipt-v1",
+            "receiptId": "run:3cd58e6737f6ee68c7f4ffe7173cf8dfe33d65cbed8661bb8004caa3c36d701c",
+            "commandId": "command:3cd58e6737f6ee68c7f4ffe7173cf8dfe33d65cbed8661bb8004caa3c36d701c",
+            "inputHash": "b418894a0d5444543b21adfd5562966d54df6e22d10225952fc7825e5085ca34",
+            "canonicalSourceRef": "binding:register:295e9595f8a82bc5f2817081e6422cbe4f2b2025f9aec4f212d08e85c4d631ba",
+            "inputVersion": {
+              "kind": "files",
+              "manifestId": "manifest:ece372e0e24252fe62615922799cc1d5e9f062bd4900e59bf378475aaa4591bd",
+              "manifestHash": "ece372e0e24252fe62615922799cc1d5e9f062bd4900e59bf378475aaa4591bd"
+            },
+            "policyHash": "c50c36c55315178053c90e515a5c264292af6722ebc61879f231214adeb03c5b",
+            "toolVersion": "24.20.0",
+            "stage": "exited",
+            "createdAt": 1789621285092,
+            "startedAt": 1789621283836,
+            "finishedAt": 1789621285092,
+            "exitCode": 0,
+            "timedOut": false,
+            "quiescent": true,
+            "assurance": "bounded",
+            "reason": "none",
+            "stdoutRef": "b047154c52073e789efc0266b7bf65edbf573c54578d4d882927d74eb9be5193",
+            "stderrRef": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "nativeRecordHash": "04ace5221b645993ef65f30786aeaaee9b35d2c3b60748ec98e8ffc3e0889e45",
+            "fixedInputHash": "7ccd91cd338f6452b92dc888db87d5431437b5d69df07e93ef08f6e1b5e9b23c"
+          }
+        ],
+        "commandRequests": [
+          {
+            "inputHash": "b418894a0d5444543b21adfd5562966d54df6e22d10225952fc7825e5085ca34",
+            "request": {
+              "toolId": "node",
+              "argv": [
+                "--test",
+                "--test-reporter=tap",
+                "@input/lru-cache.test.cjs"
+              ],
+              "inputVersion": {
+                "kind": "files",
+                "manifestId": "manifest:ece372e0e24252fe62615922799cc1d5e9f062bd4900e59bf378475aaa4591bd",
+                "manifestHash": "ece372e0e24252fe62615922799cc1d5e9f062bd4900e59bf378475aaa4591bd"
+              },
+              "timeoutMs": 30000,
+              "outputRoot": "private-per-operation",
+              "networkGrantId": null
+            }
+          }
+        ],
+        "runs": [
+          {
+            "receipt": {
+              "projectId": "graph-native-project",
+              "taskId": "graph-native-task",
+              "workerId": "lru-coder",
+              "workspaceId": "workspace:295e9595f8a82bc5f2817081e6422cbe4f2b2025f9aec4f212d08e85c4d631ba",
+              "actionId": "tool:b0e10ba47300565517ebdb64d9d2821c27a1f942cb4a58495a5b2a403b998ab6",
+              "grantRevision": 0,
+              "writerEpoch": 1,
+              "schemaVersion": "workspace-command-receipt-v1",
+              "receiptId": "run:3cd58e6737f6ee68c7f4ffe7173cf8dfe33d65cbed8661bb8004caa3c36d701c",
+              "commandId": "command:3cd58e6737f6ee68c7f4ffe7173cf8dfe33d65cbed8661bb8004caa3c36d701c",
+              "inputHash": "b418894a0d5444543b21adfd5562966d54df6e22d10225952fc7825e5085ca34",
+              "canonicalSourceRef": "binding:register:295e9595f8a82bc5f2817081e6422cbe4f2b2025f9aec4f212d08e85c4d631ba",
+              "inputVersion": {
+                "kind": "files",
+                "manifestId": "manifest:ece372e0e24252fe62615922799cc1d5e9f062bd4900e59bf378475aaa4591bd",
+                "manifestHash": "ece372e0e24252fe62615922799cc1d5e9f062bd4900e59bf378475aaa4591bd"
+              },
+              "policyHash": "c50c36c55315178053c90e515a5c264292af6722ebc61879f231214adeb03c5b",
+              "toolVersion": "24.20.0",
+              "stage": "exited",
+              "createdAt": 1789621285092,
+              "startedAt": 1789621283836,
+              "finishedAt": 1789621285092,
+              "exitCode": 0,
+              "timedOut": false,
+              "quiescent": true,
+              "assurance": "bounded",
+              "reason": "none",
+              "stdoutRef": "b047154c52073e789efc0266b7bf65edbf573c54578d4d882927d74eb9be5193",
+              "stderrRef": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "nativeRecordHash": "04ace5221b645993ef65f30786aeaaee9b35d2c3b60748ec98e8ffc3e0889e45",
+              "fixedInputHash": "7ccd91cd338f6452b92dc888db87d5431437b5d69df07e93ef08f6e1b5e9b23c"
+            },
+            "stdout": "TAP version 13\n# Subtest: missing keys return undefined\nok 1 - missing keys return undefined\n  ---\n  duration_ms: 0.394458\n  type: 'test'\n  ...\n# Subtest: get refreshes recency and capacity evicts oldest\nok 2 - get refreshes recency and capacity evicts oldest\n  ---\n  duration_ms: 0.096333\n  type: 'test'\n  ...\n# Subtest: updating a key preserves capacity\nok 3 - updating a key preserves capacity\n  ---\n  duration_ms: 0.056042\n  type: 'test'\n  ...\n# Subtest: delete removes only the chosen key\nok 4 - delete removes only the chosen key\n  ---\n  duration_ms: 0.056875\n  type: 'test'\n  ...\n# Subtest: optional TTL expires entries\nok 5 - optional TTL expires entries\n  ---\n  duration_ms: 60.609334\n  type: 'test'\n  ...\n1..5\n# tests 5\n# suites 0\n# pass 5\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 104.914333\n",
+            "stderr": ""
+          }
+        ],
+        "generatedSourceHash": "ba12b6dbb56d0897bbbe6b79b04476de88639b5281faecdf6339d73935f31ab2",
+        "workers": [
+          {
+            "workerId": "lru-coder",
+            "role": "CODER",
+            "executor": "harness",
+            "status": "done",
+            "subtaskId": "lru",
+            "sessionId": "human-gate-resume:graph-native-continue:lru-coder",
+            "startedTs": 1789621218280,
+            "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+          }
+        ],
+        "passed": true,
+        "endedAt": "2026-09-17T05:01:30.258Z",
+        "activeLeasesAfter": 0
+      },
+      {
+        "mode": "duplicate",
+        "base": "/private/tmp/agora-langgraph-round2-q53XSo",
+        "startedAt": "2026-09-17T05:02:23.512Z",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "failure": "humanGate resolution action \"graph-native-continue\" conflicts with its first write",
+        "endedAt": "2026-09-17T05:02:23.647Z",
+        "activeLeasesAfter": 0
+      },
+      {
+        "mode": "graph-only-duplicate",
+        "base": "/private/tmp/agora-langgraph-round2-q53XSo",
+        "startedAt": "2026-09-17T05:05:00.691Z",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash",
+        "scope": "Graph-only no-op after completion; production D9 replay still fails",
+        "workers": [
+          {
+            "workerId": "lru-coder",
+            "role": "CODER",
+            "executor": "harness",
+            "status": "done",
+            "subtaskId": "lru",
+            "sessionId": "human-gate-resume:graph-native-continue:lru-coder",
+            "startedTs": 1789621218280,
+            "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+          }
+        ],
+        "passed": true,
+        "endedAt": "2026-09-17T05:05:00.841Z",
+        "activeLeasesAfter": 0
+      }
+    ],
+    "diagnosis": {
+      "result": "confirmed-production-replay-defect",
+      "hypotheses": [
+        {
+          "hypothesis": "incoming parameters or canonical receipt changed",
+          "result": "ruled out for this fixture: matching action/gate/option, canonical resumed marker matches receipt"
+        },
+        {
+          "hypothesis": "worker source or child identity changed unexpectedly",
+          "result": "ruled out: stable source ref, exact deterministic child session; live resumed tools and tests passed"
+        },
+        {
+          "hypothesis": "replay uses paused-only validator after legitimate progress",
+          "result": "confirmed: identical receipt accepted against real paused worker, rejected against real done worker"
+        }
+      ],
+      "failingCaller": "apps/web/src/server/message-runtime.ts:1151",
+      "failingInvariant": "packages/core/orchestration/src/human-gate.ts:385 paused.length !== plans.length",
+      "productionCodeChanged": false
+    },
+    "typecheck": {
+      "exitCode": 0,
+      "command": "pnpm exec tsc -p test-outputs/langgraph-spike-round2/tsconfig.spike.json"
+    },
+    "biome": {
+      "exitCode": 1,
+      "reason": "test-outputs ignored; processed zero files; not counted as a pass"
+    },
+    "fullProductGates": "not run; no product implementation or dependency changes"
+  },
+  "events": [
+    {
+      "event": "process-start",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621215956
+    },
+    {
+      "event": "dispatch-initial",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621217630
+    },
+    {
+      "event": "composition-created",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621218279,
+      "resuming": false,
+      "activeLeases": 0
+    },
+    {
+      "event": "tool-start",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621221786,
+      "name": "workspace_read",
+      "activeLeases": 1
+    },
+    {
+      "event": "pause-requested",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621221787
+    },
+    {
+      "event": "gate-durable",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621223076,
+      "activeLeases": 1,
+      "refs": 1
+    },
+    {
+      "event": "composition-suspended",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621223229,
+      "activeLeases": 0
+    },
+    {
+      "event": "gate-enter",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621223235
+    },
+    {
+      "event": "process-finished",
+      "mode": "initial",
+      "pid": 89084,
+      "at": 1789621223244,
+      "passed": true,
+      "activeLeases": 0
+    },
+    {
+      "event": "process-start",
+      "mode": "inspect",
+      "pid": 89946,
+      "at": 1789621233812
+    },
+    {
+      "event": "process-finished",
+      "mode": "inspect",
+      "pid": 89946,
+      "at": 1789621233976,
+      "passed": true,
+      "activeLeases": 0
+    },
+    {
+      "event": "process-start",
+      "mode": "resolve",
+      "pid": 89966,
+      "at": 1789621234564
+    },
+    {
+      "event": "canonical-resolution-delivered",
+      "mode": "resolve",
+      "pid": 89966,
+      "at": 1789621234666,
+      "workers": 1
+    },
+    {
+      "event": "process-finished",
+      "mode": "resolve",
+      "pid": 89966,
+      "at": 1789621234671,
+      "passed": true,
+      "activeLeases": 0
+    },
+    {
+      "event": "process-start",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621259002
+    },
+    {
+      "event": "canonical-resolution-delivered",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621259174,
+      "workers": 1
+    },
+    {
+      "event": "gate-enter",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621259185
+    },
+    {
+      "event": "dispatch-resumed",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621259187
+    },
+    {
+      "event": "composition-created",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621259495,
+      "resuming": true,
+      "activeLeases": 0
+    },
+    {
+      "event": "tool-start",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621260614,
+      "name": "workspace_read",
+      "activeLeases": 1
+    },
+    {
+      "event": "tool-start",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621260963,
+      "name": "workspace_read",
+      "activeLeases": 1
+    },
+    {
+      "event": "tool-start",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621276519,
+      "name": "workspace_apply",
+      "activeLeases": 1
+    },
+    {
+      "event": "tool-start",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621279315,
+      "name": "workspace_read",
+      "activeLeases": 1
+    },
+    {
+      "event": "tool-start",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621282591,
+      "name": "workspace_run",
+      "activeLeases": 1
+    },
+    {
+      "event": "process-finished",
+      "mode": "resume",
+      "pid": 90158,
+      "at": 1789621290258,
+      "passed": true,
+      "activeLeases": 0
+    },
+    {
+      "event": "process-start",
+      "mode": "duplicate",
+      "pid": 90744,
+      "at": 1789621343513
+    },
+    {
+      "event": "process-finished",
+      "mode": "duplicate",
+      "pid": 90744,
+      "at": 1789621343647,
+      "passed": false,
+      "activeLeases": 0
+    },
+    {
+      "event": "process-start",
+      "mode": "graph-only-duplicate",
+      "pid": 91406,
+      "at": 1789621500691
+    },
+    {
+      "event": "process-finished",
+      "mode": "graph-only-duplicate",
+      "pid": 91406,
+      "at": 1789621500842,
+      "passed": true,
+      "activeLeases": 0
+    }
+  ],
+  "sessions": [
+    {
+      "path": "state/harness-sessions/--private-tmp-agora-langgraph-round2-q53XSo-project--/session~003Alru-coder/session.jsonl.zstd",
+      "sha256": "19088a8b30a347dbcda89e91173c1c9cbb30a85f674ad78ac43bfaa3dd7e2c0c",
+      "header": {
+        "type": "session",
+        "version": 0,
+        "id": "session:lru-coder",
+        "createdAt": 1789621219241,
+        "cwd": "/private/tmp/agora-langgraph-round2-q53XSo/project",
+        "delegationDepth": 0,
+        "agentPreset": "agora-role:CODER"
+      },
+      "nativeCompletedSteps": 1,
+      "providerUsage": {
+        "inputTokens": 3298,
+        "outputTokens": 209
+      },
+      "deduplication": "seq >= header.seedLength; compacted reasoning/text records not interpreted as usage"
+    },
+    {
+      "path": "state/harness-sessions/--private-tmp-agora-langgraph-round2-q53XSo-project--/human-gate-resume~003Agraph-native-continue~003Alru-coder/session.jsonl.zstd",
+      "sha256": "312f7645d201490743006b02dd5195998daeee4b858ef71a38cbf5f1713935cd",
+      "header": {
+        "type": "session",
+        "version": 0,
+        "id": "human-gate-resume:graph-native-continue:lru-coder",
+        "createdAt": 1789621259478,
+        "cwd": "/private/tmp/agora-langgraph-round2-q53XSo/project",
+        "parentSession": "session:lru-coder",
+        "seedLength": 64,
+        "delegationDepth": 0,
+        "agentPreset": "agora-role:CODER"
+      },
+      "nativeCompletedSteps": 5,
+      "providerUsage": {
+        "inputTokens": 3962,
+        "outputTokens": 3489,
+        "cacheReadTokens": 30720
+      },
+      "deduplication": "seq >= header.seedLength; compacted reasoning/text records not interpreted as usage"
+    }
+  ],
+  "nativeCompletedSteps": 6,
+  "providerReportedUsage": {
+    "inputTokens": 7260,
+    "outputTokens": 3698,
+    "cacheReadTokens": 30720
+  },
+  "package": {
+    "startedAt": "2026-09-17T05:02:10.137Z",
+    "scope": "Minimal Node app; production trace allowlist/copy/signing; no Electron UI, notarization or product upgrade",
+    "warnings": [],
+    "runs": [
+      {
+        "mode": "start",
+        "pid": 90698,
+        "node": "v24.20.0",
+        "abi": "137",
+        "next": [
+          "gate"
+        ],
+        "calls": 1,
+        "appPath": "/Users/logansu/Documents/Dev/Agora/test-outputs/langgraph-spike-round2/package-probe/stage/LangGraphProbe.app"
+      },
+      {
+        "mode": "inspect",
+        "pid": 90994,
+        "node": "v24.20.0",
+        "abi": "137",
+        "next": [
+          "gate"
+        ],
+        "calls": 1,
+        "appPath": "/Users/logansu/Documents/Dev/Agora/test-outputs/langgraph-spike-round2/package-probe/mount/LangGraphProbe.app"
+      },
+      {
+        "mode": "resume",
+        "pid": 90995,
+        "node": "v24.20.0",
+        "abi": "137",
+        "next": [],
+        "calls": 1,
+        "appPath": "/Users/logansu/Documents/Dev/Agora/test-outputs/langgraph-spike-round2/package-probe/mount/LangGraphProbe.app"
+      },
+      {
+        "mode": "finished",
+        "pid": 90998,
+        "node": "v24.20.0",
+        "abi": "137",
+        "next": [],
+        "calls": 1,
+        "appPath": "/Users/logansu/Documents/Dev/Agora/test-outputs/langgraph-spike-round2/package-probe/relocated/LangGraphProbe.app"
+      },
+      {
+        "mode": "resume",
+        "pid": 90999,
+        "node": "v24.20.0",
+        "abi": "137",
+        "next": [],
+        "calls": 1,
+        "appPath": "/Users/logansu/Documents/Dev/Agora/test-outputs/langgraph-spike-round2/package-probe/relocated/LangGraphProbe.app"
+      }
+    ],
+    "sign": {
+      "mode": "ad-hoc-validation-only",
+      "plan": [
+        {
+          "target": "Contents/MacOS/probe-node",
+          "jit": true,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "Contents/Resources/service/node_modules/better-sqlite3/build/Release/better_sqlite3.node",
+          "jit": false,
+          "hardenedRuntime": false
+        },
+        {
+          "target": "",
+          "jit": true,
+          "hardenedRuntime": false
+        }
+      ]
+    },
+    "dmgSha256": "d44a7ae19519df85e85b7802e81bb8588199af29bc83771fb7d49aea59c7bb91",
+    "passed": true,
+    "unmounted": true,
+    "endedAt": "2026-09-17T05:03:17.524Z",
+    "resourcesSummary": {
+      "files": 722,
+      "logicalBytes": 6500657,
+      "manifestSha256": "05cdcc765b40c19aa8dacab4ae21a09bfb6af0368a12c83039056c355302977a",
+      "nativeModules": [
+        {
+          "path": "service/node_modules/better-sqlite3/build/Release/better_sqlite3.node",
+          "sha256": "7a407fe7027003fab01e6d1d1b1ebaf2dc1773282f88803f75b46dd0695994e4",
+          "bytes": 1938864
+        }
+      ]
+    },
+    "traceSummary": {
+      "files": 722,
+      "listSha256": "33a70d938b0674ca0fd02f8dd1bcf830b952ddc9d26a1bc8c5cac9873f457642",
+      "nativeModules": [
+        "node_modules/better-sqlite3/build/Release/better_sqlite3.node"
+      ]
+    }
+  },
+  "failures": [
+    {
+      "kind": "production-D9-replay",
+      "message": "humanGate resolution action \"graph-native-continue\" conflicts with its first write",
+      "fixed": false
+    },
+    {
+      "kind": "restricted-hdiutil-create",
+      "exitCode": 1,
+      "message": "Error: Command failed: /usr/bin/hdiutil create -quiet -srcfolder /Users/logansu/Documents/Dev/Agora/test-outputs/langgraph-spike-round2/package-probe/stage -format UDZO -volname LangGraphProbe /Users/logansu/Documents/Dev/Agora/test-outputs/langgraph-spike-round2/package-probe/LangGraphProbe.dmg",
+      "resolution": "Same staged app/checkpoint; only disk-image step rerun with required host permission; succeeded; no mount left"
+    },
+    {
+      "kind": "probe-types",
+      "message": "unused copied imports and possibly undefined graph promise",
+      "resolution": "Fixed before real run; strict tsc passes"
+    },
+    {
+      "kind": "metadata-extraction",
+      "message": "compressed session records lack seq",
+      "resolution": "Use explicit native usage/step records and seed boundary; no raw reasoning copied"
+    }
+  ],
+  "sources": {
+    "packages/core/orchestration/src/worker-runtime.ts": "14c2f51fc5f86770baafbabf89d85e6bed1ed1912bfb19cf5af002748dfd320d",
+    "packages/core/orchestration/src/human-gate.ts": "dfcbcd79cce6c300aada2baf7edfe62d647d9b62487585fb730f6d7ff0f8b5be",
+    "packages/core/orchestration/src/global-scheduler.ts": "52b31164785f83b2fe85ab75235fadffe98636c4a15367c04c094feeed0c3322",
+    "apps/web/src/server/message-runtime.ts": "cc15dd2b9137c01aadad9b17da9197462f6a02eeec8aaaa85528582c8effda6c",
+    "apps/web/src/server/local-task-composition.ts": "1121f92bd21fee8407319d7102ae8a85ac5f6c9b5d5d96b6bacd8b77982984ee",
+    "apps/web/src/server/local-workspace-executor.ts": "2c696334e12469ee944500ba60a287e3ead6d59ad54854175c0f3d5279e93f91",
+    "packages/runtime/executor/src/harness-executor.ts": "8d61a402a3302754e9c4fb65f54be531ba5606748332a2c849aca7bd4e7c6b58",
+    "packages/runtime/sandbox/src/local-workspace-sessions.ts": "217edce60540ec24491ba05ce912ecf5f16a612da7657cae6f037a9538615633",
+    "packages/runtime/sandbox/src/local-workspace-commands.ts": "5b77bdac06692be4d670af0f53c041b4b129b08adb0e03432216d805a46fc425",
+    "apps/desktop/src/build-resources.ts": "58ac1d89fc3d0cbba5fa9c4ab77261d7adb6ab59aeab085ed4bcd54e1d011ea3",
+    "apps/desktop/dist/build-resources.js": "28257d3a86356b37b2300cf4c83ebda90528fe0d48fa640c098f12be36518ed5",
+    "apps/desktop/scripts/sign.mjs": "c042fade3199874e905f6161d2ca64c0a23a603e635d4f9edbace9ad3575fe07",
+    "packages/runtime/sandbox/native/local-root-inspection.c": "c5b57c12f4d961cc8f8ccd130829d560f8684b2700a3b322ed7a524bf833939d",
+    "packages/runtime/sandbox/native/local-root-initialization.c": "9f448acd47d3c30be889f611f94d14210216408eab0de273e74618d66e12eb79",
+    "packages/runtime/sandbox/native/local-file-transaction.c": "f089c10e1191ce1e5e3a357da6763c7b897600137b3ddd3cdad39bd6394eb5b3",
+    "packages/runtime/sandbox/native/local-command-bootstrap.c": "6a961f682c2cd385072c51c9b5819c13f23760ce39e9169a7937fd1e44ac4416",
+    "packages/runtime/sandbox/native/local-process-control.c": "305da4f928dbf3c68a341c7f4d8c527fa1837e93e8e14ee93d0f3d8a07440f4c"
+  },
+  "limitations": [
+    "One native CODER across pause/Fork; not same-task parallel Worktree (12.4 unimplemented)",
+    "Graph lifecycle wiring is test-owned; production TaskOrchestrationRuntime not replaced",
+    "No D16 completion, full admission stress, real abrupt native-process crash, full app Electron/UI/upgrade/downgrade/notarization/macOS15 acceptance",
+    "D9 duplicate failure remains in product baseline; graph-only no-op does not repair it"
+  ]
+}

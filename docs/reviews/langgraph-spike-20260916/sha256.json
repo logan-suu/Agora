@@ -1,0 +1,12 @@
+{
+  "README.md": "a7ee7225cf40dd655b1772b75de00d4c041aa4632954b91bc9c3a0cb720a9f27",
+  "cleanup.json": "8c59334f70dbe3b84df1ec57f46a159718957e39efe26290bdbcf80f75074f74",
+  "package-lock.json": "0ced6a449da2c779ec70fcbce9e1a9257bded0d68e3ef645a10353b7628fed97",
+  "package.json": "47b6321cde3078321a0b5f50fab79794732e32d3d103585cc04d1b3327e0e9af",
+  "results.json": "62da5723be9a9201b1d767a5fda18f830cd5c705d82735e0c4b7a7073a6d628b",
+  "sources/framework.mjs": "81584587f4b079ceb1b8ce7813d3e59d8767cc126e8e78ee9edc4002c055f694",
+  "sources/live.test.ts": "f64b776ac8247c65509b277b11dd27bbcc5f645afbdf891d2d5af55310cd3815",
+  "sources/scheduler.mjs": "e5aa5d436bade94f38249d275e82487683b7d96caeef7793fce77f49d02081b8",
+  "tsconfig.spike.json": "fe13586cc71b8408c23e092d967b22bca2ff9983280648335cfd257ae5d47140",
+  "vitest.spike.config.mjs": "8e7e26ae1f8b636f09ad6ffa5849e53c775509ef0ee652c8eeeb33d4e4d32290"
+}

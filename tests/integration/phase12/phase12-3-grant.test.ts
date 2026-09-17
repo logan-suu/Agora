@@ -1,5 +1,6 @@
 // Real POST handler, MessageRuntime, desktop owner, registry and Seatbelt inspector.
 // Fault wrappers stop only the trusted commit to exercise durable crash recovery.
+// Use current build:sandbox-native artifacts; compiling per case is not grant behavior.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
@@ -133,8 +134,20 @@ for (const scenario of [
         commandScenario;
       const base = mkdtempSync('/private/tmp/agora-task123-validation-'),
         identity = lstatSync(base);
-      const root = join(base, 'project'),
-        inspector = join(base, 'inspector');
+      const root = join(base, 'project');
+      const builtHelper = (name: string) => {
+        const path = resolve(
+          'packages/runtime/sandbox/build',
+          `${name}-${process.platform}-${process.arch}`,
+        );
+        return { path, sha256: hash(readFileSync(path)) };
+      };
+      const nativeHelpers = {
+        inspector: builtHelper('local-root-inspection'),
+        initializer: builtHelper('local-root-initialization'),
+        files: builtHelper('local-file-transaction'),
+      };
+      const inspector = nativeHelpers.inspector.path;
       mkdirSync(root);
       writeFileSync(join(root, 'sentinel'), 'fixed user content');
       if (scenario === 'batch-read-drift')
@@ -187,6 +200,7 @@ console.log('fixed input build and test passed');
       const evidence: Record<string, unknown> = {
         base,
         scenario,
+        nativeHelpers,
         identity: { dev: identity.dev, ino: identity.ino },
         startedAt: new Date().toISOString(),
       };
@@ -198,16 +212,6 @@ console.log('fixed input build and test passed');
       );
       let failure: unknown;
       try {
-        execFileSync('/usr/bin/clang', [
-          '-std=c11',
-          '-Wall',
-          '-Wextra',
-          '-Werror',
-          '-mmacosx-version-min=15.0',
-          resolve('packages/runtime/sandbox/native/local-root-inspection.c'),
-          '-o',
-          inspector,
-        ]);
         const stream = new ChannelStream();
         const runtime = new MessageRuntime(join(owner.root, 'tasks'), stream, DEFAULT_ROSTER);
         await runtime.initializeState(
@@ -415,17 +419,7 @@ console.log('fixed input build and test passed');
                 ]),
               });
             if (executionScenario) {
-              const initializer = join(base, 'initializer');
-              execFileSync('/usr/bin/clang', [
-                '-std=c11',
-                '-Wall',
-                '-Wextra',
-                '-Werror',
-                '-mmacosx-version-min=15.0',
-                resolve('packages/runtime/sandbox/native/local-root-initialization.c'),
-                '-o',
-                initializer,
-              ]);
+              const initializer = nativeHelpers.initializer.path;
               const roots = await LocalRootCoordinator.open(owner, control, {
                 inspector,
                 initializer,
@@ -450,17 +444,7 @@ console.log('fixed input build and test passed');
               );
               expect(readFileSync(join(root, 'sentinel'), 'utf8')).toBe('fixed user content');
               evidence.initialization = initialized;
-              const filesHelper = join(base, 'files-helper');
-              execFileSync('/usr/bin/clang', [
-                '-std=c11',
-                '-Wall',
-                '-Wextra',
-                '-Werror',
-                '-mmacosx-version-min=15.0',
-                resolve('packages/runtime/sandbox/native/local-file-transaction.c'),
-                '-o',
-                filesHelper,
-              ]);
+              const filesHelper = nativeHelpers.files.path;
               const objects = await LocalControlObjects.open(owner),
                 versions = new LocalVersionStore(objects, filesHelper);
               const registeredRoot = (await control.snapshot()).roots[0];
@@ -1193,6 +1177,14 @@ console.log('fixed input build and test passed');
                             args,
                             'command',
                           )) as typeof result;
+                          // Preserve the first command outcome if its idempotent replay fails.
+                          evidence.command = observed;
+                          evidence.commandJournal = JSON.parse(
+                            readFileSync(
+                              join(owner.root, 'command-journal', 'commands.json'),
+                              'utf8',
+                            ),
+                          );
                           expect(await execute('workspace_run', args, 'command')).toEqual(observed);
                         });
                         if (!observed) throw Error('missing MCP command result');

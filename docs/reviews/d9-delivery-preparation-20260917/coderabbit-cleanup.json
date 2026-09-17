@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-17",
+  "path": "/private/tmp/agora-coderabbit-d9-6egoa9iq",
+  "device": 16777231,
+  "inode": 128874085,
+  "ownerVerified": true,
+  "reviewExited": 0,
+  "openHandles": false,
+  "mounts": [],
+  "files": 51,
+  "logicalBytes": 318880,
+  "aggregateSha256": "6b431d31f8e2f56f0556298fcb1e890de60c3f08da7560da4a58f49f56e656a4",
+  "aggregateEncoding": "Sorted relative UTF-8 path + NUL + binary SHA-256(content), concatenated and SHA-256 hashed",
+  "preflight": {
+    "base": "/private/tmp/agora-coderabbit-d9-6egoa9iq",
+    "work": "/private/tmp/agora-coderabbit-d9-6egoa9iq/review",
+    "sourceScope": "/Users/logansu/Documents/Dev/Agora/docs/reviews/d9-delivery-preparation-20260917/review-scope.json",
+    "files": [
+      "AGENTS.md",
+      "apps/web/src/server/human-gate-replay.ts",
+      "apps/web/src/server/message-runtime.ts",
+      "apps/web/src/server/task-orchestration-runtime.ts",
+      "apps/web/test/human-gate-replay.test.ts",
+      "packages/core/orchestration/src/human-gate.ts",
+      "packages/runtime/executor/src/harness-executor.ts"
+    ],
+    "baselineCommit": "df8d48cd93d358ccbf5c242bd47ca830f9a3ed5c",
+    "mainIndexUnchanged": true,
+    "rootDevice": 16777231,
+    "rootInode": 128874085
+  },
+  "pointer": {
+    "path": "test-outputs/d9-coderabbit-path.json",
+    "logicalBytes": 727,
+    "sha256": "c7a2904f731c7f813d7e3e6a354a98d63c1456af63614fc48610aba00adfc4ce"
+  },
+  "removed": true,
+  "pointerRemoved": true,
+  "observedFreeBytesDelta": 372736,
+  "spaceNote": "Observed shared-volume delta, not exclusive reclaimed space."
+}

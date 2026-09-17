@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.24
-**生效日期**：2026-09-16
+**版本**：v2.25
+**生效日期**：2026-09-17
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 是全部任务当前状态、依赖与常驻决策摘要的唯一索引；`docs/task-history/<taskId>.md` 保存完整执行证据。初始化运行 `node scripts/task-status.mjs summary`，按需读取，禁止默认整文件/全历史输出。维护规范见 [docs/task-tracking.md](docs/task-tracking.md)。
@@ -11,7 +11,7 @@
 
 ## 0. 项目文档与快速索引
 
-**后续演进入口（D18）**：后续产品规则见项目蓝图 §22，契约设计见详细设计 §12，Phase 11–30全部任务、按任务决策规则及逐项覆盖见开发计划 §18。既有阶段实现规则与后续目标按 D18 分阶段适用；现在即拆分全部功能与后置候选；未定细则先列设计任务，不等对应批次开工才拆，也不在受影响契约未定稿前绕过既有执行保护或跨阶段出口门禁。
+**后续演进入口（D18）**：后续产品规则见项目蓝图 §22，契约设计见详细设计 §12，Phase 11–31全部任务、按任务决策规则及逐项覆盖见开发计划 §18。既有阶段实现规则与后续目标按 D18 分阶段适用；现在即拆分全部功能与后置候选；未定细则先列设计任务，不等对应批次开工才拆，也不在受影响契约未定稿前绕过既有执行保护或跨阶段出口门禁。
 
 所有规格、架构、实现规范与计划均存放于 `docs/` 目录。Agent 在执行任何编码任务前，**必须**先查阅相关文档并引用原文。
 
@@ -20,10 +20,10 @@
 | 文档 | 文件路径 | 角色 |
 |---|---|---|
 | **项目蓝图** | `docs/项目蓝图.md` | 唯一主文档：定位/架构/分阶段路线/§21 决策/§22 后续产品规则 |
-| **详细设计方案** | `docs/详细设计方案.md` | 落码规格：§0 工程结构与 Harness 约定 / §1 State schema / §2 角色 / §3 编排 / §4 抢占 / §5 通信 / §6 执行器沙箱 / §7 投影 / §8 多租户与 KB / §9 阶段 0 切片 / §10 校验 / §11 工程 Eval / §12 后续契约 |
-| **系统架构设计文档** | `docs/系统架构设计文档.md` | L1-L4 分层 / Monorepo 映射 / 关键路径（§4）/ 一致性模型（§5）/ 韧性表（§6）/ 扩展点（§7）/ 权衡（§8）/ 部署（§9） |
+| **详细设计方案** | `docs/详细设计方案.md` | 落码规格：§0 工程结构与 Harness 约定 / §1 State schema / §2 角色 / §3 编排 / §4 抢占 / §5 通信 / §6 执行器沙箱 / §7 投影 / §8 多租户与 KB / §9 阶段 0 切片 / §10 校验 / §11 工程 Eval / §12 后续契约 / §13 D19图编排 |
+| **系统架构设计文档** | `docs/系统架构设计文档.md` | L1-L4 分层 / Monorepo 映射 / 关键路径（§4）/ 一致性模型（§5）/ 韧性表（§6）/ 扩展点（§7）/ 权衡（§8）/ 部署（§9）/ D19迁移（§11） |
 | **技术选型文档** | `docs/技术选型文档.md` | 版本锁定（§12）/ 备选方案排除（§4）/ MCP 工具清单（§6）/ 沙箱（§7）/ SSE（§9）/ 持久化（§10）/ 决策记录（§13） |
-| **开发计划安排** | `docs/开发计划安排.md` | Phase 0-10 既有任务 / §18 四批交付与 Phase 11–30全部任务 / 风险 / 秋招 Demo 检查点（§17） |
+| **开发计划安排** | `docs/开发计划安排.md` | Phase 0-10 既有任务 / §18 四批交付与 Phase 11–31全部任务 / 风险 / 秋招 Demo 检查点（§17） |
 | **框架调研与借鉴决策** | `docs/框架调研与借鉴决策.md` | AutoGen/AgentScope 源码级结论 / 8 个借鉴模式 / 借鉴-拒绝矩阵 |
 | **任务状态** | `docs/task-status.json` | 全部任务当前状态/依赖/出口及短决策索引；通过 summary/task/phase/decisions 按需读取 |
 | **任务历史** | `docs/task-history/<taskId>.md` | 完整执行/失败/修复/门禁/交付时点记录，按需追读，不维护第二份当前状态 |
@@ -58,6 +58,7 @@
 | Spike/执行链路验证 | 详细设计 §9 + 架构 §4 | 最小闭环链路 |
 | 工程 Benchmark/Eval | 详细设计 §11 + 蓝图 §3/§17/§21 + 选型 §11.3 | D11：成熟任务/Outcome Grader 复用 + Agora 协作语义 Grader；不替代测试/G5 |
 | 后续桌面/本机与跨批次设计 | 蓝图 §21 D18 / §22 + 详细设计 §12 + 架构 §10 + 选型 §14 + 开发计划 §18 | 全量任务按依赖推进；Docker退役前保留适用回归，13.3转为本机替代覆盖 |
+| LangGraph持久编排/Continue/控制收据 | 蓝图§21 D19 + 详设§13 + 架构§11 + 选型§5.2/§10.2/§12 + 计划§18.13/§18.14 | 完整Harness、业务/图分权、只读恢复、分阶段验收与编号迁移 |
 | 决策变更后文档同步 | `$agora-sync-docs` Skill 流程 + 蓝图 §21 | 同步顺序与标记规范 |
 
 > **决策变更同步·浓缩顺序**：① 蓝图（§21 或对应章节，打标记）→ ② 详细设计对应节 → ③ 系统架构 / 技术选型（如涉及）→ ④ 开发计划安排 + `task-status.json`（含 standing_decisions）→ ⑤ AGENTS.md（如涉及红线）。逐步操作清单以 `$agora-sync-docs` Skill 为唯一详版。
@@ -74,9 +75,9 @@
 Agora 是一个**群聊式多 Agent 代码协作系统**：人类以 Leader 身份在一个群聊里指挥一组各司其职的 AI Agent（Coordinator/PM/Architect/Coder/Tester/Reviewer）完成编码任务——像带一支真实的远程工程团队，而不是操作一条流水线。
 
 ```
-一切皆群聊, Leader 唯一裁决, 角色投影, 配合式抢占, 薄执行器 + 自研轻编排.
+一切皆群聊, Leader 唯一裁决, 角色投影, 配合式抢占, 完整Harness + 分阶段团队编排（D19）.
 群聊是唯一协作面；人始终在场并拍板；每个 agent 只读自己该读的切片；
-LLM 永不在 token 流中被硬杀；底层循环复用 Harness，编排只有 4 个通用节点。
+LLM 永不在 token 流中被硬杀；底层循环复用 Harness，切换前编排为通用节点；D19新路径接管团队持久编排。
 ```
 
 | 真实软件团队 | Agora 对应物 |
@@ -110,6 +111,8 @@ deferred-items.json 全阶段延期项台账（DEF-NNN，常驻决策 DEF 的数
 
 ---
 
+**[2026-09-17 D19阶段同步]** LangGraph接管完整Harness团队持久编排的正式规则见蓝图§21 D19、详设§13；Phase14在13.4后实施，14.7出口才切新任务。已有R1–R13保护保持：新控制聚合只经受信任务队列与applyMutations提交，模型不可写；D4/D9/D16和GlobalScheduler不交给框架自动处理，R9冻结签名不变。旧原生任务只读、不跨引擎续跑，旧Docker不重建兼容。原未开工Phase14–30现为15–31，历史编号按开发计划§18.14转换；先登记不是开工或验收通过。
+
 ## 2. 硬红线（NEVER，违反必被拒绝）
 
 **阶段适用（D18）**：下列 Docker、KB Write-Block、六角色与现有工作区条款继续约束已交付路径；后续本机授权/稳定成员/知识维护按 D18 和对应任务先定稿再实装验收，不直接覆盖旧规则或关闭保护。R9接口调整也必须在设计任务先明确并同步。第一批不启用Librarian写入；新本机G7边界以获批授权、越界保护与真实验证为准，不将Worktree冒充OS沙箱。D18已批准Phase13退役Agora Docker后端且不兼容旧产品任务；Docker条款仅约束退役前实现，不要求永久保留。12.1定稿退役清单、13.3完成移除与本机回归替代、13.4在无Docker环境验收；研发任务历史保留，不自动删除本机旧数据。
@@ -142,7 +145,7 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 语言/运行时   TypeScript 5.9+ / Node.js 24 LTS（宿主；Docker 用户代码沙箱仍为 node:20-slim）
 包管理        pnpm 9 workspaces（catalog 统一版本）
 单 Agent 内核 DeepSeek Harness v0.1（loop 可替换/事件溯源/Turn-Step 两层/inbox steering/ctx.agents/ctx.compaction；one-shot ctx.subagents 不作顶层 worker）
-编排          自研轻量层（4 通用节点 + coordinator 条件路由，~500-800 行）
+编排          切换前自研；D19/Phase14后新工作项由LangGraph.js持久编排，完整Harness内核保持
 工具协议      MCP TS SDK v1（@modelcontextprotocol/sdk 1.30.0，锁定）
 沙箱          Phase 0: LocalTempSandbox(fs.mkdtempSync + child_process.spawn)；Phase 1+: Docker(dockerode ^4)
 版本控制      simple-git 3.36.x（worktree/merge，Phase 1+ 实际启用）
@@ -160,10 +163,10 @@ R13 提交信息用英文一句话祈使句 + 可选 body 要点（对齐仓库�
 复用与自研边界：
 
 ```
-直接采用     Harness（含 Phase 8 同版本 dsh-session-persistence-jsonl）/ MCP TS SDK / dockerode(P1+) / simple-git(P1+) / Next.js / React / Vitest / Biome / Zod(MCP 内置校验)
+直接采用     D19/Phase14新路径LangGraph.js及官方SQLite saver（版本/准入见选型§12）；Harness（含 Phase 8 同版本 dsh-session-persistence-jsonl）/ MCP TS SDK / dockerode(P1+) / simple-git(P1+) / Next.js / React / Vitest / Biome / Zod(MCP 内置校验)
 借鉴不依赖   AutoGen: TerminationCondition 语义、CodeExecutor 接口形态、MagenticOne Ledger 双循环、Handoff-as-tool
              AgentScope: reply/observe/print 语义、写所有权不变量、interrupt()/handle_interrupt、存储与上下文分离
-必须自研     4 通用节点编排 + coordinator 路由、角色投影 project()、配合式抢占 preemption、单一 Channel 通信、
+必须自研     角色/路由业务规则、角色投影 project()、配合式抢占 preemption、单一 Channel 通信、
              两层 KB 与 Write-Block 门控、D4 gate 持久生命周期编排、GlobalScheduler(槽位/成本)、GlobalInbox 聚合、LocalTempSandbox、Leader 意图映射
 ```
 
@@ -336,6 +339,7 @@ Trace       D15：只从当前任务官方 Harness JSONL 读时派生；不复�
             消息+动作一次 State commit 后投递；Coordinator 以 sourceMsgId 确认并只消费最新 applied assignment 一次；
             Phase 6 解锁 /channel；Phase 7 解锁稳定 msgId/actionId 的 /role remove 可恢复离职 saga 与 /role onboard 单 Task State 接手；Phase 8 解锁绑定 gateId 的 /resolve-gate，并以 resolution receipt 支撑清 gate 后恢复；Phase 9 解锁 main-only `/requirement <id> <JSON>` 完整 upsert 未撤回 Requirement、`/decision <topic> <JSON>` append 显式 current-only supersedes 的 Leader Decision、`/priority <subtaskId> <0-100>` 更新未完成 Subtask；三者先预校验单主消息+控制 mutations，再经 task-scoped cohort 安全点屏障与 canonical commit 原子落盘，随后投递并 reproject，空 cohort 可立即提交；同 actionId 重放交叉验证消息和 State 效果，所有角色只消费结构化 leaderDirective、不读 display/raw log；blocking 则按 D4 suspend/Fork，
             其余能力显式 rejected/deferred，不走临时 command 旁路
+            [2026-09-17 D9重放修正] 已有规范resumed事实时，旧裁决只核验不可变receipt、marker及连续lineage，不再次调用resume或重建执行实例；重启保持interrupted/needs_attention。无per-worker计划的兼容分支核对当前与历史来源证据，不能把删除后的计划冒充Phase8旧格式；首次恢复仍严格paused准入。
             [2026-09-12 D9 更新] 自然语言 main 发言可由无工具 Harness 解释为持久化需求草案/澄清，仅消费本条输入与结构化事实；普通 worker 禁止伪造解释/确认信封。用户在可读前后对照中显式确认，仍走 POST /api/messages 并按规范 proposalId、当前事实指纹和安全点后二次校验原子应用关联需求；草案不自动生效，过期拒绝，D16 完成终审不受替代。完整定义见详细设计 §11.9。
 Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 单实例组合根复用既有 runOrchestration/Harness/沙箱，
             Phase 5–8 全实例最多一个活动 run；D17/Phase 9 起不同 task 可并发登记，但所有 WorkerRuntime 共享唯一 GlobalScheduler lease；Agent 进展先持久化 State 再经 MessageBus→SSE；终态产物归档后释放 Harness/MCP/Git/Docker，
@@ -532,7 +536,7 @@ $agora-test-phase       当前 Phase 集成测试    $agora-test-integration 累
 执行者身份：Agora 研发 Agent
 目标：实现 <task-id / 模块>
 必读：AGENTS.md + task-status.json 该任务的 documents_required + standing_decisions 相关条目
-硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D18/C4/FE/WO；不确定必标注
+硬约束：五大支柱 + 红线 R1-R13 + 常驻决策 D1-D19/C4/FE/WO；不确定必标注
 交付：1) 复述约束与现状 2) 出计划等确认 3) 小步实现+测试 4) 对照 exit_criteria 自检附证据
 ```
 

@@ -1,0 +1,1194 @@
+{
+  "baseline": "55d6385a8387634864886dfdec38a8d9b1fa804e",
+  "packages": {
+    "@langchain/core": {
+      "version": "1.2.11",
+      "integrity": "sha512-8yuWLLloTSYA453akm2JSadOVa8kGDY8v+kTzQ6kTY6aIETTEIxgysjZWyKrWQLo3UazctsSoGJ8JrdCGFL4/w==",
+      "resolved": "https://registry.npmjs.org/@langchain/core/-/core-1.2.11.tgz"
+    },
+    "@langchain/langgraph": {
+      "version": "1.4.15",
+      "integrity": "sha512-QG8led1xbFfgikAIF9E5G1Kp1KLtq/xv7YASWy+wnPftQw0Hxu0kpPXl0Q1U2Dfpwb8w/Vfz0QarUR8eI/xtRw==",
+      "resolved": "https://registry.npmjs.org/@langchain/langgraph/-/langgraph-1.4.15.tgz"
+    },
+    "@langchain/langgraph-checkpoint": {
+      "version": "1.1.5",
+      "integrity": "sha512-BwDwl5VeTOh6CVuiIPgsUgfK51vTJDMSbFcSCUfjJWsl8/DPdK/mbv+ejxJstkSk/BlSPMP4JfXWcN6jD2ea2Q==",
+      "resolved": "https://registry.npmjs.org/@langchain/langgraph-checkpoint/-/langgraph-checkpoint-1.1.5.tgz"
+    },
+    "@langchain/langgraph-checkpoint-sqlite": {
+      "version": "1.0.4",
+      "integrity": "sha512-tcfDU6mwy9Su7BQKjGLTrWPL2CZzaGwb5XzEttqRRhcI3g4P6a/S7qFoJf6jcP/vP71bere7JRDZPTzahhHqog==",
+      "resolved": "https://registry.npmjs.org/@langchain/langgraph-checkpoint-sqlite/-/langgraph-checkpoint-sqlite-1.0.4.tgz"
+    },
+    "better-sqlite3": {
+      "version": "12.11.1",
+      "integrity": "sha512-dq9AtApgg5PGFtBzPFSBl3HZQjHok5gaQCM6zh2Yk0aSmDCs1CbnVI8/HgASQkNKsWFpseIO9beg5xxpYhbIfA==",
+      "resolved": "https://registry.npmjs.org/better-sqlite3/-/better-sqlite3-12.11.1.tgz"
+    },
+    "zod": {
+      "version": "4.6.5",
+      "integrity": "sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==",
+      "resolved": "https://registry.npmjs.org/zod/-/zod-4.6.5.tgz"
+    }
+  },
+  "node": "v24.20.0",
+  "platform": "darwin-arm64",
+  "os": "macOS 26.5 (25F71)",
+  "sessions": [
+    {
+      "area": "live",
+      "sessionId": "graph-source-A",
+      "parentSession": null,
+      "seedLength": null,
+      "sourceSha256": "000305f2f952ec5f51188a3b94044630f33ca398bfb785aab6a77c9571bfe512",
+      "nativeEventCounts": {
+        "agent/inbox/spliced": 2,
+        "turn/start": 1,
+        "step/start": 1,
+        "user/message": 1,
+        "request/header": 1,
+        "request/context": 1,
+        "assistant/chunk": 9,
+        "assistant/message": 1,
+        "tool/call": 1,
+        "tool/result": 1,
+        "step/end": 1,
+        "turn/end": 1
+      },
+      "nativeUsage": {
+        "inputTokens": 1452,
+        "outputTokens": 95
+      },
+      "completedTurnPresent": true
+    },
+    {
+      "area": "live",
+      "sessionId": "graph-resume-A",
+      "parentSession": "graph-source-A",
+      "seedLength": 36,
+      "sourceSha256": "db69e8d943c64c950a0bfa6fd2f9007f277d399d5bc6435cb165034b9cd58cd9",
+      "nativeEventCounts": {
+        "session/end-seed": 2,
+        "agent/inbox/spliced": 2,
+        "turn/start": 1,
+        "step/start": 2,
+        "user/message": 1,
+        "request/header": 1,
+        "assistant/chunk": 16,
+        "assistant/message": 2,
+        "tool/call": 1,
+        "tool/result": 1,
+        "step/end": 2,
+        "turn/end": 1
+      },
+      "nativeUsage": {
+        "inputTokens": 1732,
+        "outputTokens": 133,
+        "cacheReadTokens": 1536
+      },
+      "completedTurnPresent": true
+    },
+    {
+      "area": "live",
+      "sessionId": "graph-source-B",
+      "parentSession": null,
+      "seedLength": null,
+      "sourceSha256": "88d0655c440ac0cb1006324b1d19bd45545271f19a334fde766e7402a999c2b0",
+      "nativeEventCounts": {
+        "agent/inbox/spliced": 2,
+        "turn/start": 1,
+        "step/start": 1,
+        "user/message": 1,
+        "request/header": 1,
+        "request/context": 1,
+        "assistant/chunk": 12,
+        "assistant/message": 1,
+        "tool/call": 1,
+        "tool/result": 1,
+        "step/end": 1,
+        "turn/end": 1
+      },
+      "nativeUsage": {
+        "inputTokens": 1447,
+        "outputTokens": 93
+      },
+      "completedTurnPresent": true
+    },
+    {
+      "area": "live",
+      "sessionId": "graph-resume-B",
+      "parentSession": "graph-source-B",
+      "seedLength": 33,
+      "sourceSha256": "5134d34858c13013b85834182187d5b4a4d0e1153a924bcc2f7d6b09579d9832",
+      "nativeEventCounts": {
+        "session/end-seed": 2,
+        "agent/inbox/spliced": 2,
+        "turn/start": 1,
+        "step/start": 2,
+        "user/message": 1,
+        "request/header": 1,
+        "assistant/chunk": 11,
+        "assistant/message": 2,
+        "tool/call": 1,
+        "tool/result": 1,
+        "step/end": 2,
+        "turn/end": 1
+      },
+      "nativeUsage": {
+        "inputTokens": 1709,
+        "outputTokens": 107,
+        "cacheReadTokens": 1536
+      },
+      "completedTurnPresent": true
+    },
+    {
+      "area": "live-failure",
+      "sessionId": "graph-source-B",
+      "parentSession": null,
+      "seedLength": null,
+      "sourceSha256": "b22ade3285d53a2d3f2cf509963656a575314122648a0efd7dc47927f5fe9adb",
+      "nativeEventCounts": {
+        "agent/inbox/spliced": 2,
+        "turn/start": 1,
+        "step/start": 1,
+        "user/message": 1,
+        "request/header": 1,
+        "request/context": 1,
+        "assistant/chunk": 11,
+        "assistant/message": 1,
+        "tool/call": 1,
+        "tool/result": 1,
+        "step/end": 1,
+        "turn/end": 1
+      },
+      "nativeUsage": {
+        "inputTokens": 935,
+        "outputTokens": 78,
+        "cacheReadTokens": 512
+      },
+      "completedTurnPresent": true
+    }
+  ],
+  "managed": {
+    "managedNodePath": "/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/node/bin/node",
+    "managedNodeSha256": "7761de77b52f34365e02e02e582c89bfa98ffb84b5b6a2617ef999e955248aa4",
+    "cwd": "/private/tmp",
+    "relocatedRuntime": "test-outputs/langgraph-spike-20260916/relocated-service",
+    "results": [
+      {
+        "probe": "S03-interrupt",
+        "interrupts": [
+          {
+            "id": "8945dda8dd93cf2782d72e8061205d15",
+            "value": {
+              "gateId": "gate-1"
+            }
+          }
+        ]
+      },
+      {
+        "probe": "S03-read-only-wait",
+        "next": [
+          "gate"
+        ],
+        "interrupts": [
+          {
+            "id": "8945dda8dd93cf2782d72e8061205d15",
+            "value": {
+              "gateId": "gate-1"
+            }
+          }
+        ]
+      },
+      {
+        "probe": "S03-resume",
+        "error": null,
+        "out": {
+          "results": [
+            {
+              "id": "resolution-1"
+            }
+          ]
+        },
+        "events": [
+          {
+            "at": 1789620208844,
+            "pid": 84543,
+            "event": "gate-entry"
+          },
+          {
+            "at": 1789620209151,
+            "pid": 84558,
+            "event": "gate-entry"
+          },
+          {
+            "at": 1789620209151,
+            "pid": 84558,
+            "event": "gate-resolved"
+          },
+          {
+            "at": 1789620209153,
+            "pid": 84558,
+            "event": "finish"
+          }
+        ]
+      }
+    ],
+    "scope": "Relocated dependency bundle under installed managed Node; not a new signed DMG or upgrade acceptance."
+  },
+  "nativeUsageTotals": {
+    "inputTokens": 7275,
+    "outputTokens": 506,
+    "cacheReadTokens": 3584
+  },
+  "usageCaveat": "Provider-reported native usage; excludes inherited seed events. No currency charge is inferred. The sandbox transport failure has no successfully persisted model output.",
+  "probes": {
+    "rawFailure": {
+      "probe": "S01-raw-failure",
+      "error": "FIXED_BRANCH_FAILURE",
+      "siblingAborted": true,
+      "finishedAtGraphReturn": false,
+      "siblingFinished": true,
+      "joinCalls": 0,
+      "events": [
+        {
+          "at": 1789619787763,
+          "pid": 82839,
+          "event": "B-start"
+        },
+        {
+          "at": 1789619787794,
+          "pid": 82839,
+          "event": "A-failure"
+        },
+        {
+          "at": 1789619787795,
+          "pid": 82839,
+          "event": "B-abort-signal"
+        },
+        {
+          "at": 1789619787796,
+          "pid": 82839,
+          "event": "graph-return",
+          "error": "FIXED_BRANCH_FAILURE",
+          "finishedAtGraphReturn": false
+        },
+        {
+          "at": 1789619788164,
+          "pid": 82839,
+          "event": "B-finish"
+        }
+      ]
+    },
+    "outcomeAdapter": {
+      "probe": "S01-outcome-adapter",
+      "error": null,
+      "siblingAborted": false,
+      "finishedAtGraphReturn": true,
+      "siblingFinished": true,
+      "joinCalls": 1,
+      "events": [
+        {
+          "at": 1789619807752,
+          "pid": 82912,
+          "event": "B-start"
+        },
+        {
+          "at": 1789619807784,
+          "pid": 82912,
+          "event": "A-failure"
+        },
+        {
+          "at": 1789619808154,
+          "pid": 82912,
+          "event": "B-finish"
+        },
+        {
+          "at": 1789619808163,
+          "pid": 82912,
+          "event": "join"
+        },
+        {
+          "at": 1789619808169,
+          "pid": 82912,
+          "event": "graph-return",
+          "finishedAtGraphReturn": true
+        }
+      ]
+    },
+    "pendingWrites": {
+      "probe": "S02-pending-writes",
+      "aCalls": 1,
+      "bCalls": 2,
+      "results": [
+        {
+          "id": "A",
+          "kind": "completed"
+        },
+        {
+          "id": "B",
+          "kind": "completed"
+        }
+      ],
+      "events": [
+        {
+          "at": 1789619808924,
+          "pid": 82918,
+          "event": "call-A"
+        },
+        {
+          "at": 1789619808924,
+          "pid": 82918,
+          "event": "call-B"
+        },
+        {
+          "at": 1789619808925,
+          "pid": 82918,
+          "event": "A-pending-write-durable"
+        },
+        {
+          "at": 1789619808945,
+          "pid": 82918,
+          "event": "controlled-process-exit"
+        },
+        {
+          "at": 1789619809228,
+          "pid": 82920,
+          "event": "call-B"
+        },
+        {
+          "at": 1789619809231,
+          "pid": 82920,
+          "event": "join"
+        }
+      ]
+    },
+    "gateWait": {
+      "probe": "S03-read-only-wait",
+      "next": [
+        "gate"
+      ],
+      "interrupts": [
+        {
+          "id": "ed0ffe7bfd0cfcfa2e4a464d69767692",
+          "value": {
+            "gateId": "gate-1"
+          }
+        }
+      ]
+    },
+    "gateResume": {
+      "probe": "S03-resume",
+      "error": null,
+      "out": {
+        "results": [
+          {
+            "id": "resolution-1"
+          }
+        ]
+      },
+      "events": [
+        {
+          "at": 1789619809379,
+          "pid": 82921,
+          "event": "gate-entry"
+        },
+        {
+          "at": 1789619809662,
+          "pid": 82947,
+          "event": "gate-entry"
+        },
+        {
+          "at": 1789619809662,
+          "pid": 82947,
+          "event": "gate-resolved"
+        },
+        {
+          "at": 1789619809665,
+          "pid": 82947,
+          "event": "finish"
+        }
+      ]
+    },
+    "duplicateResume": {
+      "probe": "S03-duplicate-resume",
+      "error": null,
+      "out": {
+        "results": [
+          {
+            "id": "resolution-1"
+          }
+        ]
+      },
+      "events": [
+        {
+          "at": 1789619809379,
+          "pid": 82921,
+          "event": "gate-entry"
+        },
+        {
+          "at": 1789619809662,
+          "pid": 82947,
+          "event": "gate-entry"
+        },
+        {
+          "at": 1789619809662,
+          "pid": 82947,
+          "event": "gate-resolved"
+        },
+        {
+          "at": 1789619809665,
+          "pid": 82947,
+          "event": "finish"
+        }
+      ]
+    },
+    "effectReplay": {
+      "probe": "S05-receipt-replay",
+      "error": null,
+      "out": {
+        "results": [
+          {
+            "id": "effect-1"
+          }
+        ]
+      },
+      "events": [
+        {
+          "at": 1789619809951,
+          "pid": 82949,
+          "event": "node-entry"
+        },
+        {
+          "at": 1789619809951,
+          "pid": 82949,
+          "event": "external-effect"
+        },
+        {
+          "at": 1789619809951,
+          "pid": 82949,
+          "event": "business-committed"
+        },
+        {
+          "at": 1789619809952,
+          "pid": 82949,
+          "event": "exit-before-output-write"
+        },
+        {
+          "at": 1789619810092,
+          "pid": 82950,
+          "event": "node-entry"
+        },
+        {
+          "at": 1789619810092,
+          "pid": 82950,
+          "event": "receipt-reused"
+        }
+      ]
+    },
+    "mismatchedReceipt": {
+      "probe": "S05-mismatched-receipt-rejected",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'wrong-input'\n- 'fixed-input'\n",
+      "out": null,
+      "events": [
+        {
+          "at": 1789619810241,
+          "pid": 82951,
+          "event": "node-entry"
+        },
+        {
+          "at": 1789619810242,
+          "pid": 82951,
+          "event": "external-effect"
+        },
+        {
+          "at": 1789619810242,
+          "pid": 82951,
+          "event": "business-committed"
+        },
+        {
+          "at": 1789619810243,
+          "pid": 82951,
+          "event": "exit-before-output-write"
+        },
+        {
+          "at": 1789619810382,
+          "pid": 82954,
+          "event": "node-entry"
+        }
+      ]
+    },
+    "unreceiptedEffect": {
+      "probe": "S05-unreceipted-effect-rejected",
+      "error": "NEEDS_ATTENTION_UNPROVEN_EFFECT",
+      "out": null,
+      "events": [
+        {
+          "at": 1789620206382,
+          "pid": 84518,
+          "event": "node-entry"
+        },
+        {
+          "at": 1789620206382,
+          "pid": 84518,
+          "event": "external-effect"
+        },
+        {
+          "at": 1789620206382,
+          "pid": 84518,
+          "event": "exit-before-business-receipt"
+        },
+        {
+          "at": 1789620206517,
+          "pid": 84519,
+          "event": "node-entry"
+        },
+        {
+          "at": 1789620206517,
+          "pid": 84519,
+          "event": "unreceipted-effect-detected"
+        }
+      ]
+    },
+    "stream": {
+      "probe": "S07-raw-stream-boundary",
+      "customBeforeFinalValues": true,
+      "rawValuesExposeInternalState": true,
+      "events": [
+        [
+          "custom",
+          {
+            "kind": "safe-progress",
+            "step": 1
+          }
+        ],
+        [
+          "values",
+          {
+            "visible": "done",
+            "privateFact": "FIXED_INTERNAL_SENTINEL"
+          }
+        ]
+      ]
+    },
+    "scheduler": {
+      "probe": "S08-real-global-scheduler",
+      "maxActive": 2,
+      "completed": 12,
+      "order": [
+        "A",
+        "A",
+        "B",
+        "C",
+        "A",
+        "B",
+        "C",
+        "A",
+        "B",
+        "C",
+        "B",
+        "C"
+      ],
+      "queuedCancellation": {
+        "name": "AbortError"
+      },
+      "queuedExecuted": false,
+      "events": [
+        {
+          "event": "grant",
+          "project": "A",
+          "worker": "A0",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "A",
+          "worker": "A1",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "B",
+          "worker": "B0",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "A",
+          "worker": "A0",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "C",
+          "worker": "C0",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "A",
+          "worker": "A1",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "A",
+          "worker": "A2",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "B",
+          "worker": "B0",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "B",
+          "worker": "B1",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "C",
+          "worker": "C0",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "C",
+          "worker": "C1",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "A",
+          "worker": "A2",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "A",
+          "worker": "A3",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "B",
+          "worker": "B1",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "B",
+          "worker": "B2",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "C",
+          "worker": "C1",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "C",
+          "worker": "C2",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "A",
+          "worker": "A3",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "B",
+          "worker": "B3",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "B",
+          "worker": "B2",
+          "active": 2
+        },
+        {
+          "event": "grant",
+          "project": "C",
+          "worker": "C3",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "C",
+          "worker": "C2",
+          "active": 2
+        },
+        {
+          "event": "release",
+          "project": "B",
+          "worker": "B3",
+          "active": 1
+        },
+        {
+          "event": "release",
+          "project": "C",
+          "worker": "C3",
+          "active": 0
+        }
+      ]
+    },
+    "liveInspect": {
+      "next": [
+        "gate"
+      ],
+      "noNewEvents": true,
+      "pid": 84761
+    },
+    "liveDuplicate": {
+      "noAdditionalHarnessSteps": true
+    },
+    "liveAudit": {
+      "checks": [
+        {
+          "workerId": "A",
+          "existingChildVerifiedByOfficialLoad": true,
+          "wrongScopeRejected": true
+        },
+        {
+          "workerId": "B",
+          "existingChildVerifiedByOfficialLoad": true,
+          "wrongScopeRejected": true
+        }
+      ],
+      "noModelStepInvoked": true
+    },
+    "liveFailureSupervisor": {
+      "pendingAtGraphReturn": 1,
+      "graphSignalObserved": true,
+      "safePointAfterDrain": true,
+      "activeLeases": 0
+    }
+  },
+  "liveEvents": {
+    "live": [
+      {
+        "at": 1789620160602,
+        "pid": 84367,
+        "event": "lease-acquired",
+        "workerId": "A",
+        "label": "initial",
+        "active": 1,
+        "leaseId": "d12532d6-9727-47c2-aaee-48ce83540f3b"
+      },
+      {
+        "at": 1789620160615,
+        "pid": 84367,
+        "event": "harness-step-start",
+        "workerId": "A",
+        "label": "initial",
+        "sessionId": "graph-source-A",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash"
+      },
+      {
+        "at": 1789620160624,
+        "pid": 84367,
+        "event": "lease-acquired",
+        "workerId": "B",
+        "label": "initial",
+        "active": 2,
+        "leaseId": "4d3aed90-bdd0-4bc4-b9a9-ed3d5770a9ba"
+      },
+      {
+        "at": 1789620160628,
+        "pid": 84367,
+        "event": "harness-step-start",
+        "workerId": "B",
+        "label": "initial",
+        "sessionId": "graph-source-B",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash"
+      },
+      {
+        "at": 1789620162132,
+        "pid": 84367,
+        "event": "tool-start",
+        "workerId": "A",
+        "label": "initial",
+        "name": "fs_read"
+      },
+      {
+        "at": 1789620163761,
+        "pid": 84367,
+        "event": "tool-start",
+        "workerId": "B",
+        "label": "initial",
+        "name": "fs_read"
+      },
+      {
+        "at": 1789620163761,
+        "pid": 84367,
+        "event": "request-cohort-safe-point",
+        "workers": [
+          "A",
+          "B"
+        ]
+      },
+      {
+        "at": 1789620164125,
+        "pid": 84367,
+        "event": "safe-point-durable",
+        "workerId": "A",
+        "label": "initial",
+        "kind": "tool"
+      },
+      {
+        "at": 1789620164129,
+        "pid": 84367,
+        "event": "worker-disposed",
+        "workerId": "A",
+        "label": "initial",
+        "active": 1
+      },
+      {
+        "at": 1789620164132,
+        "pid": 84367,
+        "event": "safe-point-durable",
+        "workerId": "B",
+        "label": "initial",
+        "kind": "tool"
+      },
+      {
+        "at": 1789620164134,
+        "pid": 84367,
+        "event": "worker-disposed",
+        "workerId": "B",
+        "label": "initial",
+        "active": 0
+      },
+      {
+        "at": 1789620164135,
+        "pid": 84367,
+        "event": "gate-entry"
+      },
+      {
+        "at": 1789620164140,
+        "pid": 84367,
+        "event": "supervisor-drained",
+        "activeCalls": 0,
+        "activeLeases": 0,
+        "rejected": 0
+      },
+      {
+        "at": 1789620240170,
+        "pid": 84761,
+        "event": "supervisor-drained",
+        "activeCalls": 0,
+        "activeLeases": 0,
+        "rejected": 0
+      },
+      {
+        "at": 1789620241448,
+        "pid": 84800,
+        "event": "gate-entry"
+      },
+      {
+        "at": 1789620241453,
+        "pid": 84800,
+        "event": "lease-acquired",
+        "workerId": "A",
+        "label": "resume",
+        "active": 1,
+        "leaseId": "7f1ed9da-9d54-4a30-a687-7e3aa7ac457b"
+      },
+      {
+        "at": 1789620241471,
+        "pid": 84800,
+        "event": "lease-acquired",
+        "workerId": "B",
+        "label": "resume",
+        "active": 2,
+        "leaseId": "78acf37f-a918-44a5-9757-e6b6021af3ed"
+      },
+      {
+        "at": 1789620241513,
+        "pid": 84800,
+        "event": "fork-loaded",
+        "workerId": "B",
+        "sessionId": "graph-resume-B"
+      },
+      {
+        "at": 1789620241514,
+        "pid": 84800,
+        "event": "harness-step-start",
+        "workerId": "B",
+        "label": "resume",
+        "sessionId": "graph-resume-B",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash"
+      },
+      {
+        "at": 1789620241518,
+        "pid": 84800,
+        "event": "fork-loaded",
+        "workerId": "A",
+        "sessionId": "graph-resume-A"
+      },
+      {
+        "at": 1789620241518,
+        "pid": 84800,
+        "event": "harness-step-start",
+        "workerId": "A",
+        "label": "resume",
+        "sessionId": "graph-resume-A",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash"
+      },
+      {
+        "at": 1789620253636,
+        "pid": 84800,
+        "event": "tool-start",
+        "workerId": "A",
+        "label": "resume",
+        "name": "fs_write"
+      },
+      {
+        "at": 1789620254530,
+        "pid": 84800,
+        "event": "safe-point-durable",
+        "workerId": "A",
+        "label": "resume",
+        "kind": "done"
+      },
+      {
+        "at": 1789620254535,
+        "pid": 84800,
+        "event": "worker-disposed",
+        "workerId": "A",
+        "label": "resume",
+        "active": 1
+      },
+      {
+        "at": 1789620289603,
+        "pid": 84800,
+        "event": "tool-start",
+        "workerId": "B",
+        "label": "resume",
+        "name": "fs_write"
+      },
+      {
+        "at": 1789620290234,
+        "pid": 84800,
+        "event": "safe-point-durable",
+        "workerId": "B",
+        "label": "resume",
+        "kind": "done"
+      },
+      {
+        "at": 1789620290237,
+        "pid": 84800,
+        "event": "worker-disposed",
+        "workerId": "B",
+        "label": "resume",
+        "active": 0
+      },
+      {
+        "at": 1789620290241,
+        "pid": 84800,
+        "event": "graph-finish"
+      },
+      {
+        "at": 1789620290250,
+        "pid": 84800,
+        "event": "supervisor-drained",
+        "activeCalls": 0,
+        "activeLeases": 0,
+        "rejected": 0
+      },
+      {
+        "at": 1789620291883,
+        "pid": 84960,
+        "event": "supervisor-drained",
+        "activeCalls": 0,
+        "activeLeases": 0,
+        "rejected": 0
+      },
+      {
+        "at": 1789620337473,
+        "pid": 85146,
+        "event": "supervisor-drained",
+        "activeCalls": 0,
+        "activeLeases": 0,
+        "rejected": 0
+      },
+      {
+        "at": 1789620462006,
+        "pid": 85715,
+        "event": "supervisor-drained",
+        "activeCalls": 0,
+        "activeLeases": 0,
+        "rejected": 0
+      }
+    ],
+    "live-failure": [
+      {
+        "at": 1789620382259,
+        "pid": 85295,
+        "event": "lease-acquired",
+        "workerId": "B",
+        "label": "initial",
+        "active": 1,
+        "leaseId": "051b736d-06e3-4609-891f-6867c638ace4"
+      },
+      {
+        "at": 1789620382272,
+        "pid": 85295,
+        "event": "harness-step-start",
+        "workerId": "B",
+        "label": "initial",
+        "sessionId": "graph-source-B",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash"
+      },
+      {
+        "at": 1789620384028,
+        "pid": 85295,
+        "event": "tool-start",
+        "workerId": "B",
+        "label": "initial",
+        "name": "fs_read"
+      },
+      {
+        "at": 1789620384030,
+        "pid": 85295,
+        "event": "graph-abort-observed-not-forwarded"
+      },
+      {
+        "at": 1789620384059,
+        "pid": 85295,
+        "event": "safe-point-durable",
+        "workerId": "B",
+        "label": "initial",
+        "kind": "tool"
+      },
+      {
+        "at": 1789620384062,
+        "pid": 85295,
+        "event": "worker-disposed",
+        "workerId": "B",
+        "label": "initial",
+        "active": 0
+      },
+      {
+        "at": 1789620384063,
+        "pid": 85295,
+        "event": "supervisor-drained",
+        "activeCalls": 0,
+        "activeLeases": 0,
+        "rejected": 0
+      }
+    ],
+    "live-sandbox-failed": [
+      {
+        "at": 1789620024423,
+        "pid": 83935,
+        "event": "lease-acquired",
+        "workerId": "A",
+        "label": "initial",
+        "active": 1,
+        "leaseId": "886ef1d1-665e-446b-bac5-a8f866087639"
+      },
+      {
+        "at": 1789620024436,
+        "pid": 83935,
+        "event": "harness-step-start",
+        "workerId": "A",
+        "label": "initial",
+        "sessionId": "graph-source-A",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash"
+      },
+      {
+        "at": 1789620024446,
+        "pid": 83935,
+        "event": "lease-acquired",
+        "workerId": "B",
+        "label": "initial",
+        "active": 2,
+        "leaseId": "c4dedf3d-a74a-4cb4-81aa-269a741c070c"
+      },
+      {
+        "at": 1789620024450,
+        "pid": 83935,
+        "event": "harness-step-start",
+        "workerId": "B",
+        "label": "initial",
+        "sessionId": "graph-source-B",
+        "provider": "opencode-go",
+        "model": "deepseek-v4-flash"
+      },
+      {
+        "at": 1789620040682,
+        "pid": 83935,
+        "event": "worker-disposed",
+        "workerId": "B",
+        "label": "initial",
+        "active": 1
+      }
+    ]
+  },
+  "failuresRetained": [
+    {
+      "kind": "framework-default-incompatible",
+      "finding": "Sibling failure aborts sibling signal and returns before uncooperative sibling settles. Outcome adaptation and supervisor verified separately."
+    },
+    {
+      "kind": "sandbox-transport",
+      "code": "TRANSPORT",
+      "evidence": "Sandbox DNS lookup opencode.ai returned ENOTFOUND; escalated lookup and unauthenticated HTTPS succeeded; provider/model unchanged. First probe version lacked explicit drain, fixed before retry. Original process confirmed exited."
+    },
+    {
+      "kind": "probe-typecheck",
+      "code": "TS2345",
+      "evidence": "Array.map(JSON.parse) callback signature rejected; changed to map(line => JSON.parse(line)); final targeted typecheck and read-only duplicate resume passed."
+    }
+  ],
+  "checks": {
+    "targetedTypecheck": "pass",
+    "mjsSyntax": "pass",
+    "liveInitial": "pass",
+    "liveInspect": "pass",
+    "liveResume": "pass",
+    "liveDuplicate": "pass",
+    "liveAudit": "pass",
+    "liveFailureSupervisor": "pass",
+    "repositoryFullRegression": "not run: no production source or dependency changes; isolated spike only",
+    "productionG5": "not claimed"
+  },
+  "coverageLimits": [
+    "S04 uses a test-owned lifecycle adapter and production Harness/MCP/GlobalScheduler, not the full production WorkerRuntime + TaskState + D9/D4 composition.",
+    "S05 uses fixed filesystem effects and atomic fixture receipts, not production Git integration/TaskState transactions.",
+    "S06 managed Node and relocated dependency bundle passed; no new DMG, macOS15, upgrade/rollback or power-loss acceptance.",
+    "S07 stream primitives tested; no LangGraph product UI exists for browser acceptance.",
+    "S08 real GlobalScheduler with deterministic graph workers; no full multi-project real-model/workspace admission stress."
+  ],
+  "packageSourceHashes": {
+    "node_modules/@langchain/langgraph/dist/pregel/runner.js": "873bcc366332c4e83cfdfb5904165b6aa7f952e7f56e078c31e05ac671bb38fd",
+    "node_modules/@langchain/langgraph-checkpoint-sqlite/dist/index.js": "efe7f5baa1e4f1bd82826edc579d232a66d8ed65a4306c2c7fc7279d337ce3e9"
+  },
+  "retainedSourceHashes": {
+    "package-lock.json": "0ced6a449da2c779ec70fcbce9e1a9257bded0d68e3ef645a10353b7628fed97",
+    "package.json": "47b6321cde3078321a0b5f50fab79794732e32d3d103585cc04d1b3327e0e9af",
+    "sources/framework.mjs": "81584587f4b079ceb1b8ce7813d3e59d8767cc126e8e78ee9edc4002c055f694",
+    "sources/live.test.ts": "f64b776ac8247c65509b277b11dd27bbcc5f645afbdf891d2d5af55310cd3815",
+    "sources/scheduler.mjs": "e5aa5d436bade94f38249d275e82487683b7d96caeef7793fce77f49d02081b8",
+    "tsconfig.spike.json": "fe13586cc71b8408c23e092d967b22bca2ff9983280648335cfd257ae5d47140",
+    "vitest.spike.config.mjs": "8e7e26ae1f8b636f09ad6ffa5849e53c775509ef0ee652c8eeeb33d4e4d32290"
+  },
+  "sqliteVersion": "3.53.2",
+  "nodeAbi": "137"
+}

@@ -10,6 +10,7 @@ import {
   validationReceipt,
 } from '@agora/core-domain';
 import {
+  assertHumanGateResumedMarker,
   type HumanGateResolutionReceipt,
   type IntegrateWaveResult,
   materializeHumanGate,
@@ -21,6 +22,7 @@ import {
 } from '@agora/core-orchestration';
 import type { PauseReceipt, PauseRequest } from '@agora/core-preemption';
 import type { TaskScope } from '@agora/runtime-state';
+import { humanGateAlreadyResumed } from './human-gate-replay';
 import { localBootstrap } from './local-startup';
 import type { MessageRuntime } from './message-runtime';
 import { safeRunError } from './run-error';
@@ -442,6 +444,7 @@ export class TaskOrchestrationRuntime {
         if (state === undefined) throw new Error('cannot resume a missing task state');
         existing = this.#runs.get(scopeKey(scope));
       }
+      if (humanGateAlreadyResumed(state, actionId, receipt)) return;
       if (state.phase === 'done' || existing?.status === 'completed') return;
       if (state.humanGate !== undefined) {
         throw new Error('cannot resume while humanGate remains active');
@@ -490,7 +493,7 @@ export class TaskOrchestrationRuntime {
           display: `Human gate ${receipt.gateId} resumed.`,
           ts: Date.now(),
         });
-        assertResumedMarker(marker.message, actionId, receipt);
+        assertHumanGateResumedMarker(marker.message, actionId, receipt);
         resumedState = marker.state;
       } catch (error) {
         await composition.suspend().catch(() => undefined);
@@ -761,43 +764,4 @@ function requiresHumanGateAttention(state: AppState): boolean {
     );
   }
   return false;
-}
-
-function assertResumedMarker(
-  message: AppState['messages'][number],
-  actionId: string,
-  receipt: HumanGateResolutionReceipt,
-): void {
-  if (
-    message.msgId !== `human-gate-resumed:${actionId}` ||
-    message.channelId !== 'main' ||
-    message.fromRole !== 'COORDINATOR' ||
-    message.type !== 'announce' ||
-    message.payload.kind !== 'human_gate_resumed' ||
-    message.payload.actionId !== actionId ||
-    message.payload.gateId !== receipt.gateId ||
-    message.payload.resumeSessionId !== receipt.resumeSessionId ||
-    !sameWorkerResumePlans(message.payload.workerResumes, receipt.workerResumes)
-  ) {
-    throw new Error(`humanGate resumed marker for "${actionId}" conflicts with its first write`);
-  }
-}
-
-function sameWorkerResumePlans(
-  actual: unknown,
-  expected: HumanGateResolutionReceipt['workerResumes'],
-): boolean {
-  if (expected === undefined) return actual === undefined;
-  if (!Array.isArray(actual) || actual.length !== expected.length) return false;
-  return expected.every((plan, index) => {
-    const entry = actual[index];
-    return (
-      typeof entry === 'object' &&
-      entry !== null &&
-      !Array.isArray(entry) &&
-      (entry as Record<string, unknown>).workerId === plan.workerId &&
-      (entry as Record<string, unknown>).sourceSafePointRef === plan.sourceSafePointRef &&
-      (entry as Record<string, unknown>).resumeSessionId === plan.resumeSessionId
-    );
-  });
 }

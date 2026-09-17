@@ -1,0 +1,819 @@
+{
+  "date": "2026-09-17",
+  "pullRequest": "https://github.com/logan-suu/Agora/pull/87",
+  "baselineCommit": "55d6385a8387634864886dfdec38a8d9b1fa804e",
+  "headBeforeRepair": "69c8a63e768a00eed8a88db61fa625c963002d08",
+  "status": "Final repair candidate: G1/G3/G4/G5/G6/G7 passed; PR remains subject to human review and merge",
+  "source": {
+    "frozenFiles": 614,
+    "manifestSha256": "0b4be14f78d03d239b453e1e346969b0881234a8e0ebe7bbe8dd63aa0aa7308a",
+    "changedSources": {
+      "apps/web/src/server/human-gate-replay.ts": "4aedd331c7048e89e6f5a7b2e9f293662b3319bd92a74280855a974f6c67a486",
+      "apps/web/test/human-gate-replay.test.ts": "db6ebcc2ea9a096d27e24826f89823c9e80cbf9acab51a03b1ce0a0a057d5efb",
+      "tests/integration/phase12/local-validation-fixture.ts": "39d8a067fd4e2112846b51136acbc650815e1777549992d1aa3e3a93895f8a5d",
+      "tests/integration/phase12/phase12-3-grant.test.ts": "a4d63f804928e08d78944a3fac4ec80d45c927db8e95754e61c57b7d17416c5f"
+    },
+    "finalDriftCheck": {
+      "changed": [],
+      "nativeChanged": []
+    },
+    "nativeBinaryHashes": {
+      "packages/runtime/sandbox/build/local-file-transaction-darwin-arm64": "8c3daf1d09dd30b0c515d402ba0db38f53a806e642dce805151f29c5ff8d5021",
+      "packages/runtime/sandbox/build/secure-files-darwin-arm64": "8273db24f9fe40f0638575888f997b760bb994a7996e97b2dd242ffc4bc05121",
+      "packages/runtime/sandbox/build/local-command-bootstrap-darwin-arm64": "d0c503e733efcfff6f91973eb2e91d834f6400044476a15c83099f3bd0901dd2",
+      "packages/runtime/sandbox/build/local-root-initialization-darwin-arm64": "4540f62559595572e9e2978134c9528faa5302ed097445ff4bb22b27116fd8bc",
+      "packages/runtime/sandbox/build/local-root-inspection-darwin-arm64": "1d570838a1bb9126ddeb410dc0b4cbd12b064293f2f793aceec7a0d08174cb4d",
+      "packages/runtime/sandbox/build/local-process-control-darwin-arm64": "f8c0f4cbb8632f19abfe75beff11b3fc473ff0b06e07ad0c5a26c1155549bf4a"
+    }
+  },
+  "gates": {
+    "typecheck": {
+      "exitCode": 0
+    },
+    "lint": {
+      "exitCode": 0,
+      "files": 589
+    },
+    "taskIndex": {
+      "valid": true,
+      "tasks": 178,
+      "phases": 32,
+      "decisions": 26,
+      "histories": 69
+    },
+    "d9Targeted": {
+      "files": 4,
+      "tests": 63,
+      "passed": 63
+    },
+    "nativeTargeted": {
+      "passed": 5,
+      "filtered": 30,
+      "batchMilliseconds": 4041,
+      "timeoutMilliseconds": 5000
+    },
+    "installationDiagnostic": {
+      "passed": 1,
+      "filtered": 34
+    },
+    "full": {
+      "exitCode": 0,
+      "files": 227,
+      "passedFiles": 227,
+      "tests": 1774,
+      "passed": 1774,
+      "failed": 0,
+      "skipped": 0,
+      "scriptTestsPassed": 7,
+      "durationSeconds": 818.78,
+      "logSha256": "ca0d52099ca74450e991d0a741123264d4971e86c59fe47da781bca3e25503ba",
+      "batchMilliseconds": 3681
+    },
+    "secrets": {
+      "tool": "gitleaks stdin --redact",
+      "exitCode": 0,
+      "findings": 0,
+      "scope": "Complete PR diff against 55d6385 plus untracked deliverables",
+      "bytes": 1338869,
+      "logSha256": "feaf9282f55f0e7fb69a8daa2917e54b83975b69cba00352ce8fb8c418a9200c"
+    },
+    "nativeBuild": {
+      "exitCode": 0,
+      "logSha256": "15f0e79d2609c020672b91e2addd7c555a5aab46d34af02a74e31eb7c4700f15"
+    },
+    "realChains": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4-flash",
+      "formalBenchmarkRun": false,
+      "selectedEvidence": [
+        {
+          "path": "test-outputs/reviews/task123-live-workspace-evidence/agora-task123-validation-WBbRWy.json",
+          "sha256": "222312405b969f4f62f8962a2397880f7604c3cafb852d29dd135fc3cdd9f67c",
+          "provider": "opencode-go",
+          "model": "deepseek-v4-flash",
+          "passed": true,
+          "cleanup": {
+            "deleted": true,
+            "ownerReleased": true,
+            "noHandles": true,
+            "noMounts": true,
+            "availableBytesDelta": 466944
+          }
+        },
+        {
+          "path": "test-outputs/reviews/task123-composition-evidence/agora-task123-validation-RaONIt.json",
+          "sha256": "639bad4119e093570a74b22b5097e38cb7c9bfc6e37bb58cbd00f36986986996",
+          "provider": "deterministic-external-llm-adapter",
+          "model": null,
+          "passed": true,
+          "cleanup": {
+            "deleted": true,
+            "ownerReleased": true,
+            "noHandles": true,
+            "noMounts": true,
+            "availableBytesDelta": 675840
+          }
+        },
+        {
+          "path": "test-outputs/reviews/task123-installation-evidence/4ozfsN.json",
+          "sha256": "ca248c18e750ae0bc7ad5bf36d3e5bf3a67facdcbaac7b952ebfdb53cef8fdb5",
+          "provider": null,
+          "model": null,
+          "passed": null,
+          "cleanup": {
+            "deleted": true,
+            "noHandles": true,
+            "noMounts": true,
+            "availableBytesDelta": 131072
+          },
+          "result": {
+            "released": true,
+            "error": null,
+            "launchDurable": true
+          },
+          "exitCode": 0
+        }
+      ],
+      "selectedPassingSuites": [
+        "✓ tests/integration/phase9/phase9-parallel-flow.test.ts (11 tests) 104119ms",
+        "✓ tests/integration/phase12/phase12-3-live-workspace.test.ts (1 test) 49978ms",
+        "✓ packages/runtime/executor/test/g5-real-chain.test.ts (1 test) 16300ms",
+        "✓ tests/integration/phase12/phase12-3-composition.test.ts (1 test) 22156ms",
+        "✓ tests/integration/phase12/phase12-3-grant.test.ts (35 tests) 140574ms",
+        "✓ packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts (1 test) 2325ms",
+        "✓ tests/integration/phase5/phase5-exit.test.ts (4 tests) 4816ms",
+        "✓ tests/integration/phase1/phase1-exit.test.ts (13 tests) 3647ms",
+        "✓ tests/integration/phase8/human-gate-lifecycle.test.ts (1 test) 455ms",
+        "✓ apps/web/test/project-roster-g5-chain.test.ts (1 test) 31ms"
+      ]
+    }
+  },
+  "reproductions": [
+    {
+      "case": "stripped original plans after all workers advance",
+      "passed": 19,
+      "failed": 2
+    },
+    {
+      "case": "colon-containing identities falsely cross-paired",
+      "passed": 21,
+      "failed": 1
+    }
+  ],
+  "failedFullRuns": [
+    {
+      "files": 227,
+      "passedFiles": 226,
+      "failedFiles": 1,
+      "tests": 1773,
+      "passed": 1768,
+      "failed": 5,
+      "durationSeconds": 851.4,
+      "scriptTestsPassed": 7,
+      "failures": [
+        {
+          "scenario": "installation",
+          "cause": "Deterministic fixture used the invalid opaque string fixed-fixture-safe-point; new decoder correctly rejects before file_version_conflict."
+        },
+        {
+          "scenario": "trusted-validation",
+          "cause": "Deterministic fixture used the invalid opaque string fixed-fixture-safe-point; new decoder correctly rejects before file_version_conflict."
+        },
+        {
+          "scenario": "terminal-release-before",
+          "cause": "Deterministic fixture used the invalid opaque string fixed-fixture-safe-point; new decoder correctly rejects before file_version_conflict."
+        },
+        {
+          "scenario": "terminal-release-after",
+          "cause": "Deterministic fixture used the invalid opaque string fixed-fixture-safe-point; new decoder correctly rejects before file_version_conflict."
+        },
+        {
+          "scenario": "batch",
+          "cause": "Exceeded unchanged 5000 ms deadline; recheck with original assertions and timeout."
+        }
+      ],
+      "sourceChangesAfterLaunch": [
+        {
+          "path": "apps/web/src/server/human-gate-replay.ts",
+          "before": "0d703a462a0618958e3e47ebd46b5495c4ef6093d1c5b6abc50c819d649c065a",
+          "after": "4aedd331c7048e89e6f5a7b2e9f293662b3319bd92a74280855a974f6c67a486"
+        },
+        {
+          "path": "apps/web/test/human-gate-replay.test.ts",
+          "before": "ec5c765a71bc3516c08138680679845d6b09af486d0b1b3e553baad70ea492a5",
+          "after": "db6ebcc2ea9a096d27e24826f89823c9e80cbf9acab51a03b1ce0a0a057d5efb"
+        },
+        {
+          "path": "tests/integration/phase12/local-validation-fixture.ts",
+          "before": "88edc4ab9c9b70a6fd16dba405278da90364664b5548ca063a53a33845495107",
+          "after": "39d8a067fd4e2112846b51136acbc650815e1777549992d1aa3e3a93895f8a5d"
+        }
+      ],
+      "acceptedAsFinalValidation": false,
+      "logSha256": "eaae9501de3edc75ccb0247032d7bc1b0f9452270387b7861e09bdebc5206b67"
+    },
+    {
+      "failure": "installation: workspace_command_recovery_required during MCP execution/replay",
+      "hypotheses": [
+        "First receipt needsAttention or command journal is not closed",
+        "Native observation did not prove process/output settlement",
+        "Installation input or authorization qualification changed"
+      ],
+      "evidence": "test-outputs/reviews/task123-grant-evidence/installation-agora-task123-validation-JnRHEs.json",
+      "diagnosticChange": "tests/integration/phase12/phase12-3-grant.test.ts",
+      "reason": "Preserve initial command result and native journal before repeat call can mask the original reason; original assertions/deadlines unchanged.",
+      "beforeSha256": "302d7107707e78f8b4f050c5cdd8da061c0083a0aa2b75a93634f7aea530f698",
+      "afterSha256": "ba92ed0e4aff83e9e85a190cdd0b2ebdda5e2933087453a53666ae7828dcfd56",
+      "finalValidation": false,
+      "fullRun": {
+        "files": 227,
+        "passedFiles": 226,
+        "failedFiles": 1,
+        "tests": 1774,
+        "passed": 1773,
+        "failed": 1,
+        "scriptTestsPassed": 7,
+        "durationSeconds": 811.54,
+        "logSha256": "18c3bdc1fca7b92406a9388bfe02825594a040143cc1e3bdc609db4c1c6a8f8c"
+      }
+    },
+    {
+      "files": 227,
+      "passedFiles": 226,
+      "failedFiles": 1,
+      "tests": 1774,
+      "passed": 1773,
+      "failed": 1,
+      "scriptTestsPassed": 7,
+      "durationSeconds": 895.74,
+      "sourceDrift": [],
+      "failure": "batch: 5055 ms exceeds unchanged 5000 ms; fixture assertions and cleanup subsequently completed",
+      "logSha256": "a6a444718327720a1c43c544460e83bcbd51bc37c7c55914895194888f7d7202"
+    }
+  ],
+  "installationDiagnosis": {
+    "originalFailure": {
+      "path": "test-outputs/reviews/task123-grant-evidence/installation-agora-task123-validation-JnRHEs.json",
+      "sha256": "c2f275f3930ed2dbac20d12a486b19f86106cc3c44528abf0d281be9bbd7ec20",
+      "failure": "[{\"type\":\"text\",\"text\":\"Error: workspace_command_recovery_required\"}]",
+      "initialCommandResultPreserved": false,
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 466944
+      }
+    },
+    "diagnosticRun": {
+      "path": "test-outputs/reviews/task123-grant-evidence/installation-agora-task123-validation-6kCvrK.json",
+      "sha256": "939be67619c93c849d7e071e14dea0f3b0436e7394f0db1f8d06ede2075d8d65",
+      "command": {
+        "stage": "exited",
+        "exitCode": 0,
+        "quiescent": true,
+        "reason": "none",
+        "nativeRecordHash": "ec1b40a4d2626a108aa37b35dbe42bef43197dbbac7d764f8baaf60d935482a0",
+        "toolVersion": "24.20.0"
+      },
+      "journal": [
+        {
+          "version": 2,
+          "bindingFailure": null,
+          "cause": "exit",
+          "executionMs": 1105.8803750000006,
+          "cleanupMs": 46.99045800000022,
+          "discoveryPasses": 2,
+          "discoveryFailed": false,
+          "discoveryFailures": [],
+          "closedDuringDiscovery": [],
+          "mainResult": {
+            "exitCode": 0,
+            "signal": null,
+            "error": null
+          },
+          "stop": {
+            "assurance": "registered-only",
+            "registeredState": "stopped",
+            "signals": [],
+            "durationMs": 4.064667000000554,
+            "states": [
+              "exited",
+              "exited",
+              "exited"
+            ]
+          }
+        }
+      ],
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 872448
+      }
+    },
+    "rootCause": "inconclusive: original run did not retain the initial result or journal; a later passing run cannot prove the earlier cause",
+    "assertionsAndTimeoutsUnchanged": true,
+    "sourceChangesBeforeFinalRun": [
+      "tests/integration/phase12/phase12-3-grant.test.ts"
+    ],
+    "versions": {
+      "node --version": "v24.20.0",
+      "pnpm --version": "9.15.9",
+      "sw_vers ": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71",
+      "uname -m": "arm64"
+    },
+    "finalFullInstallation": {
+      "path": "test-outputs/reviews/task123-grant-evidence/installation-agora-task123-validation-WsnwEM.json",
+      "sha256": "a5afef18c12157c5649501b047d6a7377199e7428d7db99f52e6e7042f23293f",
+      "passed": true,
+      "command": {
+        "stage": "exited",
+        "reason": "none",
+        "quiescent": true,
+        "exitCode": 0,
+        "nativeRecordHash": "fdb52c933e7c0fb0e582cc6f54aa34742566352378a70532aa473c73284ec994"
+      },
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 925696
+      }
+    },
+    "deliveryFullInstallation": {
+      "path": "test-outputs/reviews/task123-grant-evidence/installation-agora-task123-validation-iYz1x9.json",
+      "sha256": "1bf0d0fcce43f8c8f8254ace2b78cbd881df517aaea4b4787a14861c7835fcad",
+      "passed": true,
+      "command": {
+        "stage": "exited",
+        "exitCode": 0,
+        "quiescent": true,
+        "reason": "none",
+        "nativeRecordHash": "62742003f49c0cde4fbc946436ec5d779875cccd60dd4056a22d299367a16c91"
+      },
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 765952
+      }
+    }
+  },
+  "migration": {
+    "baseline": "55d6385",
+    "migratedTasks": 94,
+    "allDependenciesAndStatusesPreserved": true,
+    "errors": [],
+    "newPhase14Tasks": 7,
+    "totalTasks": 178,
+    "totalPhases": 32,
+    "platformChecks": {
+      "docs/项目蓝图.md": {
+        "invalidPlatformLiteral": false
+      },
+      "docs/详细设计方案.md": {
+        "invalidPlatformLiteral": false
+      },
+      "docs/技术选型文档.md": {
+        "invalidPlatformLiteral": false
+      },
+      "docs/开发计划安排.md": {
+        "invalidPlatformLiteral": false
+      }
+    },
+    "def016Target": 25,
+    "testPathsVerified": 94,
+    "testPathErrors": []
+  },
+  "codeRabbit": {
+    "version": "0.7.6",
+    "finalFindings": 0,
+    "finalScope": [
+      {
+        "path": "apps/web/src/server/human-gate-replay.ts",
+        "sha256": "4aedd331c7048e89e6f5a7b2e9f293662b3319bd92a74280855a974f6c67a486"
+      },
+      {
+        "path": "apps/web/src/server/message-runtime.ts",
+        "sha256": "f49425917007549f243177fc65d889d50a6892082086e59cae13e242f1b759fc"
+      },
+      {
+        "path": "apps/web/src/server/task-orchestration-runtime.ts",
+        "sha256": "98689b7fe9f562a46010ef1be2adc9e65f35304b435d9e79d04b809fb9512a5b"
+      },
+      {
+        "path": "packages/core/orchestration/src/human-gate.ts",
+        "sha256": "6afe452fd3b69f8cf3fa9cf48918d117f7eb3d7473bbd472d461635aaf1c1353"
+      },
+      {
+        "path": "packages/runtime/executor/src/harness-executor.ts",
+        "sha256": "b3cb7af3a776d3082e2a9bd216f5c18637f6858f21c58e661a1f7c489413bb5b"
+      },
+      {
+        "path": "apps/web/test/human-gate-replay.test.ts",
+        "sha256": "db6ebcc2ea9a096d27e24826f89823c9e80cbf9acab51a03b1ce0a0a057d5efb"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "34b1dff68dd01769c2390dd43bd8259ddccde5d3f0763316db0a72374718f3d0"
+      }
+    ],
+    "exitCode": 0,
+    "limitedExternalUploadExplicitlyAuthorized": true,
+    "isolatedRepositoryHasRemote": false,
+    "excluded": [
+      "D19 design",
+      "native fixture and diagnostics",
+      "credentials"
+    ],
+    "earlierReview": "The first run omitted two untracked paths and suggested rebuilding executable state on old-marker replay, contradicting the approved D9 contract. Both suggestions were rejected. After intent-to-add, all seven authorized paths were reviewed, including a final review after the identity-pairing correction."
+  },
+  "logHashes": {
+    "red.log": "5b18549d5ee5b7dd441e6c8088f034bd01fc6e7af26f9cbe43b97311463432e6",
+    "identity-red.log": "331d2824a5faafc46f867665dd53590b5ad78f083ddd4bf9575983b2b8fccbfb",
+    "targeted-final.log": "c4093a39aa345bef036631de91d3d46639326ee44ea8f60bf9932393f1f29de3",
+    "native-targeted.log": "47f35ee1144c1a27145f2befe8840a94dee837873c9913a9b8278393afb056e5",
+    "installation-diagnostic.log": "b52631b1040785049c02d67743f3b2073d60553489de27a0da0101be6e8d770b",
+    "typecheck-verified.log": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+    "lint-verified.log": "01591fe2392406630b0c994139810114a1754513ae76a923323fd4a1bbcc7863",
+    "coderabbit-final.ndjson": "4c79a4fee61b58984895ac0360ad5bce628224d02d849619f4e20bee44e3ecd6",
+    "typecheck-delivery.log": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+    "lint-delivery.log": "6a2f8e7a21fd0d9614b590b30849793b917d08dd425c1dbdc04c9306ba1d474a",
+    "native-final.log": "15f0e79d2609c020672b91e2addd7c555a5aab46d34af02a74e31eb7c4700f15",
+    "batch-four-isolated.log": "792741238f108c40e713dc71919f076a62eb9e5bc3691b9f9c23f35b0be091c8",
+    "full-delivery.log": "ca0d52099ca74450e991d0a741123264d4971e86c59fe47da781bca3e25503ba"
+  },
+  "cleanup": {
+    "alreadyRemoved": [
+      {
+        "path": "/private/tmp/agora-pr87-coderabbit-k1ket05n",
+        "device": 16777231,
+        "inode": 128898265,
+        "uid": 501,
+        "noOpenHandles": true,
+        "noMounts": true,
+        "files": 49,
+        "logicalBytes": 324970,
+        "reason": "Completed scoped review copy or superseded temporary repro; permanent regression tests and final result/hash records retain necessary evidence.",
+        "removed": true,
+        "observedFreeBytesDelta": 294912
+      },
+      {
+        "path": "/Users/logansu/Documents/Dev/Agora/test-outputs/pr87-review",
+        "device": 16777231,
+        "inode": 128891931,
+        "uid": 501,
+        "noOpenHandles": true,
+        "noMounts": true,
+        "files": 5,
+        "logicalBytes": 9948,
+        "reason": "Completed scoped review copy or superseded temporary repro; permanent regression tests and final result/hash records retain necessary evidence.",
+        "removed": true,
+        "observedFreeBytesDelta": -16384
+      }
+    ],
+    "final": "Complete; only the original inconclusive installation-failure report and its full-run log remain in ignored storage. No active delivery drafts remain.",
+    "profileDirectories": [
+      {
+        "path": "/private/tmp/agora-task123-validation-bMNswX",
+        "identity": {
+          "dev": 16777231,
+          "ino": 129051933
+        },
+        "noOpenHandles": true,
+        "noMounts": true,
+        "files": 52,
+        "logicalBytes": 175897,
+        "reason": "Isolated timed-out Vitest exited before fixture cleanup; process stopped, identity and handles rechecked.",
+        "removed": true,
+        "availableBytesDelta": 274432
+      },
+      {
+        "path": "/private/tmp/agora-task123-validation-oxMvVy",
+        "identity": {
+          "dev": 16777231,
+          "ino": 129052449
+        },
+        "noOpenHandles": true,
+        "noMounts": true,
+        "files": 52,
+        "logicalBytes": 175897,
+        "reason": "Isolated timed-out Vitest exited before fixture cleanup; process stopped, identity and handles rechecked.",
+        "removed": true,
+        "availableBytesDelta": 315392
+      }
+    ],
+    "nativeFixtures": {
+      "reports": 835,
+      "categories": {
+        "task123-binding-evidence": 48,
+        "task123-boundary-evidence": 20,
+        "task123-composition-evidence": 4,
+        "task123-creation-evidence": 44,
+        "task123-discovery-evidence": 16,
+        "task123-download-evidence": 4,
+        "task123-grant-evidence": 159,
+        "task123-installation-evidence": 4,
+        "task123-isolation-evidence": 8,
+        "task123-live-workspace-evidence": 4,
+        "task123-registry-evidence": 100,
+        "task123-root-evidence": 4,
+        "task123-root-init-evidence": 44,
+        "task123-root-registration-evidence": 28,
+        "task123-start-evidence": 104,
+        "task123-state-evidence": 76,
+        "task123-stop-evidence": 44,
+        "task123-supervision-evidence": 28,
+        "task123-transaction-evidence": 84,
+        "task123-version-evidence": 12
+      },
+      "allRecordedRootsAbsent": true,
+      "missingCleanupReports": [],
+      "proofManifestSha256": "d5e1056e9edd7a73e1508fb30808260b2b3efc021cc4c09caace6cb5689e4c8d",
+      "rawReportManifestSha256": "bbc4917196d04d3bc5634005ef055622e5161192c9ddb227086509f05601f168"
+    },
+    "nativeRawReports": {
+      "removedFiles": 834,
+      "logicalBytes": 10680244,
+      "noOpenHandles": true,
+      "availableBytesDelta": 12054528,
+      "retained": [
+        "test-outputs/reviews/task123-grant-evidence/installation-agora-task123-validation-JnRHEs.json"
+      ],
+      "reason": "Compact final results, hashes, cleanup proof and failure causes retained; original inconclusive installation failure remains for follow-up."
+    },
+    "auxiliaryRawFiles": {
+      "removedFiles": 75,
+      "logicalBytes": 1546103,
+      "manifestSha256": "25a962c4e9fc2e699742fe2adc61c7acf936a10ebea0f221bcabc959e2d53a55",
+      "availableBytesDelta": 1585152,
+      "remainingPurpose": {
+        "full-final.log": "Original unresolved installation-failure trace",
+        "otherFiles": "Current delivery draft and hash verification inputs; still required until PR update"
+      }
+    },
+    "deliveryInputs": {
+      "removedFiles": 11,
+      "logicalBytes": 125199,
+      "manifestSha256": "241dd4d63d0245eb3b17a7a122414612e01ba3679e22832a9053d199a4219f07",
+      "availableBytesDelta": 110592,
+      "noOpenHandles": true
+    }
+  },
+  "limits": [
+    "No automatic merge, phase advancement, new dependency, benchmark or release.",
+    "Installation failure from the second full run has an inconclusive root cause; later successful checks do not prove it was fixed.",
+    "Current phase remains 12; completed Task 12.3 stays done; Phase 14 remains pending."
+  ],
+  "batchDiagnosis": {
+    "instrumentedSourceSha256": "7b37a6e35cec18c64c8fbdba5f4257b0663baafaf11e55edc9cdff5418bf1a21",
+    "diagnosticReports": [
+      {
+        "path": "test-outputs/reviews/task123-grant-evidence/batch-agora-task123-validation-SJlPzZ.json",
+        "sha256": "8ddfe54d365ad29b0ffe10bbfe0a52e3edb789af6d50fd19709390f8d06adad2",
+        "compileTimes": [
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-inspection.c,-o,/private/tmp/agora-task123-validation-SJlPzZ/inspector",
+            "ms": 172.090917
+          },
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-initialization.c,-o,/private/tmp/agora-task123-validation-SJlPzZ/initializer",
+            "ms": 63.5110830000001
+          },
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-file-transaction.c,-o,/private/tmp/agora-task123-validation-SJlPzZ/files-helper",
+            "ms": 78.38512500000002
+          }
+        ],
+        "profile": {
+          "assertionsMs": 4401.951834,
+          "compileTimes": [
+            {
+              "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-inspection.c,-o,/private/tmp/agora-task123-validation-SJlPzZ/inspector",
+              "ms": 172.090917
+            },
+            {
+              "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-initialization.c,-o,/private/tmp/agora-task123-validation-SJlPzZ/initializer",
+              "ms": 63.5110830000001
+            },
+            {
+              "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-file-transaction.c,-o,/private/tmp/agora-task123-validation-SJlPzZ/files-helper",
+              "ms": 78.38512500000002
+            }
+          ]
+        },
+        "profileMarks": [
+          {
+            "label": "compiled inspector",
+            "ms": 178.40720899999997
+          },
+          {
+            "label": "before grant",
+            "ms": 448.39095899999984
+          },
+          {
+            "label": "root initialized",
+            "ms": 794.837417
+          },
+          {
+            "label": "before capture",
+            "ms": 875.25225
+          },
+          {
+            "label": "batch starts",
+            "ms": 1427.9387089999998
+          },
+          {
+            "label": "before read set",
+            "ms": 1677.8481249999998
+          },
+          {
+            "label": "before content",
+            "ms": 1988.201459
+          },
+          {
+            "label": "before duplicate check",
+            "ms": 2079.3401670000003
+          },
+          {
+            "label": "before apply",
+            "ms": 2080.2831669999996
+          },
+          {
+            "label": "applied",
+            "ms": 3899.4916250000006
+          },
+          {
+            "label": "assertions complete",
+            "ms": 4401.698292
+          }
+        ],
+        "profileTotal": {
+          "totalMs": 4691.638584,
+          "cleanupMs": 289.6874170000001
+        },
+        "passed": true,
+        "cleanup": {
+          "deleted": true,
+          "ownerReleased": true,
+          "noHandles": true,
+          "noMounts": true,
+          "availableBytesDelta": 299008
+        }
+      },
+      {
+        "path": "test-outputs/reviews/task123-grant-evidence/batch-agora-task123-validation-bMNswX.json",
+        "sha256": "405cffaba87781058813e8fdbe576f42c4fa94008d2351e655b00299f7522f07",
+        "compileTimes": null,
+        "profile": null,
+        "profileMarks": null,
+        "profileTotal": null,
+        "passed": null,
+        "cleanup": null
+      },
+      {
+        "path": "test-outputs/reviews/task123-grant-evidence/batch-agora-task123-validation-oxMvVy.json",
+        "sha256": "a68811ccd54f7721e6bc4e1530786a89e018e71b82ee5a0e50355719c6d048f0",
+        "compileTimes": [
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-inspection.c,-o,/private/tmp/agora-task123-validation-oxMvVy/inspector",
+            "ms": 68.58208300000001
+          },
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-initialization.c,-o,/private/tmp/agora-task123-validation-oxMvVy/initializer",
+            "ms": 63.72891699999991
+          },
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-file-transaction.c,-o,/private/tmp/agora-task123-validation-oxMvVy/files-helper",
+            "ms": 65.14420900000005
+          }
+        ],
+        "profile": null,
+        "profileMarks": null,
+        "profileTotal": null,
+        "passed": null,
+        "cleanup": null
+      },
+      {
+        "path": "test-outputs/reviews/task123-grant-evidence/batch-agora-task123-validation-rpZRuS.json",
+        "sha256": "8b30842639c7e55d6b1084739070c72eb22bdb97b327962930bec373ccbea4bd",
+        "compileTimes": [
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-inspection.c,-o,/private/tmp/agora-task123-validation-rpZRuS/inspector",
+            "ms": 256.70425
+          },
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-initialization.c,-o,/private/tmp/agora-task123-validation-rpZRuS/initializer",
+            "ms": 65.77204099999994
+          },
+          {
+            "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-file-transaction.c,-o,/private/tmp/agora-task123-validation-rpZRuS/files-helper",
+            "ms": 86.73887500000001
+          }
+        ],
+        "profile": {
+          "assertionsMs": 4695.169542,
+          "compileTimes": [
+            {
+              "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-inspection.c,-o,/private/tmp/agora-task123-validation-rpZRuS/inspector",
+              "ms": 256.70425
+            },
+            {
+              "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-root-initialization.c,-o,/private/tmp/agora-task123-validation-rpZRuS/initializer",
+              "ms": 65.77204099999994
+            },
+            {
+              "source": "-std=c11,-Wall,-Wextra,-Werror,-mmacosx-version-min=15.0,/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-file-transaction.c,-o,/private/tmp/agora-task123-validation-rpZRuS/files-helper",
+              "ms": 86.73887500000001
+            }
+          ]
+        },
+        "profileMarks": [
+          {
+            "label": "compiled inspector",
+            "ms": 263.744958
+          },
+          {
+            "label": "before grant",
+            "ms": 582.1206670000001
+          },
+          {
+            "label": "root initialized",
+            "ms": 956.6892500000001
+          },
+          {
+            "label": "before capture",
+            "ms": 1045.4983330000002
+          },
+          {
+            "label": "batch starts",
+            "ms": 1642.0265000000002
+          },
+          {
+            "label": "before read set",
+            "ms": 1901.33175
+          },
+          {
+            "label": "before content",
+            "ms": 2214.390292
+          },
+          {
+            "label": "before duplicate check",
+            "ms": 2305.405417
+          },
+          {
+            "label": "before apply",
+            "ms": 2306.3552499999996
+          },
+          {
+            "label": "applied",
+            "ms": 4171.997083
+          },
+          {
+            "label": "assertions complete",
+            "ms": 4694.592417
+          }
+        ],
+        "profileTotal": {
+          "totalMs": 4854.520167,
+          "cleanupMs": 159.3494579999997
+        },
+        "passed": true,
+        "cleanup": {
+          "deleted": true,
+          "ownerReleased": true,
+          "noHandles": true,
+          "noMounts": true,
+          "availableBytesDelta": 303104
+        }
+      }
+    ],
+    "change": "Reuse freshly built real native helpers and retain binary hashes; assertions and timeout unchanged; no production authorization checks removed.",
+    "fixedIsolatedScenariosMilliseconds": {
+      "batch": 3766,
+      "batch-partial": 3442,
+      "batch-read-drift": 3033,
+      "batch-stale": 2220
+    },
+    "concurrentStaticCheckRun": {
+      "passed": 3,
+      "failed": 1,
+      "notAccepted": true,
+      "logSha256": "b529539a9d0f8bc17d439ceda699dee244d573b3fef4aec0191f5e7ff4b46592"
+    }
+  },
+  "delivery": {
+    "repairCommit": "89b4b64aa66d27dba7013c67cfcb8bb2c551b303",
+    "pullRequest": "https://github.com/logan-suu/Agora/pull/87",
+    "base": "dev-1.0.0",
+    "state": "OPEN",
+    "reviewReply": "https://github.com/logan-suu/Agora/pull/87#discussion_r4040826880",
+    "resolvedThread": "PRRT_kwDOUBGzms6jeHzt",
+    "githubReviewAtDelivery": "PENDING; distinct from the completed explicitly scoped CLI review",
+    "automaticMerge": false
+  }
+}

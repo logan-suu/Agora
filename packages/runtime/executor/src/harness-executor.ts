@@ -144,6 +144,7 @@ interface SafePointPayload {
 }
 
 export interface HarnessSafePointIdentity {
+  sourceSessionId: string;
   projectId: string;
   taskId: string;
   role: string;
@@ -160,6 +161,7 @@ const OBJECTION_PROTOCOL_PROMPT =
 export function inspectHarnessSafePoint(cursor: string): HarnessSafePointIdentity {
   const checkpoint = decodeSafePoint(cursor);
   return {
+    sourceSessionId: checkpoint.sourceSessionId,
     projectId: checkpoint.projectId,
     taskId: checkpoint.taskId,
     role: checkpoint.role,

@@ -1,0 +1,50 @@
+{
+  "date": "2026-09-17",
+  "tool": "CodeRabbit CLI",
+  "version": "0.7.6",
+  "exitCode": 0,
+  "issues": 0,
+  "completion": {
+    "type": "complete",
+    "status": "review_completed",
+    "findings": 0,
+    "reviewedFiles": [
+      "apps/web/src/server/message-runtime.ts",
+      "apps/web/src/server/task-orchestration-runtime.ts",
+      "packages/core/orchestration/src/human-gate.ts",
+      "packages/runtime/executor/src/harness-executor.ts",
+      "apps/web/src/server/human-gate-replay.ts",
+      "apps/web/test/human-gate-replay.test.ts"
+    ]
+  },
+  "scopeManifest": "review-scope.json",
+  "scopeVerified": true,
+  "codeModifiedByReview": false,
+  "remoteConfigured": false,
+  "paidCreditsEnabled": false,
+  "reviewContext": {
+    "type": "review_context",
+    "reviewType": "uncommitted",
+    "currentBranch": "review-baseline",
+    "baseBranch": "review-baseline",
+    "workingDirectory": "/private/tmp/agora-coderabbit-d9-6egoa9iq/review"
+  },
+  "initialAttempt": {
+    "exitCode": 1,
+    "error": {
+      "type": "error",
+      "errorType": "unknown",
+      "message": "Failed to get branch information in directory '/private/tmp/agora-coderabbit-d9-6egoa9iq/review': Unable to determine base branch. Pass one explicitly with --base <branch>, or persist it with 'git config coderabbit.baseBranch <branch>'.",
+      "recoverable": false,
+      "details": {
+        "stage": "gitService.getBranchInfo"
+      }
+    },
+    "resolution": "Specify --base review-baseline in the same authorized isolated repository; scope unchanged."
+  },
+  "logsSha256": {
+    "review.ndjson": "67c772357d0861888bac37c076fc7811f5bb9875760ed8474c047ba89b465f5c",
+    "review-with-base.ndjson": "92ffccecb23809717a2291ca83e78244189f7a3639436d3833989c63d7c949c3"
+  },
+  "limits": "Six changed code/test files reviewed with AGENTS.md. No unrelated source context, experiment artifacts, task history or product data was sent. Zero issues is the tool result, not a substitute for product gates or human merge."
+}

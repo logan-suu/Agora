@@ -1,0 +1,81 @@
+{
+  "scope": {
+    "projectId": "graph-native-project",
+    "taskId": "graph-native-task"
+  },
+  "pausedWorker": {
+    "workerId": "lru-coder",
+    "role": "CODER",
+    "executor": "harness",
+    "status": "paused",
+    "subtaskId": "lru",
+    "sessionId": "session:lru-coder",
+    "startedTs": 1789621218280,
+    "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+  },
+  "completedWorker": {
+    "workerId": "lru-coder",
+    "role": "CODER",
+    "executor": "harness",
+    "status": "done",
+    "subtaskId": "lru",
+    "sessionId": "human-gate-resume:graph-native-continue:lru-coder",
+    "startedTs": 1789621218280,
+    "safePoint": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+  },
+  "leader": {
+    "msgId": "graph-native-continue",
+    "channelId": "main",
+    "fromRole": "leader",
+    "type": "chat",
+    "payload": {
+      "kind": "leader_intent",
+      "intent": {
+        "kind": "resolve_human_gate",
+        "gateId": "human-gate:graph-native-pause",
+        "option": "continue"
+      },
+      "action": {
+        "status": "applied"
+      },
+      "resolution": {
+        "gateId": "human-gate:graph-native-pause",
+        "option": "continue",
+        "safePointRefs": [
+          "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0"
+        ],
+        "resumeSessionId": "human-gate-resume:graph-native-continue",
+        "workerResumes": [
+          {
+            "workerId": "lru-coder",
+            "sourceSafePointRef": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0",
+            "resumeSessionId": "human-gate-resume:graph-native-continue:lru-coder"
+          }
+        ]
+      }
+    },
+    "display": "/resolve-gate human-gate:graph-native-pause continue",
+    "ts": 1789621234662
+  },
+  "resumed": {
+    "msgId": "human-gate-resumed:graph-native-continue",
+    "channelId": "main",
+    "fromRole": "COORDINATOR",
+    "type": "announce",
+    "payload": {
+      "kind": "human_gate_resumed",
+      "actionId": "graph-native-continue",
+      "gateId": "human-gate:graph-native-pause",
+      "resumeSessionId": "human-gate-resume:graph-native-continue",
+      "workerResumes": [
+        {
+          "workerId": "lru-coder",
+          "sourceSafePointRef": "agora-safe-point:v1:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0SWQiOiJncmFwaC1uYXRpdmUtcHJvamVjdCIsInRhc2tJZCI6ImdyYXBoLW5hdGl2ZS10YXNrIiwicm9sZSI6IkNPREVSIiwic291cmNlU2Vzc2lvbklkIjoic2Vzc2lvbjpscnUtY29kZXIiLCJib3VuZGFyeSI6NjMsImN3ZCI6Ii9wcml2YXRlL3RtcC9hZ29yYS1sYW5nZ3JhcGgtcm91bmQyLXE1M1hTby9wcm9qZWN0IiwiYWdlbnRQcmVzZXQiOiJhZ29yYS1yb2xlOkNPREVSIn0",
+          "resumeSessionId": "human-gate-resume:graph-native-continue:lru-coder"
+        }
+      ]
+    },
+    "display": "Fixture Leader continuation resumed.",
+    "ts": 1789621259495
+  }
+}
