@@ -1700,7 +1700,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-3.test.ts",
-          "notes": "任务类型：code。PR #86已于2026-09-17T03:38:09Z人工合并，merge 1c0a84c670ac27a8e05137ecc985e07261efe6c1，原done保持。原验收/macOS15本任务例外见docs/reviews/task123-acceptance.md及docs/task-history/12.3.md，DEF-018及后续阶段门禁不变。后续D9修复与D19定稿/Phase14登记同在PR #87：https://github.com/logan-suu/Agora/pull/87。本轮修复历史来源/合法ID配对、DEF-016和阶段/平台文档；定向63项、最终全量1774项+7脚本、typecheck/lint、适用G5通过，限定CodeRabbit0issues。安装旧失败根因仍inconclusive，诊断已补，失败与清理见docs/reviews/pr87-review-fixes-20260917.md及.json。原状态不重开，新实现均pending，不启动12.4；PR待人工合并。",
+          "notes": "任务类型：code。PR #86已于2026-09-17T03:38:09Z人工合并，merge 1c0a84c670ac27a8e05137ecc985e07261efe6c1，原done保持。原验收/macOS15本任务例外见docs/reviews/task123-acceptance.md及docs/task-history/12.3.md，DEF-018及后续阶段门禁不变。后续D9修复与D19定稿/Phase14登记同在PR #87：https://github.com/logan-suu/Agora/pull/87。本轮修复历史来源/合法ID配对、DEF-016和阶段/平台文档；定向63项、最终全量1774项+7脚本、typecheck/lint、适用G5通过，限定CodeRabbit0issues。安装旧失败根因仍inconclusive，诊断已补，失败与清理见docs/reviews/pr87-review-fixes-20260917.md及.json。补丁89b4b64已推送，原状态不重开，新实现均pending，不启动12.4；PR待人工合并。",
           "last_updated": "2026-09-17"
         },
         {

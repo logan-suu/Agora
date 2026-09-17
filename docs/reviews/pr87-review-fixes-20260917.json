@@ -476,7 +476,7 @@
         "observedFreeBytesDelta": -16384
       }
     ],
-    "final": "Complete for native fixtures and redundant test/review files; unresolved failure originals retained, active delivery inputs excluded.",
+    "final": "Complete; only the original inconclusive installation-failure report and its full-run log remain in ignored storage. No active delivery drafts remain.",
     "profileDirectories": [
       {
         "path": "/private/tmp/agora-task123-validation-bMNswX",
@@ -555,6 +555,13 @@
         "full-final.log": "Original unresolved installation-failure trace",
         "otherFiles": "Current delivery draft and hash verification inputs; still required until PR update"
       }
+    },
+    "deliveryInputs": {
+      "removedFiles": 11,
+      "logicalBytes": 125199,
+      "manifestSha256": "241dd4d63d0245eb3b17a7a122414612e01ba3679e22832a9053d199a4219f07",
+      "availableBytesDelta": 110592,
+      "noOpenHandles": true
     }
   },
   "limits": [
@@ -798,5 +805,15 @@
       "notAccepted": true,
       "logSha256": "b529539a9d0f8bc17d439ceda699dee244d573b3fef4aec0191f5e7ff4b46592"
     }
+  },
+  "delivery": {
+    "repairCommit": "89b4b64aa66d27dba7013c67cfcb8bb2c551b303",
+    "pullRequest": "https://github.com/logan-suu/Agora/pull/87",
+    "base": "dev-1.0.0",
+    "state": "OPEN",
+    "reviewReply": "https://github.com/logan-suu/Agora/pull/87#discussion_r4040826880",
+    "resolvedThread": "PRRT_kwDOUBGzms6jeHzt",
+    "githubReviewAtDelivery": "PENDING; distinct from the completed explicitly scoped CLI review",
+    "automaticMerge": false
   }
 }
