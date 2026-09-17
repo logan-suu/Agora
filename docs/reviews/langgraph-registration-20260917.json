@@ -1,0 +1,191 @@
+{
+  "date": "2026-09-17",
+  "designVersion": "1.0",
+  "decision": "D19",
+  "taskCount": 178,
+  "phaseCount": 32,
+  "newPendingTasks": [
+    "14.1",
+    "14.2",
+    "14.3",
+    "14.4",
+    "14.5",
+    "14.6",
+    "14.7"
+  ],
+  "migratedPendingTasks": 94,
+  "preservedPhases": "0–13 identity/status/dependencies preserved; only task12.3 delivery notes updated",
+  "doneCount": 69,
+  "allFuturePhaseExitDependenciesVerified": true,
+  "planAndIndexTaskRowsVerified": 101,
+  "originalSectionNumbersPreserved": true,
+  "historicalEvidenceFilesVerified": 38,
+  "d9ValidatedSourceHashesUnchanged": true,
+  "productDependenciesChanged": false,
+  "schemaCovers": "C01–C12",
+  "acceptanceAllocation": "S01–S08 and V01–V32 in development plan §18.13",
+  "productionMigrationAcceptedAsImplemented": false,
+  "cleanup": {
+    "removedDuplicates": [
+      {
+        "path": "docs/reviews/langgraph-spike-20260917/package.json",
+        "canonical": "docs/reviews/langgraph-spike-20260916/package.json",
+        "bytes": 304,
+        "sha256": "47b6321cde3078321a0b5f50fab79794732e32d3d103585cc04d1b3327e0e9af"
+      },
+      {
+        "path": "docs/reviews/langgraph-spike-20260917/package-lock.json",
+        "canonical": "docs/reviews/langgraph-spike-20260916/package-lock.json",
+        "bytes": 27101,
+        "sha256": "0ced6a449da2c779ec70fcbce9e1a9257bded0d68e3ef645a10353b7628fed97"
+      }
+    ],
+    "originalReadmeSha256": "97b2a8b44742187ad703ade5d8bc34ea8d1ee19425aaebeef479ea3ab41e8aba",
+    "readmePrefix": "> **2026-09-17交付整理：** 本页下方保留实验当时结果；D9缺陷随后修复并纳入PR #87，见[后续验证](../d9-replay-fix-20260917/README.md)。第二轮package.json/package-lock.json与首轮逐字节相同，已删除重复副本；复现时将[首轮package.json](../langgraph-spike-20260916/package.json)与[首轮锁文件](../langgraph-spike-20260916/package-lock.json)复制到本页runtime目录。sha256.json保留原实验路径/hash，README原hash对应本说明之后的原文；失败log仅移除文件末尾一个空行以通过Git空白检查，原字节可追加换行还原，前后hash见定稿验证；后续登记见[定稿记录](../langgraph-registration-20260917.md)。\n\n",
+    "logicalBytesRemoved": 27405,
+    "workingFiles": {
+      "path": "test-outputs/langgraph-plan-registration",
+      "device": 16777231,
+      "inode": 128880258,
+      "ownerVerified": true,
+      "noOpenHandles": true,
+      "noMounts": true,
+      "fileCount": 13,
+      "logicalBytes": 290083,
+      "files": [
+        {
+          "path": "test-outputs/langgraph-plan-registration/before-hashes.json",
+          "bytes": 885,
+          "sha256": "72151184b769ed8887150bc3bb27d466d1c624a8e60adef0d9b7d23d5f548050"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/before-index.json",
+          "bytes": 215908,
+          "sha256": "c12ab4c5fe0757889fcf19de07b17042b3489b391b39c4e0569486b6d3fa5f9c"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/dedup.json",
+          "bytes": 1425,
+          "sha256": "7ddea01ec5c99675df25943dcfa1a62bebc40a5bffadda392a22a9ec2e192919"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/fix-refs.py",
+          "bytes": 2468,
+          "sha256": "4b4d06b030a2f30f0c27da637c649fa04abf5795db49addbd931f307a9ea8d84"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/lint.log",
+          "bytes": 118,
+          "sha256": "4cc4253288e297c50dfb98086eee34498ff2e31cdc7378d1f8bb153187170333"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/mapping.json",
+          "bytes": 1695,
+          "sha256": "715ddd23e59e3adab9a56038a2ed01b5b01e1a4892013e7166ad43cd69580501"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/pr-body.md",
+          "bytes": 4936,
+          "sha256": "bdfb7334d647a447eb84fad089ab094e7f0835e199f364c18c8301e3151d04d9"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/record.py",
+          "bytes": 6193,
+          "sha256": "7ac6e1fe6a7833f47a2034fe447c9cbf1975a0cc18a7e3fa1d670a1488e1d5bd"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/refine.py",
+          "bytes": 12808,
+          "sha256": "1f59ac456e074137d251f420b9418943c9e3b1211c9f72a8132fbf3c29afc34b"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/sync.py",
+          "bytes": 37226,
+          "sha256": "ae1adf929932e10cbea29efaf1d2aea1902c51a812554d34a42c9e86df4fee8f"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/tracking-test.log",
+          "bytes": 842,
+          "sha256": "e47930fd7b5a16c850e74393f65d4b0fb433007f562d1f78bcb9fc07df215d96"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/typecheck.log",
+          "bytes": 76,
+          "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+        },
+        {
+          "path": "test-outputs/langgraph-plan-registration/verify.py",
+          "bytes": 5503,
+          "sha256": "6fa0eff93264666022b6562928ce73d5883f560d04c2d1b225a71db8ee534d06"
+        }
+      ],
+      "removed": true,
+      "observedFreeBytesDelta": 286720,
+      "spaceNote": "Shared-volume observation, not exclusively attributed reclamation."
+    }
+  },
+  "checks": {
+    "typecheck": {
+      "exitCode": 0,
+      "logSha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+    },
+    "lint": {
+      "exitCode": 0,
+      "files": 589,
+      "logSha256": "4cc4253288e297c50dfb98086eee34498ff2e31cdc7378d1f8bb153187170333"
+    },
+    "trackingTests": {
+      "exitCode": 0,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "e47930fd7b5a16c850e74393f65d4b0fb433007f562d1f78bcb9fc07df215d96"
+    },
+    "taskIndexCheck": {
+      "valid": true,
+      "tasks": 178,
+      "phases": 32,
+      "decisions": 26,
+      "histories": 69
+    },
+    "fullProductRegression": {
+      "reusedEvidence": "d9-replay-fix-20260917/validation.json",
+      "scriptTests": 7,
+      "vitestFiles": 227,
+      "tests": 1768,
+      "rerunThisTurn": false,
+      "reason": "Validated product/test sources and runtime dependency files unchanged."
+    },
+    "gitWhitespace": {
+      "status": "passed",
+      "failureLogContentChanged": false
+    }
+  },
+  "auditCorrections": [
+    "Migration helper initially assumed all test_file values were strings; preserved null design entries and resumed before index mutation.",
+    "Plan audit initially omitted validation task type; included all four legal types without reducing the 101-row assertion.",
+    "Changed-path audit switched from quoted Git paths to NUL-delimited paths.",
+    "An inline recording invocation failed UTF-8 parsing before execution; retried from an explicit UTF-8 file."
+  ],
+  "sourcesSha256": {
+    "AGENTS.md": "2bc7e7d39d3bff5c5726ed65b84caa81dfb76294c4423694f393c33ebdb69fd0",
+    "docs/langgraph-harness-design.md": "19727b68609132ff1848a76c2287515e91862cb5f6ed459e038e54c25a2f3149",
+    "docs/项目蓝图.md": "1e0d29ac4ee94e599dfb22fe6de84a3fbd2a632c8cadc6c18f915be3f847cc93",
+    "docs/详细设计方案.md": "46d50e348da53c752c653a4a1e0e9b344a636f110da7364f5bf0d44739ea9352",
+    "docs/系统架构设计文档.md": "15418ad49fdd6d7eafbf4290877e377f9ba86be876c6bf3010e99bb938dac84e",
+    "docs/技术选型文档.md": "55d99083780cd7bcf37b66a95d9e8373901373d3aaaf65792207e80a582ae780",
+    "docs/开发计划安排.md": "5a32a8bcfefa89e8ab28685c9aa9b8e0a2c76f61442f11789c0ffdfa41614185"
+  },
+  "sensitivePatternScan": {
+    "files": 57,
+    "hits": 0,
+    "limit": "Common credential/private-key patterns only; no .env, credential store or product state included."
+  },
+  "evidenceFormatting": {
+    "path": "docs/reviews/langgraph-spike-20260917/d9-replay-failure.log",
+    "originalSha256": "b6ea19d35d77dd1123e93e83e9eae7f73015033e4e91dcfad825838f2c91c344",
+    "normalizedSha256": "e29e26178c18c39595a788ba30c7f2695d0b120252fc8094b81fe863ea04c545",
+    "removedTerminalNewlines": 1,
+    "meaning": "Only one empty terminal line removed for Git whitespace gate; failure content unchanged; original bytes reconstruct by appending one newline."
+  }
+}

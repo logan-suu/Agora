@@ -1,0 +1,1257 @@
+{
+  "sourceSha256": "4483336b2d3558fa85f08542903214c4022acbcc06788257cc80b5eaa5a22a1c",
+  "records": [
+    {
+      "case": "before-dispatch",
+      "mode": "start",
+      "exitCode": 1,
+      "seconds": 0.952,
+      "logSha256": "8f211bf44078529449484ae51533e2f914fb8a2eaf99c1f404e41beca133bbaa",
+      "fault": {
+        "window": "before-dispatch",
+        "pid": 59747,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "effect": null
+      },
+      "faultProcessExited": true
+    },
+    {
+      "case": "before-dispatch",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 1.213,
+      "logSha256": "f24442043f3ecebfd1ca22900d622fe5f27ddfa6ffa3d8ec9c7744809e035e3b",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": null,
+        "status": "not_dispatched",
+        "next": [
+          "dispatchNode"
+        ],
+        "graphValues": {},
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "59271514c53ec5b524366700346cb7031386edf8ab872be6e97f9f4979f0ee4d",
+        "effect": null,
+        "worker": null,
+        "receiptStages": [],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "before-dispatch",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.902,
+      "logSha256": "65499a0ef488b9694a2805b1e73b9054c64f043eb00ff95b407f5fb4610c5227",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": null,
+        "status": "not_dispatched",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": false,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "before-dispatch",
+      "mode": "duplicate",
+      "exitCode": 0,
+      "seconds": 0.761,
+      "logSha256": "d1fa0bc03f5c6d4ce1c0d8f72e39834e9e447cb67b7e98accdae80c776d5244e",
+      "result": {
+        "mode": "duplicate",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "dispatch-committed",
+      "mode": "start",
+      "exitCode": 1,
+      "seconds": 0.68,
+      "logSha256": "8f211bf44078529449484ae51533e2f914fb8a2eaf99c1f404e41beca133bbaa",
+      "fault": {
+        "window": "dispatch-committed",
+        "pid": 59861,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "effect": null
+      },
+      "faultProcessExited": true
+    },
+    {
+      "case": "dispatch-committed",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.761,
+      "logSha256": "354067c559749b613d42515a4f8cf5f32de49cfa1c3b4c5440ec3b32bcd0f523",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": null,
+        "status": "dispatched",
+        "next": [
+          "dispatchNode"
+        ],
+        "graphValues": {},
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "7020dd6a20efeb035bedf06a189f061ec7e7a372699985e9639c18eeaf9f42e7",
+        "effect": null,
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "pending",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "dispatch-committed",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.772,
+      "logSha256": "f78ad936b639ea390ab085783fa06e71e42ec2950dc7659d8779253bc3f8b691",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": null,
+        "status": "dispatched",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": false,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "dispatch-committed",
+      "mode": "duplicate",
+      "exitCode": 0,
+      "seconds": 0.75,
+      "logSha256": "3b652702ad66f634843f62b788099ca363f9362c6ae0ec704fd11ef4418d9d2e",
+      "result": {
+        "mode": "duplicate",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "started",
+      "mode": "start",
+      "exitCode": 1,
+      "seconds": 0.717,
+      "logSha256": "8f211bf44078529449484ae51533e2f914fb8a2eaf99c1f404e41beca133bbaa",
+      "fault": {
+        "window": "started",
+        "pid": 59939,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "effect": null
+      },
+      "faultProcessExited": true
+    },
+    {
+      "case": "started",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.758,
+      "logSha256": "a49ee234dd92bb60ff94bc3a56735e07bdf689f3cec713f4108b3d02299b39b8",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": null,
+        "status": "needs_attention",
+        "next": [
+          "effectNode"
+        ],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "78379753cc7cde0679fcc1743ac5827c73ce024933577da35de8cc38a02f12ef",
+        "effect": null,
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "running",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "started",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.817,
+      "logSha256": "8c64de0c5d89329a9d987de0064e2738a747daba4c6a050c5b70cadab35ac405",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": "NEEDS_ATTENTION_UNPROVEN_EFFECT",
+        "status": "needs_attention",
+        "next": [
+          "effectNode"
+        ],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "78379753cc7cde0679fcc1743ac5827c73ce024933577da35de8cc38a02f12ef",
+        "effect": null,
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "running",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "effect-without-receipt",
+      "mode": "start",
+      "exitCode": 1,
+      "seconds": 0.772,
+      "logSha256": "8f211bf44078529449484ae51533e2f914fb8a2eaf99c1f404e41beca133bbaa",
+      "fault": {
+        "window": "effect-without-receipt",
+        "pid": 59994,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        }
+      },
+      "faultProcessExited": true
+    },
+    {
+      "case": "effect-without-receipt",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.968,
+      "logSha256": "26c52e23f456a7def80a97f79695ee6a0b3ab85dd272e9c0373ef05bdbadd9df",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": null,
+        "status": "needs_attention",
+        "next": [
+          "effectNode"
+        ],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "78379753cc7cde0679fcc1743ac5827c73ce024933577da35de8cc38a02f12ef",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "running",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "effect-without-receipt",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.83,
+      "logSha256": "fb4967f898940f61687e466b630e3df736da074312b5a2f680178b91dcc02dee",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": "NEEDS_ATTENTION_UNPROVEN_EFFECT",
+        "status": "needs_attention",
+        "next": [
+          "effectNode"
+        ],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "78379753cc7cde0679fcc1743ac5827c73ce024933577da35de8cc38a02f12ef",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "running",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "business-committed",
+      "mode": "start",
+      "exitCode": 1,
+      "seconds": 0.834,
+      "logSha256": "8f211bf44078529449484ae51533e2f914fb8a2eaf99c1f404e41beca133bbaa",
+      "fault": {
+        "window": "business-committed",
+        "pid": 60162,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        }
+      },
+      "faultProcessExited": true
+    },
+    {
+      "case": "business-committed",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.762,
+      "logSha256": "538cee82a2fc86b478da1c3badbaa2c28f299974a9290b98c6015eb603d16bdb",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [
+          "effectNode"
+        ],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "business-committed",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.787,
+      "logSha256": "9d640c8f0f097af313dc9fea28eadbed537ff9408283c8c513a9ff2812b16461",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "business-committed",
+      "mode": "duplicate",
+      "exitCode": 0,
+      "seconds": 0.771,
+      "logSha256": "db24f301377c4cbe73d1ba8e651457bdcd9a2b4cbf2676742089a8336a501af8",
+      "result": {
+        "mode": "duplicate",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "pending-writes",
+      "mode": "start",
+      "exitCode": 1,
+      "seconds": 0.713,
+      "logSha256": "8f211bf44078529449484ae51533e2f914fb8a2eaf99c1f404e41beca133bbaa",
+      "fault": {
+        "window": "pending-writes",
+        "pid": 60240,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        }
+      },
+      "faultProcessExited": true
+    },
+    {
+      "case": "pending-writes",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.761,
+      "logSha256": "270d326724fd49d870725e54936e2721a0867bf4a60fd4546a2660c3711b3549",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [
+          "result"
+        ],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "pending-writes",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.782,
+      "logSha256": "7cf5e1a6456a9eab6bf779858b3b3a4335310cfb2402a28a2c78bf7c4776d8b7",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "pending-writes",
+      "mode": "duplicate",
+      "exitCode": 0,
+      "seconds": 0.777,
+      "logSha256": "2322534d8850ce81483c8d6c782ef5da6c4ae8f815837d44b01f5680839aa699",
+      "result": {
+        "mode": "duplicate",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "normal-final",
+      "mode": "start",
+      "exitCode": 0,
+      "seconds": 0.838,
+      "logSha256": "40e0a94c0a5ba4af8163b6e69249ea3a954a90dc23dd05cc7d86dffa499dd056",
+      "result": {
+        "mode": "start",
+        "fault": "",
+        "error": null,
+        "status": "not_dispatched",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": false,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "normal-final",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.832,
+      "logSha256": "96de71e0b3a2242750ff32daea416cc358471a5ef318a15ed3513a9d7e4bd1c3",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "normal-final",
+      "mode": "duplicate",
+      "exitCode": 0,
+      "seconds": 0.756,
+      "logSha256": "bafd1f02791d13da398e86de67a643e240a0c1eb23fc4e1beae5ab6466fe4300",
+      "result": {
+        "mode": "duplicate",
+        "fault": "",
+        "error": null,
+        "status": "completed",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "normal-final",
+      "mode": "different-input",
+      "exitCode": 0,
+      "seconds": 0.755,
+      "logSha256": "9c3d71e719950e4514e76492de0b2d1bdb098e1c330b4103d5909af7257fb9ab",
+      "result": {
+        "mode": "different-input",
+        "fault": "",
+        "error": "INPUT_CONFLICT",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-missing",
+      "mode": "start",
+      "exitCode": 0,
+      "seconds": 0.875,
+      "logSha256": "5554737b85379ed69882723823a654434e5196af000d7e53549b8e65e779cd57",
+      "result": {
+        "mode": "start",
+        "fault": "",
+        "error": null,
+        "status": "not_dispatched",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": false,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-missing",
+      "mode": "corrupt-missing",
+      "exitCode": 0,
+      "seconds": 0.78,
+      "logSha256": "e29291e7d55e2bb8ba0444544c435765b9456380d530e38d6adaa00ade41c463"
+    },
+    {
+      "case": "corrupt-missing",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.759,
+      "logSha256": "0de5c62f9ce1013911fcefe66b52ab53161aa7687acbaa165ff7c75b4136fea2",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": "GRAPH_BUSINESS_CONFLICT",
+        "status": "needs_attention",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "dd26ecf6f10e1eac005e37dccab405e239e80eadc54b63498daece6546857054",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-missing",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.775,
+      "logSha256": "3208037c0226bb06abe6b8f175783f3467ea09cd97524d76bc8665d33e6a7f35",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": "GRAPH_BUSINESS_CONFLICT",
+        "status": "needs_attention",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "dd26ecf6f10e1eac005e37dccab405e239e80eadc54b63498daece6546857054",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-input",
+      "mode": "start",
+      "exitCode": 0,
+      "seconds": 0.793,
+      "logSha256": "8477eb82418047f43f8bf0b1081184d58ea0d00aa83be73b68c9c34cf45d74d7",
+      "result": {
+        "mode": "start",
+        "fault": "",
+        "error": null,
+        "status": "not_dispatched",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": false,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-input",
+      "mode": "corrupt-input",
+      "exitCode": 0,
+      "seconds": 0.757,
+      "logSha256": "da2648a133319f6629e62fbc91023a7940e586de1165e87b22cbbc01590d391b"
+    },
+    {
+      "case": "corrupt-input",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.763,
+      "logSha256": "bee4464fe9e53522d51f6fa207d9f15ed7fc6a77a8c66b296efd713653d26602",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": "RECEIPT_CONFLICT",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "9d8439952a56641a810f37d052fedcca0a6037dc6825d023de70d816e04c0698",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-input",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.756,
+      "logSha256": "d0cbe47d9081422ef55c8e7f94d1f3bb1caa1a3f3cfb870d6bc347df78e8edd8",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": "RECEIPT_CONFLICT",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "9d8439952a56641a810f37d052fedcca0a6037dc6825d023de70d816e04c0698",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-effect",
+      "mode": "start",
+      "exitCode": 0,
+      "seconds": 0.791,
+      "logSha256": "0b736323bc016204ef147e305cdb202a36d51758025557a2a173f88d3b14b389",
+      "result": {
+        "mode": "start",
+        "fault": "",
+        "error": null,
+        "status": "not_dispatched",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": false,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 1,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-effect",
+      "mode": "corrupt-effect",
+      "exitCode": 0,
+      "seconds": 0.76,
+      "logSha256": "ca92608175c4ec1d5a2a588a4c3b5614ef1de4315904c6b00f029111e5fef5f4"
+    },
+    {
+      "case": "corrupt-effect",
+      "mode": "inspect",
+      "exitCode": 0,
+      "seconds": 0.767,
+      "logSha256": "86d1cdb6d031fccec130bb469e58defda2c4366d083dcfbe7dbdb7a8f23ecc59",
+      "result": {
+        "mode": "inspect",
+        "fault": "",
+        "error": "EFFECT_CONFLICT",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 2,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    },
+    {
+      "case": "corrupt-effect",
+      "mode": "resume",
+      "exitCode": 0,
+      "seconds": 0.765,
+      "logSha256": "22370db7309fae3f822397187b96214d332b44ddf13dda2d3e0b853891653ae6",
+      "result": {
+        "mode": "resume",
+        "fault": "",
+        "error": "EFFECT_CONFLICT",
+        "next": [],
+        "graphValues": {
+          "dispatch": "fixture:dispatch-1:dispatched",
+          "result": "fixture:dispatch-1:completed"
+        },
+        "pendingWrites": [],
+        "stateUnchanged": true,
+        "stateHash": "ba88708d51614da0351a62918d062f41a38347d741a252a29ab9bf1b4f7895ff",
+        "effect": {
+          "count": 2,
+          "fingerprint": "f33498e330839cb6d0592693363e9c1183843c6066261ba5f7738300c2e9ec35"
+        },
+        "worker": {
+          "workerId": "worker-1",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1
+        },
+        "receiptStages": [
+          "dispatched",
+          "started",
+          "completed"
+        ],
+        "modelCalls": 0,
+        "toolCalls": 0
+      }
+    }
+  ],
+  "date": "2026-09-17",
+  "scope": "Protocol fixture using real JsonTaskStateStore/applyMutations and official LangGraph SQLite; no Harness/model/workspace G5 claim",
+  "independentProcesses": 38,
+  "expectedKilledProcesses": 6,
+  "normalSuccessfulProcesses": 32,
+  "sourceUnchangedDuringMatrix": true,
+  "typecheck": {
+    "exitCode": 0,
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "lockFile": "../langgraph-spike-20260917/package-lock.json",
+  "lockSha256": "0ced6a449da2c779ec70fcbce9e1a9257bded0d68e3ef645a10353b7628fed97",
+  "productionSources": {
+    "packages/runtime/state/src/json-task-state-store.ts": "537a615ab6aa023d692993d7f018f7d0eb378c2e83861cd26381fafce6ab77c3",
+    "packages/core/domain/src/reducer.ts": "c1bcf9ddd58a278ea61b6eb68bdbab676e44c0ab40a8eb1c4a592e3e7e5eb195",
+    "apps/desktop/src/storage.ts": "56f486294eb9ce68dd7628b02d3d4a2c8ba5d4c716f6eec487e0dcb370db32f2"
+  },
+  "previousD9ChangesStillMatch": true,
+  "versions": {
+    "node": "24.20.0",
+    "nodeAbi": "137",
+    "platform": "darwin",
+    "arch": "arm64",
+    "os": "macOS 26.5",
+    "@langchain/langgraph": "1.4.15",
+    "@langchain/core": "1.2.11",
+    "@langchain/langgraph-checkpoint": "1.1.5",
+    "@langchain/langgraph-checkpoint-sqlite": "1.0.4",
+    "better-sqlite3": "12.11.1",
+    "zod": "4.6.5"
+  }
+}

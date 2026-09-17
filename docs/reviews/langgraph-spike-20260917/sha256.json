@@ -1,0 +1,16 @@
+{
+  "README.md": "97b2a8b44742187ad703ade5d8bc34ea8d1ee19425aaebeef479ea3ab41e8aba",
+  "cleanup.json": "d3e15882bdfd82fa94d3510c8ec38da835bef7dee1fd491f074c1fccea27c59d",
+  "d9-replay-failure.log": "b6ea19d35d77dd1123e93e83e9eae7f73015033e4e91dcfad825838f2c91c344",
+  "package-lock.json": "0ced6a449da2c779ec70fcbce9e1a9257bded0d68e3ef645a10353b7628fed97",
+  "package.json": "47b6321cde3078321a0b5f50fab79794732e32d3d103585cc04d1b3327e0e9af",
+  "replay-fixture.json": "b3fbb816f16ec264433f460a006cc9ee50b617db2d660e08643e13271ade97b9",
+  "results.json": "03bb14270b5fa20fbf70ac5acde24f2bbd6d8fed5c41544126b21c91cb5e0a6d",
+  "sources/diagnostic.test.ts": "5209e19243061b6eb3650793338ff4f4d6229fabd1148b97ca134f5f97c4332a",
+  "sources/live.test.ts": "235262d0b665732c6ccc49a21f0934873d2f64a97bee4b49e4450ffbedfafd88",
+  "sources/package-dmg.mjs": "d7e605810a9b93e71ad6f6447a543216cebd03ac76d615f0a98937471b20b48d",
+  "sources/package-probe.mjs": "143dd8cfa571b7f7451b4a63def5816835b62b238c2048a0bef6a29d05fc423d",
+  "tsconfig.spike.json": "6b937ee9e2063e340215e4406b1202d06d160885593e8afb21aa292c55f5a935",
+  "vitest.diagnostic.config.mjs": "3508b744607e18bb48ab8810eefe29051ccbb803fc43620da204998692fcdb0e",
+  "vitest.spike.config.mjs": "7bad9c86f3aa5c61aa288fdf8b65e5d5838f1bd1e9bddeb4c21020e4ee1aa4d5"
+}

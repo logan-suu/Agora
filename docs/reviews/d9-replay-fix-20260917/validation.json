@@ -1,0 +1,80 @@
+{
+  "date": "2026-09-17",
+  "productChangesSha256": {
+    "apps/web/src/server/human-gate-replay.ts": "78912a2785923154ffe48864f8248309aed661e9ad1e09621b7bc5b58ffdaf87",
+    "apps/web/src/server/message-runtime.ts": "f49425917007549f243177fc65d889d50a6892082086e59cae13e242f1b759fc",
+    "apps/web/src/server/task-orchestration-runtime.ts": "98689b7fe9f562a46010ef1be2adc9e65f35304b435d9e79d04b809fb9512a5b",
+    "packages/core/orchestration/src/human-gate.ts": "6afe452fd3b69f8cf3fa9cf48918d117f7eb3d7473bbd472d461635aaf1c1353",
+    "packages/runtime/executor/src/harness-executor.ts": "b3cb7af3a776d3082e2a9bd216f5c18637f6858f21c58e661a1f7c489413bb5b",
+    "apps/web/test/human-gate-replay.test.ts": "442fbec232691062c8fd261278dc7ed896c4544299a8c04092693daf5084d025"
+  },
+  "targeted": {
+    "files": 4,
+    "tests": 57,
+    "passed": 57,
+    "failed": 0,
+    "skipped": 0,
+    "logSha256": "f03fb34049dffbc602919efd685eae7d06c425520e1ab759bba9af36b1d5a8ec"
+  },
+  "typecheck": {
+    "exitCode": 0,
+    "logSha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+  },
+  "lint": {
+    "exitCode": 0,
+    "files": 589,
+    "logSha256": "f00c39fa94d46cc7553d38d5ddf2a5b02a50127362d12776d446e29092dcb7af"
+  },
+  "spikeTypecheck": {
+    "exitCode": 0,
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "tracking": {
+    "valid": true,
+    "tasks": 171,
+    "phases": 31,
+    "decisions": 25,
+    "histories": 69
+  },
+  "fullRegression": {
+    "status": "passed",
+    "command": "pnpm test",
+    "noSkipOrProviderFallback": true,
+    "exitCode": 0,
+    "files": 227,
+    "tests": 1768,
+    "passed": 1768,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 1070.88,
+    "logSha256": "1e2c263094605a6149c191aaad5f3c4bd6209c4ff2c4128782a9fd62678c390a",
+    "newD9Tests": 16,
+    "provider": "OpenCode Go",
+    "model": "deepseek-v4-flash",
+    "scriptTests": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "finalSummary": " 227 passed (227)\n      Tests  1768 passed (1768)\n   Start at  11:15:06\n   Duration  1070.88s (transform 1.59s, setup 0ms, collect 24.17s, tests 1022.16s, environment 15ms, prepare 6.01s)\n\n"
+  },
+  "delivery": {
+    "branch": "codex/fix-human-gate-replay",
+    "committed": false,
+    "pushed": false,
+    "prCreated": false,
+    "phaseAdvanced": false,
+    "langgraphProductDependencyAdded": false
+  },
+  "sourceFreezeNote": "A final same-gate corruption guard and its test were added while the unrelated Phase 0 live LRU test was running; the final affected Web suites and targeted regressions must include all 16 new tests.",
+  "sourceVerification": {
+    "baselineFiles": 599,
+    "changedAfterLaunch": [
+      "apps/web/src/server/human-gate-replay.ts",
+      "apps/web/test/human-gate-replay.test.ts"
+    ],
+    "finalProductHashesMatch": true,
+    "changedWebSuitesIncluded": true,
+    "baselineSha256": "5cb93a0f145aa9c4857814f61faed59fae4d2dfca08030e13c3c74053f356bc9"
+  }
+}

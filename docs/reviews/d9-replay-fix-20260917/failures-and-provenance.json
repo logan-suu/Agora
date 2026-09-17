@@ -1,0 +1,212 @@
+{
+  "injectedFailures": [
+    {
+      "name": "red regression",
+      "result": "6 failed, 8 passed before production repair"
+    },
+    {
+      "name": "intermediate onboarding regression",
+      "result": "broad replacement touched unrelated main-channel check; reverted, original tests unchanged; final targeted 57 pass"
+    },
+    {
+      "name": "provider failure",
+      "result": "STREAM_CLOSED after bounded recovery, failed worker retained and duplicate acknowledged without execution"
+    },
+    {
+      "name": "intercepted process.exit",
+      "result": "Vitest intercepted exit89; final graph checkpoint committed despite pending-writes failure; not counted as crash"
+    },
+    {
+      "name": "native inspection permission",
+      "result": "restricted host root inspector refused; same read-only receipt verification rerun with host permission"
+    },
+    {
+      "name": "real crash",
+      "result": "own isolated worker killed after no active lease or composition, before graph output write"
+    },
+    {
+      "name": "cold-start owner lock",
+      "result": "state_in_use; known fixture PID exited and no handles, manual lock reclamation with unchanged State hash; product lock takeover remains out of scope"
+    }
+  ],
+  "logHashes": {
+    "live-real-crash-host.log": {
+      "sha256": "8f211bf44078529449484ae51533e2f914fb8a2eaf99c1f404e41beca133bbaa",
+      "bytes": 675
+    },
+    "live-initial.log": {
+      "sha256": "ddc811eff0f331a5b36f296218c1ba2df7c8b8775b33478d50ab4f1d4f99d2c1",
+      "bytes": 404
+    },
+    "live-inspect.log": {
+      "sha256": "9c22773f75a7d8dd1e8a74671c8eaf2a6416b625b55b516b20602e5029de9fac",
+      "bytes": 306
+    },
+    "live-attempt2-resume-crash.log": {
+      "sha256": "4f04a3d35bc999531ef14a4449cde2279cf9c6c8aeb0c952b6f3dd69d922dd28",
+      "bytes": 1429
+    },
+    "typecheck-final.log": {
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "bytes": 76
+    },
+    "format.log": {
+      "sha256": "9275fe33a7c5d899e3462148b4a545624fdfb534fdb0c9efa252bf7ece02cd6e",
+      "bytes": 7642
+    },
+    "targeted-final.log": {
+      "sha256": "0d89ab4c7c8a23c0ef9a05afc3a99d5a6c4ef80560438991999304bf24ac80a4",
+      "bytes": 5169
+    },
+    "red.log": {
+      "sha256": "0604424cb1e7ec9636a545f18096613d3b10c9a44c350279a8558e01744fa26f",
+      "bytes": 3882
+    },
+    "format-final.log": {
+      "sha256": "75497bf9bdb0312f3af2fc0da3c46721cfdd182e2143411a2e79372264740451",
+      "bytes": 43
+    },
+    "live-reconcile.log": {
+      "sha256": "dd3c490d9d28785b48626f6dfe3ef8ab625bd3bf35179719b761ec52a77f7e4e",
+      "bytes": 398
+    },
+    "live-duplicate.log": {
+      "sha256": "ef457c4a7dde29327bf88779fe63d6c07c0510e0725449d7366155f0886ee17b",
+      "bytes": 398
+    },
+    "typecheck.log": {
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "bytes": 76
+    },
+    "live-failed-duplicate.log": {
+      "sha256": "459111267208e2f6bf12e6bb64ee1fba71f05ea2085452c63fa2392e1fab2bf1",
+      "bytes": 306
+    },
+    "live-real-crash.log": {
+      "sha256": "f80bf560ce8e411b2a7637f9e8e2b02aa535a4c4abed8762384cff0586cd264b",
+      "bytes": 1931
+    },
+    "targeted.log": {
+      "sha256": "31abac253edfe143a8194f46e0405a934e06997be42c14de5457880b19a3a48a",
+      "bytes": 427
+    },
+    "targeted-repaired.log": {
+      "sha256": "b43406b2afe8646e63b4cb2368828b4d5985af24a35cd1d5c1ec56e9cc5cc46b",
+      "bytes": 632
+    },
+    "live-resume-crash.log": {
+      "sha256": "f8cd46dfd9ce729b42d2810fbb5dc15ceea36b4ffeacf7146e3145585b500ad2",
+      "bytes": 3074
+    },
+    "spike-typecheck.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "final-guard-tests.log": {
+      "sha256": "f03fb34049dffbc602919efd685eae7d06c425520e1ab759bba9af36b1d5a8ec",
+      "bytes": 633
+    },
+    "spike-typecheck-final.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "live-resolve.log": {
+      "sha256": "27114f84a29339f844e1e82dfd57232c9b07ca538f7302a221b82ae63bda8518",
+      "bytes": 306
+    },
+    "live-inspect-crash.log": {
+      "sha256": "96db5c60db9d2f7acc1c87af104fc2d6d9b9e7232b90189aa095825e8cecff6d",
+      "bytes": 306
+    },
+    "lint-final.log": {
+      "sha256": "f00c39fa94d46cc7553d38d5ddf2a5b02a50127362d12776d446e29092dcb7af",
+      "bytes": 118
+    },
+    "tracking.log": {
+      "sha256": "4f115b55a51733963f022f00d2418bc79fb94327998f83513c53ae36ce986a79",
+      "bytes": 90
+    },
+    "live-inspect-fault.log": {
+      "sha256": "4fc5cea3efa9393ae5a52f229a02f0b638f5949f007550fa7b4ab670b15132aa",
+      "bytes": 1354
+    },
+    "final-guard-format.log": {
+      "sha256": "3128ee868434f3f0ae4b3d1e0ba040529feb578c8155ed4e7ddd850bcea43a52",
+      "bytes": 39
+    },
+    "install.log": {
+      "sha256": "703ea5256073ae3bfe7397346532b466cbb7a7ade79160d634a9b80fd7b530b0",
+      "bytes": 719
+    },
+    "native-build.log": {
+      "sha256": "15f0e79d2609c020672b91e2addd7c555a5aab46d34af02a74e31eb7c4700f15",
+      "bytes": 129
+    }
+  },
+  "baselineLockReference": "docs/reviews/langgraph-spike-20260917/package-lock.json",
+  "baselineLockSha256": "0ced6a449da2c779ec70fcbce9e1a9257bded0d68e3ef645a10353b7628fed97",
+  "necessaryDiagnostics": {
+    "red.log": [
+      "     → humanGate resolution action \"resolve-first\" conflicts with its first write",
+      "     → humanGate resolution action \"resolve-first\" conflicts with its first write",
+      "     → humanGate resolution action \"resolve-first\" conflicts with its first write",
+      "     → expected 2 to be 1 // Object.is equality",
+      "     → humanGate resolution action \"resolve-first\" conflicts with its first write",
+      "     → humanGate resolution action \"resolve-first\" conflicts with its first write",
+      "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯",
+      "Error: humanGate resolution action \"resolve-first\" conflicts with its first write",
+      "AssertionError: expected 2 to be 1 // Object.is equality",
+      "+ Received",
+      " Test Files  1 failed (1)",
+      "      Tests  6 failed | 8 passed (14)"
+    ],
+    "targeted-final.log": [
+      "     → onboarding action \"onboard-tester-in-sub\" conflicts with its first write",
+      "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+      "Error: onboarding action \"onboard-tester-in-sub\" conflicts with its first write",
+      " Test Files  1 failed | 3 passed (4)",
+      "      Tests  1 failed | 55 passed (56)"
+    ],
+    "live-resume-crash.log": [
+      "     → Model request failed after bounded recovery.",
+      "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+      "WorkerStepError: Model request failed after bounded recovery.",
+      "Caused by: ExecutorRequestError: Model request failed after bounded recovery.",
+      "Serialized Error: { code: 'STREAM_CLOSED' }",
+      "Caused by: LlmError: SSE stream ended without [DONE]",
+      "Serialized Error: { code: 'STREAM_CLOSED', failure: { message: 'SSE stream ended without [DONE]', code: 'STREAM_CLOSED' } }",
+      " Test Files  1 failed (1)",
+      "      Tests  1 failed (1)"
+    ],
+    "live-attempt2-resume-crash.log": [
+      "     → process.exit unexpectedly called with \"89\"",
+      "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+      "Error: process.exit unexpectedly called with \"89\"",
+      " Test Files  1 failed (1)",
+      "      Tests  1 failed (1)"
+    ],
+    "live-inspect-fault.log": [
+      "     → expected [] to deeply equal [ 'continued' ]",
+      "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+      "AssertionError: expected [] to deeply equal [ 'continued' ]",
+      "+ Received",
+      " Test Files  1 failed (1)",
+      "      Tests  1 failed (1)"
+    ],
+    "live-real-crash.log": [
+      "     → root_inspection_failed",
+      "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+      "Error: root_inspection_failed",
+      " Test Files  1 failed (1)",
+      "      Tests  1 failed (1)"
+    ],
+    "live-real-crash-host.log": [
+      "Error: Channel closed",
+      "Serialized Error: { code: 'ERR_IPC_CHANNEL_CLOSED' }"
+    ],
+    "live-inspect-crash.log": [
+      " Test Files  1 passed (1)",
+      "      Tests  1 passed (1)"
+    ]
+  }
+}

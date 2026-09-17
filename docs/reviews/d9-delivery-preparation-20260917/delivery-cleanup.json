@@ -1,0 +1,25 @@
+{
+  "date": "2026-09-17",
+  "pr": "https://github.com/logan-suu/Agora/pull/87",
+  "implementationCommit": "c41c3e6a8c0c45e581cb0302f1043151d7515b9b",
+  "reason": "Superseded local patch, patch manifest and PR draft; final source and scope are preserved by the pushed commit, necessary review hashes remain in the evidence records.",
+  "plannedFiles": [
+    {
+      "path": "docs/reviews/d9-delivery-preparation-20260917/d9-only.patch",
+      "bytes": 58685,
+      "sha256": "1aca58e175f6edfb1decbec2869e9c6f7d34012745303d32a897f52d84281d29"
+    },
+    {
+      "path": "docs/reviews/d9-delivery-preparation-20260917/patch-files.json",
+      "bytes": 4929,
+      "sha256": "382c361ffd3468460de20e16dc42dab141cecf76f20a8358aa10d8f5a8753459"
+    },
+    {
+      "path": "docs/reviews/d9-delivery-preparation-20260917/pr-body.md",
+      "bytes": 3262,
+      "sha256": "5bf7b6da979774d0bb789a74922aa3c18df75069a2b84eb8cb8519647ed94550"
+    }
+  ],
+  "logicalBytes": 66876,
+  "removed": true
+}
