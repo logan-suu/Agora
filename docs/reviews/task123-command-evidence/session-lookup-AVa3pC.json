@@ -1,0 +1,97 @@
+{
+  "base": "/private/tmp/agora-task123-validation-AVa3pC",
+  "target": "gui/501/org.agora.task123.probe.AVa3pC",
+  "startedAt": "2026-09-16T01:25:59.038Z",
+  "sourceHash": "b7ecae84104f060a3184fd08afe348c1d1835b2bd37645ac154fa7fa81d64c98",
+  "controllerHash": "8530cb5b87f440f244f324a5fd6ab69a214e4fb2f07ed63743f8d29d72560d57",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127764421
+  },
+  "availableBefore": 46489948160,
+  "os": {
+    "status": 0,
+    "signal": null,
+    "stdout": "25F71\n",
+    "stderr": ""
+  },
+  "build": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-command-evidence/session-lookup-probe.c.txt:37:20: warning: 'auditon' is deprecated: first deprecated in macOS 11.0 - audit is deprecated [-Wdeprecated-declarations]\n   37 |     int positive = auditon(A_GETSINFO_ADDR, &control, sizeof(control));\n      |                    ^\n/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/bsm/audit.h:376:9: note: 'auditon' has been explicitly marked deprecated here\n  376 | int     auditon(int, void *, int)\n      |         ^\n/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-command-evidence/session-lookup-probe.c.txt:41:18: warning: 'auditon' is deprecated: first deprecated in macOS 11.0 - audit is deprecated [-Wdeprecated-declarations]\n   41 |     int result = auditon(A_GETSINFO_ADDR, &target, sizeof(target));\n      |                  ^\n/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/bsm/audit.h:376:9: note: 'auditon' has been explicitly marked deprecated here\n  376 | int     auditon(int, void *, int)\n      |         ^\n/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-command-evidence/session-lookup-probe.c.txt:45:19: warning: 'auditon' is deprecated: first deprecated in macOS 11.0 - audit is deprecated [-Wdeprecated-declarations]\n   45 |     int invalid = auditon(A_GETSINFO_ADDR, &malformed, sizeof(malformed) - 1);\n      |                   ^\n/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/bsm/audit.h:376:9: note: 'auditon' has been explicitly marked deprecated here\n  376 | int     auditon(int, void *, int)\n      |         ^\n3 warnings generated.\n"
+  },
+  "binaryHash": "e5ff03ee654a654047eeb4572d01683d782b207542416d086b6f0443ce1bd40d",
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-AVa3pC/session-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-AVa3pC/session-probe\"))",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\"><plist version=\"1.0\"><dict><key>Label</key><string>org.agora.task123.probe.AVa3pC</string><key>ProgramArguments</key><array><string>/usr/bin/env</string><string>-i</string><string>PATH=/usr/bin:/bin</string><string>HOME=/private/tmp/agora-task123-validation-AVa3pC</string><string>TMPDIR=/private/tmp/agora-task123-validation-AVa3pC</string><string>/usr/bin/sandbox-exec</string><string>-p</string><string>(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-AVa3pC/session-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-AVa3pC/session-probe\"))</string><string>/private/tmp/agora-task123-validation-AVa3pC/session-probe</string><string>escape</string></array><key>RunAtLoad</key><true/><key>SessionCreate</key><true/><key>KeepAlive</key><false/><key>WorkingDirectory</key><string>/private/tmp/agora-task123-validation-AVa3pC</string><key>EnvironmentVariables</key><dict><key>HOME</key><string>/private/tmp/agora-task123-validation-AVa3pC</string><key>TMPDIR</key><string>/private/tmp/agora-task123-validation-AVa3pC</string></dict><key>StandardOutPath</key><string>/private/tmp/agora-task123-validation-AVa3pC/stdout</string><key>StandardErrorPath</key><string>/private/tmp/agora-task123-validation-AVa3pC/stderr</string></dict></plist>",
+  "bootstrap": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "stdout": "{\"stage\":\"parent\",\"pid\":6425,\"ppid\":1,\"pgid\":6425,\"sid\":1,\"auditResult\":0,\"asid\":104653}\n{\"stage\":\"intermediate-exit\",\"pid\":6426,\"ppid\":6425,\"pgid\":6426,\"sid\":6426,\"auditResult\":0,\"asid\":104653}\n{\"stage\":\"grandchild\",\"pid\":6427,\"ppid\":1,\"pgid\":6427,\"sid\":6426,\"auditResult\":0,\"asid\":104653}\n{\"stage\":\"parent-exit\",\"pid\":6425,\"ppid\":1,\"pgid\":6425,\"sid\":1,\"auditResult\":0,\"asid\":104653}\n",
+  "lookupWhileDescendantAlive": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"lookup\",\"selfResult\":0,\"selfAsid\":100023,\"positive\":0,\"positiveErrno\":0,\"targetAsid\":104653,\"result\":0,\"errno\":0,\"malformed\":-1,\"malformedErrno\":22,\"size\":48}\n",
+    "stderr": ""
+  },
+  "jobBeforeStop": {
+    "status": 0,
+    "signal": null,
+    "stdout": "\tactive count = 0\n\tstate = not running\n\tlast exit code = 0\n\t\tstate = active\n\t\tactive count = 1\n\t\tstate = active\n\t\tactive count = 1",
+    "stderr": ""
+  },
+  "externalInspection": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"stop\",\"pid\":6427,\"asid\":104653,\"pidVersion\":18295825,\"wrongResult\":3,\"wrongErrno\":3,\"aliveAfterWrong\":true,\"correctResult\":0,\"correctErrno\":0}\n",
+    "stderr": ""
+  },
+  "lookupAfterDescendantExit": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"lookup\",\"selfResult\":0,\"selfAsid\":100023,\"positive\":0,\"positiveErrno\":0,\"targetAsid\":104653,\"result\":0,\"errno\":0,\"malformed\":-1,\"malformedErrno\":22,\"size\":48}\n",
+    "stderr": ""
+  },
+  "testedAsid": 104653,
+  "stderr": "",
+  "job": {
+    "status": 0,
+    "signal": null,
+    "stdout": "\tactive count = 0\n\tstate = not running\n\tlast exit code = 0\n\t\tstate = active\n\t\tactive count = 1\n\t\tstate = active\n\t\tactive count = 1",
+    "stderr": ""
+  },
+  "bootout": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "absent": {
+    "status": 113,
+    "signal": null,
+    "stdout": "",
+    "stderr": "Bad request.\nCould not find service \"org.agora.task123.probe.AVa3pC\" in domain for user gui: 501\n"
+  },
+  "lookupAfterBootout": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"lookup\",\"selfResult\":0,\"selfAsid\":100023,\"positive\":0,\"positiveErrno\":0,\"targetAsid\":104653,\"result\":0,\"errno\":0,\"malformed\":-1,\"malformedErrno\":22,\"size\":48}\n",
+    "stderr": ""
+  },
+  "completedAt": "2026-09-16T01:26:04.507Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "availableAfter": 46488649728,
+  "spaceDelta": -1298432
+}

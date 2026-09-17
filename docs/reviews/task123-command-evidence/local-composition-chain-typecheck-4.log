@@ -1,0 +1,7 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+tests/integration/phase12/phase12-3-composition.test.ts(61,30): error TS2550: Property 'withResolvers' does not exist on type 'PromiseConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2024' or later.
+tests/integration/phase12/phase12-3-composition.test.ts(62,31): error TS2550: Property 'withResolvers' does not exist on type 'PromiseConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2024' or later.
+ ELIFECYCLE  Command failed with exit code 2.

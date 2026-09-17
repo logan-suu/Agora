@@ -1,0 +1,28 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/tools/bridge/test/local-workspace-bridge.test.ts (2 tests | 1 failed) 57ms
+   × only exposes versioned workspace tools and binds actions to the trusted session/call 52ms
+     → ctx.dispose is not a function
+   ✓ does not register write or run capabilities for a read-only worker 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/tools/bridge/test/local-workspace-bridge.test.ts > only exposes versioned workspace tools and binds actions to the trusted session/call
+TypeError: ctx.dispose is not a function
+ ❯ packages/tools/bridge/test/local-workspace-bridge.test.ts:73:15
+     71|   } finally {
+     72|     await catalog.dispose();
+     73|     await ctx.dispose();
+       |               ^
+     74|   }
+     75| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  17:20:56
+   Duration  580ms (transform 77ms, setup 0ms, collect 324ms, tests 57ms, environment 0ms, prepare 52ms)
+

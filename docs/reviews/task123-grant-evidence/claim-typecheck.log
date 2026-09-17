@@ -1,0 +1,11 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+tests/integration/phase12/phase12-3-grant.test.ts(292,15): error TS2322: Type '{ op: "set"; field: "subtasks"; value: { id: string; title: string; ownerRole: string; status: string; dependsOn: never[]; }[]; }' is not assignable to type 'Mutation'.
+  Types of property 'field' are incompatible.
+    Type '"subtasks"' is not assignable to type '"integration" | "nextRole" | "parallelExecution" | "localExecution" | "phase" | "iterationCount" | "architecture" | "conventions" | "testResults" | "humanGate" | "complexity"'.
+tests/integration/phase12/phase12-3-grant.test.ts(309,19): error TS2322: Type '{ op: "mergeById"; field: "workers"; value: { workerId: string; subtaskId: string; role: string; executor: string; status: string; startedTs: number; }; }' is not assignable to type 'Mutation'.
+  Types of property 'value' are incompatible.
+    Object literal may only specify known properties, and 'workerId' does not exist in type '{ id: string; }'.
+ ELIFECYCLE  Command failed with exit code 2.

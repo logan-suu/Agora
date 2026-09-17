@@ -1,0 +1,50 @@
+{
+  "recordedAt": "2026-09-16T02:11:46.853446+00:00",
+  "scope": "Official Apple documentation metadata read only; no VM or service created.",
+  "sources": [
+    {
+      "label": "vm-stop",
+      "url": "https://developer.apple.com/tutorials/data/documentation/virtualization/vzvirtualmachine/stop(completionhandler:).json",
+      "sha256": "30375da5599207ffd0ee1ccb36ffd30a49e437a7ed0b66039eed498c3017fb31",
+      "bytes": 27029,
+      "platforms": [
+        {
+          "beta": false,
+          "deprecated": false,
+          "introducedAt": "12.0",
+          "name": "macOS",
+          "unavailable": false
+        }
+      ]
+    },
+    {
+      "label": "virtualization-entitlement",
+      "url": "https://developer.apple.com/tutorials/data/documentation/virtualization/adding-the-virtualization-entitlement-to-your-project.json",
+      "sha256": "596e59446eea45b4381f5afd689750885ad58fa22e22741413f5a8aea3786acc",
+      "bytes": 6210,
+      "platforms": null
+    },
+    {
+      "label": "service-register",
+      "url": "https://developer.apple.com/tutorials/data/documentation/servicemanagement/smappservice/register().json",
+      "sha256": "81acac4bb1ff9ba421070ecfad0b65811ea3a77695ccd14c52427adabfa8fa7e",
+      "bytes": 16966,
+      "platforms": [
+        {
+          "beta": false,
+          "deprecated": false,
+          "introducedAt": "16.0",
+          "name": "Mac Catalyst",
+          "unavailable": false
+        },
+        {
+          "beta": false,
+          "deprecated": false,
+          "introducedAt": "13.0",
+          "name": "macOS",
+          "unavailable": false
+        }
+      ]
+    }
+  ]
+}

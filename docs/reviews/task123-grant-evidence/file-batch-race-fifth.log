@@ -1,0 +1,24 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (14 tests) 21154ms
+   ✓ confirms a durable grant through the real Leader POST: normal  4405ms
+   ✓ confirms a durable grant through the real Leader POST: batch  3693ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3510ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3246ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2459ms
+   ✓ confirms a durable grant through the real Leader POST: before  462ms
+   ✓ confirms a durable grant through the real Leader POST: after  492ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  401ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  499ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  386ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  410ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  420ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  361ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  408ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  16:42:33
+   Duration  21.80s (transform 241ms, setup 0ms, collect 535ms, tests 21.15s, environment 0ms, prepare 30ms)
+

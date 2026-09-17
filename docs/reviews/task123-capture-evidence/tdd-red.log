@@ -1,0 +1,159 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts (19 tests | 7 failed) 15132ms
+   × recovers a transient read-only capture timeout without changing launch or call deadlines 1509ms
+     → expected 1 to be 2 // Object.is equality
+   × still rejects release authorization after a transient capture timeout 848ms
+     → expected 1 to be 2 // Object.is equality
+   × bounds persistent capture timeouts to three attempts and keeps resources quarantined 850ms
+     → expected 1 to be 3 // Object.is equality
+   × does not retry a failed kernel query that did not time out 817ms
+     → Cannot read properties of undefined (reading 'map')
+   × rechecks authority before retrying capture 866ms
+     → expected 'spawnSync /private/tmp/agora-task123-…' to be 'command_binding_invalidated' // Object.is equality
+   × observes bootstrap exit before another PID capture can be attempted 839ms
+     → expected 'spawnSync /private/tmp/agora-task123-…' to be 'command_bootstrap_failed' // Object.is equality
+   × refuses a capture when a control-plane check exhausts the original startup window 818ms
+     → expected 1 to be +0 // Object.is equality
+   ✓ registers the suspended executable before any constructor or project code runs  815ms
+   ✓ keeps project code suspended when the release authorization is revoked  677ms
+   ✓ does not release the executable when durable registration fails  671ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  737ms
+   ✓ records a failed exec without releasing any project code  717ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  341ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  691ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  793ms
+   ✓ persists the executable result independently of the bootstrap and survives reopening  801ms
+   ✓ never overwrites a terminal launch fact and rejects stale revisions  764ms
+   ✓ rejects persisted launch facts that contradict identities or release state  792ms
+   ✓ preserves observed process facts without claiming a launch receipt when final persistence is blocked  783ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > recovers a transient read-only capture timeout without changing launch or call deadlines
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:7:36
+      5| it('recovers a transient read-only capture timeout without changing la…
+      6|   const value = await probeLocalCommandStart('capture-once');
+      7|   expect(value.captureInvocations).toBe(2);
+       |                                    ^
+      8|   expect(value.result.captureAttempts.map((a) => a.outcome)).toEqual([…
+      9|   expect(value.result.released).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > still rejects release authorization after a transient capture timeout
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:17:36
+     15| it('still rejects release authorization after a transient capture time…
+     16|   const value = await probeLocalCommandStart('capture-revoked');
+     17|   expect(value.captureInvocations).toBe(2);
+       |                                    ^
+     18|   expect(value.result.error).toBe('command_start_denied');
+     19|   expect(value.result.released).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > bounds persistent capture timeouts to three attempts and keeps resources quarantined
+AssertionError: expected 1 to be 3 // Object.is equality
+
+- Expected
++ Received
+
+- 3
++ 1
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:26:36
+     24| it('bounds persistent capture timeouts to three attempts and keeps res…
+     25|   const value = await probeLocalCommandStart('capture-always');
+     26|   expect(value.captureInvocations).toBe(3);
+       |                                    ^
+     27|   expect(value.result.captureAttempts.map((a) => a.outcome)).toEqual([
+     28|     'timed_out',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > does not retry a failed kernel query that did not time out
+TypeError: Cannot read properties of undefined (reading 'map')
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:42:39
+     40|   const value = await probeLocalCommandStart('capture-error');
+     41|   expect(value.captureInvocations).toBe(1);
+     42|   expect(value.result.captureAttempts.map((a) => a.outcome)).toEqual([…
+       |                                       ^
+     43|   expect(value.result.error).toBe('command_capture_failed');
+     44|   expect(value.afterRelease).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > rechecks authority before retrying capture
+AssertionError: expected 'spawnSync /private/tmp/agora-task123-…' to be 'command_binding_invalidated' // Object.is equality
+
+Expected: "command_binding_invalidated"
+Received: "spawnSync /private/tmp/agora-task123-validation-Jk9RbG/control ETIMEDOUT"
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:50:30
+     48|   const value = await probeLocalCommandStart('capture-authority');
+     49|   expect(value.captureInvocations).toBe(1);
+     50|   expect(value.result.error).toBe('command_binding_invalidated');
+       |                              ^
+     51|   expect(value.afterRelease).toBe(false);
+     52|   expect(value.record?.birthIdentities).toHaveLength(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > observes bootstrap exit before another PID capture can be attempted
+AssertionError: expected 'spawnSync /private/tmp/agora-task123-…' to be 'command_bootstrap_failed' // Object.is equality
+
+Expected: "command_bootstrap_failed"
+Received: "spawnSync /private/tmp/agora-task123-validation-UJVoNs/control ETIMEDOUT"
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:58:30
+     56|   const value = await probeLocalCommandStart('capture-exited');
+     57|   expect(value.captureInvocations).toBe(1);
+     58|   expect(value.result.error).toBe('command_bootstrap_failed');
+       |                              ^
+     59|   expect(value.afterRelease).toBe(false);
+     60|   expect(value.record?.birthIdentities).toHaveLength(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > refuses a capture when a control-plane check exhausts the original startup window
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:65:36
+     63| it('refuses a capture when a control-plane check exhausts the original…
+     64|   const value = await probeLocalCommandStart('capture-deadline');
+     65|   expect(value.captureInvocations).toBe(0);
+       |                                    ^
+     66|   expect(value.result.error).toBe('command_capture_deadline');
+     67|   expect(value.afterRelease).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 12 passed (19)
+   Start at  12:56:51
+   Duration  15.33s (transform 57ms, setup 0ms, collect 71ms, tests 15.13s, environment 0ms, prepare 38ms)
+

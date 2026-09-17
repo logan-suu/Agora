@@ -14,6 +14,7 @@ import {
   deriveCompletionResolution,
   deriveObjectionResolutions,
   isIntegration,
+  isLocalReviewBinding,
   isReviewBinding,
   latestRequirementInterpretation,
   type Message,
@@ -106,6 +107,10 @@ export class RequirementInputError extends Error {
     super(message);
   }
 }
+export class WorkspaceControlInputError extends Error {}
+export interface WorkspaceControlPort {
+  commit(scope: TaskScope, message: Message): Promise<AppState>;
+}
 
 export class MessageRuntime {
   readonly root: string;
@@ -130,6 +135,8 @@ export class MessageRuntime {
   readonly #initialRoster: readonly RosterEntry[];
   readonly #channelContext = new DerivedChannelContextBuilder();
   #requirementInterpreter: RequirementInterpreter | undefined;
+  #workspaceControl: WorkspaceControlPort | undefined;
+  #localCompletionVerifier: ((scope: TaskScope, state: AppState) => Promise<void>) | undefined;
   readonly #leaderQueues = new Map<string, Promise<void>>();
 
   constructor(
@@ -229,6 +236,18 @@ export class MessageRuntime {
     this.#leaderPreemption = port;
   }
 
+  bindWorkspaceControlPort(port: WorkspaceControlPort): void {
+    this.#workspaceControl = port;
+  }
+  bindLocalCompletionVerifier(verify: (scope: TaskScope, state: AppState) => Promise<void>): void {
+    this.#localCompletionVerifier = verify;
+  }
+  async #verifyLocalCompletion(scope: TaskScope, state: AppState): Promise<void> {
+    if (state.localExecution === undefined) return;
+    if (!this.#localCompletionVerifier) throw Error('local_completion_verifier_required');
+    await this.#localCompletionVerifier(scope, state);
+  }
+
   ensureProjectChannels(projectId: string) {
     return this.channels.initialize(projectId, [
       createMainChannel(this.#initialRoster.map((entry) => entry.spec.role)),
@@ -301,6 +320,46 @@ export class MessageRuntime {
     }
     const existing = current.messages.find((message) => message.msgId === input.msgId);
     let incomingIntent = parseLeaderIntent(input.display);
+    if (
+      this.#workspaceControl &&
+      (incomingIntent.kind === 'workspace_control' ||
+        (existing?.payload.intent as { kind?: string } | undefined)?.kind === 'workspace_control')
+    ) {
+      if (
+        incomingIntent.kind !== 'workspace_control' ||
+        input.requirementProposal ||
+        input.channelId !== 'main' ||
+        input.msgId !== incomingIntent.actionId ||
+        incomingIntent.projectId !== scope.projectId ||
+        incomingIntent.taskId !== scope.taskId ||
+        (existing && (existing.display !== input.display || existing.channelId !== input.channelId))
+      )
+        throw new WorkspaceControlInputError('workspace_control_source_invalid');
+      const message: Message = existing ?? {
+        msgId: input.msgId,
+        channelId: 'main',
+        fromRole: 'leader',
+        type: 'chat',
+        display: input.display,
+        ts: input.ts,
+        payload: { kind: 'leader_intent', intent: incomingIntent, action: { status: 'applied' } },
+      };
+      try {
+        const state = await this.#workspaceControl.commit(scope, message);
+        const canonical = state.messages.find((m) => m.msgId === message.msgId);
+        if (!canonical) throw new Error('workspace_binding_incomplete');
+        return {
+          state,
+          message: canonical,
+          published: existing === undefined,
+          action: { status: 'applied' },
+        };
+      } catch (error) {
+        throw new WorkspaceControlInputError(
+          error instanceof Error ? error.message : 'workspace_control_failed',
+        );
+      }
+    }
     if (input.requirementProposal) {
       if (input.channelId !== 'main')
         throw new RequirementInputError('Requirement proposals can only be confirmed in main.');
@@ -411,6 +470,8 @@ export class MessageRuntime {
           input.channelId,
           incomingIntent,
         );
+        if (incomingIntent.option === 'approve_completion')
+          await this.#verifyLocalCompletion(scope, current);
         await this.#completeDepartureResolution(scope, input.msgId, incomingIntent);
         await this.#humanGate.resume(scope, input.msgId, receipt);
       }
@@ -572,39 +633,45 @@ export class MessageRuntime {
       if (input.channelId !== 'main') {
         throw new Error('humanGate resolution commands must use main');
       }
-      const resolution = await this.#service.commitPlannedMessage(scope, input.msgId, (state) => {
-        const plan = planHumanGateResolution(state, {
-          actionId: input.msgId,
-          gateId: intent.gateId,
-          option: intent.option,
-          ...(intent.argument === undefined ? {} : { argument: intent.argument }),
-          enabledRoles: enabledRoster.map((entry) => entry.role),
-          ts: input.ts,
-        });
-        return {
-          message: {
-            msgId: input.msgId,
-            channelId: input.channelId,
-            fromRole: 'leader',
-            type: 'chat',
-            payload: {
-              kind: 'leader_intent',
-              intent,
-              action: { status: 'applied' },
-              resolution: plan.receipt,
-              ...(plan.objectionResolution === undefined
-                ? {}
-                : { objectionResolution: plan.objectionResolution }),
-              ...(plan.completionResolution === undefined
-                ? {}
-                : { completionResolution: plan.completionResolution }),
-            },
-            display: input.display,
+      const resolution = await this.#service.commitPlannedMessage(
+        scope,
+        input.msgId,
+        async (state) => {
+          if (intent.option === 'approve_completion')
+            await this.#verifyLocalCompletion(scope, state);
+          const plan = planHumanGateResolution(state, {
+            actionId: input.msgId,
+            gateId: intent.gateId,
+            option: intent.option,
+            ...(intent.argument === undefined ? {} : { argument: intent.argument }),
+            enabledRoles: enabledRoster.map((entry) => entry.role),
             ts: input.ts,
-          },
-          mutations: plan.mutations,
-        };
-      });
+          });
+          return {
+            message: {
+              msgId: input.msgId,
+              channelId: input.channelId,
+              fromRole: 'leader',
+              type: 'chat',
+              payload: {
+                kind: 'leader_intent',
+                intent,
+                action: { status: 'applied' },
+                resolution: plan.receipt,
+                ...(plan.objectionResolution === undefined
+                  ? {}
+                  : { objectionResolution: plan.objectionResolution }),
+                ...(plan.completionResolution === undefined
+                  ? {}
+                  : { completionResolution: plan.completionResolution }),
+              },
+              display: input.display,
+              ts: input.ts,
+            },
+            mutations: plan.mutations,
+          };
+        },
+      );
       const receipt = assertHumanGateResolutionReplay(
         resolution.state,
         resolution.message,
@@ -1157,7 +1224,8 @@ function assertHumanGateResolutionReplay(
     safePointRefs: [...(safePointRefs as string[])],
     resumeSessionId: receipt.resumeSessionId as string,
     ...(workerResumes === undefined ? {} : { workerResumes }),
-    ...(isReviewBinding(receipt.completionEvidence)
+    ...(isReviewBinding(receipt.completionEvidence) ||
+    isLocalReviewBinding(receipt.completionEvidence)
       ? { completionEvidence: receipt.completionEvidence }
       : {}),
     ...(isIntegration(integrationRework) ? { integrationRework } : {}),

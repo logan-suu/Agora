@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-download.test.ts (1 test) 98ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  19:41:51
+   Duration  245ms (transform 24ms, setup 0ms, collect 28ms, tests 98ms, environment 0ms, prepare 34ms)
+

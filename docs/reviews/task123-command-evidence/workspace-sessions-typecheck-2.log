@@ -1,0 +1,8 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+tests/integration/phase12/phase12-3-grant.test.ts(402,21): error TS2322: Type '(_old: AppState, mutations: readonly Mutation[]) => Promise<MutationCommitResult>' is not assignable to type 'StateTransition'.
+  Type 'Promise<MutationCommitResult>' is not assignable to type 'Promise<AppState>'.
+    Type 'MutationCommitResult' is missing the following properties from type 'AppState': projectId, taskId, goal, phase, and 9 more.
+ ELIFECYCLE  Command failed with exit code 2.

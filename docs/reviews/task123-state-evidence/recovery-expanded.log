@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-state-binding.test.ts (9 tests) 1621ms
+ ✓ packages/runtime/sandbox/test/local-registry-records.test.ts (9 tests) 4ms
+
+ Test Files  2 passed (2)
+      Tests  18 passed (18)
+   Start at  14:19:18
+   Duration  1.98s (transform 109ms, setup 0ms, collect 147ms, tests 1.62s, environment 0ms, prepare 58ms)
+

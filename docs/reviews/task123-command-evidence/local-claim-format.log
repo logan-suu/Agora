@@ -1,0 +1,29 @@
+packages/runtime/sandbox/src/local-workspace-authority.ts:160:7 lint/complexity/useOptionalChain  FIXABLE  ━━━━━━━━━━
+
+  ! Change to an optional chain.
+  
+    158 │     const subtask = state.subtasks.find((s) => s.id === request.subtaskId);
+    159 │     if (
+  > 160 │       !worker ||
+        │       ^^^^^^^^^^
+  > 161 │       worker.role !== 'CODER' ||
+        │       ^^^^^^^^^^^^^^^^^^^^^^^
+    162 │       worker.subtaskId !== request.subtaskId ||
+    163 │       !['pending', 'running'].includes(worker.status) ||
+  
+  i Unsafe fix: Change to an optional chain.
+  
+    158 158 │       const subtask = state.subtasks.find((s) => s.id === request.subtaskId);
+    159 159 │       if (
+    160     │ - ······!worker·||
+    161     │ - ······worker.role·!==·'CODER'·||
+        160 │ + ······worker?.role·!==·'CODER'·||
+    162 161 │         worker.subtaskId !== request.subtaskId ||
+    163 162 │         !['pending', 'running'].includes(worker.status) ||
+  
+
+Skipped 2 suggested fixes.
+If you wish to apply the suggested (unsafe) fixes, use the command biome check --write --unsafe
+
+Checked 3 files in 104ms. Fixed 3 files.
+Found 1 warning.

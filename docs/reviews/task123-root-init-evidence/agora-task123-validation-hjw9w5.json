@@ -1,0 +1,52 @@
+{
+  "base": "/private/tmp/agora-task123-validation-hjw9w5",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128309625
+  },
+  "startedAt": "2026-09-16T19:55:01.834Z",
+  "scenario": "move-completion",
+  "result": {
+    "schemaVersion": "local-root-initialization-v1",
+    "actionId": "fixed-init",
+    "inputHash": "343a34ae8fbcffbee857ae53c5d3f9cf1ee05528b6120d44f68c5b71043fdf56",
+    "journalPath": "/private/tmp/agora-task123-validation-hjw9w5/journal/fixed-init",
+    "stage": "recoveryRequired",
+    "reason": "authorization_or_identity_changed",
+    "created": true,
+    "stagingIdentity": "16777231:128309638",
+    "quiescent": true,
+    "nativeExitCode": 0
+  },
+  "error": {
+    "message": "expected true to be false // Object.is equality"
+  },
+  "sources": {
+    "packages/runtime/sandbox/native/local-root-inspection.c": {
+      "sha256": "c5b57c12f4d961cc8f8ccd130829d560f8684b2700a3b322ed7a524bf833939d",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-hjw9w5-source-0.txt"
+    },
+    "packages/runtime/sandbox/native/local-root-initialization.c": {
+      "sha256": "ad30ec4eae4eab4fb4a3e87f57cdb7db7b05f357c34dfb52c3fb3ff3942d1897",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-hjw9w5-source-1.txt"
+    },
+    "packages/runtime/sandbox/src/local-root-inspection.ts": {
+      "sha256": "56a60a48e100c3e56597a37720570d5cec0b1f7cb3a6dbde65a2280dc73d8c97",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-hjw9w5-source-2.txt"
+    },
+    "packages/runtime/sandbox/src/local-root-initialization.ts": {
+      "sha256": "2fbec615ce45a2284d3bbe8644fbc8d3ef25857554b35ed21506fe3683b785a8",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-hjw9w5-source-3.txt"
+    },
+    "packages/runtime/sandbox/test/local-root-initialization.test.ts": {
+      "sha256": "13a2f4da9acf19613fab7771a7b5d1f5c8ae14108ff7a9afa721ba95e842c3ea",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-hjw9w5-source-4.txt"
+    }
+  },
+  "cleanup": {
+    "deleted": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 77824
+  }
+}

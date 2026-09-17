@@ -1,0 +1,49 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (23 tests | 1 failed | 22 skipped) 1704ms
+   ↓ confirms a durable grant through the real Leader POST: normal
+   ↓ confirms a durable grant through the real Leader POST: file-update
+   ↓ confirms a durable grant through the real Leader POST: file-create
+   ↓ confirms a durable grant through the real Leader POST: file-proof
+   ↓ confirms a durable grant through the real Leader POST: command
+   ↓ confirms a durable grant through the real Leader POST: mcp
+   ↓ confirms a durable grant through the real Leader POST: mcp-partial
+   × confirms a durable grant through the real Leader POST: reader 1704ms
+     → readerAuthority.registerReadOnly is not a function
+   ↓ confirms a durable grant through the real Leader POST: mcp-command
+   ↓ confirms a durable grant through the real Leader POST: worker-companion
+   ↓ confirms a durable grant through the real Leader POST: batch
+   ↓ confirms a durable grant through the real Leader POST: batch-partial
+   ↓ confirms a durable grant through the real Leader POST: batch-read-drift
+   ↓ confirms a durable grant through the real Leader POST: batch-stale
+   ↓ confirms a durable grant through the real Leader POST: before
+   ↓ confirms a durable grant through the real Leader POST: after
+   ↓ confirms a durable grant through the real Leader POST: wrong-hash
+   ↓ confirms a durable grant through the real Leader POST: wrong-selection
+   ↓ confirms a durable grant through the real Leader POST: wrong-scope
+   ↓ confirms a durable grant through the real Leader POST: stale-policy
+   ↓ confirms a durable grant through the real Leader POST: root-drift
+   ↓ confirms a durable grant through the real Leader POST: corrupt-proposal
+   ↓ confirms a durable grant through the real Leader POST: unsupported-action
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: reader
+TypeError: readerAuthority.registerReadOnly is not a function
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:638:69
+    636|                         expectedRevision: (await control.snapshot()).r…
+    637|                       };
+    638|                       const readerWorkspace = await readerAuthority.re…
+       |                                                                     ^
+    639|                       expect(await readerAuthority.registerReadOnly(re…
+    640|                         readerWorkspace,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 22 skipped (23)
+   Start at  18:23:37
+   Duration  2.61s (transform 334ms, setup 0ms, collect 803ms, tests 1.70s, environment 0ms, prepare 26ms)
+

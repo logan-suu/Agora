@@ -1,0 +1,51 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/core/domain/test/local-execution.test.ts (18 tests | 1 failed) 7ms
+   × canonical local execution references > allows a task-scoped reader without inventing a coder subtask, and keeps absence immutable 4ms
+     → expected false to be true // Object.is equality
+   ✓ canonical local execution references > accepts a scoped registration without interpreting it as live authority 1ms
+   ✓ canonical local execution references > rejects cross-scope workspace projectId 0ms
+   ✓ canonical local execution references > rejects cross-scope workspace taskId 0ms
+   ✓ canonical local execution references > rejects cross-scope workspace rootId 0ms
+   ✓ canonical local execution references > rejects a dangling workerId binding 0ms
+   ✓ canonical local execution references > rejects a dangling subtaskId binding 0ms
+   ✓ canonical local execution references > rejects a dangling workspaceId binding 0ms
+   ✓ canonical local execution references > rejects a dangling receiptId binding 0ms
+   ✓ canonical local execution references > refuses worker reassignment under an existing binding 0ms
+   ✓ canonical local execution references > retains historical rootIds when closing authority elsewhere 0ms
+   ✓ canonical local execution references > retains historical workspaces when closing authority elsewhere 0ms
+   ✓ canonical local execution references > retains historical bindings when closing authority elsewhere 0ms
+   ✓ canonical local execution references > retains historical receipts when closing authority elsewhere 0ms
+   ✓ canonical local execution references > rejects reusing an action or receipt for different input 0ms
+   ✓ canonical local execution references > rejects old worktree authority both on load and reducer writes 0ms
+   ✓ canonical local execution references > requires a files version for direct workspace test evidence 0ms
+   ✓ canonical local execution references > rejects non-JSON data without running its accessors 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/core/domain/test/local-execution.test.ts > canonical local execution references > allows a task-scoped reader without inventing a coder subtask, and keeps absence immutable
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/core/domain/test/local-execution.test.ts:62:39
+     60|     worker.role = 'TESTER';
+     61|     delete worker.subtaskId;
+     62|     expect(isLocalExecutionV1(value)).toBe(true);
+       |                                       ^
+     63|     const bound = applyMutations(candidate, [setMutation('localExecuti…
+     64|     const changed = structuredClone(value);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 passed (18)
+   Start at  18:20:22
+   Duration  202ms (transform 68ms, setup 0ms, collect 79ms, tests 7ms, environment 0ms, prepare 34ms)
+

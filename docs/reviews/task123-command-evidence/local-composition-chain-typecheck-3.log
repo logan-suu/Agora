@@ -1,0 +1,6 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+tests/integration/phase12/phase12-3-composition.test.ts(435,12): error TS2571: Object is of type 'unknown'.
+ ELIFECYCLE  Command failed with exit code 2.

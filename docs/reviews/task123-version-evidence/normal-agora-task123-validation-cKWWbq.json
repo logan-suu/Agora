@@ -1,0 +1,191 @@
+{
+  "base": "/private/tmp/agora-task123-validation-cKWWbq",
+  "scenario": "normal",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128581371
+  },
+  "fixedInput": {
+    "schemaVersion": "local-fixed-input-v1",
+    "actionId": "command-input",
+    "scope": {
+      "projectId": "project",
+      "taskId": "task",
+      "rootId": "root",
+      "policyHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "version": {
+      "kind": "files",
+      "manifestId": "manifest:6e6ae474ee164912211d405c6580af4b687706edc3b9a435b6e1ce944e0dc362",
+      "manifestHash": "6e6ae474ee164912211d405c6580af4b687706edc3b9a435b6e1ce944e0dc362"
+    },
+    "path": "/private/tmp/agora-task123-validation-cKWWbq/state/fixed-inputs/c4cbd02e449ea4e4dd051de36fc3e9ca7c95219393c21a3014e64f00af464c38",
+    "directories": [
+      {
+        "path": "",
+        "identity": "16777231:128581393"
+      },
+      {
+        "path": "src",
+        "identity": "16777231:128581394"
+      }
+    ],
+    "files": [
+      {
+        "path": "image.bin",
+        "identity": "16777231:128581395"
+      },
+      {
+        "path": "src/main.js",
+        "identity": "16777231:128581396"
+      }
+    ]
+  },
+  "version": {
+    "kind": "files",
+    "manifestId": "manifest:6e6ae474ee164912211d405c6580af4b687706edc3b9a435b6e1ce944e0dc362",
+    "manifestHash": "6e6ae474ee164912211d405c6580af4b687706edc3b9a435b6e1ce944e0dc362"
+  },
+  "manifest": {
+    "projectId": "project",
+    "taskId": "task",
+    "rootId": "root",
+    "policyHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "schemaVersion": "local-file-manifest-v1",
+    "bindingHash": "5f7d2575467affcc0439258167d1d93b1dff81f9eca877c880e4e22b4385b5b3",
+    "directories": [
+      {
+        "path": "",
+        "identity": "16777231:128581372",
+        "entries": [
+          {
+            "name": ".agora-operations",
+            "kind": "excluded"
+          },
+          {
+            "name": ".env",
+            "kind": "excluded"
+          },
+          {
+            "name": "image.bin",
+            "kind": "file"
+          },
+          {
+            "name": "src",
+            "kind": "directory"
+          }
+        ]
+      },
+      {
+        "path": "src",
+        "identity": "16777231:128581374",
+        "entries": [
+          {
+            "name": "main.js",
+            "kind": "file"
+          }
+        ]
+      }
+    ],
+    "files": [
+      {
+        "path": "image.bin",
+        "version": {
+          "kind": "regular",
+          "identity": "16777231:128581376",
+          "sha256": "902f278e7b2fbd893838cf03ef8fe47f7259727d5c6343960ce30a95d7b57111",
+          "size": 4,
+          "executable": false,
+          "metadataHash": "79eefbf75cb1eeb95f2683caab25164701d79c69984ffef489ca128e4fed3b16"
+        },
+        "contentHash": "902f278e7b2fbd893838cf03ef8fe47f7259727d5c6343960ce30a95d7b57111"
+      },
+      {
+        "path": "src/main.js",
+        "version": {
+          "kind": "regular",
+          "identity": "16777231:128581375",
+          "sha256": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761",
+          "size": 25,
+          "executable": false,
+          "metadataHash": "79eefbf75cb1eeb95f2683caab25164701d79c69984ffef489ca128e4fed3b16"
+        },
+        "contentHash": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761"
+      }
+    ],
+    "excludedPaths": [
+      ".agora-operations",
+      ".env"
+    ]
+  },
+  "passed": true,
+  "files": [
+    {
+      "path": "files",
+      "sha256": "41177c97ee1466b56376363de2e0837f28bd256fdc3b86ed5d14fb422001dac0"
+    },
+    {
+      "path": "project/.env",
+      "sha256": "b65c62450474bacd8343e287c43bd22fccbd42dfb8b99e7d9fa28127f5bdc4b6"
+    },
+    {
+      "path": "project/image.bin",
+      "sha256": "039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81"
+    },
+    {
+      "path": "project/src/main.js",
+      "sha256": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761"
+    },
+    {
+      "path": "state/fixed-inputs/c4cbd02e449ea4e4dd051de36fc3e9ca7c95219393c21a3014e64f00af464c38/image.bin",
+      "sha256": "295d78b95cd4cfaa9a28210f1e23920b9cd496c22609ccadff9f0f351114942d"
+    },
+    {
+      "path": "state/fixed-inputs/c4cbd02e449ea4e4dd051de36fc3e9ca7c95219393c21a3014e64f00af464c38/src/main.js",
+      "sha256": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761"
+    },
+    {
+      "path": "state/local-workspaces/objects/2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761.bin",
+      "sha256": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761"
+    },
+    {
+      "path": "state/local-workspaces/objects/6e4805ebab4590df60d6d1f273b84a0374e307067077c4954c89d5a2508d39d0.json",
+      "sha256": "285431a28d269983746020fa66ec8d364a278436a2445f917a185eefbe0b6e06"
+    },
+    {
+      "path": "state/local-workspaces/objects/6e6ae474ee164912211d405c6580af4b687706edc3b9a435b6e1ce944e0dc362.json",
+      "sha256": "0bfd67d7ca8970c33dd0de50eba2e562287a9800d557586f217f6a1b16e3cb3a"
+    },
+    {
+      "path": "state/local-workspaces/objects/902f278e7b2fbd893838cf03ef8fe47f7259727d5c6343960ce30a95d7b57111.bin",
+      "sha256": "902f278e7b2fbd893838cf03ef8fe47f7259727d5c6343960ce30a95d7b57111"
+    },
+    {
+      "path": "state/local-workspaces/objects/c4cbd02e449ea4e4dd051de36fc3e9ca7c95219393c21a3014e64f00af464c38.ref",
+      "sha256": "e93ff9ca5856e471bea25278af7f4ed6e2adee46ca1071fcdec7233807f6c9d6"
+    },
+    {
+      "path": "state/local-workspaces/objects/d84b5d37d87f5c432bf206810818a98b75cbee159a5b4a677c72b3ef9f0a3a5d.json",
+      "sha256": "86fd4e5ed78e2eabc4739bb81ff8bbc06fa1c219c65cd1b3b61b1a48c36d9253"
+    },
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "9e00a636ab33cb16c49088c731aa94b1f991f55d399d5376f3a44b4fd1be7a5b"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/native/local-file-transaction.c": "d7da93a33fdb70ab22744b3f87e32d07ec1d1fd1faff862dda12747ee12ca667",
+    "packages/runtime/sandbox/src/local-file-transaction.ts": "2d9885c4558140b37c81e1cf6db1e251cde719458008adece969fa4d8b606097",
+    "packages/runtime/sandbox/src/local-version-store.ts": "05d70d451a938a75a3abf3accf643e64658e2c61c2d437ea1fda11053688310e",
+    "packages/runtime/sandbox/src/local-fixed-inputs.ts": "f967c98149389701a9f9461a4703df8e7e497b9a773fa9dab6011acbc90ecf98",
+    "packages/runtime/sandbox/src/local-control-objects.ts": "5e23b990ab51dd33c486dd2bab50dba35a073f15ff9f5740c40627ec38391817",
+    "tests/integration/phase12/phase12-3-version.test.ts": "01640970cf765d3f98c948aa73a153a76f754dee5c4d0c612737666ca564e4a3"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 57344
+  }
+}

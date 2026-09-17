@@ -1,0 +1,49 @@
+{
+  "base": "/private/tmp/agora-task123-validation-2Kq6Qv",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128566473
+  },
+  "startedAt": "2026-09-17T02:01:06.670Z",
+  "scope": "L03 supplemental actual IPC policy qualification; no Keychain secrets",
+  "sources": {
+    "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-ipc-evidence/probe.c": "9849fee19cdec736aed2a93f6b9473cea2148ca12820a13e380d00442135df96",
+    "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-ipc-evidence/ipc.validation.ts": "1c6a5f266ff7844f7f1be3c7e9e8cdbf56740357f66c31a02d438e7c6c62adc5",
+    "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/src/local-command-policy.ts": "3faffdbc34bff9b9fad94c164b2a6470c25e997a2b9191c8a5053984a7c7ffd1"
+  },
+  "baseline": {
+    "status": 0,
+    "signal": null,
+    "output": [
+      null,
+      "{\"actor\":\"parent\",\"securitydLookup\":0,\"unixConnected\":true,\"unixErrno\":0}\n{\"actor\":\"child\",\"securitydLookup\":0,\"unixConnected\":true,\"unixErrno\":0}\n",
+      ""
+    ],
+    "pid": 4401,
+    "stdout": "{\"actor\":\"parent\",\"securitydLookup\":0,\"unixConnected\":true,\"unixErrno\":0}\n{\"actor\":\"child\",\"securitydLookup\":0,\"unixConnected\":true,\"unixErrno\":0}\n",
+    "stderr": ""
+  },
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-2Kq6Qv/probe\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-2Kq6Qv\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-2Kq6Qv/probe\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-2Kq6Qv/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "confined": {
+    "status": 0,
+    "signal": null,
+    "output": [
+      null,
+      "{\"actor\":\"parent\",\"securitydLookup\":1100,\"unixConnected\":false,\"unixErrno\":1}\n{\"actor\":\"child\",\"securitydLookup\":1100,\"unixConnected\":false,\"unixErrno\":1}\n",
+      ""
+    ],
+    "pid": 4403,
+    "stdout": "{\"actor\":\"parent\",\"securitydLookup\":1100,\"unixConnected\":false,\"unixErrno\":1}\n{\"actor\":\"child\",\"securitydLookup\":1100,\"unixConnected\":false,\"unixErrno\":1}\n",
+    "stderr": ""
+  },
+  "connected": 2,
+  "files": {
+    "probe": "1666f24820dda2cb0a678ccc25fd21c7c9e045238c4f766de8c9a8079a1dc045"
+  },
+  "cleanup": {
+    "deleted": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 24576
+  }
+}

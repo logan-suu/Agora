@@ -1,0 +1,41 @@
+// Trusted fixed-fixture diagnostic; project payload runs only inside Seatbelt.
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { buildLocalCommandPolicy } from '/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/src/local-command-policy';
+import { LocalCommandJournal } from '/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/src/local-command-journal';
+import { LocalCommandBinding } from '/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/src/local-command-binding';
+import { runHeldLocalCommand } from '/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/src/local-command-start';
+const repo='/Users/logansu/Documents/Dev/Agora';
+const prepared=JSON.parse(readFileSync(join(repo,'docs/reviews/task123-managed-node-evidence/prepared.json'),'utf8'));
+const {base,executable}=prepared;
+const digest=(bytes:string|Buffer)=>createHash('sha256').update(bytes).digest('hex');
+const helper=join(base,'process-control'),bootstrap=join(base,'bootstrap');
+for(const [source,target] of [['local-process-control.c',helper],['local-command-bootstrap.c',bootstrap]])
+ execFileSync('/usr/bin/clang',['-std=c11','-Wall','-Wextra','-Werror','-mmacosx-version-min=15.0',join(repo,'packages/runtime/sandbox/native',source),'-o',target]);
+for(const name of ['source','input','output','journal','fake-private'])mkdirSync(join(base,name),{mode:0o700});
+writeFileSync(join(base,'source/value.txt'),'fixed source');
+writeFileSync(join(base,'fake-private/secret'),'fixed private sentinel');
+const payload=`import fs from 'node:fs';
+const [source,output,secret]=process.argv.slice(2);
+if(fs.readFileSync(source,'utf8')!=='fixed source')throw Error('read failed');
+let deniedRead=false,deniedWrite=false;
+try{fs.readFileSync(secret);}catch(e){deniedRead=['EPERM','EACCES'].includes(e.code);}
+try{fs.writeFileSync(source,'forbidden');}catch(e){deniedWrite=['EPERM','EACCES'].includes(e.code);}
+if(!deniedRead||!deniedWrite)throw Error('boundary failed');
+fs.writeFileSync(output,'fixed output');
+console.log(JSON.stringify({node:process.version,deniedRead,deniedWrite}));`;
+const input=join(base,'input/probe.mjs');writeFileSync(input,payload);
+const outputRoot=join(base,'output');
+const policy=buildLocalCommandPolicy({executable,bootstrap,sourceRoot:join(base,'source'),inputRoot:join(base,'input'),outputRoot,deniedRoots:[join(base,'journal'),join(base,'fake-private')]});
+const argv=[input,join(base,'source/value.txt'),join(outputRoot,'result.txt'),join(base,'fake-private/secret')];
+const journal=new LocalCommandJournal(join(base,'journal'),true);
+const reservation=journal.reserve({commandId:'managed-node-fixed',workspaceId:'fixed-workspace',policyHash:digest(policy),inputHash:digest(payload),roots:[outputRoot]});
+const authority={projectId:'fixed-project',taskId:'fixed-task',workspaceId:'fixed-workspace',rootId:'fixed-root',grantId:'fixed-grant',workerId:'fixed-worker',policyVersion:'fixed-v1',grantHash:'a'.repeat(64),toolchainHash:prepared.sha256,networkHash:'b'.repeat(64),grantRevision:0,writerEpoch:0};
+const invocation={commandId:reservation.commandId,bootstrap,executable,helper,argv,policy,outputRoot};
+const binding=new LocalCommandBinding(invocation,['source','input','output','journal','fake-private'].map(p=>join(base,p)),authority,()=>authority);
+const result=await runHeldLocalCommand({...invocation,journal,revision:reservation.revision,binding,authorize:()=>true});
+const evidence={prepared,payload,policy,helperHash:digest(readFileSync(helper)),bootstrapHash:digest(readFileSync(bootstrap)),result,source:readFileSync(join(base,'source/value.txt'),'utf8'),sentinel:readFileSync(join(base,'fake-private/secret'),'utf8'),completedAt:new Date().toISOString()};
+writeFileSync(join(repo,'docs/reviews/task123-managed-node-evidence/diagnostic.json'),JSON.stringify(evidence,null,2)+'\n',{flag:'wx'});
+console.log(JSON.stringify(result));

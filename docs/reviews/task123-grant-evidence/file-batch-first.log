@@ -1,0 +1,38 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (10 tests | 1 failed) 8958ms
+   × confirms a durable grant through the real Leader POST: normal 5008ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ confirms a durable grant through the real Leader POST: before  541ms
+   ✓ confirms a durable grant through the real Leader POST: after  536ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  442ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  422ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  405ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  400ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  425ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  415ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  364ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: normal
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:56:3
+     54|   'unsupported-action',
+     55| ])
+     56|   it(`confirms a durable grant through the real Leader POST: ${scenari…
+       |   ^
+     57|     const base = mkdtempSync('/private/tmp/agora-task123-validation-'),
+     58|       identity = lstatSync(base);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  16:35:48
+   Duration  9.61s (transform 243ms, setup 0ms, collect 534ms, tests 8.96s, environment 0ms, prepare 31ms)
+

@@ -1,0 +1,87 @@
+/* Trusted internal primitive. The caller must establish command membership before
+ * capture; a PID or token supplied by project code is not an authorization. */
+#define _DARWIN_C_SOURCE
+#include <bsm/audit.h>
+#include <errno.h>
+#include <limits.h>
+#include <libproc.h>
+#include <mach/mach.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/proc.h>
+#include <unistd.h>
+
+static int number(const char *text, unsigned int *value) {
+  if (!text || !*text || strspn(text, "0123456789") != strlen(text)) return 0;
+  errno = 0;
+  char *end;
+  unsigned long parsed = strtoul(text, &end, 10);
+  if (errno || *end || parsed > UINT_MAX) return 0;
+  *value = (unsigned int)parsed;
+  return 1;
+}
+
+static int token_for_pid(pid_t pid, audit_token_t *token) {
+  mach_port_t port = MACH_PORT_NULL;
+  kern_return_t result = task_name_for_pid(mach_task_self(), pid, &port);
+  if (result != KERN_SUCCESS) return 0;
+  mach_msg_type_number_t count = TASK_AUDIT_TOKEN_COUNT;
+  result = task_info(port, TASK_AUDIT_TOKEN, (task_info_t)token, &count);
+  mach_port_deallocate(mach_task_self(), port);
+  return result == KERN_SUCCESS && count == TASK_AUDIT_TOKEN_COUNT;
+}
+
+static const char *inspect(audit_token_t expected) {
+  audit_token_t actual = {{0}};
+  if (token_for_pid((pid_t)expected.val[5], &actual))
+    return memcmp(&actual, &expected, sizeof(actual)) ? "identityMismatch" : "alive";
+  struct proc_bsdinfo info = {0};
+  errno = 0;
+  int size = proc_pidinfo((pid_t)expected.val[5], PROC_PIDTBSDINFO, 0, &info, sizeof(info));
+  if ((size == 0 && errno == ESRCH) || (size == sizeof(info) && info.pbi_status == SZOMB))
+    return "exited";
+  return "unknown";
+}
+
+int main(int argc, char **argv) {
+  alarm(2);
+  if (argc == 3 && !strcmp(argv[1], "capture")) {
+    unsigned int pid;
+    audit_token_t token = {{0}};
+    if (!number(argv[2], &pid) || pid <= 1 || pid > INT_MAX ||
+        !token_for_pid((pid_t)pid, &token) || token.val[5] != pid || token.val[1] != getuid())
+      return 65;
+    printf("{\"token\":[");
+    for (int i = 0; i < 8; i++) printf("%s%u", i ? "," : "", token.val[i]);
+    printf("]}\n");
+    return 0;
+  }
+  if (argc != 10 && argc != 11) return 64;
+  if (strcmp(argv[1], "inspect") && strcmp(argv[1], "signal")) return 64;
+  if ((!strcmp(argv[1], "inspect") && argc != 10) ||
+      (!strcmp(argv[1], "signal") && argc != 11)) return 64;
+  audit_token_t token = {{0}};
+  for (int i = 0; i < 8; i++) if (!number(argv[i + 2], &token.val[i])) return 64;
+  if (token.val[5] <= 1 || token.val[5] > INT_MAX || token.val[1] != getuid()) return 65;
+  const char *state = inspect(token);
+  int sent = 0, error = 0;
+  if (argc == 11) {
+    unsigned int sig;
+    if (!number(argv[10], &sig) || (sig != SIGTERM && sig != SIGKILL)) return 64;
+    if (!strcmp(state, "alive")) {
+      errno = 0;
+      sent = proc_signal_with_audittoken(&token, (int)sig) == 0;
+      if (!sent) {
+        error = errno;
+        state = inspect(token);
+        if (!strcmp(state, "alive")) state = "unknown";
+      }
+    }
+  }
+  printf("{\"state\":\"%s\",\"signalSent\":%s,\"errno\":%d}\n", state,
+         sent ? "true" : "false", error);
+  return 0;
+}

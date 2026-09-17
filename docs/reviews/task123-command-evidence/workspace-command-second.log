@@ -1,0 +1,45 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (15 tests | 1 failed) 26705ms
+   ✓ confirms a durable grant through the real Leader POST: normal  4995ms
+   × confirms a durable grant through the real Leader POST: command 3852ms
+     → expected 'needsAttention' to be 'exited' // Object.is equality
+   ✓ confirms a durable grant through the real Leader POST: batch  3935ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3853ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3265ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2751ms
+   ✓ confirms a durable grant through the real Leader POST: before  647ms
+   ✓ confirms a durable grant through the real Leader POST: after  487ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  417ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  415ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  403ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  412ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  427ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  417ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  427ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: command
+AssertionError: expected 'needsAttention' to be 'exited' // Object.is equality
+
+Expected: "exited"
+Received: "needsAttention"
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:526:40
+    524|                   };
+    525|                   const result = await commands.runCommand(commandCall…
+    526|                   expect(result.stage).toBe('exited');
+       |                                        ^
+    527|                   expect(result.exitCode).toBe(0);
+    528|                   expect(result.stdout).toBe('fixed input build and te…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 14 passed (15)
+   Start at  16:57:05
+   Duration  27.47s (transform 307ms, setup 0ms, collect 630ms, tests 26.71s, environment 0ms, prepare 36ms)
+

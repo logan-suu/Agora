@@ -1,0 +1,91 @@
+{
+  "startedAt": "2026-09-16T00:54:45.947Z",
+  "base": "/private/tmp/agora-task123-validation-1mRIFc",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127760058
+  },
+  "availableBefore": 46758133760,
+  "sourceHash": "c59c1d23b1639c799f9032d546e4caa68a2191df75d4bf4d532623ae19b957f6",
+  "controllerHash": "7e91c21b23db5cfd498a7d7cdd6277b0cf175bf23296242ee650143142946528",
+  "os": {
+    "status": 0,
+    "signal": null,
+    "stdout": "25F71\n",
+    "stderr": ""
+  },
+  "compiler": {
+    "status": 0,
+    "signal": null,
+    "stdout": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+    "stderr": ""
+  },
+  "cases": [
+    {
+      "restriction": "deny-spawn-enosys",
+      "mode": "setsid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))\n(deny syscall-unix (syscall-number SYS_posix_spawn) (with errno ENOSYS))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4401,\"pgid\":4394,\"sid\":4394}\n{\"mode\":\"setsid\",\"result\":-1,\"errno\":1,\"pid\":4402,\"pgid\":4394,\"sid\":4394}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4401,\"pgid\":4394,\"sid\":4394}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-spawn-enosys",
+      "mode": "setpgid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))\n(deny syscall-unix (syscall-number SYS_posix_spawn) (with errno ENOSYS))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4403,\"pgid\":4394,\"sid\":4394}\n{\"mode\":\"setpgid\",\"result\":-1,\"errno\":1,\"pid\":4405,\"pgid\":4394,\"sid\":4394}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4403,\"pgid\":4394,\"sid\":4394}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-spawn-enosys",
+      "mode": "spawn-setsid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))\n(deny syscall-unix (syscall-number SYS_posix_spawn) (with errno ENOSYS))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4406,\"pgid\":4394,\"sid\":4394}\n{\"mode\":\"spawn-setsid\",\"result\":-1,\"errno\":78,\"pid\":4406,\"pgid\":4394,\"sid\":4394}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-spawn-enosys",
+      "mode": "spawn-setpgid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))\n(deny syscall-unix (syscall-number SYS_posix_spawn) (with errno ENOSYS))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4408,\"pgid\":4394,\"sid\":4394}\n{\"mode\":\"spawn-setpgid\",\"result\":-1,\"errno\":78,\"pid\":4408,\"pgid\":4394,\"sid\":4394}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-spawn-enosys",
+      "mode": "spawn-normal",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-1mRIFc/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))\n(deny syscall-unix (syscall-number SYS_posix_spawn) (with errno ENOSYS))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4409,\"pgid\":4394,\"sid\":4394}\n{\"mode\":\"spawn-normal\",\"result\":-1,\"errno\":78,\"pid\":4409,\"pgid\":4394,\"sid\":4394}\n",
+      "stderr": ""
+    }
+  ],
+  "build": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "binaryHash": "ac61905a0bbb61cb6de248edd8f533fd7dbf1cad7d18394f19598ee1555d7b5b",
+  "completedAt": "2026-09-16T00:54:46.342Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountsChecked": true
+  },
+  "availableAfter": 46758006784,
+  "spaceDelta": -126976
+}

@@ -1,0 +1,9 @@
+#define main actual_control_main
+#include "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-process-control.c"
+#undef main
+int main(int argc, char **argv) {
+  dprintf(2, "entered\n");
+  int code = actual_control_main(argc, argv);
+  dprintf(2, "returned\n");
+  return code;
+}

@@ -1,0 +1,58 @@
+{
+  "base": "/private/tmp/agora-task123-validation-rub4iq",
+  "scenario": "unsupported-action",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128357855
+  },
+  "startedAt": "2026-09-16T20:46:30.146Z",
+  "firstResponse": {
+    "status": 409,
+    "body": {
+      "error": "workspace_control_not_available"
+    }
+  },
+  "passed": true,
+  "files": [
+    {
+      "path": "inspector",
+      "sha256": "1eeb93dbe36b32bed587647fecea9949bd039f9cb390c570897e3585218ce854"
+    },
+    {
+      "path": "project/sentinel",
+      "sha256": "b04d67be9a6081174ab5384f84bf4c0fea2b47bd8fb9a2f010de349a05880a19"
+    },
+    {
+      "path": "state/local-workspaces/objects/a328a961687251a11e23be2b5d2be86b696ddca72ba1edc3744921125482ce46.json",
+      "sha256": "8ebf73d811662b274c10ae5d9454dce787828a7e8e25625469e587aa3ccfcea1"
+    },
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "9e00a636ab33cb16c49088c731aa94b1f991f55d399d5376f3a44b4fd1be7a5b"
+    },
+    {
+      "path": "state/tasks/projects/project/collaboration.json",
+      "sha256": "3a4336bbd1e04a6f3715388c0f632a9a9214592dbd8011ad458e368895939f75"
+    },
+    {
+      "path": "state/tasks/projects/project/tasks/task/state.json",
+      "sha256": "4ad95a4c23d194a5f1e49e63fd37755574160a59e2c4fc621ffd1dfd3a2d7334"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/src/local-grant-controller.ts": "3a0cdff08cf4f06005788362d368c316e79040a86fce0ae0397396a45d288efd",
+    "packages/runtime/sandbox/src/local-control-objects.ts": "85eb9062c3dad9a2726873e728d425207e498a8937cc2d2ed4fc53b5cf9c16e0",
+    "packages/runtime/sandbox/src/local-binding-coordinator.ts": "3b47e9cf80c25bbbc78df3a5843e69e87b9235dbff947ae42b9e046c4bfc137a",
+    "packages/runtime/sandbox/src/local-registry-records.ts": "35f5563ab2dfdc327378e53093a2e264850fb9e84d176498fe3696a73e84c12e",
+    "apps/web/src/server/message-runtime.ts": "d7a0a1bc595e00a4561322a572fb1fc005396b1844109e4a77649d526c3b25dc",
+    "apps/web/src/server/message-handlers.ts": "c7b7fa7d5885887efcdc22caf37f463428ef67aded4a060dd2b97bf9cbf293a7",
+    "tests/integration/phase12/phase12-3-grant.test.ts": "0187fc865b73e92a4da203f580f987141082c9079712aec2d228b77c51624de0"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 12288
+  }
+}

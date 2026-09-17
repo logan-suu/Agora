@@ -1,0 +1,169 @@
+{
+  "base": "/private/tmp/agora-task123-validation-DvFWdJ",
+  "scenario": "normal",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128576507
+  },
+  "startedAt": "2026-09-17T02:05:37.915Z",
+  "result": {
+    "kind": "root-initialization",
+    "actionId": "initialize-root",
+    "inputHash": "e30b6d536becc348f1c950758963814c0a6bead7611ad42d2a06771ff943c12d",
+    "receiptId": "root-init:5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01",
+    "projectId": "project",
+    "taskId": "task",
+    "rootId": "root",
+    "grantId": "grant",
+    "grantRevision": 0,
+    "sourceMessageId": "grant-source",
+    "preparedRevision": 3,
+    "stage": "committed",
+    "nativeReceipt": {
+      "sha256": "df4e23015ef232187790894da65ca8970fbc0fc61b64d8972ade36efd91b27a0",
+      "stage": "applied",
+      "created": true,
+      "stagingIdentity": "16777231:128576537",
+      "quiescent": true
+    }
+  },
+  "registry": {
+    "schemaVersion": "local-workspaces-v1",
+    "revision": 4,
+    "roots": [
+      {
+        "rootId": "root",
+        "projectId": "project",
+        "selectionRef": "selection",
+        "path": "/private/tmp/agora-task123-validation-DvFWdJ/project",
+        "volumeId": "590f6b192edb43d6a07e030fe433d7cf",
+        "dev": "16777231",
+        "inode": "128576508",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2"
+          },
+          {
+            "path": "/private",
+            "identity": "16777231:76454369"
+          },
+          {
+            "path": "/private/tmp",
+            "identity": "16777231:119551154"
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-DvFWdJ",
+            "identity": "16777231:128576507"
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-DvFWdJ/project",
+            "identity": "16777231:128576508"
+          }
+        ],
+        "staging": {
+          "path": "/private/tmp/agora-task123-validation-DvFWdJ/project/.agora-operations",
+          "identity": "16777231:128576537"
+        },
+        "inspectionHash": "ec4eab693de33805dc2500f554d82cca723477db19637ddd6fae3d2505f84b93"
+      }
+    ],
+    "grants": [
+      {
+        "grantId": "grant",
+        "projectId": "project",
+        "rootId": "root",
+        "revision": 0,
+        "policyVersion": "fixed-policy",
+        "actions": [
+          "read",
+          "edit"
+        ],
+        "toolchainHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "networkHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "policyHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "createdActionId": "grant-root",
+        "leaderMessageId": "grant-source",
+        "status": "active",
+        "revocationActionId": null
+      }
+    ],
+    "workspaces": [],
+    "claims": [],
+    "operations": [
+      {
+        "actionId": "grant-root",
+        "inputHash": "a5dd4930c71663a155ca78461bee5f66296b18707197e6fcf071c54df26c7e9a",
+        "receiptId": "binding:grant-root",
+        "projectId": "project",
+        "taskId": "task",
+        "preparedRevision": 1,
+        "stage": "committed",
+        "previousLocalHash": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "nextLocalExecution": {
+          "schemaVersion": "local-execution-v1",
+          "rootIds": [
+            "root"
+          ],
+          "workspaces": [],
+          "bindings": [],
+          "receipts": [
+            {
+              "receiptId": "binding:grant-root",
+              "actionId": "grant-root",
+              "inputHash": "a5dd4930c71663a155ca78461bee5f66296b18707197e6fcf071c54df26c7e9a",
+              "registryRevision": 1
+            }
+          ]
+        },
+        "sourceMessageId": "grant-source"
+      },
+      {
+        "kind": "root-initialization",
+        "actionId": "initialize-root",
+        "inputHash": "e30b6d536becc348f1c950758963814c0a6bead7611ad42d2a06771ff943c12d",
+        "receiptId": "root-init:5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01",
+        "projectId": "project",
+        "taskId": "task",
+        "rootId": "root",
+        "grantId": "grant",
+        "grantRevision": 0,
+        "sourceMessageId": "grant-source",
+        "preparedRevision": 3,
+        "stage": "committed",
+        "nativeReceipt": {
+          "sha256": "df4e23015ef232187790894da65ca8970fbc0fc61b64d8972ade36efd91b27a0",
+          "stage": "applied",
+          "created": true,
+          "stagingIdentity": "16777231:128576537",
+          "quiescent": true
+        }
+      }
+    ]
+  },
+  "passed": true,
+  "sources": {
+    "packages/runtime/sandbox/src/local-root-coordinator.ts": {
+      "sha256": "40c6165470fc3ff9cf83b24e7c070a451b6cec2b1402eca12d7275aa7d4ccf55",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-registration-evidence/agora-task123-validation-DvFWdJ-source-0.txt"
+    },
+    "packages/runtime/sandbox/src/local-registry-records.ts": {
+      "sha256": "ad122a5dc565bb562c89bbd36f702168cac6d7d258e6b3814b8988d3258f1370",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-registration-evidence/agora-task123-validation-DvFWdJ-source-1.txt"
+    },
+    "packages/runtime/sandbox/src/local-binding-coordinator.ts": {
+      "sha256": "3b47e9cf80c25bbbc78df3a5843e69e87b9235dbff947ae42b9e046c4bfc137a",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-registration-evidence/agora-task123-validation-DvFWdJ-source-2.txt"
+    },
+    "tests/integration/phase12/phase12-3-root-registration.test.ts": {
+      "sha256": "14b63d4494f31e96a86ef478b959624c78279adf4239b319d7d355f6ff2f56eb",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-registration-evidence/agora-task123-validation-DvFWdJ-source-3.txt"
+    }
+  },
+  "cleanup": {
+    "deleted": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 73728
+  }
+}

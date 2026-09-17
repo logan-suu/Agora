@@ -1,0 +1,223 @@
+{
+  "scenario": "journal-failure",
+  "base": "/private/tmp/agora-task123-validation-1WK4RR",
+  "startedAt": "2026-09-16T04:52:20.291Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127944215
+  },
+  "sources": {
+    "packages/runtime/sandbox/native/local-process-control.c": "3a18c846c639f77b10da346ac53eaac1526af47f9233e68a94abfb18436b3d10",
+    "packages/runtime/sandbox/native/local-command-supervision-probe.c": "cf160e9db608145fe575e28ebeafb143389bad394ac95ab1decb32b0b1a8fbf3",
+    "packages/runtime/sandbox/src/local-command-supervisor.ts": "595a0c2c81920525a27c37efc5c1a368c32527b83eba7a7e5167e47c9d338f62",
+    "packages/runtime/sandbox/src/local-command-stop.ts": "4db644dd2d89700f4878fd306d941b6b7a9fed18f216835c17ca3eaf6d11e553",
+    "packages/runtime/sandbox/src/local-command-output.ts": "e0839dcb0fe9e80be88df2a36dddb168d32bf8cc9da13ba78fc533fe531ee9d3",
+    "packages/runtime/sandbox/src/local-command-journal.ts": "3cd3ed97602ce0c6ffce503015e837532d97a7a3341aefd63f4947e466cd0110",
+    "packages/runtime/sandbox/src/local-command-policy.ts": "26233dc14b99574633af2a2a60275ad8bb020d3f2e4529973314e3716183288c",
+    "tests/integration/phase12/local-command-supervision-fixture.ts": "6ab62365fa17a0b71f32982023565da9188751a0ce8a69419136d7d9424ad1a9",
+    "tests/integration/phase12/phase12-3-command-supervision.test.ts": "9f3c55ca942bca717f3aba1fdd91c513ecb99f2c5b635ffd9a3b957ef11529f5"
+  },
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "node": "v24.20.0",
+  "availableBefore": 46906806272,
+  "binaries": {
+    "helper": "863cd02faffc4936fcdf22bcbe7cc367eefd7fd7a5f86517fa06edcaca605834",
+    "payload": "d78e1e51a9b51c3bc8fded4e9d346bd1ae1d011c36a33f3df00ef492249a7010"
+  },
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-1WK4RR/payload\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-1WK4RR\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-1WK4RR/payload\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/journal\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-1WK4RR/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "fixtureLockRestored": true,
+  "result": {
+    "receipt": {
+      "version": 1,
+      "cause": "cancelled",
+      "executionMs": 526.6928750000006,
+      "cleanupMs": 19.788166999998793,
+      "discoveryPasses": 2,
+      "discoveryFailed": true,
+      "mainResult": {
+        "exitCode": null,
+        "signal": null,
+        "error": "command_observation_incomplete"
+      },
+      "stdout": {
+        "retainedBytes": 11,
+        "observedBytes": 11,
+        "sha256": "81f68f1605806eb880dc8162726812c61825c582bca891341558712872b75333",
+        "truncated": true,
+        "error": null
+      },
+      "stderr": {
+        "retainedBytes": 0,
+        "observedBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "truncated": true,
+        "error": null
+      },
+      "stop": {
+        "assurance": "registered-only",
+        "registeredState": "stopped",
+        "signals": [
+          "TERM"
+        ],
+        "durationMs": 19.379459000003408,
+        "states": [
+          "exited",
+          "exited",
+          "exited"
+        ]
+      },
+      "output": {
+        "mainResult": {
+          "exitCode": null,
+          "signal": null,
+          "error": "command_observation_incomplete"
+        },
+        "stdout": {
+          "bytes": "tree-ready\n",
+          "observedBytes": 11,
+          "truncated": true,
+          "error": null
+        },
+        "stderr": {
+          "bytes": "",
+          "observedBytes": 0,
+          "truncated": true,
+          "error": null
+        },
+        "tailDurationMs": 0.09641700000065612
+      },
+      "durable": false
+    },
+    "record": {
+      "commandId": "fixture-journal-failure",
+      "workspaceId": "fixed-fixture",
+      "policyHash": "a10d92049e6497e77dc8b202e7f83ab774e6ce01f04294d1b0a7d7112f7d41a9",
+      "inputHash": "941cd4d37179e82f857ca590c8f74c1f1a60fccc78dcdce8e8a7d414484401e7",
+      "roots": [
+        {
+          "path": "/private/tmp/agora-task123-validation-1WK4RR/output",
+          "identity": "16777231:127944224"
+        }
+      ],
+      "revision": 3,
+      "birthIdentities": [
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          73370,
+          100023,
+          18980673
+        ],
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          73377,
+          100023,
+          18980686
+        ],
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          73378,
+          100023,
+          18980687
+        ]
+      ],
+      "birthRelations": [
+        {
+          "parent": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            73370,
+            100023,
+            18980673
+          ],
+          "child": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            73377,
+            100023,
+            18980686
+          ]
+        },
+        {
+          "parent": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            73377,
+            100023,
+            18980686
+          ],
+          "child": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            73378,
+            100023,
+            18980687
+          ]
+        }
+      ],
+      "observationReceipt": null,
+      "resourceState": "reserved",
+      "reason": null
+    },
+    "blocked": true,
+    "aliveAfterSupervision": false,
+    "errors": [
+      "command_journal_locked"
+    ]
+  },
+  "finalStop": {
+    "assurance": "registered-only",
+    "registeredState": "stopped",
+    "signals": [],
+    "durationMs": 5.709750000001804,
+    "states": [
+      "exited",
+      "exited",
+      "exited"
+    ]
+  },
+  "completedAt": "2026-09-16T04:52:20.989Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "output": [
+        null,
+        "",
+        ""
+      ],
+      "pid": 73393,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 46906798080,
+  "spaceDelta": -8192
+}

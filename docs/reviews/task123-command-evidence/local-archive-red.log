@@ -1,0 +1,55 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (28 tests | 1 failed | 27 skipped) 7013ms
+   ↓ confirms a durable grant through the real Leader POST: normal
+   ↓ confirms a durable grant through the real Leader POST: file-update
+   ↓ confirms a durable grant through the real Leader POST: file-create
+   ↓ confirms a durable grant through the real Leader POST: file-proof
+   ↓ confirms a durable grant through the real Leader POST: command
+   ↓ confirms a durable grant through the real Leader POST: mcp
+   ↓ confirms a durable grant through the real Leader POST: mcp-partial
+   ↓ confirms a durable grant through the real Leader POST: reader
+   ↓ confirms a durable grant through the real Leader POST: mcp-command
+   × confirms a durable grant through the real Leader POST: trusted-validation 7012ms
+     → service.archive is not a function
+   ↓ confirms a durable grant through the real Leader POST: worker-companion
+   ↓ confirms a durable grant through the real Leader POST: tester-companion
+   ↓ confirms a durable grant through the real Leader POST: reviewer-companion
+   ↓ confirms a durable grant through the real Leader POST: pm-companion
+   ↓ confirms a durable grant through the real Leader POST: coordinator-companion
+   ↓ confirms a durable grant through the real Leader POST: batch
+   ↓ confirms a durable grant through the real Leader POST: batch-partial
+   ↓ confirms a durable grant through the real Leader POST: batch-read-drift
+   ↓ confirms a durable grant through the real Leader POST: batch-stale
+   ↓ confirms a durable grant through the real Leader POST: before
+   ↓ confirms a durable grant through the real Leader POST: after
+   ↓ confirms a durable grant through the real Leader POST: wrong-hash
+   ↓ confirms a durable grant through the real Leader POST: wrong-selection
+   ↓ confirms a durable grant through the real Leader POST: wrong-scope
+   ↓ confirms a durable grant through the real Leader POST: stale-policy
+   ↓ confirms a durable grant through the real Leader POST: root-drift
+   ↓ confirms a durable grant through the real Leader POST: corrupt-proposal
+   ↓ confirms a durable grant through the real Leader POST: unsupported-action
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: trusted-validation
+TypeError: service.archive is not a function
+ ❯ exerciseLocalValidation tests/integration/phase12/local-validation-fixture.ts:136:26
+    134|     await input.runtime.commitLeaderMessage(scope, approval);
+    135|     expect((await load()).messages.filter((m) => m.msgId === approval.…
+    136|     await expect(service.archive(await load(), local)).rejects.toThrow…
+       |                          ^
+    137|     await input.runtime.commitMutations(scope, [
+    138|       ...((await load()).workers.filter((w) => w.role === 'REVIEWER').…
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:912:45
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 27 skipped (28)
+   Start at  18:59:50
+   Duration  7.86s (transform 343ms, setup 0ms, collect 737ms, tests 7.01s, environment 0ms, prepare 25ms)
+

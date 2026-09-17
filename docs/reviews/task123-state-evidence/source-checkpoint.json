@@ -1,0 +1,94 @@
+{
+  "sources": [
+    {
+      "path": "packages/core/domain/src/local-execution.ts",
+      "sha256": "e847dcc45519acc8e40e13671e33d273feb97a339e609d3306587e4d2acf4f06",
+      "snapshot": "docs/reviews/task123-state-evidence/source-00.txt"
+    },
+    {
+      "path": "packages/core/domain/src/local-workspace.ts",
+      "sha256": "9eb24898a8880c0d36ba0113645cf5f85083a8201311660e56062ce96e754b35",
+      "snapshot": "docs/reviews/task123-state-evidence/source-01.txt"
+    },
+    {
+      "path": "packages/core/domain/src/state.ts",
+      "sha256": "aa4f013dc7fecb6d01ef8d8cb07fb2172f4bf15c9f9213401e594c7cd4f77992",
+      "snapshot": "docs/reviews/task123-state-evidence/source-02.txt"
+    },
+    {
+      "path": "packages/core/domain/src/reducer.ts",
+      "sha256": "7297eb141be68946bf2c7b8122d56aecbe4b2fc5aa9fd850b3cb7cb723a1c315",
+      "snapshot": "docs/reviews/task123-state-evidence/source-03.txt"
+    },
+    {
+      "path": "packages/core/domain/src/index.ts",
+      "sha256": "c3039c76cb1608e3f9b4e2831f5b6e5aadbb55f4e2a5714d83dd9b6a9820c7d5",
+      "snapshot": "docs/reviews/task123-state-evidence/source-04.txt"
+    },
+    {
+      "path": "packages/core/domain/test/local-execution.test.ts",
+      "sha256": "506f07f861bf78c083df03cbe215095c59074b10c4b9925dcd0bff36b451473d",
+      "snapshot": "docs/reviews/task123-state-evidence/source-05.txt"
+    },
+    {
+      "path": "packages/runtime/state/src/json-task-state-store.ts",
+      "sha256": "537a615ab6aa023d692993d7f018f7d0eb378c2e83861cd26381fafce6ab77c3",
+      "snapshot": "docs/reviews/task123-state-evidence/source-06.txt"
+    },
+    {
+      "path": "packages/runtime/state/test/json-task-state-store.test.ts",
+      "sha256": "1db5a4423d2900519d90fa1ddb9611fe76dd241ab98fc61171859f0ebeec6e5e",
+      "snapshot": "docs/reviews/task123-state-evidence/source-07.txt"
+    },
+    {
+      "path": "packages/runtime/executor/src/project.ts",
+      "sha256": "5c235b177fa8c651f4e4ccb355cadab06e38c0b1e72edc1310d03b2c5bf70998",
+      "snapshot": "docs/reviews/task123-state-evidence/source-08.txt"
+    },
+    {
+      "path": "packages/runtime/executor/test/project.test.ts",
+      "sha256": "62e011111332fb90b4008c682ef53c22ee16d95f9f7e11422993c7f7231fe21f",
+      "snapshot": "docs/reviews/task123-state-evidence/source-09.txt"
+    },
+    {
+      "path": "packages/core/orchestration/src/worker-runtime.ts",
+      "sha256": "989529edf667ec08b5c710b509149e59fa5af0a2c34a9405e342559c89a907c2",
+      "snapshot": "docs/reviews/task123-state-evidence/source-10.txt"
+    },
+    {
+      "path": "packages/core/orchestration/test/worker-runtime.test.ts",
+      "sha256": "116097332a91898e5b23d55c87b8f0118d2c440f0f9d3f5b51ecb70d2688f365",
+      "snapshot": "docs/reviews/task123-state-evidence/source-11.txt"
+    },
+    {
+      "path": "packages/runtime/sandbox/src/local-registry-file.ts",
+      "sha256": "6f4c92b4b89b938868a5bb8f6121b658051ff173017b53468ed724532b101a69",
+      "snapshot": "docs/reviews/task123-state-evidence/source-12.txt"
+    },
+    {
+      "path": "packages/runtime/sandbox/src/local-registry-records.ts",
+      "sha256": "9c1fddcd0e082a5d1897ade808c5d153bb4302058c6fb8124095683c8af2bd8e",
+      "snapshot": "docs/reviews/task123-state-evidence/source-13.txt"
+    },
+    {
+      "path": "packages/runtime/sandbox/src/local-binding-coordinator.ts",
+      "sha256": "53b0c91c3bf0068294a0bfd0561de8ae8992eae22b7d380cd00a8c58c257c1be",
+      "snapshot": "docs/reviews/task123-state-evidence/source-14.txt"
+    },
+    {
+      "path": "packages/runtime/sandbox/test/local-registry-records.test.ts",
+      "sha256": "81d2529950e903a890c76e6154397b22a12ceb7b74f3af13d6630c1c9080e24d",
+      "snapshot": "docs/reviews/task123-state-evidence/source-15.txt"
+    },
+    {
+      "path": "packages/runtime/sandbox/test/local-registry-file.test.ts",
+      "sha256": "8a0635ba156138cba899efe003c19af8fc6e0e1ff6245e7a6158e1dce95746b0",
+      "snapshot": "docs/reviews/task123-state-evidence/source-16.txt"
+    },
+    {
+      "path": "tests/integration/phase12/phase12-3-state-binding.test.ts",
+      "sha256": "802cd14df0fcfc30b57410b0712bbac833cf11cac0294d433512860aebe736fa",
+      "snapshot": "docs/reviews/task123-state-evidence/source-17.txt"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "control-objects",
+  "base": "/private/tmp/agora-task123-validation-ir2oJA",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128377039
+  },
+  "node": "v24.20.0",
+  "startedAt": "2026-09-16T21:17:24.118Z",
+  "passed": true,
+  "files": [
+    {
+      "path": "state/local-workspaces/objects/6509423fd9da5c225d2f8619ffae394b40f9f7686fee55a38c54b1424ac65f46.bin",
+      "sha256": "6509423fd9da5c225d2f8619ffae394b40f9f7686fee55a38c54b1424ac65f46"
+    },
+    {
+      "path": "state/local-workspaces/objects/732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d.json",
+      "sha256": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+    },
+    {
+      "path": "state/local-workspaces/objects/b4db63a8606b41e579def00725f4a83e1d7ea7e362723975b14249c89a828a64.ref",
+      "sha256": "4aa69f6f6cee7e94637042c6a0c8d1539527b502d1853f902cfc0aa8becf2352"
+    },
+    {
+      "path": "state/local-workspaces/objects/d2c3aeac31e01577e499289ca02736d397133a7c9966c9ea3b5acac3c485f4d5.json",
+      "sha256": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+    },
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "9e00a636ab33cb16c49088c731aa94b1f991f55d399d5376f3a44b4fd1be7a5b"
+    },
+    {
+      "path": "state/tasks/projects/project/tasks/task/state.json",
+      "sha256": "3277863755b651261c1f388d76da204fc067802d6bf5cb9fdb2f91b1d719f3f5"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/src/local-binding-coordinator.ts": "3b47e9cf80c25bbbc78df3a5843e69e87b9235dbff947ae42b9e046c4bfc137a",
+    "packages/runtime/sandbox/src/local-registry-records.ts": "35f5563ab2dfdc327378e53093a2e264850fb9e84d176498fe3696a73e84c12e",
+    "packages/runtime/sandbox/src/local-registry-file.ts": "6f4c92b4b89b938868a5bb8f6121b658051ff173017b53468ed724532b101a69",
+    "packages/core/domain/src/local-execution.ts": "e847dcc45519acc8e40e13671e33d273feb97a339e609d3306587e4d2acf4f06",
+    "tests/integration/phase12/phase12-3-state-binding.test.ts": "a5a8fcb746584966a6d7407e4e0dfe0c13d95bf0c2191db6b7ffb3ad5cdfc47f"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 20480,
+    "completedAt": "2026-09-16T21:17:24.283Z"
+  }
+}

@@ -1,0 +1,298 @@
+{
+  "base": "/private/tmp/agora-task123-validation-lJa3FV",
+  "scenario": "missing-closure-companion",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128505561
+  },
+  "startedAt": "2026-09-17T00:36:29.834Z",
+  "firstResponse": {
+    "status": 202,
+    "body": {
+      "accepted": true,
+      "published": true,
+      "action": {
+        "status": "applied"
+      }
+    }
+  },
+  "initialization": {
+    "kind": "root-initialization",
+    "actionId": "initialize-root",
+    "inputHash": "c9de946a6576e99cabb77384a3740973a163b08ead75ca4b44c02dbcc58e42a3",
+    "receiptId": "root-init:5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01",
+    "projectId": "project",
+    "taskId": "task",
+    "rootId": "root:d069fa9fe4b4ba1353b1738e5029d8143eded73c3cdffacb95e41caedf9d4f3d",
+    "grantId": "grant:3b38dcc5f6fa67667da4a11b90d959f02644e50ab6bf703280a155b992b01c97",
+    "grantRevision": 0,
+    "sourceMessageId": "grant-action",
+    "preparedRevision": 3,
+    "stage": "committed",
+    "nativeReceipt": {
+      "sha256": "9791a5d9b1bf9663188abace0797acd5f6a2c7011c850739af52313953a873c6",
+      "stage": "applied",
+      "created": true,
+      "stagingIdentity": "16777231:128505597",
+      "quiescent": true
+    }
+  },
+  "removedClosure": {
+    "key": "0308e44421996e76a61b4d162b4e085af407994309011a741dcea5845a7644e1",
+    "valueHash": "a18fab3465bcae5e48aad7e931b117155ffbcf3b67dd2526ec0796fd7614664b"
+  },
+  "workerCompanion": {
+    "steps": 1,
+    "state": {
+      "projectId": "project",
+      "taskId": "task",
+      "goal": "fixed grant control",
+      "phase": "clarifying",
+      "iterationCount": 0,
+      "workers": [
+        {
+          "subtaskId": "work",
+          "role": "CODER",
+          "executor": "harness",
+          "status": "done",
+          "startedTs": 1,
+          "workerId": "worker",
+          "sessionId": "session:worker"
+        }
+      ],
+      "subtasks": [
+        {
+          "title": "Fixed task",
+          "ownerRole": "CODER",
+          "status": "in_progress",
+          "dependsOn": [],
+          "id": "work"
+        }
+      ],
+      "messages": [
+        {
+          "msgId": "grant-action",
+          "channelId": "main",
+          "fromRole": "leader",
+          "type": "chat",
+          "display": "/workspace grant {\"projectId\":\"project\",\"taskId\":\"task\",\"actionId\":\"grant-action\",\"expectedRevision\":0,\"selectionRef\":\"selection\",\"policyProposalId\":\"grant:054d6d7afee2da7e3205752757d02f5d27e57681897bbcdc5ec4679df2e3cefe\",\"inputHash\":\"054d6d7afee2da7e3205752757d02f5d27e57681897bbcdc5ec4679df2e3cefe\"}",
+          "ts": 1789605390083,
+          "payload": {
+            "kind": "leader_intent",
+            "intent": {
+              "kind": "workspace_control",
+              "verb": "grant",
+              "projectId": "project",
+              "taskId": "task",
+              "actionId": "grant-action",
+              "expectedRevision": 0,
+              "selectionRef": "selection",
+              "policyProposalId": "grant:054d6d7afee2da7e3205752757d02f5d27e57681897bbcdc5ec4679df2e3cefe",
+              "inputHash": "054d6d7afee2da7e3205752757d02f5d27e57681897bbcdc5ec4679df2e3cefe"
+            },
+            "action": {
+              "status": "applied"
+            }
+          }
+        }
+      ],
+      "requirements": [],
+      "reviewComments": [],
+      "handoffPackets": [],
+      "decisionLedger": [],
+      "objections": [],
+      "localExecution": {
+        "schemaVersion": "local-execution-v1",
+        "rootIds": [
+          "root:d069fa9fe4b4ba1353b1738e5029d8143eded73c3cdffacb95e41caedf9d4f3d"
+        ],
+        "workspaces": [
+          {
+            "schemaVersion": "workspace-v1",
+            "projectId": "project",
+            "taskId": "task",
+            "workspaceId": "workspace:0d62e45ecd01d7d59d9c0c17bd2c6aaf8552b1c5ac2bb84de4dedd711b69f42d",
+            "rootId": "root:d069fa9fe4b4ba1353b1738e5029d8143eded73c3cdffacb95e41caedf9d4f3d",
+            "grantId": "grant:3b38dcc5f6fa67667da4a11b90d959f02644e50ab6bf703280a155b992b01c97",
+            "purpose": "coding",
+            "mode": "direct",
+            "baselineManifestId": "manifest:27573880039822632c0cb3714ead992c894dd8c7b6222c35f5fbfaf5dd56f995"
+          }
+        ],
+        "bindings": [
+          {
+            "workerId": "worker",
+            "subtaskId": "work",
+            "workspaceId": "workspace:0d62e45ecd01d7d59d9c0c17bd2c6aaf8552b1c5ac2bb84de4dedd711b69f42d",
+            "receiptId": "binding:register:0d62e45ecd01d7d59d9c0c17bd2c6aaf8552b1c5ac2bb84de4dedd711b69f42d"
+          }
+        ],
+        "receipts": [
+          {
+            "receiptId": "binding:grant-action",
+            "actionId": "grant-action",
+            "inputHash": "feea2201043379997d8d26facfc75265ad491686dbd22f9e8cc6b2c4ae11dd6c",
+            "registryRevision": 1
+          },
+          {
+            "receiptId": "binding:register:0d62e45ecd01d7d59d9c0c17bd2c6aaf8552b1c5ac2bb84de4dedd711b69f42d",
+            "actionId": "register:0d62e45ecd01d7d59d9c0c17bd2c6aaf8552b1c5ac2bb84de4dedd711b69f42d",
+            "inputHash": "a7e250fffaaaced5a20d51e67c9a5e02e8f60f69aec91879b591bb1ba5595339",
+            "registryRevision": 5
+          }
+        ]
+      }
+    },
+    "activeLeases": 0,
+    "executor": "scripted lifecycle driver; not Harness G5"
+  },
+  "passed": true,
+  "files": [
+    {
+      "path": "files-helper",
+      "sha256": "711115c1435687adb6a3f78e7b30a9273edf0f1d16ed9ea1c6aa79167dbd0026"
+    },
+    {
+      "path": "initializer",
+      "sha256": "90c0e1fc54c4b37d4b9d6b62da2b81c7fffd005662f250cada61a3f2112e4f99"
+    },
+    {
+      "path": "inspector",
+      "sha256": "1eeb93dbe36b32bed587647fecea9949bd039f9cb390c570897e3585218ce854"
+    },
+    {
+      "path": "project/sentinel",
+      "sha256": "b04d67be9a6081174ab5384f84bf4c0fea2b47bd8fb9a2f010de349a05880a19"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/native.json",
+      "sha256": "91c69eab01699d31d5ddb0ac9561f598fe38c2da59206e2f84227ff55d108441"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/prepared.json",
+      "sha256": "1a84e3b6a5bd1b596f2233f76e1320c200311a34e3a144c060ee1b56758c10aa"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/result.json",
+      "sha256": "9791a5d9b1bf9663188abace0797acd5f6a2c7011c850739af52313953a873c6"
+    },
+    {
+      "path": "state/local-workspaces/objects/054d6d7afee2da7e3205752757d02f5d27e57681897bbcdc5ec4679df2e3cefe.json",
+      "sha256": "ee089c0c219c2761e3da2c12b211d3c968c79a3ec5ec609aa9046b072566b599"
+    },
+    {
+      "path": "state/local-workspaces/objects/0aa244750b5c6adc5a2a00af9997053b95c9f0baa6aa2fb98ea11a7322cd8122.json",
+      "sha256": "63b7ce30308957393cec28decb43b3faeb3b6257c9b5100fe1ed8f3f1ce51065"
+    },
+    {
+      "path": "state/local-workspaces/objects/1889f00b80106ed626c7b835019e893dbca6285cbf4081154dc1d88cfcfab365.ref",
+      "sha256": "e43570befe2525592b9e7589e0d69140457ab90bf8ddca50b4e62ed95faaf625"
+    },
+    {
+      "path": "state/local-workspaces/objects/27573880039822632c0cb3714ead992c894dd8c7b6222c35f5fbfaf5dd56f995.json",
+      "sha256": "36d682229e39684aab2e17d00d8618f803603062d4af9ec533f5a2537aea2bd4"
+    },
+    {
+      "path": "state/local-workspaces/objects/3a1818005d3963a15bd27b24f7021b93aa5c01262e32e9fd057ace2c22009a25.json",
+      "sha256": "3a1818005d3963a15bd27b24f7021b93aa5c01262e32e9fd057ace2c22009a25"
+    },
+    {
+      "path": "state/local-workspaces/objects/6c06a1a382dca2f1a59beb09fc431ee46c2d0508229bc1a83f54e0b618464bb3.json",
+      "sha256": "6c06a1a382dca2f1a59beb09fc431ee46c2d0508229bc1a83f54e0b618464bb3"
+    },
+    {
+      "path": "state/local-workspaces/objects/8ab9ea6ff4cae5dd432df8355da45821dbd6f6d1f8a075c74bc67b2f22bb2bdb.json",
+      "sha256": "f9f418a08813fa595b670aae9c861fb6c1aeb16cf468de16c3182edc5039388a"
+    },
+    {
+      "path": "state/local-workspaces/objects/a18fab3465bcae5e48aad7e931b117155ffbcf3b67dd2526ec0796fd7614664b.json",
+      "sha256": "c5e87a97d10912cabee8492a4147f97696e1de67b82ca25519595cbcd263ce54"
+    },
+    {
+      "path": "state/local-workspaces/objects/b04d67be9a6081174ab5384f84bf4c0fea2b47bd8fb9a2f010de349a05880a19.bin",
+      "sha256": "b04d67be9a6081174ab5384f84bf4c0fea2b47bd8fb9a2f010de349a05880a19"
+    },
+    {
+      "path": "state/local-workspaces/objects/c64a478869831825dd898858b471d2c26116735376be0cdb1c35073165de5d0c.json",
+      "sha256": "02160b9c89893546a17af58d945db5f824ac4845c1c6a00afe030310d68ca8a9"
+    },
+    {
+      "path": "state/local-workspaces/objects/d5302669a3feae0a880804123622759f566b34df03e535663f8e270bdd85f151.ref",
+      "sha256": "8bdb5f1be4e26bb376ccaa29ab4fc582a57f0569a332fe185873ae4527fd453c"
+    },
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "fbf6b2bb0b972f32a2aae6bc798f4ff4bb468e0a39a88ada2686af84dbb61357"
+    },
+    {
+      "path": "state/tasks/projects/project/collaboration.json",
+      "sha256": "3a4336bbd1e04a6f3715388c0f632a9a9214592dbd8011ad458e368895939f75"
+    },
+    {
+      "path": "state/tasks/projects/project/tasks/task/state.json",
+      "sha256": "bdf3d5fac300bf6ba00a3aa34349a28ba0891c865628ad7295d2105c80fee001"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/src/local-binding-coordinator.ts": "3b47e9cf80c25bbbc78df3a5843e69e87b9235dbff947ae42b9e046c4bfc137a",
+    "packages/runtime/sandbox/src/local-command-binding.ts": "6a79ae3e5a90108e15030f5b8437ad80f49ea3ce17415011333f64149427a18f",
+    "packages/runtime/sandbox/src/local-command-journal.ts": "ff18b89fa0998572cc2c7a57f2a4711f29d53dbe8489ce0e43a63a7aaf7207fa",
+    "packages/runtime/sandbox/src/local-command-output.ts": "e0839dcb0fe9e80be88df2a36dddb168d32bf8cc9da13ba78fc533fe531ee9d3",
+    "packages/runtime/sandbox/src/local-command-policy.ts": "2748c2147c6799eef535bbcbc618ec0b5733922a10d05472665c9731e86daa2d",
+    "packages/runtime/sandbox/src/local-command-start.ts": "3b4524e7b9a4d8b8f969bfaaef51c647a3d872b8a1b2b2b6bfd1956028b4ff79",
+    "packages/runtime/sandbox/src/local-command-stop.ts": "ba3b59f1f302b3a5714911302618ec051cd2868e9d5a2b7f5513d0c3504cace7",
+    "packages/runtime/sandbox/src/local-command-supervisor.ts": "fc8cb05b5fca978fd94f1db0da6c76cc47a953da4e9fd777aa4db57db0a02202",
+    "packages/runtime/sandbox/src/local-control-objects.ts": "5e23b990ab51dd33c486dd2bab50dba35a073f15ff9f5740c40627ec38391817",
+    "packages/runtime/sandbox/src/local-file-transaction.ts": "2d9885c4558140b37c81e1cf6db1e251cde719458008adece969fa4d8b606097",
+    "packages/runtime/sandbox/src/local-fixed-inputs.ts": "f967c98149389701a9f9461a4703df8e7e497b9a773fa9dab6011acbc90ecf98",
+    "packages/runtime/sandbox/src/local-grant-controller.ts": "337e62bec3111d9457b4648320e7683dba588f3b64ed8a87b30dea1d39174a87",
+    "packages/runtime/sandbox/src/local-registry-file.ts": "6f4c92b4b89b938868a5bb8f6121b658051ff173017b53468ed724532b101a69",
+    "packages/runtime/sandbox/src/local-registry-records.ts": "ad122a5dc565bb562c89bbd36f702168cac6d7d258e6b3814b8988d3258f1370",
+    "packages/runtime/sandbox/src/local-root-coordinator.ts": "40c6165470fc3ff9cf83b24e7c070a451b6cec2b1402eca12d7275aa7d4ccf55",
+    "packages/runtime/sandbox/src/local-root-initialization.ts": "2fbec615ce45a2284d3bbe8644fbc8d3ef25857554b35ed21506fe3683b785a8",
+    "packages/runtime/sandbox/src/local-root-inspection.ts": "56a60a48e100c3e56597a37720570d5cec0b1f7cb3a6dbde65a2280dc73d8c97",
+    "packages/runtime/sandbox/src/local-temp-sandbox.ts": "7d1619175cc8a7fee7a8d924aa466c98e7bb3334bf37c1dd581ebeb0942949cf",
+    "packages/runtime/sandbox/src/local-version-store.ts": "05d70d451a938a75a3abf3accf643e64658e2c61c2d437ea1fda11053688310e",
+    "packages/runtime/sandbox/src/local-workspace-apply.ts": "90de79c7647f9e008fc3509c19415de2074565a1a2ea454a4ce61b97b098898f",
+    "packages/runtime/sandbox/src/local-workspace-authority.ts": "6b2fe8621cf9de5ac4ae878d86859eb76ad72e29395baf3bde5407ae7c39588c",
+    "packages/runtime/sandbox/src/local-workspace-batch.ts": "49dafe6d404369f81ac15444bf03096e03e6b5c6c024c4403572fe46be8ac80b",
+    "packages/runtime/sandbox/src/local-workspace-commands.ts": "606c7b466ec9c11c6ee3f0c04879b79387cafe4e9dcda86b72d3fa39258ed0f9",
+    "packages/runtime/sandbox/src/local-workspace-files.ts": "5a97dcc6569ca73662318a23e5b38979a37e3c7c32f1a9bdc70f384308c5d9a8",
+    "packages/runtime/sandbox/src/local-workspace-operation.ts": "eb15e4bb9ccea231622ff3f6c70a043ab093ce5534a65eb494967ef24f1d7e93",
+    "packages/runtime/sandbox/src/local-workspace-sessions.ts": "97128b43cbdfb16e0321b24fc0c7d33ce5a213a07dc59c9ff738141ebf227686",
+    "packages/runtime/sandbox/src/local-workspace-tools.ts": "d3577f5fdd18b1c541ca13f2926a0638690bb56f044e592b8d5afa3814af9c78",
+    "packages/runtime/sandbox/native/local-boundary-probe.c": "ec1681c437480ecef3adb17f5bf8ca1e2006b7aade33ba081066461b0f37bcb4",
+    "packages/runtime/sandbox/native/local-command-binding-probe.c": "453772e7a35f4eaa28ac1abf1bdbdbe4539e69a5b0fee1e5d46fa1069cb26bca",
+    "packages/runtime/sandbox/native/local-command-bootstrap.c": "6a961f682c2cd385072c51c9b5819c13f23760ce39e9169a7937fd1e44ac4416",
+    "packages/runtime/sandbox/native/local-command-capture-probe.c": "c48b9ab1f14f000096c73320bbf5c7a2b4f595f7a5ed68cbf9e818c19bead294",
+    "packages/runtime/sandbox/native/local-command-control-drift-probe.c": "513a031c2301c995998cc5cc155a97f90717e03f9a56f391c129590f5e911b7f",
+    "packages/runtime/sandbox/native/local-command-discovery-probe.c": "ad8cff015ddb84388b4b5f5b1c7b11135a5fb25ff899395aa744ea04608266a3",
+    "packages/runtime/sandbox/native/local-command-isolation-probe.c": "247bb29315abc53279cec90183def9d443efc260d3844e0f688fb61db7ff55cc",
+    "packages/runtime/sandbox/native/local-command-start-probe.c": "cd9c6ece3cbaa2aca87bc2c59ef9854315cf2e18d8f7bec019c81293937534c2",
+    "packages/runtime/sandbox/native/local-command-stop-probe.c": "24f16058f703c384eebc0870780fc333470d2d907de21ef701fba58334a403ea",
+    "packages/runtime/sandbox/native/local-command-supervision-probe.c": "cf160e9db608145fe575e28ebeafb143389bad394ac95ab1decb32b0b1a8fbf3",
+    "packages/runtime/sandbox/native/local-file-transaction.c": "d7da93a33fdb70ab22744b3f87e32d07ec1d1fd1faff862dda12747ee12ca667",
+    "packages/runtime/sandbox/native/local-process-control.c": "305da4f928dbf3c68a341c7f4d8c527fa1837e93e8e14ee93d0f3d8a07440f4c",
+    "packages/runtime/sandbox/native/local-root-initialization-probe.c": "4e37e7409e81bc9ff6d83927f9a6df45d6485fb6cd66a154e2f0e2eb8985bec1",
+    "packages/runtime/sandbox/native/local-root-initialization.c": "9f448acd47d3c30be889f611f94d14210216408eab0de273e74618d66e12eb79",
+    "packages/runtime/sandbox/native/local-root-inspection-probe.c": "f649749d3506c8947a73f4b0c9e5e1e1874031ca7123dfde7e1cbaf7d7d74a96",
+    "packages/runtime/sandbox/native/local-root-inspection.c": "c5b57c12f4d961cc8f8ccd130829d560f8684b2700a3b322ed7a524bf833939d",
+    "packages/core/orchestration/src/global-scheduler.ts": "52b31164785f83b2fe85ab75235fadffe98636c4a15367c04c094feeed0c3322",
+    "packages/core/orchestration/src/worker-runtime.ts": "14c2f51fc5f86770baafbabf89d85e6bed1ed1912bfb19cf5af002748dfd320d",
+    "packages/runtime/sandbox/src/workspace-worker-port.ts": "a78f514bc13df69506351ddeea9cd5c5ba96ec2020e7d5c40311c433552e23df",
+    "packages/runtime/executor/src/project.ts": "c940ee06a3942cae6fddbdca700dafa55a1b6331eace19acde07fcac3e5804a3",
+    "packages/runtime/sandbox/src/workspace-port.ts": "4dfc143f7742e9480b65a3fe70b73fe24b9638b2cf73cbdd01e4c76e266212e1",
+    "packages/tools/fs/src/workspace-server.ts": "de787ea6739758e6c6510ac00d62ce7b4b7c2f2654af12a0d9b92baae9a604d7",
+    "packages/tools/bridge/src/local-workspace-bridge.ts": "de3c59aa65c89a2439e669cd1094fc6cd08a05773f735d0ecde56bcbed38a5b2",
+    "apps/web/src/server/message-runtime.ts": "cc15dd2b9137c01aadad9b17da9197462f6a02eeec8aaaa85528582c8effda6c",
+    "apps/web/src/server/message-handlers.ts": "c7b7fa7d5885887efcdc22caf37f463428ef67aded4a060dd2b97bf9cbf293a7",
+    "tests/integration/phase12/phase12-3-grant.test.ts": "2994f8d3d32289983dbb94994baa731f71b0985746d7f8f00596c7f1d26723b1"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 167936
+  }
+}

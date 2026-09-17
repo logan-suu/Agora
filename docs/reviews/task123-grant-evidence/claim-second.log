@@ -1,0 +1,39 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (10 tests | 1 failed) 4813ms
+   × confirms a durable grant through the real Leader POST: normal 1107ms
+     → worker identity must match merge id "undefined"
+   ✓ confirms a durable grant through the real Leader POST: before  455ms
+   ✓ confirms a durable grant through the real Leader POST: after  496ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  451ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  407ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  379ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  390ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  401ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  361ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  364ms
+ ✓ packages/core/orchestration/test/global-scheduler.test.ts (10 tests) 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: normal
+Error: worker identity must match merge id "undefined"
+ ❯ applyMergeById packages/core/domain/src/reducer.ts:247:15
+    245|       const patch = value as Record<string, unknown>;
+    246|       if (patch.workerId !== undefined && patch.workerId !== value.id)…
+    247|         throw new Error(`worker identity must match merge id "${value.…
+       |               ^
+    248|       }
+    249|       if (index < 0) {
+ ❯ applyMutations packages/core/domain/src/reducer.ts:423:19
+ ❯ packages/runtime/state/src/json-task-state-store.ts:60:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 19 passed (20)
+   Start at  16:07:20
+   Duration  5.70s (transform 231ms, setup 0ms, collect 675ms, tests 4.82s, environment 0ms, prepare 54ms)
+

@@ -1,0 +1,60 @@
+{
+  "base": "/private/tmp/agora-task123-validation-M2OVRP",
+  "scenario": "root-replaced",
+  "startedAt": "2026-09-16T18:25:45.564Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 128243171
+  },
+  "sources": {
+    "packages/runtime/sandbox/src/local-command-journal.ts": "a86b4433d2fda190a6b269250579b9886852935b0b6ab8a9d97066deba911f25",
+    "tests/integration/phase12/local-command-journal-fixture.ts": "7d5acf4c1e5850e0710ffe3955064b776548450c9df134fc085114b4f1f16c36",
+    "tests/integration/phase12/phase12-3-command-journal.test.ts": "eb7ab94aa67469ea930a81b8fa240aeab5ea81c967b07e8682d574c07e3f501b"
+  },
+  "availableBefore": 44946481152,
+  "result": {
+    "errors": [
+      "command_journal_root_changed"
+    ],
+    "record": {
+      "commandId": "cmd-1",
+      "workspaceId": "workspace-1",
+      "policyHash": "823412d1eacb67956220e532959f0104603057c88704863ca38e7cd188fda812",
+      "inputHash": "c96c6d5be8d08a12e7b5cdc1b207fa6b2430974c86803d8891675e76fd992c20",
+      "roots": [
+        {
+          "path": "/private/tmp/agora-task123-validation-M2OVRP/output",
+          "identity": "16777231:128243173"
+        }
+      ],
+      "revision": 0,
+      "birthIdentities": [],
+      "birthRelations": [],
+      "observationReceipt": null,
+      "launchReceipt": null,
+      "binding": null,
+      "resourceState": "reserved",
+      "reason": null
+    }
+  },
+  "completedAt": "2026-09-16T18:25:45.579Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "output": [
+        null,
+        "",
+        ""
+      ],
+      "pid": 65994,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 44946481152,
+  "spaceDelta": 0
+}

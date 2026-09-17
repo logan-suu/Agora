@@ -1,0 +1,40 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+packages/runtime/sandbox/src/local-registry-records.ts(119,17): error TS2345: Argument of type '{} | undefined' is not assignable to parameter of type 'object'.
+  Type 'undefined' is not assignable to type 'object'.
+packages/runtime/sandbox/src/local-registry-records.ts(120,32): error TS2345: Argument of type '{} | undefined' is not assignable to parameter of type 'object'.
+  Type 'undefined' is not assignable to type 'object'.
+packages/runtime/sandbox/src/local-registry-records.ts(126,10): error TS18048: 'd' is possibly 'undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(133,20): error TS2345: Argument of type '{} | undefined' is not assignable to parameter of type 'object'.
+  Type 'undefined' is not assignable to type 'object'.
+packages/runtime/sandbox/src/local-registry-records.ts(149,3): error TS2322: Type 'unknown' is not assignable to type 'unknown[]'.
+packages/runtime/sandbox/src/local-registry-records.ts(288,15): error TS18046: 'r.nextLocalExecution' is of type 'unknown'.
+packages/runtime/sandbox/src/local-registry-records.ts(288,51): error TS7006: Parameter 'x' implicitly has an 'any' type.
+packages/runtime/sandbox/src/local-registry-records.ts(294,5): error TS18046: 'r.nextLocalExecution' is of type 'unknown'.
+packages/runtime/sandbox/src/local-registry-records.ts(295,8): error TS7006: Parameter 'w' implicitly has an 'any' type.
+packages/runtime/sandbox/src/local-registry-records.ts(331,19): error TS18046: 'r.workspaces' is of type 'unknown'.
+packages/runtime/sandbox/src/local-registry-records.ts(340,8): error TS18046: 'r.workspaces' is of type 'unknown'.
+packages/runtime/sandbox/src/local-registry-records.ts(341,10): error TS7006: Parameter 'w' implicitly has an 'any' type.
+packages/runtime/sandbox/src/local-registry-records.ts(350,9): error TS18046: 'r.workspaces' is of type 'unknown'.
+packages/runtime/sandbox/src/local-registry-records.ts(351,12): error TS7006: Parameter 'w' implicitly has an 'any' type.
+packages/runtime/sandbox/src/local-registry-records.ts(355,9): error TS18046: 'r.workspaces' is of type 'unknown'.
+packages/runtime/sandbox/src/local-registry-records.ts(356,12): error TS7006: Parameter 'w' implicitly has an 'any' type.
+packages/runtime/sandbox/src/local-registry-records.ts(370,28): error TS18046: 'r.revision' is of type 'unknown'.
+packages/runtime/sandbox/src/local-registry-records.ts(377,12): error TS18046: 'r.workspaces' is of type 'unknown'.
+packages/runtime/sandbox/src/local-registry-records.ts(377,31): error TS7006: Parameter 'current' implicitly has an 'any' type.
+packages/runtime/sandbox/src/local-registry-records.ts(394,13): error TS2339: Property 'status' does not exist on type 'LocalGrantRecord | undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(394,26): error TS2339: Property 'revision' does not exist on type 'LocalGrantRecord | undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(394,41): error TS2339: Property 'revocationActionId' does not exist on type 'LocalGrantRecord | undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(398,7): error TS18048: 'n' is possibly 'undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(400,7): error TS18048: 'n' is possibly 'undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(401,66): error TS18048: 'n' is possibly 'undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(409,13): error TS2339: Property 'status' does not exist on type 'LocalClaimRecord | undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(409,26): error TS2339: Property 'closureReceiptId' does not exist on type 'LocalClaimRecord | undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(414,7): error TS18048: 'n' is possibly 'undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(415,38): error TS18048: 'n' is possibly 'undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(423,9): error TS2339: Property 'stage' does not exist on type 'LocalBindingOperation | undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(426,35): error TS18048: 'n' is possibly 'undefined'.
+packages/runtime/sandbox/src/local-registry-records.ts(429,58): error TS18048: 'n' is possibly 'undefined'.
+ ELIFECYCLE  Command failed with exit code 2.

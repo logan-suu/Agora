@@ -1,0 +1,974 @@
+[
+  {
+    "path": "docs/reviews/task123-isolation-evidence/isolation-S5FI7Z.json",
+    "sha256": "6d0c46931c23989768f4cc0ae316f40f0b7fd8acedf98a383d2106ce0f3684f4",
+    "base": "/private/tmp/agora-task123-validation-S5FI7Z",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-isolation-evidence/isolation-flhN8t.json",
+    "sha256": "4aaddf726cf32b70746560a3acf234389a25f2852bd06a753a59de04d24a4994",
+    "base": "/private/tmp/agora-task123-validation-flhN8t",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-isolation-evidence/isolation-iWTWE4.json",
+    "sha256": "3f73773abf035d951bffbdc3054f34468a383ecb2abd9b22c936ed32dd4a338b",
+    "base": "/private/tmp/agora-task123-validation-iWTWE4",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-isolation-evidence/isolation-2jnNhG.json",
+    "sha256": "b96d3e9524f2839d23bb9e92c45993ec311956c8012c0576d83d77ab80976f2e",
+    "base": "/private/tmp/agora-task123-validation-2jnNhG",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-isolation-evidence/isolation-ysyWpm.json",
+    "sha256": "1f7f7522f93c459d645ae7a372f52f56642bd23ba3c47d0568c7198f7a360b8a",
+    "base": "/private/tmp/agora-task123-validation-ysyWpm",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-isolation-evidence/isolation-huACe2.json",
+    "sha256": "70ce5e6a57bf033474a1af138fdf7d0ed867de62e9ca79091d6d979e2abd0040",
+    "base": "/private/tmp/agora-task123-validation-huACe2",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-isolation-evidence/isolation-Mj96v0.json",
+    "sha256": "c4847e17372ccc506a6f91b3c2236a936c40b7d70d55f83ed804d37ff5344729",
+    "base": "/private/tmp/agora-task123-validation-Mj96v0",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-isolation-evidence/isolation-Mq6tgq.json",
+    "sha256": "5a57bcc0aa3d0abdd69679918115a9e9453312bd7267e3a0ea69f063b7e6fb9c",
+    "base": "/private/tmp/agora-task123-validation-Mq6tgq",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/metadata-before-swap-AFnucV.json",
+    "sha256": "67a9222f13b0ead3f9abb8d9fa49d3eb4409849a3cb3cf0d938e2d7bcc2e3d7e",
+    "base": "/private/tmp/agora-task123-validation-AFnucV",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/revoke-before-write-5zDgJx.json",
+    "sha256": "2afc3184f6e615251ed94bae784139e1eee4a696a6c43b80e7ca2075211c88bb",
+    "base": "/private/tmp/agora-task123-validation-5zDgJx",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-completion-cpnY5h.json",
+    "sha256": "fc7838e9b5f6cbbd8200ca3cc305a576ba95cd7869cc0aebb695871b84c4e057",
+    "base": "/private/tmp/agora-task123-validation-cpnY5h",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-after-swap-UB1OX2.json",
+    "sha256": "7172d955cdd091ca777f895f53001b17aaea086d6cd0d825f76f9cb9cb101eda",
+    "base": "/private/tmp/agora-task123-validation-UB1OX2",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-different-input-f8xmHR.json",
+    "sha256": "de180fb31efd0bd47b33a0ace9cfb4055d5ccbe39f6ca1d76fabc9527e9e0490",
+    "base": "/private/tmp/agora-task123-validation-f8xmHR",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/symlink-target-OhpbZx.json",
+    "sha256": "6bbfaf0a7f5636582aa3024beced635e07717aae1da517d271b037a937419235",
+    "base": "/private/tmp/agora-task123-validation-OhpbZx",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/normal-USANSi.json",
+    "sha256": "fc3706a07638e3c9c3c71864d6eb46bdb4c5ca2072a776931d3523e1084ae2d2",
+    "base": "/private/tmp/agora-task123-validation-USANSi",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/revoke-before-swap-pBmwog.json",
+    "sha256": "5b0f1a7ba5587266facc88befa6375c6f556fb41dfce14f18cf61669ee7162c8",
+    "base": "/private/tmp/agora-task123-validation-pBmwog",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/hardlink-target-SqALeA.json",
+    "sha256": "9c6f28b9b00e980ca92e2757ebf299cd8eb7a85dc99f9f1216b547c6f1571b16",
+    "base": "/private/tmp/agora-task123-validation-SqALeA",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/symlink-target-Q97DVl.json",
+    "sha256": "17c8738bc80f4d17eeffccc9dbc2e3df709319c8685aaccf17ac1735184fa406",
+    "base": "/private/tmp/agora-task123-validation-Q97DVl",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-parent-before-swap-tEi8lO.json",
+    "sha256": "853ab4d2cb2f5302396914c2127d56697e8d0afd041b97732683809bc7c7ec89",
+    "base": "/private/tmp/agora-task123-validation-tEi8lO",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/metadata-before-swap-7Vryy7.json",
+    "sha256": "8e6b075bbc824a16c083c99a592ba98d98f832235b5eccf096134f12e63c9679",
+    "base": "/private/tmp/agora-task123-validation-7Vryy7",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/edit-before-swap-aTBrl4.json",
+    "sha256": "12b7fb586a830b0e05d52ef4e395e72e570b7a4a12479c18c5feb0b3e308a8e6",
+    "base": "/private/tmp/agora-task123-validation-aTBrl4",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/normal-QLh4cV.json",
+    "sha256": "49b7be728f864c4eca488aef32c02c7a19cea2e3139db9590dbcf73bac9ca502",
+    "base": "/private/tmp/agora-task123-validation-QLh4cV",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-completion-RP5Q5L.json",
+    "sha256": "23eb9a51deba0c57e8993ed8868dddcc4093f53667f91402c083c8e60b561c6a",
+    "base": "/private/tmp/agora-task123-validation-RP5Q5L",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-completion-cbIAF3.json",
+    "sha256": "b234ba334d899946779d47ab6f2ee3c172cb930317a788a7c13979748a178f2c",
+    "base": "/private/tmp/agora-task123-validation-cbIAF3",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-missing-receipt-bdoqH0.json",
+    "sha256": "1abe4b2099f5c9b28fc89c15b6ced209ec88143a158af5f88c819c6c7ce7b08a",
+    "base": "/private/tmp/agora-task123-validation-bdoqH0",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-completion-AQpmFi.json",
+    "sha256": "309b0faf08aafa5d5c08b2f81aa0d93b48d149552fc99e3c6d2f2b0428712519",
+    "base": "/private/tmp/agora-task123-validation-AQpmFi",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-parent-completion-ojpwCP.json",
+    "sha256": "536372ebd4ea71ba8df820ec2880e5b45edb374d2812c81bde4097892be67452",
+    "base": "/private/tmp/agora-task123-validation-ojpwCP",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/normal-fGhzGJ.json",
+    "sha256": "cf8502a3afac8da73a9ec220f1339718f3f080f4d6f761f4c8d7dd09c1b7595e",
+    "base": "/private/tmp/agora-task123-validation-fGhzGJ",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-corrupt-receipt-lo3jTN.json",
+    "sha256": "e1b69788f1fd36a7d202dda1c7de4aed57320d8e34fd44b058d70b9db2e3162d",
+    "base": "/private/tmp/agora-task123-validation-lo3jTN",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-missing-receipt-oiDEgi.json",
+    "sha256": "0ecdca680971d9829a07bc4a5eeaaac5a1fa806bf3d6d91c25bb6dead6bd181e",
+    "base": "/private/tmp/agora-task123-validation-oiDEgi",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/revoke-before-write-rB2Zey.json",
+    "sha256": "a803feeb4ed8d373cb8436dd126fb1268137179ffee95cd8098c01e2a98676ce",
+    "base": "/private/tmp/agora-task123-validation-rB2Zey",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-different-input-jumGMa.json",
+    "sha256": "be524fda2d6c56c0936539f4793f1acdb1b103825f7efc0f462adaeeacc67980",
+    "base": "/private/tmp/agora-task123-validation-jumGMa",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-after-swap-vsZbvL.json",
+    "sha256": "870c9e0291d8344f3436c7678609f61d7903059a1cf1e4cfde00680ea6567241",
+    "base": "/private/tmp/agora-task123-validation-vsZbvL",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/revoke-before-swap-6bCvfU.json",
+    "sha256": "a2375677ed1fadbcd0d398f3e87bb4babcd7447ea8bfa8ff2788ef87e18ffa4b",
+    "base": "/private/tmp/agora-task123-validation-6bCvfU",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/metadata-before-swap-pCwxLm.json",
+    "sha256": "6dba32f3efa80ee14d69a02f4b6743623039b64db20cf033d113acd31a52d736",
+    "base": "/private/tmp/agora-task123-validation-pCwxLm",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/metadata-before-swap-fNCxEM.json",
+    "sha256": "0452ce89398ee90c98d09cef3b7bc0167bd82093488f4741192bcd75be58fce0",
+    "base": "/private/tmp/agora-task123-validation-fNCxEM",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-before-write-UrIS9t.json",
+    "sha256": "abbadb32c9ef1c8ca3dde533e0db0392efee14825dc50c8c2925912d825dbb54",
+    "base": "/private/tmp/agora-task123-validation-UrIS9t",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/revoke-before-swap-GAosVm.json",
+    "sha256": "14d7b8cd3f9f41b6303f645dace1cba76ab31eedecc733975bc257816dd3b396",
+    "base": "/private/tmp/agora-task123-validation-GAosVm",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-before-write-MlYnfz.json",
+    "sha256": "e7b28b833e5bea7c577addd1625d8eb7be890c7913706fdddbdf753b2239a655",
+    "base": "/private/tmp/agora-task123-validation-MlYnfz",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-UQgIw7.json",
+    "sha256": "432d05299c314b9776e4656a221e2ac9635522b647588f3c79e530409387b717",
+    "base": "/private/tmp/agora-task123-validation-UQgIw7",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-after-swap-9REmIu.json",
+    "sha256": "acec7d2779e9a2f4e9c22c853384d0afdf29811f3beecd1c2ab5854b44e1577d",
+    "base": "/private/tmp/agora-task123-validation-9REmIu",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-after-swap-gQ9EBA.json",
+    "sha256": "4d4457c33071ef37a4846172e5ec416618cb7ac98925346772b57e357ba43f16",
+    "base": "/private/tmp/agora-task123-validation-gQ9EBA",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-missing-receipt-j2knIN.json",
+    "sha256": "59fb73166e06e13ebc955624f95dbe65ef6488d246b011a5f6a5021914261820",
+    "base": "/private/tmp/agora-task123-validation-j2knIN",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/normal-TciJ9X.json",
+    "sha256": "40d20ccbf64a3d22db7de4503675be0303101705f71d24b013ff76bf111b6764",
+    "base": "/private/tmp/agora-task123-validation-TciJ9X",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-parent-completion-V7fPII.json",
+    "sha256": "032836b5e2b7e8b5d12f2a10b034c3b4c25b117977df747aa69ef84573970b68",
+    "base": "/private/tmp/agora-task123-validation-V7fPII",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-parent-before-swap-bGQFCS.json",
+    "sha256": "687a9d2955798340be6d2a03515006e72d5ba6f1da854fa6984d7555414a24fa",
+    "base": "/private/tmp/agora-task123-validation-bGQFCS",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/revoke-before-write-gvPnvP.json",
+    "sha256": "3ee0893c7f59778a8187e5dc0f5e302d560ac15eeeb9f6335bcc76051d016d31",
+    "base": "/private/tmp/agora-task123-validation-gvPnvP",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/edit-before-swap-sptLq9.json",
+    "sha256": "991155296e075c95991ba99c674c2f95b3a567f563ae521a300f222d5c736da2",
+    "base": "/private/tmp/agora-task123-validation-sptLq9",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-parent-completion-eaMoTh.json",
+    "sha256": "beb59a95cee55dae0383d100897b3f9b6854d873e938ab91ba47be8f6be4ba84",
+    "base": "/private/tmp/agora-task123-validation-eaMoTh",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replace-root-mbHzwA.json",
+    "sha256": "f5f5155978acb82b3a4a326a2faf56910c0f679226a73b40131d71d2a92bcc89",
+    "base": "/private/tmp/agora-task123-validation-mbHzwA",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-parent-completion-iaUgFc.json",
+    "sha256": "24d4bbabd7766155ecef83ddc3ecfe4813328d2efbda31956d733f802b162b96",
+    "base": "/private/tmp/agora-task123-validation-iaUgFc",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/revoke-before-swap-myyWtO.json",
+    "sha256": "53ab290c0b1d08e5cb615f60c7853306d4b2834933161aaa822220168c1d82ab",
+    "base": "/private/tmp/agora-task123-validation-myyWtO",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-before-write-nv8tOo.json",
+    "sha256": "5d194d9b2219df4271f7c593b46f86262ed87a5af17e9fc9b1012ca64ee629bd",
+    "base": "/private/tmp/agora-task123-validation-nv8tOo",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/hardlink-target-8BzPkx.json",
+    "sha256": "1d46dccc320b9905f67854da6f95ab29cdedf95e033ea620e816ad594af33d4b",
+    "base": "/private/tmp/agora-task123-validation-8BzPkx",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replace-root-8p9ZVn.json",
+    "sha256": "f2456eb25a71e646b5db0679b690ede2c46723aad69f333e8e535032fbacd4d6",
+    "base": "/private/tmp/agora-task123-validation-8p9ZVn",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-root-before-write-s3UPMe.json",
+    "sha256": "5d51e54ebc47411811039d266e3527623f2e546e8f288022a023f82e5bb102c7",
+    "base": "/private/tmp/agora-task123-validation-s3UPMe",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/hardlink-target-adJdFZ.json",
+    "sha256": "2528de609b16050fa58b8115069232495d7b075640b113c501dbb845538a848c",
+    "base": "/private/tmp/agora-task123-validation-adJdFZ",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-parent-before-swap-M5nc34.json",
+    "sha256": "a6b45104fca64516e5f41182c1956383bb1caa151c8aebc0ef9dfe2233c4e12b",
+    "base": "/private/tmp/agora-task123-validation-M5nc34",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/symlink-target-XY7XMM.json",
+    "sha256": "f24215668be9d46977ac255cb8fa6eafb8903170e4d105dc7a0f0826db373b4a",
+    "base": "/private/tmp/agora-task123-validation-XY7XMM",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-9kx2Rh.json",
+    "sha256": "7928809bf73ced26f50367668ef0b5b5e37e875f3a3f441fa4ed2426dda0d09e",
+    "base": "/private/tmp/agora-task123-validation-9kx2Rh",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-missing-receipt-0aQYM4.json",
+    "sha256": "4514f44f3a473b09025a5b42d17893e294ce460d2b9c5019427332f3ae399aa8",
+    "base": "/private/tmp/agora-task123-validation-0aQYM4",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-corrupt-receipt-etwtzD.json",
+    "sha256": "d1f280763da0ee54a7b8e209ee7eb92c338e3d17f4bd761d120b1928ff70400e",
+    "base": "/private/tmp/agora-task123-validation-etwtzD",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/hardlink-target-wVGnIs.json",
+    "sha256": "601d319e4fbc64359c7fb4b673d4d6d8929fbcd35811b443c62ba45f82fdca9d",
+    "base": "/private/tmp/agora-task123-validation-wVGnIs",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-corrupt-receipt-03P0Ka.json",
+    "sha256": "ff8a1089d6e197686f727c78e57a407f89c26b27b835c5355d8869ab5b34fbe1",
+    "base": "/private/tmp/agora-task123-validation-03P0Ka",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-different-input-mtWFLE.json",
+    "sha256": "e183069e5a52608c1dcc837a26777b9352789b1b83e333e2e2130e00f8eaeb43",
+    "base": "/private/tmp/agora-task123-validation-mtWFLE",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replace-root-YhU1ZM.json",
+    "sha256": "3904d58cfdcd27ffd018d76d89fc91b891e284af36b88ba7df5f1e2052bd8b25",
+    "base": "/private/tmp/agora-task123-validation-YhU1ZM",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/edit-before-swap-Y0o285.json",
+    "sha256": "98363c9fa1a34619b98c69068c90241ea4e47800ce572f30780306861ac576b0",
+    "base": "/private/tmp/agora-task123-validation-Y0o285",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-dk08wy.json",
+    "sha256": "1fbb0b82bcc073a2ccd82e0e77b355792fdcc9bec90f9c91298e99086de0342f",
+    "base": "/private/tmp/agora-task123-validation-dk08wy",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/move-parent-before-swap-ItrKlA.json",
+    "sha256": "2bcf6e23fc44a7333234ca85b53bdaf8fee36683596499edd036909c62e2f6a7",
+    "base": "/private/tmp/agora-task123-validation-ItrKlA",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/revoke-before-write-oMeWFW.json",
+    "sha256": "4ca06de7626477b1a2b1bde357d64e33acf6e3b80bea65a3e8a71e4d73bdc71e",
+    "base": "/private/tmp/agora-task123-validation-oMeWFW",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-qjIF5M.json",
+    "sha256": "7f59fbaefca1e1604ae5355c83ca27ee7fe2e556df42fd6af3e9a0b60d17e5e5",
+    "base": "/private/tmp/agora-task123-validation-qjIF5M",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/edit-before-swap-eXihpn.json",
+    "sha256": "18fcd154d58b8f9f437083711a634e0afd42b0f8f3673a71b76f0048afb0195d",
+    "base": "/private/tmp/agora-task123-validation-eXihpn",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-corrupt-receipt-1VpV3C.json",
+    "sha256": "4d15bc688637971b11ba8b29112ba65221998b4e8c8699c3b0bfdb38da0a1c35",
+    "base": "/private/tmp/agora-task123-validation-1VpV3C",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replay-different-input-7OwWBG.json",
+    "sha256": "bb5ab0df2d8badb0a6b7c9cc4d51d860888db9630b0c2edfd928d949957e482c",
+    "base": "/private/tmp/agora-task123-validation-7OwWBG",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/replace-root-gfj7a5.json",
+    "sha256": "5bde258811e663f88e88744f14bc69c74d1f0a9cdcd75740bec5115965ab4149",
+    "base": "/private/tmp/agora-task123-validation-gfj7a5",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-transaction-evidence/symlink-target-88B5Ih.json",
+    "sha256": "7d9e7caa70d7da138609af21fe9c889cd24d770abf0e5831e65fdd799a2f826c",
+    "base": "/private/tmp/agora-task123-validation-88B5Ih",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/tree-dsS6c6.json",
+    "sha256": "9726e8a5f7b5d61764fb1beca6ce7d0e8bd5be1a7746336270b038647ce76ebd",
+    "base": "/private/tmp/agora-task123-validation-dsS6c6",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/wrong-parent-7Ov86n.json",
+    "sha256": "bdb80c66afc26faf52b1b84f493ca93492db16d1218c9d10094994dccb55617c",
+    "base": "/private/tmp/agora-task123-validation-7Ov86n",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/reparent-6dU6Ak.json",
+    "sha256": "dad28b1d34c677dd80bcc22c1f8bc8f90a2851cf5272d023b6e5af0243edfac4",
+    "base": "/private/tmp/agora-task123-validation-6dU6Ak",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/reparent-bUzxLU.json",
+    "sha256": "1c07577323ca615aa401a2b6b3a9f1937caba53a3860ef18afc861c5dd92bee2",
+    "base": "/private/tmp/agora-task123-validation-bUzxLU",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/tree-Qijf13.json",
+    "sha256": "d7ddcc6332f4f6d8fff95eee98ff32144418f490a45d3a75e9ac394b829c5285",
+    "base": "/private/tmp/agora-task123-validation-Qijf13",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/reparent-5KdpbC.json",
+    "sha256": "78ada4d5b874e8ff343aab3f5e9f5c17681fc66dd771834a966cd9fc531428fd",
+    "base": "/private/tmp/agora-task123-validation-5KdpbC",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/tree-UiTmVE.json",
+    "sha256": "d185bc3b20bdda7270e5105a9a15ba47349f239436a592c988e313e012aa705c",
+    "base": "/private/tmp/agora-task123-validation-UiTmVE",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/tree-9YUR7a.json",
+    "sha256": "84eacb509665ac20714b5d30f86e5700012218e7233e3e4ad0ac5ec7c9c496be",
+    "base": "/private/tmp/agora-task123-validation-9YUR7a",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/wrong-parent-oNbuP8.json",
+    "sha256": "8c333f9b82c67550fcb2a9dac10757aee377d374d57d7c5f619e3f3e7b43e7ce",
+    "base": "/private/tmp/agora-task123-validation-oNbuP8",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/tree-XoxjWD.json",
+    "sha256": "a94c15d35608fb63a9c4c6060758ed9ab5573e3ae27433ee9b1eda30d64fbeca",
+    "base": "/private/tmp/agora-task123-validation-XoxjWD",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/reparent-9ptm59.json",
+    "sha256": "65ee6d31335d609a04a003c86a3fe2a07bac8f844fe848e8e439ae13294a0c44",
+    "base": "/private/tmp/agora-task123-validation-9ptm59",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/wrong-parent-kmh0Kv.json",
+    "sha256": "fb56f898a38dc0c322781148a4abbd1aaaee780e1339e8074b3ab6b932b5062d",
+    "base": "/private/tmp/agora-task123-validation-kmh0Kv",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/wrong-parent-qHj7tX.json",
+    "sha256": "c99babe52f171ca0f6ae97f5b1337d99aa001bc48d6d6425e8ecabc536a96594",
+    "base": "/private/tmp/agora-task123-validation-qHj7tX",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/reparent-O2S9CQ.json",
+    "sha256": "e4d5623c9fd31eb2363ca907765530377b96249b29207d2cc7dd643c1384e550",
+    "base": "/private/tmp/agora-task123-validation-O2S9CQ",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/missing-helper-n7LIWI.json",
+    "sha256": "4606b98c0ffb4b9ac1b55cc5b2c2cceee22868d7cb84a30ad6a9632354cd899c",
+    "base": "/private/tmp/agora-task123-validation-n7LIWI",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/missing-helper-qgIRUF.json",
+    "sha256": "bef9d5e05a24a271ab2414493f1119b9420823aab4f95f970812518745092db5",
+    "base": "/private/tmp/agora-task123-validation-qgIRUF",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/missing-helper-fjjXKW.json",
+    "sha256": "7ff37735cc4cbc67484afe6b77cb8c34d1b7c5a9bb68afd8c9d651ddd70a6a7f",
+    "base": "/private/tmp/agora-task123-validation-fjjXKW",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/missing-helper-tMpsCF.json",
+    "sha256": "71498c59c4c991da118e35e0bc6ad8b8f7eca7584dd8e1eea7935be39766e831",
+    "base": "/private/tmp/agora-task123-validation-tMpsCF",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/missing-helper-cck360.json",
+    "sha256": "02fde4ffa01d96ef386283b7b51396e3c1a163c325538e71bef64b958fb13eeb",
+    "base": "/private/tmp/agora-task123-validation-cck360",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-discovery-evidence/wrong-parent-4x1sUB.json",
+    "sha256": "6636489ce586ed971c16d92894848bff637d2bf9144260add5945b0f712a2eae",
+    "base": "/private/tmp/agora-task123-validation-4x1sUB",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-root-UaOZKh.json",
+    "sha256": "01c2e01b10022444faa65b8cbe5542ac932c00278aa03e84a784cfa97487fb43",
+    "base": "/private/tmp/agora-task123-validation-UaOZKh",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/stationary-zaqk8r.json",
+    "sha256": "247245f1aef947552220675494192a918bb0ce397c7b833a9330a2f90e8a0628",
+    "base": "/private/tmp/agora-task123-validation-zaqk8r",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-root-zp7BmW.json",
+    "sha256": "f529a7cf74444e3349761826807666b4ddf5cf8fb5d6a949c1ca83d59ed415a5",
+    "base": "/private/tmp/agora-task123-validation-zp7BmW",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/stationary-l9lwmX.json",
+    "sha256": "aca1e03a24e4794ac1ce09274d6a36ea608046fd715096c1df119574c8e143f1",
+    "base": "/private/tmp/agora-task123-validation-l9lwmX",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-parent-nWqwZg.json",
+    "sha256": "0c7c2bcae73730ef730248294328f727a64c143ea87d6e09af69f50f8da42a37",
+    "base": "/private/tmp/agora-task123-validation-nWqwZg",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/stationary-eun8t0.json",
+    "sha256": "8a82c7341eb071d101ab0a4e2ac74d70e6a91cfdcf52eeda268739dbd935aaf4",
+    "base": "/private/tmp/agora-task123-validation-eun8t0",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-parent-4oJlNP.json",
+    "sha256": "40d577d58810d200ae8c53ae9e4dd0d9e05034f460357d72e7b709cbafee97c6",
+    "base": "/private/tmp/agora-task123-validation-4oJlNP",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/stationary-lMaOam.json",
+    "sha256": "d5f8661da8e64bb76b863a64a91765b290017b502226df70ce0d015427d99d81",
+    "base": "/private/tmp/agora-task123-validation-lMaOam",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/stationary-KeAoFG.json",
+    "sha256": "e7e9fa479946a855d31e2de939995c62ad17be1a0560d0a1960608528fa8e3e3",
+    "base": "/private/tmp/agora-task123-validation-KeAoFG",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-root-kTaGyZ.json",
+    "sha256": "0f9605e1624ccfd5c0a3a0e98fdee2a771e3b948270c187153df40aaa5256876",
+    "base": "/private/tmp/agora-task123-validation-kTaGyZ",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-root-EjloWJ.json",
+    "sha256": "fb50eeb982466c1bfc655a417f203ec3e10481c44f46baee528716b389028522",
+    "base": "/private/tmp/agora-task123-validation-EjloWJ",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/stationary-sfWOcz.json",
+    "sha256": "70ca9850af558356aae6947ae17492f9f9a4bab6cd53e65e8a3403b564d400bc",
+    "base": "/private/tmp/agora-task123-validation-sfWOcz",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/stationary-hUuoon.json",
+    "sha256": "e85d66147bf73e0f1bf8a43540ed371858fa5583e3d27f018074c560b17c85bb",
+    "base": "/private/tmp/agora-task123-validation-hUuoon",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-root-tb6GYI.json",
+    "sha256": "204e5d1d5417cac1895198c0aaee1962639671dcc73901926c29a6030712a6e3",
+    "base": "/private/tmp/agora-task123-validation-tb6GYI",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-root-jqCDoa.json",
+    "sha256": "45aab691d7bd1d2ba820c19e0750879f1c4e013fe1d211bc885bab2dea3577e5",
+    "base": "/private/tmp/agora-task123-validation-jqCDoa",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-parent-AhTOec.json",
+    "sha256": "e1a95719cbdad4acb65691cf32320758c8276831b24ae425e88aea6d1350ba27",
+    "base": "/private/tmp/agora-task123-validation-AhTOec",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-root-DuP4hP.json",
+    "sha256": "ba8345500e2cfce1d897289a617663443ae7a5c0d5d8c42e6fd0b0d385666b35",
+    "base": "/private/tmp/agora-task123-validation-DuP4hP",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-root-3H4pHm.json",
+    "sha256": "23084f4b2112af92243954dff27ccd140cf23e7cd3bfa7cd852d186350540cf6",
+    "base": "/private/tmp/agora-task123-validation-3H4pHm",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/stationary-qlmRtI.json",
+    "sha256": "3b1a8fe75457235baae9e7db48de5b541a0b3655a4662ed81f43bc4fe1e55b1b",
+    "base": "/private/tmp/agora-task123-validation-qlmRtI",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-boundary-evidence/move-parent-VfoF4K.json",
+    "sha256": "dff39f4bc2c70d802b90fc6f20615f43f11481c75d81533ed7a303f4cfc5b194",
+    "base": "/private/tmp/agora-task123-validation-VfoF4K",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-root-replaced-j7gWpo.json",
+    "sha256": "d59326c14d9fd8454e692214f1f39acc7b4e78b696e230a4a173a0dd601e365f",
+    "base": "/private/tmp/agora-task123-validation-j7gWpo",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/flood-BVErNV.json",
+    "sha256": "63a273af4cda6dbead5ea9d506f9ca5b51eb2447a4cab96e2b570dd2a090a0ea",
+    "base": "/private/tmp/agora-task123-validation-BVErNV",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/inherited-pipe-LHA4Zs.json",
+    "sha256": "474d0a1382773c820a8b6a5fa9110ac498c6915f2226eba0daa3b8835a490f0f",
+    "base": "/private/tmp/agora-task123-validation-LHA4Zs",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/ignore-term-WdUb9l.json",
+    "sha256": "1774149e40fa5110976b46d001b07819e6b84680053b9f991248cebf949df2fd",
+    "base": "/private/tmp/agora-task123-validation-WdUb9l",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/flood-Od9uOc.json",
+    "sha256": "6ae65c6cc76f1130c2bc407e3d3b4baf5bed3f6471379d9d574ac0b98a58515c",
+    "base": "/private/tmp/agora-task123-validation-Od9uOc",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-quarantine-hOaU8G.json",
+    "sha256": "84a51821ad651c95bc88053be2ca0128a9e3e732c308f1d459a5e964bdad2633",
+    "base": "/private/tmp/agora-task123-validation-hOaU8G",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/delayed-control-kq0Kd2.json",
+    "sha256": "6e11f80babcfacc3d54c3ec4c3f3955bc15ba57d6ceaac5b73f94084c69a3ace",
+    "base": "/private/tmp/agora-task123-validation-kq0Kd2",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-root-replaced-up0OBz.json",
+    "sha256": "f521bf212028320a94b5d98a86e8108bf2ac2a7011def497dea8c4062a955841",
+    "base": "/private/tmp/agora-task123-validation-up0OBz",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-replay-oPz3RQ.json",
+    "sha256": "dda2996d518705c850ffb2cee2c826f58941cbf0a16e6378b2973b6f529373af",
+    "base": "/private/tmp/agora-task123-validation-oPz3RQ",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-interrupted-RXz3ww.json",
+    "sha256": "abf464e7f394de4786f4219da2419c7b665af47efb6db2d7c1c8515590ddfd00",
+    "base": "/private/tmp/agora-task123-validation-RXz3ww",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-quarantine-QiyDDm.json",
+    "sha256": "a7703c8b8118cc1cf3dedf94b88e2e30aaca8b2ebcd9246c9705c41e61f66c35",
+    "base": "/private/tmp/agora-task123-validation-QiyDDm",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/wrong-birth-0naSFH.json",
+    "sha256": "f1d0d4c544926325eed111c6818e60cb3c25b4c640d20bc246959a4033b937c5",
+    "base": "/private/tmp/agora-task123-validation-0naSFH",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-corrupt-Imat8f.json",
+    "sha256": "db847b3cd1dc266bdd0d4061c3e99fbf66b5a72b3e8ed5e37ea7a171bc889a2c",
+    "base": "/private/tmp/agora-task123-validation-Imat8f",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/inherited-pipe-x53UhB.json",
+    "sha256": "d7286429333a3f7d9ac036ff1652aedd7a8cdbcad7702a0b81d6cb864531297e",
+    "base": "/private/tmp/agora-task123-validation-x53UhB",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-quarantine-Oj3St1.json",
+    "sha256": "ec5e97cfb5a06aa31ae7616a2cb6e4e33276f286f3b33bac01d608dc7aa8a9f2",
+    "base": "/private/tmp/agora-task123-validation-Oj3St1",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/wrong-birth-F5bEER.json",
+    "sha256": "41c029425e424cac9435731f862b4596788f3896010fdd93f8a3369970d9951f",
+    "base": "/private/tmp/agora-task123-validation-F5bEER",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-replay-aEpVMc.json",
+    "sha256": "11470c93294ca9dabccbfa66966fd20c71fe525d4d73083cac1efb4d4a210cd5",
+    "base": "/private/tmp/agora-task123-validation-aEpVMc",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-root-replaced-Rkm5QS.json",
+    "sha256": "1175aa82813654e3274172d7e6e9659efc58a5a2a96b0a94f1d7301014a8fdbc",
+    "base": "/private/tmp/agora-task123-validation-Rkm5QS",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/normal-term-zoSQgo.json",
+    "sha256": "ef950c86ca350c2d1c2b40ef7d23e2268cecdab1a704905cbb7cdd0ebad55eff",
+    "base": "/private/tmp/agora-task123-validation-zoSQgo",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/wrong-birth-BW2u5I.json",
+    "sha256": "2db632f074ec74324af050f180914a479c5d78d2d6957293284be29415d21f2f",
+    "base": "/private/tmp/agora-task123-validation-BW2u5I",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/flood-xQTmwR.json",
+    "sha256": "7f8ee5dbce99f50f92d710c7dbdd26aa771f2c5df0145a9c4ee999dd2fe2eb4d",
+    "base": "/private/tmp/agora-task123-validation-xQTmwR",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/ignore-term-pywT5t.json",
+    "sha256": "3295615cdb00843df404bcfb5a6909ceeddeab9be9dc9e6d226fad2ce57b9e9c",
+    "base": "/private/tmp/agora-task123-validation-pywT5t",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-interrupted-byDI8O.json",
+    "sha256": "fe56360b74a0776a557f399051ed7952e43802e94f23f552048902c740c28e58",
+    "base": "/private/tmp/agora-task123-validation-byDI8O",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/delayed-control-VoPISV.json",
+    "sha256": "4af4f272da69bfcedcebeec68dea6c5a5924ebfb4e6fea085631df74bb3a8ef5",
+    "base": "/private/tmp/agora-task123-validation-VoPISV",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/inherited-pipe-WIgLOY.json",
+    "sha256": "f28be3eab4919bb84571437de8ae8f80f19edeacbde79fac19cd6401e02f58ca",
+    "base": "/private/tmp/agora-task123-validation-WIgLOY",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/delayed-control-6kI5Ss.json",
+    "sha256": "6b396af2eeba1dba1b537adbd8f40a6742b7098eb21c5d9f110bdc75780abfae",
+    "base": "/private/tmp/agora-task123-validation-6kI5Ss",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-interrupted-nuuTmn.json",
+    "sha256": "071648322931d6ae973a44f2ab69706b5435a007a90ce3252dcc75ebfefb5279",
+    "base": "/private/tmp/agora-task123-validation-nuuTmn",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/inherited-pipe-bFjmQ8.json",
+    "sha256": "359717fcaaf00685a73ce490f83a15438b7c72145574bb3c39db3ae66b9b5fc5",
+    "base": "/private/tmp/agora-task123-validation-bFjmQ8",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-corrupt-NfIEDg.json",
+    "sha256": "00c880b852df8548fad55fdc425ee85fd0aa13a743065cd77a9dad41f5f7e95f",
+    "base": "/private/tmp/agora-task123-validation-NfIEDg",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-quarantine-Rq1H1L.json",
+    "sha256": "ba3fac96a29031f56baec7c5d6fdfda613fa5b29c4275374703f3f6ae7ba9e26",
+    "base": "/private/tmp/agora-task123-validation-Rq1H1L",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/normal-term-TF8NxY.json",
+    "sha256": "e0a95e19dfa85742e75eb132665080da8ec348a31186945e44d92f080a4099ce",
+    "base": "/private/tmp/agora-task123-validation-TF8NxY",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/ignore-term-GnKJ0N.json",
+    "sha256": "5185bbea7e8f07a48d98ccd64e86aee84599a4130a2151e9496473448283cf1c",
+    "base": "/private/tmp/agora-task123-validation-GnKJ0N",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/flood-KIKHvX.json",
+    "sha256": "0ccd60d2dd68971f7d1964f8a15ec18a5efb4e1bffa8a55a013f306d0b397e4e",
+    "base": "/private/tmp/agora-task123-validation-KIKHvX",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/normal-term-IW24n2.json",
+    "sha256": "c5972b54759331afc4846b2bbbb2cc77baa2836a2bfb236e43fd21e6f14520c4",
+    "base": "/private/tmp/agora-task123-validation-IW24n2",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/delayed-control-MtMl7a.json",
+    "sha256": "457cfd61c1b0efef7fcd439f439cc31fbc0d8731a14930296d07e88436b1e8f6",
+    "base": "/private/tmp/agora-task123-validation-MtMl7a",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-corrupt-h7H5S1.json",
+    "sha256": "4dee4fe030a39ac94dffb7128d5207eb3488f0ad4c8e20c12de40a72bbac9132",
+    "base": "/private/tmp/agora-task123-validation-h7H5S1",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-root-replaced-kYPXYi.json",
+    "sha256": "d491f435232c7dd5a8f4edcf73921698fb0a2585e39e1949e40c0202e53ba963",
+    "base": "/private/tmp/agora-task123-validation-kYPXYi",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/ignore-term-cGkQNt.json",
+    "sha256": "8dafc2b3fc728c1706afc4ac2d3947c74477b479e1bd0c05fc5ee113eadfa675",
+    "base": "/private/tmp/agora-task123-validation-cGkQNt",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-interrupted-WlV00C.json",
+    "sha256": "c0767600e94301deff1f606810f5cc38a35751972d2c91d0963729d6d2718080",
+    "base": "/private/tmp/agora-task123-validation-WlV00C",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-replay-iDT9qz.json",
+    "sha256": "067cf61f3be74f90a950e3c66384f80b97c03586820b021dd455653a05c9f0e4",
+    "base": "/private/tmp/agora-task123-validation-iDT9qz",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/normal-term-TlfxnS.json",
+    "sha256": "619b36f26238da6680a3b4108700bf6c61f413c7d7fb22ac4505c76792d3919c",
+    "base": "/private/tmp/agora-task123-validation-TlfxnS",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-corrupt-NVElnY.json",
+    "sha256": "c10bf73182c53ac938334456f911ce00cf37ae5f21a8d3450519a41310b77b60",
+    "base": "/private/tmp/agora-task123-validation-NVElnY",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/delayed-control-KmQ6GZ.json",
+    "sha256": "1de6dcb58e239f10b121c127605c7662a8ef8e3f3344f6d3ae1dbf622f8c7998",
+    "base": "/private/tmp/agora-task123-validation-KmQ6GZ",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/journal-replay-GIL3Qo.json",
+    "sha256": "f43fbd3fcd3deda7d9a3de46384e3bb93580711b8499a1ec0c17f95bdc0dc37d",
+    "base": "/private/tmp/agora-task123-validation-GIL3Qo",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/delayed-control-bV7Xdc.json",
+    "sha256": "c4d1500dae5c1c1c435703bb0dbd45b408d4445996d1294ab4d9e5949562a39a",
+    "base": "/private/tmp/agora-task123-validation-bV7Xdc",
+    "removed": true
+  },
+  {
+    "path": "docs/reviews/task123-stop-evidence/wrong-birth-IEzbsX.json",
+    "sha256": "661e94574483b60844f36308b240199edf34b30b25ed1c6e36efd3d31914152e",
+    "base": "/private/tmp/agora-task123-validation-IEzbsX",
+    "removed": true
+  }
+]

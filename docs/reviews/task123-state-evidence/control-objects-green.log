@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-state-binding.test.ts (19 tests) 3064ms
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  15:41:16
+   Duration  3.30s (transform 98ms, setup 0ms, collect 127ms, tests 3.06s, environment 0ms, prepare 26ms)
+

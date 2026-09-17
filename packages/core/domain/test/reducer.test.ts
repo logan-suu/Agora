@@ -484,6 +484,7 @@ describe('mutation builders', () => {
       'humanGate',
       'integration',
       'parallelExecution',
+      'localExecution',
       'architecture',
       'conventions',
       'complexity',

@@ -3,13 +3,13 @@ import {
   appendMutation,
   buildCompletionResolution,
   buildObjectionResolution,
+  type CompletionEvidence,
   type CompletionResolutionAction,
   currentCompletionEvidence,
   type HumanGate,
   type HumanGateRequest,
   type Mutation,
   mergeByIdMutation,
-  type ReviewBinding,
   setMutation,
 } from '@agora/core-domain';
 import type { TaskScope } from '@agora/runtime-state';
@@ -37,7 +37,7 @@ export interface HumanGateResolutionReceipt {
   safePointRefs: string[];
   resumeSessionId: string;
   workerResumes?: WorkerResumePlan[];
-  completionEvidence?: ReviewBinding;
+  completionEvidence?: CompletionEvidence;
   integrationRework?: AppState['integration'];
 }
 
@@ -283,7 +283,8 @@ export function planHumanGateResolution(
       ...(state.parallelExecution !== undefined && input.option === 'request_rework'
         ? { integrationRework: state.integration }
         : {}),
-      ...(completionResolution === undefined || state.parallelExecution === undefined
+      ...(completionResolution === undefined ||
+      (state.parallelExecution === undefined && state.localExecution === undefined)
         ? {}
         : { completionEvidence: currentCompletionEvidence(state) }),
       gateId: gate.gateId,

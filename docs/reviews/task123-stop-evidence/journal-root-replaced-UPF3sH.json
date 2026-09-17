@@ -1,0 +1,56 @@
+{
+  "base": "/private/tmp/agora-task123-validation-UPF3sH",
+  "scenario": "root-replaced",
+  "startedAt": "2026-09-16T03:18:13.052Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127834530
+  },
+  "sources": {
+    "packages/runtime/sandbox/src/local-command-journal.ts": "38e1f2416cf93a704bd15ea25e3804cd0ee4740e579fbe46a9561f192f32438e",
+    "tests/integration/phase12/local-command-journal-fixture.ts": "7d5acf4c1e5850e0710ffe3955064b776548450c9df134fc085114b4f1f16c36",
+    "tests/integration/phase12/phase12-3-command-journal.test.ts": "7d65ba6789055e1a0f4ee329cb0c5e64430370aac32c6e869416a86c1abc960a"
+  },
+  "availableBefore": 46960259072,
+  "result": {
+    "errors": [
+      "command_journal_root_changed"
+    ],
+    "record": {
+      "commandId": "cmd-1",
+      "workspaceId": "workspace-1",
+      "policyHash": "823412d1eacb67956220e532959f0104603057c88704863ca38e7cd188fda812",
+      "inputHash": "c96c6d5be8d08a12e7b5cdc1b207fa6b2430974c86803d8891675e76fd992c20",
+      "roots": [
+        {
+          "path": "/private/tmp/agora-task123-validation-UPF3sH/output",
+          "identity": "16777231:127834532"
+        }
+      ],
+      "revision": 0,
+      "birthIdentities": [],
+      "resourceState": "reserved",
+      "reason": null
+    }
+  },
+  "completedAt": "2026-09-16T03:18:13.063Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "output": [
+        null,
+        "",
+        ""
+      ],
+      "pid": 52967,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 46960259072,
+  "spaceDelta": 0
+}

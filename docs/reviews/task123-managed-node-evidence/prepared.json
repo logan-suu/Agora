@@ -1,0 +1,9 @@
+{
+  "base": "/private/tmp/agora-task123-validation-IpeUQZ",
+  "executable": "/private/tmp/agora-task123-validation-IpeUQZ/node-v24.20.0-darwin-arm64/bin/node",
+  "version": "v24.20.0",
+  "sha256": "9d050fd455b56426e25d4d603c7c501cbb2630348e836cf221dcce748e90588a",
+  "archiveHash": "40e5607e5ecb3db9192723776da2d75d966260fc74a7a9e731c1bd67dda96bc8",
+  "entries": 5888,
+  "preparedAt": "2026-09-16T20:06:36.529Z"
+}

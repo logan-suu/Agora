@@ -1,0 +1,19 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-state-binding.test.ts (18 tests) 2906ms
+ ✓ tests/integration/phase12/phase12-3-root-registration.test.ts (7 tests) 4392ms
+   ✓ closes authorized root registration: normal  772ms
+   ✓ closes authorized root registration: interrupted  780ms
+   ✓ closes authorized root registration: unapproved  416ms
+   ✓ closes authorized root registration: wrong-selection  460ms
+   ✓ closes authorized root registration: read-only  470ms
+   ✓ closes authorized root registration: native-result-corrupt  881ms
+   ✓ closes authorized root registration: existing  612ms
+ ✓ packages/runtime/sandbox/test/local-registry-records.test.ts (17 tests) 5ms
+
+ Test Files  3 passed (3)
+      Tests  42 passed (42)
+   Start at  15:38:51
+   Duration  7.77s (transform 113ms, setup 0ms, collect 179ms, tests 7.30s, environment 0ms, prepare 74ms)
+

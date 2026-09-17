@@ -1,0 +1,229 @@
+{
+  "base": "/private/tmp/agora-task123-validation-nV1OYT",
+  "mode": "native",
+  "startedAt": "2026-09-16T03:31:06.134Z",
+  "sourceHash": "247bb29315abc53279cec90183def9d443efc260d3844e0f688fb61db7ff55cc",
+  "policySourceHash": "26233dc14b99574633af2a2a60275ad8bb020d3f2e4529973314e3716183288c",
+  "controllerHash": "28c4056dbd06bc3217df5e984610904bc358c88a5da40ccff20b79bd11e603a4",
+  "assertionsHash": "c6c788cbb0b1a7ec4aed50e84e0539f7c332a8d5bbea5658cbb6c553b41cc6f3",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "arch": "arm64",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "node": "v24.20.0",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127862986
+  },
+  "availableBefore": 46944219136,
+  "binaryHash": "68c256d15c4a8be26f1c45d34b4311760f6ee57a6e3a213beb2063382383b28d",
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-nV1OYT/isolation-probe\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-nV1OYT\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-nV1OYT/isolation-probe\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/neighbor\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/secrets\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/control\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-nV1OYT/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "process": {
+    "pid": 87635,
+    "exitCode": 0,
+    "signal": null,
+    "stdout": "{\"actor\":\"child\",\"operation\":\"read-input\",\"ok\":true,\"errno\":0}\n{\"actor\":\"child\",\"operation\":\"write-output\",\"ok\":true,\"errno\":0}\n{\"actor\":\"child\",\"operation\":\"write-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"write-input\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"read-secret\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"read-control\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"read-neighbor\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"write-neighbor\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"symlink-write-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"hardlink-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"rename-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"unlink-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"read-source-env\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"write-source-via-read-fd\",\"ok\":false,\"errno\":9}\n{\"actor\":\"grandchild\",\"operation\":\"read-input\",\"ok\":true,\"errno\":0}\n{\"actor\":\"grandchild\",\"operation\":\"write-output\",\"ok\":true,\"errno\":0}\n{\"actor\":\"grandchild\",\"operation\":\"write-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"write-input\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"read-secret\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"read-control\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"read-neighbor\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"write-neighbor\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"symlink-write-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"hardlink-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"rename-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"unlink-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"read-source-env\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"write-source-via-read-fd\",\"ok\":false,\"errno\":9}\n",
+    "stderr": ""
+  },
+  "result": {
+    "exitCode": 0,
+    "events": [
+      {
+        "actor": "child",
+        "operation": "read-input",
+        "ok": true,
+        "errno": 0
+      },
+      {
+        "actor": "child",
+        "operation": "write-output",
+        "ok": true,
+        "errno": 0
+      },
+      {
+        "actor": "child",
+        "operation": "write-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "write-input",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "read-secret",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "read-control",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "read-neighbor",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "write-neighbor",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "symlink-write-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "hardlink-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "rename-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "unlink-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "read-source-env",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "write-source-via-read-fd",
+        "ok": false,
+        "errno": 9
+      },
+      {
+        "actor": "grandchild",
+        "operation": "read-input",
+        "ok": true,
+        "errno": 0
+      },
+      {
+        "actor": "grandchild",
+        "operation": "write-output",
+        "ok": true,
+        "errno": 0
+      },
+      {
+        "actor": "grandchild",
+        "operation": "write-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "write-input",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "read-secret",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "read-control",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "read-neighbor",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "write-neighbor",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "symlink-write-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "hardlink-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "rename-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "unlink-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "read-source-env",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "write-source-via-read-fd",
+        "ok": false,
+        "errno": 9
+      }
+    ],
+    "admissionErrors": [
+      "overlapping_command_scope",
+      "overlapping_command_scope",
+      "invalid_command_scope",
+      "command_output_not_fresh"
+    ],
+    "source": "source-sentinel",
+    "input": "fixed-input",
+    "neighbor": "neighbor-sentinel",
+    "secret": "fake-secret-sentinel",
+    "control": "control-sentinel",
+    "outputFiles": [
+      "child",
+      "grandchild"
+    ]
+  },
+  "completedAt": "2026-09-16T03:31:06.412Z",
+  "cleanup": {
+    "removed": true,
+    "reapedFixedTree": true,
+    "handles": {
+      "status": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 46944120832,
+  "spaceDelta": -98304
+}

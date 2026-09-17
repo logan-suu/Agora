@@ -1,0 +1,29 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ apps/web/test/local-validation-command.test.ts (3 tests | 1 failed) 6ms
+   × fixed local Node validation > selects every supported test in stable order with exact TAP arguments 4ms
+     → expected [Function] to throw an error
+   ✓ fixed local Node validation > requires actual successful exit and complete non-skipped TAP counts 1ms
+   ✓ fixed local Node validation > preserves a complete failed run instead of converting its real exit into pass 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/web/test/local-validation-command.test.ts > fixed local Node validation > selects every supported test in stable order with exact TAP arguments
+AssertionError: expected [Function] to throw an error
+ ❯ apps/web/test/local-validation-command.test.ts:29:63
+     27|       .toEqual(['--test', '--test-reporter=tap', '@input/a.test.cjs', …
+     28|     for (const paths of [[], ['lib.js'], ['a.test.cjs', 'a.test.cjs'],…
+     29|       expect(() => localValidationCommand(inspection(paths))).toThrow(…
+       |                                                               ^
+     30|   });
+     31|   it('requires actual successful exit and complete non-skipped TAP cou…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+   Start at  18:05:17
+   Duration  351ms (transform 121ms, setup 0ms, collect 218ms, tests 6ms, environment 0ms, prepare 32ms)
+

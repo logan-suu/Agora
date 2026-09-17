@@ -1,0 +1,104 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-supervision.test.ts (7 tests) 35345ms
+   ✓ persists observed parent relations and stops descendants after the main process exits  1067ms
+   ✓ uses the default thirty-second execution limit and closes durable observation after timeout  30308ms
+   ✓ cancels a running process tree without extending the cleanup deadline  867ms
+   ✓ bounds observation when the registered identity is wrong without signaling the live process  504ms
+   ✓ rejects invalid parent relations atomically and refuses corrupted or old-version records  813ms
+   ✓ preserves blocking state when the final observation cannot be durably committed  787ms
+   ✓ stops observing execution when the durable command is quarantined by the control plane  997ms
+ ✓ tests/integration/phase12/phase12-3-command-stop.test.ts (6 tests) 13291ms
+   ✓ preserves KILL escalation when real helper launch latency approaches the TERM boundary  2378ms
+   ✓ stops only the registered process birth identity and escalates ignored TERM  1514ms
+   ✓ caps retained output without treating a successful exit as trusted completion  535ms
+   ✓ closes inherited pipes within the tail deadline while exposing incomplete output  7780ms
+   ✓ finishes a TERM-responsive registered process without sending KILL  556ms
+   ✓ returns needsAttention for a mismatched registered birth without sending a signal  528ms
+ ❯ tests/integration/phase12/phase12-3-command-binding.test.ts (12 tests | 1 failed) 7488ms
+   ✓ stops registered execution when grant-revision changes  712ms
+   ✓ stops registered execution when worker changes  700ms
+   ✓ stops registered execution when writer-epoch changes  706ms
+   ✓ stops registered execution when authority-error changes  680ms
+   ✓ refuses to release project code after a root is replaced  671ms
+   ✓ stops on ancestor relocation and never follows the moved directory  673ms
+   ✓ rejects tool replacement before any process is launched 282ms
+   ✓ keeps invalidation sticky even when the authority is restored 284ms
+   ✓ rejects command arguments that differ from the captured binding 282ms
+   ✓ rechecks authority at completion instead of accepting a successful process exit  692ms
+   ✓ never executes a replaced process-control helper even during cleanup  1103ms
+   × rejects old journal formats and malformed persisted root bindings 704ms
+     → expected [ 'invalid_command_journal', …(1) ] to deeply equal [ 'invalid_command_journal', …(1) ]
+ ✓ tests/integration/phase12/phase12-3-transaction.test.ts (17 tests) 6460ms
+   ✓ durably preserves the baseline and exchanged inode before reporting applied  405ms
+   ✓ closes the operation without touching source or external objects: move-root-before-write  385ms
+   ✓ closes the operation without touching source or external objects: move-parent-before-swap  389ms
+   ✓ closes the operation without touching source or external objects: replace-root  362ms
+   ✓ invalidates a completed exchange after root movement without undoing the actual result  383ms
+   ✓ preserves a competing user edit and refuses a stale baseline  384ms
+   ✓ refuses linked external objects: symlink-target  362ms
+   ✓ refuses linked external objects: hardlink-target  376ms
+   ✓ does not repeat a filesystem mutation when replaying an identical action  383ms
+   ✓ checks root identity after the final asynchronous authorization check  360ms
+   ✓ also invalidates a parent moved during completion authorization  385ms
+   ✓ refuses a metadata-only edit after the baseline read  391ms
+   ✓ honors trusted authorization closure: revoke-before-write  371ms
+   ✓ honors trusted authorization closure: revoke-before-swap  387ms
+   ✓ refuses unsafe journal replay: replay-different-input  384ms
+   ✓ refuses unsafe journal replay: replay-corrupt-receipt  363ms
+   ✓ refuses unsafe journal replay: replay-missing-receipt  389ms
+ ✓ tests/integration/phase12/phase12-3-command-start.test.ts (8 tests) 4569ms
+   ✓ registers the suspended executable before any constructor or project code runs  659ms
+   ✓ keeps project code suspended when the release authorization is revoked  567ms
+   ✓ does not release the executable when durable registration fails  544ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  690ms
+   ✓ records a failed exec without releasing any project code  563ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  563ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  698ms
+ ✓ tests/integration/phase12/phase12-3-command-discovery.test.ts (5 tests) 2324ms
+   ✓ discovers a real child and grandchild without enrolling an unrelated sibling  613ms
+   ✓ retains a discovered grandchild after its parent exits and it is reparented  574ms
+   ✓ rejects a wrong parent birth and leaves the real tree alive  573ms
+   ✓ exposes helper failure as incomplete discovery without signaling the root  564ms
+ ✓ tests/integration/phase12/phase12-3.test.ts (5 tests) 1744ms
+   ✓ preserves both versions in a normal confined APFS exchange  387ms
+   ✓ refuses an exchange after the opened parent moves outside the authorized root  345ms
+   ✓ refuses an exchange after the opened root moves away from its authorized path  324ms
+   ✓ can prepare a transaction file through an opened handle inside the authorized root  345ms
+   ✓ distinguishes a refused new open from the original file handle after root movement  343ms
+ ✓ tests/integration/phase12/phase12-3-command-isolation.test.ts (2 tests) 739ms
+   ✓ confines native child and exec descendants to one private command write root  359ms
+   ✓ runs the pinned Node toolchain and preserves the boundary in its spawned child  380ms
+ ✓ tests/integration/phase12/phase12-3-command-journal.test.ts (5 tests) 637ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-binding.test.ts > rejects old journal formats and malformed persisted root bindings
+AssertionError: expected [ 'invalid_command_journal', …(1) ] to deeply equal [ 'invalid_command_journal', …(1) ]
+
+- Expected
++ Received
+
+  [
+    "invalid_command_journal",
+-   "invalid_command_journal",
++   "unexpected-acceptance",
+  ]
+
+ ❯ tests/integration/phase12/phase12-3-command-binding.test.ts:72:32
+     70| it('rejects old journal formats and malformed persisted root bindings'…
+     71|   const result = await probeLocalCommandBinding('binding-journal');
+     72|   expect(result.journalErrors).toEqual(['invalid_command_journal', 'in…
+       |                                ^
+     73|   expect(result.record.binding).not.toBeNull();
+     74| }, 20_000);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 8 passed (9)
+      Tests  1 failed | 66 passed (67)
+   Start at  01:05:28
+   Duration  73.60s (transform 91ms, setup 0ms, collect 162ms, tests 72.60s, environment 1ms, prepare 215ms)
+

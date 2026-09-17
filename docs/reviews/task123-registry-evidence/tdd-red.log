@@ -1,0 +1,27 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/runtime/sandbox/test/local-registry-file.test.ts [ packages/runtime/sandbox/test/local-registry-file.test.ts ]
+Error: Cannot find module '../src/local-registry-file' imported from '/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/test/local-registry-file.test.ts'
+ ❯ packages/runtime/sandbox/test/local-registry-file.test.ts:8:1
+      6| import { expect, it } from 'vitest';
+      7| import { acquireState } from '../../../../apps/desktop/src/storage';
+      8| import { LocalRegistryFile } from '../src/local-registry-file';
+       | ^
+      9| 
+     10| const codec = (value: unknown) => {
+
+Caused by: Error: Failed to load url ../src/local-registry-file (resolved id: ../src/local-registry-file) in /Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/test/local-registry-file.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@20.19.43_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  11:30:13
+   Duration  147ms (transform 28ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 37ms)
+

@@ -1,0 +1,31 @@
+{
+  "scenario": "replay",
+  "base": "/private/tmp/agora-task123-validation-xaCVCZ",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128307757
+  },
+  "startedAt": "2026-09-16T19:41:25.377Z",
+  "binaryHash": "39af5d6d94e81c8dfa3597ce4bdb5c888c2c992f8a9a78657baf1a53f9274891",
+  "error": "(0 , __vite_ssr_import_5__.inspectLocalCreationBasis) is not a function",
+  "sources": {
+    "packages/runtime/sandbox/native/local-file-transaction.c": {
+      "sha256": "437e59d9cdab636afe741519d9944bc97122b8cc82b5c2a48502c23db8c3a521",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-creation-evidence/agora-task123-validation-xaCVCZ-source-0.txt"
+    },
+    "packages/runtime/sandbox/src/local-file-transaction.ts": {
+      "sha256": "d9a23dd5e8abf053b3e8c0d4cc34ba629bb2fb4d4b099a11f0e73400d93b9ec1",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-creation-evidence/agora-task123-validation-xaCVCZ-source-1.txt"
+    },
+    "tests/integration/phase12/phase12-3-creation.test.ts": {
+      "sha256": "297d392031800dc3ed9e7803c2870a60017e422d292281bdb66e40a7d69e00ce",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-creation-evidence/agora-task123-validation-xaCVCZ-source-2.txt"
+    }
+  },
+  "cleanup": {
+    "deleted": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 49152
+  }
+}

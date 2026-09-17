@@ -1,0 +1,27 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-binding.test.ts [ tests/integration/phase12/phase12-3-command-binding.test.ts ]
+Error: Cannot find module './local-command-binding-fixture' imported from '/Users/logansu/Documents/Dev/Agora/tests/integration/phase12/phase12-3-command-binding.test.ts'
+ ❯ tests/integration/phase12/phase12-3-command-binding.test.ts:4:1
+      2| // exercises the registry seam; it is not a substitute for the pending…
+      3| import { expect, it } from 'vitest';
+      4| import { probeLocalCommandBinding } from './local-command-binding-fixt…
+       | ^
+      5| 
+      6| for (const scenario of ['grant-revision', 'worker', 'writer-epoch', 'a…
+
+Caused by: Error: Failed to load url ./local-command-binding-fixture (resolved id: ./local-command-binding-fixture) in /Users/logansu/Documents/Dev/Agora/tests/integration/phase12/phase12-3-command-binding.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@20.19.43_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  00:56:14
+   Duration  137ms (transform 18ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 38ms)
+

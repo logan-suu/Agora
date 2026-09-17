@@ -1,0 +1,63 @@
+// One disposable user-domain job for a fixed trusted prelude; no login item or daemon installation.
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, statfsSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const directory = dirname(fileURLToPath(import.meta.url));
+const base = mkdtempSync('/private/tmp/agora-task123-validation-');
+const identity = statSync(base);
+const suffix = base.split('-').at(-1);
+const label = `org.agora.task123.probe.${suffix}`;
+const domain = `gui/${process.getuid()}`;
+const target = `${domain}/${label}`;
+const executable = join(base, 'session-probe');
+const hash = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
+const space = () => { const s = statfsSync('/private/tmp'); return s.bavail * s.bsize; };
+const run = (file, args) => {
+  const r = spawnSync(file, args, { cwd: directory, env: { PATH: '/usr/bin:/bin', HOME: base, TMPDIR: base }, encoding: 'utf8', timeout: 10000 });
+  return { status: r.status, signal: r.signal, stdout: r.stdout, stderr: r.stderr, error: r.error?.message };
+};
+const record = { base, target, startedAt: new Date().toISOString(), sourceHash: hash(join(directory, 'security-session-probe.c.txt')), controllerHash: hash(fileURLToPath(import.meta.url)), identity: { uid: identity.uid, dev: identity.dev, ino: identity.ino }, availableBefore: space(), os: run('/usr/bin/sw_vers', ['-buildVersion']) };
+const evidence = join(directory, `launchd-session-${suffix}.json`);
+try {
+  record.build = run('/usr/bin/clang', ['-x', 'c', '-std=c11', '-Wall', '-Wextra', '-Werror', '-mmacosx-version-min=15.0', '-framework', 'Security', '-lbsm', join(directory, 'security-session-probe.c.txt'), '-o', executable]);
+  if (record.build.status !== 0) throw new Error('compile_failed');
+  record.binaryHash = hash(executable);
+  const plist = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>Label</key><string>${label}</string><key>ProgramArguments</key><array><string>${executable}</string><string>hold</string></array><key>RunAtLoad</key><true/><key>SessionCreate</key><true/><key>KeepAlive</key><false/><key>WorkingDirectory</key><string>${base}</string><key>EnvironmentVariables</key><dict><key>HOME</key><string>${base}</string><key>TMPDIR</key><string>${base}</string></dict><key>StandardOutPath</key><string>${base}/stdout</string><key>StandardErrorPath</key><string>${base}/stderr</string></dict></plist>`;
+  record.plist = plist;
+  writeFileSync(join(base, 'job.plist'), plist);
+  record.bootstrap = run('/bin/launchctl', ['bootstrap', domain, join(base, 'job.plist')]);
+  if (record.bootstrap.status !== 0) throw new Error('bootstrap_failed');
+  for (let i = 0; i < 100; i++) {
+    if (existsSync(join(base, 'stdout')) && readFileSync(join(base, 'stdout'), 'utf8').includes('"stage":"before"')) break;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  record.stdout = existsSync(join(base, 'stdout')) ? readFileSync(join(base, 'stdout'), 'utf8') : '';
+  const first = JSON.parse(record.stdout.trim().split('\n')[0]);
+  record.externalInspection = run(executable, ['inspect', String(first.pid)]);
+  await new Promise((resolve) => setTimeout(resolve, 3500));
+  record.stdout = readFileSync(join(base, 'stdout'), 'utf8');
+  record.stderr = existsSync(join(base, 'stderr')) ? readFileSync(join(base, 'stderr'), 'utf8') : '';
+  record.job = run('/bin/launchctl', ['print', target]);
+} catch (error) {
+  record.error = error.message;
+  process.exitCode = 1;
+} finally {
+  record.bootout = run('/bin/launchctl', ['bootout', target]);
+  record.absent = run('/bin/launchctl', ['print', target]);
+  record.completedAt = new Date().toISOString();
+  writeFileSync(evidence, `${JSON.stringify(record, null, 2)}\n`);
+  const current = statSync(base);
+  const handles = run('/usr/sbin/lsof', ['-nP', '+D', base]);
+  const mounts = run('/sbin/mount', []);
+  record.cleanup = { removed: false, handles };
+  if (record.bootout.status === 0 && record.absent.status === 113 && current.uid === identity.uid && current.dev === identity.dev && current.ino === identity.ino && realpathSync(base) === base && handles.status === 1 && !handles.stdout && !handles.stderr && mounts.status === 0 && !mounts.stdout.includes(base)) {
+    rmSync(base, { recursive: true });
+    record.cleanup.removed = true;
+  }
+  record.availableAfter = space();
+  record.spaceDelta = record.availableAfter - record.availableBefore;
+  writeFileSync(evidence, `${JSON.stringify(record, null, 2)}\n`);
+  console.log(JSON.stringify({ evidence, stdout: record.stdout, externalInspection: record.externalInspection, stderr: record.stderr, error: record.error, bootstrap: record.bootstrap, bootout: record.bootout, absent: record.absent, cleanup: record.cleanup }));
+}

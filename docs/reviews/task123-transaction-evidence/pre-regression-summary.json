@@ -1,0 +1,1027 @@
+{
+  "recordedAt": "2026-09-16T00:19:03.436Z",
+  "scope": "Internal native replacement primitive only; no public workspace port or command-supervisor G5",
+  "checks": {
+    "nativeBuild": "existing formal helper passed; new internal helper compiled inside each fixture",
+    "typecheck": "passed",
+    "lint": "passed",
+    "targeted": {
+      "files": 2,
+      "passed": 22,
+      "failed": 0
+    },
+    "fullRegression": "not started: automatic approval rejected external model payload authorization; concrete scope requested",
+    "modelRequests": 0
+  },
+  "sourceHashes": {
+    "packages/runtime/sandbox/native/local-file-transaction.c": "437e59d9cdab636afe741519d9944bc97122b8cc82b5c2a48502c23db8c3a521",
+    "packages/runtime/sandbox/src/local-file-transaction.ts": "d9a23dd5e8abf053b3e8c0d4cc34ba629bb2fb4d4b099a11f0e73400d93b9ec1",
+    "tests/integration/phase12/local-transaction-fixture.ts": "2f5f872bb922a65c22286afb823be0a8b280208384e0715bd2fefb035825c1f3",
+    "tests/integration/phase12/phase12-3-transaction.test.ts": "a3600fb0d45faca3ef16da534eb26cf9e9d7e010905a80e4faa39872a83f9b88",
+    "tests/integration/phase12/phase12-3.test.ts": "82fce55bb52b200653e5ed45df46610571cb7482de405ee1a370b2fad2c895da"
+  },
+  "runs": [
+    {
+      "file": "edit-before-swap-32h4KS.json",
+      "path": "/private/tmp/agora-task123-validation-32h4KS",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -69632
+    },
+    {
+      "file": "edit-before-swap-7W8ANN.json",
+      "path": "/private/tmp/agora-task123-validation-7W8ANN",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -86016
+    },
+    {
+      "file": "edit-before-swap-IEnRZT.json",
+      "path": "/private/tmp/agora-task123-validation-IEnRZT",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 4169728
+    },
+    {
+      "file": "edit-before-swap-QnziU6.json",
+      "path": "/private/tmp/agora-task123-validation-QnziU6",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -65536
+    },
+    {
+      "file": "edit-before-swap-W4VRvG.json",
+      "path": "/private/tmp/agora-task123-validation-W4VRvG",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -28672
+    },
+    {
+      "file": "edit-before-swap-a4lDbl.json",
+      "path": "/private/tmp/agora-task123-validation-a4lDbl",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -1052672
+    },
+    {
+      "file": "hardlink-target-59JRWF.json",
+      "path": "/private/tmp/agora-task123-validation-59JRWF",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -24576
+    },
+    {
+      "file": "hardlink-target-Rve4Nm.json",
+      "path": "/private/tmp/agora-task123-validation-Rve4Nm",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -94208
+    },
+    {
+      "file": "hardlink-target-hK1EHN.json",
+      "path": "/private/tmp/agora-task123-validation-hK1EHN",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -77824
+    },
+    {
+      "file": "hardlink-target-k87b8P.json",
+      "path": "/private/tmp/agora-task123-validation-k87b8P",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -16384
+    },
+    {
+      "file": "hardlink-target-rP9XJl.json",
+      "path": "/private/tmp/agora-task123-validation-rP9XJl",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -24576
+    },
+    {
+      "file": "hardlink-target-yxUjpp.json",
+      "path": "/private/tmp/agora-task123-validation-yxUjpp",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -2617344
+    },
+    {
+      "file": "metadata-before-swap-6L6T0y.json",
+      "path": "/private/tmp/agora-task123-validation-6L6T0y",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -884736
+    },
+    {
+      "file": "metadata-before-swap-yVBkXk.json",
+      "path": "/private/tmp/agora-task123-validation-yVBkXk",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -307200
+    },
+    {
+      "file": "move-parent-before-swap-PaMIYP.json",
+      "path": "/private/tmp/agora-task123-validation-PaMIYP",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -40960
+    },
+    {
+      "file": "move-parent-before-swap-RiFSXn.json",
+      "path": "/private/tmp/agora-task123-validation-RiFSXn",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -90112
+    },
+    {
+      "file": "move-parent-before-swap-U5JvN0.json",
+      "path": "/private/tmp/agora-task123-validation-U5JvN0",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -20480
+    },
+    {
+      "file": "move-parent-before-swap-VnaCMH.json",
+      "path": "/private/tmp/agora-task123-validation-VnaCMH",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -966656
+    },
+    {
+      "file": "move-parent-before-swap-oA1Uk4.json",
+      "path": "/private/tmp/agora-task123-validation-oA1Uk4",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -73728
+    },
+    {
+      "file": "move-parent-before-swap-sSqNYA.json",
+      "path": "/private/tmp/agora-task123-validation-sSqNYA",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -8192
+    },
+    {
+      "file": "move-parent-completion-CnX1pw.json",
+      "path": "/private/tmp/agora-task123-validation-CnX1pw",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -163840
+    },
+    {
+      "file": "move-parent-completion-pVRg1w.json",
+      "path": "/private/tmp/agora-task123-validation-pVRg1w",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -184320
+    },
+    {
+      "file": "move-root-after-swap-DOZmjj.json",
+      "path": "/private/tmp/agora-task123-validation-DOZmjj",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -1040384
+    },
+    {
+      "file": "move-root-after-swap-F4IS2f.json",
+      "path": "/private/tmp/agora-task123-validation-F4IS2f",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -73728
+    },
+    {
+      "file": "move-root-after-swap-LzvSya.json",
+      "path": "/private/tmp/agora-task123-validation-LzvSya",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 0
+    },
+    {
+      "file": "move-root-after-swap-QUXZk6.json",
+      "path": "/private/tmp/agora-task123-validation-QUXZk6",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -12288
+    },
+    {
+      "file": "move-root-after-swap-Qv7XxT.json",
+      "path": "/private/tmp/agora-task123-validation-Qv7XxT",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 12288
+    },
+    {
+      "file": "move-root-after-swap-Xxof06.json",
+      "path": "/private/tmp/agora-task123-validation-Xxof06",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -8192
+    },
+    {
+      "file": "move-root-before-write-3pF3DG.json",
+      "path": "/private/tmp/agora-task123-validation-3pF3DG",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 1024000
+    },
+    {
+      "file": "move-root-before-write-B8Vy2L.json",
+      "path": "/private/tmp/agora-task123-validation-B8Vy2L",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 0
+    },
+    {
+      "file": "move-root-before-write-cLeh7x.json",
+      "path": "/private/tmp/agora-task123-validation-cLeh7x",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 8192
+    },
+    {
+      "file": "move-root-before-write-mABmEV.json",
+      "path": "/private/tmp/agora-task123-validation-mABmEV",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 1748992
+    },
+    {
+      "file": "move-root-before-write-tXC3RT.json",
+      "path": "/private/tmp/agora-task123-validation-tXC3RT",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -65536
+    },
+    {
+      "file": "move-root-before-write-y8Xu1p.json",
+      "path": "/private/tmp/agora-task123-validation-y8Xu1p",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -32768
+    },
+    {
+      "file": "move-root-completion-5GS1sH.json",
+      "path": "/private/tmp/agora-task123-validation-5GS1sH",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 12288
+    },
+    {
+      "file": "move-root-completion-8aODgi.json",
+      "path": "/private/tmp/agora-task123-validation-8aODgi",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -65536
+    },
+    {
+      "file": "move-root-completion-Th5JE0.json",
+      "path": "/private/tmp/agora-task123-validation-Th5JE0",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -12288
+    },
+    {
+      "file": "move-root-completion-lzruGS.json",
+      "path": "/private/tmp/agora-task123-validation-lzruGS",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -4096
+    },
+    {
+      "file": "normal-AeHpu9.json",
+      "path": "/private/tmp/agora-task123-validation-AeHpu9",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 131072
+    },
+    {
+      "file": "normal-CvpHUI.json",
+      "path": "/private/tmp/agora-task123-validation-CvpHUI",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -57344
+    },
+    {
+      "file": "normal-FbL3BL.json",
+      "path": "/private/tmp/agora-task123-validation-FbL3BL",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -86016
+    },
+    {
+      "file": "normal-RGNYRH.json",
+      "path": "/private/tmp/agora-task123-validation-RGNYRH",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 65536
+    },
+    {
+      "file": "normal-dWziSf.json",
+      "path": "/private/tmp/agora-task123-validation-dWziSf",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -53248
+    },
+    {
+      "file": "normal-jPPbeM.json",
+      "path": "/private/tmp/agora-task123-validation-jPPbeM",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -1183744
+    },
+    {
+      "file": "normal-mXuOpv.json",
+      "path": "/private/tmp/agora-task123-validation-mXuOpv",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -28672
+    },
+    {
+      "file": "normal-nnDLIA.json",
+      "path": "/private/tmp/agora-task123-validation-nnDLIA",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 106496
+    },
+    {
+      "file": "normal-ojXg6Z.json",
+      "path": "/private/tmp/agora-task123-validation-ojXg6Z",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -16384
+    },
+    {
+      "file": "normal-olGHtx.json",
+      "path": "/private/tmp/agora-task123-validation-olGHtx",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 0
+    },
+    {
+      "file": "normal-w0AC29.json",
+      "path": "/private/tmp/agora-task123-validation-w0AC29",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 0
+    },
+    {
+      "file": "replace-root-69Wcfe.json",
+      "path": "/private/tmp/agora-task123-validation-69Wcfe",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -77824
+    },
+    {
+      "file": "replace-root-9yeLjK.json",
+      "path": "/private/tmp/agora-task123-validation-9yeLjK",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -20480
+    },
+    {
+      "file": "replace-root-K5snvF.json",
+      "path": "/private/tmp/agora-task123-validation-K5snvF",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -24576
+    },
+    {
+      "file": "replace-root-TesrwX.json",
+      "path": "/private/tmp/agora-task123-validation-TesrwX",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -1126400
+    },
+    {
+      "file": "replace-root-Xk3pOn.json",
+      "path": "/private/tmp/agora-task123-validation-Xk3pOn",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -81920
+    },
+    {
+      "file": "replace-root-g0cQfv.json",
+      "path": "/private/tmp/agora-task123-validation-g0cQfv",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -172032
+    },
+    {
+      "file": "replay-6nvVvE.json",
+      "path": "/private/tmp/agora-task123-validation-6nvVvE",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -1024000
+    },
+    {
+      "file": "replay-I9AMlv.json",
+      "path": "/private/tmp/agora-task123-validation-I9AMlv",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -24576
+    },
+    {
+      "file": "replay-RPg1ut.json",
+      "path": "/private/tmp/agora-task123-validation-RPg1ut",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -73728
+    },
+    {
+      "file": "replay-corrupt-receipt-jZAuk9.json",
+      "path": "/private/tmp/agora-task123-validation-jZAuk9",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 1613824
+    },
+    {
+      "file": "replay-corrupt-receipt-xkCwBR.json",
+      "path": "/private/tmp/agora-task123-validation-xkCwBR",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -8192
+    },
+    {
+      "file": "replay-corrupt-receipt-zctAwR.json",
+      "path": "/private/tmp/agora-task123-validation-zctAwR",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -1110016
+    },
+    {
+      "file": "replay-d4ztzZ.json",
+      "path": "/private/tmp/agora-task123-validation-d4ztzZ",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 4096
+    },
+    {
+      "file": "replay-different-input-ZKABvj.json",
+      "path": "/private/tmp/agora-task123-validation-ZKABvj",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -987136
+    },
+    {
+      "file": "replay-different-input-oazmiC.json",
+      "path": "/private/tmp/agora-task123-validation-oazmiC",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 12288
+    },
+    {
+      "file": "replay-different-input-qPe8Is.json",
+      "path": "/private/tmp/agora-task123-validation-qPe8Is",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -4096
+    },
+    {
+      "file": "replay-h0IOXc.json",
+      "path": "/private/tmp/agora-task123-validation-h0IOXc",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 24576
+    },
+    {
+      "file": "replay-jTqdUK.json",
+      "path": "/private/tmp/agora-task123-validation-jTqdUK",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 20480
+    },
+    {
+      "file": "replay-missing-receipt-ESXsAW.json",
+      "path": "/private/tmp/agora-task123-validation-ESXsAW",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 0
+    },
+    {
+      "file": "replay-missing-receipt-ISehSG.json",
+      "path": "/private/tmp/agora-task123-validation-ISehSG",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 0
+    },
+    {
+      "file": "replay-missing-receipt-PJAl7V.json",
+      "path": "/private/tmp/agora-task123-validation-PJAl7V",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 28672
+    },
+    {
+      "file": "revoke-before-swap-JiwcB1.json",
+      "path": "/private/tmp/agora-task123-validation-JiwcB1",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -110592
+    },
+    {
+      "file": "revoke-before-swap-Nlg1LL.json",
+      "path": "/private/tmp/agora-task123-validation-Nlg1LL",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 0
+    },
+    {
+      "file": "revoke-before-swap-f0evQT.json",
+      "path": "/private/tmp/agora-task123-validation-f0evQT",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 2080768
+    },
+    {
+      "file": "revoke-before-write-6J7mLe.json",
+      "path": "/private/tmp/agora-task123-validation-6J7mLe",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -20480
+    },
+    {
+      "file": "revoke-before-write-UkIkix.json",
+      "path": "/private/tmp/agora-task123-validation-UkIkix",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -8192
+    },
+    {
+      "file": "revoke-before-write-Xkac9w.json",
+      "path": "/private/tmp/agora-task123-validation-Xkac9w",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -110592
+    },
+    {
+      "file": "symlink-target-3kvfBc.json",
+      "path": "/private/tmp/agora-task123-validation-3kvfBc",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -12288
+    },
+    {
+      "file": "symlink-target-8x74qD.json",
+      "path": "/private/tmp/agora-task123-validation-8x74qD",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 3588096
+    },
+    {
+      "file": "symlink-target-NEuBzx.json",
+      "path": "/private/tmp/agora-task123-validation-NEuBzx",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -1044480
+    },
+    {
+      "file": "symlink-target-ahLvOz.json",
+      "path": "/private/tmp/agora-task123-validation-ahLvOz",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -106496
+    },
+    {
+      "file": "symlink-target-oLK5ED.json",
+      "path": "/private/tmp/agora-task123-validation-oLK5ED",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": -61440
+    },
+    {
+      "file": "symlink-target-x1Cus4.json",
+      "path": "/private/tmp/agora-task123-validation-x1Cus4",
+      "quiescent": true,
+      "removed": true,
+      "pathAbsent": true,
+      "spaceDelta": 4096
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "edit-before-swap-32h4KS.json",
+      "sha256": "e5065ec8fd3002b370dea88caebfa2864306d64770ab87eb5bee6fc24f8f468e"
+    },
+    {
+      "file": "edit-before-swap-7W8ANN.json",
+      "sha256": "c9629c3e024dc148f44d7ec47d7fb81c93bb3ae765ec581b2a3aea6654243ab2"
+    },
+    {
+      "file": "edit-before-swap-IEnRZT.json",
+      "sha256": "48ab71d231dc017a44438b797edcff93d53a3d3b8cf358e30ef900a2039e779b"
+    },
+    {
+      "file": "edit-before-swap-QnziU6.json",
+      "sha256": "d6d00c4d98f472e2da47d0ed909c56a357459a1869c898def9e11318e8e73672"
+    },
+    {
+      "file": "edit-before-swap-W4VRvG.json",
+      "sha256": "a6436ed4c8436b62e45a59b7eb58c260e65a31fb6207cfa79e4adef70c0ccb2b"
+    },
+    {
+      "file": "edit-before-swap-a4lDbl.json",
+      "sha256": "bc83c75d70f22580360e523a688ca3cd35202f7dd40ffb47c167463c51ff4a63"
+    },
+    {
+      "file": "hardlink-target-59JRWF.json",
+      "sha256": "f236939007e3b730d74935ab588cfcf3078fde3766c2db3229c27174599d955b"
+    },
+    {
+      "file": "hardlink-target-Rve4Nm.json",
+      "sha256": "436ab5a524555d282ccdca9450c27d3f2adcb5cba68ee397f2ca9276d794dcbc"
+    },
+    {
+      "file": "hardlink-target-hK1EHN.json",
+      "sha256": "f68bf94b1ceebdcd05ed60300d19db425506f58a5cc938d49382845595a4ca92"
+    },
+    {
+      "file": "hardlink-target-k87b8P.json",
+      "sha256": "f43d352776b6e4c45f5ae7a60dce2adfd33b2f3e55400acf2713c71ad225f744"
+    },
+    {
+      "file": "hardlink-target-rP9XJl.json",
+      "sha256": "15d3a6502843883b15871389c0e3b17c1512e48b756452a87e1ad4c4aa3a9f9c"
+    },
+    {
+      "file": "hardlink-target-yxUjpp.json",
+      "sha256": "29c347714ab1063faffd84e8b2e69f300202ef9b310876fc7b0aeb26c2a46cae"
+    },
+    {
+      "file": "lint.log",
+      "sha256": "c00b1bb3d2fcaf2257db0bf8f20ebada560442f22350ec58864b18502e3a1766"
+    },
+    {
+      "file": "metadata-before-swap-6L6T0y.json",
+      "sha256": "cad53237388bb06b6526661ff94727058e577778da83ee77ccc094ede244394c"
+    },
+    {
+      "file": "metadata-before-swap-yVBkXk.json",
+      "sha256": "94613e623b179c76b8a137262bfcc5ea46a25293eb09f1dba943379f8332b8ce"
+    },
+    {
+      "file": "move-parent-before-swap-PaMIYP.json",
+      "sha256": "132b158ce2c68545d7ee596b92a4bc44099a563a3af06df2c41f2a1049fc4250"
+    },
+    {
+      "file": "move-parent-before-swap-RiFSXn.json",
+      "sha256": "45704d773265d18129e542eb9a7f849373832ca2264960c6731139c5720a938e"
+    },
+    {
+      "file": "move-parent-before-swap-U5JvN0.json",
+      "sha256": "7c41d6e8af276a0e7a1671c8214b9fe724e32616f54e2bb91a89703f3124541f"
+    },
+    {
+      "file": "move-parent-before-swap-VnaCMH.json",
+      "sha256": "a4a01872afd600281e69b6a214e86d78e17f88372b544cbf60f59a47f698876b"
+    },
+    {
+      "file": "move-parent-before-swap-oA1Uk4.json",
+      "sha256": "4513ea41ba0a995d3207f25776c4c0eecc2d7891cad9e7fd7e5097ba6c554119"
+    },
+    {
+      "file": "move-parent-before-swap-sSqNYA.json",
+      "sha256": "ae877b1290a85187f8870cd3f577f55be6ab820700a5ac25880490b0d8f74f11"
+    },
+    {
+      "file": "move-parent-completion-CnX1pw.json",
+      "sha256": "33f0e97bb862d1615c92b218096b486f15fb21ad1b0c8a5e87cc6d6b9be86b77"
+    },
+    {
+      "file": "move-parent-completion-pVRg1w.json",
+      "sha256": "825ab8b8674ad06051891decb58a2437f4fe195b1244a7a505a1c6d66c1b7a7d"
+    },
+    {
+      "file": "move-root-after-swap-DOZmjj.json",
+      "sha256": "ec216d4b41017a897173ff47569dff3918e55c6cea98774c2c851f216b3f5f81"
+    },
+    {
+      "file": "move-root-after-swap-F4IS2f.json",
+      "sha256": "bd04a832cfcab8702368587c9ffc06b267d79e1350574265f5507aed6959315c"
+    },
+    {
+      "file": "move-root-after-swap-LzvSya.json",
+      "sha256": "3c7d26d1ac2bbb4a3b9ce8c927b8635688695450afd30f669ae4d78e9fbfc48b"
+    },
+    {
+      "file": "move-root-after-swap-QUXZk6.json",
+      "sha256": "f8fa7496384a08f0d9f7e9fa5ed028b4cdaed0663ec4f37762ab180fef731150"
+    },
+    {
+      "file": "move-root-after-swap-Qv7XxT.json",
+      "sha256": "acc40a6b9cf6862b0c37f701e828f1c4815b92b9e6e48939e9d3798f8bf9f51b"
+    },
+    {
+      "file": "move-root-after-swap-Xxof06.json",
+      "sha256": "237ab8cef53f2df35b4200dfd3671b10408e842c99bafa73f5534bc05ce4e1c5"
+    },
+    {
+      "file": "move-root-before-write-3pF3DG.json",
+      "sha256": "b43ea5c1ccd7dee7f0f4eb292737829e2ae7f9a3dd5b930895c7b4d3b89efecb"
+    },
+    {
+      "file": "move-root-before-write-B8Vy2L.json",
+      "sha256": "e588e87a44f4454e3a536defa1fef06746af782840dc9eb706a17a88c0ef3c31"
+    },
+    {
+      "file": "move-root-before-write-cLeh7x.json",
+      "sha256": "e961dfcabb60ee20277687a956a2f20f5328b353e2593534828cccb48cc543bc"
+    },
+    {
+      "file": "move-root-before-write-mABmEV.json",
+      "sha256": "701536d9fb358e81381dc3744c9429fdb36b1203620753b86362dd1fb68fa47e"
+    },
+    {
+      "file": "move-root-before-write-tXC3RT.json",
+      "sha256": "21ff28e9ec7312eb44ea37746e529e18b7fe51b8a88d9e737f3df648006c8d2e"
+    },
+    {
+      "file": "move-root-before-write-y8Xu1p.json",
+      "sha256": "aacd34b0a7b065e4db91119c3e2ecd744e89ce16e3a786510c07877a09b76bb1"
+    },
+    {
+      "file": "move-root-completion-5GS1sH.json",
+      "sha256": "78ec0e0f6df5f8919a765feb0a97edb95bf11c17a25a817b3d942867d19ca3ee"
+    },
+    {
+      "file": "move-root-completion-8aODgi.json",
+      "sha256": "4016592608b202fade526991cb67261eada46ea8c21622a4112dd12431a13578"
+    },
+    {
+      "file": "move-root-completion-Th5JE0.json",
+      "sha256": "334d51b6c840ff5ebc0ae85955249e49c29753c3e3e86d5f347f263736499697"
+    },
+    {
+      "file": "move-root-completion-lzruGS.json",
+      "sha256": "27f4725dd71cf5ee42c9792156d995fb7b58df51f11be6fb514d871536b75a28"
+    },
+    {
+      "file": "normal-AeHpu9.json",
+      "sha256": "346f6eb0caa5de3c6eb80584b0b6186b2f3ec7780a26b934fd5515458bbdfb5c"
+    },
+    {
+      "file": "normal-CvpHUI.json",
+      "sha256": "55fdbc59833f4e481b434b20e553ea098a31e608d62155be771fec83b6dc318b"
+    },
+    {
+      "file": "normal-FbL3BL.json",
+      "sha256": "7e65cd705a5a2db86443e907f4bc2547d903a7d31f4d3a34a8cc01b4b6067b4d"
+    },
+    {
+      "file": "normal-RGNYRH.json",
+      "sha256": "334e08a3df505217099d6e9d71754e40de58d007e12315a6ac08f60782b54a7b"
+    },
+    {
+      "file": "normal-dWziSf.json",
+      "sha256": "360d8bb0146f4b6232212df0e79c1585fd007a176b24deec003fa55545a3daf7"
+    },
+    {
+      "file": "normal-jPPbeM.json",
+      "sha256": "db3ad691915f33c967d114f47edac442c9f272e74607b1cc28cf4c9d1127a7c2"
+    },
+    {
+      "file": "normal-mXuOpv.json",
+      "sha256": "d6f282fd2074cc9e28f91f9ccd54a5ae654f9c04bda583d1bb80619aa9e38141"
+    },
+    {
+      "file": "normal-nnDLIA.json",
+      "sha256": "469de58bc6ff4657b5fea0f9a25d32e309a1769a33cb69500a4c0324fd660655"
+    },
+    {
+      "file": "normal-ojXg6Z.json",
+      "sha256": "4886e89d9e0d377263c84323d5fa426a8a7e3c5a33b33c4315d03b68e6c4c54b"
+    },
+    {
+      "file": "normal-olGHtx.json",
+      "sha256": "9bf59c7fe891cbb908f5d88730b30b23ff67be015de70f93a602fac12f808cce"
+    },
+    {
+      "file": "normal-w0AC29.json",
+      "sha256": "e9ecc9f337087d3f487ed825b9e0857bb3a99dabb1f93d44b715716f66fbae04"
+    },
+    {
+      "file": "original-phase12-3.test.ts.txt",
+      "sha256": "6bebd29a2719a4e2682f8f8b433b44cc9a49c2124555b7e4383202a1083a2358"
+    },
+    {
+      "file": "replace-root-69Wcfe.json",
+      "sha256": "71d568d50f65910999c69f072bd45a3e3a2ca51259b721d31fb86eac379255ca"
+    },
+    {
+      "file": "replace-root-9yeLjK.json",
+      "sha256": "bf1ebbc36fa07df8147b54f7b663936b936bd03d96c0c80b391953458c240df3"
+    },
+    {
+      "file": "replace-root-K5snvF.json",
+      "sha256": "c044e5158c7afc41ba1b9c2922eb5aa52e854649968fee4364c3888f011b080b"
+    },
+    {
+      "file": "replace-root-TesrwX.json",
+      "sha256": "66630a522ed16e38d5b93f3d3cd4dd1b6d09b12fc737844b3a6da5eb98356dff"
+    },
+    {
+      "file": "replace-root-Xk3pOn.json",
+      "sha256": "6f1a58c09384600aa7d672266e00e2d67dc6b1d99423a89d6c593d3e93e00e86"
+    },
+    {
+      "file": "replace-root-g0cQfv.json",
+      "sha256": "18150c962bddd4dece7a1ef7375c4dce1ebccdee8df2f79959aaa0929b3458d0"
+    },
+    {
+      "file": "replay-6nvVvE.json",
+      "sha256": "9095e09be3b7d1186033703f35ed4dabc663a532dbf994b96378d20c6aaebcab"
+    },
+    {
+      "file": "replay-I9AMlv.json",
+      "sha256": "64f2d948acb9ab9a98bca7913493b3ba20e9df20eaebc5a4f59663fa96f40fa6"
+    },
+    {
+      "file": "replay-RPg1ut.json",
+      "sha256": "6288fc04a16a5d5330fde98a36eb4fd9d8e3316b719e235dcf178cdbd4b831c9"
+    },
+    {
+      "file": "replay-corrupt-receipt-jZAuk9.json",
+      "sha256": "7113e75498f9abf70e174a9a39c4cffe67005c0814ac2bb2b9a804460799287c"
+    },
+    {
+      "file": "replay-corrupt-receipt-xkCwBR.json",
+      "sha256": "fc95c34399173f9a4e86069f5f0dd8bc5cf03e1050f77610845c15778895d86c"
+    },
+    {
+      "file": "replay-corrupt-receipt-zctAwR.json",
+      "sha256": "370dbc81d118f32d47a40dcde94191fa42d02ffb3673334b903d464121654383"
+    },
+    {
+      "file": "replay-d4ztzZ.json",
+      "sha256": "6f1eb4ae0b41da1ae2f91bb611786e3d3ee35255690d13b05a02a887b9f38e88"
+    },
+    {
+      "file": "replay-different-input-ZKABvj.json",
+      "sha256": "e624b37772c952fc2728d6eb880c641032352d091bdc369da99026efae3e90ef"
+    },
+    {
+      "file": "replay-different-input-oazmiC.json",
+      "sha256": "e08edd02ec96ebb31d51070b5cdffe35b8e01fbd20517c84979d6e61c9841491"
+    },
+    {
+      "file": "replay-different-input-qPe8Is.json",
+      "sha256": "b72f8b8d9b12c0e5c76523c41984db00156bdd0faa518efd659bb58233c3f572"
+    },
+    {
+      "file": "replay-h0IOXc.json",
+      "sha256": "9849502b54ed52fe2dc26677052ab9ea774135520c68ce0306fcf93d2b80ce8c"
+    },
+    {
+      "file": "replay-jTqdUK.json",
+      "sha256": "99cf7e92ff1edbd3aeb16903b0a8d15747b9cb8f6b9c9c427234493975ba1ae4"
+    },
+    {
+      "file": "replay-missing-receipt-ESXsAW.json",
+      "sha256": "373600ff0767bb64881118ab249f32b7f8829812462d1122a7041d8a97d32fc5"
+    },
+    {
+      "file": "replay-missing-receipt-ISehSG.json",
+      "sha256": "c7a1c63a36ba77d58636d74e212a79c13de037b3e29090969876e4fc54372529"
+    },
+    {
+      "file": "replay-missing-receipt-PJAl7V.json",
+      "sha256": "0b0618a4e83ffdda3d2df4827078cde6689a40fa5e9b5dc52c41602c93930562"
+    },
+    {
+      "file": "revoke-before-swap-JiwcB1.json",
+      "sha256": "e2c06c753a886c951c06e3abf4872408d272058b6cdff9e21e7956e93b5ac85c"
+    },
+    {
+      "file": "revoke-before-swap-Nlg1LL.json",
+      "sha256": "3749d6c48d2b7619d04e559283ced43db43ca370594686a870f8ef6418111831"
+    },
+    {
+      "file": "revoke-before-swap-f0evQT.json",
+      "sha256": "6dc3b8f86e804c6ab6c752b8d873c2cccf21dd64ffe8f791cbee8875c591bc46"
+    },
+    {
+      "file": "revoke-before-write-6J7mLe.json",
+      "sha256": "bc69e45a7b5f49cf532c684324d42fd2224b6044697c07fbd9755eb9b3e36deb"
+    },
+    {
+      "file": "revoke-before-write-UkIkix.json",
+      "sha256": "c00377cd1a5c35c052d8e6042723b002509e4d46889da754d9b101a46c829185"
+    },
+    {
+      "file": "revoke-before-write-Xkac9w.json",
+      "sha256": "8f1b064029436fb7632269f23186ebe1da48d2b37d83d4f6a3791c30a9d2b169"
+    },
+    {
+      "file": "symlink-target-3kvfBc.json",
+      "sha256": "a01245880575ebb529648340113b1f08b355f9e91e59a5ea671aa5ce4e2c6401"
+    },
+    {
+      "file": "symlink-target-8x74qD.json",
+      "sha256": "2c0c9826c735c1d3db4ecc81ac16da143571227438d52b394dba4758d3cadeec"
+    },
+    {
+      "file": "symlink-target-NEuBzx.json",
+      "sha256": "c3c5846dd8ebaa378dba0aa3c7e312178bef2725c4e29a6093351b3b7bbf3094"
+    },
+    {
+      "file": "symlink-target-ahLvOz.json",
+      "sha256": "6954161eb1d5bd7b8467f87440679b46ba033dbcb1782bb3f9407c6b30c9c763"
+    },
+    {
+      "file": "symlink-target-oLK5ED.json",
+      "sha256": "e19976da9f112740a0af9e2bd4bacf590657b750134b3bcaec5f69651952c744"
+    },
+    {
+      "file": "symlink-target-x1Cus4.json",
+      "sha256": "8df87c14b50e75ad185cd6e94dde12f7737785711f100f1b40d04b62a99eaa0f"
+    },
+    {
+      "file": "typecheck.log",
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144"
+    },
+    {
+      "file": "verified-tests.log",
+      "sha256": "688a6d1080d16102dcc3ef9b11f046943aae9986a21e7a987bf8a034ca0104be"
+    }
+  ]
+}

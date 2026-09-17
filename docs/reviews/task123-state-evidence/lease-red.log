@@ -1,0 +1,43 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/core/orchestration/test/global-scheduler.test.ts (10 tests | 1 failed) 6ms
+   × validates only the currently held lease capability without changing capacity 4ms
+     → expected [Function] to not throw an error but 'TypeError: scheduler.assertActive is …' was thrown
+   ✓ GlobalScheduler (D17) > enforces the global cap and grants a queued worker after release 1ms
+   ✓ GlobalScheduler (D17) > deduplicates active and queued acquire calls by projectId/workerId 0ms
+   ✓ GlobalScheduler (D17) > round-robins waiting projects instead of letting one project monopolize the slot 0ms
+   ✓ GlobalScheduler (D17) > keeps the round-robin successor when a granted project leaves a multi-slot queue 0ms
+   ✓ GlobalScheduler (D17) > scopes the same workerId independently by projectId/taskId 0ms
+   ✓ GlobalScheduler (D17) > keeps delimiter-containing worker identities distinct 0ms
+   ✓ GlobalScheduler (D17) > makes duplicate release a no-op but rejects a forged or mismatched lease 0ms
+   ✓ GlobalScheduler (D17) > removes an aborted queued acquire without consuming a future slot 0ms
+   ✓ GlobalScheduler (D17) > rejects invalid capacity before any lease can be acquired 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/core/orchestration/test/global-scheduler.test.ts > validates only the currently held lease capability without changing capacity
+AssertionError: expected [Function] to not throw an error but 'TypeError: scheduler.assertActive is …' was thrown
+
+- Expected: 
+undefined
+
++ Received: 
+"TypeError: scheduler.assertActive is not a function"
+
+ ❯ packages/core/orchestration/test/global-scheduler.test.ts:8:51
+      6|   const scheduler = new GlobalScheduler({ cap: 1 });
+      7|   const lease = await scheduler.acquire('project', 'task', 'worker');
+      8|   expect(() => scheduler.assertActive(lease)).not.toThrow();
+       |                                                   ^
+      9|   expect(() => scheduler.assertActive({ ...lease })).toThrow('does not…
+     10|   expect(scheduler.activeCount).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  16:03:59
+   Duration  611ms (transform 184ms, setup 0ms, collect 491ms, tests 6ms, environment 0ms, prepare 33ms)
+

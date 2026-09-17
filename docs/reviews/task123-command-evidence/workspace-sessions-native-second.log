@@ -1,0 +1,35 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (21 tests) 60465ms
+   ✓ confirms a durable grant through the real Leader POST: normal  491ms
+   ✓ confirms a durable grant through the real Leader POST: file-update  3511ms
+   ✓ confirms a durable grant through the real Leader POST: file-create  2344ms
+   ✓ confirms a durable grant through the real Leader POST: file-proof  2573ms
+   ✓ confirms a durable grant through the real Leader POST: command  4226ms
+   ✓ confirms a durable grant through the real Leader POST: mcp  4548ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-command  18237ms
+   ✓ confirms a durable grant through the real Leader POST: worker-companion  2953ms
+   ✓ confirms a durable grant through the real Leader POST: batch  4861ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  4376ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  4683ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  3388ms
+   ✓ confirms a durable grant through the real Leader POST: before  500ms
+   ✓ confirms a durable grant through the real Leader POST: after  493ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  427ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  506ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  460ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  507ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  425ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  506ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  446ms
+ ✓ packages/core/orchestration/test/worker-runtime.test.ts (45 tests) 1044ms
+   ✓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a provider failure after a real worker Git commit without losing recovery identity  363ms
+   ✓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a head_refresh failure after a real worker Git commit without losing recovery identity  307ms
+   ✓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a head_commit failure after a real worker Git commit without losing recovery identity  323ms
+
+ Test Files  2 passed (2)
+      Tests  66 passed (66)
+   Start at  17:35:32
+   Duration  63.59s (transform 443ms, setup 0ms, collect 1.57s, tests 61.51s, environment 0ms, prepare 91ms)
+

@@ -1,0 +1,59 @@
+{
+  "scenario": "normal",
+  "base": "/private/tmp/agora-task123-validation-mXuOpv",
+  "availableBefore": 46907629568,
+  "ownership": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127721744
+  },
+  "os": "25F71",
+  "arch": "arm64",
+  "controllerNode": "v24.20.0",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+  "sourceHashes": {
+    "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-file-transaction.c": "101c9d8ed063a9287bd6f6852a71e3ea625373763e12e1deaac1751e375f270b",
+    "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/src/local-file-transaction.ts": "f0fc08bfb061b788ff3e31372c00ba052b1c0750f879b96a08c54e1546ed1094",
+    "/Users/logansu/Documents/Dev/Agora/tests/integration/phase12/local-transaction-fixture.ts": "e8fba9a3a30f628a5160d9ff9daa3cc64827a3a99e4d4ad214fe7436a7f826da",
+    "/Users/logansu/Documents/Dev/Agora/tests/integration/phase12/phase12-3-transaction.test.ts": "c8391a3feae8bf16d667c22372668316c7e2cb78b6a5775414cd4189bb450f3c"
+  },
+  "binaryHash": "481f36bf7febedc647233acbd2ff4b63f65e58c4f3d43771986e58337f002148",
+  "checkpoints": [
+    "admission"
+  ],
+  "journals": {
+    "expected": "original",
+    "native.json": "{\"code\":1,\"signal\":null,\"stdout\":\"{\\\"event\\\":\\\"result\\\",\\\"stage\\\":\\\"recoveryRequired\\\",\\\"reason\\\":\\\"root_identity_changed\\\",\\\"exchanged\\\":false}\\n\",\"stderr\":\"directory_open:1\\n\"}",
+    "prepared.json": "{\"schemaVersion\":\"local-replacement-primitive-v1\",\"actionId\":\"replace-one\",\"inputHash\":\"6f360753820a12be12525a0d49e70ac5f25c8723a67944a35a71708da7179fea\",\"stage\":\"prepared\",\"binding\":{\"root\":\"/private/tmp/agora-task123-validation-mXuOpv/project\",\"chain\":[{\"path\":\"/\",\"identity\":\"16777231:2\"},{\"path\":\"/private\",\"identity\":\"16777231:76454369\"},{\"path\":\"/private/tmp\",\"identity\":\"16777231:119551154\"},{\"path\":\"/private/tmp/agora-task123-validation-mXuOpv\",\"identity\":\"16777231:127721744\"},{\"path\":\"/private/tmp/agora-task123-validation-mXuOpv/project\",\"identity\":\"16777231:127721745\"}],\"stagingIdentity\":\"16777231:127721747\"},\"path\":\"moving/target\",\"expectedIdentity\":\"16777231:127721751\",\"expectedMetadata\":\"33188:501:0\",\"expectedHash\":\"0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5\",\"replacementHash\":\"95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47\",\"helperHash\":\"481f36bf7febedc647233acbd2ff4b63f65e58c4f3d43771986e58337f002148\",\"policyHash\":\"0996dd985c5b8238d3a2be5d989afd3654952689ca342334a2d9c9e9e24be8e6\",\"candidateName\":\"replace-one-candidate\"}",
+    "replacement": "replacement",
+    "result.json": "{\"schemaVersion\":\"local-replacement-primitive-v1\",\"actionId\":\"replace-one\",\"inputHash\":\"6f360753820a12be12525a0d49e70ac5f25c8723a67944a35a71708da7179fea\",\"stage\":\"recoveryRequired\",\"reason\":\"root_identity_changed\",\"exchanged\":false,\"quiescent\":true,\"candidateName\":\"replace-one-candidate\",\"journalPath\":\"/private/tmp/agora-task123-validation-mXuOpv/state/replace-one\",\"nativeExitCode\":1}"
+  },
+  "result": {
+    "receipt": {
+      "schemaVersion": "local-replacement-primitive-v1",
+      "actionId": "replace-one",
+      "inputHash": "6f360753820a12be12525a0d49e70ac5f25c8723a67944a35a71708da7179fea",
+      "stage": "recoveryRequired",
+      "reason": "root_identity_changed",
+      "exchanged": false,
+      "quiescent": true,
+      "candidateName": "replace-one-candidate",
+      "journalPath": "/private/tmp/agora-task123-validation-mXuOpv/state/replace-one",
+      "nativeExitCode": 1
+    },
+    "target": "original",
+    "preserved": null,
+    "sentinel": "external-secret",
+    "journalStages": [
+      "prepared",
+      "recoveryRequired"
+    ]
+  },
+  "quiescent": true,
+  "completedAt": "2026-09-16T00:02:42.076Z",
+  "cleanup": {
+    "removed": true,
+    "availableAfter": 46907600896,
+    "spaceDelta": -28672
+  }
+}

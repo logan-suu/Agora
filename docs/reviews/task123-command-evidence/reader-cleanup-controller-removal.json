@@ -1,0 +1,12 @@
+{
+  "path": "/private/tmp/agora-task123-reader-cleanup-20260916.mjs",
+  "sha256": "1334eef29372c20176f660ffa5e153f3954144353be0208293d0261f6c7d4e58",
+  "uid": 501,
+  "dev": 16777231,
+  "ino": 128487011,
+  "bytes": 7213,
+  "archive": "docs/reviews/task123-command-evidence/reader-cleanup-controller-source.txt",
+  "lsofStatus": 1,
+  "checkedAt": "2026-09-16T23:53:59.324822+00:00",
+  "removed": true
+}

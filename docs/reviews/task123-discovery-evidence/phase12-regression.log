@@ -1,0 +1,48 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-stop.test.ts (5 tests) 11927ms
+   ✓ stops only the registered process birth identity and escalates ignored TERM  1774ms
+   ✓ caps retained output without treating a successful exit as trusted completion  690ms
+   ✓ closes inherited pipes within the tail deadline while exposing incomplete output  7867ms
+   ✓ finishes a TERM-responsive registered process without sending KILL  869ms
+   ✓ returns needsAttention for a mismatched registered birth without sending a signal  726ms
+ ✓ tests/integration/phase12/phase12-3-transaction.test.ts (17 tests) 6900ms
+   ✓ durably preserves the baseline and exchanged inode before reporting applied  451ms
+   ✓ closes the operation without touching source or external objects: move-root-before-write  398ms
+   ✓ closes the operation without touching source or external objects: move-parent-before-swap  401ms
+   ✓ closes the operation without touching source or external objects: replace-root  402ms
+   ✓ invalidates a completed exchange after root movement without undoing the actual result  425ms
+   ✓ preserves a competing user edit and refuses a stale baseline  404ms
+   ✓ refuses linked external objects: symlink-target  462ms
+   ✓ refuses linked external objects: hardlink-target  400ms
+   ✓ does not repeat a filesystem mutation when replaying an identical action  393ms
+   ✓ checks root identity after the final asynchronous authorization check  398ms
+   ✓ also invalidates a parent moved during completion authorization  411ms
+   ✓ refuses a metadata-only edit after the baseline read  387ms
+   ✓ honors trusted authorization closure: revoke-before-write  394ms
+   ✓ honors trusted authorization closure: revoke-before-swap  398ms
+   ✓ refuses unsafe journal replay: replay-different-input  376ms
+   ✓ refuses unsafe journal replay: replay-corrupt-receipt  394ms
+   ✓ refuses unsafe journal replay: replay-missing-receipt  403ms
+ ✓ tests/integration/phase12/phase12-3-command-discovery.test.ts (5 tests) 2529ms
+   ✓ discovers a real child and grandchild without enrolling an unrelated sibling  698ms
+   ✓ retains a discovered grandchild after its parent exits and it is reparented  635ms
+   ✓ rejects a wrong parent birth and leaves the real tree alive  584ms
+   ✓ exposes helper failure as incomplete discovery without signaling the root  611ms
+ ✓ tests/integration/phase12/phase12-3.test.ts (5 tests) 1989ms
+   ✓ preserves both versions in a normal confined APFS exchange  404ms
+   ✓ refuses an exchange after the opened parent moves outside the authorized root  365ms
+   ✓ refuses an exchange after the opened root moves away from its authorized path  383ms
+   ✓ can prepare a transaction file through an opened handle inside the authorized root  471ms
+   ✓ distinguishes a refused new open from the original file handle after root movement  365ms
+ ✓ tests/integration/phase12/phase12-3-command-isolation.test.ts (2 tests) 824ms
+   ✓ confines native child and exec descendants to one private command write root  403ms
+   ✓ runs the pinned Node toolchain and preserves the boundary in its spawned child  420ms
+ ✓ tests/integration/phase12/phase12-3-command-journal.test.ts (5 tests) 766ms
+
+ Test Files  6 passed (6)
+      Tests  39 passed (39)
+   Start at  22:48:12
+   Duration  25.80s (transform 80ms, setup 0ms, collect 137ms, tests 24.93s, environment 0ms, prepare 194ms)
+

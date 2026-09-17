@@ -1,0 +1,6 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+packages/core/orchestration/test/worker-runtime.test.ts(180,21): error TS2304: Cannot find name 'createLocalRuntimeFixture'.
+ ELIFECYCLE  Command failed with exit code 2.

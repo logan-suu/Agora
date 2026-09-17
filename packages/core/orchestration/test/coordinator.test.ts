@@ -30,6 +30,39 @@ function clock(): DeterministicClock {
   return { newId: () => `id-${++counter}`, now: () => 1000 };
 }
 
+it('records a canonical local TESTER dispatch before admitting validation', () => {
+  const initial = applyMutations(createInitialAppState('local', 'Fixed local task'), [
+    setMutation('phase', 'coding'),
+    setMutation('localExecution', {
+      schemaVersion: 'local-execution-v1',
+      rootIds: ['root'],
+      workspaces: [],
+      bindings: [],
+      receipts: [
+        { receiptId: 'grant', actionId: 'grant', inputHash: 'a'.repeat(64), registryRevision: 1 },
+      ],
+    }),
+    mergeByIdMutation('subtasks', 'work', {
+      title: 'Fixed work',
+      ownerRole: 'CODER',
+      status: 'in_progress',
+      dependsOn: [],
+    }),
+  ]);
+  const decision = decide(initial, clock());
+  const next = applyMutations(initial, decision.mutations);
+  expect(decision.route).toMatchObject({
+    kind: 'worker',
+    batch: [{ role: 'TESTER', subtaskId: 'work' }],
+  });
+  expect(
+    next.messages.filter(
+      (m) =>
+        m.fromRole === 'COORDINATOR' && m.type === 'announce' && m.payload.nextRole === 'TESTER',
+    ),
+  ).toHaveLength(1);
+});
+
 function applyCompletedWorkerDecision(
   state: AppState,
   decision: ReturnType<typeof decide>,

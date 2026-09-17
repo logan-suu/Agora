@@ -1,0 +1,75 @@
+{
+  "base": "/private/tmp/agora-task123-validation-ZOPRgv",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128307573
+  },
+  "startedAt": "2026-09-16T19:38:59.689Z",
+  "sourceHash": "c5b57c12f4d961cc8f8ccd130829d560f8684b2700a3b322ed7a524bf833939d",
+  "binaryHash": "18cb12d807e8d9ed119a84ce840f0263e7ed6d75c430962abf8f5c7ddfa85784",
+  "result": {
+    "schemaVersion": "local-root-inspection-v1",
+    "path": "/private/tmp/agora-task123-validation-ZOPRgv/project",
+    "filesystem": "apfs",
+    "local": true,
+    "volumeId": "590f6b192edb43d6a07e030fe433d7cf",
+    "chain": [
+      {
+        "path": "/",
+        "identity": "16777231:2",
+        "uid": 0,
+        "mode": 16877
+      },
+      {
+        "path": "/private",
+        "identity": "16777231:76454369",
+        "uid": 0,
+        "mode": 16877
+      },
+      {
+        "path": "/private/tmp",
+        "identity": "16777231:119551154",
+        "uid": 0,
+        "mode": 17407
+      },
+      {
+        "path": "/private/tmp/agora-task123-validation-ZOPRgv",
+        "identity": "16777231:128307573",
+        "uid": 501,
+        "mode": 16832
+      },
+      {
+        "path": "/private/tmp/agora-task123-validation-ZOPRgv/project",
+        "identity": "16777231:128307574",
+        "uid": 501,
+        "mode": 16877
+      }
+    ]
+  },
+  "probeHash": "bea7d794a8eda6ed0e5ce69a2a75a313dc215c49483ef75d5f66c68e1a6f1850",
+  "passed": true,
+  "sources": {
+    "packages/runtime/sandbox/native/local-root-inspection.c": {
+      "sha256": "c5b57c12f4d961cc8f8ccd130829d560f8684b2700a3b322ed7a524bf833939d",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-evidence/agora-task123-validation-ZOPRgv-source-0.txt"
+    },
+    "packages/runtime/sandbox/native/local-root-inspection-probe.c": {
+      "sha256": "f649749d3506c8947a73f4b0c9e5e1e1874031ca7123dfde7e1cbaf7d7d74a96",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-evidence/agora-task123-validation-ZOPRgv-source-1.txt"
+    },
+    "packages/runtime/sandbox/src/local-root-inspection.ts": {
+      "sha256": "56a60a48e100c3e56597a37720570d5cec0b1f7cb3a6dbde65a2280dc73d8c97",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-evidence/agora-task123-validation-ZOPRgv-source-2.txt"
+    },
+    "packages/runtime/sandbox/test/local-root-inspection.test.ts": {
+      "sha256": "922544ac46c4b83a693d682e474339ebb4cf72a36c92d43de3060c5651a7039f",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-evidence/agora-task123-validation-ZOPRgv-source-3.txt"
+    }
+  },
+  "cleanup": {
+    "deleted": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 73728
+  }
+}

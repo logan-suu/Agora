@@ -1,0 +1,65 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (29 tests | 1 failed | 28 skipped) 2189ms
+   ↓ confirms a durable grant through the real Leader POST: normal
+   ↓ confirms a durable grant through the real Leader POST: file-update
+   ↓ confirms a durable grant through the real Leader POST: file-create
+   ↓ confirms a durable grant through the real Leader POST: file-proof
+   ↓ confirms a durable grant through the real Leader POST: command
+   ↓ confirms a durable grant through the real Leader POST: mcp
+   ↓ confirms a durable grant through the real Leader POST: mcp-partial
+   ↓ confirms a durable grant through the real Leader POST: reader
+   ↓ confirms a durable grant through the real Leader POST: mcp-command
+   ↓ confirms a durable grant through the real Leader POST: trusted-validation
+   ↓ confirms a durable grant through the real Leader POST: worker-companion
+   × confirms a durable grant through the real Leader POST: successor-companion 2189ms
+     → expected true not to be true // Object.is equality
+   ↓ confirms a durable grant through the real Leader POST: tester-companion
+   ↓ confirms a durable grant through the real Leader POST: reviewer-companion
+   ↓ confirms a durable grant through the real Leader POST: pm-companion
+   ↓ confirms a durable grant through the real Leader POST: coordinator-companion
+   ↓ confirms a durable grant through the real Leader POST: batch
+   ↓ confirms a durable grant through the real Leader POST: batch-partial
+   ↓ confirms a durable grant through the real Leader POST: batch-read-drift
+   ↓ confirms a durable grant through the real Leader POST: batch-stale
+   ↓ confirms a durable grant through the real Leader POST: before
+   ↓ confirms a durable grant through the real Leader POST: after
+   ↓ confirms a durable grant through the real Leader POST: wrong-hash
+   ↓ confirms a durable grant through the real Leader POST: wrong-selection
+   ↓ confirms a durable grant through the real Leader POST: wrong-scope
+   ↓ confirms a durable grant through the real Leader POST: stale-policy
+   ↓ confirms a durable grant through the real Leader POST: root-drift
+   ↓ confirms a durable grant through the real Leader POST: corrupt-proposal
+   ↓ confirms a durable grant through the real Leader POST: unsupported-action
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: successor-companion
+WorkerStepError: expected true not to be true // Object.is equality
+ ❯ WorkerRuntime.loop packages/core/orchestration/src/worker-runtime.ts:791:15
+    789|           );
+    790|         }
+    791|         throw new WorkerStepError(error);
+       |               ^
+    792|       }
+    793|       if (handle.localSession) {
+ ❯ WorkerRuntime.runAssignment packages/core/orchestration/src/worker-runtime.ts:691:7
+ ❯ WorkerRuntime.runOne packages/core/orchestration/src/worker-runtime.ts:353:7
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:554:32
+
+Caused by: AssertionError: expected true not to be true // Object.is equality
+ ❯ Object.step tests/integration/phase12/phase12-3-grant.test.ts:505:54
+ ❯ WorkerRuntime.loop packages/core/orchestration/src/worker-runtime.ts:767:18
+ ❯ WorkerRuntime.runAssignment packages/core/orchestration/src/worker-runtime.ts:691:7
+ ❯ WorkerRuntime.runOne packages/core/orchestration/src/worker-runtime.ts:353:7
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:554:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 28 skipped (29)
+   Start at  19:05:10
+   Duration  2.96s (transform 337ms, setup 0ms, collect 667ms, tests 2.19s, environment 0ms, prepare 26ms)
+

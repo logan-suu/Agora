@@ -1,0 +1,718 @@
+{
+  "items": [
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/file-update-agora-task123-validation-dJ0DKg.json",
+      "sha256": "49b271a2279e6f02098c5d91ce91b9878ac02a5e561738f30f1404b2f53d4aa3",
+      "base": "/private/tmp/agora-task123-validation-dJ0DKg",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 282624
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/wrong-scope-agora-task123-validation-brsfDB.json",
+      "sha256": "940d0afb9f41bbdf89cb76eafbdb49e45af1da7edb5d3d62642687c2b0a4304f",
+      "base": "/private/tmp/agora-task123-validation-brsfDB",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 24576
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/file-proof-agora-task123-validation-EcBhQw.json",
+      "sha256": "ba36eb6b25f67e1584eb2794a4a46d3b4efe6c45e1eb64db11dadc19623ef7e7",
+      "base": "/private/tmp/agora-task123-validation-EcBhQw",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 221184
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/mcp-partial-agora-task123-validation-fCIA80.json",
+      "sha256": "5ad5697c2ed6a41a0c60506d673e912d3d67319f2d5efdc459203cb2767693b1",
+      "base": "/private/tmp/agora-task123-validation-fCIA80",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 303104
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/mcp-command-agora-task123-validation-Wc66ef.json",
+      "sha256": "b18331c07b27ab8813bee3bf4bb9c8c2c0d02b9c67417fb9ccf768a947a6226f",
+      "base": "/private/tmp/agora-task123-validation-Wc66ef",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 311296
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/worker-companion-agora-task123-validation-fBCHqk.json",
+      "sha256": "87b9f7327390db332b069a7885d567a75d54b21f0ef387babf0e9ab7644b2688",
+      "base": "/private/tmp/agora-task123-validation-fBCHqk",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 184320
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/batch-stale-agora-task123-validation-cneJSu.json",
+      "sha256": "a1b032c4cc441b6bea3e24aa225b18ee1ec943c9c1072d527a034af8f8da9236",
+      "base": "/private/tmp/agora-task123-validation-cneJSu",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 204800
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/batch-agora-task123-validation-E651bj.json",
+      "sha256": "f037a9d06fcc2aff9c50afe50a4a9965a7c3c8ca5ff12a2ddab0bd56e30f9b46",
+      "base": "/private/tmp/agora-task123-validation-E651bj",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 311296
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/mcp-agora-task123-validation-Gq9Snh.json",
+      "sha256": "e4904b56b8bce85ea2bc25fe99d85a48606877fe54040c987ec85c5cc4fe7837",
+      "base": "/private/tmp/agora-task123-validation-Gq9Snh",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 274432
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/normal-agora-task123-validation-qTWZFb.json",
+      "sha256": "c846b6164312fc2cdb3d5262bad71b3975c03d6535d0aff55ec8f0337962a23b",
+      "base": "/private/tmp/agora-task123-validation-qTWZFb",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 20480
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/command-agora-task123-validation-jCGpw7.json",
+      "sha256": "7fb1965f82d650124cf8b99261ff0cd6a6f3b1b92fcfd9bf767f1feb2a987049",
+      "base": "/private/tmp/agora-task123-validation-jCGpw7",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 290816
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/root-drift-agora-task123-validation-ibSTSx.json",
+      "sha256": "4fbe57ce2dc8b308587fac91976db3b3ac6ecb6a0e54d9d3d55f745311580221",
+      "base": "/private/tmp/agora-task123-validation-ibSTSx",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 20480
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/after-agora-task123-validation-heO8oh.json",
+      "sha256": "1e24747afcc42530d6fb4d56a5195b565423509792a622155dfb978ebe1e0eb6",
+      "base": "/private/tmp/agora-task123-validation-heO8oh",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 24576
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/corrupt-proposal-agora-task123-validation-3GDp24.json",
+      "sha256": "de7951d9c00cde65ae16ff5579a5781add69be00bef8c9a629ab72b8cedf1475",
+      "base": "/private/tmp/agora-task123-validation-3GDp24",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 24576
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/wrong-hash-agora-task123-validation-UJJWDj.json",
+      "sha256": "8484ba3e4fe2a5b43a7f631f3d9ff573ca50a7a8a8b2e1835537ad3e489865c3",
+      "base": "/private/tmp/agora-task123-validation-UJJWDj",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 24576
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/wrong-selection-agora-task123-validation-3GCOIo.json",
+      "sha256": "f8e5db191f26b2724fb1de7a5ae2b024a8950f21fd8603bd54f59afff7549b55",
+      "base": "/private/tmp/agora-task123-validation-3GCOIo",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 20480
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/mcp-partial-agora-task123-validation-DECxzO.json",
+      "sha256": "e3b408e14296014df58e5eed30ae7ed987760ac79082758d8f0486ba4b2e1766",
+      "base": "/private/tmp/agora-task123-validation-DECxzO",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 307200
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/batch-partial-agora-task123-validation-Q8UP9R.json",
+      "sha256": "18280313be5fa6c4bbec698989e80bb3e406538dcc8b64bc4474d1e5a162d8e4",
+      "base": "/private/tmp/agora-task123-validation-Q8UP9R",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 311296
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/unsupported-action-agora-task123-validation-FndEZf.json",
+      "sha256": "7d09937681a59f78f18b6860a6b0eccbb6e806a0f80c4470e0d5225e57519f9c",
+      "base": "/private/tmp/agora-task123-validation-FndEZf",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 32768
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/batch-read-drift-agora-task123-validation-6646uf.json",
+      "sha256": "d9fa484ec943211176cb6a4ca3d276768e3fdea2772474bbf11770f2f956abe4",
+      "base": "/private/tmp/agora-task123-validation-6646uf",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 274432
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/before-agora-task123-validation-mJjdEE.json",
+      "sha256": "936a991ef2236e6ff424d2a8048f3d1a0d81c25f1dd23ccfad550b73e53a6e88",
+      "base": "/private/tmp/agora-task123-validation-mJjdEE",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 20480
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/file-create-agora-task123-validation-aOSNCE.json",
+      "sha256": "ee989d8ace529232a6b981b10bcbc3ab4bbe1a68ac7077deec08d5b445367db1",
+      "base": "/private/tmp/agora-task123-validation-aOSNCE",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 229376
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-grant-evidence/stale-policy-agora-task123-validation-xBLehS.json",
+      "sha256": "103ed429fb2d327847201549c0f8e25e28ff55eeea32b1927a07815bff979ef9",
+      "base": "/private/tmp/agora-task123-validation-xBLehS",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 28672
+      },
+      "spaceDelta": null,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-discovery-evidence/reparent-bY5qSp.json",
+      "sha256": "5b88f5a2f6a6f7d0cfc55878f6db4f08f89bbb0c084d7d199fcceb890d149dc6",
+      "base": "/private/tmp/agora-task123-validation-bY5qSp",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 43028,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -36864,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-discovery-evidence/missing-helper-K2sQl6.json",
+      "sha256": "b6644ad51725f7aae14502ad687521b565fb08434ee0028bc06022876d47fa31",
+      "base": "/private/tmp/agora-task123-validation-K2sQl6",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 43109,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -1056768,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-discovery-evidence/tree-4i0TEw.json",
+      "sha256": "961d3772795bfaa70b52bfae04d31b48e4999273524be0eca2ae85a0f79be162",
+      "base": "/private/tmp/agora-task123-validation-4i0TEw",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 42991,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -81920,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-discovery-evidence/wrong-parent-LfgZFb.json",
+      "sha256": "3db8b8433bf179615863f9c6b7dbf38a410f8ce998c09de1ed5a28c174b0e236",
+      "base": "/private/tmp/agora-task123-validation-LfgZFb",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 43072,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -8192,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-stop-evidence/flood-YYCV9Z.json",
+      "sha256": "6dc65b8904c38bb4481a71ac09795ac7f21eee7881805e4014ae430895ce3f81",
+      "base": "/private/tmp/agora-task123-validation-YYCV9Z",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 46006,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -8192,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-stop-evidence/ignore-term-wu4xG0.json",
+      "sha256": "26bb53ac31541eb2f9bcd98a27f1f2c0051dc136cee0f23eab0d14c98563ba7e",
+      "base": "/private/tmp/agora-task123-validation-wu4xG0",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 45989,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -73728,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-stop-evidence/wrong-birth-i99waC.json",
+      "sha256": "ce867d8be3571f8c75523c283a3e9dce4cb497942aea10eff41d1569b4aa40fe",
+      "base": "/private/tmp/agora-task123-validation-i99waC",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 46084,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -4096,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-stop-evidence/inherited-pipe-U5JmvW.json",
+      "sha256": "5713bd8baf1c7d2c2adaf7ec5b4448cd065ddac7a5961ebc9eb116ed2a877a53",
+      "base": "/private/tmp/agora-task123-validation-U5JmvW",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 46037,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -77824,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-stop-evidence/normal-term-HQcE9a.json",
+      "sha256": "6e7e29d80b37b30b6c6471f1d2134608fce06538a65792ac353cd9945a620067",
+      "base": "/private/tmp/agora-task123-validation-HQcE9a",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 46056,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": 61440,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-stop-evidence/delayed-control-yLj9Z2.json",
+      "sha256": "c221538dcc65b981d08d9819286c0c04dda7c6a316968172c89a4e736df69def",
+      "base": "/private/tmp/agora-task123-validation-yLj9Z2",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 45938,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -28672,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-supervision-evidence/journal-failure-tOt32P.json",
+      "sha256": "7dd1b2e792c7aadbf3543adf6fb8ca8e07c9474e740aead30593603d42d9abf5",
+      "base": "/private/tmp/agora-task123-validation-tOt32P",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 45864,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -4096,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-supervision-evidence/journal-Qvy2vA.json",
+      "sha256": "08f32d0c4424d333a2051895059cebfc86ba95943dff4ea49e913f8ef606f38a",
+      "base": "/private/tmp/agora-task123-validation-Qvy2vA",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 45829,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -4096,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-supervision-evidence/journal-revoked-Tlb3YA.json",
+      "sha256": "571545b4626028ffb5def00908e054dbc803775cb93f41d817de42c0fc98ea3c",
+      "base": "/private/tmp/agora-task123-validation-Tlb3YA",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 45901,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -8192,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-supervision-evidence/cancel-8tJfGX.json",
+      "sha256": "03ba727f0ff86008aad96ae57f4e171c821f51821ec25e8145d3faf59f931663",
+      "base": "/private/tmp/agora-task123-validation-8tJfGX",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 45767,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -4096,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-supervision-evidence/exit-fELCAd.json",
+      "sha256": "2f93dff15c6dd1bd1f7d79bbeee3051b43baf3e4f3d926918644878d679fe2be",
+      "base": "/private/tmp/agora-task123-validation-fELCAd",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 44962,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": 32768,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-supervision-evidence/timeout-EbbxRZ.json",
+      "sha256": "dbcc0fa6df0800ac2102ec5de49bcfa7a645cba042401b12d21e5e806b11152b",
+      "base": "/private/tmp/agora-task123-validation-EbbxRZ",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 45731,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -1105920,
+      "removed": true
+    },
+    {
+      "evidence": "docs/reviews/task123-supervision-evidence/wrong-birth-lIEfsd.json",
+      "sha256": "fc6bb3ed4a1233d9e2dd13ad7e848441d6efb4557591473995a4aa4323466fc7",
+      "base": "/private/tmp/agora-task123-validation-lIEfsd",
+      "cleanup": {
+        "removed": true,
+        "handles": {
+          "status": 1,
+          "signal": null,
+          "output": [
+            null,
+            "",
+            ""
+          ],
+          "pid": 45793,
+          "stdout": "",
+          "stderr": ""
+        },
+        "mountCheckPassed": true
+      },
+      "spaceDelta": -2109440,
+      "removed": true
+    }
+  ],
+  "allRemoved": true
+}

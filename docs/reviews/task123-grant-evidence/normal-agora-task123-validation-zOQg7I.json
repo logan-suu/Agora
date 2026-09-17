@@ -1,0 +1,123 @@
+{
+  "base": "/private/tmp/agora-task123-validation-zOQg7I",
+  "scenario": "normal",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128371610
+  },
+  "startedAt": "2026-09-16T21:06:42.205Z",
+  "firstResponse": {
+    "status": 202,
+    "body": {
+      "accepted": true,
+      "published": true,
+      "action": {
+        "status": "applied"
+      }
+    }
+  },
+  "initialization": {
+    "kind": "root-initialization",
+    "actionId": "initialize-root",
+    "inputHash": "4f3735c101b806a753c06566dc15165339e129e873d87ad9b861b1da45720d6d",
+    "receiptId": "root-init:5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01",
+    "projectId": "project",
+    "taskId": "task",
+    "rootId": "root:d069fa9fe4b4ba1353b1738e5029d8143eded73c3cdffacb95e41caedf9d4f3d",
+    "grantId": "grant:3b38dcc5f6fa67667da4a11b90d959f02644e50ab6bf703280a155b992b01c97",
+    "grantRevision": 0,
+    "sourceMessageId": "grant-action",
+    "preparedRevision": 3,
+    "stage": "committed",
+    "nativeReceipt": {
+      "sha256": "e992308430e4a707c520f05e6efd589e0ba387f94114c35ac422056e0243ad81",
+      "stage": "applied",
+      "created": true,
+      "stagingIdentity": "16777231:128371650",
+      "quiescent": true
+    }
+  },
+  "failure": "mutation field \"subtasks\" is defined by spec §1 but not enabled in Phase 0",
+  "files": [
+    {
+      "path": "files-helper",
+      "sha256": "711115c1435687adb6a3f78e7b30a9273edf0f1d16ed9ea1c6aa79167dbd0026"
+    },
+    {
+      "path": "initializer",
+      "sha256": "90c0e1fc54c4b37d4b9d6b62da2b81c7fffd005662f250cada61a3f2112e4f99"
+    },
+    {
+      "path": "inspector",
+      "sha256": "1eeb93dbe36b32bed587647fecea9949bd039f9cb390c570897e3585218ce854"
+    },
+    {
+      "path": "project/sentinel",
+      "sha256": "b04d67be9a6081174ab5384f84bf4c0fea2b47bd8fb9a2f010de349a05880a19"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/native.json",
+      "sha256": "7a3411b59a9442fa6c2345596112bc48946390144d55bde0e7bc13a62ddb4ed7"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/prepared.json",
+      "sha256": "81b8abb775023ccd6d55acec7ad633ef79d39dbdf7b344a84394850e57cced3c"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/result.json",
+      "sha256": "e992308430e4a707c520f05e6efd589e0ba387f94114c35ac422056e0243ad81"
+    },
+    {
+      "path": "state/local-workspaces/objects/3a1818005d3963a15bd27b24f7021b93aa5c01262e32e9fd057ace2c22009a25.json",
+      "sha256": "3a1818005d3963a15bd27b24f7021b93aa5c01262e32e9fd057ace2c22009a25"
+    },
+    {
+      "path": "state/local-workspaces/objects/5c2219b2e000202023ac21d4c3bceede949a5222c3dcc9a8fd43ef3ba70fc25d.json",
+      "sha256": "8ec68ff35c4554f7c4e100538d409c5a0cc8ef11f3fc89d4b55a463780260906"
+    },
+    {
+      "path": "state/local-workspaces/objects/6c06a1a382dca2f1a59beb09fc431ee46c2d0508229bc1a83f54e0b618464bb3.json",
+      "sha256": "6c06a1a382dca2f1a59beb09fc431ee46c2d0508229bc1a83f54e0b618464bb3"
+    },
+    {
+      "path": "state/local-workspaces/objects/b04d67be9a6081174ab5384f84bf4c0fea2b47bd8fb9a2f010de349a05880a19.bin",
+      "sha256": "b04d67be9a6081174ab5384f84bf4c0fea2b47bd8fb9a2f010de349a05880a19"
+    },
+    {
+      "path": "state/local-workspaces/objects/c64a478869831825dd898858b471d2c26116735376be0cdb1c35073165de5d0c.json",
+      "sha256": "02160b9c89893546a17af58d945db5f824ac4845c1c6a00afe030310d68ca8a9"
+    },
+    {
+      "path": "state/local-workspaces/objects/dcdc8b836cd8dee4fb04483a591bfa34153f91fa0dac0938944d5752135f8023.json",
+      "sha256": "0eb79aaaaa14d250505a1a886a04c0028793bf0813f467b4d694c372c293580f"
+    },
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "06d3057912d17955046a2d5685bdb32c911aed357c12be4007e62d7a928da6c9"
+    },
+    {
+      "path": "state/tasks/projects/project/collaboration.json",
+      "sha256": "3a4336bbd1e04a6f3715388c0f632a9a9214592dbd8011ad458e368895939f75"
+    },
+    {
+      "path": "state/tasks/projects/project/tasks/task/state.json",
+      "sha256": "ac7b58fc876b29d49d0dcebd7f39ad5c43c38d3a55b3ddf2e72f68bc793f0ac5"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/src/local-grant-controller.ts": "986729745a710b9e121382efcc60a48d03f9799e4e9654b8bdaff6d45c900074",
+    "packages/runtime/sandbox/src/local-control-objects.ts": "38e7a1d8cd6baa185d7e4a1c69968bb0541077e34be0444bf890f575d672866b",
+    "packages/runtime/sandbox/src/local-binding-coordinator.ts": "3b47e9cf80c25bbbc78df3a5843e69e87b9235dbff947ae42b9e046c4bfc137a",
+    "packages/runtime/sandbox/src/local-registry-records.ts": "35f5563ab2dfdc327378e53093a2e264850fb9e84d176498fe3696a73e84c12e",
+    "apps/web/src/server/message-runtime.ts": "06e3a0c879486c88746eba90d67be9803ac291ff3c3a39a655fd534874a5d73a",
+    "apps/web/src/server/message-handlers.ts": "c7b7fa7d5885887efcdc22caf37f463428ef67aded4a060dd2b97bf9cbf293a7",
+    "tests/integration/phase12/phase12-3-grant.test.ts": "67cabebad43734d76f0ffd3880dae53b1aa9c145cceff1205ede2a87d9a1c344"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 139264
+  }
+}

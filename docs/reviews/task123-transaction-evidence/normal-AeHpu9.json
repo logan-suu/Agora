@@ -1,0 +1,59 @@
+{
+  "scenario": "normal",
+  "base": "/private/tmp/agora-task123-validation-AeHpu9",
+  "availableBefore": 46904344576,
+  "ownership": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127721657
+  },
+  "os": "25F71",
+  "arch": "arm64",
+  "controllerNode": "v24.20.0",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+  "sourceHashes": {
+    "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-file-transaction.c": "be4e797a745e6448eb596445a0f8c4743002944f88fce1b8d3c971244bdfc238",
+    "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/src/local-file-transaction.ts": "f0fc08bfb061b788ff3e31372c00ba052b1c0750f879b96a08c54e1546ed1094",
+    "/Users/logansu/Documents/Dev/Agora/tests/integration/phase12/local-transaction-fixture.ts": "e8fba9a3a30f628a5160d9ff9daa3cc64827a3a99e4d4ad214fe7436a7f826da",
+    "/Users/logansu/Documents/Dev/Agora/tests/integration/phase12/phase12-3-transaction.test.ts": "c8391a3feae8bf16d667c22372668316c7e2cb78b6a5775414cd4189bb450f3c"
+  },
+  "binaryHash": "2f8d740e814b320baaaf0b3be2224f6fb541cf9c903b779f3c9a747a586581cb",
+  "checkpoints": [
+    "admission"
+  ],
+  "journals": {
+    "expected": "original",
+    "native.json": "{\"code\":71,\"signal\":null,\"stdout\":\"\",\"stderr\":\"sandbox-exec: sandbox_apply: Operation not permitted\\n\"}",
+    "prepared.json": "{\"schemaVersion\":\"local-replacement-primitive-v1\",\"actionId\":\"replace-one\",\"inputHash\":\"08a2d4324ef986851d282be8a6ebf6810490b9b059d87ab3fbdf313f4bdb873f\",\"stage\":\"prepared\",\"binding\":{\"root\":\"/private/tmp/agora-task123-validation-AeHpu9/project\",\"chain\":[{\"path\":\"/\",\"identity\":\"16777231:2\"},{\"path\":\"/private\",\"identity\":\"16777231:76454369\"},{\"path\":\"/private/tmp\",\"identity\":\"16777231:119551154\"},{\"path\":\"/private/tmp/agora-task123-validation-AeHpu9\",\"identity\":\"16777231:127721657\"},{\"path\":\"/private/tmp/agora-task123-validation-AeHpu9/project\",\"identity\":\"16777231:127721658\"}],\"stagingIdentity\":\"16777231:127721660\"},\"path\":\"moving/target\",\"expectedIdentity\":\"16777231:127721664\",\"expectedMetadata\":\"33188:501:0\",\"expectedHash\":\"0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5\",\"replacementHash\":\"95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47\",\"helperHash\":\"2f8d740e814b320baaaf0b3be2224f6fb541cf9c903b779f3c9a747a586581cb\",\"policyHash\":\"abe2a6d546beea0a8300a0cbcc554a598cc9e8387a218891caca29803eb9593a\",\"candidateName\":\"replace-one-candidate\"}",
+    "replacement": "replacement",
+    "result.json": "{\"schemaVersion\":\"local-replacement-primitive-v1\",\"actionId\":\"replace-one\",\"inputHash\":\"08a2d4324ef986851d282be8a6ebf6810490b9b059d87ab3fbdf313f4bdb873f\",\"stage\":\"recoveryRequired\",\"reason\":\"native_failed\",\"exchanged\":null,\"quiescent\":true,\"candidateName\":\"replace-one-candidate\",\"journalPath\":\"/private/tmp/agora-task123-validation-AeHpu9/state/replace-one\",\"nativeExitCode\":71}"
+  },
+  "result": {
+    "receipt": {
+      "schemaVersion": "local-replacement-primitive-v1",
+      "actionId": "replace-one",
+      "inputHash": "08a2d4324ef986851d282be8a6ebf6810490b9b059d87ab3fbdf313f4bdb873f",
+      "stage": "recoveryRequired",
+      "reason": "native_failed",
+      "exchanged": null,
+      "quiescent": true,
+      "candidateName": "replace-one-candidate",
+      "journalPath": "/private/tmp/agora-task123-validation-AeHpu9/state/replace-one",
+      "nativeExitCode": 71
+    },
+    "target": "original",
+    "preserved": null,
+    "sentinel": "external-secret",
+    "journalStages": [
+      "prepared",
+      "recoveryRequired"
+    ]
+  },
+  "quiescent": true,
+  "completedAt": "2026-09-16T00:01:48.435Z",
+  "cleanup": {
+    "removed": true,
+    "availableAfter": 46904475648,
+    "spaceDelta": 131072
+  }
+}

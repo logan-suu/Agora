@@ -1,0 +1,36 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-command-stop.test.ts (6 tests | 1 failed | 5 skipped) 6699ms
+   × preserves KILL escalation when real helper launch latency approaches the TERM boundary 6699ms
+     → expected 'needsAttention' to be 'stopped' // Object.is equality
+   ↓ stops only the registered process birth identity and escalates ignored TERM
+   ↓ caps retained output without treating a successful exit as trusted completion
+   ↓ closes inherited pipes within the tail deadline while exposing incomplete output
+   ↓ finishes a TERM-responsive registered process without sending KILL
+   ↓ returns needsAttention for a mismatched registered birth without sending a signal
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-stop.test.ts > preserves KILL escalation when real helper launch latency approaches the TERM boundary
+AssertionError: expected 'needsAttention' to be 'stopped' // Object.is equality
+
+Expected: "stopped"
+Received: "needsAttention"
+
+ ❯ tests/integration/phase12/phase12-3-command-stop.test.ts:7:40
+      5| it('preserves KILL escalation when real helper launch latency approach…
+      6|   const result = await probeLocalCommandStop('delayed-control');
+      7|   expect(result.stop?.registeredState).toBe('stopped');
+       |                                        ^
+      8|   expect(result.stop?.signals).toEqual(['TERM', 'KILL']);
+      9|   expect(result.stop?.durationMs).toBeLessThan(4000);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 skipped (6)
+   Start at  23:02:21
+   Duration  6.84s (transform 31ms, setup 0ms, collect 37ms, tests 6.70s, environment 0ms, prepare 27ms)
+

@@ -1,0 +1,42 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (14 tests | 1 failed) 24292ms
+   ✓ confirms a durable grant through the real Leader POST: normal  4731ms
+   ✓ confirms a durable grant through the real Leader POST: batch  3813ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3696ms
+   × confirms a durable grant through the real Leader POST: batch-read-drift 5005ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2901ms
+   ✓ confirms a durable grant through the real Leader POST: before  551ms
+   ✓ confirms a durable grant through the real Leader POST: after  509ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  434ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  412ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  359ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  422ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  433ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  489ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  533ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch-read-drift
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:60:3
+     58|   'unsupported-action',
+     59| ])
+     60|   it(`confirms a durable grant through the real Leader POST: ${scenari…
+       |   ^
+     61|     const base = mkdtempSync('/private/tmp/agora-task123-validation-'),
+     62|       identity = lstatSync(base);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 13 passed (14)
+   Start at  16:41:01
+   Duration  24.99s (transform 267ms, setup 0ms, collect 573ms, tests 24.29s, environment 0ms, prepare 36ms)
+

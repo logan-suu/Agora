@@ -1,0 +1,96 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/core/orchestration/test/coordinator.test.ts (63 tests | 1 failed) 17ms
+   × records a canonical local TESTER dispatch before admitting validation 6ms
+     → expected [] to have a length of 1 but got +0
+   ✓ coordinator.decide · D17 stable worker dispatch > persists a stable pending worker before execution and replays that assignment unchanged 1ms
+   ✓ coordinator.decide · D17 stable worker dispatch > recovers paused and pending assignments together after a humanGate fork 0ms
+   ✓ decide · D14 objection routing > routes a persisted blocking objection to a stable D4 request before normal phase work 1ms
+   ✓ decide · D14 objection routing > keeps advisory objections visible without interrupting normal routing 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > consumes the latest applied Leader assignment once before normal phase routing 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > does not recover a drain-paused worker without a human-gate resume plan 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > escalates when an applied Leader assignment becomes unavailable before consumption 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > treats older unapplied Leader assignments as superseded by the latest one 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > routes PM from clarifying while the goal is ambiguous (no requirements yet) 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > routes ARCHITECT once requirements are distilled (需求已定) and moves to planning 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > routes CODER once the design is complete (设计完成) and creates the subtask 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > throws when planning finishes without an architecture slice (producer contract) 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > routes REVIEWER once tests pass (测试通过) and moves to review 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > opens a review-bound completion confirmation gate when REVIEWER approves 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > sends a changes_requested verdict back to CODER with the review feedback (评审回环) 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > finalizes only after a canonical Leader approval and resumed marker 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > reopens all CODER work after a canonical Leader request_changes resolution 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > escalates to human_gate when the review loop reaches the iteration cap (评审回环超限升级) 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > throws when review finishes without a verdict entry (producer contract) 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > throws on an unknown verdict value instead of guessing a route 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > does not reuse a verdict from before the current REVIEWER dispatch 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > does not reuse a deduplicated verdict id from an earlier REVIEWER turn 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > advances to TESTING after the CODER worker finishes a coding round 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > sends failing results back to CODER and increments iterationCount to 1 (测试失败回环) 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > routes failing tests back to CODER at MAX-1 and escalates at the cap (测试回环边界) 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > finalizes from done and keeps the integrating phase unroutable until Phase 9 0ms
+   ✓ coordinator.decide · conditional routing (task 2.2, spec §5.3) > never returns integrate below the iteration cap and only gates approved completion candidates 1ms
+   ✓ coordinator.decide · structured coordination artifacts (task 4.4 + DEF-012) > appends one strict Ledger event for the chosen route without fabricating an initial handoff 0ms
+   ✓ coordinator.decide · structured coordination artifacts (task 4.4 + DEF-012) > generates a validated handoff for every real worker role switch with decision/file refs 0ms
+   ✓ coordinator.decide · structured coordination artifacts (task 4.4 + DEF-012) > preserves failures without a source location and emits no invented file reference 0ms
+   ✓ coordinator.decide · structured coordination artifacts (task 4.4 + DEF-012) > does not emit a handoff when the coordinator re-dispatches the same role 0ms
+   ✓ coordinator.decide · structured coordination artifacts (task 4.4 + DEF-012) > records the completion gate as a candidate but never self-approves the request 0ms
+   ✓ coordinator.decide · structured coordination artifacts (task 4.4 + DEF-012) > records human_gate with LEADER as the next speaker 0ms
+   ✓ coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semantics) > keeps the Phase 0 fixed CODER dispatch when the roster has no PM (PHASE0_ROSTER) 0ms
+   ✓ coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semantics) > gates for the Leader when the next required role is not enabled 0ms
+   ✓ coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semantics) > increments iterationCount on each PM dispatch so a silent PM loop stays bounded 0ms
+   ✓ coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semantics) > escalates to human_gate when the PM clarifying loop reaches the cap (PM 回环超限升级) 0ms
+   ✓ coordinator.decide · roster-gated dispatch (task 2.2 hot-plug semantics) > finalizes on passing tests when the roster has no REVIEWER (Phase 0 slice) 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > keeps the first consecutive test failure in the CODER repair loop 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > routes REVIEWER on the second consecutive test failure when rostered 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > degrades visibly to CODER when the repeated-failure roster has no REVIEWER 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > keeps iteration-limit humanGate above repeated-failure escalation 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > defaults a missing issueScope to implementation and returns review changes to CODER 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > upgrades architecture scope monotonically from Tier +0 to 1 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > upgrades architecture scope monotonically from Tier 1 to 2 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > upgrades architecture scope monotonically from Tier 2 to 2 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > degrades visibly to CODER when architecture escalation has no ARCHITECT 0ms
+   ✓ coordinator.decide · feedback escalation (task 4.3, spec §3) > rejects approved verdicts during a repeated-test-failure root-cause review 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 0 skips PM and ARCH even when the roster has them (spec §3 直接小环) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 0 skips ARCH when requirements are ready (no planning leg) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 0 still routes REVIEWER after passing tests when rostered (裁决①: spec only skips PM/ARCH) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 1 and unset complexity keep the full-machine head: PM first (drift-zero contract) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 2 splits architecture.modules into CODER subtasks and activates the first (拆分但不并行) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 2 degrades to the single subtask when architecture has no modules (退化不静默) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 2 marks the passed subtask done and activates the next in array order without burning an iteration 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 2 activation gates on dependsOn: dependents stay todo until deps are done (拓扑门控) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 2 routes REVIEWER once the last subtask passes and closes its lifecycle 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 2 failing tests return CODER to the same in_progress subtask (不跳号) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > throws when more than one CODER subtask is in_progress (invariant enforcement) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > review changes_requested reopens all subtasks and re-activates the first (裁决③保守重开, DEF-013) 0ms
+   ✓ coordinator.decide · tier-aware topology routing (task 4.2, spec §3) > Tier 2 with the Phase 0 roster keeps the single CODER dispatch (C4: no ARCH to split from) 0ms
+   ✓ continues a canonical sequential advisory without accepting it as a verdict or replaying the old worker 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/core/orchestration/test/coordinator.test.ts > records a canonical local TESTER dispatch before admitting validation
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ packages/core/orchestration/test/coordinator.test.ts:42:115
+     40|   const next = applyMutations(initial,decision.mutations);
+     41|   expect(decision.route).toMatchObject({kind:'worker',batch:[{role:'TE…
+     42|   expect(next.messages.filter(m=>m.fromRole==='COORDINATOR'&&m.type===…
+       |                                                                                                                   ^
+     43| });
+     44| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 62 passed (63)
+   Start at  19:33:30
+   Duration  536ms (transform 208ms, setup 0ms, collect 408ms, tests 17ms, environment 0ms, prepare 28ms)
+

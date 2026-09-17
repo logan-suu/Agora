@@ -1,0 +1,60 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (29 tests | 1 failed | 28 skipped) 1940ms
+   ↓ confirms a durable grant through the real Leader POST: normal
+   ↓ confirms a durable grant through the real Leader POST: file-update
+   ↓ confirms a durable grant through the real Leader POST: file-create
+   ↓ confirms a durable grant through the real Leader POST: file-proof
+   ↓ confirms a durable grant through the real Leader POST: command
+   ↓ confirms a durable grant through the real Leader POST: mcp
+   ↓ confirms a durable grant through the real Leader POST: mcp-partial
+   ↓ confirms a durable grant through the real Leader POST: reader
+   ↓ confirms a durable grant through the real Leader POST: mcp-command
+   ↓ confirms a durable grant through the real Leader POST: trusted-validation
+   ↓ confirms a durable grant through the real Leader POST: worker-companion
+   × confirms a durable grant through the real Leader POST: successor-companion 1940ms
+     → workspace_claim_closure_unavailable
+   ↓ confirms a durable grant through the real Leader POST: tester-companion
+   ↓ confirms a durable grant through the real Leader POST: reviewer-companion
+   ↓ confirms a durable grant through the real Leader POST: pm-companion
+   ↓ confirms a durable grant through the real Leader POST: coordinator-companion
+   ↓ confirms a durable grant through the real Leader POST: batch
+   ↓ confirms a durable grant through the real Leader POST: batch-partial
+   ↓ confirms a durable grant through the real Leader POST: batch-read-drift
+   ↓ confirms a durable grant through the real Leader POST: batch-stale
+   ↓ confirms a durable grant through the real Leader POST: before
+   ↓ confirms a durable grant through the real Leader POST: after
+   ↓ confirms a durable grant through the real Leader POST: wrong-hash
+   ↓ confirms a durable grant through the real Leader POST: wrong-selection
+   ↓ confirms a durable grant through the real Leader POST: wrong-scope
+   ↓ confirms a durable grant through the real Leader POST: stale-policy
+   ↓ confirms a durable grant through the real Leader POST: root-drift
+   ↓ confirms a durable grant through the real Leader POST: corrupt-proposal
+   ↓ confirms a durable grant through the real Leader POST: unsupported-action
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: successor-companion
+Error: workspace_claim_closure_unavailable
+ ❯ LocalWorkspaceSessions.proveClaimClosed packages/runtime/sandbox/src/local-workspace-sessions.ts:127:13
+    125|     );
+    126|     if (!worker || !['done', 'failed'].includes(worker.status) || !wor…
+    127|       throw Error('workspace_claim_closure_unavailable');
+       |             ^
+    128|     const actionId = `session:${localRecordHash({ identity: key(claim)…
+    129|     const matches: string[] = [];
+ ❯ LocalWorkspaceAuthority.register packages/runtime/sandbox/src/local-workspace-authority.ts:198:32
+ ❯ LocalWorkspaceSessions.open packages/runtime/sandbox/src/local-workspace-sessions.ts:391:13
+ ❯ WorkerRuntime.runAssignment packages/core/orchestration/src/worker-runtime.ts:636:24
+ ❯ WorkerRuntime.runOne packages/core/orchestration/src/worker-runtime.ts:353:7
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:554:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 28 skipped (29)
+   Start at  19:04:26
+   Duration  2.91s (transform 365ms, setup 0ms, collect 853ms, tests 1.94s, environment 0ms, prepare 31ms)
+

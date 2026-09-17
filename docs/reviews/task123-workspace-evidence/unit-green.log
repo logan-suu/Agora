@@ -1,0 +1,15 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/runtime/sandbox/test/local-registry-file.test.ts (25 tests) 5950ms
+   ✓ persists immutable workspace identities across owner restarts  376ms
+   ✓ checks workspace transitions inside the publication lock before changing disk  383ms
+   ✓ publishes and reopens durable revisions across actual desktop owner lifetimes  323ms
+   ✓ never resets a valid registry or initializes an existing incomplete directory  304ms
+ ✓ packages/core/domain/test/local-workspace.test.ts (40 tests) 6ms
+
+ Test Files  2 passed (2)
+      Tests  65 passed (65)
+   Start at  12:16:41
+   Duration  6.79s (transform 261ms, setup 0ms, collect 354ms, tests 5.96s, environment 0ms, prepare 144ms)
+

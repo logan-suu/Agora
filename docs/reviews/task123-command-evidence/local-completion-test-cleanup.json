@@ -1,0 +1,1252 @@
+{
+  "recordedAt": "2026-09-16T23:18:18.837Z",
+  "runStarted": "2026-09-16T23:16:45.523Z",
+  "runCompleted": "2026-09-16T23:16:48.139Z",
+  "logHash": "896f4105b7917a8fae032d6aec90bd1416ccaab52f6c66743a6e30a6a26df0fb",
+  "scriptHash": "461cd50aec61a1bc85b1679ac9a8ad8b78888169279dde0729c67b2725d5a604",
+  "availableBefore": 44104142848,
+  "entries": [
+    {
+      "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora-sandbox-trash/agora-failed-worker-head-head_commit-5f720d3a0c1b4979-CODER-95QPbX",
+      "source": "packages/core/orchestration/test/worker-runtime.test.ts",
+      "uid": 501,
+      "dev": 16777231,
+      "ino": 128457721,
+      "birthtime": "2026-09-16T23:16:47.297Z",
+      "eligible": true,
+      "manifest": {
+        "entries": [
+          {
+            "path": ".git",
+            "mode": 16877,
+            "size": 384,
+            "dev": 16777231,
+            "ino": 128457723,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/COMMIT_EDITMSG",
+            "mode": 33188,
+            "size": 12,
+            "dev": 16777231,
+            "ino": 128457765,
+            "kind": "file",
+            "sha256": "d0dd63946937441944a7cf14f902a9a67d676ce84cc3a3c4d4fb52b60f53fc4c"
+          },
+          {
+            "path": ".git/HEAD",
+            "mode": 33188,
+            "size": 21,
+            "dev": 16777231,
+            "ino": 128457754,
+            "kind": "file",
+            "sha256": "28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80"
+          },
+          {
+            "path": ".git/config",
+            "mode": 33188,
+            "size": 183,
+            "dev": 16777231,
+            "ino": 128457759,
+            "kind": "file",
+            "sha256": "aefe1bddd5be4a743a4770f8de955bb9e324119a65fb86d9be3c01f4106bceb0"
+          },
+          {
+            "path": ".git/description",
+            "mode": 33188,
+            "size": 73,
+            "dev": 16777231,
+            "ino": 128457726,
+            "kind": "file",
+            "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+          },
+          {
+            "path": ".git/hooks",
+            "mode": 16877,
+            "size": 512,
+            "dev": 16777231,
+            "ino": 128457727,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/hooks/applypatch-msg.sample",
+            "mode": 33261,
+            "size": 478,
+            "dev": 16777231,
+            "ino": 128457732,
+            "kind": "file",
+            "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+          },
+          {
+            "path": ".git/hooks/commit-msg.sample",
+            "mode": 33261,
+            "size": 896,
+            "dev": 16777231,
+            "ino": 128457728,
+            "kind": "file",
+            "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+          },
+          {
+            "path": ".git/hooks/fsmonitor-watchman.sample",
+            "mode": 33261,
+            "size": 4726,
+            "dev": 16777231,
+            "ino": 128457733,
+            "kind": "file",
+            "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+          },
+          {
+            "path": ".git/hooks/post-update.sample",
+            "mode": 33261,
+            "size": 189,
+            "dev": 16777231,
+            "ino": 128457736,
+            "kind": "file",
+            "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+          },
+          {
+            "path": ".git/hooks/pre-applypatch.sample",
+            "mode": 33261,
+            "size": 424,
+            "dev": 16777231,
+            "ino": 128457738,
+            "kind": "file",
+            "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+          },
+          {
+            "path": ".git/hooks/pre-commit.sample",
+            "mode": 33261,
+            "size": 1649,
+            "dev": 16777231,
+            "ino": 128457731,
+            "kind": "file",
+            "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+          },
+          {
+            "path": ".git/hooks/pre-merge-commit.sample",
+            "mode": 33261,
+            "size": 416,
+            "dev": 16777231,
+            "ino": 128457737,
+            "kind": "file",
+            "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+          },
+          {
+            "path": ".git/hooks/pre-push.sample",
+            "mode": 33261,
+            "size": 1374,
+            "dev": 16777231,
+            "ino": 128457739,
+            "kind": "file",
+            "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+          },
+          {
+            "path": ".git/hooks/pre-rebase.sample",
+            "mode": 33261,
+            "size": 4898,
+            "dev": 16777231,
+            "ino": 128457729,
+            "kind": "file",
+            "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+          },
+          {
+            "path": ".git/hooks/pre-receive.sample",
+            "mode": 33261,
+            "size": 544,
+            "dev": 16777231,
+            "ino": 128457734,
+            "kind": "file",
+            "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+          },
+          {
+            "path": ".git/hooks/prepare-commit-msg.sample",
+            "mode": 33261,
+            "size": 1492,
+            "dev": 16777231,
+            "ino": 128457735,
+            "kind": "file",
+            "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+          },
+          {
+            "path": ".git/hooks/push-to-checkout.sample",
+            "mode": 33261,
+            "size": 2783,
+            "dev": 16777231,
+            "ino": 128457741,
+            "kind": "file",
+            "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+          },
+          {
+            "path": ".git/hooks/sendemail-validate.sample",
+            "mode": 33261,
+            "size": 2308,
+            "dev": 16777231,
+            "ino": 128457730,
+            "kind": "file",
+            "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+          },
+          {
+            "path": ".git/hooks/update.sample",
+            "mode": 33261,
+            "size": 3650,
+            "dev": 16777231,
+            "ino": 128457740,
+            "kind": "file",
+            "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+          },
+          {
+            "path": ".git/index",
+            "mode": 33188,
+            "size": 145,
+            "dev": 16777231,
+            "ino": 128457788,
+            "kind": "file",
+            "sha256": "717814eae02439788a9a8a6181cf1f604bc80db8008b7f0f0511acd2e22029f4"
+          },
+          {
+            "path": ".git/info",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457724,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/info/exclude",
+            "mode": 33188,
+            "size": 240,
+            "dev": 16777231,
+            "ino": 128457725,
+            "kind": "file",
+            "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+          },
+          {
+            "path": ".git/logs",
+            "mode": 16877,
+            "size": 128,
+            "dev": 16777231,
+            "ino": 128457772,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/HEAD",
+            "mode": 33188,
+            "size": 292,
+            "dev": 16777231,
+            "ino": 128457773,
+            "kind": "file",
+            "sha256": "cb27a5fc641d9930ef62a7d96a3f00e7a21bf4d338a4338ff73b32d5f32bdfff"
+          },
+          {
+            "path": ".git/logs/refs",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457774,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/refs/heads",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457775,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/refs/heads/main",
+            "mode": 33188,
+            "size": 292,
+            "dev": 16777231,
+            "ino": 128457776,
+            "kind": "file",
+            "sha256": "cb27a5fc641d9930ef62a7d96a3f00e7a21bf4d338a4338ff73b32d5f32bdfff"
+          },
+          {
+            "path": ".git/objects",
+            "mode": 16877,
+            "size": 288,
+            "dev": 16777231,
+            "ino": 128457755,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/1e",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457789,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/1e/0bde6e9b1a03cc5c93822a269a9cb369c8cc87",
+            "mode": 33060,
+            "size": 57,
+            "dev": 16777231,
+            "ino": 128457790,
+            "kind": "file",
+            "sha256": "3bb361c49506f0ee06c8d77b0160bd6cfb199b9246f08db67610c6a59ae766a3"
+          },
+          {
+            "path": ".git/objects/23",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457793,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/23/36a044cb976f66aadfa003ddf18eb46278e36a",
+            "mode": 33060,
+            "size": 151,
+            "dev": 16777231,
+            "ino": 128457794,
+            "kind": "file",
+            "sha256": "08995a0b376b253e6acbd6bcfbf1b6278db8e010cf3546620e18f29eda2da724"
+          },
+          {
+            "path": ".git/objects/26",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457766,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/26/55df96ccb0d3f9504f3e6e33cb3ea3f9252cb9",
+            "mode": 33060,
+            "size": 118,
+            "dev": 16777231,
+            "ino": 128457767,
+            "kind": "file",
+            "sha256": "cfb56e3410c5d863dac8a9a56ad02e0f2f062654a95575d6750982a3b1304142"
+          },
+          {
+            "path": ".git/objects/4b",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457761,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/4b/825dc642cb6eb9a060e54bf8d69288fbee4904",
+            "mode": 33060,
+            "size": 15,
+            "dev": 16777231,
+            "ino": 128457762,
+            "kind": "file",
+            "sha256": "e72602cad67ed061ec84b13e92568f873172efac19a512a1b561dbf54e2c8426"
+          },
+          {
+            "path": ".git/objects/64",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457784,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/64/a32fd291e405a963aacf964a021809dd206c46",
+            "mode": 33060,
+            "size": 42,
+            "dev": 16777231,
+            "ino": 128457785,
+            "kind": "file",
+            "sha256": "ff34ae269cd0a249535f8ae80837ca0517b14507e737b26f9fd6b79905447dc4"
+          },
+          {
+            "path": ".git/objects/info",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457757,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/pack",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457756,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs",
+            "mode": 16877,
+            "size": 128,
+            "dev": 16777231,
+            "ino": 128457751,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs/heads",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457752,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs/heads/main",
+            "mode": 33188,
+            "size": 41,
+            "dev": 16777231,
+            "ino": 128457798,
+            "kind": "file",
+            "sha256": "646f072c58d387a5f418e48d7018d859d1283ed14ff901563c17654aa31184f1"
+          },
+          {
+            "path": ".git/refs/tags",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457753,
+            "kind": "directory"
+          },
+          {
+            "path": "business.mjs",
+            "mode": 33152,
+            "size": 26,
+            "dev": 16777231,
+            "ino": 128457780,
+            "kind": "file",
+            "sha256": "a2098bd92b10bf8b816d24b7556b1ce8c49a879d130489065ef1051c17e042f6"
+          }
+        ],
+        "sha256": "d0975d1b611d5dcb5547769e94a7c4161becfb7d69ccca6f770f26d44c1cfc76",
+        "logicalBytes": 27535
+      },
+      "removed": true
+    },
+    {
+      "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora-sandbox-trash/agora-failed-worker-head-head_refresh-9e97932ba1a62deb-CODER-olSQCJ",
+      "source": "packages/core/orchestration/test/worker-runtime.test.ts",
+      "uid": 501,
+      "dev": 16777231,
+      "ino": 128457639,
+      "birthtime": "2026-09-16T23:16:47.000Z",
+      "eligible": true,
+      "manifest": {
+        "entries": [
+          {
+            "path": ".git",
+            "mode": 16877,
+            "size": 384,
+            "dev": 16777231,
+            "ino": 128457641,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/COMMIT_EDITMSG",
+            "mode": 33188,
+            "size": 12,
+            "dev": 16777231,
+            "ino": 128457683,
+            "kind": "file",
+            "sha256": "d0dd63946937441944a7cf14f902a9a67d676ce84cc3a3c4d4fb52b60f53fc4c"
+          },
+          {
+            "path": ".git/HEAD",
+            "mode": 33188,
+            "size": 21,
+            "dev": 16777231,
+            "ino": 128457672,
+            "kind": "file",
+            "sha256": "28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80"
+          },
+          {
+            "path": ".git/config",
+            "mode": 33188,
+            "size": 183,
+            "dev": 16777231,
+            "ino": 128457677,
+            "kind": "file",
+            "sha256": "aefe1bddd5be4a743a4770f8de955bb9e324119a65fb86d9be3c01f4106bceb0"
+          },
+          {
+            "path": ".git/description",
+            "mode": 33188,
+            "size": 73,
+            "dev": 16777231,
+            "ino": 128457644,
+            "kind": "file",
+            "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+          },
+          {
+            "path": ".git/hooks",
+            "mode": 16877,
+            "size": 512,
+            "dev": 16777231,
+            "ino": 128457645,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/hooks/applypatch-msg.sample",
+            "mode": 33261,
+            "size": 478,
+            "dev": 16777231,
+            "ino": 128457650,
+            "kind": "file",
+            "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+          },
+          {
+            "path": ".git/hooks/commit-msg.sample",
+            "mode": 33261,
+            "size": 896,
+            "dev": 16777231,
+            "ino": 128457646,
+            "kind": "file",
+            "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+          },
+          {
+            "path": ".git/hooks/fsmonitor-watchman.sample",
+            "mode": 33261,
+            "size": 4726,
+            "dev": 16777231,
+            "ino": 128457651,
+            "kind": "file",
+            "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+          },
+          {
+            "path": ".git/hooks/post-update.sample",
+            "mode": 33261,
+            "size": 189,
+            "dev": 16777231,
+            "ino": 128457654,
+            "kind": "file",
+            "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+          },
+          {
+            "path": ".git/hooks/pre-applypatch.sample",
+            "mode": 33261,
+            "size": 424,
+            "dev": 16777231,
+            "ino": 128457656,
+            "kind": "file",
+            "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+          },
+          {
+            "path": ".git/hooks/pre-commit.sample",
+            "mode": 33261,
+            "size": 1649,
+            "dev": 16777231,
+            "ino": 128457649,
+            "kind": "file",
+            "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+          },
+          {
+            "path": ".git/hooks/pre-merge-commit.sample",
+            "mode": 33261,
+            "size": 416,
+            "dev": 16777231,
+            "ino": 128457655,
+            "kind": "file",
+            "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+          },
+          {
+            "path": ".git/hooks/pre-push.sample",
+            "mode": 33261,
+            "size": 1374,
+            "dev": 16777231,
+            "ino": 128457657,
+            "kind": "file",
+            "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+          },
+          {
+            "path": ".git/hooks/pre-rebase.sample",
+            "mode": 33261,
+            "size": 4898,
+            "dev": 16777231,
+            "ino": 128457647,
+            "kind": "file",
+            "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+          },
+          {
+            "path": ".git/hooks/pre-receive.sample",
+            "mode": 33261,
+            "size": 544,
+            "dev": 16777231,
+            "ino": 128457652,
+            "kind": "file",
+            "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+          },
+          {
+            "path": ".git/hooks/prepare-commit-msg.sample",
+            "mode": 33261,
+            "size": 1492,
+            "dev": 16777231,
+            "ino": 128457653,
+            "kind": "file",
+            "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+          },
+          {
+            "path": ".git/hooks/push-to-checkout.sample",
+            "mode": 33261,
+            "size": 2783,
+            "dev": 16777231,
+            "ino": 128457659,
+            "kind": "file",
+            "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+          },
+          {
+            "path": ".git/hooks/sendemail-validate.sample",
+            "mode": 33261,
+            "size": 2308,
+            "dev": 16777231,
+            "ino": 128457648,
+            "kind": "file",
+            "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+          },
+          {
+            "path": ".git/hooks/update.sample",
+            "mode": 33261,
+            "size": 3650,
+            "dev": 16777231,
+            "ino": 128457658,
+            "kind": "file",
+            "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+          },
+          {
+            "path": ".git/index",
+            "mode": 33188,
+            "size": 145,
+            "dev": 16777231,
+            "ino": 128457706,
+            "kind": "file",
+            "sha256": "7ece432662db2db462c5cd8d0f3c6f3e0f3f785f1867b3033aa3ac4bc9a981e7"
+          },
+          {
+            "path": ".git/info",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457642,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/info/exclude",
+            "mode": 33188,
+            "size": 240,
+            "dev": 16777231,
+            "ino": 128457643,
+            "kind": "file",
+            "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+          },
+          {
+            "path": ".git/logs",
+            "mode": 16877,
+            "size": 128,
+            "dev": 16777231,
+            "ino": 128457690,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/HEAD",
+            "mode": 33188,
+            "size": 292,
+            "dev": 16777231,
+            "ino": 128457691,
+            "kind": "file",
+            "sha256": "cb27a5fc641d9930ef62a7d96a3f00e7a21bf4d338a4338ff73b32d5f32bdfff"
+          },
+          {
+            "path": ".git/logs/refs",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457692,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/refs/heads",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457693,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/refs/heads/main",
+            "mode": 33188,
+            "size": 292,
+            "dev": 16777231,
+            "ino": 128457694,
+            "kind": "file",
+            "sha256": "cb27a5fc641d9930ef62a7d96a3f00e7a21bf4d338a4338ff73b32d5f32bdfff"
+          },
+          {
+            "path": ".git/objects",
+            "mode": 16877,
+            "size": 288,
+            "dev": 16777231,
+            "ino": 128457673,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/1e",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457707,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/1e/0bde6e9b1a03cc5c93822a269a9cb369c8cc87",
+            "mode": 33060,
+            "size": 57,
+            "dev": 16777231,
+            "ino": 128457708,
+            "kind": "file",
+            "sha256": "3bb361c49506f0ee06c8d77b0160bd6cfb199b9246f08db67610c6a59ae766a3"
+          },
+          {
+            "path": ".git/objects/23",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457711,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/23/36a044cb976f66aadfa003ddf18eb46278e36a",
+            "mode": 33060,
+            "size": 151,
+            "dev": 16777231,
+            "ino": 128457712,
+            "kind": "file",
+            "sha256": "08995a0b376b253e6acbd6bcfbf1b6278db8e010cf3546620e18f29eda2da724"
+          },
+          {
+            "path": ".git/objects/26",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457684,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/26/55df96ccb0d3f9504f3e6e33cb3ea3f9252cb9",
+            "mode": 33060,
+            "size": 118,
+            "dev": 16777231,
+            "ino": 128457685,
+            "kind": "file",
+            "sha256": "cfb56e3410c5d863dac8a9a56ad02e0f2f062654a95575d6750982a3b1304142"
+          },
+          {
+            "path": ".git/objects/4b",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457679,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/4b/825dc642cb6eb9a060e54bf8d69288fbee4904",
+            "mode": 33060,
+            "size": 15,
+            "dev": 16777231,
+            "ino": 128457680,
+            "kind": "file",
+            "sha256": "e72602cad67ed061ec84b13e92568f873172efac19a512a1b561dbf54e2c8426"
+          },
+          {
+            "path": ".git/objects/64",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457702,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/64/a32fd291e405a963aacf964a021809dd206c46",
+            "mode": 33060,
+            "size": 42,
+            "dev": 16777231,
+            "ino": 128457703,
+            "kind": "file",
+            "sha256": "ff34ae269cd0a249535f8ae80837ca0517b14507e737b26f9fd6b79905447dc4"
+          },
+          {
+            "path": ".git/objects/info",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457675,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/pack",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457674,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs",
+            "mode": 16877,
+            "size": 128,
+            "dev": 16777231,
+            "ino": 128457669,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs/heads",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457670,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs/heads/main",
+            "mode": 33188,
+            "size": 41,
+            "dev": 16777231,
+            "ino": 128457716,
+            "kind": "file",
+            "sha256": "646f072c58d387a5f418e48d7018d859d1283ed14ff901563c17654aa31184f1"
+          },
+          {
+            "path": ".git/refs/tags",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457671,
+            "kind": "directory"
+          },
+          {
+            "path": "business.mjs",
+            "mode": 33152,
+            "size": 26,
+            "dev": 16777231,
+            "ino": 128457698,
+            "kind": "file",
+            "sha256": "a2098bd92b10bf8b816d24b7556b1ce8c49a879d130489065ef1051c17e042f6"
+          }
+        ],
+        "sha256": "d164c9e1f9b3b6f2730feeacf849978baedeb8c9dc4fb7abd03698df95083173",
+        "logicalBytes": 27535
+      },
+      "removed": true
+    },
+    {
+      "path": "/private/var/folders/_r/6dh_2jf542d4p97jl9nqwk480000gn/T/agora-sandbox-trash/agora-failed-worker-head-provider-a5b5b2a7b7702470-CODER-zCvkGZ",
+      "source": "packages/core/orchestration/test/worker-runtime.test.ts",
+      "uid": 501,
+      "dev": 16777231,
+      "ino": 128457552,
+      "birthtime": "2026-09-16T23:16:46.676Z",
+      "eligible": true,
+      "manifest": {
+        "entries": [
+          {
+            "path": ".git",
+            "mode": 16877,
+            "size": 384,
+            "dev": 16777231,
+            "ino": 128457554,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/COMMIT_EDITMSG",
+            "mode": 33188,
+            "size": 12,
+            "dev": 16777231,
+            "ino": 128457598,
+            "kind": "file",
+            "sha256": "d0dd63946937441944a7cf14f902a9a67d676ce84cc3a3c4d4fb52b60f53fc4c"
+          },
+          {
+            "path": ".git/HEAD",
+            "mode": 33188,
+            "size": 21,
+            "dev": 16777231,
+            "ino": 128457585,
+            "kind": "file",
+            "sha256": "28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80"
+          },
+          {
+            "path": ".git/config",
+            "mode": 33188,
+            "size": 183,
+            "dev": 16777231,
+            "ino": 128457592,
+            "kind": "file",
+            "sha256": "aefe1bddd5be4a743a4770f8de955bb9e324119a65fb86d9be3c01f4106bceb0"
+          },
+          {
+            "path": ".git/description",
+            "mode": 33188,
+            "size": 73,
+            "dev": 16777231,
+            "ino": 128457557,
+            "kind": "file",
+            "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+          },
+          {
+            "path": ".git/hooks",
+            "mode": 16877,
+            "size": 512,
+            "dev": 16777231,
+            "ino": 128457558,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/hooks/applypatch-msg.sample",
+            "mode": 33261,
+            "size": 478,
+            "dev": 16777231,
+            "ino": 128457563,
+            "kind": "file",
+            "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+          },
+          {
+            "path": ".git/hooks/commit-msg.sample",
+            "mode": 33261,
+            "size": 896,
+            "dev": 16777231,
+            "ino": 128457559,
+            "kind": "file",
+            "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+          },
+          {
+            "path": ".git/hooks/fsmonitor-watchman.sample",
+            "mode": 33261,
+            "size": 4726,
+            "dev": 16777231,
+            "ino": 128457564,
+            "kind": "file",
+            "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+          },
+          {
+            "path": ".git/hooks/post-update.sample",
+            "mode": 33261,
+            "size": 189,
+            "dev": 16777231,
+            "ino": 128457567,
+            "kind": "file",
+            "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+          },
+          {
+            "path": ".git/hooks/pre-applypatch.sample",
+            "mode": 33261,
+            "size": 424,
+            "dev": 16777231,
+            "ino": 128457569,
+            "kind": "file",
+            "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+          },
+          {
+            "path": ".git/hooks/pre-commit.sample",
+            "mode": 33261,
+            "size": 1649,
+            "dev": 16777231,
+            "ino": 128457562,
+            "kind": "file",
+            "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+          },
+          {
+            "path": ".git/hooks/pre-merge-commit.sample",
+            "mode": 33261,
+            "size": 416,
+            "dev": 16777231,
+            "ino": 128457568,
+            "kind": "file",
+            "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+          },
+          {
+            "path": ".git/hooks/pre-push.sample",
+            "mode": 33261,
+            "size": 1374,
+            "dev": 16777231,
+            "ino": 128457570,
+            "kind": "file",
+            "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+          },
+          {
+            "path": ".git/hooks/pre-rebase.sample",
+            "mode": 33261,
+            "size": 4898,
+            "dev": 16777231,
+            "ino": 128457560,
+            "kind": "file",
+            "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+          },
+          {
+            "path": ".git/hooks/pre-receive.sample",
+            "mode": 33261,
+            "size": 544,
+            "dev": 16777231,
+            "ino": 128457565,
+            "kind": "file",
+            "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+          },
+          {
+            "path": ".git/hooks/prepare-commit-msg.sample",
+            "mode": 33261,
+            "size": 1492,
+            "dev": 16777231,
+            "ino": 128457566,
+            "kind": "file",
+            "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+          },
+          {
+            "path": ".git/hooks/push-to-checkout.sample",
+            "mode": 33261,
+            "size": 2783,
+            "dev": 16777231,
+            "ino": 128457572,
+            "kind": "file",
+            "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+          },
+          {
+            "path": ".git/hooks/sendemail-validate.sample",
+            "mode": 33261,
+            "size": 2308,
+            "dev": 16777231,
+            "ino": 128457561,
+            "kind": "file",
+            "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+          },
+          {
+            "path": ".git/hooks/update.sample",
+            "mode": 33261,
+            "size": 3650,
+            "dev": 16777231,
+            "ino": 128457571,
+            "kind": "file",
+            "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+          },
+          {
+            "path": ".git/index",
+            "mode": 33188,
+            "size": 145,
+            "dev": 16777231,
+            "ino": 128457624,
+            "kind": "file",
+            "sha256": "810690b051eddf6ec70c9ef81554673af8f397096016aa766c67eada2c9bc6db"
+          },
+          {
+            "path": ".git/info",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457555,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/info/exclude",
+            "mode": 33188,
+            "size": 240,
+            "dev": 16777231,
+            "ino": 128457556,
+            "kind": "file",
+            "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+          },
+          {
+            "path": ".git/logs",
+            "mode": 16877,
+            "size": 128,
+            "dev": 16777231,
+            "ino": 128457605,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/HEAD",
+            "mode": 33188,
+            "size": 292,
+            "dev": 16777231,
+            "ino": 128457606,
+            "kind": "file",
+            "sha256": "7e9364c7fec8495e3c0410c38389d36b6f26b958a4268e431488de784d64e6f9"
+          },
+          {
+            "path": ".git/logs/refs",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457607,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/refs/heads",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457608,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/logs/refs/heads/main",
+            "mode": 33188,
+            "size": 292,
+            "dev": 16777231,
+            "ino": 128457609,
+            "kind": "file",
+            "sha256": "7e9364c7fec8495e3c0410c38389d36b6f26b958a4268e431488de784d64e6f9"
+          },
+          {
+            "path": ".git/objects",
+            "mode": 16877,
+            "size": 288,
+            "dev": 16777231,
+            "ino": 128457586,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/1e",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457625,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/1e/0bde6e9b1a03cc5c93822a269a9cb369c8cc87",
+            "mode": 33060,
+            "size": 57,
+            "dev": 16777231,
+            "ino": 128457626,
+            "kind": "file",
+            "sha256": "3bb361c49506f0ee06c8d77b0160bd6cfb199b9246f08db67610c6a59ae766a3"
+          },
+          {
+            "path": ".git/objects/20",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457599,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/20/e5909365b6c042fab4f74ca272b330f744be9c",
+            "mode": 33060,
+            "size": 118,
+            "dev": 16777231,
+            "ino": 128457600,
+            "kind": "file",
+            "sha256": "31744ba1143d8bde661d5b28a7992c1450909ec4642a31fd26783de6aed6c261"
+          },
+          {
+            "path": ".git/objects/4b",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457594,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/4b/825dc642cb6eb9a060e54bf8d69288fbee4904",
+            "mode": 33060,
+            "size": 15,
+            "dev": 16777231,
+            "ino": 128457595,
+            "kind": "file",
+            "sha256": "e72602cad67ed061ec84b13e92568f873172efac19a512a1b561dbf54e2c8426"
+          },
+          {
+            "path": ".git/objects/64",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457619,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/64/a32fd291e405a963aacf964a021809dd206c46",
+            "mode": 33060,
+            "size": 42,
+            "dev": 16777231,
+            "ino": 128457620,
+            "kind": "file",
+            "sha256": "ff34ae269cd0a249535f8ae80837ca0517b14507e737b26f9fd6b79905447dc4"
+          },
+          {
+            "path": ".git/objects/b8",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457629,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/b8/76222318b2ca87c15afdbee7692f2e3a2d1ed0",
+            "mode": 33060,
+            "size": 149,
+            "dev": 16777231,
+            "ino": 128457630,
+            "kind": "file",
+            "sha256": "508da153419c9e13e56428ef41b6b20a7d44b17fc83132d28f02f502e554f5e2"
+          },
+          {
+            "path": ".git/objects/info",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457588,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/objects/pack",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457587,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs",
+            "mode": 16877,
+            "size": 128,
+            "dev": 16777231,
+            "ino": 128457582,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs/heads",
+            "mode": 16877,
+            "size": 96,
+            "dev": 16777231,
+            "ino": 128457583,
+            "kind": "directory"
+          },
+          {
+            "path": ".git/refs/heads/main",
+            "mode": 33188,
+            "size": 41,
+            "dev": 16777231,
+            "ino": 128457634,
+            "kind": "file",
+            "sha256": "c14fb245390eb20aa92a692ba3fae5cfe2c2424449016fa47460aa4fa66a7818"
+          },
+          {
+            "path": ".git/refs/tags",
+            "mode": 16877,
+            "size": 64,
+            "dev": 16777231,
+            "ino": 128457584,
+            "kind": "directory"
+          },
+          {
+            "path": "business.mjs",
+            "mode": 33152,
+            "size": 26,
+            "dev": 16777231,
+            "ino": 128457613,
+            "kind": "file",
+            "sha256": "a2098bd92b10bf8b816d24b7556b1ce8c49a879d130489065ef1051c17e042f6"
+          }
+        ],
+        "sha256": "7f8bfcf34d5e1da4dc6ba6b5f93e9456c04e6661ecc3361ba805f617bb3ee749",
+        "logicalBytes": 27533
+      },
+      "removed": true
+    }
+  ],
+  "availableAfter": 44104179712,
+  "spaceDelta": 36864,
+  "completedAt": "2026-09-16T23:18:30.450Z"
+}

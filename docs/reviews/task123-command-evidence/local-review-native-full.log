@@ -1,0 +1,38 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (28 tests) 62985ms
+   ✓ confirms a durable grant through the real Leader POST: normal  688ms
+   ✓ confirms a durable grant through the real Leader POST: file-update  3445ms
+   ✓ confirms a durable grant through the real Leader POST: file-create  2144ms
+   ✓ confirms a durable grant through the real Leader POST: file-proof  2479ms
+   ✓ confirms a durable grant through the real Leader POST: command  4268ms
+   ✓ confirms a durable grant through the real Leader POST: mcp  4359ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-partial  4743ms
+   ✓ confirms a durable grant through the real Leader POST: reader  2045ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-command  5112ms
+   ✓ confirms a durable grant through the real Leader POST: trusted-validation  7405ms
+   ✓ confirms a durable grant through the real Leader POST: worker-companion  1632ms
+   ✓ confirms a durable grant through the real Leader POST: tester-companion  1982ms
+   ✓ confirms a durable grant through the real Leader POST: reviewer-companion  1905ms
+   ✓ confirms a durable grant through the real Leader POST: pm-companion  1235ms
+   ✓ confirms a durable grant through the real Leader POST: coordinator-companion  1133ms
+   ✓ confirms a durable grant through the real Leader POST: batch  4119ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3820ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3790ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2633ms
+   ✓ confirms a durable grant through the real Leader POST: before  509ms
+   ✓ confirms a durable grant through the real Leader POST: after  514ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  445ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  453ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  470ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  411ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  436ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  375ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  428ms
+
+ Test Files  1 passed (1)
+      Tests  28 passed (28)
+   Start at  18:56:21
+   Duration  63.95s (transform 397ms, setup 0ms, collect 838ms, tests 62.99s, environment 0ms, prepare 29ms)
+

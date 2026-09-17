@@ -1,0 +1,27 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/roles/definitions/test/local-runtime-contract.test.ts [ packages/roles/definitions/test/local-runtime-contract.test.ts ]
+Error: Cannot find module '../src/local-runtime-contract' imported from '/Users/logansu/Documents/Dev/Agora/packages/roles/definitions/test/local-runtime-contract.test.ts'
+ ❯ packages/roles/definitions/test/local-runtime-contract.test.ts:3:1
+      1| import { expect, it } from 'vitest';
+      2| import { DEFAULT_ROSTER } from '../src/roster';
+      3| import { localCoderRole } from '../src/local-runtime-contract';
+       | ^
+      4| 
+      5| it('uses versioned local tools without expanding a reduced role whitel…
+
+Caused by: Error: Failed to load url ../src/local-runtime-contract (resolved id: ../src/local-runtime-contract) in /Users/logansu/Documents/Dev/Agora/packages/roles/definitions/test/local-runtime-contract.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@20.19.43_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  17:39:08
+   Duration  222ms (transform 79ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 34ms)
+

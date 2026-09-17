@@ -1,0 +1,15 @@
+{
+  "exitCode": 1,
+  "files": {
+    "passed": 199,
+    "failed": 1
+  },
+  "tests": {
+    "passed": 1477,
+    "failed": 1,
+    "skipped": 0
+  },
+  "seconds": 710.57,
+  "evidence": "docs/reviews/task123-start-evidence/revoked-x9iNlW.json",
+  "sha256": "d674f6d0733ed83aa456c5a19bd75cc4ca39a704fa834064a17007ed6f5a9d3a"
+}

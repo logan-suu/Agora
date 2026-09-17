@@ -1,0 +1,70 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (25 tests | 2 failed) 49669ms
+   ✓ confirms a durable grant through the real Leader POST: normal  893ms
+   ✓ confirms a durable grant through the real Leader POST: file-update  3353ms
+   ✓ confirms a durable grant through the real Leader POST: file-create  2105ms
+   ✓ confirms a durable grant through the real Leader POST: file-proof  2366ms
+   ✓ confirms a durable grant through the real Leader POST: command  3953ms
+   ✓ confirms a durable grant through the real Leader POST: mcp  3942ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-partial  4501ms
+   ✓ confirms a durable grant through the real Leader POST: reader  1992ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-command  4816ms
+   ✓ confirms a durable grant through the real Leader POST: worker-companion  1674ms
+   × confirms a durable grant through the real Leader POST: tester-companion 1353ms
+     → expected undefined to deeply equal []
+   × confirms a durable grant through the real Leader POST: reviewer-companion 1355ms
+     → expected undefined to deeply equal []
+   ✓ confirms a durable grant through the real Leader POST: batch  3889ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3712ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3407ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2608ms
+   ✓ confirms a durable grant through the real Leader POST: before  454ms
+   ✓ confirms a durable grant through the real Leader POST: after  494ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  404ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  398ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  389ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  396ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  416ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  369ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  426ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: tester-companion
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: reviewer-companion
+WorkerStepError: expected undefined to deeply equal []
+ ❯ WorkerRuntime.loop packages/core/orchestration/src/worker-runtime.ts:748:15
+    746|           );
+    747|         }
+    748|         throw new WorkerStepError(error);
+       |               ^
+    749|       }
+    750|       if (handle.localSession) {
+ ❯ WorkerRuntime.runAssignment packages/core/orchestration/src/worker-runtime.ts:648:7
+ ❯ WorkerRuntime.runOne packages/core/orchestration/src/worker-runtime.ts:338:7
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:486:34
+
+Caused by: AssertionError: expected undefined to deeply equal []
+
+- Expected: 
+[]
+
++ Received: 
+undefined
+
+ ❯ Object.step tests/integration/phase12/phase12-3-grant.test.ts:449:71
+ ❯ WorkerRuntime.loop packages/core/orchestration/src/worker-runtime.ts:724:40
+ ❯ WorkerRuntime.runAssignment packages/core/orchestration/src/worker-runtime.ts:648:7
+ ❯ WorkerRuntime.runOne packages/core/orchestration/src/worker-runtime.ts:338:7
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:486:34
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 23 passed (25)
+   Start at  18:37:07
+   Duration  50.44s (transform 333ms, setup 0ms, collect 662ms, tests 49.67s, environment 0ms, prepare 27ms)
+

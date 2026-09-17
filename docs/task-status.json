@@ -2,7 +2,7 @@
   "version": "1.5",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "current_phase": 12,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
@@ -123,7 +123,7 @@
     },
     {
       "id": "D18",
-      "rule": "Phase11–30共20阶段110任务，末项集成/发布，下一阶段依赖前出口，旧ID见计划§18.12。11/12限定预览；13退役Docker且不兼容旧任务，不自动删数据；12.1清单、13.3移除、13.4无Docker验收。G1–G7/人工PR合并不变；阶段done不等于发布，dev→main人工合并后经授权tag/Release。身份/CAS/跨聚合回执与D4真Fork见详设§12.1。12.2已接受Seatbelt候选及弃用风险/失败关闭、本机APFS、版本事务/固定输入验证/接管保全，冻结方法不变，L01–L18待实测。Electron+独立Node，仅Apple Silicon/macOS15+；GitHub ad-hoc DMG/校验和/未公证说明，不要求Developer ID/公证。真实安装、升级Keychain与state/workspace/配置证据连续性及迁移恢复保留；11.5干净macOS15获批忽略但未验证，DEF-018。D3等保护保留，设计接受不替代实装验收；来源详设§12、蓝图§22.3.2、选型§12、计划§18.11。",
+      "rule": "Phase11–30末项集成/发布，后阶段依赖前出口；旧ID见计划§18.12。11/12限定预览；13退役Docker且不兼容旧任务，不自动删数据；12.1清单、13.3移除、13.4无Docker验收。G1–G7/人工合并不变；阶段done不等于发布，dev→main人工合并后经授权tag/Release。身份/CAS/D4真Fork见详设§12.1。12.2按§12.2采用Seatbelt候选/失效关闭、本机APFS与同卷事务、固定输入验证/接管保全；9/15复评区分新准入与旧合法对象在途收敛，根移动不瞬撤fd，外部对象仍隔离，漂移关闭/失效/保全待实测；冻结方法不变，L01–L18待验。Electron+独立Node，仅AppleSilicon/macOS15+；GitHub ad-hoc DMG/校验和/未公证说明，无DeveloperID/公证要求。安装升级保留Keychain/state/workspace/配置；11.5及12.3分别获批macOS15未验例外见DEF-018，不自动沿用后续阶段。D3保持，批准有界清理及残留隔离，接受漏检风险；coalition暂缓。",
       "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18；12.1退役清单：docs/详细设计方案.md §12.3.11；12.2本机契约：docs/详细设计方案.md §12.2"
     },
     {
@@ -1676,7 +1676,7 @@
           "id": "12.3",
           "title": "实现受控本机执行与普通目录工作区",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1",
             "docs/详细设计方案.md §12.2",
@@ -1689,8 +1689,8 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-3.test.ts",
-          "notes": "任务类型：code。实现经端口校验的文件/命令工具；普通非Git目录可开始；G5实测编辑/构建/测试、越界拒绝、凭据隔离，切换前维持既有回归，13.3完成本机替代覆盖并退役Docker路径。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
-          "last_updated": "2026-09-15"
+          "notes": "任务类型：code。当前范围实现/验收就绪：授权与版本MCP、官方Harness/D4真Fork、独立Tester、Leader终审、同版本归档/claim释放，生成候选事务及授权下载→禁网pnpm→固定依赖验证已实测。五helper构建/清单与启动探测完成；typecheck、585文件lint、桌面编译通过。最终7脚本+225文件/1748测试全绿0skip；Phase12为168项，额外IPC 1/1，609源码hash一致。首版仅精确直接/dev包计划，已有lock/config等明确不支持。152测试目录已清理，31个VM只读句柄目录保守保留；用户项目/应用未动。Leader仅跳过本次macOS15，DEF-018保留。已获commit/push/PR授权，正在交付并待人工合并，故in_progress；普通入口关闭。报告docs/reviews/task123-acceptance.md；完整证据docs/task-history/12.3.md。",
+          "last_updated": "2026-09-16"
         },
         {
           "id": "12.4",

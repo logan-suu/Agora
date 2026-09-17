@@ -1,0 +1,402 @@
+{
+  "scenario": "arguments",
+  "base": "/private/tmp/agora-task123-validation-Uerejs",
+  "startedAt": "2026-09-17T02:04:05.277Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 128573235
+  },
+  "sources": {
+    "packages/runtime/sandbox/native/local-process-control.c": "305da4f928dbf3c68a341c7f4d8c527fa1837e93e8e14ee93d0f3d8a07440f4c",
+    "packages/runtime/sandbox/native/local-command-bootstrap.c": "6a961f682c2cd385072c51c9b5819c13f23760ce39e9169a7937fd1e44ac4416",
+    "packages/runtime/sandbox/native/local-command-binding-probe.c": "453772e7a35f4eaa28ac1abf1bdbdbe4539e69a5b0fee1e5d46fa1069cb26bca",
+    "packages/runtime/sandbox/src/local-command-binding.ts": "6a79ae3e5a90108e15030f5b8437ad80f49ea3ce17415011333f64149427a18f",
+    "packages/runtime/sandbox/src/local-command-start.ts": "3b4524e7b9a4d8b8f969bfaaef51c647a3d872b8a1b2b2b6bfd1956028b4ff79",
+    "packages/runtime/sandbox/src/local-command-supervisor.ts": "fc8cb05b5fca978fd94f1db0da6c76cc47a953da4e9fd777aa4db57db0a02202",
+    "packages/runtime/sandbox/src/local-command-journal.ts": "ff18b89fa0998572cc2c7a57f2a4711f29d53dbe8489ce0e43a63a7aaf7207fa",
+    "packages/runtime/sandbox/src/local-command-stop.ts": "ba3b59f1f302b3a5714911302618ec051cd2868e9d5a2b7f5513d0c3504cace7",
+    "tests/integration/phase12/local-command-binding-fixture.ts": "4973c7bc81af927c8ad9d553ce439876efd6252269e1e8ac6824cfdbf1e8a125",
+    "tests/integration/phase12/phase12-3-command-binding.test.ts": "1e4e3162cb7a58efeb99487523a7d6c282faa130028500a3a7bb88ebc3f8061f"
+  },
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "node": "v24.20.0",
+  "availableBefore": 45071409152,
+  "binaries": {
+    "/private/tmp/agora-task123-validation-Uerejs/control": "ecfcad6f8981c59f149f0de74b854434ba127d51fa19660a8c34d098cf18bf1b",
+    "/private/tmp/agora-task123-validation-Uerejs/bootstrap": "137255d88a7026217d85eeaec3782d079631fadeee88c8856caa797020289577",
+    "/private/tmp/agora-task123-validation-Uerejs/payload": "98adc5aa621ad69f2d5ef43cae7667230216c7795cd7ba227e2b2bc9691e929b"
+  },
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-Uerejs/payload\"))\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-Uerejs/bootstrap\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-Uerejs/project-parent\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-Uerejs\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-Uerejs/payload\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-Uerejs/bootstrap\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Uerejs/journal\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Uerejs/project-parent/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "binding": {
+    "version": 1,
+    "authority": {
+      "projectId": "fixed-project",
+      "taskId": "fixed-task",
+      "workspaceId": "fixed-fixture",
+      "rootId": "fixed-root",
+      "grantId": "fixed-grant",
+      "workerId": "fixed-worker",
+      "policyVersion": "fixed-v1",
+      "grantHash": "7bfab9989b056a84f8561428ce025c68395d84da063a8c04c37670303f695243",
+      "toolchainHash": "7aef3e671d1c096aef364449cc36f084e091c33ee6918e866a10ac0ee9615cd5",
+      "networkHash": "e3201a911e215c30f22a61e0be43fe840e4b25b74a5f26e36bb555dc439b4ea8",
+      "grantRevision": 0,
+      "writerEpoch": 0
+    },
+    "invocationHash": "659e5b5884bf70713ec4d3809fb985bebfd75f1b033c849befee4df54351c1c6",
+    "host": {
+      "release": "25.5.0",
+      "arch": "arm64"
+    },
+    "roots": [
+      {
+        "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent/source",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private",
+            "identity": "16777231:76454369",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private/tmp",
+            "identity": "16777231:119551154",
+            "uid": 0,
+            "mode": 17407
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs",
+            "identity": "16777231:128573235",
+            "uid": 501,
+            "mode": 16832
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent",
+            "identity": "16777231:128573245",
+            "uid": 501,
+            "mode": 16832
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent/source",
+            "identity": "16777231:128573246",
+            "uid": 501,
+            "mode": 16832
+          }
+        ]
+      },
+      {
+        "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent/input",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private",
+            "identity": "16777231:76454369",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private/tmp",
+            "identity": "16777231:119551154",
+            "uid": 0,
+            "mode": 17407
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs",
+            "identity": "16777231:128573235",
+            "uid": 501,
+            "mode": 16832
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent",
+            "identity": "16777231:128573245",
+            "uid": 501,
+            "mode": 16832
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent/input",
+            "identity": "16777231:128573247",
+            "uid": 501,
+            "mode": 16832
+          }
+        ]
+      },
+      {
+        "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent/output",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private",
+            "identity": "16777231:76454369",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private/tmp",
+            "identity": "16777231:119551154",
+            "uid": 0,
+            "mode": 17407
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs",
+            "identity": "16777231:128573235",
+            "uid": 501,
+            "mode": 16832
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent",
+            "identity": "16777231:128573245",
+            "uid": 501,
+            "mode": 16832
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent/output",
+            "identity": "16777231:128573248",
+            "uid": 501,
+            "mode": 16832
+          }
+        ]
+      },
+      {
+        "path": "/private/tmp/agora-task123-validation-Uerejs/journal",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private",
+            "identity": "16777231:76454369",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private/tmp",
+            "identity": "16777231:119551154",
+            "uid": 0,
+            "mode": 17407
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs",
+            "identity": "16777231:128573235",
+            "uid": 501,
+            "mode": 16832
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs/journal",
+            "identity": "16777231:128573249",
+            "uid": 501,
+            "mode": 16832
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "bootstrap",
+        "path": "/private/tmp/agora-task123-validation-Uerejs/bootstrap",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private",
+            "identity": "16777231:76454369",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private/tmp",
+            "identity": "16777231:119551154",
+            "uid": 0,
+            "mode": 17407
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs",
+            "identity": "16777231:128573235",
+            "uid": 501,
+            "mode": 16832
+          }
+        ],
+        "metadata": "16777231:128573241:34168:1789610645396026705:1789610645396026705:33261:501:1",
+        "sha256": "137255d88a7026217d85eeaec3782d079631fadeee88c8856caa797020289577"
+      },
+      {
+        "name": "executable",
+        "path": "/private/tmp/agora-task123-validation-Uerejs/payload",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private",
+            "identity": "16777231:76454369",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private/tmp",
+            "identity": "16777231:119551154",
+            "uid": 0,
+            "mode": 17407
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs",
+            "identity": "16777231:128573235",
+            "uid": 501,
+            "mode": 16832
+          }
+        ],
+        "metadata": "16777231:128573244:33720:1789610645439146075:1789610645439146075:33261:501:1",
+        "sha256": "98adc5aa621ad69f2d5ef43cae7667230216c7795cd7ba227e2b2bc9691e929b"
+      },
+      {
+        "name": "helper",
+        "path": "/private/tmp/agora-task123-validation-Uerejs/control",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private",
+            "identity": "16777231:76454369",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/private/tmp",
+            "identity": "16777231:119551154",
+            "uid": 0,
+            "mode": 17407
+          },
+          {
+            "path": "/private/tmp/agora-task123-validation-Uerejs",
+            "identity": "16777231:128573235",
+            "uid": 501,
+            "mode": 16832
+          }
+        ],
+        "metadata": "16777231:128573238:34728:1789610645350558809:1789610645350558809:33261:501:1",
+        "sha256": "ecfcad6f8981c59f149f0de74b854434ba127d51fa19660a8c34d098cf18bf1b"
+      },
+      {
+        "name": "sandboxExec",
+        "path": "/usr/bin/sandbox-exec",
+        "chain": [
+          {
+            "path": "/",
+            "identity": "16777231:2",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/usr",
+            "identity": "16777231:1152921500312571576",
+            "uid": 0,
+            "mode": 16877
+          },
+          {
+            "path": "/usr/bin",
+            "identity": "16777231:1152921500312571579",
+            "uid": 0,
+            "mode": 16877
+          }
+        ],
+        "metadata": "16777231:1152921500312572721:102560:1777577597000000000:1777577597000000000:33261:0:1",
+        "sha256": "8857d087219f0f39d3e3c163e5d0a0aed690cc22f34b50c7eee3d74f93e69688"
+      }
+    ]
+  },
+  "result": {
+    "result": {
+      "released": false,
+      "payloadResult": null,
+      "observation": null,
+      "startupStop": null,
+      "error": "invalid_command_start",
+      "launchDurable": true,
+      "captureAttempts": [],
+      "controlReady": null
+    },
+    "record": {
+      "commandId": "fixture-arguments",
+      "workspaceId": "fixed-fixture",
+      "policyHash": "bf26e23d1f7309b2e43fe9cb34cf32b2f27ad5bd82bd7b7458199a37d4b8f662",
+      "inputHash": "2cdc0b8ec118d1bca0eb27ea763d13701daeb723642527155eedefcbc0d86ccd",
+      "roots": [
+        {
+          "path": "/private/tmp/agora-task123-validation-Uerejs/project-parent/output",
+          "identity": "16777231:128573248"
+        }
+      ],
+      "revision": 2,
+      "birthIdentities": [],
+      "birthRelations": [],
+      "observationReceipt": null,
+      "launchReceipt": {
+        "version": 1,
+        "targetIdentity": null,
+        "released": false,
+        "payloadResult": null,
+        "error": "invalid_command_start"
+      },
+      "binding": null,
+      "resourceState": "quarantined",
+      "reason": "control_failure"
+    },
+    "marker": false,
+    "bindingFailure": null,
+    "stickyChecks": [],
+    "trapExecuted": false,
+    "fixtureStop": null,
+    "journalErrors": [],
+    "replacementUnchanged": true
+  },
+  "completedAt": "2026-09-17T02:04:05.468Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "output": [
+        null,
+        "",
+        ""
+      ],
+      "pid": 27655,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 45071396864,
+  "spaceDelta": -12288
+}

@@ -1,0 +1,34 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-composition.test.ts (1 test | 1 failed) 5638ms
+   × runs local composition through a real D4 Fork and D16 fixed artifact 5637ms
+     → expected 'blocking_objection:assistant-5364d88c…' to match /^objection:/
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-composition.test.ts > runs local composition through a real D4 Fork and D16 fixed artifact
+AssertionError: expected 'blocking_objection:assistant-5364d88c…' to match /^objection:/
+
+- Expected: 
+/^objection:/
+
++ Received: 
+"blocking_objection:assistant-5364d88cd7ae15186302ec5b"
+
+ ❯ tests/integration/phase12/phase12-3-composition.test.ts:397:26
+    395|     const gate = (await state()).humanGate;
+    396|     expect(gate, JSON.stringify(evidence.firstSummary)).toBeDefined();
+    397|     expect(gate?.reason).toMatch(/^objection:/);
+       |                          ^
+    398|     expect(gate?.safePointRefs).toHaveLength(1);
+    399|     expect(scheduler.activeCount).toBe(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  19:28:02
+   Duration  6.59s (transform 355ms, setup 0ms, collect 841ms, tests 5.64s, environment 0ms, prepare 32ms)
+

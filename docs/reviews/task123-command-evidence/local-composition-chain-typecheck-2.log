@@ -1,0 +1,6 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+tests/integration/phase12/phase12-3-composition.test.ts(435,28): error TS2339: Property 'coordinationLedger' does not exist on type 'AppState'.
+ ELIFECYCLE  Command failed with exit code 2.

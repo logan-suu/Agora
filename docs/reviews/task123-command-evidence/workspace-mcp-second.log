@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/tools/bridge/test/local-workspace-bridge.test.ts (2 tests) 18ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:22:13
+   Duration  248ms (transform 33ms, setup 0ms, collect 120ms, tests 18ms, environment 0ms, prepare 32ms)
+

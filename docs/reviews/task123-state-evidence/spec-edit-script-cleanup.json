@@ -1,0 +1,7 @@
+{
+  "path": "/private/tmp/agora-task123-extend-spec.py",
+  "sha256": "746ee211c842090b92530a25a3f78db12ea38b6f81adb7b6de6742bf39aa13bb",
+  "snapshot": "docs/reviews/task123-state-evidence/spec-edit-script.txt",
+  "deleted": true,
+  "reason": "completed temporary spec editing script; no child or mount was created"
+}

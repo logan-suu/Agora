@@ -1,0 +1,32 @@
+/* Trusted fixed launcher prelude experiment. No user code or Keychain access. */
+#include <Security/AuthSession.h>
+#include <bsm/audit.h>
+#include <errno.h>
+#include <mach/mach.h>
+#include <stdio.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+static void report(const char *stage) {
+  auditinfo_addr_t info = {0};
+  int result = getaudit_addr(&info, sizeof(info));
+  int error = result < 0 ? errno : 0;
+  mach_port_t name = MACH_PORT_NULL;
+  kern_return_t name_result = task_name_for_pid(mach_task_self(), getpid(), &name);
+  audit_token_t token = {{0}};
+  mach_msg_type_number_t count = TASK_AUDIT_TOKEN_COUNT;
+  kern_return_t token_result = name_result == KERN_SUCCESS
+    ? task_info(name, TASK_AUDIT_TOKEN, (task_info_t)&token, &count) : name_result;
+  printf("{\"stage\":\"%s\",\"pid\":%d,\"auditResult\":%d,\"errno\":%d,\"asid\":%u,\"nameResult\":%d,\"tokenResult\":%d,\"tokenAsid\":%u,\"pidVersion\":%u}\n",
+         stage, getpid(), result, error, info.ai_asid, name_result, token_result, token.val[6], token.val[7]);
+  fflush(stdout);
+  if (name != MACH_PORT_NULL) mach_port_deallocate(mach_task_self(), name);
+}
+int main(void) {
+  alarm(5);
+  report("before");
+  OSStatus result = SessionCreate(0, 0);
+  printf("{\"sessionCreateResult\":%d}\n", (int)result);
+  report("after");
+  return 0;
+}

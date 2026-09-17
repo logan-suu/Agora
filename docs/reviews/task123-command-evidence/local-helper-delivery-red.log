@@ -1,0 +1,24 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ apps/desktop/test/toolchain-installation.test.ts (3 tests | 1 failed) 70ms
+   ✓ hashes multi-chunk binaries without changing the digest or executable metadata 49ms
+   ✓ rejects corruption, wrong architecture and internal launcher replacement 13ms
+   × requires every executable local helper before admitting local execution 7ms
+     → verifyLocalExecutionToolchain is not a function
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/desktop/test/toolchain-installation.test.ts > requires every executable local helper before admitting local execution
+TypeError: verifyLocalExecutionToolchain is not a function
+ ❯ apps/desktop/test/toolchain-installation.test.ts:88:16
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+   Start at  20:23:26
+   Duration  235ms (transform 31ms, setup 0ms, collect 30ms, tests 70ms, environment 0ms, prepare 42ms)
+

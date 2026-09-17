@@ -1,0 +1,6 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+tests/integration/phase12/local-command-start-fixture.ts(204,10): error TS6133: 'stage' is declared but its value is never read.
+ ELIFECYCLE  Command failed with exit code 2.

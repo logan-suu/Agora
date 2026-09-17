@@ -1,0 +1,241 @@
+/** Internal launch gate, not a workspace authorization or product entry point.
+ * A trusted caller must bind binaries, policy, roots and argv to a current grant.
+ * Only this controller can release its suspended, durably registered executable.
+ */
+import { type ChildProcess, spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { performance } from 'node:perf_hooks';
+import type { Duplex } from 'node:stream';
+import type { LocalCommandJournal } from './local-command-journal';
+import {
+  captureLocalProcess,
+  discoverLocalProcessCohort,
+  inspectLocalProcess,
+  type LocalProcessIdentity,
+  stopRegisteredLocalProcesses,
+} from './local-command-stop';
+import { superviseLocalCommand } from './local-command-supervisor';
+
+type Options = {
+  bootstrap: string;
+  executable: string;
+  argv: string[];
+  policy: string;
+  outputRoot: string;
+  helper: string;
+  journal: LocalCommandJournal;
+  commandId: string;
+  revision: number;
+  /** Synchronous trusted control-plane check; never supplied by project code. */
+  authorize: (stage: 'admission' | 'spawn' | 'register' | 'release') => boolean;
+  signal?: AbortSignal;
+};
+
+function protocol(channel: Duplex, child: ChildProcess, deadline: number) {
+  let buffer = '';
+  let bytes = 0;
+  let closed = false;
+  let failure = false;
+  let wake: (() => void) | undefined;
+  const data = (chunk: Buffer) => {
+    bytes += chunk.length;
+    if (bytes > 256) failure = true;
+    else buffer += chunk.toString('ascii');
+    wake?.();
+  };
+  const end = () => {
+    closed = true;
+    wake?.();
+  };
+  const error = () => {
+    failure = true;
+    wake?.();
+  };
+  channel.on('data', data);
+  channel.on('end', end);
+  channel.on('error', error);
+  child.on('error', error);
+  return {
+    async line(until = deadline): Promise<string> {
+      for (;;) {
+        if (failure) throw new Error('command_bootstrap_failed');
+        const newline = buffer.indexOf('\n');
+        if (newline >= 0) {
+          const result = buffer.slice(0, newline);
+          buffer = buffer.slice(newline + 1);
+          return result;
+        }
+        if (closed || performance.now() >= until) throw new Error('command_bootstrap_failed');
+        await new Promise<void>((resolve) => {
+          const timer = setTimeout(resolve, Math.max(1, until - performance.now()));
+          wake = () => {
+            clearTimeout(timer);
+            resolve();
+          };
+        });
+        wake = undefined;
+      }
+    },
+    close() {
+      channel.off('data', data);
+      channel.off('end', end);
+      channel.off('error', error);
+      child.off('error', error);
+      channel.destroy();
+    },
+  };
+}
+
+export async function runHeldLocalCommand(options: Options) {
+  let released = false;
+  let error: string | null = null;
+  let payloadResult: { exitCode: number | null; signal: number | null } | null = null;
+  let observation: Awaited<ReturnType<typeof superviseLocalCommand>> | null = null;
+  let startupStop: Awaited<ReturnType<typeof stopRegisteredLocalProcesses>> | null = null;
+  let reader: ReturnType<typeof protocol> | undefined;
+  let child: ReturnType<typeof spawn> | undefined;
+  const known: LocalProcessIdentity[] = [];
+  let pending: Promise<Awaited<ReturnType<typeof superviseLocalCommand>>> | undefined;
+  const cancel = new AbortController();
+  const aborted = () => cancel.abort();
+  options.signal?.addEventListener('abort', aborted, { once: true });
+  const authorized = (stage: Parameters<Options['authorize']>[0]) => {
+    if (options.signal?.aborted || !options.authorize(stage))
+      throw new Error('command_start_denied');
+  };
+  try {
+    let current = options.journal.snapshot().records.find((r) => r.commandId === options.commandId);
+    if (
+      process.platform !== 'darwin' ||
+      !current ||
+      current.revision !== options.revision ||
+      current.resourceState !== 'reserved' ||
+      current.birthIdentities.length !== 0 ||
+      current.policyHash !== createHash('sha256').update(options.policy).digest('hex') ||
+      !current.roots.some((root) => root.path === options.outputRoot)
+    )
+      throw new Error('invalid_command_start');
+    authorized('admission');
+    const startedAt = performance.now();
+    const deadline = startedAt + 5000;
+    child = spawn(
+      '/usr/bin/sandbox-exec',
+      ['-p', options.policy, options.bootstrap, options.executable, ...options.argv],
+      {
+        cwd: options.outputRoot,
+        // No inherited keys, runtime injection variables, shell configuration or user HOME.
+        env: {
+          NODE_ENV: 'production',
+          HOME: options.outputRoot,
+          TMPDIR: options.outputRoot,
+          LANG: 'C',
+          LC_ALL: 'C',
+        },
+        stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+      },
+    );
+    const channel = child.stdio[3] as Duplex;
+    reader = protocol(channel, child, deadline);
+    if ((await reader.line()) !== 'ready') throw new Error('command_bootstrap_failed');
+    const bootstrapIdentity = captureLocalProcess(options.helper, child.pid as number);
+    known.push(bootstrapIdentity);
+    current = options.journal.registerBirth(current.commandId, current.revision, bootstrapIdentity);
+    authorized('spawn');
+    channel.write('s');
+    const line = await reader.line();
+    if (!/^child:[1-9][0-9]{0,9}$/.test(line)) throw new Error('command_bootstrap_failed');
+    const pid = Number(line.slice(6));
+    // The private bootstrap nominates a PID; the kernel must prove its parent relation.
+    const discovered = discoverLocalProcessCohort(options.helper, [bootstrapIdentity], deadline);
+    for (const identity of discovered.identities.slice(1)) known.push(identity);
+    const relation = discovered.relations.find(
+      (r) => r.child[5] === pid && r.parent.join(':') === bootstrapIdentity.join(':'),
+    );
+    if (
+      discovered.observationState !== 'observed' ||
+      discovered.relations.length !== 1 ||
+      !relation
+    )
+      throw new Error('command_birth_unproven');
+    authorized('register');
+    current = options.journal.registerBirth(
+      current.commandId,
+      current.revision,
+      relation.child,
+      relation.parent,
+    );
+    const releaseRevision = current.revision;
+    pending = superviseLocalCommand({
+      child,
+      identity: bootstrapIdentity,
+      helper: options.helper,
+      journal: options.journal,
+      commandId: current.commandId,
+      revision: current.revision,
+      startedAt,
+      signal: cancel.signal,
+      release() {
+        try {
+          authorized('release');
+          // The callback may revoke durable state; re-read immediately before release.
+          const active = options.journal
+            .snapshot()
+            .records.find((r) => r.commandId === options.commandId);
+          if (
+            !active ||
+            active.revision !== releaseRevision ||
+            active.resourceState !== 'reserved' ||
+            performance.now() >= deadline
+          )
+            throw new Error('command_start_denied');
+          const resumed = inspectLocalProcess(options.helper, relation.child, 'CONT');
+          if (!resumed.signalSent) throw new Error('command_release_failed');
+          released = true;
+          return true;
+        } catch (caught) {
+          error = caught instanceof Error ? caught.message : 'command_release_failed';
+          return false;
+        }
+      },
+    });
+    observation = await pending;
+    if (released) {
+      const result = await reader.line(performance.now() + 250);
+      const match = /^(exit|signal):([0-9]{1,3})$/.exec(result);
+      if (!match || Number(match[2]) > 255 || (match[1] === 'signal' && Number(match[2]) === 0))
+        throw new Error('command_bootstrap_failed');
+      payloadResult =
+        match[1] === 'exit'
+          ? { exitCode: Number(match[2]), signal: null }
+          : { exitCode: null, signal: Number(match[2]) };
+    }
+  } catch (caught) {
+    error = caught instanceof Error ? caught.message : 'command_start_failed';
+    cancel.abort();
+    if (pending) {
+      try {
+        observation = await pending;
+      } catch {
+        error = 'command_supervision_failed';
+      }
+    }
+  } finally {
+    if (!observation && known.length)
+      startupStop = await stopRegisteredLocalProcesses(options.helper, known);
+    try {
+      const active = options.journal
+        .snapshot()
+        .records.find((r) => r.commandId === options.commandId);
+      if (active?.resourceState === 'reserved')
+        options.journal.quarantine(active.commandId, active.revision, 'control_failure');
+    } catch {
+      // An unreadable/locked reservation stays blocking; never reset or release it.
+      error ??= 'command_journal_unavailable';
+    }
+    reader?.close();
+    child?.stdout?.destroy();
+    child?.stderr?.destroy();
+    options.signal?.removeEventListener('abort', aborted);
+  }
+  return { released, payloadResult, observation, startupStop, error };
+}

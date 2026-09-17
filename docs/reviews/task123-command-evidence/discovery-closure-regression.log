@@ -1,0 +1,110 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-start.test.ts (26 tests) 32346ms
+   ✓ initializes a cold helper before applying the shorter process-query deadline  1503ms
+   ✓ fails closed before bootstrap creation if helper initialization consumes the launch window  5472ms
+   ✓ rejects malformed helper readiness without attempting PID capture  632ms
+   ✓ recovers a transient read-only capture timeout without changing launch or call deadlines  1158ms
+   ✓ still rejects release authorization after a transient capture timeout  1110ms
+   ✓ bounds persistent capture timeouts to three attempts and keeps resources quarantined  1510ms
+   ✓ does not retry a failed kernel query that did not time out  804ms
+   ✓ rechecks authority before retrying capture  964ms
+   ✓ does not execute a replacement helper on a capture retry  1002ms
+   ✓ honors cancellation between capture attempts  1037ms
+   ✓ observes bootstrap exit before another PID capture can be attempted  1062ms
+   ✓ refuses a capture when a control-plane check exhausts the original startup window  5964ms
+   ✓ registers the suspended executable before any constructor or project code runs  779ms
+   ✓ keeps project code suspended when the release authorization is revoked  711ms
+   ✓ does not release the executable when durable registration fails  649ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  966ms
+   ✓ records a failed exec without releasing any project code  640ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  339ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  692ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  782ms
+   ✓ persists the executable result independently of the bootstrap and survives reopening  801ms
+   ✓ never overwrites a terminal launch fact and rejects stale revisions  935ms
+   ✓ rejects persisted launch facts that contradict identities or release state  788ms
+   ✓ preserves observed process facts without claiming a launch receipt when final persistence is blocked  771ms
+   ✓ waits for current asynchronous authority before releasing project code: async-release-revoked  659ms
+   ✓ waits for current asynchronous authority before releasing project code: async-authority-rejected  614ms
+ ✓ tests/integration/phase12/phase12-3-command-supervision.test.ts (7 tests) 34973ms
+   ✓ persists observed parent relations and stops descendants after the main process exits  753ms
+   ✓ uses the default thirty-second execution limit and closes durable observation after timeout  30350ms
+   ✓ cancels a running process tree without extending the cleanup deadline  1223ms
+   ✓ bounds observation when the registered identity is wrong without signaling the live process  576ms
+   ✓ rejects invalid parent relations atomically and refuses corrupted or old-version records  628ms
+   ✓ preserves blocking state when the final observation cannot be durably committed  638ms
+   ✓ stops observing execution when the durable command is quarantined by the control plane  804ms
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (17 tests | 4 failed) 31987ms
+   ✓ confirms a durable grant through the real Leader POST: normal  3519ms
+   × confirms a durable grant through the real Leader POST: file-create 460ms
+     → expected 202 to be 409 // Object.is equality
+   × confirms a durable grant through the real Leader POST: file-proof 492ms
+     → expected 202 to be 409 // Object.is equality
+   ✓ confirms a durable grant through the real Leader POST: command  4962ms
+   × confirms a durable grant through the real Leader POST: batch 5003ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   × confirms a durable grant through the real Leader POST: batch-partial 5003ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  4928ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  3409ms
+   ✓ confirms a durable grant through the real Leader POST: before  556ms
+   ✓ confirms a durable grant through the real Leader POST: after  540ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  426ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  427ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  462ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  437ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  505ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  432ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  424ms
+ ✓ tests/integration/phase12/phase12-3-command-discovery.test.ts (5 tests) 2930ms
+   ✓ discovers a real child and grandchild without enrolling an unrelated sibling  760ms
+   ✓ retains a discovered grandchild after its parent exits and it is reparented  731ms
+   ✓ rejects a wrong parent birth and leaves the real tree alive  655ms
+   ✓ exposes helper failure as incomplete discovery without signaling the root  782ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: file-create
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: file-proof
+AssertionError: expected 202 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 202
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:234:35
+    232|             'after',
+    233|           ].includes(scenario);
+    234|           expect(response.status).toBe(
+       |                                   ^
+    235|             [
+    236|               'normal',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch-partial
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:65:3
+     63|   'unsupported-action',
+     64| ])
+     65|   it(
+       |   ^
+     66|     `confirms a durable grant through the real Leader POST: ${scenario…
+     67|     async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  4 failed | 51 passed (55)
+   Start at  17:12:45
+   Duration  103.68s (transform 394ms, setup 0ms, collect 806ms, tests 102.24s, environment 0ms, prepare 157ms)
+

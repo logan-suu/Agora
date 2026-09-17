@@ -1,0 +1,11 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+packages/tools/bridge/src/local-workspace-bridge.ts(25,11): error TS2322: Type '{ name: string; description: string; parameters: ParameterJsonSchema; output: { schema: {}; render: (_args: unknown, value: JsonValue) => { type: "text"; text: string; }[]; }; execute(args: unknown, exec: ToolRunContext): Promise<...>; }[]' is not assignable to type 'ToolDefinition[]'.
+  Type '{ name: string; description: string; parameters: ParameterJsonSchema; output: { schema: {}; render: (_args: unknown, value: JsonValue) => { type: "text"; text: string; }[]; }; execute(args: unknown, exec: ToolRunContext): Promise<...>; }' is not assignable to type 'ToolDefinition'.
+    Types of property 'parameters' are incompatible.
+      Type 'ParameterJsonSchema' is not assignable to type 'Record<string, unknown>'.
+        Index signature for type 'string' is missing in type 'ParameterJsonSchema'.
+packages/tools/bridge/test/local-workspace-bridge.test.ts(73,15): error TS2339: Property 'dispose' does not exist on type 'Context'.
+ ELIFECYCLE  Command failed with exit code 2.

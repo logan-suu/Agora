@@ -3,14 +3,17 @@ import {
   type Mutation,
   normalizePhase9LeaderIntent,
   type Phase9LeaderIntent,
+  parseWorkspaceControl,
   type RoleSpec,
   setMutation,
+  type WorkspaceControlIntent,
 } from '@agora/core-domain';
 
 export type DeferredLeaderIntent = 'human_gate_resolution' | 'open_sub_channel';
 
 export type LeaderIntent =
   | Phase9LeaderIntent
+  | WorkspaceControlIntent
   | { kind: 'assign'; targetRole: string; instruction: string }
   | { kind: 'onboard_role'; targetRole: string; entrustedHandoffMsgIds: string[] }
   | { kind: 'remove_role'; targetRole: string; successorRole?: string }
@@ -78,6 +81,15 @@ export function parseLeaderIntent(display: string): LeaderIntent {
   }
 
   if (firstToken.startsWith('/')) {
+    if (firstToken.toLowerCase() === '/workspace') {
+      try {
+        return (
+          parseWorkspaceControl(text) ?? { kind: 'invalid', reason: 'invalid_workspace_control' }
+        );
+      } catch {
+        return { kind: 'invalid', reason: 'invalid_workspace_control' };
+      }
+    }
     if (firstToken.toLowerCase() === '/channel') return parseChannelIntent(remainder);
     if (firstToken.toLowerCase() === '/role') return parseRoleIntent(remainder);
     if (firstToken.toLowerCase() === '/resolve-gate') return parseHumanGateIntent(remainder);
@@ -98,6 +110,12 @@ export function planLeaderIntent(
   knownRoles: readonly string[] = roster.map((entry) => entry.role),
 ): LeaderIntentPlan {
   switch (intent.kind) {
+    case 'workspace_control':
+      return {
+        intent,
+        action: { status: 'rejected', reason: 'workspace_controller_required' },
+        mutations: [],
+      };
     case 'chat':
       return { intent, action: { status: 'none' }, mutations: [] };
     case 'invalid':

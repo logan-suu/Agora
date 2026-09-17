@@ -1,0 +1,15 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ apps/web/test/local-task-composition.test.ts (3 tests) 473ms
+   ✓ rejects unbound tasks before preparing any local runtime capability  454ms
+ ✓ apps/desktop/test/toolchain-installation.test.ts (3 tests) 98ms
+ ✓ packages/runtime/sandbox/test/local-installation-command.test.ts (6 tests) 2ms
+ ✓ packages/roles/definitions/test/local-runtime-contract.test.ts (2 tests) 2ms
+ ✓ packages/runtime/sandbox/test/local-generation-command.test.ts (7 tests) 2ms
+
+ Test Files  5 passed (5)
+      Tests  21 passed (21)
+   Start at  20:48:03
+   Duration  1.28s (transform 264ms, setup 0ms, collect 183ms, tests 577ms, environment 0ms, prepare 130ms)
+

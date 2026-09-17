@@ -1,0 +1,7 @@
+{
+  "scenario": "bad-executable",
+  "bytesUtf8": "invalid-fixed-binary",
+  "sha256": "814bf8a576ba38eeca59922fd0b607668bc5b9f8003d229358ba8116411f263c",
+  "source": "tests/integration/phase12/local-command-start-fixture.ts",
+  "note": "The raw fixture binaries map records initial compiled bytes. This fixed fault replaces the executable afterward; derived from the frozen fixture source, not a second execution."
+}

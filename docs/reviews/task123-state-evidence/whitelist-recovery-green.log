@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/core/domain/test/reducer.test.ts (69 tests) 15ms
+ ✓ tests/integration/phase12/phase12-3-state-binding.test.ts (9 tests) 1633ms
+ ✓ packages/core/domain/test/workspace-control.test.ts (22 tests) 3ms
+
+ Test Files  3 passed (3)
+      Tests  100 passed (100)
+   Start at  14:34:51
+   Duration  2.09s (transform 109ms, setup 0ms, collect 157ms, tests 1.65s, environment 0ms, prepare 71ms)
+

@@ -1,0 +1,136 @@
+{
+  "startedAt": "2026-09-16T00:54:05.452Z",
+  "base": "/private/tmp/agora-task123-validation-UiqBqr",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127760031
+  },
+  "availableBefore": 45675528192,
+  "sourceHash": "c59c1d23b1639c799f9032d546e4caa68a2191df75d4bf4d532623ae19b957f6",
+  "controllerHash": "1e89d94947afb4e43fa715570129f4d49518924025c8d452d82853bfc61297df",
+  "os": {
+    "status": 0,
+    "signal": null,
+    "stdout": "25F71\n",
+    "stderr": ""
+  },
+  "compiler": {
+    "status": 0,
+    "signal": null,
+    "stdout": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+    "stderr": ""
+  },
+  "cases": [
+    {
+      "restriction": "none",
+      "mode": "setsid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4321,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"setsid\",\"result\":4322,\"errno\":0,\"pid\":4322,\"pgid\":4322,\"sid\":4322}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4321,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "none",
+      "mode": "setpgid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4323,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"setpgid\",\"result\":0,\"errno\":0,\"pid\":4325,\"pgid\":4325,\"sid\":4314}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4323,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "none",
+      "mode": "spawn-setsid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4326,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawn-setsid\",\"result\":4328,\"errno\":0,\"pid\":4326,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawned\",\"result\":0,\"errno\":0,\"pid\":4328,\"pgid\":4328,\"sid\":4328}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4326,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "none",
+      "mode": "spawn-setpgid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4329,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawn-setpgid\",\"result\":4330,\"errno\":0,\"pid\":4329,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawned\",\"result\":0,\"errno\":0,\"pid\":4330,\"pgid\":4330,\"sid\":4314}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4329,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "none",
+      "mode": "spawn-normal",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4331,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawn-normal\",\"result\":4332,\"errno\":0,\"pid\":4331,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawned\",\"result\":0,\"errno\":0,\"pid\":4332,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4331,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-session-calls",
+      "mode": "setsid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4333,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"setsid\",\"result\":-1,\"errno\":1,\"pid\":4334,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4333,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-session-calls",
+      "mode": "setpgid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4335,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"setpgid\",\"result\":-1,\"errno\":1,\"pid\":4336,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4335,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-session-calls",
+      "mode": "spawn-setsid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4337,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawn-setsid\",\"result\":4338,\"errno\":0,\"pid\":4337,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawned\",\"result\":0,\"errno\":0,\"pid\":4338,\"pgid\":4338,\"sid\":4338}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4337,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-session-calls",
+      "mode": "spawn-setpgid",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4339,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawn-setpgid\",\"result\":4340,\"errno\":0,\"pid\":4339,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawned\",\"result\":0,\"errno\":0,\"pid\":4340,\"pgid\":4340,\"sid\":4314}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4339,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    },
+    {
+      "restriction": "deny-session-calls",
+      "mode": "spawn-normal",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-UiqBqr/process-group-probe\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"mode\":\"initial\",\"result\":0,\"errno\":0,\"pid\":4341,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawn-normal\",\"result\":4342,\"errno\":0,\"pid\":4341,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"spawned\",\"result\":0,\"errno\":0,\"pid\":4342,\"pgid\":4314,\"sid\":4314}\n{\"mode\":\"waited\",\"result\":0,\"errno\":0,\"pid\":4341,\"pgid\":4314,\"sid\":4314}\n",
+      "stderr": ""
+    }
+  ],
+  "build": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "binaryHash": "ac61905a0bbb61cb6de248edd8f533fd7dbf1cad7d18394f19598ee1555d7b5b",
+  "completedAt": "2026-09-16T00:54:06.495Z",
+  "cleanup": {
+    "removed": false,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "stdout": "COMMAND  PID    USER   FD   TYPE DEVICE SIZE/OFF      NODE NAME\nlsof    4343 logansu  cwd    DIR   1,15       96 127760031 /private/tmp/agora-task123-validation-UiqBqr\nlsof    4344 logansu  cwd    DIR   1,15       96 127760031 /private/tmp/agora-task123-validation-UiqBqr\n",
+      "stderr": ""
+    },
+    "mountsChecked": true
+  },
+  "availableAfter": 45675372544,
+  "spaceDelta": -155648
+}

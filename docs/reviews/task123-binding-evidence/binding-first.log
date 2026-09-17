@@ -1,0 +1,29 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-binding.test.ts (10 tests) 6779ms
+   ✓ stops registered execution when grant-revision changes  1364ms
+   ✓ stops registered execution when worker changes  757ms
+   ✓ stops registered execution when writer-epoch changes  731ms
+   ✓ stops registered execution when authority-error changes  747ms
+   ✓ refuses to release project code after a root is replaced  620ms
+   ✓ stops on ancestor relocation and never follows the moved directory  738ms
+   ✓ rejects tool replacement before any process is launched  320ms
+   ✓ keeps invalidation sticky even when the authority is restored  317ms
+   ✓ rejects command arguments that differ from the captured binding  316ms
+   ✓ rechecks authority at completion instead of accepting a successful process exit  868ms
+ ✓ tests/integration/phase12/phase12-3-command-start.test.ts (8 tests) 5180ms
+   ✓ registers the suspended executable before any constructor or project code runs  900ms
+   ✓ keeps project code suspended when the release authorization is revoked  623ms
+   ✓ does not release the executable when durable registration fails  577ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  731ms
+   ✓ records a failed exec without releasing any project code  649ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  317ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  617ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  765ms
+
+ Test Files  2 passed (2)
+      Tests  18 passed (18)
+   Start at  01:02:33
+   Duration  12.27s (transform 55ms, setup 0ms, collect 79ms, tests 11.96s, environment 0ms, prepare 61ms)
+

@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/core/domain/test/local-validation.test.ts (3 tests) 5ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  17:58:49
+   Duration  171ms (transform 43ms, setup 0ms, collect 49ms, tests 5ms, environment 0ms, prepare 31ms)
+

@@ -1,0 +1,12 @@
+{
+  "path": "/private/tmp/agora-task123-terminal-cleanup-20260916.mjs",
+  "sha256": "b64fc224dca603f12712eb8a1c0989087a96eecaab2454307b09dbea97f04c84",
+  "uid": 501,
+  "dev": 16777231,
+  "ino": 128499424,
+  "bytes": 7226,
+  "archive": "docs/reviews/task123-command-evidence/terminal-cleanup-controller-source.txt",
+  "lsofStatus": 1,
+  "checkedAt": "2026-09-17T00:15:53.710528+00:00",
+  "removed": true
+}

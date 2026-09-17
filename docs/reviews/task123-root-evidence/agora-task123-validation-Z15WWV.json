@@ -1,0 +1,23 @@
+{
+  "base": "/private/tmp/agora-task123-validation-Z15WWV",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128307460
+  },
+  "startedAt": "2026-09-16T19:36:04.775Z",
+  "sourceHash": "c5b57c12f4d961cc8f8ccd130829d560f8684b2700a3b322ed7a524bf833939d",
+  "binaryHash": "18cb12d807e8d9ed119a84ce840f0263e7ed6d75c430962abf8f5c7ddfa85784",
+  "error": {
+    "message": "unsupported_workspace",
+    "cause": {
+      "exitCode": 66,
+      "diagnostic": "getattr_errno:1\n"
+    }
+  },
+  "cleanup": {
+    "deleted": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 32768
+  }
+}

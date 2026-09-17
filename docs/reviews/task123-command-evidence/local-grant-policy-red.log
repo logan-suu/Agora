@@ -1,0 +1,27 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/runtime/sandbox/test/local-grant-policy.test.ts [ packages/runtime/sandbox/test/local-grant-policy.test.ts ]
+Error: Cannot find module '../src/local-grant-policy' imported from '/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/test/local-grant-policy.test.ts'
+ ❯ packages/runtime/sandbox/test/local-grant-policy.test.ts:3:1
+      1| // Pure policy checks; no registry, network or process doubles are use…
+      2| import { expect, it } from 'vitest';
+      3| import { validateLocalGrantPolicy } from '../src/local-grant-policy';
+       | ^
+      4| 
+      5| const policy = {
+
+Caused by: Error: Failed to load url ../src/local-grant-policy (resolved id: ../src/local-grant-policy) in /Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/test/local-grant-policy.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@20.19.43_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  19:47:43
+   Duration  123ms (transform 15ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 31ms)
+

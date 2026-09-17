@@ -1,0 +1,7 @@
+{
+  "at": "2026-09-17T02:03:32.684948+00:00",
+  "scanned": 6133,
+  "sensitiveFilenames": [],
+  "findingsWithoutValues": [],
+  "note": "Heuristic review aid; findings require context review. Never reads ignored .env or prints matching credential values."
+}

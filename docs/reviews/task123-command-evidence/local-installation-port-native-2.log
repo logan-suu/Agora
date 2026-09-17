@@ -1,0 +1,69 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (35 tests | 1 failed | 34 skipped) 13726ms
+   ↓ confirms a durable grant through the real Leader POST: normal
+   ↓ confirms a durable grant through the real Leader POST: generation
+   × confirms a durable grant through the real Leader POST: installation 13726ms
+     → expected '(node:2598) [DEP0169] DeprecationWarn…' to be '' // Object.is equality
+   ↓ confirms a durable grant through the real Leader POST: download
+   ↓ confirms a durable grant through the real Leader POST: file-update
+   ↓ confirms a durable grant through the real Leader POST: file-create
+   ↓ confirms a durable grant through the real Leader POST: file-proof
+   ↓ confirms a durable grant through the real Leader POST: command
+   ↓ confirms a durable grant through the real Leader POST: mcp
+   ↓ confirms a durable grant through the real Leader POST: mcp-partial
+   ↓ confirms a durable grant through the real Leader POST: reader
+   ↓ confirms a durable grant through the real Leader POST: mcp-command
+   ↓ confirms a durable grant through the real Leader POST: trusted-validation
+   ↓ confirms a durable grant through the real Leader POST: terminal-release-before
+   ↓ confirms a durable grant through the real Leader POST: terminal-release-after
+   ↓ confirms a durable grant through the real Leader POST: worker-companion
+   ↓ confirms a durable grant through the real Leader POST: successor-companion
+   ↓ confirms a durable grant through the real Leader POST: missing-closure-companion
+   ↓ confirms a durable grant through the real Leader POST: tester-companion
+   ↓ confirms a durable grant through the real Leader POST: reviewer-companion
+   ↓ confirms a durable grant through the real Leader POST: pm-companion
+   ↓ confirms a durable grant through the real Leader POST: coordinator-companion
+   ↓ confirms a durable grant through the real Leader POST: batch
+   ↓ confirms a durable grant through the real Leader POST: batch-partial
+   ↓ confirms a durable grant through the real Leader POST: batch-read-drift
+   ↓ confirms a durable grant through the real Leader POST: batch-stale
+   ↓ confirms a durable grant through the real Leader POST: before
+   ↓ confirms a durable grant through the real Leader POST: after
+   ↓ confirms a durable grant through the real Leader POST: wrong-hash
+   ↓ confirms a durable grant through the real Leader POST: wrong-selection
+   ↓ confirms a durable grant through the real Leader POST: wrong-scope
+   ↓ confirms a durable grant through the real Leader POST: stale-policy
+   ↓ confirms a durable grant through the real Leader POST: root-drift
+   ↓ confirms a durable grant through the real Leader POST: corrupt-proposal
+   ↓ confirms a durable grant through the real Leader POST: unsupported-action
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: installation
+AssertionError: expected '(node:2598) [DEP0169] DeprecationWarn…' to be '' // Object.is equality
+
+- Expected
++ Received
+
++ (node:2598) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
++ (Use `node --trace-deprecation ...` to show where the warning was created)
++
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:1135:45
+    1133|                       if(scenario === 'installation') expect(result.st…
+    1134|                       else expect(result.stdout).toBe('fixed input bui…
+    1135|                       expect(result.stderr).toBe('');
+       |                                             ^
+    1136|                       expect(result.quiescent).toBe(true);
+    1137|                       expect(result.assurance).toBe('bounded');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 34 skipped (35)
+   Start at  20:45:36
+   Duration  14.69s (transform 369ms, setup 0ms, collect 849ms, tests 13.73s, environment 0ms, prepare 31ms)
+

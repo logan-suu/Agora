@@ -1,0 +1,58 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (15 tests | 6 failed) 49963ms
+   × confirms a durable grant through the real Leader POST: normal 5005ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   × confirms a durable grant through the real Leader POST: command 20053ms
+     → Test timed out in 20000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   × confirms a durable grant through the real Leader POST: batch 5005ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   × confirms a durable grant through the real Leader POST: batch-partial 5007ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   × confirms a durable grant through the real Leader POST: batch-read-drift 5001ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   × confirms a durable grant through the real Leader POST: batch-stale 5001ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ confirms a durable grant through the real Leader POST: before  656ms
+   ✓ confirms a durable grant through the real Leader POST: after  713ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  541ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  491ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  437ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  473ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  495ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  528ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  551ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: normal
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: command
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch-partial
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch-read-drift
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch-stale
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:63:3
+     61|   'unsupported-action',
+     62| ])
+     63|   it(
+       |   ^
+     64|     `confirms a durable grant through the real Leader POST: ${scenario…
+     65|     async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 9 passed (15)
+   Start at  16:58:24
+   Duration  50.86s (transform 339ms, setup 0ms, collect 672ms, tests 49.96s, environment 0ms, prepare 39ms)
+

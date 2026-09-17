@@ -1,0 +1,63 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (34 tests | 1 failed | 33 skipped) 5849ms
+   ↓ confirms a durable grant through the real Leader POST: normal
+   × confirms a durable grant through the real Leader POST: generation 5848ms
+     → [{"type":"text","text":"Error: MCP error -32602: Input validation error: Invalid arguments for tool workspace_apply: Unrecognized key: \"op\" at changes[0]"}]
+   ↓ confirms a durable grant through the real Leader POST: download
+   ↓ confirms a durable grant through the real Leader POST: file-update
+   ↓ confirms a durable grant through the real Leader POST: file-create
+   ↓ confirms a durable grant through the real Leader POST: file-proof
+   ↓ confirms a durable grant through the real Leader POST: command
+   ↓ confirms a durable grant through the real Leader POST: mcp
+   ↓ confirms a durable grant through the real Leader POST: mcp-partial
+   ↓ confirms a durable grant through the real Leader POST: reader
+   ↓ confirms a durable grant through the real Leader POST: mcp-command
+   ↓ confirms a durable grant through the real Leader POST: trusted-validation
+   ↓ confirms a durable grant through the real Leader POST: terminal-release-before
+   ↓ confirms a durable grant through the real Leader POST: terminal-release-after
+   ↓ confirms a durable grant through the real Leader POST: worker-companion
+   ↓ confirms a durable grant through the real Leader POST: successor-companion
+   ↓ confirms a durable grant through the real Leader POST: missing-closure-companion
+   ↓ confirms a durable grant through the real Leader POST: tester-companion
+   ↓ confirms a durable grant through the real Leader POST: reviewer-companion
+   ↓ confirms a durable grant through the real Leader POST: pm-companion
+   ↓ confirms a durable grant through the real Leader POST: coordinator-companion
+   ↓ confirms a durable grant through the real Leader POST: batch
+   ↓ confirms a durable grant through the real Leader POST: batch-partial
+   ↓ confirms a durable grant through the real Leader POST: batch-read-drift
+   ↓ confirms a durable grant through the real Leader POST: batch-stale
+   ↓ confirms a durable grant through the real Leader POST: before
+   ↓ confirms a durable grant through the real Leader POST: after
+   ↓ confirms a durable grant through the real Leader POST: wrong-hash
+   ↓ confirms a durable grant through the real Leader POST: wrong-selection
+   ↓ confirms a durable grant through the real Leader POST: wrong-scope
+   ↓ confirms a durable grant through the real Leader POST: stale-policy
+   ↓ confirms a durable grant through the real Leader POST: root-drift
+   ↓ confirms a durable grant through the real Leader POST: corrupt-proposal
+   ↓ confirms a durable grant through the real Leader POST: unsupported-action
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: generation
+Error: [{"type":"text","text":"Error: MCP error -32602: Input validation error: Invalid arguments for tool workspace_apply: Unrecognized key: \"op\" at changes[0]"}]
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:818:53
+    816|                           signal: new AbortController().signal,
+    817|                         });
+    818|                         if (response.isError) throw Error(JSON.stringi…
+       |                                                     ^
+    819|                         return response.value;
+    820|                       });
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:1172:43
+ ❯ withTools tests/integration/phase12/phase12-3-grant.test.ts:811:23
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:1165:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 33 skipped (34)
+   Start at  20:37:27
+   Duration  6.84s (transform 386ms, setup 0ms, collect 865ms, tests 5.85s, environment 0ms, prepare 32ms)
+

@@ -1,0 +1,18 @@
+{
+  "completedAt": "2026-09-16T16:49:40.118Z",
+  "exitCode": 0,
+  "scriptTests": 7,
+  "vitestFiles": 199,
+  "vitestTests": 1433,
+  "skipped": 0,
+  "seconds": 684.78,
+  "provider": "opencode-go",
+  "model": "deepseek-v4-flash",
+  "realModelsSeconds": {
+    "lru": 199.686,
+    "harness": 14.951,
+    "channelSummary": 9.068
+  },
+  "sourceSnapshots": 5,
+  "fullLogHash": "d971eda1dc66ab3f3784156aec7fdb39351c55b4d14a1669142ebc65c3e321c6"
+}

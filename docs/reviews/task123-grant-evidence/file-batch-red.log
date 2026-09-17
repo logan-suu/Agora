@@ -1,0 +1,36 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (10 tests | 1 failed) 7641ms
+   × confirms a durable grant through the real Leader POST: normal 3962ms
+     → files2.prepareReadSet is not a function
+   ✓ confirms a durable grant through the real Leader POST: before  482ms
+   ✓ confirms a durable grant through the real Leader POST: after  476ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  397ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  368ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  389ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  393ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  399ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  388ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  387ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: normal
+TypeError: files2.prepareReadSet is not a function
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:412:43
+    410|               evidence.fileCreation = created;
+    411|               const secondRead = await files.readFile({ ...call, actio…
+    412|               const readSet = await files.prepareReadSet({ ...call, ac…
+       |                                           ^
+    413|                 { path: 'sentinel', version: fresh.version, readReceip…
+    414|                 { path: 'new.txt', version: secondRead.version, readRe…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  16:33:00
+   Duration  8.33s (transform 255ms, setup 0ms, collect 568ms, tests 7.64s, environment 0ms, prepare 30ms)
+

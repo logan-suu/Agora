@@ -1,0 +1,40 @@
+{
+  "scenario": "move-root",
+  "operation": "write-open-file",
+  "base": "/private/tmp/agora-task123-validation-WViVeu",
+  "sourceHash": "ec1681c437480ecef3adb17f5bf8ca1e2006b7aade33ba081066461b0f37bcb4",
+  "source": "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-boundary-probe.c",
+  "os": "25F71",
+  "arch": "arm64",
+  "controllerNode": "v24.20.0",
+  "fixtureHash": "4f516302076a280b5f8055daf29846c54631d4e371adf7eb1ff9e1b66e0895fb",
+  "assertionsHash": "6bebd29a2719a4e2682f8f8b433b44cc9a49c2124555b7e4383202a1083a2358",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+  "dyldSupportHash": "06215a5d32689aefe395c29710e182eb54ba22162f50df8b4842290f8a19bf1c",
+  "ownership": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127715867
+  },
+  "availableBefore": 46914367488,
+  "binaryHash": "5c1ba7bf0ff53e94fedc731e24f6d33c1e934253be34fa8720d6af7291ff9a2f",
+  "policy": "(version 1)\n(deny default)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-WViVeu/boundary-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* (subpath \"/usr/lib\") (subpath \"/System/Library\"))\n(allow file-read* file-map-executable (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-map-executable (literal \"/private/tmp/agora-task123-validation-WViVeu/boundary-probe\") (subpath \"/usr/lib\") (subpath \"/System/Library\"))\n(allow file-read* (literal \"/private/tmp/agora-task123-validation-WViVeu/boundary-probe\") (subpath \"/private/tmp/agora-task123-validation-WViVeu/project\"))\n(allow file-write* (subpath \"/private/tmp/agora-task123-validation-WViVeu/project\"))",
+  "pid": 57766,
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "ready": true,
+    "filesystem": "apfs",
+    "stdout": "{\"ready\":true,\"filesystem\":\"apfs\"}\n{\"reopenErrno\":1,\"openedFilePath\":\"/private/tmp/agora-task123-validation-WViVeu/outside/.agora-operations/candidate\"}\n{\"wrotePreparedFile\":true}\n",
+    "stderr": "",
+    "target": "original",
+    "backup": "prepared!"
+  },
+  "quiescent": true,
+  "completedAt": "2026-09-15T23:34:14.284Z",
+  "cleanup": {
+    "removed": true,
+    "availableAfter": 46914351104,
+    "spaceDelta": -16384
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "scenario": "extra",
+  "base": "/private/tmp/agora-task123-validation-74tZNZ",
+  "startedAt": "2026-09-16T17:16:45.192Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 128162148
+  },
+  "node": "v24.20.0",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "sources": {
+    "packages/core/domain/src/local-workspace.ts": "45edd3b0be1a61750480ec7a814b9b5fef98011595f1f13483972869f679e929",
+    "packages/runtime/sandbox/src/local-registry-file.ts": "d46cd2d0a96b4c5b256a71034c19a204303bbb865db883e96c936c8fb01cdb34",
+    "packages/runtime/sandbox/test/local-registry-file.test.ts": "8a0635ba156138cba899efe003c19af8fc6e0e1ff6245e7a6158e1dce95746b0",
+    "apps/desktop/src/storage.ts": "56f486294eb9ce68dd7628b02d3d4a2c8ba5d4c716f6eec487e0dcb370db32f2"
+  },
+  "passed": true,
+  "files": [
+    {
+      "path": "state/local-workspaces/registry.json",
+      "mode": 33152,
+      "sha256": "5c22d78021f79d4992f96a65418eefdb63f03f40d39bbbe78adb0b59af28ae46"
+    }
+  ],
+  "completedAt": "2026-09-16T17:16:45.220Z",
+  "cleanup": {
+    "removed": true,
+    "noHandles": true,
+    "noMounts": true
+  },
+  "spaceDelta": 12288
+}

@@ -1,0 +1,11 @@
+{
+  "path": "/private/tmp/agora-task123-capture-diagnostic.c",
+  "archive": "docs/reviews/task123-capture-evidence/diagnostic-wrapper.c.txt",
+  "sha256": "9db7005ce30b315876ace01d05e484fe08bf01cada85c925c8e5b876501a9c66",
+  "uid": 501,
+  "dev": 16777231,
+  "ino": 128209803,
+  "removed": true,
+  "noHandles": true,
+  "noMounts": true
+}

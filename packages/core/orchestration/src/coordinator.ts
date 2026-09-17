@@ -16,6 +16,7 @@ import {
   deriveCompletionResolution,
   deriveObjectionResolutions,
   isFileRef,
+  localReviewBindingForValidation,
   mergeByIdMutation,
   setMutation,
 } from '@agora/core-domain';
@@ -126,7 +127,7 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
         decision = dispatchAfterPlanning(state, clock);
         break;
       case 'coding':
-        decision = advanceToTesting(state);
+        decision = advanceToTesting(state, clock);
         break;
       case 'testing':
         decision = evaluateTestResults(state, clock, options?.roster);
@@ -690,11 +691,26 @@ function activeCoderSubtaskId(state: AppState): string {
   return subtask.id;
 }
 
-function advanceToTesting(state: AppState): DraftCoordinatorDecision {
+function advanceToTesting(state: AppState, clock: Clock): DraftCoordinatorDecision {
   const subtaskId = activeCoderSubtaskId(state);
   return {
     route: { kind: 'worker', batch: [{ role: 'TESTER', subtaskId }], parallel: false },
-    mutations: [setMutation('nextRole', 'TESTER'), setMutation('phase', 'testing')],
+    mutations: [
+      setMutation('nextRole', 'TESTER'),
+      setMutation('phase', 'testing'),
+      ...(state.localExecution === undefined
+        ? []
+        : [
+            appendMutation(
+              'messages',
+              announce(
+                clock,
+                { nextRole: 'TESTER', subtaskId },
+                'Validate the fixed local workspace before review.',
+              ),
+            ),
+          ]),
+    ],
   };
 }
 
@@ -811,13 +827,20 @@ function evaluateTestResults(
             'messages',
             announce(
               clock,
-              { nextRole: 'REVIEWER', reviewCommentCursor: state.reviewComments.length },
+              {
+                nextRole: 'REVIEWER',
+                reviewCommentCursor: state.reviewComments.length,
+                ...(state.localExecution === undefined
+                  ? {}
+                  : { workspaceReviewBinding: localReviewBindingForValidation(state) }),
+              },
               `All tests passed (${state.testResults.total}/${state.testResults.total}). Assigning REVIEWER.`,
             ),
           ),
         ],
       };
     }
+    if (state.localExecution !== undefined) throw Error('local_completion_requires_reviewer');
     return { route: { kind: 'finalize' }, mutations: closeActive };
   }
   const escalation = ifIterationLimit(state, clock);

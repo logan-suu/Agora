@@ -1,0 +1,44 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (32 tests) 94932ms
+   ✓ confirms a durable grant through the real Leader POST: normal  686ms
+   ✓ confirms a durable grant through the real Leader POST: file-update  3591ms
+   ✓ confirms a durable grant through the real Leader POST: file-create  2080ms
+   ✓ confirms a durable grant through the real Leader POST: file-proof  2386ms
+   ✓ confirms a durable grant through the real Leader POST: command  4300ms
+   ✓ confirms a durable grant through the real Leader POST: mcp  4019ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-partial  4552ms
+   ✓ confirms a durable grant through the real Leader POST: reader  2118ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-command  4835ms
+   ✓ confirms a durable grant through the real Leader POST: trusted-validation  11257ms
+   ✓ confirms a durable grant through the real Leader POST: terminal-release-before  12893ms
+   ✓ confirms a durable grant through the real Leader POST: terminal-release-after  12868ms
+   ✓ confirms a durable grant through the real Leader POST: worker-companion  1684ms
+   ✓ confirms a durable grant through the real Leader POST: successor-companion  2499ms
+   ✓ confirms a durable grant through the real Leader POST: missing-closure-companion  1732ms
+   ✓ confirms a durable grant through the real Leader POST: tester-companion  1824ms
+   ✓ confirms a durable grant through the real Leader POST: reviewer-companion  1906ms
+   ✓ confirms a durable grant through the real Leader POST: pm-companion  1100ms
+   ✓ confirms a durable grant through the real Leader POST: coordinator-companion  1087ms
+   ✓ confirms a durable grant through the real Leader POST: batch  3910ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3785ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3446ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2619ms
+   ✓ confirms a durable grant through the real Leader POST: before  505ms
+   ✓ confirms a durable grant through the real Leader POST: after  497ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  430ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  402ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  360ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  406ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  424ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  374ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  353ms
+ ✓ tests/integration/phase12/phase12-3-composition.test.ts (1 test) 17250ms
+   ✓ runs local composition through a real D4 Fork and D16 fixed artifact  17249ms
+
+ Test Files  2 passed (2)
+      Tests  33 passed (33)
+   Start at  19:35:19
+   Duration  113.61s (transform 376ms, setup 0ms, collect 1.19s, tests 112.18s, environment 0ms, prepare 57ms)
+

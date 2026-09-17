@@ -5,6 +5,9 @@ export * from './coordination-ledger';
 export * from './handoff';
 export * from './leader-directive';
 export * from './ledger';
+export * from './local-execution';
+export * from './local-validation';
+export * from './local-workspace';
 export * from './model-settings';
 export * from './objection';
 export * from './objection-resolution';
@@ -14,3 +17,5 @@ export * from './reducer';
 export * from './requirement-proposal';
 export * from './roster';
 export * from './state';
+
+export { parseWorkspaceControl, type WorkspaceControlIntent } from './workspace-control';

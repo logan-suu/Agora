@@ -1,0 +1,111 @@
+{
+  "base": "/private/tmp/agora-task123-validation-VKtfjH",
+  "mode": "node",
+  "startedAt": "2026-09-16T23:06:17.859Z",
+  "sourceHash": "247bb29315abc53279cec90183def9d443efc260d3844e0f688fb61db7ff55cc",
+  "policySourceHash": "2748c2147c6799eef535bbcbc618ec0b5733922a10d05472665c9731e86daa2d",
+  "controllerHash": "28c4056dbd06bc3217df5e984610904bc358c88a5da40ccff20b79bd11e603a4",
+  "assertionsHash": "c6c788cbb0b1a7ec4aed50e84e0539f7c332a8d5bbea5658cbb6c553b41cc6f3",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "arch": "arm64",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "node": "v24.20.0",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 128450006
+  },
+  "availableBefore": 43071086592,
+  "manifestHash": "c3b48e8cf01eaabe76bada629694698ff3af61b26af97af366dd34f1107fd9b9",
+  "binaryHash": "7761de77b52f34365e02e02e582c89bfa98ffb84b5b6a2617ef999e955248aa4",
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/node/bin/node\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-VKtfjH\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/node/bin/node\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/neighbor\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/secrets\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/control\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-VKtfjH/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "payload": "\nconst fs = require('node:fs');\nconst path = require('node:path');\nconst base = process.argv[1], actor = process.argv[2];\nconst report = (operation, fn) => {\n  try { fn(); console.log(JSON.stringify({actor,operation,ok:true,errno:0})); }\n  catch (error) { console.log(JSON.stringify({actor,operation,ok:false,errno:Math.abs(error.errno || 1)})); }\n};\nreport('read-input', () => fs.readFileSync(path.join(base,'input/file')));\nreport('write-output', () => fs.writeFileSync(path.join(base,'output',actor),'changed'));\nreport('write-source', () => fs.writeFileSync(path.join(base,'source/file'),'changed',{flag:'r+'}));\nreport('read-secret', () => fs.readFileSync(path.join(base,'secrets/file')));\nif (actor === 'child') {\n  const result = require('node:child_process').spawnSync(process.execPath,\n    ['-e',process.argv[3],base,'grandchild'],{encoding:'utf8',timeout:3000});\n  process.stdout.write(result.stdout || '');\n  if (result.error || result.status !== 0) { process.stderr.write(result.stderr || String(result.error)); process.exit(96); }\n}\n",
+  "process": {
+    "pid": 38125,
+    "exitCode": 0,
+    "signal": null,
+    "stdout": "{\"actor\":\"child\",\"operation\":\"read-input\",\"ok\":true,\"errno\":0}\n{\"actor\":\"child\",\"operation\":\"write-output\",\"ok\":true,\"errno\":0}\n{\"actor\":\"child\",\"operation\":\"write-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"child\",\"operation\":\"read-secret\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"read-input\",\"ok\":true,\"errno\":0}\n{\"actor\":\"grandchild\",\"operation\":\"write-output\",\"ok\":true,\"errno\":0}\n{\"actor\":\"grandchild\",\"operation\":\"write-source\",\"ok\":false,\"errno\":1}\n{\"actor\":\"grandchild\",\"operation\":\"read-secret\",\"ok\":false,\"errno\":1}\n",
+    "stderr": ""
+  },
+  "result": {
+    "exitCode": 0,
+    "events": [
+      {
+        "actor": "child",
+        "operation": "read-input",
+        "ok": true,
+        "errno": 0
+      },
+      {
+        "actor": "child",
+        "operation": "write-output",
+        "ok": true,
+        "errno": 0
+      },
+      {
+        "actor": "child",
+        "operation": "write-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "child",
+        "operation": "read-secret",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "read-input",
+        "ok": true,
+        "errno": 0
+      },
+      {
+        "actor": "grandchild",
+        "operation": "write-output",
+        "ok": true,
+        "errno": 0
+      },
+      {
+        "actor": "grandchild",
+        "operation": "write-source",
+        "ok": false,
+        "errno": 1
+      },
+      {
+        "actor": "grandchild",
+        "operation": "read-secret",
+        "ok": false,
+        "errno": 1
+      }
+    ],
+    "admissionErrors": [
+      "overlapping_command_scope",
+      "overlapping_command_scope",
+      "invalid_command_scope",
+      "command_output_not_fresh"
+    ],
+    "source": "source-sentinel",
+    "input": "fixed-input",
+    "neighbor": "neighbor-sentinel",
+    "secret": "fake-secret-sentinel",
+    "control": "control-sentinel",
+    "outputFiles": [
+      "child",
+      "grandchild"
+    ]
+  },
+  "completedAt": "2026-09-16T23:06:18.170Z",
+  "cleanup": {
+    "removed": true,
+    "reapedFixedTree": true,
+    "handles": {
+      "status": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 43071025152,
+  "spaceDelta": -61440
+}

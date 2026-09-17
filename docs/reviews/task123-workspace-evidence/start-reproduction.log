@@ -1,0 +1,22 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-start.test.ts (12 tests) 8804ms
+   ✓ registers the suspended executable before any constructor or project code runs  1014ms
+   ✓ keeps project code suspended when the release authorization is revoked  731ms
+   ✓ does not release the executable when durable registration fails  636ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  772ms
+   ✓ records a failed exec without releasing any project code  678ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  343ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  722ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  759ms
+   ✓ persists the executable result independently of the bootstrap and survives reopening  795ms
+   ✓ never overwrites a terminal launch fact and rejects stale revisions  770ms
+   ✓ rejects persisted launch facts that contradict identities or release state  825ms
+   ✓ preserves observed process facts without claiming a launch receipt when final persistence is blocked  758ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  12:31:05
+   Duration  8.98s (transform 52ms, setup 0ms, collect 62ms, tests 8.80s, environment 0ms, prepare 30ms)
+

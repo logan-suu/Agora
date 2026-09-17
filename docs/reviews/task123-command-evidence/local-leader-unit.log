@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ apps/web/test/local-validation-service.test.ts (1 test) 101ms
+ ✓ apps/web/test/message-flow.test.ts (29 tests) 158ms
+ ✓ packages/core/orchestration/test/message-service.test.ts (13 tests) 41ms
+ ✓ packages/core/domain/test/local-validation.test.ts (7 tests) 5ms
+
+ Test Files  4 passed (4)
+      Tests  50 passed (50)
+   Start at  18:53:56
+   Duration  1.39s (transform 240ms, setup 0ms, collect 691ms, tests 305ms, environment 0ms, prepare 102ms)
+

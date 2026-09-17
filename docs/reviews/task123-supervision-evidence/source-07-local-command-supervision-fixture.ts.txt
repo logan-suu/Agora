@@ -1,0 +1,278 @@
+// Trusted controller; all fixed command payloads execute inside Seatbelt.
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statfsSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { join, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
+import { setTimeout as delay } from 'node:timers/promises';
+import { LocalCommandJournal } from '../../../packages/runtime/sandbox/src/local-command-journal';
+import { buildLocalCommandPolicy } from '../../../packages/runtime/sandbox/src/local-command-policy';
+import {
+  captureLocalProcess,
+  inspectLocalProcess,
+  type LocalProcessIdentity,
+  stopRegisteredLocalProcesses,
+} from '../../../packages/runtime/sandbox/src/local-command-stop';
+import { superviseLocalCommand } from '../../../packages/runtime/sandbox/src/local-command-supervisor';
+
+type Scenario =
+  | 'exit'
+  | 'timeout'
+  | 'cancel'
+  | 'wrong-birth'
+  | 'journal'
+  | 'journal-failure'
+  | 'journal-revoked';
+const sha = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
+const available = () => {
+  const s = statfsSync('/private/tmp');
+  return s.bavail * s.bsize;
+};
+
+export async function probeLocalCommandSupervision(scenario: Scenario) {
+  if (process.platform !== 'darwin' || process.arch !== 'arm64')
+    throw new Error('Apple Silicon Seatbelt validation required; no fallback.');
+  const base = mkdtempSync('/private/tmp/agora-task123-validation-');
+  const identity = statSync(base);
+  const folder = resolve('docs/reviews/task123-supervision-evidence');
+  mkdirSync(folder, { recursive: true });
+  const evidencePath = join(folder, `${scenario}-${base.split('-').at(-1)}.json`);
+  const sources = [
+    'packages/runtime/sandbox/native/local-process-control.c',
+    'packages/runtime/sandbox/native/local-command-supervision-probe.c',
+    'packages/runtime/sandbox/src/local-command-supervisor.ts',
+    'packages/runtime/sandbox/src/local-command-stop.ts',
+    'packages/runtime/sandbox/src/local-command-output.ts',
+    'packages/runtime/sandbox/src/local-command-journal.ts',
+    'packages/runtime/sandbox/src/local-command-policy.ts',
+    'tests/integration/phase12/local-command-supervision-fixture.ts',
+    'tests/integration/phase12/phase12-3-command-supervision.test.ts',
+  ];
+  const evidence: Record<string, unknown> = {
+    scenario,
+    base,
+    startedAt: new Date().toISOString(),
+    identity: { uid: identity.uid, dev: identity.dev, ino: identity.ino },
+    sources: Object.fromEntries(sources.map((p) => [p, sha(readFileSync(p))])),
+    os: execFileSync('/usr/bin/sw_vers', [], { encoding: 'utf8' }),
+    compiler: execFileSync('/usr/bin/clang', ['--version'], { encoding: 'utf8' }),
+    node: process.version,
+    availableBefore: available(),
+  };
+  const helper = join(base, 'control');
+  const payload = join(base, 'payload');
+  let actual: LocalProcessIdentity | undefined;
+  let launched = 0;
+  let known: LocalProcessIdentity[] = [];
+  let safe = false;
+  const errors: string[] = [];
+  const reject = (action: () => unknown) => {
+    try {
+      action();
+      errors.push('unexpected-acceptance');
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : String(error));
+    }
+  };
+  try {
+    for (const [source, target] of [
+      [sources[0], helper],
+      [sources[1], payload],
+    ])
+      execFileSync('/usr/bin/clang', [
+        '-std=c11',
+        '-Wall',
+        '-Wextra',
+        '-Werror',
+        '-mmacosx-version-min=15.0',
+        source as string,
+        '-o',
+        target as string,
+      ]);
+    evidence.binaries = { helper: sha(readFileSync(helper)), payload: sha(readFileSync(payload)) };
+    for (const name of ['source', 'input', 'output', 'journal'])
+      mkdirSync(join(base, name), { mode: 0o700 });
+    const policy = buildLocalCommandPolicy({
+      executable: payload,
+      sourceRoot: join(base, 'source'),
+      inputRoot: join(base, 'input'),
+      outputRoot: join(base, 'output'),
+      deniedRoots: [join(base, 'journal')],
+    });
+    evidence.policy = policy;
+    const journal = new LocalCommandJournal(join(base, 'journal'), true);
+    let record = journal.reserve({
+      commandId: `fixture-${scenario}`,
+      workspaceId: 'fixed-fixture',
+      policyHash: sha(policy),
+      inputHash: sha('empty-fixed-input'),
+      roots: [join(base, 'output')],
+    });
+    launched = Date.now();
+    const startedAt = performance.now();
+    const child = spawn(
+      '/usr/bin/sandbox-exec',
+      ['-p', policy, payload, scenario === 'wrong-birth' ? 'single' : 'tree'],
+      {
+        cwd: base,
+        env: { NODE_ENV: 'test', HOME: join(base, 'output'), TMPDIR: join(base, 'output') },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    );
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('payload_not_ready')), 2000);
+      child.stdout.once('data', (chunk: Buffer) => {
+        clearTimeout(timer);
+        if (chunk.toString() === 'ready\n') resolve();
+        else reject(new Error('unexpected_marker'));
+      });
+      child.once('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      child.once('exit', () => {
+        clearTimeout(timer);
+        reject(new Error('payload_exited_before_ready'));
+      });
+    });
+    actual = captureLocalProcess(helper, child.pid as number);
+    known = [actual];
+    const registered = [...actual];
+    if (scenario === 'wrong-birth') registered[7] = ((registered[7] ?? 0) + 1) >>> 0;
+    record = journal.registerBirth(record.commandId, record.revision, registered);
+    const cancel = new AbortController();
+    const pending = superviseLocalCommand({
+      child,
+      identity: registered,
+      helper,
+      journal,
+      commandId: record.commandId,
+      revision: record.revision,
+      startedAt,
+      signal: cancel.signal,
+    });
+    child.stdin.write('x');
+    if (scenario !== 'wrong-birth') {
+      const deadline = performance.now() + 3000;
+      while (performance.now() < deadline) {
+        record = journal.snapshot().records[0] as typeof record;
+        known = record.birthIdentities;
+        if (record.birthRelations.length === 2) break;
+        await delay(20);
+      }
+      if (record.birthRelations.length !== 2) {
+        cancel.abort();
+        await pending;
+        throw new Error('tree_not_registered');
+      }
+    }
+    if (scenario === 'journal') {
+      const unknown = [...registered];
+      unknown[7] = ((unknown[7] ?? 0) + 2) >>> 0;
+      const childIdentity = record.birthRelations[0]?.child as LocalProcessIdentity;
+      reject(() => journal.registerBirth(record.commandId, record.revision, unknown, unknown));
+      reject(() =>
+        journal.registerBirth(record.commandId, record.revision, childIdentity, registered),
+      );
+      reject(() =>
+        journal.registerBirth(record.commandId, record.revision - 1, unknown, registered),
+      );
+    }
+    if (scenario === 'exit' || scenario === 'journal') child.stdin.end('e');
+    if (scenario === 'journal-revoked')
+      journal.quarantine(record.commandId, record.revision, 'control_failure');
+    const lock = join(base, 'journal', 'commands.lock');
+    if (scenario === 'journal-failure')
+      writeFileSync(lock, 'fixed-fixture-lock', { flag: 'wx', mode: 0o600 });
+    if (scenario === 'cancel' || scenario === 'journal-failure') cancel.abort();
+    const receipt = await pending;
+    if (scenario === 'journal-failure') {
+      reject(() => new LocalCommandJournal(join(base, 'journal')));
+      // Restore only the fault this fixture inserted after the observer returned.
+      // Production never removes crash locks or releases interrupted resources.
+      if (readFileSync(lock, 'utf8') !== 'fixed-fixture-lock')
+        throw new Error('fixture_lock_changed');
+      unlinkSync(lock);
+      evidence.fixtureLockRestored = true;
+    }
+    const reopened = new LocalCommandJournal(join(base, 'journal')).snapshot();
+    record = reopened.records[0] as typeof record;
+    const aliveAfterSupervision = inspectLocalProcess(helper, actual).state === 'alive';
+    if (scenario === 'journal') {
+      const path = join(base, 'journal', 'commands.json');
+      const original = readFileSync(path);
+      const wrapper = JSON.parse(original.toString());
+      wrapper.data.records[0].birthRelations[0].parent =
+        wrapper.data.records[0].birthRelations[0].child;
+      wrapper.sha256 = sha(JSON.stringify(wrapper.data));
+      writeFileSync(path, JSON.stringify(wrapper));
+      reject(() => new LocalCommandJournal(join(base, 'journal')));
+      const old = JSON.parse(original.toString());
+      old.data.version = 1;
+      old.sha256 = sha(JSON.stringify(old.data));
+      writeFileSync(path, JSON.stringify(old));
+      reject(() => new LocalCommandJournal(join(base, 'journal')));
+      writeFileSync(path, original);
+    }
+    const result = { receipt, record, blocked: reopened.blocked, aliveAfterSupervision, errors };
+    evidence.result = {
+      ...result,
+      receipt: {
+        ...receipt,
+        output: {
+          ...receipt.output,
+          stdout: { ...receipt.output.stdout, bytes: receipt.output.stdout.bytes.toString() },
+          stderr: { ...receipt.output.stderr, bytes: receipt.output.stderr.bytes.toString() },
+        },
+      },
+    };
+    safe = receipt.stop.registeredState === 'stopped' || scenario === 'wrong-birth';
+    return result;
+  } catch (error) {
+    evidence.error = error instanceof Error ? error.message : String(error);
+    throw error;
+  } finally {
+    if (known.length) evidence.finalStop = await stopRegisteredLocalProcesses(helper, known);
+    // Only this fixed program has a forty-second alarm and bounded fork depth.
+    if (launched && !safe) await delay(Math.max(0, launched + 42_000 - Date.now()));
+    evidence.completedAt = new Date().toISOString();
+    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
+    const current = statSync(base);
+    const handles = spawnSync('/usr/sbin/lsof', ['-nP', '+D', base], { encoding: 'utf8' });
+    const mounts = spawnSync('/sbin/mount', [], { encoding: 'utf8' });
+    const removable =
+      current.uid === identity.uid &&
+      current.dev === identity.dev &&
+      current.ino === identity.ino &&
+      realpathSync(base) === base &&
+      handles.status === 1 &&
+      !handles.stdout &&
+      !handles.stderr &&
+      mounts.status === 0 &&
+      !mounts.stdout.includes(base);
+    evidence.cleanup = {
+      removed: false,
+      handles,
+      mountCheckPassed: mounts.status === 0 && !mounts.stdout.includes(base),
+    };
+    if (removable) {
+      rmSync(base, { recursive: true });
+      evidence.cleanup = { ...(evidence.cleanup as object), removed: !existsSync(base) };
+    }
+    evidence.availableAfter = available();
+    evidence.spaceDelta =
+      (evidence.availableAfter as number) - (evidence.availableBefore as number);
+    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
+  }
+}

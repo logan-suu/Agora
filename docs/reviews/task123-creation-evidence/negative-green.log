@@ -1,0 +1,21 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-creation.test.ts (11 tests) 4413ms
+   ✓ creates a file with a durable no-replace result: normal  548ms
+   ✓ creates a file with a durable no-replace result: race  382ms
+   ✓ creates a file with a durable no-replace result: symlink-race  383ms
+   ✓ creates a file with a durable no-replace result: existing  404ms
+   ✓ creates a file with a durable no-replace result: symlink-existing  394ms
+   ✓ creates a file with a durable no-replace result: revoke  380ms
+   ✓ creates a file with a durable no-replace result: move-before  391ms
+   ✓ creates a file with a durable no-replace result: move-after  366ms
+   ✓ creates a file with a durable no-replace result: replay  424ms
+   ✓ creates a file with a durable no-replace result: replay-corrupt  384ms
+   ✓ creates a file with a durable no-replace result: replay-missing  354ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  14:47:49
+   Duration  4.54s (transform 26ms, setup 0ms, collect 27ms, tests 4.41s, environment 0ms, prepare 27ms)
+

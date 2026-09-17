@@ -1,0 +1,99 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts (26 tests | 1 failed) 31329ms
+   ✓ initializes a cold helper before applying the shorter process-query deadline  1542ms
+   ✓ fails closed before bootstrap creation if helper initialization consumes the launch window  5411ms
+   ✓ rejects malformed helper readiness without attempting PID capture  621ms
+   ✓ recovers a transient read-only capture timeout without changing launch or call deadlines  1196ms
+   ✓ still rejects release authorization after a transient capture timeout  940ms
+   ✓ bounds persistent capture timeouts to three attempts and keeps resources quarantined  1491ms
+   ✓ does not retry a failed kernel query that did not time out  723ms
+   ✓ rechecks authority before retrying capture  945ms
+   ✓ does not execute a replacement helper on a capture retry  942ms
+   ✓ honors cancellation between capture attempts  936ms
+   ✓ observes bootstrap exit before another PID capture can be attempted  1048ms
+   ✓ refuses a capture when a control-plane check exhausts the original startup window  5895ms
+   ✓ registers the suspended executable before any constructor or project code runs  757ms
+   ✓ keeps project code suspended when the release authorization is revoked  654ms
+   ✓ does not release the executable when durable registration fails  623ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  826ms
+   ✓ records a failed exec without releasing any project code  647ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  325ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  616ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  791ms
+   ✓ persists the executable result independently of the bootstrap and survives reopening  752ms
+   ✓ never overwrites a terminal launch fact and rejects stale revisions  839ms
+   ✓ rejects persisted launch facts that contradict identities or release state  771ms
+   × preserves observed process facts without claiming a launch receipt when final persistence is blocked 742ms
+     → expected false to be true // Object.is equality
+   ✓ waits for current asynchronous authority before releasing project code: async-release-revoked  675ms
+   ✓ waits for current asynchronous authority before releasing project code: async-authority-rejected  621ms
+ ✓ tests/integration/phase12/phase12-3-command-supervision.test.ts (7 tests) 34443ms
+   ✓ persists observed parent relations and stops descendants after the main process exits  759ms
+   ✓ uses the default thirty-second execution limit and closes durable observation after timeout  30338ms
+   ✓ cancels a running process tree without extending the cleanup deadline  722ms
+   ✓ bounds observation when the registered identity is wrong without signaling the live process  562ms
+   ✓ rejects invalid parent relations atomically and refuses corrupted or old-version records  626ms
+   ✓ preserves blocking state when the final observation cannot be durably committed  606ms
+   ✓ stops observing execution when the durable command is quarantined by the control plane  830ms
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (14 tests) 21682ms
+   ✓ confirms a durable grant through the real Leader POST: normal  4636ms
+   ✓ confirms a durable grant through the real Leader POST: batch  3859ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3547ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3172ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2469ms
+   ✓ confirms a durable grant through the real Leader POST: before  480ms
+   ✓ confirms a durable grant through the real Leader POST: after  486ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  403ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  413ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  408ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  412ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  426ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  455ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  513ms
+ ✓ tests/integration/phase12/phase12-3-command-binding.test.ts (12 tests) 8061ms
+   ✓ stops registered execution when grant-revision changes  795ms
+   ✓ stops registered execution when worker changes  741ms
+   ✓ stops registered execution when writer-epoch changes  726ms
+   ✓ stops registered execution when authority-error changes  746ms
+   ✓ refuses to release project code after a root is replaced  658ms
+   ✓ stops on ancestor relocation and never follows the moved directory  744ms
+   ✓ rejects tool replacement before any process is launched  322ms
+   ✓ keeps invalidation sticky even when the authority is restored  319ms
+   ✓ rejects command arguments that differ from the captured binding  314ms
+   ✓ rechecks authority at completion instead of accepting a successful process exit  795ms
+   ✓ never executes a replaced process-control helper even during cleanup  1160ms
+   ✓ rejects old journal formats and malformed persisted root bindings  740ms
+ ✓ tests/integration/phase12/phase12-3-version.test.ts (3 tests) 1499ms
+   ✓ captures immutable file inputs and refuses incomplete evidence: normal  614ms
+   ✓ captures immutable file inputs and refuses incomplete evidence: changed  439ms
+   ✓ captures immutable file inputs and refuses incomplete evidence: revoke  445ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > preserves observed process facts without claiming a launch receipt when final persistence is blocked
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:225:46
+    223|   const result = await probeLocalCommandStart('receipt-lock');
+    224|   expect(result.result.payloadResult).toEqual({ exitCode: 7, signal: n…
+    225|   expect(result.result.observation?.durable).toBe(true);
+       |                                              ^
+    226|   expect(result.result.launchDurable).toBe(false);
+    227|   expect(result.result.error).toBe('command_journal_unavailable');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  1 failed | 61 passed (62)
+   Start at  16:48:23
+   Duration  98.25s (transform 309ms, setup 0ms, collect 695ms, tests 97.01s, environment 0ms, prepare 141ms)
+

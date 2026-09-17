@@ -1,0 +1,72 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (13 tests | 13 failed) 5094ms
+   × confirms a durable grant through the real Leader POST: normal 461ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: batch 406ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: batch-partial 389ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: batch-read-drift 355ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: before 395ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: after 405ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: wrong-hash 371ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: wrong-selection 367ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: wrong-scope 402ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: stale-policy 390ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: root-drift 388ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: corrupt-proposal 386ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+   × confirms a durable grant through the real Leader POST: unsupported-action 378ms
+     → expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 13 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: normal
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch-partial
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: batch-read-drift
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: before
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: after
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: wrong-hash
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: wrong-selection
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: wrong-scope
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: stale-policy
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: root-drift
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: corrupt-proposal
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: unsupported-action
+AssertionError: expected [ 'dependency', 'sentinel' ] to deeply equal [ 'sentinel' ]
+
+- Expected
++ Received
+
+  [
++   "dependency",
+    "sentinel",
+  ]
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:141:33
+    139|       });
+    140|       expect((await control.snapshot()).revision).toBe(0);
+    141|       expect(readdirSync(root)).toEqual(['sentinel']);
+       |                                 ^
+    142|       const body = {
+    143|         ...scope,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  13 failed (13)
+   Start at  16:37:34
+   Duration  5.65s (transform 239ms, setup 0ms, collect 449ms, tests 5.09s, environment 0ms, prepare 26ms)
+

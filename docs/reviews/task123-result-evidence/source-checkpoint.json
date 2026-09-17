@@ -1,0 +1,82 @@
+[
+  {
+    "source": "packages/runtime/sandbox/src/local-command-binding.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-00-local-command-binding.ts.txt",
+    "sha256": "6a79ae3e5a90108e15030f5b8437ad80f49ea3ce17415011333f64149427a18f"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-start.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-01-local-command-start.ts.txt",
+    "sha256": "4aa48fe6c1b35df8f347c04a6884f8e0429846cb48092d7bf6c132c7d7115c99"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-supervisor.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-02-local-command-supervisor.ts.txt",
+    "sha256": "0aad16b0bc0e74136ba3e5a52960124f63585f41f96db2e8776800cc9361ed6e"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-journal.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-03-local-command-journal.ts.txt",
+    "sha256": "a86b4433d2fda190a6b269250579b9886852935b0b6ab8a9d97066deba911f25"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-stop.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-04-local-command-stop.ts.txt",
+    "sha256": "c2c9f6c4ca80f0652c2c02406bbd0d124acf4c8ee48d0b883d56d9c03fcc2802"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-policy.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-05-local-command-policy.ts.txt",
+    "sha256": "2748c2147c6799eef535bbcbc618ec0b5733922a10d05472665c9731e86daa2d"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-output.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-06-local-command-output.ts.txt",
+    "sha256": "e0839dcb0fe9e80be88df2a36dddb168d32bf8cc9da13ba78fc533fe531ee9d3"
+  },
+  {
+    "source": "packages/runtime/sandbox/native/local-command-bootstrap.c",
+    "snapshot": "docs/reviews/task123-result-evidence/source-07-local-command-bootstrap.c.txt",
+    "sha256": "34ae277b87174c035a432940b534a1b6d756a567f4b444073f20491d66b2dd35"
+  },
+  {
+    "source": "packages/runtime/sandbox/native/local-process-control.c",
+    "snapshot": "docs/reviews/task123-result-evidence/source-08-local-process-control.c.txt",
+    "sha256": "385b5ec3ad3897a194338e2026d21c70b066eb2dccdbdd635deed0148d1b24d3"
+  },
+  {
+    "source": "packages/runtime/sandbox/native/local-command-binding-probe.c",
+    "snapshot": "docs/reviews/task123-result-evidence/source-09-local-command-binding-probe.c.txt",
+    "sha256": "453772e7a35f4eaa28ac1abf1bdbdbe4539e69a5b0fee1e5d46fa1069cb26bca"
+  },
+  {
+    "source": "packages/runtime/sandbox/native/local-command-control-drift-probe.c",
+    "snapshot": "docs/reviews/task123-result-evidence/source-10-local-command-control-drift-probe.c.txt",
+    "sha256": "513a031c2301c995998cc5cc155a97f90717e03f9a56f391c129590f5e911b7f"
+  },
+  {
+    "source": "tests/integration/phase12/local-command-start-fixture.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-11-local-command-start-fixture.ts.txt",
+    "sha256": "4cd5e4b1f58bd32e14c49b0459f52d879dc989c84fbc1250d96becfd1bb71dc7"
+  },
+  {
+    "source": "tests/integration/phase12/local-command-binding-fixture.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-12-local-command-binding-fixture.ts.txt",
+    "sha256": "4973c7bc81af927c8ad9d553ce439876efd6252269e1e8ac6824cfdbf1e8a125"
+  },
+  {
+    "source": "tests/integration/phase12/phase12-3-command-binding.test.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-13-phase12-3-command-binding.test.ts.txt",
+    "sha256": "1e4e3162cb7a58efeb99487523a7d6c282faa130028500a3a7bb88ebc3f8061f"
+  },
+  {
+    "source": "tests/integration/phase12/phase12-3-command-start.test.ts",
+    "snapshot": "docs/reviews/task123-result-evidence/source-14-phase12-3-command-start.test.ts.txt",
+    "sha256": "1d7585660279d6ff12de1c387e0f5c3c3056f00b7281f8a87610dd9a4620a4ea"
+  },
+  {
+    "source": "packages/runtime/sandbox/native/local-command-start-probe.c",
+    "snapshot": "docs/reviews/task123-result-evidence/source-15-local-command-start-probe.c.txt",
+    "sha256": "cd9c6ece3cbaa2aca87bc2c59ef9854315cf2e18d8f7bec019c81293937534c2"
+  }
+]

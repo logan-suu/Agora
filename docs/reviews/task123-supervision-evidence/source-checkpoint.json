@@ -1,0 +1,47 @@
+[
+  {
+    "source": "packages/runtime/sandbox/native/local-process-control.c",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-00-local-process-control.c.txt",
+    "sha256": "3a18c846c639f77b10da346ac53eaac1526af47f9233e68a94abfb18436b3d10"
+  },
+  {
+    "source": "packages/runtime/sandbox/native/local-command-supervision-probe.c",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-01-local-command-supervision-probe.c.txt",
+    "sha256": "cf160e9db608145fe575e28ebeafb143389bad394ac95ab1decb32b0b1a8fbf3"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-supervisor.ts",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-02-local-command-supervisor.ts.txt",
+    "sha256": "595a0c2c81920525a27c37efc5c1a368c32527b83eba7a7e5167e47c9d338f62"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-stop.ts",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-03-local-command-stop.ts.txt",
+    "sha256": "4db644dd2d89700f4878fd306d941b6b7a9fed18f216835c17ca3eaf6d11e553"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-output.ts",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-04-local-command-output.ts.txt",
+    "sha256": "e0839dcb0fe9e80be88df2a36dddb168d32bf8cc9da13ba78fc533fe531ee9d3"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-journal.ts",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-05-local-command-journal.ts.txt",
+    "sha256": "3cd3ed97602ce0c6ffce503015e837532d97a7a3341aefd63f4947e466cd0110"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-policy.ts",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-06-local-command-policy.ts.txt",
+    "sha256": "26233dc14b99574633af2a2a60275ad8bb020d3f2e4529973314e3716183288c"
+  },
+  {
+    "source": "tests/integration/phase12/local-command-supervision-fixture.ts",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-07-local-command-supervision-fixture.ts.txt",
+    "sha256": "6ab62365fa17a0b71f32982023565da9188751a0ce8a69419136d7d9424ad1a9"
+  },
+  {
+    "source": "tests/integration/phase12/phase12-3-command-supervision.test.ts",
+    "snapshot": "docs/reviews/task123-supervision-evidence/source-08-phase12-3-command-supervision.test.ts.txt",
+    "sha256": "9f3c55ca942bca717f3aba1fdd91c513ecb99f2c5b635ffd9a3b957ef11529f5"
+  }
+]

@@ -37,12 +37,16 @@ export async function runOrchestration(
   const transition = (state: AppState, mutations: readonly Mutation[]): Promise<AppState> =>
     deps.transition?.(state, mutations) ?? Promise.resolve(applyMutations(state, mutations));
   let state = initialState;
+  if (state.humanGate !== undefined) return state;
   if (state.complexity === undefined) {
     state = await transition(state, [
       setMutation('complexity', evaluateComplexity({ goal: state.goal })),
     ]);
   }
   while (state.phase !== 'done') {
+    // An external lifecycle pause may close while a worker is returning.
+    // Preserve its canonical gate until Leader resolution starts a new run.
+    if (state.humanGate !== undefined) return state;
     const roster = (await deps.loadRoster?.()) ?? deps.roster;
     const resumingWorkerIds = deps.workerRuntime.resumableWorkerIds;
     const parallel = await deps.parallelContext?.(state);

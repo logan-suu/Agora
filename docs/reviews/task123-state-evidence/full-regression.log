@@ -1,0 +1,521 @@
+
+> agora@0.0.0 test /Users/logansu/Documents/Dev/Agora
+> node --test scripts/test/*.test.mjs && vitest run
+
+✔ summary reports readiness without mutating canonical state or dumping history (1.266667ms)
+✔ task returns dependencies, previous phase gate, and history path (0.18675ms)
+✔ phase and decision selection are explicit; unknown or extra arguments fail (0.29325ms)
+✔ invalid dependency graphs and oversized summaries fail explicitly (0.246333ms)
+✔ history is bounded, paginated, Unicode-safe and read-only (3.575ms)
+✔ check verifies independent migrated-note identities and rejects missing or altered evidence (3.097042ms)
+✔ CLI finds the canonical repository from another working directory (66.201542ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116.288709
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/core/__tests__/e2e/lru-cache.test.ts (1 test) 229831ms
+   ✓ G5 e2e: LRU cache task over live Harness provider (Phase 0 exit baseline) (opencode-go/deepseek-v4-flash) > runs Coordinator → CODER → TESTER to done with passing testResults and sandbox output  229830ms
+ ✓ tests/integration/phase9/phase9-parallel-flow.test.ts (11 tests) 97649ms
+   ✓ Phase 9 automatic parallel flow (real G5) > preserves cumulative evidence through root_cause_failure before starting C  11863ms
+   ✓ Phase 9 automatic parallel flow (real G5) > preserves cumulative evidence through architecture_failure before starting C  11865ms
+   ✓ Phase 9 automatic parallel flow (real G5) > aborts a real merge conflict and rebuilds only the Leader-selected worker from the original base  7625ms
+   ✓ Phase 9 automatic parallel flow (real G5) > uses a real failing test receipt to rework the wave from its tested HEAD before advancing dependencies  8827ms
+   ✓ Phase 9 automatic parallel flow (real G5) > invalidates completed evidence after a real D9 requirement reproject and revalidates without recoding completed waves  7974ms
+   ✓ Phase 9 automatic parallel flow (real G5) > reopens A and already completed C while preserving B, then honors Leader request_changes  17648ms
+   ✓ Phase 9 automatic parallel flow (real G5) > suspends validation after 0 observed tools and resumes the same dispatch in a fresh Harness Fork  6856ms
+   ✓ Phase 9 automatic parallel flow (real G5) > suspends validation after 2 observed tools and resumes the same dispatch in a fresh Harness Fork  6916ms
+   ✓ Phase 9 automatic parallel flow (real G5) > continues the real Harness after aborting a quiescent validation pause  4754ms
+   ✓ Phase 9 automatic parallel flow (real G5) > suspends real parallel resources after evidence failure while preserving the source and freeing admission  4505ms
+   ✓ Phase 9 automatic parallel flow (real G5) > runs A/B concurrently, inherits tested code into C, then approves and reruns the archived artifact  8817ms
+ ✓ tests/integration/phase10/phase10-benchmark.test.ts (12 tests) 57406ms
+   ✓ benchmark multi driver binds actual parallel validation and resumes completion without reopening done workers  8390ms
+   ✓ benchmark single driver runs one real tool-using Harness solver without a product gate  948ms
+   ✓ benchmark public test contracts are readable through the real solver filesystem tools  883ms
+   ✓ benchmark public Jest contracts survive real multi-role Node validation without being executed  8918ms
+   ✓ benchmark sparse projection and a real coding-boundary requirement update preserve the canonical pipeline  8907ms
+   ✓ benchmark mixed roster routes the real production Harness requests by their projected role  8931ms
+   ✓ continues a canonical advisory through real Harness, Docker, validation and the final Leader gate  8425ms
+   ✓ stops repeated real patch errors before the third provider request and retains a closed failure trace  594ms
+   ✓ recovers from batched missing-file probes independently across real sessions  8392ms
+   ✓ activates the real wide DAG for the fresh inventory-restock task input  821ms
+   ✓ activates the real wide DAG for the fresh thermal-inspection task input  816ms
+   ✓ activates the real wide DAG for the fresh daily-availability task input  1378ms
+ ✓ tests/integration/phase12/phase12-3-command-supervision.test.ts (7 tests) 36115ms
+   ✓ persists observed parent relations and stops descendants after the main process exits  1408ms
+   ✓ uses the default thirty-second execution limit and closes durable observation after timeout  30396ms
+   ✓ cancels a running process tree without extending the cleanup deadline  935ms
+   ✓ bounds observation when the registered identity is wrong without signaling the live process  652ms
+   ✓ rejects invalid parent relations atomically and refuses corrupted or old-version records  835ms
+   ✓ preserves blocking state when the final observation cannot be durably committed  859ms
+   ✓ stops observing execution when the durable command is quarantined by the control plane  1029ms
+ ✓ packages/runtime/sandbox/test/docker-sandbox.test.ts (16 tests) 35577ms
+   ✓ DockerSandbox (G5 real Docker execution) > createWorktree creates a real host dir inside a running container task root  2154ms
+   ✓ DockerSandbox (G5 real Docker execution) > reuses ONE container per task and isolates roles into separate dirs  2130ms
+   ✓ DockerSandbox (G5 real Docker execution) > rejects a persisted worktree that belongs to another task  4294ms
+   ✓ DockerSandbox (G5 real Docker execution) > write then read round-trips content including nested paths  2153ms
+   ✓ DockerSandbox (G5 real Docker execution) > write overwrites existing content  2155ms
+   ✓ DockerSandbox (G5 real Docker execution) > read rejects paths escaping the sandbox root (R7 path confinement)  2146ms
+   ✓ DockerSandbox (G5 real Docker execution) > run executes a real command inside the container and captures stdout  2170ms
+   ✓ DockerSandbox (G5 real Docker execution) > run sees the node runtime of the container image (node:20-slim)  2171ms
+   ✓ DockerSandbox (G5 real Docker execution) > run reports a non-zero exit code for a failing command  2204ms
+   ✓ DockerSandbox (G5 real Docker execution) > run captures stderr  2192ms
+   ✓ DockerSandbox (G5 real Docker execution) > run can see files written via write (bind-mount shared truth)  2182ms
+   ✓ DockerSandbox (G5 real Docker execution) > run enforces a timeout and kills only the exec, container stays usable (R7)  3211ms
+   ✓ DockerSandbox (G5 real Docker execution) > rejects roles that sanitize to an existing role directory (isolation)  2131ms
+   ✓ DockerSandbox (G5 real Docker execution) > concurrent createWorktree for the same new task shares ONE container  2147ms
+   ✓ DockerSandbox (G5 real Docker execution) > teardown stops and removes the container and is idempotent  2133ms
+ ✓ packages/runtime/executor/test/compatible-cancellation.test.ts (1 test) 30582ms
+   ✓ closes a stalled HTTP stream after cloned requests are collected, before retrying  30581ms
+ ✓ tests/integration/phase12/phase12-3-command-start.test.ts (24 tests) 29513ms
+   ✓ initializes a cold helper before applying the shorter process-query deadline  1538ms
+   ✓ fails closed before bootstrap creation if helper initialization consumes the launch window  5444ms
+   ✓ rejects malformed helper readiness without attempting PID capture  615ms
+   ✓ recovers a transient read-only capture timeout without changing launch or call deadlines  1161ms
+   ✓ still rejects release authorization after a transient capture timeout  954ms
+   ✓ bounds persistent capture timeouts to three attempts and keeps resources quarantined  1454ms
+   ✓ does not retry a failed kernel query that did not time out  721ms
+   ✓ rechecks authority before retrying capture  883ms
+   ✓ does not execute a replacement helper on a capture retry  915ms
+   ✓ honors cancellation between capture attempts  995ms
+   ✓ observes bootstrap exit before another PID capture can be attempted  1050ms
+   ✓ refuses a capture when a control-plane check exhausts the original startup window  5774ms
+   ✓ registers the suspended executable before any constructor or project code runs  757ms
+   ✓ keeps project code suspended when the release authorization is revoked  581ms
+   ✓ does not release the executable when durable registration fails  580ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  686ms
+   ✓ records a failed exec without releasing any project code  656ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  325ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  598ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  710ms
+   ✓ persists the executable result independently of the bootstrap and survives reopening  724ms
+   ✓ never overwrites a terminal launch fact and rejects stale revisions  818ms
+   ✓ rejects persisted launch facts that contradict identities or release state  763ms
+   ✓ preserves observed process facts without claiming a launch receipt when final persistence is blocked  807ms
+ ✓ tests/integration/phase10/phase10-exit.test.ts (4 tests) 29545ms
+   ✓ confirms natural input at real safe points, Forks validation, invalidates receipts and preserves cumulative evidence through Leader rework and archive  18048ms
+   ✓ rejects a proposal whose facts change while the real active cohort drains without partially applying related requirements  5625ms
+   ✓ reports a pre-CODER runtime failure and removes the real fixture resources  619ms
+   ✓ releases blocked real workers when a stage deadline rejects and cleanup runs  5252ms
+ ✓ tests/integration/phase12/phase12-3-command-stop.test.ts (6 tests) 13976ms
+   ✓ preserves KILL escalation when real helper launch latency approaches the TERM boundary  2815ms
+   ✓ stops only the registered process birth identity and escalates ignored TERM  1629ms
+   ✓ caps retained output without treating a successful exit as trusted completion  591ms
+   ✓ closes inherited pipes within the tail deadline while exposing incomplete output  7812ms
+   ✓ finishes a TERM-responsive registered process without sending KILL  582ms
+   ✓ returns needsAttention for a mismatched registered birth without sending a signal  548ms
+ ✓ packages/tools/git/test/git-service.test.ts (29 tests) 11897ms
+   ✓ WorktreeGitService > lazily creates a temp main repo with an initial commit  337ms
+   ✓ WorktreeGitService > initializes a nested task repository without discovering or branching the enclosing checkout  914ms
+   ✓ WorktreeGitService > isolates worktree directories for sibling main repositories  302ms
+   ✓ WorktreeGitService > rejects branch names that are not git-ref-safe  418ms
+   ✓ WorktreeGitService > migrates a legacy string path by inspecting its real Git branch, base, and HEAD  498ms
+   ✓ WorktreeGitService > rejects an existing repository that is not linked to the configured canonical repo  454ms
+   ✓ WorktreeGitService > compensates a worktree created immediately before cancellation so retry can reuse its identity  467ms
+   ✓ WorktreeGitService > tracks service-owned worktrees by absolute paths when configured with relative roots  441ms
+   ✓ WorktreeGitService > rejects task ids that could escape the worktrees directory (R7)  320ms
+   ✓ WorktreeGitService > applies a patch, commits, and returns a real commit id  541ms
+   ✓ WorktreeGitService > stops before committing when cancelled by an aborted signal (task 1.5 timeout policy)  389ms
+   ✓ WorktreeGitService > diffs working-tree changes vs HEAD when ref is omitted  383ms
+   ✓ WorktreeGitService > diffs against an explicit ref  470ms
+   ✓ WorktreeGitService > merges a branch into the base cleanly  428ms
+   ✓ WorktreeGitService > merges in a dedicated linked worktree and aborts a real conflict  829ms
+   ✓ WorktreeGitService > returns ok:false when the target branch is checked out by a linked worktree  430ms
+   ✓ WorktreeGitService > returns ok:false with conflicting paths on a real merge conflict  493ms
+   ✓ WorktreeGitService > reclaims missing task trees after restart without pruning other task records  977ms
+   ✓ WorktreeGitService > rejects stale disposal with mismatched branch and preserves foreign files  336ms
+   ✓ WorktreeGitService > rejects stale disposal with replacement symlink and preserves foreign files  320ms
+   ✓ WorktreeGitService > moves its service-owned temp base to staging on dispose (no leak)  332ms
+   ✓ WorktreeGitService > moves created worktrees to staging but preserves a caller-owned main repo on dispose  474ms
+ ✓ tests/integration/phase9/phase9-exit.test.ts (1 test) 10668ms
+   ✓ executes the full four-wide batch at cap 3 and validates its dependent cumulative artifact  10667ms
+ ✓ packages/runtime/executor/test/channel-summary-g5-real-chain.test.ts (1 test) 9880ms
+   ✓ G5 real-chain: closed-channel summary over live thin Harness (opencode-go/deepseek-v4-flash) > returns a strictly validated source-scoped summary without tools  9879ms
+ ✓ apps/web/test/wave-validation.test.ts (10 tests) 8836ms
+   ✓ trusted wave validation > reuses immutable execution evidence when its canonical receipt commit was lost  1570ms
+   ✓ trusted wave validation > rejects damaged, mismatched or changed replay evidence without executing or overwriting it  2813ms
+   ✓ trusted wave validation > executes tracked tests with Unicode, spaces, quotes and leading hyphens instead of skipping them  580ms
+   ✓ trusted wave validation > records a failing test nested in a real Node suite as a business test failure  621ms
+   ✓ trusted wave validation > ignores old result files and requires tests on a clean committed HEAD  755ms
+   ✓ trusted wave validation > rejects business edits and tests that mutate the validated tree  697ms
+   ✓ rejects deletion of an inherited cumulative regression test  457ms
+   ✓ rejects renaming an inherited Unicode test outside the discovered test set  497ms
+   ✓ accepts ignored CODER caches but rejects uncommitted source and lost cumulative tests  845ms
+ ✓ tests/integration/phase12/phase12-3-command-binding.test.ts (12 tests) 9357ms
+   ✓ stops registered execution when grant-revision changes  1006ms
+   ✓ stops registered execution when worker changes  899ms
+   ✓ stops registered execution when writer-epoch changes  903ms
+   ✓ stops registered execution when authority-error changes  891ms
+   ✓ refuses to release project code after a root is replaced  677ms
+   ✓ stops on ancestor relocation and never follows the moved directory  869ms
+   ✓ rejects tool replacement before any process is launched  341ms
+   ✓ keeps invalidation sticky even when the authority is restored  343ms
+   ✓ rejects command arguments that differ from the captured binding  335ms
+   ✓ rechecks authority at completion instead of accepting a successful process exit  755ms
+   ✓ never executes a replaced process-control helper even during cleanup  1489ms
+   ✓ rejects old journal formats and malformed persisted root bindings  847ms
+ ✓ tests/integration/phase12/phase12-3-transaction.test.ts (17 tests) 7089ms
+   ✓ durably preserves the baseline and exchanged inode before reporting applied  517ms
+   ✓ closes the operation without touching source or external objects: move-root-before-write  434ms
+   ✓ closes the operation without touching source or external objects: move-parent-before-swap  457ms
+   ✓ closes the operation without touching source or external objects: replace-root  411ms
+   ✓ invalidates a completed exchange after root movement without undoing the actual result  386ms
+   ✓ preserves a competing user edit and refuses a stale baseline  405ms
+   ✓ refuses linked external objects: symlink-target  407ms
+   ✓ refuses linked external objects: hardlink-target  378ms
+   ✓ does not repeat a filesystem mutation when replaying an identical action  412ms
+   ✓ checks root identity after the final asynchronous authorization check  405ms
+   ✓ also invalidates a parent moved during completion authorization  371ms
+   ✓ refuses a metadata-only edit after the baseline read  402ms
+   ✓ honors trusted authorization closure: revoke-before-write  511ms
+   ✓ honors trusted authorization closure: revoke-before-swap  375ms
+   ✓ refuses unsafe journal replay: replay-different-input  401ms
+   ✓ refuses unsafe journal replay: replay-corrupt-receipt  402ms
+   ✓ refuses unsafe journal replay: replay-missing-receipt  411ms
+ ✓ tests/integration/phase5/phase5-exit.test.ts (4 tests) 4957ms
+   ✓ Phase 5 real Docker/Harness/MCP cumulative exit chain > runs one browser-shaped task to durable completion under the shared scheduler  4913ms
+ ✓ tests/integration/phase2/phase2-exit.test.ts (16 tests) 4540ms
+ ✓ packages/runtime/executor/test/g5-real-chain.test.ts (1 test) 20661ms
+   ✓ G5 real-chain: HarnessExecutor over live Harness provider (opencode-go/deepseek-v4-flash) > runs one real turn, returns a done StepResult with the model reply as a messages mutation  20660ms
+ ✓ packages/runtime/sandbox/test/local-registry-file.test.ts (25 tests) 3980ms
+ ✓ tests/integration/phase1/phase1-exit.test.ts (13 tests) 3651ms
+   ✓ Phase 1 exit: MCP 五类 server 可用 (direct catalog chain, lint resolved via task 2.5) > runs the full git chain on the real git binary (createWorktree → write → diff → applyPatch → merge)  481ms
+ ✓ tests/integration/phase10/phase10-resilience.test.ts (1 test) 3710ms
+   ✓ recovers through real MCP/Docker/Git, commits state, releases its lease and reads a genuine Fork without retry seed duplication  3709ms
+ ✓ tests/integration/phase9/phase9-filesystem-boundary.test.ts (3 tests) 3459ms
+   ✓ fs formal entry refuses independent ancestor races and root replacement  540ms
+   ✓ local formal entry refuses independent ancestor races and root replacement  377ms
+   ✓ docker formal entry refuses independent ancestor races and root replacement  2541ms
+ ✓ packages/runtime/sandbox/test/workspace-adapter.test.ts (7 tests) 3324ms
+   ✓ preserves linked worktrees after failed suspension and retries terminal cleanup  453ms
+   ✓ retires historical task worktrees after reconstruction without touching another task  818ms
+   ✓ refuses mismatched task worktree names before retiring any files  328ms
+   ✓ WorkspaceAdapter > creates a new wave from the accepted cumulative HEAD without moving the canonical checkout  374ms
+   ✓ WorkspaceAdapter > creates distinct deterministic linked worktrees for same-role workers and binds those exact paths  335ms
+   ✓ WorkspaceAdapter > compensates a linked worktree when execution binding fails so the same worker can retry  469ms
+   ✓ WorkspaceAdapter > merges only in its dedicated integration worktree and aborts on the first conflict  548ms
+ ✓ tests/integration/phase10/phase10-model-settings.test.ts (1 test) 2778ms
+   ✓ runs frozen per-Agent connections through real tools, canonical state and a fresh session Fork  2778ms
+ ✓ tests/integration/phase9/phase9-worktree-integration.test.ts (2 tests) 2447ms
+   ✓ Phase 9 task-owned worktree integration (G5) > binds each worker Git path into Docker and persists a recoverable dedicated integration result  1330ms
+   ✓ Phase 9 task-owned worktree integration (G5) > aborts a real merge conflict and emits the deterministic request_rework gate  1116ms
+ ✓ tests/integration/phase12/phase12-3-command-discovery.test.ts (5 tests) 2724ms
+   ✓ discovers a real child and grandchild without enrolling an unrelated sibling  916ms
+   ✓ retains a discovered grandchild after its parent exits and it is reparented  623ms
+   ✓ rejects a wrong parent birth and leaves the real tree alive  599ms
+   ✓ exposes helper failure as incomplete discovery without signaling the root  586ms
+ ✓ apps/desktop/test/upgrades.test.ts (16 tests) 2044ms
+ ✓ tests/integration/phase12/phase12-3.test.ts (5 tests) 1815ms
+   ✓ preserves both versions in a normal confined APFS exchange  397ms
+   ✓ refuses an exchange after the opened parent moves outside the authorized root  362ms
+   ✓ refuses an exchange after the opened root moves away from its authorized path  361ms
+   ✓ can prepare a transaction file through an opened handle inside the authorized root  336ms
+   ✓ distinguishes a refused new open from the original file handle after root movement  360ms
+ ✓ packages/runtime/executor/test/compatible-model.test.ts (14 tests) 1553ms
+   ✓ sends the configured model and key through the official compatible provider without redirecting  1462ms
+ ✓ packages/tools/git/test/git-server.test.ts (4 tests) 1496ms
+   ✓ git-server MCP round-trip > creates a worktree and applies a patch through the MCP boundary  642ms
+   ✓ git-server MCP round-trip > serves diff in both modes through the MCP boundary  464ms
+   ✓ git-server MCP round-trip > serves merge through the MCP boundary  388ms
+ ✓ tests/integration/phase12/phase12-3-state-binding.test.ts (9 tests) 1613ms
+ ✓ apps/desktop/test/entrypoint.test.ts (1 test) 830ms
+   ✓ finishes evaluating the production entry before waiting for Electron ready  829ms
+ ✓ tests/integration/phase3/phase3-exit.test.ts (5 tests) 1283ms
+ ✓ apps/web/test/orchestration-flow-docker.test.ts (2 tests) 1295ms
+   ✓ Web orchestration bridge (G5 real Docker/Harness/MCP chain) > persists and streams one continuous cache task through Coder, Tester, and Reviewer  1294ms
+ ✓ tests/integration/phase12/phase12-3-command-isolation.test.ts (2 tests) 808ms
+   ✓ confines native child and exec descendants to one private command write root  403ms
+   ✓ runs the pinned Node toolchain and preserves the boundary in its spawned child  404ms
+ ✓ packages/core/orchestration/test/worker-runtime.test.ts (43 tests) 904ms
+ ✓ tests/integration/phase4/phase4-adaptive-routing.test.ts (2 tests) 868ms
+   ✓ Phase 4 adaptive routing deterministic real-chain validation > routes “实现一个函数” as Tier 0 and skips PM/ARCHITECT  431ms
+   ✓ Phase 4 adaptive routing deterministic real-chain validation > routes “实现一个 REST API 服务” as Tier 2 and engages the full sequential team  436ms
+ ✓ tests/integration/phase0/phase0-exit.test.ts (7 tests) 815ms
+ ✓ packages/runtime/sandbox/test/secure-files.test.ts (4 tests) 799ms
+   ✓ never reads or changes an outside sentinel while a separate process swaps an ancestor  775ms
+ ✓ packages/tools/git/test/git-metadata-isolation.test.ts (1 test) 760ms
+   ✓ pins linked metadata after registration even if the worktree .git pointer is replaced  759ms
+ ✓ tests/integration/phase12/phase12-3-command-journal.test.ts (5 tests) 698ms
+ ✓ packages/tools/test/test/test-service.test.ts (7 tests) 709ms
+   ✓ WorktreeTestService > kills the whole process group on timeout so grandchildren do not leak  311ms
+ ✓ packages/tools/bridge/test/bridge.test.ts (8 tests) 619ms
+   ✓ createToolCatalog (MCP → Harness bridge, task 1.5) > creates a git worktree, applies a patch, and diffs it (real git binary)  458ms
+ ✓ tests/integration/phase8/phase8-exit.test.ts (3 tests) 620ms
+   ✓ Phase 8 exit matrix > runs candidate → Leader rework → new candidate → Leader approval through durable Fork resume  615ms
+ ✓ packages/runtime/sandbox/test/docker-isolation.test.ts (2 tests) 612ms
+   ✓ mounts only the executing worktree and suspends every task container  597ms
+ ✓ tests/integration/phase9/phase9-preemption.test.ts (1 test) 497ms
+   ✓ Phase 9 cooperative preemption real chain > forks every paused Harness worker from its own durable safe point and releases leases  496ms
+ ✓ apps/web/test/task-composition.test.ts (9 tests) 419ms
+ ✓ tests/integration/phase8/human-gate-lifecycle.test.ts (1 test) 404ms
+   ✓ Phase 8 humanGate lifecycle > flushes a source turn, rebuilds after disposal, resumes a lineage child, and completes  403ms
+ ✓ packages/runtime/sandbox/test/local-temp-sandbox.test.ts (17 tests) 364ms
+ ✓ tests/integration/phase8/objection-dual-track.test.ts (1 test) 345ms
+   ✓ Phase 8 objection dual track > atomically persists a blocking objection, streams its display, and suspends at a complete D4 gate  345ms
+ ✓ apps/desktop/test/lifecycle.test.ts (3 tests) 356ms
+ ✓ packages/runtime/executor/test/request-retry.test.ts (15 tests) 254ms
+ ✓ packages/tools/lint/test/lint-service.test.ts (12 tests) 196ms
+ ✓ tests/integration/phase11/phase11-exit.test.ts (3 tests) 180ms
+ ✓ packages/runtime/executor/test/harness-executor.test.ts (27 tests) 174ms
+ ✓ apps/desktop/test/fixture-stop.test.ts (2 tests) 176ms
+ ✓ tests/evals/phase8/scenarios.test.ts (8 tests) 163ms
+ ✓ apps/web/test/orchestration-flow.test.ts (17 tests) 159ms
+ ✓ apps/web/test/message-flow.test.ts (29 tests) 158ms
+ ✓ tests/integration/phase10/phase10-local-startup.test.ts (1 test) 154ms
+ ✓ tests/integration/phase7/phase7-exit.test.ts (2 tests) 143ms
+ ✓ packages/tools/test/test/test-server.test.ts (3 tests) 139ms
+ ✓ tests/integration/phase7/phase7-guardrails.test.ts (3 tests) 132ms
+ ✓ packages/runtime/executor/test/compatible-reasoning.test.ts (1 test) 103ms
+ ✓ tests/integration/phase7/phase7-role-departure.test.ts (1 test) 111ms
+ ✓ apps/web/test/message-content.test.ts (15 tests) 96ms
+ ✓ tests/integration/phase11/phase11-4.test.ts (1 test) 113ms
+ ✓ apps/desktop/test/service.test.ts (4 tests) 103ms
+ ✓ tests/evals/phase7/scenarios.test.ts (9 tests) 94ms
+ ✓ packages/runtime/executor/test/tool-governance.test.ts (4 tests) 83ms
+ ✓ packages/runtime/executor/test/compatible-timeout.test.ts (6 tests) 78ms
+ ✓ packages/runtime/executor/test/output-repair.test.ts (12 tests) 70ms
+ ✓ apps/web/test/model-settings.test.ts (3 tests) 70ms
+ ✓ packages/runtime/executor/test/requirement-interpreter.test.ts (3 tests) 64ms
+ ✓ tests/integration/phase10/exit-wait.test.ts (6 tests) 64ms
+ ✓ apps/web/test/requirement-input.test.ts (7 tests) 58ms
+ ✓ packages/runtime/executor/test/channel-summary-generator.test.ts (6 tests) 55ms
+ ✓ apps/desktop/test/validation-cleanup.test.ts (2 tests) 55ms
+ ✓ packages/tools/fs/test/fs-service.test.ts (13 tests) 51ms
+ ✓ tests/evals/phase10/final/projection-wire.test.ts (1 test) 52ms
+ ✓ packages/runtime/executor/test/compatible-session.test.ts (1 test) 52ms
+ ✓ packages/runtime/sandbox/test/phase0-tools.test.ts (4 tests) 50ms
+ ✓ apps/desktop/test/toolchain-installation.test.ts (2 tests) 66ms
+ ✓ tests/integration/phase8/trace-panel.test.ts (1 test) 55ms
+ ✓ tests/integration/phase9/phase9-worker-pool.test.ts (1 test) 52ms
+ ✓ tests/integration/phase6/phase6-exit.test.ts (2 tests) 42ms
+ ✓ apps/desktop/test/preview-server.test.ts (1 test) 40ms
+ ✓ packages/core/orchestration/test/message-service.test.ts (13 tests) 42ms
+ ✓ tests/integration/phase11/phase11-3.test.ts (1 test) 40ms
+ ✓ apps/web/test/routes.test.ts (12 tests) 38ms
+ ✓ tests/integration/phase7/phase7-role-onboarding.test.ts (1 test) 38ms
+ ✓ packages/core/orchestration/test/channel-lifecycle.test.ts (6 tests) 35ms
+ ✓ tests/evals/phase10/final/model-adapter.test.ts (8 tests) 36ms
+ ✓ packages/runtime/executor/test/projection-input.test.ts (3 tests) 33ms
+ ✓ packages/core/orchestration/test/role-departure-service.test.ts (5 tests) 35ms
+ ✓ apps/web/test/message-markdown.test.ts (9 tests) 30ms
+ ✓ apps/web/test/project-roster-g5-chain.test.ts (1 test) 30ms
+ ✓ packages/core/orchestration/test/parallel-coordinator.test.ts (17 tests) 30ms
+ ✓ apps/web/test/chat-ui.test.ts (13 tests) 30ms
+ ✓ packages/runtime/state/test/json-task-state-store.test.ts (14 tests) 27ms
+ ✓ packages/core/orchestration/test/channel-summary-reconciler.test.ts (4 tests) 27ms
+ ✓ packages/comm/channels/test/json-project-channel-store.test.ts (10 tests) 27ms
+ ✓ apps/desktop/test/storage.test.ts (5 tests) 25ms
+ ✓ apps/desktop/test/toolchain-cache.test.ts (1 test) 18ms
+ ✓ tests/helpers/live-model.test.ts (2 tests) 26ms
+ ✓ tests/evals/phase10/final/go-diagnostic.test.ts (1 test) 23ms
+ ✓ apps/web/test/parallel-failure-lifecycle.test.ts (2 tests) 25ms
+ ✓ packages/core/orchestration/test/orchestrator.test.ts (15 tests) 21ms
+ ✓ apps/web/test/project-roster-runtime.test.ts (2 tests) 31ms
+ ✓ packages/comm/channels/test/json-project-collaboration-store.test.ts (6 tests) 20ms
+ ✓ packages/tools/fs/test/fs-server.test.ts (2 tests) 21ms
+ ✓ tests/evals/phase10/final/opencode-go.test.ts (4 tests) 19ms
+ ✓ packages/runtime/state/test/local-credentials.test.ts (6 tests) 21ms
+ ✓ tests/evals/core/runner.test.ts (6 tests) 25ms
+ ✓ packages/core/orchestration/test/project-roster-service.test.ts (3 tests) 21ms
+ ❯ packages/core/domain/test/reducer.test.ts (69 tests | 1 failed) 21ms
+   ✓ applyMutations · append > rejects malformed messages before reading fields or suppressing duplicate identities 2ms
+   ✓ applyMutations · append > accepts all message types and optional routing fields for custom roles 0ms
+   ✓ applyMutations · append > commutativity: two appends applied in either order yield the same message set 7ms
+   ✓ applyMutations · append > idempotency: replaying the same mutation leaves a single entry 0ms
+   ✓ applyMutations · append > producer contract: same identity key with different content is a producer bug and first write stays 0ms
+   ✓ applyMutations · append > idempotency falls back to deep equality for values without an identity key 0ms
+   ✓ applyMutations · mergeById > does not expose task-level channels after D7 moved the registry to Project 0ms
+   ✓ applyMutations · mergeById > updates an existing element in place without duplicating it 0ms
+   ✓ applyMutations · mergeById > accepts only integer subtask priorities from 0 through 100 0ms
+   ✓ applyMutations · mergeById > upserts stable Phase 9 worker identities without conflating workers of the same role 0ms
+   ✓ applyMutations · mergeById > appends a copy when the identity is not found yet 0ms
+   ✓ applyMutations · mergeById > touches only the targeted element: non-owner fields are unaffected 0ms
+   ✓ applyMutations · set > follows last-write-wins and replays are stable 0ms
+   ✓ applyMutations · set > overwrites testResults as a whole object 0ms
+   ✓ applyMutations · composition guarantees > cross-op order independence: append and set commute to an equivalent terminal state 0ms
+   ✓ applyMutations · composition guarantees > purity: a deeply frozen input state is neither mutated nor causes throws 0ms
+   ✓ applyMutations · composition guarantees > returns an equivalent but fresh state for an empty mutation list 0ms
+   ✓ applyMutations · stage gating (spec §1 vs Phase 0 slice) > throws the stage-gate error for every append field outside the Phase 0 slice 0ms
+   ✓ applyMutations · stage gating (spec §1 vs Phase 0 slice) > has unlocked every specified mergeById field by Phase 9 0ms
+   ✓ applyMutations · stage gating (spec §1 vs Phase 0 slice) > has unlocked every specified set field by Phase 9 0ms
+   ✓ applyMutations · stage gating (spec §1 vs Phase 0 slice) > defensively rejects an unknown op forged past the type system 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > mergeById(requirements): upserts a new requirement and updates an existing one in place 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > mergeById(requirements): replay is idempotent and unordered writes commute 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > set(architecture): last-write-wins object overwrite with stable replays 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > set(architecture): rejects non-object values instead of corrupting the design slice 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > set(conventions): last-write-wins object overwrite with stable replays 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > set(conventions): rejects non-object values instead of corrupting the conventions slice 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > append(reviewComments): identity-keyed dedup keeps replays idempotent 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > append(reviewComments): same identity with different content is a producer bug, first write stays 0ms
+   ✓ applyMutations · Phase 2 unlocked fields (task 2.2) > createInitialAppState: Phase 2 fields default to empty artifacts so routing signals start clean 0ms
+   ✓ mutation builders > mergeByIdMutation normalizes the id so the patch cannot override identity 0ms
+   × mutation builders > expose exactly the enabled field sets declared by the active phase slice 4ms
+     → expected [ 'testResults', 'phase', …(9) ] to deeply equal [ 'testResults', 'phase', …(8) ]
+   ✓ mutation builders > applies set("iterationCount") with last-write-wins semantics for the orchestration loop counter 0ms
+   ✓ mutation builders > rejects non-non-negative-integer iterationCount values instead of corrupting the loop counter 0ms
+   ✓ applyMutations · durable humanGate field (task 8.1, D4) > createInitialAppState leaves humanGate unset so tasks start unescalated 0ms
+   ✓ applyMutations · durable humanGate field (task 8.1, D4) > applies a complete gate and clears it with set("humanGate", undefined) 0ms
+   ✓ applyMutations · durable humanGate field (task 8.1, D4) > keeps last-write-wins semantics so a re-escalation replaces the stale gate 0ms
+   ✓ applyMutations · durable humanGate field (task 8.1, D4) > rejects malformed humanGate values instead of storing an unroutable gate 1ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.1) > append(decisionLedger): two appends commute to the same ledger set 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.1) > append(decisionLedger): replaying the same mutation is idempotent via the identity key 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.1) > append(decisionLedger): same id with different content is a producer bug, first write stays 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.1) > append(decisionLedger): rejects a malformed entry at the reducer boundary (set-field precedent) 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.1) > append(decisionLedger): an agent-level entry cannot supersede a leader-level one at the reducer boundary (blueprint §14) 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.1) > append(decisionLedger): rejects supersedes pointing at an unknown decision id 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.1) > append(decisionLedger): keeps an identical replay idempotent after its target is superseded 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.1) > createInitialAppState: decisionLedger starts empty so the ledger is append-only from a clean slate 0ms
+   ✓ applyMutations · Phase 8 objection facts (task 8.2, D14) > appends an objection idempotently and starts from an empty fact set 0ms
+   ✓ applyMutations · Phase 8 objection facts (task 8.2, D14) > rejects a mismatched computed track and same-id different content 0ms
+   ✓ applyMutations · Phase 8 objection facts (task 8.2, D14) > keeps an identical replay idempotent after its decision target is superseded 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④) > append(handoffPackets): two appends commute to the same packet set (no identity key — normalize by ts) 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④) > append(handoffPackets): replaying the same packet is idempotent via deep-equal dedup (no id field in spec §1) 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④) > append(handoffPackets): two distinct packets are both kept — deep-equal dedup must not conflate them 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④) > append(handoffPackets): rejects a malformed packet at the reducer boundary (3.1 boundary-validation precedent) 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④) > append(handoffPackets): rejects fileRefs that paste code instead of path:line references (iron rule 2) 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④) > append(handoffPackets): rejects keyDecisions referencing an unknown decision id (traceability, blueprint §14) 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④) > append(handoffPackets): accepts keyDecisions referencing decisions already recorded in the ledger 0ms
+   ✓ applyMutations · Phase 3 unlocked field (task 3.2, spec §1 / pattern ④) > createInitialAppState: handoffPackets starts empty so handoffs are append-only from a clean slate 0ms
+   ✓ applyMutations · Phase 4 unlocked field (task 4.1, spec §1/§3) > applies set("complexity") with the §1 shape {tier, signals} 0ms
+   ✓ applyMutations · Phase 4 unlocked field (task 4.1, spec §1/§3) > set(complexity): last-write-wins overwrite with stable replays 0ms
+   ✓ applyMutations · Phase 4 unlocked field (task 4.1, spec §1/§3) > rejects malformed complexity values instead of storing an unroutable tier 0ms
+   ✓ applyMutations · Phase 4 unlocked field (task 4.1, spec §1/§3) > createInitialAppState leaves complexity unset so the entry node evaluates it exactly once 0ms
+   ✓ applyMutations · Phase 4 unlocked field (task 4.1, spec §1/§3) > cross-op commutativity: set(complexity) and append(messages) commute to an equivalent terminal state 0ms
+   ✓ test result admission before coordinator handoff > rejects success with failure evidence: {"failed":1,"failures":[]} 0ms
+   ✓ test result admission before coordinator handoff > rejects success with failure evidence: {"failed":0,"failures":[{"test":"price","message":"wrong price","file":"","line":0}]} 0ms
+   ✓ test result admission before coordinator handoff > rejects a malformed failure without committing shared State: {"test":"ttl","message":"expired value returned"} 0ms
+   ✓ test result admission before coordinator handoff > rejects a malformed failure without committing shared State: {"test":"ttl","message":"expired value returned","file":"cache.test.mjs","line":"4"} 0ms
+   ✓ test result admission before coordinator handoff > rejects a malformed failure without committing shared State: {"test":"ttl","message":"expired value returned","file":"cache.test.mjs","line":null} 0ms
+   ✓ test result admission before coordinator handoff > rejects a malformed failure without committing shared State: "ttl failed" 0ms
+   ✓ test result admission before coordinator handoff > preserves a valid failed result for normal feedback routing 0ms
+ ✓ packages/runtime/state/test/model-config-store.test.ts (3 tests) 22ms
+ ✓ packages/core/orchestration/test/coordinator.test.ts (62 tests) 16ms
+ ✓ tests/evals/phase10/final/formal-guard.test.ts (9 tests) 15ms
+ ✓ apps/web/test/task-overview.test.ts (1 test) 14ms
+ ✓ tests/evals/phase10/final/accounting.test.ts (9 tests) 14ms
+ ✓ apps/web/test/trace-flow.test.ts (8 tests) 15ms
+ ✓ packages/core/orchestration/test/human-gate.test.ts (11 tests) 11ms
+ ✓ packages/core/orchestration/test/integrate.test.ts (5 tests) 11ms
+ ✓ packages/core/domain/test/project-roster.test.ts (11 tests) 11ms
+ ✓ packages/core/orchestration/test/worker-failure.test.ts (2 tests) 10ms
+ ✓ tests/evals/phase9/repair-budget.test.ts (7 tests) 9ms
+ ✓ packages/core/domain/test/requirement-proposal.test.ts (4 tests) 9ms
+ ✓ tests/helpers/live-model-wire.test.ts (3 tests) 10ms
+ ✓ packages/core/domain/test/state.test.ts (5 tests) 8ms
+ ✓ packages/runtime/executor/test/project.test.ts (33 tests) 8ms
+ ✓ packages/core/domain/test/local-workspace.test.ts (42 tests) 5ms
+ ✓ apps/desktop/test/toolchains.test.ts (3 tests) 7ms
+ ✓ packages/runtime/executor/test/assignment-project.test.ts (11 tests) 6ms
+ ✓ tests/evals/phase10/final/tasks.test.ts (9 tests) 7ms
+ ✓ packages/runtime/sandbox/test/path-guard.test.ts (9 tests) 6ms
+ ✓ tests/evals/phase10/natural-input-checks.test.ts (15 tests) 6ms
+ ✓ apps/desktop/test/resources.test.ts (4 tests) 5ms
+ ✓ packages/runtime/executor/test/trace.test.ts (25 tests) 5ms
+ ✓ tests/evals/phase10/final/protocol.test.ts (2 tests) 5ms
+ ✓ apps/desktop/test/status-assets.test.ts (1 test) 5ms
+ ✓ tests/evals/phase8/tasks.test.ts (4 tests) 5ms
+ ✓ tests/integration/phase4/phase4-exit.test.ts (3 tests) 4ms
+ ✓ apps/web/test/requirement-proposal-card.test.ts (1 test) 4ms
+ ✓ tests/evals/phase7/tasks.test.ts (4 tests) 5ms
+ ✓ apps/web/test/intent.test.ts (44 tests) 4ms
+ ✓ packages/roles/definitions/test/runtime-contracts.test.ts (9 tests) 3ms
+ ✓ packages/runtime/executor/test/completion-feedback.test.ts (4 tests) 4ms
+ ✓ packages/core/domain/test/local-execution.test.ts (17 tests) 4ms
+ ✓ tests/integration/phase10/phase10-cleanup.test.ts (2 tests) 3ms
+ ✓ packages/core/orchestration/test/global-scheduler.test.ts (9 tests) 3ms
+ ✓ packages/runtime/sandbox/test/local-registry-records.test.ts (9 tests) 4ms
+ ✓ tests/evals/phase6/tasks.test.ts (4 tests) 4ms
+ ✓ packages/core/orchestration/test/progress-ledger.test.ts (12 tests) 4ms
+ ✓ tests/evals/phase10/final/manifest.test.ts (1 test) 3ms
+ ✓ packages/tools/test/test/tap.test.ts (14 tests) 4ms
+ ✓ packages/core/domain/test/leader-directive.test.ts (6 tests) 3ms
+ ✓ packages/core/preemption/test/preemptor.test.ts (6 tests) 3ms
+ ✓ tests/integration/cross-phase/phase4-coordination-ledger.test.ts (1 test) 3ms
+ ✓ packages/comm/channels/test/channel-context.test.ts (4 tests) 3ms
+ ✓ tests/evals/phase10/final/wire-usage.test.ts (2 tests) 3ms
+ ✓ apps/web/test/local-diagnostics.test.ts (5 tests) 3ms
+ ✓ packages/core/orchestration/test/route-conditions.test.ts (10 tests) 3ms
+ ✓ packages/core/domain/test/onboarding.test.ts (4 tests) 3ms
+ ✓ packages/core/domain/test/objection-resolution.test.ts (5 tests) 3ms
+ ✓ packages/roles/definitions/test/roster.test.ts (13 tests) 3ms
+ ✓ packages/core/domain/test/ledger.test.ts (13 tests) 3ms
+ ✓ packages/core/domain/test/parallel-execution.test.ts (5 tests) 3ms
+ ✓ tests/evals/phase10/final/public-contracts.test.ts (3 tests) 3ms
+ ✓ packages/core/domain/test/channel.test.ts (16 tests) 3ms
+ ✓ packages/core/orchestration/test/complexity.test.ts (15 tests) 3ms
+ ✓ packages/core/domain/test/handoff.test.ts (10 tests) 3ms
+ ✓ tests/evals/core/contracts.test.ts (3 tests) 3ms
+ ✓ tests/evals/phase10/final/flow-tool-policy.test.ts (8 tests) 2ms
+ ✓ tests/evals/phase10/final/benchmark-image.test.ts (2 tests) 2ms
+ ✓ packages/core/domain/test/completion-resolution.test.ts (4 tests) 2ms
+ ✓ packages/runtime/executor/test/slice-compression.test.ts (11 tests) 2ms
+ ✓ apps/web/test/channel-stream.test.ts (3 tests) 2ms
+ ✓ packages/core/domain/test/model-settings.test.ts (2 tests) 2ms
+ ✓ apps/web/test/local-drain.test.ts (1 test) 2ms
+ ✓ packages/core/domain/test/objection.test.ts (6 tests) 2ms
+ ✓ tests/evals/phase9/model-adapter.test.ts (3 tests) 2ms
+ ✓ tests/evals/phase10/final/go-tool-stream.test.ts (2 tests) 2ms
+ ✓ packages/core/orchestration/test/objection.test.ts (3 tests) 2ms
+ ✓ tests/evals/phase10/final/public-adapter.test.ts (3 tests) 2ms
+ ✓ apps/desktop/test/protocol.test.ts (3 tests) 2ms
+ ✓ tests/evals/phase9/metrics.test.ts (6 tests) 2ms
+ ✓ packages/comm/channels/test/inbox.test.ts (4 tests) 2ms
+ ✓ packages/core/domain/test/channel-summary.test.ts (6 tests) 2ms
+ ✓ packages/core/domain/test/roster.test.ts (6 tests) 2ms
+ ✓ apps/web/test/trace-lanes.test.ts (2 tests) 1ms
+ ✓ apps/web/test/local-process.test.ts (2 tests) 1ms
+ ✓ apps/web/test/run-error.test.ts (5 tests) 2ms
+ ✓ packages/tools/bridge/test/loader.test.ts (4 tests) 1ms
+ ✓ tests/evals/phase10/final/context-policy.test.ts (1 test) 1ms
+ ✓ packages/comm/channels/test/message-policy.test.ts (5 tests) 2ms
+ ✓ apps/web/test/model-capacity.test.ts (1 test) 1ms
+ ✓ packages/comm/bus/test/message-bus.test.ts (1 test) 1ms
+ ✓ tests/evals/phase10/final/task-container.test.ts (2 tests) 1ms
+ ✓ tests/evals/phase9/wide-grader.test.ts (3 tests) 1ms
+ ✓ packages/runtime/sandbox/test/factory.test.ts (4 tests) 1ms
+ ✓ packages/comm/channels/test/base.test.ts (2 tests) 1ms
+ ✓ packages/shared/test/smoke.test.ts (1 test) 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/core/domain/test/reducer.test.ts > mutation builders > expose exactly the enabled field sets declared by the active phase slice
+AssertionError: expected [ 'testResults', 'phase', …(9) ] to deeply equal [ 'testResults', 'phase', …(8) ]
+
+- Expected
++ Received
+
+@@ -4,9 +4,10 @@
+    "nextRole",
+    "iterationCount",
+    "humanGate",
+    "integration",
+    "parallelExecution",
++   "localExecution",
+    "architecture",
+    "conventions",
+    "complexity",
+  ]
+
+ ❯ packages/core/domain/test/reducer.test.ts:479:37
+    477|     ]);
+    478|     expect([...ENABLED_MERGE_BY_ID_FIELDS]).toEqual(['workers', 'subta…
+    479|     expect([...ENABLED_SET_FIELDS]).toEqual([
+       |                                     ^
+    480|       'testResults',
+    481|       'phase',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 202 passed (203)
+      Tests  1 failed | 1528 passed (1529)
+   Start at  14:22:01
+   Duration  741.78s (transform 1.20s, setup 0ms, collect 19.95s, tests 701.60s, environment 13ms, prepare 4.94s)
+
+ ELIFECYCLE  Test failed. See above for more details.

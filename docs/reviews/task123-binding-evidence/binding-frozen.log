@@ -1,0 +1,21 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-binding.test.ts (12 tests) 7894ms
+   ✓ stops registered execution when grant-revision changes  833ms
+   ✓ stops registered execution when worker changes  846ms
+   ✓ stops registered execution when writer-epoch changes  758ms
+   ✓ stops registered execution when authority-error changes  729ms
+   ✓ refuses to release project code after a root is replaced  594ms
+   ✓ stops on ancestor relocation and never follows the moved directory  722ms
+   ✓ rejects tool replacement before any process is launched  309ms
+   ✓ keeps invalidation sticky even when the authority is restored  311ms
+   ✓ rechecks authority at completion instead of accepting a successful process exit  677ms
+   ✓ never executes a replaced process-control helper even during cleanup  1121ms
+   ✓ rejects old journal formats and malformed persisted root bindings  710ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  01:07:53
+   Duration  8.06s (transform 47ms, setup 0ms, collect 61ms, tests 7.89s, environment 0ms, prepare 26ms)
+

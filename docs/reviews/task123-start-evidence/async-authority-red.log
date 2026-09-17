@@ -1,0 +1,61 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts (26 tests | 2 failed | 24 skipped) 1977ms
+   ↓ initializes a cold helper before applying the shorter process-query deadline
+   ↓ fails closed before bootstrap creation if helper initialization consumes the launch window
+   ↓ rejects malformed helper readiness without attempting PID capture
+   ↓ recovers a transient read-only capture timeout without changing launch or call deadlines
+   ↓ still rejects release authorization after a transient capture timeout
+   ↓ bounds persistent capture timeouts to three attempts and keeps resources quarantined
+   ↓ does not retry a failed kernel query that did not time out
+   ↓ rechecks authority before retrying capture
+   ↓ does not execute a replacement helper on a capture retry
+   ↓ honors cancellation between capture attempts
+   ↓ observes bootstrap exit before another PID capture can be attempted
+   ↓ refuses a capture when a control-plane check exhausts the original startup window
+   ↓ registers the suspended executable before any constructor or project code runs
+   ↓ keeps project code suspended when the release authorization is revoked
+   ↓ does not release the executable when durable registration fails
+   ↓ closes the bootstrap control channel and inherited extra descriptors before project code
+   ↓ records a failed exec without releasing any project code
+   ↓ rejects policy drift at admission without creating a bootstrap process
+   ↓ rechecks durable state after the authorization callback before releasing the executable
+   ↓ keeps the real executable signal separate from the successful bootstrap exit
+   ↓ persists the executable result independently of the bootstrap and survives reopening
+   ↓ never overwrites a terminal launch fact and rejects stale revisions
+   ↓ rejects persisted launch facts that contradict identities or release state
+   ↓ preserves observed process facts without claiming a launch receipt when final persistence is blocked
+   × waits for current asynchronous authority before releasing project code: async-release-revoked 1136ms
+     → expected true to be false // Object.is equality
+   × waits for current asynchronous authority before releasing project code: async-authority-rejected 841ms
+     → expected true to be false // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > waits for current asynchronous authority before releasing project code: async-release-revoked
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > waits for current asynchronous authority before releasing project code: async-authority-rejected
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:237:36
+    235|   it(`waits for current asynchronous authority before releasing projec…
+    236|     const result = await probeLocalCommandStart(scenario);
+    237|     expect(result.result.released).toBe(false);
+       |                                    ^
+    238|     expect(result.result.error).toBe('command_start_denied');
+    239|     expect(result.afterRelease).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 24 skipped (26)
+   Start at  16:47:24
+   Duration  2.17s (transform 63ms, setup 0ms, collect 71ms, tests 1.98s, environment 0ms, prepare 36ms)
+

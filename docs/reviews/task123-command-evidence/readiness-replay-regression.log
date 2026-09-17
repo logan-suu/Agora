@@ -1,0 +1,52 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-discovery.test.ts (5 tests) 2925ms
+   ✓ discovers a real child and grandchild without enrolling an unrelated sibling  857ms
+   ✓ retains a discovered grandchild after its parent exits and it is reparented  755ms
+   ✓ rejects a wrong parent birth and leaves the real tree alive  701ms
+   ✓ exposes helper failure as incomplete discovery without signaling the root  611ms
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (22 tests) 47572ms
+   ✓ confirms a durable grant through the real Leader POST: normal  612ms
+   ✓ confirms a durable grant through the real Leader POST: file-update  3477ms
+   ✓ confirms a durable grant through the real Leader POST: file-create  2177ms
+   ✓ confirms a durable grant through the real Leader POST: file-proof  2569ms
+   ✓ confirms a durable grant through the real Leader POST: command  4327ms
+   ✓ confirms a durable grant through the real Leader POST: mcp  4157ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-partial  4676ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-command  4884ms
+   ✓ confirms a durable grant through the real Leader POST: worker-companion  2037ms
+   ✓ confirms a durable grant through the real Leader POST: batch  3962ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  4294ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3667ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2633ms
+   ✓ confirms a durable grant through the real Leader POST: before  509ms
+   ✓ confirms a durable grant through the real Leader POST: after  498ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  423ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  400ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  421ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  427ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  537ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  464ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  416ms
+ ✓ tests/integration/phase12/phase12-3-command-supervision.test.ts (7 tests) 35054ms
+   ✓ persists observed parent relations and stops descendants after the main process exits  827ms
+   ✓ uses the default thirty-second execution limit and closes durable observation after timeout  30522ms
+   ✓ cancels a running process tree without extending the cleanup deadline  898ms
+   ✓ bounds observation when the registered identity is wrong without signaling the live process  586ms
+   ✓ rejects invalid parent relations atomically and refuses corrupted or old-version records  641ms
+   ✓ preserves blocking state when the final observation cannot be durably committed  689ms
+   ✓ stops observing execution when the durable command is quarantined by the control plane  891ms
+ ✓ tests/integration/phase12/phase12-3-command-stop.test.ts (6 tests) 14168ms
+   ✓ preserves KILL escalation when real helper launch latency approaches the TERM boundary  2451ms
+   ✓ stops only the registered process birth identity and escalates ignored TERM  1662ms
+   ✓ caps retained output without treating a successful exit as trusted completion  608ms
+   ✓ closes inherited pipes within the tail deadline while exposing incomplete output  8012ms
+   ✓ finishes a TERM-responsive registered process without sending KILL  634ms
+   ✓ returns needsAttention for a mismatched registered birth without sending a signal  800ms
+
+ Test Files  4 passed (4)
+      Tests  40 passed (40)
+   Start at  18:10:50
+   Duration  100.90s (transform 356ms, setup 0ms, collect 743ms, tests 99.72s, environment 0ms, prepare 103ms)
+

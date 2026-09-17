@@ -1,0 +1,6 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+apps/web/test/local-task-composition.test.ts(96,30): error TS2307: Cannot find module '../../../../packages/runtime/sandbox/src/local-workspace-sessions' or its corresponding type declarations.
+ ELIFECYCLE  Command failed with exit code 2.

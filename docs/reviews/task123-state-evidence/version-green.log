@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-version.test.ts (3 tests) 1958ms
+   ✓ captures immutable file inputs and refuses incomplete evidence: normal  997ms
+   ✓ captures immutable file inputs and refuses incomplete evidence: changed  458ms
+   ✓ captures immutable file inputs and refuses incomplete evidence: revoke  502ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  16:00:06
+   Duration  2.20s (transform 106ms, setup 0ms, collect 130ms, tests 1.96s, environment 0ms, prepare 33ms)
+

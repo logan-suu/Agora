@@ -1,0 +1,57 @@
+[
+  {
+    "source": "packages/runtime/sandbox/native/local-process-control.c",
+    "snapshot": "docs/reviews/task123-start-evidence/source-00-local-process-control.c.txt",
+    "sha256": "385b5ec3ad3897a194338e2026d21c70b066eb2dccdbdd635deed0148d1b24d3"
+  },
+  {
+    "source": "packages/runtime/sandbox/native/local-command-bootstrap.c",
+    "snapshot": "docs/reviews/task123-start-evidence/source-01-local-command-bootstrap.c.txt",
+    "sha256": "34ae277b87174c035a432940b534a1b6d756a567f4b444073f20491d66b2dd35"
+  },
+  {
+    "source": "packages/runtime/sandbox/native/local-command-start-probe.c",
+    "snapshot": "docs/reviews/task123-start-evidence/source-02-local-command-start-probe.c.txt",
+    "sha256": "cd9c6ece3cbaa2aca87bc2c59ef9854315cf2e18d8f7bec019c81293937534c2"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-start.ts",
+    "snapshot": "docs/reviews/task123-start-evidence/source-03-local-command-start.ts.txt",
+    "sha256": "4210f1a15c2a4b494e2c7246e0157371bfa4b3da8ea3cb8a0a0fd87b968a8a28"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-supervisor.ts",
+    "snapshot": "docs/reviews/task123-start-evidence/source-04-local-command-supervisor.ts.txt",
+    "sha256": "121a04acd744abe49fda0a7a1a4730aefa86dba8d493f420011ad8be5607a27d"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-stop.ts",
+    "snapshot": "docs/reviews/task123-start-evidence/source-05-local-command-stop.ts.txt",
+    "sha256": "7222ae6934fd940f11943da2864d4c08a6f817566a229855eb0f3aa35ece71ec"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-policy.ts",
+    "snapshot": "docs/reviews/task123-start-evidence/source-06-local-command-policy.ts.txt",
+    "sha256": "2748c2147c6799eef535bbcbc618ec0b5733922a10d05472665c9731e86daa2d"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-journal.ts",
+    "snapshot": "docs/reviews/task123-start-evidence/source-07-local-command-journal.ts.txt",
+    "sha256": "3cd3ed97602ce0c6ffce503015e837532d97a7a3341aefd63f4947e466cd0110"
+  },
+  {
+    "source": "packages/runtime/sandbox/src/local-command-output.ts",
+    "snapshot": "docs/reviews/task123-start-evidence/source-08-local-command-output.ts.txt",
+    "sha256": "e0839dcb0fe9e80be88df2a36dddb168d32bf8cc9da13ba78fc533fe531ee9d3"
+  },
+  {
+    "source": "tests/integration/phase12/local-command-start-fixture.ts",
+    "snapshot": "docs/reviews/task123-start-evidence/source-09-local-command-start-fixture.ts.txt",
+    "sha256": "e4f01ceb3483bc28f55454e0b968c2cb68f32728516e41e50a985e3daaa011e8"
+  },
+  {
+    "source": "tests/integration/phase12/phase12-3-command-start.test.ts",
+    "snapshot": "docs/reviews/task123-start-evidence/source-10-phase12-3-command-start.test.ts.txt",
+    "sha256": "03eaec03a8dc4fb8329593bbaa59e79817bfe4c862d08ab2c5c1e96e19f19d78"
+  }
+]

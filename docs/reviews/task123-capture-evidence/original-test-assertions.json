@@ -1,0 +1,6 @@
+{
+  "source": "tests/integration/phase12/phase12-3-command-start.test.ts",
+  "originalSnapshot": "docs/reviews/task123-result-evidence/source-14-phase12-3-command-start.test.ts.txt",
+  "unchangedBodyHash": "cb8d295bff1c1367801f2a3ea990379003f2dbe99041c7b8d96ca4d099450a36",
+  "unchangedTests": 12
+}

@@ -1,0 +1,230 @@
+{
+  "recordedAt": "2026-09-16T05:07:11.701751+00:00",
+  "scope": "Task 12.3 persistent process relations and internal live-command supervision; final original pnpm test passed; production launcher, authority binding and complete local G5 remain incomplete.",
+  "files": {
+    "cancel-H7GW5S.json": {
+      "sha256": "6485c888bee32ebfa1464d84e5056ee605db3b28324ad6ebb0bc89786db3973e",
+      "bytes": 8872
+    },
+    "cancel-YG0XFO.json": {
+      "sha256": "04845b54fffb99d44546963ccef53cb40d0a27bd3142e7fc5adbeb89a448876a",
+      "bytes": 8873
+    },
+    "cancel-pq53xH.json": {
+      "sha256": "a1f1214e4b6bd55d3a70a454c7f8f895b2c98100e4d6fc098fe93da1be820bac",
+      "bytes": 8878
+    },
+    "cancel-sv2D2u.json": {
+      "sha256": "13518454acefe9cad94b4828987151b58339322dc0217d344f629a69b5c9afc7",
+      "bytes": 8877
+    },
+    "cleanup-apply.log": {
+      "sha256": "87eb1dda2e1b93ec747c6ea83e70170a82bce7c8e8ba29e4cb19075a1840c07b",
+      "bytes": 52
+    },
+    "cleanup-controller.mjs.txt": {
+      "sha256": "bec3d4a32da6c05ce6407d22471d42f0b068ac9bcf4bd18c0b2bf3ece3368793",
+      "bytes": 6701
+    },
+    "cleanup-prepare.log": {
+      "sha256": "6efad8bdfc6464c5082ae39d41bd1bc9f791ef00a08b8dd9526f4b0e2e820851",
+      "bytes": 6391
+    },
+    "exit-2Ls1Yp.json": {
+      "sha256": "ad90700cf3c2dcb94542befb5091379d5e5089284d96c30a9f3d1f766b141024",
+      "bytes": 8801
+    },
+    "exit-jxCpDY.json": {
+      "sha256": "88382312abbb4db843441878ab9d308c0d8b1ae2a36960eace3bc502f2ff0f7c",
+      "bytes": 8834
+    },
+    "exit-oIBLt0.json": {
+      "sha256": "dc7bbcde3f061b891439d793dba66e97891bc5b9fe694c02f24506da7c82eb0f",
+      "bytes": 8825
+    },
+    "exit-rKJIZJ.json": {
+      "sha256": "4d78bb4a49d19d0e58918fdab0b4acb951e4a409fcbe1d736d4c62b37f73a212",
+      "bytes": 8835
+    },
+    "full-regression-cleanup.json": {
+      "sha256": "f211d9e52c96088a792ac633be908147807a67d86aef220dcc9549243fbcd335",
+      "bytes": 794779
+    },
+    "full-regression.log": {
+      "sha256": "422727f97c5f20fcef64eb859a228c347b76226851df4f988dd115358637e5df",
+      "bytes": 31605
+    },
+    "journal-4ElKM9.json": {
+      "sha256": "884096a40b0bc4b4c3c4989252111286dfcefea8cf6fb3bce2eeac4084bdc5f5",
+      "bytes": 9013
+    },
+    "journal-BhPBLZ.json": {
+      "sha256": "637cae727178cf30de9c5af153ac3aeca03ca0cfda8d49ba7baf46e59783e860",
+      "bytes": 9009
+    },
+    "journal-failure-1WK4RR.json": {
+      "sha256": "c50636a252269c8eb5d9b1ed939734260e60f3555e37f83bc02f99a7c2a01334",
+      "bytes": 7884
+    },
+    "journal-failure-HxwH1p.json": {
+      "sha256": "a29f5d0cfd857266d04cfe6a0b26cb7f0043db5e4f7ea95ddd606deee3cca536",
+      "bytes": 7839
+    },
+    "journal-failure-oYiyT0.json": {
+      "sha256": "0e7d603a06382a0cbcffab08a768f84953a25d5ebbff1d0bc78a6b45a7067425",
+      "bytes": 7886
+    },
+    "journal-kIpw82.json": {
+      "sha256": "61cd16b20848aa4c3da5572ca4e01727b6dead522a080038c0b8917dc4d50054",
+      "bytes": 9010
+    },
+    "journal-revoked-EZJLcQ.json": {
+      "sha256": "389ed18c8b3896303013c020bbc9c848365a044b30ea741aa22e3f63bb765b9e",
+      "bytes": 7842
+    },
+    "journal-revoked-ou3F8h.json": {
+      "sha256": "7239b51006d30daef6b7aeb905254d1a0c6c14ee15817f1bc4ba76dc2bd89d62",
+      "bytes": 7842
+    },
+    "journal-xQXMAo.json": {
+      "sha256": "7977da8d2f8cf8aaec8f26854087816060a3d86b6ec7aa77786f6f0b652d9af9",
+      "bytes": 9010
+    },
+    "lint-final.log": {
+      "sha256": "d6521c17829028d46d10f06f84c6b89f34d31f5e4a841332dd1f63b3dc2db4f2",
+      "bytes": 118
+    },
+    "lint.log": {
+      "sha256": "bad103a6f8b7b0f41b41ccb5a76a97851612ca844bc3b3a2ef6409962742cb31",
+      "bytes": 118
+    },
+    "native-build.log": {
+      "sha256": "15f0e79d2609c020672b91e2addd7c555a5aab46d34af02a74e31eb7c4700f15",
+      "bytes": 129
+    },
+    "phase12-regression.log": {
+      "sha256": "81f64fddf05bfee392a6da2823c253d11f3dca484e791416a1c5e42d378772f7",
+      "bytes": 4283
+    },
+    "source-00-local-process-control.c.txt": {
+      "sha256": "3a18c846c639f77b10da346ac53eaac1526af47f9233e68a94abfb18436b3d10",
+      "bytes": 5757
+    },
+    "source-01-local-command-supervision-probe.c.txt": {
+      "sha256": "cf160e9db608145fe575e28ebeafb143389bad394ac95ab1decb32b0b1a8fbf3",
+      "bytes": 1084
+    },
+    "source-02-local-command-supervisor.ts.txt": {
+      "sha256": "595a0c2c81920525a27c37efc5c1a368c32527b83eba7a7e5167e47c9d338f62",
+      "bytes": 6570
+    },
+    "source-03-local-command-stop.ts.txt": {
+      "sha256": "4db644dd2d89700f4878fd306d941b6b7a9fed18f216835c17ca3eaf6d11e553",
+      "bytes": 7974
+    },
+    "source-04-local-command-output.ts.txt": {
+      "sha256": "e0839dcb0fe9e80be88df2a36dddb168d32bf8cc9da13ba78fc533fe531ee9d3",
+      "bytes": 4348
+    },
+    "source-05-local-command-journal.ts.txt": {
+      "sha256": "3cd3ed97602ce0c6ffce503015e837532d97a7a3341aefd63f4947e466cd0110",
+      "bytes": 16990
+    },
+    "source-06-local-command-policy.ts.txt": {
+      "sha256": "26233dc14b99574633af2a2a60275ad8bb020d3f2e4529973314e3716183288c",
+      "bytes": 3427
+    },
+    "source-07-local-command-supervision-fixture.ts.txt": {
+      "sha256": "6ab62365fa17a0b71f32982023565da9188751a0ce8a69419136d7d9424ad1a9",
+      "bytes": 11150
+    },
+    "source-08-phase12-3-command-supervision.test.ts.txt": {
+      "sha256": "9f3c55ca942bca717f3aba1fdd91c513ecb99f2c5b635ffd9a3b957ef11529f5",
+      "bytes": 3892
+    },
+    "source-checkpoint.json": {
+      "sha256": "64a920b62c5db639e5fcabc39c1a07c58e274c1396ff0368e8067b251c642ef2",
+      "bytes": 2414
+    },
+    "supervision-final.log": {
+      "sha256": "8f31c147f1bfc373722364e42c62a130c34eeb563464baeacb48e985b9d46eeb",
+      "bytes": 1017
+    },
+    "supervision-first.log": {
+      "sha256": "d375d3f1b9d8c450e0f7e98d4c5d3ee11e3013af76fdbc1238ee3ec4850096aa",
+      "bytes": 822
+    },
+    "tdd-red.log": {
+      "sha256": "545fedca36462d404f9639d292fc489cdc7b8588dc781b9e8175deca67c559bd",
+      "bytes": 1460
+    },
+    "temporary-controller-cleanup.json": {
+      "sha256": "2359ee469dd0237ce68c79aaed02e433cb7bf2945c93249e4283e92e11a22088",
+      "bytes": 219
+    },
+    "timeout-UQQBoN.json": {
+      "sha256": "4b0bfeb3b5df82a34e5cc8e3ce273f1cc9b9b96f55e7b19b4c42ac2ebba2c885",
+      "bytes": 8869
+    },
+    "timeout-aN8U9s.json": {
+      "sha256": "3394385d77a4c0cbe27c9fb5b719a8db4bc6f73060f704c92e7a989b24248201",
+      "bytes": 8881
+    },
+    "timeout-cUMo4j.json": {
+      "sha256": "e43389ba98d7514b4a49e70759938a89579480446be7f20b2d09820f9196f102",
+      "bytes": 8868
+    },
+    "timeout-yW8DZt.json": {
+      "sha256": "fe65e028285584b49367000f455017c9ef3de2b601d5a2a450af71d10bc6febe",
+      "bytes": 8868
+    },
+    "typecheck-final.log": {
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "bytes": 76
+    },
+    "typecheck-initial.log": {
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "bytes": 76
+    },
+    "typecheck.log": {
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "bytes": 76
+    },
+    "unit-fixture-cleanup-index.json": {
+      "sha256": "c24748f08eed690a9860ab52ac162d518759a7f57671e24b8b89019f68c8eea8",
+      "bytes": 25949
+    },
+    "wrong-birth-30CC9n.json": {
+      "sha256": "f54cb93353742e11be39f361c08594b8ad46fbbcdced428559e764a1cf256dfa",
+      "bytes": 7776
+    },
+    "wrong-birth-CQgs1q.json": {
+      "sha256": "74a70cf55cbe1bd40dd7a15b9dba0806b8e4dc3af02f5e4f09f396f788b63570",
+      "bytes": 7769
+    },
+    "wrong-birth-VKIhts.json": {
+      "sha256": "f1d6926f391815c8aba7222c01b5f0fe045eea8c0b48a1001549f10a2ea2a3a5",
+      "bytes": 7770
+    },
+    "wrong-birth-XYeyrM.json": {
+      "sha256": "7e312b652c0c56112dbf7f5cfa2c84cbdd6ba216c5c0a3552748d8d96352d447",
+      "bytes": 7770
+    }
+  },
+  "unitFixtures": 103,
+  "supervisionFixtures": 25,
+  "regressionCleanup": {
+    "removed": 152,
+    "retained": 31
+  },
+  "checks": {
+    "sourceSnapshots": 9,
+    "localReportLinks": 10,
+    "historicalHashesUnchanged": [
+      45,
+      23,
+      44,
+      67
+    ]
+  }
+}

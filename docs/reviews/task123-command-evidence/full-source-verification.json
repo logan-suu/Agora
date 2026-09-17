@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-09-16T23:07:16.578932+00:00",
+  "checkpointHash": "43ecb9200e20a5a4b379e97eb0185b1ca81bcebeea8432496bc3887bb6b18724",
+  "checkedFiles": 546,
+  "changed": [],
+  "fullLogHash": "eaaec23ab43953e2db1925c130b663943145b2c76b46606d5779c27cce398b24",
+  "addedUnconnectedFiles": [
+    "packages/core/domain/src/local-validation.ts",
+    "packages/core/domain/test/local-validation.test.ts",
+    "apps/web/src/server/local-validation-command.ts",
+    "apps/web/test/local-validation-command.test.ts"
+  ]
+}

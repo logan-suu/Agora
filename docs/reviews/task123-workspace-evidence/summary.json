@@ -1,0 +1,202 @@
+{
+  "recordedAt": "2026-09-16T17:35:25.489Z",
+  "scope": "Strict workspace domain types and immutable registry identities; no product authority or TaskState closure",
+  "files": {
+    "cleanup-apply.log": {
+      "sha256": "81086c05588cc5823df6c4413caa9ae206f0f1e8ee613e8db01804d0b140cc90",
+      "bytes": 52
+    },
+    "cleanup-controller-identity.json": {
+      "sha256": "9b3f130a191f55786eb624de4982bf57cd8e25182e4c87ecbe43a6c09aa68d24",
+      "bytes": 198
+    },
+    "cleanup-controller.mjs.txt": {
+      "sha256": "f45d8da98c5925c5623c01434717d8f2dc0df93a8fa9257cc458aada3a869e23",
+      "bytes": 6699
+    },
+    "cleanup-prepare.log": {
+      "sha256": "a4a5e642e9143a98b69218d1068502bfcdc5eac7a8bb419bdd8567dd7ae9287e",
+      "bytes": 6391
+    },
+    "collection-red.log": {
+      "sha256": "1aafb9920a009c3ccf1d1ca08735e838c19c5ffc0317d339d06dbfd508402b0c",
+      "bytes": 5633
+    },
+    "diff-check.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "domain-green.log": {
+      "sha256": "f52303c43d9b727579a5c40841124787fb52f8118f87c1676a1a7ea3cc16a74d",
+      "bytes": 301
+    },
+    "format-final.log": {
+      "sha256": "4c1035560851386875830a3cf5355822d78ea2b234c3bafbe35dd77f560f9db9",
+      "bytes": 39
+    },
+    "format-storage.log": {
+      "sha256": "0593ef6e3a039598e78e97c744839f9b670c6e352488677e43687cf540b47c46",
+      "bytes": 39
+    },
+    "format.log": {
+      "sha256": "0374c572dc546121713330148949e59b2174d653f9d2dc2a28b9c7dc6afeffbe",
+      "bytes": 40
+    },
+    "full-regression-cleanup.json": {
+      "sha256": "5de7fece8c213934b98e00666f7e283ef3073693e752cb6803d6e88e7f0fa3b5",
+      "bytes": 793833
+    },
+    "full-regression.log": {
+      "sha256": "73d1137ab306ca9c0bd9374b17a8861e7495c3e821032a2579fa206d9895243f",
+      "bytes": 35521
+    },
+    "historical-evidence-check.json": {
+      "sha256": "2c8fbc9836928f700a4cf325a6cbb4edf11a5ac05bae360f96a63007dae69cec",
+      "bytes": 860
+    },
+    "lint-final.log": {
+      "sha256": "0b523b360312c047378d4ed91acec76795eb85264681e9fae5a06a154e37354b",
+      "bytes": 118
+    },
+    "lint.log": {
+      "sha256": "9b960a6e0273db669fbf6fdb510599a1fc4f4704457a5054427b508f717ab87b",
+      "bytes": 118
+    },
+    "native-build.log": {
+      "sha256": "15f0e79d2609c020672b91e2addd7c555a5aab46d34af02a74e31eb7c4700f15",
+      "bytes": 129
+    },
+    "regression-failure.json": {
+      "sha256": "d9af818d652e649006fd89f7b7874cd28ac22fabae3c86ac19a628b931ccb319",
+      "bytes": 319
+    },
+    "regression-result.json": {
+      "sha256": "053351c98fb6d4df701afbbea41122b138605eb673e68cfef4264a4b8d34cd5a",
+      "bytes": 589
+    },
+    "run-start.json": {
+      "sha256": "0fe9090250b73e6c00f5d8bf32e9e014c02fed7de17f75d64f0e0d1db7d597e8",
+      "bytes": 254
+    },
+    "source-00-local-workspace.ts.txt": {
+      "sha256": "9eb24898a8880c0d36ba0113645cf5f85083a8201311660e56062ce96e754b35",
+      "bytes": 7477
+    },
+    "source-01-local-workspace.test.ts.txt": {
+      "sha256": "b4513321c15b0d1761cbe66d4df56c37ef377a0304969cf6603ee3de73e6adab",
+      "bytes": 8478
+    },
+    "source-02-index.ts.txt": {
+      "sha256": "223a5365876bc738f31644d05b1e488a3ba43782dd00e44bc0263829f199c708",
+      "bytes": 555
+    },
+    "source-03-state.ts.txt": {
+      "sha256": "de43ef142e81f66c5a99b0e00cb3366feb04905a3eb5d30dfe1d7b82d78e3588",
+      "bytes": 14435
+    },
+    "source-04-local-registry-file.ts.txt": {
+      "sha256": "f21abc07cee7408f35f508724c3eca574246b75e2420f85a630000bd426f841b",
+      "bytes": 11904
+    },
+    "source-05-local-registry-file.test.ts.txt": {
+      "sha256": "8a0635ba156138cba899efe003c19af8fc6e0e1ff6245e7a6158e1dce95746b0",
+      "bytes": 20157
+    },
+    "source-06-storage.ts.txt": {
+      "sha256": "56f486294eb9ce68dd7628b02d3d4a2c8ba5d4c716f6eec487e0dcb370db32f2",
+      "bytes": 3358
+    },
+    "source-07-upgrades.ts.txt": {
+      "sha256": "381a082e0da568f7f505115c499623929d0a2fd9930df406386f742181e359a4",
+      "bytes": 10891
+    },
+    "source-08-upgrade-files.ts.txt": {
+      "sha256": "6a29028cacf6ca412ac76e0f6a492bec6e7bfdd213657a6a79c2546a91cfe7d5",
+      "bytes": 2202
+    },
+    "source-checkpoint.json": {
+      "sha256": "762885024282b94cdc19109c9839b84de3fe316c8b9a5b1e6e319c3705a776d2",
+      "bytes": 2138
+    },
+    "start-reproduction.log": {
+      "sha256": "771b33480edfe31a059466c41378056b61c434748595f7998a957a5712c22c73",
+      "bytes": 1408
+    },
+    "startup-failure-analysis.json": {
+      "sha256": "1005cb4c3c93dcbb6ed2008e8208187f5efcd03c0a70746f7523e629176c8b14",
+      "bytes": 6417
+    },
+    "storage-red.log": {
+      "sha256": "e69e2e54524df8e8b295bb28e6c9f338945426855949beb352c2cf624823dc85",
+      "bytes": 6287
+    },
+    "task-status-check.log": {
+      "sha256": "4f115b55a51733963f022f00d2418bc79fb94327998f83513c53ae36ce986a79",
+      "bytes": 90
+    },
+    "tdd-red.log": {
+      "sha256": "3087960d69da5275f4b63c9813aaf814558faf6ca1ba3da739cd3bc534fc006a",
+      "bytes": 1189
+    },
+    "temporary-controller-cleanup.json": {
+      "sha256": "8efd0ee1f7c91d10d48b0b57b94a8430ba4e42fcd3bf136f67b3c9e101945f6d",
+      "bytes": 303
+    },
+    "typecheck-final.log": {
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "bytes": 76
+    },
+    "typecheck.log": {
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "bytes": 76
+    },
+    "unit-final.log": {
+      "sha256": "1b03f1f18ef3e1dbccda3324f68e4d3fff8c543b8e0dd7cc2731eb1aabab1ac3",
+      "bytes": 386
+    },
+    "unit-fixture-cleanup-index.json": {
+      "sha256": "bfbd7413082c23edc49d1d2747a77cce72354acba1d5803e7a139084b9c6f296",
+      "bytes": 39910
+    },
+    "unit-green.log": {
+      "sha256": "0b05f67b388a531c2d213845ee273731022e580957dfc7faeddb1b132bae8acc",
+      "bytes": 739
+    }
+  },
+  "result": {
+    "completedAt": "2026-09-16T17:32:35.221Z",
+    "exitCode": 1,
+    "scriptTests": 7,
+    "vitestFiles": 200,
+    "vitestTests": 1478,
+    "passed": 1477,
+    "failed": 1,
+    "skipped": 0,
+    "seconds": 710.57,
+    "provider": "opencode-go",
+    "model": "deepseek-v4-flash",
+    "realModelsSeconds": {
+      "lru": 164.251,
+      "harness": 20.282,
+      "channelSummary": 8.144
+    },
+    "sourceSnapshots": 9,
+    "fullLogHash": "73d1137ab306ca9c0bd9374b17a8861e7495c3e821032a2579fa206d9895243f",
+    "focusedReproduction": {
+      "tests": 12,
+      "passed": 12,
+      "seconds": 8.98
+    },
+    "rootCause": "inconclusive"
+  },
+  "sourceSnapshots": 9,
+  "fixtureCleanupCount": 160,
+  "historicalEvidenceVerified": 492,
+  "cleanup": {
+    "removed": 152,
+    "retained": 31,
+    "spaceDelta": 5627904
+  },
+  "g4": "failed; first helper capture timeout remains inconclusive",
+  "productG5": "incomplete"
+}

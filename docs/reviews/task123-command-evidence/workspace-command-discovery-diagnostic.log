@@ -1,0 +1,45 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (15 tests | 1 failed | 14 skipped) 3872ms
+   ↓ confirms a durable grant through the real Leader POST: normal
+   × confirms a durable grant through the real Leader POST: command 3871ms
+     → expected 'needsAttention' to be 'exited' // Object.is equality
+   ↓ confirms a durable grant through the real Leader POST: batch
+   ↓ confirms a durable grant through the real Leader POST: batch-partial
+   ↓ confirms a durable grant through the real Leader POST: batch-read-drift
+   ↓ confirms a durable grant through the real Leader POST: batch-stale
+   ↓ confirms a durable grant through the real Leader POST: before
+   ↓ confirms a durable grant through the real Leader POST: after
+   ↓ confirms a durable grant through the real Leader POST: wrong-hash
+   ↓ confirms a durable grant through the real Leader POST: wrong-selection
+   ↓ confirms a durable grant through the real Leader POST: wrong-scope
+   ↓ confirms a durable grant through the real Leader POST: stale-policy
+   ↓ confirms a durable grant through the real Leader POST: root-drift
+   ↓ confirms a durable grant through the real Leader POST: corrupt-proposal
+   ↓ confirms a durable grant through the real Leader POST: unsupported-action
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: command
+AssertionError: expected 'needsAttention' to be 'exited' // Object.is equality
+
+Expected: "exited"
+Received: "needsAttention"
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:530:40
+    528|                     readFileSync(join(owner.root, 'command-journal', '…
+    529|                   );
+    530|                   expect(result.stage).toBe('exited');
+       |                                        ^
+    531|                   expect(result.exitCode).toBe(0);
+    532|                   expect(result.stdout).toBe('fixed input build and te…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 14 skipped (15)
+   Start at  17:06:59
+   Duration  4.57s (transform 277ms, setup 0ms, collect 589ms, tests 3.87s, environment 0ms, prepare 27ms)
+

@@ -1,0 +1,14 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/core/orchestration/test/worker-runtime.test.ts (45 tests) 1041ms
+   ✓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a provider failure after a real worker Git commit without losing recovery identity  369ms
+   ✓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a head_refresh failure after a real worker Git commit without losing recovery identity  306ms
+   ✓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a head_commit failure after a real worker Git commit without losing recovery identity  311ms
+ ✓ packages/runtime/executor/test/project.test.ts (33 tests) 11ms
+
+ Test Files  2 passed (2)
+      Tests  78 passed (78)
+   Start at  17:29:01
+   Duration  2.43s (transform 434ms, setup 0ms, collect 1.07s, tests 1.05s, environment 0ms, prepare 115ms)
+

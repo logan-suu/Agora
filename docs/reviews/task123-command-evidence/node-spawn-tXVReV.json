@@ -1,0 +1,44 @@
+{
+  "startedAt": "2026-09-16T00:58:57.860Z",
+  "base": "/private/tmp/agora-task123-validation-tXVReV",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127760936
+  },
+  "availableBefore": 46569242624,
+  "controllerHash": "6c73bc5a3cecd65409f3f16ea9dbd9f6d5b14812f98744d9651d0dc2e84f4b46",
+  "nodePath": "/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/node/bin/node",
+  "nodeHash": "7761de77b52f34365e02e02e582c89bfa98ffb84b5b6a2617ef999e955248aa4",
+  "manifestHash": "c3b48e8cf01eaabe76bada629694698ff3af61b26af97af366dd34f1107fd9b9",
+  "os": {
+    "status": 0,
+    "signal": null,
+    "stdout": "25F71\n",
+    "stderr": ""
+  },
+  "cases": [
+    {
+      "restriction": "none",
+      "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/node/bin/node\") (literal \"/bin/sh\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/node/bin/node\") (literal \"/bin/sh\"))\n(allow file-read* file-write-data (literal \"/dev/null\"))\n(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid))",
+      "script": "const {spawnSync}=require(\"node:child_process\"); console.log(JSON.stringify({node:process.version,uv:process.versions.uv})); const c=spawnSync(process.execPath,[\"-e\",\"process.stdout.write(\"child-ok\")\"],{encoding:\"utf8\",timeout:3000}); console.log(JSON.stringify({status:c.status,signal:c.signal,stdout:c.stdout,stderr:c.stderr,error:c.error?.code}));",
+      "status": 1,
+      "signal": null,
+      "stdout": "",
+      "stderr": "[eval]:1\nconst {spawnSync}=require(\"node:child_process\"); console.log(JSON.stringify({node:process.version,uv:process.versions.uv})); const c=spawnSync(process.execPath,[\"-e\",\"process.stdout.write(\"child-ok\")\"],{encoding:\"utf8\",timeout:3000}); console.log(JSON.stringify({status:c.status,signal:c.signal,stdout:c.stdout,stderr:c.stderr,error:c.error?.code}));\n                                                                                                                                                                                             ^^^^^\nExpected ',', got 'ident'\n\nSyntaxError: Unexpected identifier 'child'\n    at makeContextifyScript (node:internal/vm:194:14)\n    at compileScript (node:internal/process/execution:388:10)\n    at evalTypeScript (node:internal/process/execution:260:22)\n    at node:internal/main/eval_string:71:3\n\nNode.js v24.20.0\n"
+    }
+  ],
+  "completedAt": "2026-09-16T00:58:58.002Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountsChecked": true
+  },
+  "availableAfter": 46569222144,
+  "spaceDelta": -20480
+}

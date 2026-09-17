@@ -1,0 +1,27 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/tools/bridge/test/local-workspace-bridge.test.ts [ packages/tools/bridge/test/local-workspace-bridge.test.ts ]
+Error: Cannot find module '../src/local-workspace-bridge' imported from '/Users/logansu/Documents/Dev/Agora/packages/tools/bridge/test/local-workspace-bridge.test.ts'
+ ❯ packages/tools/bridge/test/local-workspace-bridge.test.ts:9:1
+      7| import ToolRuntime from '@deepseek-ai/dsh-tools';
+      8| import { expect, it } from 'vitest';
+      9| import { createLocalWorkspaceCatalog } from '../src/local-workspace-br…
+       | ^
+     10| 
+     11| it('only exposes versioned workspace tools and binds actions to the tr…
+
+Caused by: Error: Failed to load url ../src/local-workspace-bridge (resolved id: ../src/local-workspace-bridge) in /Users/logansu/Documents/Dev/Agora/packages/tools/bridge/test/local-workspace-bridge.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@20.19.43_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  17:18:44
+   Duration  142ms (transform 15ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 30ms)
+

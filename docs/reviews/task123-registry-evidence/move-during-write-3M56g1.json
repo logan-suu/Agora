@@ -1,0 +1,55 @@
+{
+  "scenario": "move-during-write",
+  "base": "/private/tmp/agora-task123-validation-3M56g1",
+  "startedAt": "2026-09-16T18:24:59.961Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 128237488
+  },
+  "node": "v24.20.0",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "sources": {
+    "packages/core/domain/src/local-workspace.ts": "9eb24898a8880c0d36ba0113645cf5f85083a8201311660e56062ce96e754b35",
+    "packages/runtime/sandbox/src/local-registry-file.ts": "f21abc07cee7408f35f508724c3eca574246b75e2420f85a630000bd426f841b",
+    "packages/runtime/sandbox/test/local-registry-file.test.ts": "8a0635ba156138cba899efe003c19af8fc6e0e1ff6245e7a6158e1dce95746b0",
+    "apps/desktop/src/storage.ts": "56f486294eb9ce68dd7628b02d3d4a2c8ba5d4c716f6eec487e0dcb370db32f2"
+  },
+  "partialSnapshot": {
+    "snapshot": {
+      "schemaVersion": "local-workspaces-v1",
+      "revision": 0,
+      "roots": [],
+      "grants": [],
+      "workspaces": [],
+      "claims": [],
+      "operations": []
+    },
+    "sha256": "75ed9fe0d078f0a7b67b2c57d3f26211cf9b765cd5ed10ed0f0bc9cd9f95bd9d"
+  },
+  "passed": true,
+  "files": [
+    {
+      "path": "state/local-workspaces/registry.json",
+      "mode": 33152,
+      "sha256": "9e00a636ab33cb16c49088c731aa94b1f991f55d399d5376f3a44b4fd1be7a5b"
+    },
+    {
+      "path": "state/local-workspaces/registry.lock",
+      "mode": 33152,
+      "sha256": "c58d35b3ec81c914eb699f47b729eb83b7dbb9bb31c7cba329abba9194bda4d3"
+    },
+    {
+      "path": "state/local-workspaces/registry.pending-799d5e33-8dd2-41b9-8314-e79de6fa15fc",
+      "mode": 33152,
+      "sha256": "4413920e279cfb26ab25ac0e6f674dd0f20af12340b12b3fcb004fdef26f3054"
+    }
+  ],
+  "completedAt": "2026-09-16T18:24:59.989Z",
+  "cleanup": {
+    "removed": true,
+    "noHandles": true,
+    "noMounts": true
+  },
+  "spaceDelta": 8192
+}

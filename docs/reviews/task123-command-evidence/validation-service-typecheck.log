@@ -1,0 +1,8 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+apps/web/test/local-validation-service.test.ts(7,52): error TS2307: Cannot find module '../src/local-validation' or its corresponding type declarations.
+apps/web/test/local-validation-service.test.ts(16,3): error TS2412: Type 'Record<string, unknown> | undefined' is not assignable to type 'Record<string, unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+  Type 'undefined' is not assignable to type 'Record<string, unknown>'.
+ ELIFECYCLE  Command failed with exit code 2.

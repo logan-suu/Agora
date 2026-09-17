@@ -1,0 +1,138 @@
+{
+  "base": "/private/tmp/agora-task123-validation-psdFJp",
+  "scenario": "normal",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128370905
+  },
+  "version": {
+    "kind": "files",
+    "manifestId": "manifest:555ca8379795227c832170ed712f16eb8d0a94896fe8cc43f80c82db673662d9",
+    "manifestHash": "555ca8379795227c832170ed712f16eb8d0a94896fe8cc43f80c82db673662d9"
+  },
+  "manifest": {
+    "projectId": "project",
+    "taskId": "task",
+    "rootId": "root",
+    "policyHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "schemaVersion": "local-file-manifest-v1",
+    "bindingHash": "086f9790f80cfa83d854a414f0f6f21c4be5545c455881155d030c76f50161e8",
+    "directories": [
+      {
+        "path": "",
+        "identity": "16777231:128370906",
+        "entries": [
+          {
+            "name": ".agora-operations",
+            "kind": "excluded"
+          },
+          {
+            "name": ".env",
+            "kind": "excluded"
+          },
+          {
+            "name": "image.bin",
+            "kind": "file"
+          },
+          {
+            "name": "src",
+            "kind": "directory"
+          }
+        ]
+      },
+      {
+        "path": "src",
+        "identity": "16777231:128370908",
+        "entries": [
+          {
+            "name": "main.js",
+            "kind": "file"
+          }
+        ]
+      }
+    ],
+    "files": [
+      {
+        "path": "image.bin",
+        "version": {
+          "kind": "regular",
+          "identity": "16777231:128370910",
+          "sha256": "902f278e7b2fbd893838cf03ef8fe47f7259727d5c6343960ce30a95d7b57111",
+          "size": 4,
+          "executable": false,
+          "metadataHash": "79eefbf75cb1eeb95f2683caab25164701d79c69984ffef489ca128e4fed3b16"
+        },
+        "contentHash": "902f278e7b2fbd893838cf03ef8fe47f7259727d5c6343960ce30a95d7b57111"
+      },
+      {
+        "path": "src/main.js",
+        "version": {
+          "kind": "regular",
+          "identity": "16777231:128370909",
+          "sha256": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761",
+          "size": 25,
+          "executable": false,
+          "metadataHash": "79eefbf75cb1eeb95f2683caab25164701d79c69984ffef489ca128e4fed3b16"
+        },
+        "contentHash": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761"
+      }
+    ],
+    "excludedPaths": [
+      ".agora-operations",
+      ".env"
+    ]
+  },
+  "passed": true,
+  "files": [
+    {
+      "path": "files",
+      "sha256": "41177c97ee1466b56376363de2e0837f28bd256fdc3b86ed5d14fb422001dac0"
+    },
+    {
+      "path": "project/.env",
+      "sha256": "b65c62450474bacd8343e287c43bd22fccbd42dfb8b99e7d9fa28127f5bdc4b6"
+    },
+    {
+      "path": "project/image.bin",
+      "sha256": "039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81"
+    },
+    {
+      "path": "project/src/main.js",
+      "sha256": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761"
+    },
+    {
+      "path": "state/local-workspaces/objects/2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761.bin",
+      "sha256": "2496df5f88b82a3a0dcd34e29ce9bdafe95fd15da04695c3cd99f74fac55e761"
+    },
+    {
+      "path": "state/local-workspaces/objects/555ca8379795227c832170ed712f16eb8d0a94896fe8cc43f80c82db673662d9.json",
+      "sha256": "93d59d491a83565cbeb761d8ed3bfa1552cd2c08b5dfded0bf45ca5299ea9e50"
+    },
+    {
+      "path": "state/local-workspaces/objects/902f278e7b2fbd893838cf03ef8fe47f7259727d5c6343960ce30a95d7b57111.bin",
+      "sha256": "902f278e7b2fbd893838cf03ef8fe47f7259727d5c6343960ce30a95d7b57111"
+    },
+    {
+      "path": "state/local-workspaces/objects/b3d34f1a243c404dff5ec335d8dcaf5e62bb24591ac877e167a4bd53af3a118f.json",
+      "sha256": "d07fda457372695e862183cef7983e5c25f4cc99cccd05cfbefb5289b7d6fde3"
+    },
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "9e00a636ab33cb16c49088c731aa94b1f991f55d399d5376f3a44b4fd1be7a5b"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/native/local-file-transaction.c": "d7da93a33fdb70ab22744b3f87e32d07ec1d1fd1faff862dda12747ee12ca667",
+    "packages/runtime/sandbox/src/local-file-transaction.ts": "2d9885c4558140b37c81e1cf6db1e251cde719458008adece969fa4d8b606097",
+    "packages/runtime/sandbox/src/local-version-store.ts": "e9de36c11f01ca1492bc54b99611ab7de682acb1c82a1de8f49798bd6b6341b8",
+    "packages/runtime/sandbox/src/local-control-objects.ts": "38e7a1d8cd6baa185d7e4a1c69968bb0541077e34be0444bf890f575d672866b",
+    "tests/integration/phase12/phase12-3-version.test.ts": "536ed7d941f6b3c4dc2c15786c2fcd7e8870383070311e9c2f2297904a5279f6"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 49152
+  }
+}

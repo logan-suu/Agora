@@ -1,0 +1,35 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3.test.ts (5 tests | 1 failed | 4 skipped) 506ms
+   ↓ preserves both versions in a normal confined APFS exchange
+   ↓ refuses an exchange after the opened parent moves outside the authorized root
+   ↓ refuses an exchange after the opened root moves away from its authorized path
+   ↓ can prepare a transaction file through an opened handle inside the authorized root
+   × refuses writing an opened transaction file after its root moves outside authorization 506ms
+     → expected 'prepared!' to be 'candidate' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3.test.ts > refuses writing an opened transaction file after its root moves outside authorization
+AssertionError: expected 'prepared!' to be 'candidate' // Object.is equality
+
+Expected: "candidate"
+Received: "prepared!"
+
+ ❯ tests/integration/phase12/phase12-3.test.ts:42:25
+     40|   const result = await probeLocalFileBoundary('move-root', 'write-open…
+     41|   expect(result.ready).toBe(true);
+     42|   expect(result.backup).toBe('candidate');
+       |                         ^
+     43|   expect(result.target).toBe('original');
+     44|   expect(result.exitCode).not.toBe(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 skipped (5)
+   Start at  18:31:30
+   Duration  643ms (transform 20ms, setup 0ms, collect 21ms, tests 506ms, environment 0ms, prepare 29ms)
+

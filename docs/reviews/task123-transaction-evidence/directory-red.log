@@ -1,0 +1,48 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-transaction.test.ts (21 tests | 1 failed) 8018ms
+   × enumerates a pinned directory without following links or reading excluded content 197ms
+     → (0 , inspectLocalDirectory) is not a function
+   ✓ preserves exact binary bytes and snapshots inputs before admission: binary  417ms
+   ✓ preserves exact binary bytes and snapshots inputs before admission: binary-replay  344ms
+   ✓ preserves exact binary bytes and snapshots inputs before admission: binary-input-mutation  422ms
+   ✓ durably preserves the baseline and exchanged inode before reporting applied  394ms
+   ✓ closes the operation without touching source or external objects: move-root-before-write  395ms
+   ✓ closes the operation without touching source or external objects: move-parent-before-swap  408ms
+   ✓ closes the operation without touching source or external objects: replace-root  364ms
+   ✓ invalidates a completed exchange after root movement without undoing the actual result  408ms
+   ✓ preserves a competing user edit and refuses a stale baseline  402ms
+   ✓ refuses linked external objects: symlink-target  365ms
+   ✓ refuses linked external objects: hardlink-target  407ms
+   ✓ does not repeat a filesystem mutation when replaying an identical action  409ms
+   ✓ checks root identity after the final asynchronous authorization check  362ms
+   ✓ also invalidates a parent moved during completion authorization  401ms
+   ✓ refuses a metadata-only edit after the baseline read  405ms
+   ✓ honors trusted authorization closure: revoke-before-write  368ms
+   ✓ honors trusted authorization closure: revoke-before-swap  398ms
+   ✓ refuses unsafe journal replay: replay-different-input  398ms
+   ✓ refuses unsafe journal replay: replay-corrupt-receipt  374ms
+   ✓ refuses unsafe journal replay: replay-missing-receipt  378ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-transaction.test.ts > enumerates a pinned directory without following links or reading excluded content
+TypeError: (0 , inspectLocalDirectory) is not a function
+ ❯ exerciseLocalTransaction tests/integration/phase12/local-transaction-fixture.ts:126:26
+    124|       writeFileSync(join(root, '.env'), 'fixed project secret');
+    125|       symlinkSync(external, join(root, 'external-link'));
+    126|       directoryEntries = inspectLocalDirectory(binding, '', helper);
+       |                          ^
+    127|       try { inspectLocalDirectory(binding, 'external-link', helper); }
+    128|       catch (error) { directoryLinkError = error instanceof Error ? er…
+ ❯ tests/integration/phase12/phase12-3-transaction.test.ts:6:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 20 passed (21)
+   Start at  15:53:51
+   Duration  8.16s (transform 32ms, setup 0ms, collect 35ms, tests 8.02s, environment 0ms, prepare 27ms)
+

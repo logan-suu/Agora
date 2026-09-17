@@ -1,0 +1,83 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-state-binding.test.ts (18 tests | 9 failed) 2846ms
+   ✓ closes both real stores and replays without a second receipt 198ms
+   ✓ recovers interruption before the canonical TaskState commit 172ms
+   ✓ recovers interruption after the canonical TaskState commit 169ms
+   ✓ rejects a non-Leader source before preparing any authority 143ms
+   ✓ rejects canonical workspace references absent from the committed registry action 174ms
+   ✓ serializes racing bindings and rejects an obsolete registry revision 171ms
+   ✓ keeps an interrupted binding blocked when canonical input changed 155ms
+   ✓ rejects invalid root/grant data before changing either store 138ms
+   ✓ closes a second operation and replays prior immutable evidence 223ms
+   × atomically persists the Leader message and binding across normal interruption 143ms
+     → workspace_control_input_invalid
+   × atomically persists the Leader message and binding across before interruption 144ms
+     → expected [Function] to throw error including 'fixed interruption' but got 'workspace_control_input_invalid'
+   × atomically persists the Leader message and binding across after interruption 142ms
+     → expected [Function] to throw error including 'fixed interruption' but got 'workspace_control_input_invalid'
+   × rejects inconsistent atomic control role before registry preparation 144ms
+     → expected [Function] to throw error including 'workspace_control_source_invalid' but got 'workspace_control_input_invalid'
+   × rejects inconsistent atomic control payload before registry preparation 138ms
+     → expected [Function] to throw error including 'workspace_control_source_invalid' but got 'workspace_control_input_invalid'
+   × rejects inconsistent atomic control scope before registry preparation 157ms
+     → expected [Function] to throw error including 'workspace_control_source_invalid' but got 'workspace_control_input_invalid'
+   × rejects inconsistent atomic control revision before registry preparation 148ms
+     → expected [Function] to throw error including 'workspace_control_source_invalid' but got 'workspace_control_input_invalid'
+   × rejects inconsistent atomic control message-id before registry preparation 148ms
+     → expected [Function] to throw error including 'workspace_control_source_invalid' but got 'workspace_control_input_invalid'
+   × refuses to adopt a separately persisted atomic Leader message 139ms
+     → expected [Function] to throw error including 'workspace_binding_conflict' but got 'workspace_control_input_invalid'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > atomically persists the Leader message and binding across normal interruption
+Error: workspace_control_input_invalid
+ ❯ LocalBindingCoordinator.commitBinding packages/runtime/sandbox/src/local-binding-coordinator.ts:118:29
+    116|       Object.keys(input.records).sort().join(',') !== 'claims,grants,r…
+    117|     )
+    118|       return Promise.reject(new Error('workspace_control_input_invalid…
+       |                             ^
+    119|     const request = structuredClone(input);
+    120|     return this.serial(async () => {
+ ❯ tests/integration/phase12/phase12-3-state-binding.test.ts:321:44
+ ❯ fixture tests/integration/phase12/phase12-3-state-binding.test.ts:69:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > atomically persists the Leader message and binding across before interruption
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > atomically persists the Leader message and binding across after interruption
+AssertionError: expected [Function] to throw error including 'fixed interruption' but got 'workspace_control_input_invalid'
+
+Expected: "fixed interruption"
+Received: "workspace_control_input_invalid"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > rejects inconsistent atomic control role before registry preparation
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > rejects inconsistent atomic control payload before registry preparation
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > rejects inconsistent atomic control scope before registry preparation
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > rejects inconsistent atomic control revision before registry preparation
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > rejects inconsistent atomic control message-id before registry preparation
+AssertionError: expected [Function] to throw error including 'workspace_control_source_invalid' but got 'workspace_control_input_invalid'
+
+Expected: "workspace_control_source_invalid"
+Received: "workspace_control_input_invalid"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  tests/integration/phase12/phase12-3-state-binding.test.ts > refuses to adopt a separately persisted atomic Leader message
+AssertionError: expected [Function] to throw error including 'workspace_binding_conflict' but got 'workspace_control_input_invalid'
+
+Expected: "workspace_binding_conflict"
+Received: "workspace_control_input_invalid"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 failed | 9 passed (18)
+   Start at  15:37:13
+   Duration  3.08s (transform 99ms, setup 0ms, collect 126ms, tests 2.85s, environment 0ms, prepare 28ms)
+

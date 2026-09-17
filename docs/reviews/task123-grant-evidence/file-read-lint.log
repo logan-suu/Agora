@@ -1,0 +1,31 @@
+
+> agora@0.0.0 lint /Users/logansu/Documents/Dev/Agora
+> biome check .
+
+packages/runtime/sandbox/src/local-workspace-authority.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+    288 288 │         throw Error('registry_revision_conflict');
+    289 289 │       this.assertLease(call);
+    290     │ - ····return·{·workspace,·root,·grant,·claim,·binding:·localRootBinding(root),·sourceReceiptId:·origin.receiptId·};
+        290 │ + ····return·{
+        291 │ + ······workspace,
+        292 │ + ······root,
+        293 │ + ······grant,
+        294 │ + ······claim,
+        295 │ + ······binding:·localRootBinding(root),
+        296 │ + ······sourceReceiptId:·origin.receiptId,
+        297 │ + ····};
+    291 298 │     }
+    292 299 │   }
+  
+
+Checked 543 files in 243ms. No fixes applied.
+Found 1 error.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+ ELIFECYCLE  Command failed with exit code 1.

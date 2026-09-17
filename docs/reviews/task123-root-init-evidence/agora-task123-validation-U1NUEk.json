@@ -1,0 +1,56 @@
+{
+  "base": "/private/tmp/agora-task123-validation-U1NUEk",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128309469
+  },
+  "startedAt": "2026-09-16T19:54:58.266Z",
+  "scenario": "normal",
+  "result": {
+    "schemaVersion": "local-root-initialization-v1",
+    "actionId": "fixed-init",
+    "inputHash": "2b8187d5772ac4402c2ecf53a7578f1079a024e4d447929ea871b8366dedbb7c",
+    "journalPath": "/private/tmp/agora-task123-validation-U1NUEk/journal/fixed-init",
+    "stage": "applied",
+    "reason": "none",
+    "created": true,
+    "stagingIdentity": "16777231:128309482",
+    "quiescent": true,
+    "nativeExitCode": 0
+  },
+  "journal": {
+    "native.json": "{\"code\":0,\"signal\":null,\"stdout\":\"{\\\"event\\\":\\\"checkpoint\\\",\\\"name\\\":\\\"before_initialize\\\"}\\n{\\\"event\\\":\\\"checkpoint\\\",\\\"name\\\":\\\"after_initialize\\\"}\\n{\\\"event\\\":\\\"result\\\",\\\"stage\\\":\\\"applied\\\",\\\"reason\\\":\\\"none\\\",\\\"created\\\":true,\\\"stagingIdentity\\\":\\\"16777231:128309482\\\"}\\n\",\"stderr\":\"\"}",
+    "prepared.json": "{\"schemaVersion\":\"local-root-initialization-v1\",\"stage\":\"prepared\",\"actionId\":\"fixed-init\",\"inputHash\":\"2b8187d5772ac4402c2ecf53a7578f1079a024e4d447929ea871b8366dedbb7c\",\"inspection\":{\"schemaVersion\":\"local-root-inspection-v1\",\"path\":\"/private/tmp/agora-task123-validation-U1NUEk/project\",\"filesystem\":\"apfs\",\"local\":true,\"volumeId\":\"590f6b192edb43d6a07e030fe433d7cf\",\"chain\":[{\"path\":\"/\",\"identity\":\"16777231:2\",\"uid\":0,\"mode\":16877},{\"path\":\"/private\",\"identity\":\"16777231:76454369\",\"uid\":0,\"mode\":16877},{\"path\":\"/private/tmp\",\"identity\":\"16777231:119551154\",\"uid\":0,\"mode\":17407},{\"path\":\"/private/tmp/agora-task123-validation-U1NUEk\",\"identity\":\"16777231:128309469\",\"uid\":501,\"mode\":16832},{\"path\":\"/private/tmp/agora-task123-validation-U1NUEk/project\",\"identity\":\"16777231:128309470\",\"uid\":501,\"mode\":16877}]},\"authorityHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"helperHash\":\"cf1c02033bc694b725b8292dab3f2a3cd61e01057445183964d2526c8238a88d\",\"policyHash\":\"6e13c31a434d9a5b3b2cab368a5fbe757b92acbf81c2cdf0adf9b4b8cfddc3aa\"}",
+    "result.json": "{\"schemaVersion\":\"local-root-initialization-v1\",\"actionId\":\"fixed-init\",\"inputHash\":\"2b8187d5772ac4402c2ecf53a7578f1079a024e4d447929ea871b8366dedbb7c\",\"journalPath\":\"/private/tmp/agora-task123-validation-U1NUEk/journal/fixed-init\",\"stage\":\"applied\",\"reason\":\"none\",\"created\":true,\"stagingIdentity\":\"16777231:128309482\",\"quiescent\":true,\"nativeExitCode\":0}"
+  },
+  "binaryHash": "cf1c02033bc694b725b8292dab3f2a3cd61e01057445183964d2526c8238a88d",
+  "passed": true,
+  "sources": {
+    "packages/runtime/sandbox/native/local-root-inspection.c": {
+      "sha256": "c5b57c12f4d961cc8f8ccd130829d560f8684b2700a3b322ed7a524bf833939d",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-U1NUEk-source-0.txt"
+    },
+    "packages/runtime/sandbox/native/local-root-initialization.c": {
+      "sha256": "ad30ec4eae4eab4fb4a3e87f57cdb7db7b05f357c34dfb52c3fb3ff3942d1897",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-U1NUEk-source-1.txt"
+    },
+    "packages/runtime/sandbox/src/local-root-inspection.ts": {
+      "sha256": "56a60a48e100c3e56597a37720570d5cec0b1f7cb3a6dbde65a2280dc73d8c97",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-U1NUEk-source-2.txt"
+    },
+    "packages/runtime/sandbox/src/local-root-initialization.ts": {
+      "sha256": "2fbec615ce45a2284d3bbe8644fbc8d3ef25857554b35ed21506fe3683b785a8",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-U1NUEk-source-3.txt"
+    },
+    "packages/runtime/sandbox/test/local-root-initialization.test.ts": {
+      "sha256": "13a2f4da9acf19613fab7771a7b5d1f5c8ae14108ff7a9afa721ba95e842c3ea",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-root-init-evidence/agora-task123-validation-U1NUEk-source-4.txt"
+    }
+  },
+  "cleanup": {
+    "deleted": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 77824
+  }
+}

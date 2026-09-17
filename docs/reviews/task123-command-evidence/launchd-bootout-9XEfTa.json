@@ -1,0 +1,91 @@
+{
+  "base": "/private/tmp/agora-task123-validation-9XEfTa",
+  "target": "gui/501/org.agora.task123.probe.9XEfTa",
+  "startedAt": "2026-09-16T01:50:31.048Z",
+  "sourceHash": "1a8f2653dbfa0037ec4e2f0394431676ea37a29a88fe83ef49325bd1b60d4446",
+  "controllerHash": "41a3d1181cee689d079a9e96cc2722f027f9d99983e717339514bdd024acf56c",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127776373
+  },
+  "availableBefore": 47550558208,
+  "os": {
+    "status": 0,
+    "signal": null,
+    "stdout": "25F71\n",
+    "stderr": ""
+  },
+  "build": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "binaryHash": "a722223d4c334f47084037b8f0a4e627c69ecd10ab2922986130ef21b794c5b5",
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-9XEfTa/session-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-9XEfTa/session-probe\"))",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\"><plist version=\"1.0\"><dict><key>Label</key><string>org.agora.task123.probe.9XEfTa</string><key>ProgramArguments</key><array><string>/usr/bin/env</string><string>-i</string><string>PATH=/usr/bin:/bin</string><string>HOME=/private/tmp/agora-task123-validation-9XEfTa</string><string>TMPDIR=/private/tmp/agora-task123-validation-9XEfTa</string><string>/usr/bin/sandbox-exec</string><string>-p</string><string>(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-9XEfTa/session-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-9XEfTa/session-probe\"))</string><string>/private/tmp/agora-task123-validation-9XEfTa/session-probe</string><string>escape</string></array><key>RunAtLoad</key><true/><key>SessionCreate</key><true/><key>KeepAlive</key><false/><key>AbandonProcessGroup</key><false/><key>WorkingDirectory</key><string>/private/tmp/agora-task123-validation-9XEfTa</string><key>EnvironmentVariables</key><dict><key>HOME</key><string>/private/tmp/agora-task123-validation-9XEfTa</string><key>TMPDIR</key><string>/private/tmp/agora-task123-validation-9XEfTa</string></dict><key>StandardOutPath</key><string>/private/tmp/agora-task123-validation-9XEfTa/stdout</string><key>StandardErrorPath</key><string>/private/tmp/agora-task123-validation-9XEfTa/stderr</string></dict></plist>",
+  "bootstrap": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "stdout": "{\"stage\":\"parent\",\"pid\":7955,\"ppid\":1,\"pgid\":7955,\"sid\":1,\"auditResult\":0,\"asid\":104666}\n{\"stage\":\"intermediate-exit\",\"pid\":7956,\"ppid\":7955,\"pgid\":7956,\"sid\":7956,\"auditResult\":0,\"asid\":104666}\n{\"stage\":\"grandchild\",\"pid\":7957,\"ppid\":1,\"pgid\":7957,\"sid\":7956,\"auditResult\":0,\"asid\":104666}\n{\"stage\":\"parent-exit\",\"pid\":7955,\"ppid\":1,\"pgid\":7955,\"sid\":1,\"auditResult\":0,\"asid\":104666}\n",
+  "beforeBootout": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"inspect\",\"pid\":7957,\"asid\":104666,\"infoResult\":0,\"sameSession\":true,\"pidVersion\":18299820}\n",
+    "stderr": ""
+  },
+  "jobBeforeStop": {
+    "status": 0,
+    "signal": null,
+    "stdout": "\tactive count = 0\n\tstate = not running\n\tlast exit code = 0\n\t\tstate = active\n\t\tactive count = 1\n\t\tstate = active\n\t\tactive count = 1",
+    "stderr": ""
+  },
+  "bootout": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "absent": {
+    "status": 113,
+    "signal": null,
+    "stdout": "",
+    "stderr": "Bad request.\nCould not find service \"org.agora.task123.probe.9XEfTa\" in domain for user gui: 501\n"
+  },
+  "afterBootout": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"inspect\",\"pid\":7957,\"asid\":104666,\"infoResult\":0,\"sameSession\":true,\"pidVersion\":18299820}\n",
+    "stderr": ""
+  },
+  "descendantSurvivedBootout": true,
+  "externalInspection": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"stop\",\"pid\":7957,\"asid\":104666,\"pidVersion\":18299820,\"wrongResult\":3,\"wrongErrno\":3,\"aliveAfterWrong\":true,\"correctResult\":0,\"correctErrno\":0}\n",
+    "stderr": ""
+  },
+  "stderr": "",
+  "job": {
+    "status": 113,
+    "signal": null,
+    "stdout": "",
+    "stderr": "Bad request.\nCould not find service \"org.agora.task123.probe.9XEfTa\" in domain for user gui: 501\n"
+  },
+  "completedAt": "2026-09-16T01:50:36.526Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "availableAfter": 47550533632,
+  "spaceDelta": -24576
+}

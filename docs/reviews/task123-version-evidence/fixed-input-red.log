@@ -1,0 +1,27 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-version.test.ts [ tests/integration/phase12/phase12-3-version.test.ts ]
+Error: Cannot find module '../../../packages/runtime/sandbox/src/local-fixed-inputs' imported from '/Users/logansu/Documents/Dev/Agora/tests/integration/phase12/phase12-3-version.test.ts'
+ ❯ tests/integration/phase12/phase12-3-version.test.ts:21:1
+     19| import { LocalControlObjects } from '../../../packages/runtime/sandbox…
+     20| import { inspectLocalRoot } from '../../../packages/runtime/sandbox/sr…
+     21| import { LocalFixedInputs } from '../../../packages/runtime/sandbox/sr…
+       | ^
+     22| import { LocalRegistryFile } from '../../../packages/runtime/sandbox/s…
+     23| import { parseLocalRegistry } from '../../../packages/runtime/sandbox/…
+
+Caused by: Error: Failed to load url ../../../packages/runtime/sandbox/src/local-fixed-inputs (resolved id: ../../../packages/runtime/sandbox/src/local-fixed-inputs) in /Users/logansu/Documents/Dev/Agora/tests/integration/phase12/phase12-3-version.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@20.19.43_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  16:44:21
+   Duration  236ms (transform 99ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 33ms)
+

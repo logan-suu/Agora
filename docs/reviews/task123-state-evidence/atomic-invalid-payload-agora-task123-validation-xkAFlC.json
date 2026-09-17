@@ -1,0 +1,36 @@
+{
+  "name": "atomic-invalid-payload",
+  "base": "/private/tmp/agora-task123-validation-xkAFlC",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128376973
+  },
+  "node": "v24.20.0",
+  "startedAt": "2026-09-16T21:17:23.407Z",
+  "passed": true,
+  "files": [
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "9e00a636ab33cb16c49088c731aa94b1f991f55d399d5376f3a44b4fd1be7a5b"
+    },
+    {
+      "path": "state/tasks/projects/project/tasks/task/state.json",
+      "sha256": "3277863755b651261c1f388d76da204fc067802d6bf5cb9fdb2f91b1d719f3f5"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/src/local-binding-coordinator.ts": "3b47e9cf80c25bbbc78df3a5843e69e87b9235dbff947ae42b9e046c4bfc137a",
+    "packages/runtime/sandbox/src/local-registry-records.ts": "35f5563ab2dfdc327378e53093a2e264850fb9e84d176498fe3696a73e84c12e",
+    "packages/runtime/sandbox/src/local-registry-file.ts": "6f4c92b4b89b938868a5bb8f6121b658051ff173017b53468ed724532b101a69",
+    "packages/core/domain/src/local-execution.ts": "e847dcc45519acc8e40e13671e33d273feb97a339e609d3306587e4d2acf4f06",
+    "tests/integration/phase12/phase12-3-state-binding.test.ts": "a5a8fcb746584966a6d7407e4e0dfe0c13d95bf0c2191db6b7ffb3ad5cdfc47f"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": -4096,
+    "completedAt": "2026-09-16T21:17:23.527Z"
+  }
+}

@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest';
 
 import { GlobalScheduler, type SlotLease } from '../src/index';
 
+it('validates only the currently held lease capability without changing capacity', async () => {
+  const scheduler = new GlobalScheduler({ cap: 1 });
+  const lease = await scheduler.acquire('project', 'task', 'worker');
+  expect(() => scheduler.assertActive(lease)).not.toThrow();
+  expect(() => scheduler.assertActive({ ...lease })).toThrow('does not match');
+  expect(scheduler.activeCount).toBe(1);
+  await scheduler.release(lease);
+  expect(() => scheduler.assertActive(lease)).toThrow('does not match');
+  const next = await scheduler.acquire('project', 'task', 'worker');
+  expect(() => scheduler.assertActive(next)).not.toThrow();
+  expect(() => scheduler.assertActive(lease)).toThrow('does not match');
+  await scheduler.release(next);
+});
+
 function deterministicScheduler(cap: number): GlobalScheduler {
   let sequence = 0;
   return new GlobalScheduler({

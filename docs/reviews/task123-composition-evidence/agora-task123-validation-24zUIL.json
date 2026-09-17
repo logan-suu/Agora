@@ -1,0 +1,1160 @@
+{
+  "base": "/private/tmp/agora-task123-validation-24zUIL",
+  "startedAt": "2026-09-17T00:28:03.742Z",
+  "task": "Implement only lru-cache.cjs as CommonJS exporting LRUCache. Constructor(capacity, ttlMs = Infinity); get(key) returns value or undefined and refreshes recency; set(key,value) inserts/updates and evicts least recently used when capacity is exceeded; delete(key) returns whether it existed. Optional TTL expires entries from their last set time. Read the existing files first; preserve lru-cache.test.cjs unchanged. Use workspace_apply with the original expected/readReceiptId. Capture the resulting file manifest with workspace_read with no path, then run managed Node using workspace_run argv [\"--test\",\"--test-reporter=tap\",\"@input/lru-cache.test.cjs\"] against that inputVersion. All five tests must pass. End with actual file and test evidence; do not invent a receipt or modify tests.",
+  "testSource": "const { test } = require('node:test');\nconst assert = require('node:assert/strict');\nconst { LRUCache } = require('./lru-cache.cjs');\ntest('missing keys return undefined', () => { const c = new LRUCache(2); assert.equal(c.get('missing'), undefined); });\ntest('get refreshes recency and capacity evicts oldest', () => { const c = new LRUCache(2); c.set('a', 1); c.set('b', 2); assert.equal(c.get('a'), 1); c.set('c', 3); assert.equal(c.get('b'), undefined); assert.equal(c.get('a'), 1); assert.equal(c.get('c'), 3); });\ntest('updating a key preserves capacity', () => { const c = new LRUCache(2); c.set('a', 1); c.set('b', 2); c.set('a', 7); assert.equal(c.get('a'), 7); assert.equal(c.get('b'), 2); });\ntest('delete removes only the chosen key', () => { const c = new LRUCache(2); c.set('a', 1); c.set('b', 2); assert.equal(c.delete('a'), true); assert.equal(c.delete('a'), false); assert.equal(c.get('a'), undefined); assert.equal(c.get('b'), 2); });\ntest('optional TTL expires entries', async () => { const c = new LRUCache(2, 20); c.set('a', 1); assert.equal(c.get('a'), 1); await new Promise(resolve => setTimeout(resolve, 60)); assert.equal(c.get('a'), undefined); });\n",
+  "provider": "deterministic-external-llm-adapter",
+  "scope": "real composition, native MCP, official Harness Fork and D16",
+  "toolchain": {
+    "manifestHash": "c3b48e8cf01eaabe76bada629694698ff3af61b26af97af366dd34f1107fd9b9",
+    "nodeHash": "7761de77b52f34365e02e02e582c89bfa98ffb84b5b6a2617ef999e955248aa4",
+    "nodeVersion": "24.20.0"
+  },
+  "firstSummary": {
+    "projectId": "fixed-lru-project",
+    "taskId": "fixed-lru-task",
+    "goal": "Implement only lru-cache.cjs as CommonJS exporting LRUCache. Constructor(capacity, ttlMs = Infinity); get(key) returns value or undefined and refreshes recency; set(key,value) inserts/updates and evicts least recently used when capacity is exceeded; delete(key) returns whether it existed. Optional TTL expires entries from their last set time. Read the existing files first; preserve lru-cache.test.cjs unchanged. Use workspace_apply with the original expected/readReceiptId. Capture the resulting file manifest with workspace_read with no path, then run managed Node using workspace_run argv [\"--test\",\"--test-reporter=tap\",\"@input/lru-cache.test.cjs\"] against that inputVersion. All five tests must pass. End with actual file and test evidence; do not invent a receipt or modify tests.",
+    "runStatus": "needs_attention",
+    "phase": "coding",
+    "currentRole": "CODER",
+    "testResults": null,
+    "artifactPath": null,
+    "messageCount": 13
+  },
+  "firstState": {
+    "projectId": "fixed-lru-project",
+    "taskId": "fixed-lru-task",
+    "goal": "Implement only lru-cache.cjs as CommonJS exporting LRUCache. Constructor(capacity, ttlMs = Infinity); get(key) returns value or undefined and refreshes recency; set(key,value) inserts/updates and evicts least recently used when capacity is exceeded; delete(key) returns whether it existed. Optional TTL expires entries from their last set time. Read the existing files first; preserve lru-cache.test.cjs unchanged. Use workspace_apply with the original expected/readReceiptId. Capture the resulting file manifest with workspace_read with no path, then run managed Node using workspace_run argv [\"--test\",\"--test-reporter=tap\",\"@input/lru-cache.test.cjs\"] against that inputVersion. All five tests must pass. End with actual file and test evidence; do not invent a receipt or modify tests.",
+    "phase": "coding",
+    "iterationCount": 1,
+    "workers": [
+      {
+        "workerId": "worker:0eb14259-68ab-49c5-ad0e-00458746c1ec:0",
+        "role": "PM",
+        "executor": "harness",
+        "status": "done",
+        "sessionId": "session:worker:0eb14259-68ab-49c5-ad0e-00458746c1ec:0",
+        "startedTs": 1789604884806
+      },
+      {
+        "workerId": "worker:e03c43a7-01ba-47f6-a0a3-573aee94c910:0",
+        "role": "ARCHITECT",
+        "executor": "harness",
+        "status": "done",
+        "sessionId": "session:worker:e03c43a7-01ba-47f6-a0a3-573aee94c910:0",
+        "startedTs": 1789604884942
+      },
+      {
+        "workerId": "worker:a44f7058-3da9-4606-af68-c9f23f81b93e:0",
+        "role": "CODER",
+        "executor": "harness",
+        "status": "done",
+        "subtaskId": "fixed-lru-task-sub-0",
+        "sessionId": "session:worker:a44f7058-3da9-4606-af68-c9f23f81b93e:0",
+        "startedTs": 1789604886131
+      }
+    ],
+    "subtasks": [
+      {
+        "id": "fixed-lru-task-sub-0",
+        "title": "Implement only lru-cache.cjs as CommonJS exporting LRUCache. Constructor(capacity, ttlMs = Infinity); get(key) returns value or undefined and refreshes recency; set(key,value) inserts/updates and evicts least recently used when capacity is exceeded; delete(key) returns whether it existed. Optional TTL expires entries from their last set time. Read the existing files first; preserve lru-cache.test.cjs unchanged. Use workspace_apply with the original expected/readReceiptId. Capture the resulting file manifest with workspace_read with no path, then run managed Node using workspace_run argv [\"--test\",\"--test-reporter=tap\",\"@input/lru-cache.test.cjs\"] against that inputVersion. All five tests must pass. End with actual file and test evidence; do not invent a receipt or modify tests.",
+        "ownerRole": "CODER",
+        "dependsOn": [],
+        "status": "in_progress"
+      }
+    ],
+    "messages": [
+      {
+        "msgId": "fixed-lru-grant",
+        "channelId": "main",
+        "fromRole": "leader",
+        "type": "chat",
+        "display": "/workspace grant {\"projectId\":\"fixed-lru-project\",\"taskId\":\"fixed-lru-task\",\"actionId\":\"fixed-lru-grant\",\"expectedRevision\":0,\"selectionRef\":\"fixed-lru-selection\",\"policyProposalId\":\"grant:8c6855a8f13c9cb1ceac6bf9fb98615125d11a55077f4d652becdfc5187eda2d\",\"inputHash\":\"8c6855a8f13c9cb1ceac6bf9fb98615125d11a55077f4d652becdfc5187eda2d\"}",
+        "ts": 1789604884397,
+        "payload": {
+          "kind": "leader_intent",
+          "intent": {
+            "kind": "workspace_control",
+            "verb": "grant",
+            "projectId": "fixed-lru-project",
+            "taskId": "fixed-lru-task",
+            "actionId": "fixed-lru-grant",
+            "expectedRevision": 0,
+            "selectionRef": "fixed-lru-selection",
+            "policyProposalId": "grant:8c6855a8f13c9cb1ceac6bf9fb98615125d11a55077f4d652becdfc5187eda2d",
+            "inputHash": "8c6855a8f13c9cb1ceac6bf9fb98615125d11a55077f4d652becdfc5187eda2d"
+          },
+          "action": {
+            "status": "applied"
+          }
+        }
+      },
+      {
+        "msgId": "fixed-local-start",
+        "channelId": "main",
+        "fromRole": "leader",
+        "type": "chat",
+        "payload": {
+          "kind": "leader_intent",
+          "intent": {
+            "kind": "resolve_human_gate",
+            "gateId": "human-gate:fixed-local-start",
+            "option": "continue"
+          },
+          "action": {
+            "status": "applied"
+          },
+          "resolution": {
+            "gateId": "human-gate:fixed-local-start",
+            "option": "continue",
+            "safePointRefs": [],
+            "resumeSessionId": "human-gate-resume:fixed-local-start"
+          }
+        },
+        "display": "/resolve-gate human-gate:fixed-local-start continue",
+        "ts": 1789604884779
+      },
+      {
+        "msgId": "human-gate-resumed:fixed-local-start",
+        "channelId": "main",
+        "fromRole": "COORDINATOR",
+        "type": "announce",
+        "payload": {
+          "kind": "human_gate_resumed",
+          "actionId": "fixed-local-start",
+          "gateId": "human-gate:fixed-local-start",
+          "resumeSessionId": "human-gate-resume:fixed-local-start"
+        },
+        "display": "Human gate human-gate:fixed-local-start resumed.",
+        "ts": 1789604884802
+      },
+      {
+        "msgId": "fcb34b35-59a3-4076-9f31-328f1e358710",
+        "channelId": "main",
+        "fromRole": "COORDINATOR",
+        "type": "announce",
+        "payload": {
+          "nextRole": "PM"
+        },
+        "display": "Assigning PM to define requirements.",
+        "ts": 1789604884806
+      },
+      {
+        "msgId": "0eb14259-68ab-49c5-ad0e-00458746c1ec",
+        "channelId": "main",
+        "fromRole": "COORDINATOR",
+        "type": "chat",
+        "payload": {
+          "kind": "coordination_ledger",
+          "revision": 1,
+          "task": {
+            "confirmedFacts": [
+              {
+                "key": "goal",
+                "value": "Implement only lru-cache.cjs as CommonJS exporting LRUCache. Constructor(capacity, ttlMs = Infinity); get(key) returns value or undefined and refreshes recency; set(key,value) inserts/updates and evicts least recently used when capacity is exceeded; delete(key) returns whether it existed. Optional TTL expires entries from their last set time. Read the existing files first; preserve lru-cache.test.cjs unchanged. Use workspace_apply with the original expected/readReceiptId. Capture the resulting file manifest with workspace_read with no path, then run managed Node using workspace_run argv [\"--test\",\"--test-reporter=tap\",\"@input/lru-cache.test.cjs\"] against that inputVersion. All five tests must pass. End with actual file and test evidence; do not invent a receipt or modify tests."
+              },
+              {
+                "key": "phase",
+                "value": "clarifying"
+              },
+              {
+                "key": "complexityTier",
+                "value": 1
+              },
+              {
+                "key": "requirementsCount",
+                "value": 0
+              },
+              {
+                "key": "architectureReady",
+                "value": false
+              },
+              {
+                "key": "completedSubtasks",
+                "value": 0
+              },
+              {
+                "key": "testsPassed",
+                "value": null
+              },
+              {
+                "key": "reviewEntries",
+                "value": 0
+              }
+            ],
+            "hypotheses": [],
+            "plan": [
+              {
+                "id": "coordination-plan-r1-1",
+                "revision": 1,
+                "role": "PM",
+                "instruction": "Assigning PM to define requirements.",
+                "status": "active",
+                "dependsOn": []
+              },
+              {
+                "id": "coordination-plan-r1-2",
+                "revision": 1,
+                "role": "ARCHITECT",
+                "instruction": "Complete the ARCHITECT stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-1"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-3",
+                "revision": 1,
+                "role": "CODER",
+                "instruction": "Complete the CODER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-2"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-4",
+                "revision": 1,
+                "role": "TESTER",
+                "instruction": "Complete the TESTER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-3"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-5",
+                "revision": 1,
+                "role": "REVIEWER",
+                "instruction": "Complete the REVIEWER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-4"
+                ]
+              }
+            ]
+          },
+          "progress": {
+            "isRequestSatisfied": {
+              "reason": "task_incomplete",
+              "answer": false,
+              "authority": "leader"
+            },
+            "isInLoop": {
+              "reason": "first_evaluation",
+              "answer": false
+            },
+            "isProgressBeingMade": {
+              "reason": "structured_state_advanced",
+              "answer": true
+            },
+            "nextSpeaker": {
+              "reason": "coordinator_route",
+              "answer": "PM"
+            },
+            "instructionOrQuestion": {
+              "reason": "coordinator_instruction",
+              "answer": "Assigning PM to define requirements."
+            }
+          },
+          "completionCandidate": false,
+          "stallCount": 0,
+          "progressMarker": "{\"phase\":\"clarifying\",\"complexityTier\":1,\"requirementIds\":[],\"architectureReady\":false,\"subtasks\":[],\"testOutcome\":null,\"reviewEntries\":0,\"humanGateReason\":null}",
+          "replanned": false,
+          "replanReason": null
+        },
+        "display": "Coordinator Ledger r1: stall=0/3",
+        "ts": 1789604884806
+      },
+      {
+        "msgId": "assistant-f22ef33f2a585b9af6a34ffd",
+        "channelId": "main",
+        "fromRole": "PM",
+        "type": "chat",
+        "payload": {},
+        "display": "[{\"id\":\"req-lru\",\"story\":\"Fixed LRU implementation\",\"acceptance\":[\"All five original tests pass unchanged\"],\"nonGoals\":[]}]",
+        "ts": 1789604884858
+      },
+      {
+        "msgId": "d6ec5714-47ca-4feb-95fe-bf2320861317",
+        "channelId": "main",
+        "fromRole": "COORDINATOR",
+        "type": "announce",
+        "payload": {
+          "nextRole": "ARCHITECT"
+        },
+        "display": "Requirements ready. Assigning ARCHITECT to design the solution.",
+        "ts": 1789604884942
+      },
+      {
+        "msgId": "e03c43a7-01ba-47f6-a0a3-573aee94c910",
+        "channelId": "main",
+        "fromRole": "COORDINATOR",
+        "type": "chat",
+        "payload": {
+          "kind": "coordination_ledger",
+          "revision": 1,
+          "task": {
+            "confirmedFacts": [
+              {
+                "key": "goal",
+                "value": "Implement only lru-cache.cjs as CommonJS exporting LRUCache. Constructor(capacity, ttlMs = Infinity); get(key) returns value or undefined and refreshes recency; set(key,value) inserts/updates and evicts least recently used when capacity is exceeded; delete(key) returns whether it existed. Optional TTL expires entries from their last set time. Read the existing files first; preserve lru-cache.test.cjs unchanged. Use workspace_apply with the original expected/readReceiptId. Capture the resulting file manifest with workspace_read with no path, then run managed Node using workspace_run argv [\"--test\",\"--test-reporter=tap\",\"@input/lru-cache.test.cjs\"] against that inputVersion. All five tests must pass. End with actual file and test evidence; do not invent a receipt or modify tests."
+              },
+              {
+                "key": "phase",
+                "value": "planning"
+              },
+              {
+                "key": "complexityTier",
+                "value": 1
+              },
+              {
+                "key": "requirementsCount",
+                "value": 1
+              },
+              {
+                "key": "architectureReady",
+                "value": false
+              },
+              {
+                "key": "completedSubtasks",
+                "value": 0
+              },
+              {
+                "key": "testsPassed",
+                "value": null
+              },
+              {
+                "key": "reviewEntries",
+                "value": 0
+              }
+            ],
+            "hypotheses": [],
+            "plan": [
+              {
+                "id": "coordination-plan-r1-1",
+                "revision": 1,
+                "role": "PM",
+                "instruction": "Complete the PM stage when routed",
+                "status": "done",
+                "dependsOn": []
+              },
+              {
+                "id": "coordination-plan-r1-2",
+                "revision": 1,
+                "role": "ARCHITECT",
+                "instruction": "Requirements ready. Assigning ARCHITECT to design the solution.",
+                "status": "active",
+                "dependsOn": [
+                  "coordination-plan-r1-1"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-3",
+                "revision": 1,
+                "role": "CODER",
+                "instruction": "Complete the CODER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-2"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-4",
+                "revision": 1,
+                "role": "TESTER",
+                "instruction": "Complete the TESTER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-3"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-5",
+                "revision": 1,
+                "role": "REVIEWER",
+                "instruction": "Complete the REVIEWER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-4"
+                ]
+              }
+            ]
+          },
+          "progress": {
+            "isRequestSatisfied": {
+              "reason": "task_incomplete",
+              "answer": false,
+              "authority": "leader"
+            },
+            "isInLoop": {
+              "reason": "structured_state_advanced",
+              "answer": false
+            },
+            "isProgressBeingMade": {
+              "reason": "structured_state_advanced",
+              "answer": true
+            },
+            "nextSpeaker": {
+              "reason": "coordinator_route",
+              "answer": "ARCHITECT"
+            },
+            "instructionOrQuestion": {
+              "reason": "coordinator_instruction",
+              "answer": "Requirements ready. Assigning ARCHITECT to design the solution."
+            }
+          },
+          "completionCandidate": false,
+          "stallCount": 0,
+          "progressMarker": "{\"phase\":\"planning\",\"complexityTier\":1,\"requirementIds\":[\"req-lru\"],\"architectureReady\":false,\"subtasks\":[],\"testOutcome\":null,\"reviewEntries\":0,\"humanGateReason\":null}",
+          "replanned": false,
+          "replanReason": null
+        },
+        "display": "Coordinator Ledger r1: stall=0/3",
+        "ts": 1789604884942
+      },
+      {
+        "msgId": "assistant-2e40b1fdd36d449444c9bada",
+        "channelId": "main",
+        "fromRole": "ARCHITECT",
+        "type": "chat",
+        "payload": {},
+        "display": "{\"architecture\":{\"modules\":[\"LRUCache\"]},\"conventions\":{\"testFiles\":[\"lru-cache.test.cjs\"]}}",
+        "ts": 1789604885818
+      },
+      {
+        "msgId": "85930a37-8fb6-4bde-89b4-39b0e9ed0220",
+        "channelId": "main",
+        "fromRole": "COORDINATOR",
+        "type": "announce",
+        "payload": {
+          "nextRole": "CODER",
+          "subtaskId": "fixed-lru-task-sub-0"
+        },
+        "display": "Design ready. Assigning CODER to implement the solution.",
+        "ts": 1789604886131
+      },
+      {
+        "msgId": "a44f7058-3da9-4606-af68-c9f23f81b93e",
+        "channelId": "main",
+        "fromRole": "COORDINATOR",
+        "type": "chat",
+        "payload": {
+          "kind": "coordination_ledger",
+          "revision": 1,
+          "task": {
+            "confirmedFacts": [
+              {
+                "key": "goal",
+                "value": "Implement only lru-cache.cjs as CommonJS exporting LRUCache. Constructor(capacity, ttlMs = Infinity); get(key) returns value or undefined and refreshes recency; set(key,value) inserts/updates and evicts least recently used when capacity is exceeded; delete(key) returns whether it existed. Optional TTL expires entries from their last set time. Read the existing files first; preserve lru-cache.test.cjs unchanged. Use workspace_apply with the original expected/readReceiptId. Capture the resulting file manifest with workspace_read with no path, then run managed Node using workspace_run argv [\"--test\",\"--test-reporter=tap\",\"@input/lru-cache.test.cjs\"] against that inputVersion. All five tests must pass. End with actual file and test evidence; do not invent a receipt or modify tests."
+              },
+              {
+                "key": "phase",
+                "value": "coding"
+              },
+              {
+                "key": "complexityTier",
+                "value": 1
+              },
+              {
+                "key": "requirementsCount",
+                "value": 1
+              },
+              {
+                "key": "architectureReady",
+                "value": true
+              },
+              {
+                "key": "completedSubtasks",
+                "value": 0
+              },
+              {
+                "key": "testsPassed",
+                "value": null
+              },
+              {
+                "key": "reviewEntries",
+                "value": 0
+              }
+            ],
+            "hypotheses": [],
+            "plan": [
+              {
+                "id": "coordination-plan-r1-1",
+                "revision": 1,
+                "role": "PM",
+                "instruction": "Complete the PM stage when routed",
+                "status": "done",
+                "dependsOn": []
+              },
+              {
+                "id": "coordination-plan-r1-2",
+                "revision": 1,
+                "role": "ARCHITECT",
+                "instruction": "Complete the ARCHITECT stage when routed",
+                "status": "done",
+                "dependsOn": [
+                  "coordination-plan-r1-1"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-3",
+                "revision": 1,
+                "role": "CODER",
+                "instruction": "Design ready. Assigning CODER to implement the solution.",
+                "status": "active",
+                "dependsOn": [
+                  "coordination-plan-r1-2"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-4",
+                "revision": 1,
+                "role": "TESTER",
+                "instruction": "Complete the TESTER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-3"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-5",
+                "revision": 1,
+                "role": "REVIEWER",
+                "instruction": "Complete the REVIEWER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-4"
+                ]
+              }
+            ]
+          },
+          "progress": {
+            "isRequestSatisfied": {
+              "reason": "task_incomplete",
+              "answer": false,
+              "authority": "leader"
+            },
+            "isInLoop": {
+              "reason": "structured_state_advanced",
+              "answer": false
+            },
+            "isProgressBeingMade": {
+              "reason": "structured_state_advanced",
+              "answer": true
+            },
+            "nextSpeaker": {
+              "reason": "coordinator_route",
+              "answer": "CODER"
+            },
+            "instructionOrQuestion": {
+              "reason": "coordinator_instruction",
+              "answer": "Design ready. Assigning CODER to implement the solution."
+            }
+          },
+          "completionCandidate": false,
+          "stallCount": 0,
+          "progressMarker": "{\"phase\":\"coding\",\"complexityTier\":1,\"requirementIds\":[\"req-lru\"],\"architectureReady\":true,\"subtasks\":[{\"id\":\"fixed-lru-task-sub-0\",\"status\":\"in_progress\"}],\"testOutcome\":null,\"reviewEntries\":0,\"humanGateReason\":null}",
+          "replanned": false,
+          "replanReason": null
+        },
+        "display": "Coordinator Ledger r1: stall=0/3",
+        "ts": 1789604886131
+      },
+      {
+        "msgId": "assistant-5364d88cd7ae15186302ec5b",
+        "threadId": "assistant-5364d88cd7ae15186302ec5b",
+        "channelId": "main",
+        "fromRole": "CODER",
+        "type": "objection",
+        "payload": {
+          "objection": {
+            "claim": "contradiction",
+            "target": {
+              "kind": "requirement",
+              "id": "req-lru"
+            },
+            "argument": "Fixed acceptance fixture requests a Leader decision before continuing."
+          }
+        },
+        "display": "Raised an objection: Fixed acceptance fixture requests a Leader decision before continuing.",
+        "ts": 1789604888572
+      },
+      {
+        "msgId": "b4d57b22-4bc7-41d0-a9ea-a2274dee7d69",
+        "channelId": "main",
+        "fromRole": "COORDINATOR",
+        "type": "chat",
+        "payload": {
+          "kind": "coordination_ledger",
+          "revision": 1,
+          "task": {
+            "confirmedFacts": [
+              {
+                "key": "goal",
+                "value": "Implement only lru-cache.cjs as CommonJS exporting LRUCache. Constructor(capacity, ttlMs = Infinity); get(key) returns value or undefined and refreshes recency; set(key,value) inserts/updates and evicts least recently used when capacity is exceeded; delete(key) returns whether it existed. Optional TTL expires entries from their last set time. Read the existing files first; preserve lru-cache.test.cjs unchanged. Use workspace_apply with the original expected/readReceiptId. Capture the resulting file manifest with workspace_read with no path, then run managed Node using workspace_run argv [\"--test\",\"--test-reporter=tap\",\"@input/lru-cache.test.cjs\"] against that inputVersion. All five tests must pass. End with actual file and test evidence; do not invent a receipt or modify tests."
+              },
+              {
+                "key": "phase",
+                "value": "coding"
+              },
+              {
+                "key": "complexityTier",
+                "value": 1
+              },
+              {
+                "key": "requirementsCount",
+                "value": 1
+              },
+              {
+                "key": "architectureReady",
+                "value": true
+              },
+              {
+                "key": "completedSubtasks",
+                "value": 0
+              },
+              {
+                "key": "testsPassed",
+                "value": null
+              },
+              {
+                "key": "reviewEntries",
+                "value": 0
+              }
+            ],
+            "hypotheses": [],
+            "plan": [
+              {
+                "id": "coordination-plan-r1-1",
+                "revision": 1,
+                "role": "PM",
+                "instruction": "Complete the PM stage when routed",
+                "status": "done",
+                "dependsOn": []
+              },
+              {
+                "id": "coordination-plan-r1-2",
+                "revision": 1,
+                "role": "ARCHITECT",
+                "instruction": "Complete the ARCHITECT stage when routed",
+                "status": "done",
+                "dependsOn": [
+                  "coordination-plan-r1-1"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-3",
+                "revision": 1,
+                "role": "CODER",
+                "instruction": "Complete the CODER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-2"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-4",
+                "revision": 1,
+                "role": "TESTER",
+                "instruction": "Complete the TESTER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-3"
+                ]
+              },
+              {
+                "id": "coordination-plan-r1-5",
+                "revision": 1,
+                "role": "REVIEWER",
+                "instruction": "Complete the REVIEWER stage when routed",
+                "status": "pending",
+                "dependsOn": [
+                  "coordination-plan-r1-4"
+                ]
+              }
+            ]
+          },
+          "progress": {
+            "isRequestSatisfied": {
+              "reason": "task_incomplete",
+              "answer": false,
+              "authority": "leader"
+            },
+            "isInLoop": {
+              "reason": "no_structured_progress",
+              "answer": true
+            },
+            "isProgressBeingMade": {
+              "reason": "no_structured_progress",
+              "answer": false
+            },
+            "nextSpeaker": {
+              "reason": "coordinator_route",
+              "answer": "LEADER"
+            },
+            "instructionOrQuestion": {
+              "reason": "coordinator_instruction",
+              "answer": "Await Leader resolution for blocking_objection:assistant-5364d88cd7ae15186302ec5b"
+            }
+          },
+          "completionCandidate": false,
+          "stallCount": 1,
+          "progressMarker": "{\"phase\":\"coding\",\"complexityTier\":1,\"requirementIds\":[\"req-lru\"],\"architectureReady\":true,\"subtasks\":[{\"id\":\"fixed-lru-task-sub-0\",\"status\":\"in_progress\"}],\"testOutcome\":null,\"reviewEntries\":0,\"humanGateReason\":null}",
+          "replanned": false,
+          "replanReason": null
+        },
+        "display": "Coordinator Ledger r1: stall=1/3",
+        "ts": 1789604889228
+      }
+    ],
+    "requirements": [
+      {
+        "story": "Fixed LRU implementation",
+        "acceptance": [
+          "All five original tests pass unchanged"
+        ],
+        "nonGoals": [],
+        "id": "req-lru"
+      }
+    ],
+    "reviewComments": [],
+    "handoffPackets": [
+      {
+        "fromRole": "PM",
+        "toRole": "ARCHITECT",
+        "done": "PM stage completed; Coordinator routed the structured handoff to ARCHITECT",
+        "keyDecisions": [],
+        "openIssues": [],
+        "fileRefs": [],
+        "ts": 1789604884942
+      },
+      {
+        "fromRole": "ARCHITECT",
+        "toRole": "CODER",
+        "done": "ARCHITECT stage completed; Coordinator routed the structured handoff to CODER",
+        "keyDecisions": [],
+        "openIssues": [],
+        "fileRefs": [],
+        "ts": 1789604886131
+      }
+    ],
+    "decisionLedger": [],
+    "objections": [
+      {
+        "id": "assistant-5364d88cd7ae15186302ec5b",
+        "threadId": "assistant-5364d88cd7ae15186302ec5b",
+        "fromRole": "CODER",
+        "claim": "contradiction",
+        "target": {
+          "kind": "requirement",
+          "id": "req-lru"
+        },
+        "argument": "Fixed acceptance fixture requests a Leader decision before continuing.",
+        "ts": 1789604888572,
+        "track": "blocking"
+      }
+    ],
+    "localExecution": {
+      "schemaVersion": "local-execution-v1",
+      "rootIds": [
+        "root:c3601e180d1e702e25b3dff38f4c67ff0cefe5514b4fdd8004987bfc1dc05a68"
+      ],
+      "workspaces": [
+        {
+          "schemaVersion": "workspace-v1",
+          "projectId": "fixed-lru-project",
+          "taskId": "fixed-lru-task",
+          "workspaceId": "workspace:cd7db3e77e62d01a316d415aee809fb2f388ad74db6e3a1acff45792ba62247d",
+          "rootId": "root:c3601e180d1e702e25b3dff38f4c67ff0cefe5514b4fdd8004987bfc1dc05a68",
+          "grantId": "grant:e5b3071b8394b5703dc382b1f9758923798cd264889e3acf1ce9cf4dc29b4d9f",
+          "purpose": "validation",
+          "mode": "direct",
+          "baselineManifestId": "manifest:f90f9216f0843f1adc629ca21b8ec77162507271e8d2ce26bd1b8dd2b7b37b7f"
+        },
+        {
+          "schemaVersion": "workspace-v1",
+          "projectId": "fixed-lru-project",
+          "taskId": "fixed-lru-task",
+          "workspaceId": "workspace:f3c072c3b4e31e7ad55a482ffbe90e4b206110556cce6d8f060031ffc5c0359d",
+          "rootId": "root:c3601e180d1e702e25b3dff38f4c67ff0cefe5514b4fdd8004987bfc1dc05a68",
+          "grantId": "grant:e5b3071b8394b5703dc382b1f9758923798cd264889e3acf1ce9cf4dc29b4d9f",
+          "purpose": "coding",
+          "mode": "direct",
+          "baselineManifestId": "manifest:f90f9216f0843f1adc629ca21b8ec77162507271e8d2ce26bd1b8dd2b7b37b7f"
+        }
+      ],
+      "bindings": [
+        {
+          "workerId": "worker:e03c43a7-01ba-47f6-a0a3-573aee94c910:0",
+          "workspaceId": "workspace:cd7db3e77e62d01a316d415aee809fb2f388ad74db6e3a1acff45792ba62247d",
+          "receiptId": "binding:register:cd7db3e77e62d01a316d415aee809fb2f388ad74db6e3a1acff45792ba62247d"
+        },
+        {
+          "workerId": "worker:a44f7058-3da9-4606-af68-c9f23f81b93e:0",
+          "subtaskId": "fixed-lru-task-sub-0",
+          "workspaceId": "workspace:f3c072c3b4e31e7ad55a482ffbe90e4b206110556cce6d8f060031ffc5c0359d",
+          "receiptId": "binding:register:f3c072c3b4e31e7ad55a482ffbe90e4b206110556cce6d8f060031ffc5c0359d"
+        }
+      ],
+      "receipts": [
+        {
+          "receiptId": "binding:fixed-lru-grant",
+          "actionId": "fixed-lru-grant",
+          "inputHash": "06b87373da93c9a8e3d77b0387799df3f0bc0d40bfae43dd6439b0c5295f1667",
+          "registryRevision": 1
+        },
+        {
+          "receiptId": "binding:register:cd7db3e77e62d01a316d415aee809fb2f388ad74db6e3a1acff45792ba62247d",
+          "actionId": "register:cd7db3e77e62d01a316d415aee809fb2f388ad74db6e3a1acff45792ba62247d",
+          "inputHash": "c4d06044b5e8fcccd05116190158e4b5e425433b4587926454bdfe64c3385a2c",
+          "registryRevision": 5
+        },
+        {
+          "receiptId": "binding:register:f3c072c3b4e31e7ad55a482ffbe90e4b206110556cce6d8f060031ffc5c0359d",
+          "actionId": "register:f3c072c3b4e31e7ad55a482ffbe90e4b206110556cce6d8f060031ffc5c0359d",
+          "inputHash": "a3ea67a89c2935d39831d5bb5e8b6a34b6b2b8d4c433a87cbfb5ff322f567eaa",
+          "registryRevision": 7
+        }
+      ]
+    },
+    "complexity": {
+      "tier": 1,
+      "signals": {
+        "rule": "tier1.default",
+        "goalLengthChars": 788,
+        "matchedTier2Keywords": [],
+        "matchedTier0Keywords": [
+          "lru",
+          "cache"
+        ],
+        "estimatedFileCount": null,
+        "dependencyCount": null
+      }
+    },
+    "nextRole": "CODER",
+    "architecture": {
+      "modules": [
+        "LRUCache"
+      ]
+    },
+    "conventions": {
+      "testFiles": [
+        "lru-cache.test.cjs"
+      ]
+    },
+    "humanGate": {
+      "gateId": "human-gate:assistant-5364d88cd7ae15186302ec5b",
+      "reason": "blocking_objection:assistant-5364d88cd7ae15186302ec5b",
+      "options": [
+        "accept_objection",
+        "reject_objection"
+      ],
+      "phase": "coding",
+      "openedTs": 1789604888572,
+      "safePointRefs": []
+    }
+  },
+  "failure": "expected 'blocking_objection:assistant-5364d88c…' to match /^objection:/",
+  "files": [
+    {
+      "path": "local-command-bootstrap",
+      "sha256": "3fc3d30a5ba589e592a0b3e89ca9c8f79e3271c507b61dcf031ed8bc58e0c9aa"
+    },
+    {
+      "path": "local-file-transaction",
+      "sha256": "7cf918843fedf4b26ee046fed3e9db9f38a07c732814fcddd9db94caaa456242"
+    },
+    {
+      "path": "local-process-control",
+      "sha256": "a5f7c53d2f6f7ec0c522920aeac65d0cd4b1c68e0909a08a96b5815b02d1f22e"
+    },
+    {
+      "path": "local-root-initialization",
+      "sha256": "b9b7cbb5f616cde76ad396720ce8a555df46663fade0b8642251f8763f307645"
+    },
+    {
+      "path": "local-root-inspection",
+      "sha256": "1372d837deca93701cbe04434faf7f7f1272c051156a679b8ee81ef898c64c95"
+    },
+    {
+      "path": "project/.agora-operations/file-f61676f58954d8301c0c6678b432832b8a990f9e67a5a3476731f79484671e5d-candidate",
+      "sha256": "4138393c0d70bd6eb24c5d85d2443cc766aec08215fabcf77fdf9d6012094e19"
+    },
+    {
+      "path": "project/.env",
+      "sha256": "fbc7e5a6e16b165c6ee8e3a4145b0a0a91e131e374ee723577574d88b45495e7"
+    },
+    {
+      "path": "project/lru-cache.cjs",
+      "sha256": "b2e57de02eb3ef3607e4e953d6466f17ac7290ec67b91ad246976de2098bac1b"
+    },
+    {
+      "path": "project/lru-cache.test.cjs",
+      "sha256": "0336e96840c0633574e3ed246f536a8d621679dd7ddd8a9678dbe27bcda4a9f1"
+    },
+    {
+      "path": "state/command-journal/commands.json",
+      "sha256": "fc351b495b6bae6fe4dabd08cfe3e60c1fc8d73906f91ab4fc6ea14b55d1da9b"
+    },
+    {
+      "path": "state/harness-sessions/--private-tmp-agora-task123-validation-24zUIL-project--/session~003Aworker~003A0eb14259-68ab-49c5-ad0e-00458746c1ec~003A0/session.jsonl.zstd",
+      "sha256": "8fcb5d3836108e17a8d43d0402e384ed0149df5db18d7fd8604d975c4d3b0d55"
+    },
+    {
+      "path": "state/harness-sessions/--private-tmp-agora-task123-validation-24zUIL-project--/session~003Aworker~003Aa44f7058-3da9-4606-af68-c9f23f81b93e~003A0/session.jsonl.zstd",
+      "sha256": "cb16bb206e859ba6ee4f4efe1bcc974031fc3a6800ebcecabb9bfc7ee0ec1631"
+    },
+    {
+      "path": "state/harness-sessions/--private-tmp-agora-task123-validation-24zUIL-project--/session~003Aworker~003Ae03c43a7-01ba-47f6-a0a3-573aee94c910~003A0/session.jsonl.zstd",
+      "sha256": "48b2e141ae0b7c80efb1439d5ee6f4c45ba964a62291d86ba422d2c51374e80b"
+    },
+    {
+      "path": "state/local-workspaces/file-transactions/file-f61676f58954d8301c0c6678b432832b8a990f9e67a5a3476731f79484671e5d/expected",
+      "sha256": "4138393c0d70bd6eb24c5d85d2443cc766aec08215fabcf77fdf9d6012094e19"
+    },
+    {
+      "path": "state/local-workspaces/file-transactions/file-f61676f58954d8301c0c6678b432832b8a990f9e67a5a3476731f79484671e5d/native.json",
+      "sha256": "3efefcd10cc5c428059a35e6ea69f1c50f3aec70f76e6be323ac694b9e50eaf5"
+    },
+    {
+      "path": "state/local-workspaces/file-transactions/file-f61676f58954d8301c0c6678b432832b8a990f9e67a5a3476731f79484671e5d/prepared.json",
+      "sha256": "29dc234855e26475e91ed4c184414c55cbebb7052076ac5b847c8125ff547d57"
+    },
+    {
+      "path": "state/local-workspaces/file-transactions/file-f61676f58954d8301c0c6678b432832b8a990f9e67a5a3476731f79484671e5d/replacement",
+      "sha256": "b2e57de02eb3ef3607e4e953d6466f17ac7290ec67b91ad246976de2098bac1b"
+    },
+    {
+      "path": "state/local-workspaces/file-transactions/file-f61676f58954d8301c0c6678b432832b8a990f9e67a5a3476731f79484671e5d/result.json",
+      "sha256": "706cb8b7c28df6550ab4361959bd0768e87d61d1602974fa9581e822f6476358"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-7bee8de54bda28c1e54366b2d9ce6ce3f845bd8e0879e6e9af5116a182f8a519/native.json",
+      "sha256": "9d5b5c091c470d2fa448d11b7f75b88961ff5707942a18aeb20932583451961e"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-7bee8de54bda28c1e54366b2d9ce6ce3f845bd8e0879e6e9af5116a182f8a519/prepared.json",
+      "sha256": "92ea0cea06e1e1eb2f1953461951683bbcc9f48c6eb8a9036b7d222017e5c71f"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-7bee8de54bda28c1e54366b2d9ce6ce3f845bd8e0879e6e9af5116a182f8a519/result.json",
+      "sha256": "c7e02b233f3919e7d97d0874209f106654432fd4cdb1fdd6cd6a10b276775dd8"
+    },
+    {
+      "path": "state/local-workspaces/objects/0336e96840c0633574e3ed246f536a8d621679dd7ddd8a9678dbe27bcda4a9f1.bin",
+      "sha256": "0336e96840c0633574e3ed246f536a8d621679dd7ddd8a9678dbe27bcda4a9f1"
+    },
+    {
+      "path": "state/local-workspaces/objects/0eeae35ecf6a43e1ec34a08d620fd1a5bd29a85120a40a69eb220e27606ebbcf.ref",
+      "sha256": "91621331d0f3820bbaf8bd155dad5463cf2ed377e812ce1731df5f3777fd640e"
+    },
+    {
+      "path": "state/local-workspaces/objects/27a8093920d3955aa23048b8d42f31427a0b386201425accde39df85ab086782.json",
+      "sha256": "8850a5f94ef52332907a188cbf83a771778888788e5cc291095d3a612c335565"
+    },
+    {
+      "path": "state/local-workspaces/objects/2ea20b74b74f0e3699b694c9b49722e6b59c94dd93c94dadc4d246301c101337.json",
+      "sha256": "dbf7f768f3a392dad91d3fc1915683397ef21c1985fc14dfbdfbeed347ee32e9"
+    },
+    {
+      "path": "state/local-workspaces/objects/2fa6daf52b73c709502efd2eb6803d543edb3aa0cdb92633a5fec1cf0c2ae49e.json",
+      "sha256": "5e75ddc8e30613a93f39320ec537b451f538a5f9154232690b67730f95fb9917"
+    },
+    {
+      "path": "state/local-workspaces/objects/37fa359df2e06aed6588e8ff708d462c46716ec792bd8a3fd30bd74946e13bb1.ref",
+      "sha256": "05fa28d33ea8b6c09ce9d26e74bc526d6e7ddd25837f91040ceec18888af5313"
+    },
+    {
+      "path": "state/local-workspaces/objects/4138393c0d70bd6eb24c5d85d2443cc766aec08215fabcf77fdf9d6012094e19.bin",
+      "sha256": "4138393c0d70bd6eb24c5d85d2443cc766aec08215fabcf77fdf9d6012094e19"
+    },
+    {
+      "path": "state/local-workspaces/objects/4ade4f0d347b164f54f9697708e46bba50ffa2797ad306d5b22ee8e17b5c8cda.json",
+      "sha256": "98cdf120220dc87b09953f912a809ea7a13e2896af6da80945a1230581d36cb9"
+    },
+    {
+      "path": "state/local-workspaces/objects/51e7fabfe691f70cb4f399bd9de5312241bbcb3b550c5f37439118727b69905f.ref",
+      "sha256": "815d41f703cc4662a51ba00e9f6a584bea99cc35f92ccb21c6890216d9b6ed22"
+    },
+    {
+      "path": "state/local-workspaces/objects/655a4f9a2fe47441fa2d6e9ceb0eb9dfc546aa5eaaf9a8e572763efe2c229874.json",
+      "sha256": "06b49711b42a4e45ba18a6e7b9202578a83714aca9af05ad03d49410da2a0efc"
+    },
+    {
+      "path": "state/local-workspaces/objects/6c06a1a382dca2f1a59beb09fc431ee46c2d0508229bc1a83f54e0b618464bb3.json",
+      "sha256": "6c06a1a382dca2f1a59beb09fc431ee46c2d0508229bc1a83f54e0b618464bb3"
+    },
+    {
+      "path": "state/local-workspaces/objects/7011c862b3ffbab27300f921ec5717273c0d8efa0ba547e9c38f7801bb88f2ce.json",
+      "sha256": "c185a87533e9e62cb57d7614ba7058402ba08f428fe3774e8259a4ba19c0c8a5"
+    },
+    {
+      "path": "state/local-workspaces/objects/76eab77b74094b80fb514d6e7d69c43800677e5850a9153c0f2dd08ac419d4b7.ref",
+      "sha256": "88bd0055a21d7832b37de2e5948e8c6c8c8e660879613f18bb6d9863ebaeaa98"
+    },
+    {
+      "path": "state/local-workspaces/objects/82f481ab22b2ed1b974ea2e494cc00f0025875288a3944c3f5ddef7853262d21.json",
+      "sha256": "f51e0ab7bf7fb174e0f84765611b88e238b3e64a04f30a280713380ca3375d93"
+    },
+    {
+      "path": "state/local-workspaces/objects/8c6855a8f13c9cb1ceac6bf9fb98615125d11a55077f4d652becdfc5187eda2d.json",
+      "sha256": "850a5f1a40966bc74353622de0a03df8ec462a27b304ab2cbf91e998c61c6e2d"
+    },
+    {
+      "path": "state/local-workspaces/objects/9bac6154c0feaddb407245787742410b4874004f576e0a382e53fb6cb9afdcd8.ref",
+      "sha256": "7ff26820edf78473a61e0bfac03248e9d8119a3028ad769bb145c60614e914c5"
+    },
+    {
+      "path": "state/local-workspaces/objects/9bb82413c3bb4f471353cbbbfecbc289d39d9e909605a29cf36ba9a8265a163f.ref",
+      "sha256": "d917b8badc9e0ccc16b6605a84d974d5a00eac3ed3eb96cbaa17c860214ef8bb"
+    },
+    {
+      "path": "state/local-workspaces/objects/9d15bb6c8f46e5cca8cda30f4222e5bd478dc7e5279b7e53ffe5f15a6c10c671.json",
+      "sha256": "da2e0ef40c8564d0b03b9afdabeffc44605c0f15c8a7aeb0ebef9e4fff045276"
+    },
+    {
+      "path": "state/local-workspaces/objects/a2a7629dfa19a2b76ea7f8244b0886cadea9d2df2ea854396c61d8b4c895003f.json",
+      "sha256": "8b16f93bf0c2c727041255fb1ae1f62e8cc77787fc5b23de0e8977d55874f738"
+    },
+    {
+      "path": "state/local-workspaces/objects/a851b7983bbe2873f022c009405267039ae1ac4b5bf6fcc4aad8ec567ff5bd61.json",
+      "sha256": "1995cde2d153e07e5ab48e9428420d8d9e3d5d2f5704116d67deb9cb4ea55116"
+    },
+    {
+      "path": "state/local-workspaces/objects/b2e57de02eb3ef3607e4e953d6466f17ac7290ec67b91ad246976de2098bac1b.bin",
+      "sha256": "b2e57de02eb3ef3607e4e953d6466f17ac7290ec67b91ad246976de2098bac1b"
+    },
+    {
+      "path": "state/local-workspaces/objects/bf02fa682f41f48d33e1914396bfe09bb404254cc2fc037d8633eca38ab1d169.ref",
+      "sha256": "407d3132c529ece0fc71c57306c3e0f8f182da1e0ea5b0e20cceefb87c2cf403"
+    },
+    {
+      "path": "state/local-workspaces/objects/c1f6fc02eb45f5d872e87daffd056132a5b98879dcf9899c29d7f9e8b49c3f21.json",
+      "sha256": "e1c335827dd1e0b62e9c1b76be34d28e9cc16ead576250df10e02bc56cfcceb1"
+    },
+    {
+      "path": "state/local-workspaces/objects/d380dddb66f9849db41c42d2569f3c81d9223de6c8d5fdf7675dd9d9ca3cb5f2.ref",
+      "sha256": "c6b90e6f624051130081b475b00f7de9e0ee496ef5b75f4c90ab2d0f938ed9b1"
+    },
+    {
+      "path": "state/local-workspaces/objects/d3b0b0b7daab557a099e9037b35eb35c1a4a3b21b5f5b3234be5d5d42cd8c298.ref",
+      "sha256": "2e4489a38f4e676b9a7c86146d848bb47f3b8f50313644534749459da306b00f"
+    },
+    {
+      "path": "state/local-workspaces/objects/db2875025b33fa3ab31069c05c79fe8243f6adb14b91d37d8dca04fb3dc34ad9.json",
+      "sha256": "706cb8b7c28df6550ab4361959bd0768e87d61d1602974fa9581e822f6476358"
+    },
+    {
+      "path": "state/local-workspaces/objects/e10de329d1acc30c81db7155cbb7be68e95793ac8e45ecc04ea722e1af97585e.ref",
+      "sha256": "76c371caba3638ca764484cffbae78ffde6ab5662fd76e07a61245f9c809440e"
+    },
+    {
+      "path": "state/local-workspaces/objects/f0059b74add5d44ebd0d8b4d56ec2ddbf31dfa6d662438e45a8379fd11861f31.json",
+      "sha256": "a83009662a42fc6d42ae5fbd289879c940dfd88a56677db40cfa1ec5edc62c15"
+    },
+    {
+      "path": "state/local-workspaces/objects/f1f15f0b03bc0e1a7c5d03c2545bbbd809506e2754640601a6544e2010ae8ad2.json",
+      "sha256": "f1f15f0b03bc0e1a7c5d03c2545bbbd809506e2754640601a6544e2010ae8ad2"
+    },
+    {
+      "path": "state/local-workspaces/objects/f61676f58954d8301c0c6678b432832b8a990f9e67a5a3476731f79484671e5d.ref",
+      "sha256": "a094c7162fa5c87b802ee9d444ca43859be1819dd775a39a6b8979c6a2795d05"
+    },
+    {
+      "path": "state/local-workspaces/objects/f785be9563612a3b348da435e4b7f7f9aed4f3e3452ebdfa7ff5383c6a4d94d3.json",
+      "sha256": "45df06b73544ffc2dc942e7cd272ad2b12ec42a58348d617c99678e9f97430f8"
+    },
+    {
+      "path": "state/local-workspaces/objects/f90f9216f0843f1adc629ca21b8ec77162507271e8d2ce26bd1b8dd2b7b37b7f.json",
+      "sha256": "d6d43f516ee01bea9b73b95d7069f3cfa0ace003c783c22a68ab5aa4c2559312"
+    },
+    {
+      "path": "state/local-workspaces/objects/fa37514f4235c1a3f212a12e2941f8afd29571c96ac7203418c7d810288b4d88.ref",
+      "sha256": "d141afdd56094a656252b54d69b009a9bdf6b8d9be31acd344817e683da5b73f"
+    },
+    {
+      "path": "state/local-workspaces/objects/ffa4b137e62f7619c78b9955c2db5fd24af5fbc9e0e2187917d9d40d1a219064.ref",
+      "sha256": "d300ed5e4dbe48c924265c61eb97539be684f81da4cf71d9986af52a27f001ff"
+    },
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "a17202b110e4f511f6dd811ecadd45dc3279402e388da0a964de525364728fbc"
+    },
+    {
+      "path": "state/tasks/projects/fixed-lru-project/collaboration.json",
+      "sha256": "e09fcf9ffa841077bfe7bfa4d33fc5b9af52f19a46f424a35962771778df0a4f"
+    },
+    {
+      "path": "state/tasks/projects/fixed-lru-project/tasks/fixed-lru-task/state.json",
+      "sha256": "d353fd297e4e52a5eadf10719eebae7fd8fcc1d6e8b0f1ad9d2874ff707c2df6"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/src/local-binding-coordinator.ts": "3b47e9cf80c25bbbc78df3a5843e69e87b9235dbff947ae42b9e046c4bfc137a",
+    "packages/runtime/sandbox/src/local-command-binding.ts": "6a79ae3e5a90108e15030f5b8437ad80f49ea3ce17415011333f64149427a18f",
+    "packages/runtime/sandbox/src/local-command-journal.ts": "ff18b89fa0998572cc2c7a57f2a4711f29d53dbe8489ce0e43a63a7aaf7207fa",
+    "packages/runtime/sandbox/src/local-command-output.ts": "e0839dcb0fe9e80be88df2a36dddb168d32bf8cc9da13ba78fc533fe531ee9d3",
+    "packages/runtime/sandbox/src/local-command-policy.ts": "2748c2147c6799eef535bbcbc618ec0b5733922a10d05472665c9731e86daa2d",
+    "packages/runtime/sandbox/src/local-command-start.ts": "3b4524e7b9a4d8b8f969bfaaef51c647a3d872b8a1b2b2b6bfd1956028b4ff79",
+    "packages/runtime/sandbox/src/local-command-stop.ts": "ba3b59f1f302b3a5714911302618ec051cd2868e9d5a2b7f5513d0c3504cace7",
+    "packages/runtime/sandbox/src/local-command-supervisor.ts": "fc8cb05b5fca978fd94f1db0da6c76cc47a953da4e9fd777aa4db57db0a02202",
+    "packages/runtime/sandbox/src/local-control-objects.ts": "5e23b990ab51dd33c486dd2bab50dba35a073f15ff9f5740c40627ec38391817",
+    "packages/runtime/sandbox/src/local-file-transaction.ts": "2d9885c4558140b37c81e1cf6db1e251cde719458008adece969fa4d8b606097",
+    "packages/runtime/sandbox/src/local-fixed-inputs.ts": "f967c98149389701a9f9461a4703df8e7e497b9a773fa9dab6011acbc90ecf98",
+    "packages/runtime/sandbox/src/local-grant-controller.ts": "337e62bec3111d9457b4648320e7683dba588f3b64ed8a87b30dea1d39174a87",
+    "packages/runtime/sandbox/src/local-registry-file.ts": "6f4c92b4b89b938868a5bb8f6121b658051ff173017b53468ed724532b101a69",
+    "packages/runtime/sandbox/src/local-registry-records.ts": "ad122a5dc565bb562c89bbd36f702168cac6d7d258e6b3814b8988d3258f1370",
+    "packages/runtime/sandbox/src/local-root-coordinator.ts": "40c6165470fc3ff9cf83b24e7c070a451b6cec2b1402eca12d7275aa7d4ccf55",
+    "packages/runtime/sandbox/src/local-root-initialization.ts": "2fbec615ce45a2284d3bbe8644fbc8d3ef25857554b35ed21506fe3683b785a8",
+    "packages/runtime/sandbox/src/local-root-inspection.ts": "56a60a48e100c3e56597a37720570d5cec0b1f7cb3a6dbde65a2280dc73d8c97",
+    "packages/runtime/sandbox/src/local-temp-sandbox.ts": "7d1619175cc8a7fee7a8d924aa466c98e7bb3334bf37c1dd581ebeb0942949cf",
+    "packages/runtime/sandbox/src/local-version-store.ts": "05d70d451a938a75a3abf3accf643e64658e2c61c2d437ea1fda11053688310e",
+    "packages/runtime/sandbox/src/local-workspace-apply.ts": "f59b124b3fbb86fb60de3a6615656b61a081c8a403fca3a59296dfc5f13ee14a",
+    "packages/runtime/sandbox/src/local-workspace-authority.ts": "6b2fe8621cf9de5ac4ae878d86859eb76ad72e29395baf3bde5407ae7c39588c",
+    "packages/runtime/sandbox/src/local-workspace-batch.ts": "49dafe6d404369f81ac15444bf03096e03e6b5c6c024c4403572fe46be8ac80b",
+    "packages/runtime/sandbox/src/local-workspace-commands.ts": "606c7b466ec9c11c6ee3f0c04879b79387cafe4e9dcda86b72d3fa39258ed0f9",
+    "packages/runtime/sandbox/src/local-workspace-files.ts": "5a97dcc6569ca73662318a23e5b38979a37e3c7c32f1a9bdc70f384308c5d9a8",
+    "packages/runtime/sandbox/src/local-workspace-operation.ts": "eb15e4bb9ccea231622ff3f6c70a043ab093ce5534a65eb494967ef24f1d7e93",
+    "packages/runtime/sandbox/src/local-workspace-sessions.ts": "04365434bc6d1aa057c4acb266d8e6cdad0fc5a3aa3285c32c2ae599fdf5fec5",
+    "packages/runtime/sandbox/src/local-workspace-tools.ts": "d3577f5fdd18b1c541ca13f2926a0638690bb56f044e592b8d5afa3814af9c78",
+    "packages/runtime/sandbox/src/workspace-adapter.ts": "fcce62fcd21daa452ed85a76907fafd6da403b06700b6ec67904039164e38edc",
+    "packages/runtime/sandbox/src/workspace-port.ts": "4dfc143f7742e9480b65a3fe70b73fe24b9638b2cf73cbdd01e4c76e266212e1",
+    "packages/runtime/sandbox/src/workspace-worker-port.ts": "a78f514bc13df69506351ddeea9cd5c5ba96ec2020e7d5c40311c433552e23df",
+    "packages/runtime/sandbox/native/local-boundary-probe.c": "ec1681c437480ecef3adb17f5bf8ca1e2006b7aade33ba081066461b0f37bcb4",
+    "packages/runtime/sandbox/native/local-command-binding-probe.c": "453772e7a35f4eaa28ac1abf1bdbdbe4539e69a5b0fee1e5d46fa1069cb26bca",
+    "packages/runtime/sandbox/native/local-command-bootstrap.c": "6a961f682c2cd385072c51c9b5819c13f23760ce39e9169a7937fd1e44ac4416",
+    "packages/runtime/sandbox/native/local-command-capture-probe.c": "c48b9ab1f14f000096c73320bbf5c7a2b4f595f7a5ed68cbf9e818c19bead294",
+    "packages/runtime/sandbox/native/local-command-control-drift-probe.c": "513a031c2301c995998cc5cc155a97f90717e03f9a56f391c129590f5e911b7f",
+    "packages/runtime/sandbox/native/local-command-discovery-probe.c": "ad8cff015ddb84388b4b5f5b1c7b11135a5fb25ff899395aa744ea04608266a3",
+    "packages/runtime/sandbox/native/local-command-isolation-probe.c": "247bb29315abc53279cec90183def9d443efc260d3844e0f688fb61db7ff55cc",
+    "packages/runtime/sandbox/native/local-command-start-probe.c": "cd9c6ece3cbaa2aca87bc2c59ef9854315cf2e18d8f7bec019c81293937534c2",
+    "packages/runtime/sandbox/native/local-command-stop-probe.c": "24f16058f703c384eebc0870780fc333470d2d907de21ef701fba58334a403ea",
+    "packages/runtime/sandbox/native/local-command-supervision-probe.c": "cf160e9db608145fe575e28ebeafb143389bad394ac95ab1decb32b0b1a8fbf3",
+    "packages/runtime/sandbox/native/local-file-transaction.c": "d7da93a33fdb70ab22744b3f87e32d07ec1d1fd1faff862dda12747ee12ca667",
+    "packages/runtime/sandbox/native/local-process-control.c": "305da4f928dbf3c68a341c7f4d8c527fa1837e93e8e14ee93d0f3d8a07440f4c",
+    "packages/runtime/sandbox/native/local-root-initialization-probe.c": "4e37e7409e81bc9ff6d83927f9a6df45d6485fb6cd66a154e2f0e2eb8985bec1",
+    "packages/runtime/sandbox/native/local-root-initialization.c": "9f448acd47d3c30be889f611f94d14210216408eab0de273e74618d66e12eb79",
+    "packages/runtime/sandbox/native/local-root-inspection-probe.c": "f649749d3506c8947a73f4b0c9e5e1e1874031ca7123dfde7e1cbaf7d7d74a96",
+    "packages/runtime/sandbox/native/local-root-inspection.c": "c5b57c12f4d961cc8f8ccd130829d560f8684b2700a3b322ed7a524bf833939d",
+    "packages/core/orchestration/src/worker-runtime.ts": "14c2f51fc5f86770baafbabf89d85e6bed1ed1912bfb19cf5af002748dfd320d",
+    "packages/runtime/executor/src/harness-executor.ts": "8d61a402a3302754e9c4fb65f54be531ba5606748332a2c849aca7bd4e7c6b58",
+    "packages/runtime/executor/src/project.ts": "c940ee06a3942cae6fddbdca700dafa55a1b6331eace19acde07fcac3e5804a3",
+    "packages/tools/bridge/src/local-workspace-bridge.ts": "de3c59aa65c89a2439e669cd1094fc6cd08a05773f735d0ecde56bcbed38a5b2",
+    "packages/tools/fs/src/workspace-server.ts": "de787ea6739758e6c6510ac00d62ce7b4b7c2f2654af12a0d9b92baae9a604d7",
+    "packages/roles/definitions/src/local-runtime-contract.ts": "bbcd95572a05316c6e9016e30d2da9a0be1cbe6f3459c0f925ad2496ca55d38a",
+    "apps/web/src/server/local-workspace-executor.ts": "2c696334e12469ee944500ba60a287e3ead6d59ad54854175c0f3d5279e93f91",
+    "apps/web/src/server/local-task-composition.ts": "31f27a6a40f5cbc3cae9cf8fb29c29bb8f1736e64f32cd9ca7cb3dd67a59831f",
+    "apps/web/src/server/local-validation.ts": "aca419012666e25ebde0ae6ddeb3c831723c68a5861e313964f18df81f463b59",
+    "apps/web/src/server/task-composition.ts": "791c2582c70288d36915f3b381c9908ee155f05002f36d3e199a9c1c924a112c",
+    "apps/web/src/server/task-orchestration-runtime.ts": "97d4766487d396577eb9d9728bc317a3068d5487744562d6c4413d4c354dc82e",
+    "tests/integration/phase12/phase12-3-composition.test.ts": "0c074f67915084c98daf3cbc8763ebd3b2a6d2ac212638390e8c0f4bf5bc6b04"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 442368
+  }
+}

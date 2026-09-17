@@ -1,0 +1,43 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (10 tests | 1 failed) 4077ms
+   ✓ confirms a durable grant through the real Leader POST: normal  495ms
+   × confirms a durable grant through the real Leader POST: before 424ms
+     → expected 409 to be 202 // Object.is equality
+   ✓ confirms a durable grant through the real Leader POST: after  443ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  344ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  400ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  399ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  381ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  423ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  377ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  389ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: before
+AssertionError: expected 409 to be 202 // Object.is equality
+
+- Expected
++ Received
+
+- 202
++ 409
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:174:32
+    172|           }
+    173|           const retry = await post(request());
+    174|           expect(retry.status).toBe(202);
+       |                                ^
+    175|           const closed = await control.assertClosed(scope),
+    176|             snapshot = await control.snapshot();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  15:46:25
+   Duration  4.59s (transform 209ms, setup 0ms, collect 403ms, tests 4.08s, environment 0ms, prepare 27ms)
+

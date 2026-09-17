@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/core/__tests__/e2e/lru-cache.test.ts (1 test) 180081ms
+   ✓ G5 e2e: LRU cache task over live Harness provider (Phase 0 exit baseline) (opencode-go/deepseek-v4-flash) > runs Coordinator → CODER → TESTER to done with passing testResults and sandbox output  180080ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  21:54:58
+   Duration  180.83s (transform 219ms, setup 0ms, collect 630ms, tests 180.08s, environment 0ms, prepare 33ms)
+

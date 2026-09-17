@@ -1,0 +1,108 @@
+{
+  "base": "/private/tmp/agora-task123-validation-bLCYaU",
+  "target": "gui/501/org.agora.task123.probe.bLCYaU",
+  "startedAt": "2026-09-16T01:11:04.893Z",
+  "sourceHash": "b69a0e0d1cca1b1742be1f29783a8810508b477da9c242d786a6d48915259dcc",
+  "controllerHash": "b5dc3a2b9761df3be67dc0b760b28e7fa41ddbe7e501fc126456ba6245782edc",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127763112
+  },
+  "availableBefore": 46486028288,
+  "os": {
+    "status": 0,
+    "signal": null,
+    "stdout": "25F71\n",
+    "stderr": ""
+  },
+  "build": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "binaryHash": "09cd40c3990ddf66c1daecc488d1cbeace0125a602a4fa0b6b308db2bc4a8f10",
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-bLCYaU/session-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-bLCYaU/session-probe\"))",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\"><plist version=\"1.0\"><dict><key>Label</key><string>org.agora.task123.probe.bLCYaU</string><key>ProgramArguments</key><array><string>/usr/bin/env</string><string>-i</string><string>PATH=/usr/bin:/bin</string><string>HOME=/private/tmp/agora-task123-validation-bLCYaU</string><string>TMPDIR=/private/tmp/agora-task123-validation-bLCYaU</string><string>/usr/bin/sandbox-exec</string><string>-p</string><string>(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-bLCYaU/session-probe\"))\n(allow sysctl-read)\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-bLCYaU/session-probe\"))</string><string>/private/tmp/agora-task123-validation-bLCYaU/session-probe</string><string>escape</string></array><key>RunAtLoad</key><true/><key>SessionCreate</key><true/><key>KeepAlive</key><false/><key>WorkingDirectory</key><string>/private/tmp/agora-task123-validation-bLCYaU</string><key>EnvironmentVariables</key><dict><key>HOME</key><string>/private/tmp/agora-task123-validation-bLCYaU</string><key>TMPDIR</key><string>/private/tmp/agora-task123-validation-bLCYaU</string></dict><key>StandardOutPath</key><string>/private/tmp/agora-task123-validation-bLCYaU/stdout</string><key>StandardErrorPath</key><string>/private/tmp/agora-task123-validation-bLCYaU/stderr</string></dict></plist>",
+  "admissionClock": {
+    "status": 0,
+    "signal": null,
+    "stdout": "13340685962164\n",
+    "stderr": ""
+  },
+  "bootstrap": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "stdout": "{\"stage\":\"parent\",\"pid\":5265,\"ppid\":1,\"pgid\":5265,\"sid\":1,\"auditResult\":0,\"asid\":104651}\n{\"stage\":\"coalition\",\"pid\":5265,\"result\":40,\"resource\":\"49830\",\"jetsam\":\"49831\"}\n{\"stage\":\"intermediate-exit\",\"pid\":5266,\"ppid\":5265,\"pgid\":5266,\"sid\":5266,\"auditResult\":0,\"asid\":104651}\n{\"stage\":\"coalition\",\"pid\":5266,\"result\":40,\"resource\":\"49830\",\"jetsam\":\"49831\"}\n{\"stage\":\"grandchild\",\"pid\":5267,\"ppid\":1,\"pgid\":5267,\"sid\":5266,\"auditResult\":0,\"asid\":104651}\n{\"stage\":\"coalition\",\"pid\":5267,\"result\":40,\"resource\":\"49830\",\"jetsam\":\"49831\"}\n{\"stage\":\"parent-exit\",\"pid\":5265,\"ppid\":1,\"pgid\":5265,\"sid\":1,\"auditResult\":0,\"asid\":104651}\n{\"stage\":\"coalition\",\"pid\":5265,\"result\":40,\"resource\":\"49830\",\"jetsam\":\"49831\"}\n",
+  "countBefore": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"count\",\"result\":0,\"errno\":0,\"id\":\"49830\",\"started\":6,\"exited\":5}\n",
+    "stderr": ""
+  },
+  "jobBeforeStop": {
+    "status": 0,
+    "signal": null,
+    "stdout": "\tactive count = 0\n\tstate = not running\n\tlast exit code = 0\n\t\tstate = active\n\t\tactive count = 1\n\t\tstate = active\n\t\tactive count = 1",
+    "stderr": ""
+  },
+  "scanBefore": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"member\",\"pid\":5267,\"asid\":104651,\"pidVersion\":18293148}\n{\"stage\":\"scan\",\"members\":1,\"unresolved\":0,\"predating\":2,\"examined\":391}\n",
+    "stderr": ""
+  },
+  "externalInspection": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"stop\",\"pid\":5267,\"asid\":104651,\"pidVersion\":18293148,\"wrongResult\":3,\"wrongErrno\":3,\"aliveAfterWrong\":true,\"correctResult\":0,\"correctErrno\":0}\n",
+    "stderr": ""
+  },
+  "countAfter": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"count\",\"result\":0,\"errno\":0,\"id\":\"49830\",\"started\":6,\"exited\":6}\n",
+    "stderr": ""
+  },
+  "scanAfter": {
+    "status": 0,
+    "signal": null,
+    "stdout": "{\"stage\":\"scan\",\"members\":0,\"unresolved\":0,\"predating\":2,\"examined\":390}\n",
+    "stderr": ""
+  },
+  "stderr": "",
+  "job": {
+    "status": 0,
+    "signal": null,
+    "stdout": "\tactive count = 0\n\tstate = not running\n\tlast exit code = 0\n\t\tstate = active\n\t\tactive count = 1\n\t\tstate = active\n\t\tactive count = 1",
+    "stderr": ""
+  },
+  "bootout": {
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "absent": {
+    "status": 113,
+    "signal": null,
+    "stdout": "",
+    "stderr": "Bad request.\nCould not find service \"org.agora.task123.probe.bLCYaU\" in domain for user gui: 501\n"
+  },
+  "completedAt": "2026-09-16T01:11:09.977Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "availableAfter": 46485946368,
+  "spaceDelta": -81920
+}

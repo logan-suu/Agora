@@ -1,0 +1,36 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-transaction.test.ts (17 tests) 6806ms
+   ✓ durably preserves the baseline and exchanged inode before reporting applied  527ms
+   ✓ closes the operation without touching source or external objects: move-root-before-write  359ms
+   ✓ closes the operation without touching source or external objects: move-parent-before-swap  461ms
+   ✓ closes the operation without touching source or external objects: replace-root  385ms
+   ✓ invalidates a completed exchange after root movement without undoing the actual result  377ms
+   ✓ preserves a competing user edit and refuses a stale baseline  386ms
+   ✓ refuses linked external objects: symlink-target  408ms
+   ✓ refuses linked external objects: hardlink-target  385ms
+   ✓ does not repeat a filesystem mutation when replaying an identical action  374ms
+   ✓ checks root identity after the final asynchronous authorization check  358ms
+   ✓ also invalidates a parent moved during completion authorization  461ms
+   ✓ refuses a metadata-only edit after the baseline read  385ms
+   ✓ honors trusted authorization closure: revoke-before-write  373ms
+   ✓ honors trusted authorization closure: revoke-before-swap  371ms
+   ✓ refuses unsafe journal replay: replay-different-input  431ms
+   ✓ refuses unsafe journal replay: replay-corrupt-receipt  377ms
+   ✓ refuses unsafe journal replay: replay-missing-receipt  384ms
+ ✓ tests/integration/phase12/phase12-3.test.ts (5 tests) 1767ms
+   ✓ preserves both versions in a normal confined APFS exchange  388ms
+   ✓ refuses an exchange after the opened parent moves outside the authorized root  345ms
+   ✓ refuses an exchange after the opened root moves away from its authorized path  344ms
+   ✓ can prepare a transaction file through an opened handle inside the authorized root  341ms
+   ✓ distinguishes a refused new open from the original file handle after root movement  347ms
+ ✓ tests/integration/phase12/phase12-3-command-isolation.test.ts (2 tests) 792ms
+   ✓ confines native child and exec descendants to one private command write root  424ms
+   ✓ runs the pinned Node toolchain and preserves the boundary in its spawned child  367ms
+
+ Test Files  3 passed (3)
+      Tests  24 passed (24)
+   Start at  21:38:46
+   Duration  9.72s (transform 44ms, setup 0ms, collect 56ms, tests 9.36s, environment 0ms, prepare 77ms)
+

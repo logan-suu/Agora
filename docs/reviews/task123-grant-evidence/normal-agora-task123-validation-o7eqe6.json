@@ -1,0 +1,99 @@
+{
+  "base": "/private/tmp/agora-task123-validation-o7eqe6",
+  "scenario": "normal",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128359301
+  },
+  "startedAt": "2026-09-16T20:53:18.154Z",
+  "firstResponse": {
+    "status": 202,
+    "body": {
+      "accepted": true,
+      "published": true,
+      "action": {
+        "status": "applied"
+      }
+    }
+  },
+  "initialization": {
+    "kind": "root-initialization",
+    "actionId": "initialize-root",
+    "inputHash": "94706cabca23c4ed109300ab27d90b366fd41d928289a35ba7e16717638ce22c",
+    "receiptId": "root-init:5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01",
+    "projectId": "project",
+    "taskId": "task",
+    "rootId": "root:d069fa9fe4b4ba1353b1738e5029d8143eded73c3cdffacb95e41caedf9d4f3d",
+    "grantId": "grant:3b38dcc5f6fa67667da4a11b90d959f02644e50ab6bf703280a155b992b01c97",
+    "grantRevision": 0,
+    "sourceMessageId": "grant-action",
+    "preparedRevision": 3,
+    "stage": "committed",
+    "nativeReceipt": {
+      "sha256": "f5fb60ec650a56f9650361544421f7c87dde56203f6447e1589fa110b8bddbc7",
+      "stage": "applied",
+      "created": true,
+      "stagingIdentity": "16777231:128359334",
+      "quiescent": true
+    }
+  },
+  "passed": true,
+  "files": [
+    {
+      "path": "initializer",
+      "sha256": "90c0e1fc54c4b37d4b9d6b62da2b81c7fffd005662f250cada61a3f2112e4f99"
+    },
+    {
+      "path": "inspector",
+      "sha256": "1eeb93dbe36b32bed587647fecea9949bd039f9cb390c570897e3585218ce854"
+    },
+    {
+      "path": "project/sentinel",
+      "sha256": "b04d67be9a6081174ab5384f84bf4c0fea2b47bd8fb9a2f010de349a05880a19"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/native.json",
+      "sha256": "c6871da940fbc8f4ccabfac23e5b97af417912360aaa22300a6cdac4a2a971a2"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/prepared.json",
+      "sha256": "5d21268844100e9f6321452b1e8dd7eb356a1d2dd03cdd229b243a406f1309e8"
+    },
+    {
+      "path": "state/local-workspaces/initializations/init-5102f77263ff31cb30e07c99df4a7130889cdcb2c6684a1868024e5d3a7c7d01/result.json",
+      "sha256": "f5fb60ec650a56f9650361544421f7c87dde56203f6447e1589fa110b8bddbc7"
+    },
+    {
+      "path": "state/local-workspaces/objects/64963c510cb3ab4ea81dda412eebe52815a37311f602c050e341f2601d22b43a.json",
+      "sha256": "ce6f655e1e35f12d8437496ac89aa5bbf1a19c50312595ba51cecc37fa78a45c"
+    },
+    {
+      "path": "state/local-workspaces/registry.json",
+      "sha256": "c4a3e83fa86c646e36fff05a3f2aa904a77946b994c648fe68768ba32dc8fe2d"
+    },
+    {
+      "path": "state/tasks/projects/project/collaboration.json",
+      "sha256": "3a4336bbd1e04a6f3715388c0f632a9a9214592dbd8011ad458e368895939f75"
+    },
+    {
+      "path": "state/tasks/projects/project/tasks/task/state.json",
+      "sha256": "aafaf08cd864f0024b75f02b002797f043eda8342fbdfce74b3ea807a39eed9c"
+    }
+  ],
+  "sources": {
+    "packages/runtime/sandbox/src/local-grant-controller.ts": "e5a668d0218902aee4dc0e78ed2b97622d94306fb7491ea85da96af34eab62f7",
+    "packages/runtime/sandbox/src/local-control-objects.ts": "85eb9062c3dad9a2726873e728d425207e498a8937cc2d2ed4fc53b5cf9c16e0",
+    "packages/runtime/sandbox/src/local-binding-coordinator.ts": "3b47e9cf80c25bbbc78df3a5843e69e87b9235dbff947ae42b9e046c4bfc137a",
+    "packages/runtime/sandbox/src/local-registry-records.ts": "35f5563ab2dfdc327378e53093a2e264850fb9e84d176498fe3696a73e84c12e",
+    "apps/web/src/server/message-runtime.ts": "06e3a0c879486c88746eba90d67be9803ac291ff3c3a39a655fd534874a5d73a",
+    "apps/web/src/server/message-handlers.ts": "c7b7fa7d5885887efcdc22caf37f463428ef67aded4a060dd2b97bf9cbf293a7",
+    "tests/integration/phase12/phase12-3-grant.test.ts": "52414d2ab71353374b06e6703d99ebc59149166d432c4ad95acd8dd04cb7e951"
+  },
+  "cleanup": {
+    "deleted": true,
+    "ownerReleased": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 61440
+  }
+}

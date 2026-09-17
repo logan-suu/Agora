@@ -1,0 +1,145 @@
+{
+  "generatedAt": "2026-09-17T01:57:08.299081+00:00",
+  "entries": [
+    {
+      "report": "docs/reviews/task123-grant-evidence/installation-agora-task123-validation-RAGSOI.json",
+      "sha256": "7e305a46f91410ee2535399b94ee773e713cf5405165318142196689f815cbd7",
+      "scenario": "installation",
+      "startedAt": "2026-09-17T01:48:40.595Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 741376
+      },
+      "failure": "workspace_command_scope_mismatch"
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/generation-agora-task123-validation-uQ4hfd.json",
+      "sha256": "54997b972af6e9d371627796cfa44de6455d6978db0e08feb38f0985bc7c7ec9",
+      "scenario": "generation",
+      "startedAt": "2026-09-17T01:38:26.048Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 417792
+      },
+      "failure": null
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/installation-agora-task123-validation-xv4sUM.json",
+      "sha256": "06db7041ca248c5eb1d53d211f875efbd487ce72665635a8c938db0282cec6f8",
+      "scenario": "installation",
+      "startedAt": "2026-09-17T01:45:37.006Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 544768
+      },
+      "failure": "expected '(node:2598) [DEP0169] DeprecationWarn\u2026' to be '' // Object.is equality"
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/installation-agora-task123-validation-RORMVf.json",
+      "sha256": "7eab0bd22deffacc854971486bc849bd3c68876930bcd4aa79b561010c99457e",
+      "scenario": "installation",
+      "startedAt": "2026-09-17T01:47:00.936Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 671744
+      },
+      "failure": null
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/installation-agora-task123-validation-whHtXC.json",
+      "sha256": "6de32827e521c300d22f840e974e13e5adddf873ccd49f231a000375b956de81",
+      "scenario": "installation",
+      "startedAt": "2026-09-17T01:50:38.597Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 933888
+      },
+      "failure": null
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/generation-agora-task123-validation-a88SUf.json",
+      "sha256": "d5da5a75faef731702325c969945ecbb5eda98306b4b455b6f12dce7cf9e2af2",
+      "scenario": "generation",
+      "startedAt": "2026-09-17T01:37:06.036Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 303104
+      },
+      "failure": "expected [Function] to throw error including 'operation_conflict' but got 'invalid_generation_entry'"
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/installation-agora-task123-validation-fSSJda.json",
+      "sha256": "91934a133395a30d1abe516761af99972ff9e0262f7f0c1adbb2d2812f582cec",
+      "scenario": "installation",
+      "startedAt": "2026-09-17T01:48:03.324Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 688128
+      },
+      "failure": "existsSync is not defined"
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/generation-agora-task123-validation-GTEEWW.json",
+      "sha256": "84ad0860f7cece474b133903dd9fb0f12a56b7e1f4393a79d0d34622ef5faf54",
+      "scenario": "generation",
+      "startedAt": "2026-09-17T01:37:28.958Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 335872
+      },
+      "failure": "[{\"type\":\"text\",\"text\":\"Error: MCP error -32602: Input validation error: Invalid arguments for tool workspace_apply: Unrecognized key: \\\"op\\\" at changes[0]\"}]"
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/installation-agora-task123-validation-oLO9kz.json",
+      "sha256": "f9151bcfe40f2bac798f7471a04b5aea06cbd7f282e3279025888ebdc1f5ad1e",
+      "scenario": "installation",
+      "startedAt": "2026-09-17T01:44:38.411Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 516096
+      },
+      "failure": "expected 'Progress: resolved 0, reused 0, downl\u2026' to contain 'picocolors'"
+    },
+    {
+      "report": "docs/reviews/task123-grant-evidence/installation-agora-task123-validation-Gsytk2.json",
+      "sha256": "4938c48b623f67728a76bd3d07382367d4ebb686abc91c5cd269206a92ffa29f",
+      "scenario": "installation",
+      "startedAt": "2026-09-17T01:42:51.308Z",
+      "cleanup": {
+        "deleted": true,
+        "ownerReleased": true,
+        "noHandles": true,
+        "noMounts": true,
+        "availableBytesDelta": 290816
+      },
+      "failure": "[{\"type\":\"text\",\"text\":\"Error: invalid_workspace_command\"}]"
+    }
+  ]
+}

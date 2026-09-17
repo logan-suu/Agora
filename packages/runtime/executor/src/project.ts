@@ -2,6 +2,7 @@ import {
   type AppState,
   activeRequirements,
   adoptedExecutionPlan,
+  assertLocalExecutionState,
   type CoordinationLedgerPayload,
   currentReviewDispatch,
   deriveCompletionFeedback,
@@ -46,6 +47,7 @@ export function project(
   roster: readonly RoleSpec[],
   channelContext: readonly unknown[] = [],
 ): ProjectionView {
+  assertLocalExecutionState(state);
   const spec = roster.find((entry) => entry.role === role);
   const slices: Record<string, unknown> = {};
   if (spec !== undefined) {
@@ -96,6 +98,37 @@ export function projectForAssignment(
     worker.subtaskId !== assignment.subtaskId
   )
     throw new Error('projection assignment does not match canonical WorkerState');
+  if (state.localExecution !== undefined) {
+    const view = project(state, assignment.role, roster, channelContext);
+    if (['PM', 'COORDINATOR'].includes(assignment.role)) {
+      if (
+        assignment.subtaskId !== undefined ||
+        state.localExecution.bindings.some((b) => b.workerId === assignment.workerId)
+      )
+        throw Error('local_control_assignment_mismatch');
+      view.slices.assignment = { ...assignment };
+      return view;
+    }
+    const binding = state.localExecution.bindings.find(
+      (entry) => entry.workerId === assignment.workerId && entry.subtaskId === assignment.subtaskId,
+    );
+    const workspace = state.localExecution.workspaces.find(
+      (entry) => entry.workspaceId === binding?.workspaceId,
+    );
+    const subtask = state.subtasks.find((entry) => entry.id === assignment.subtaskId);
+    if (!binding || !workspace || (assignment.subtaskId !== undefined && !subtask))
+      throw Error('local_workspace_assignment_missing');
+    view.slices.localWorkspace = structuredClone(workspace);
+    view.slices.assignment = { ...assignment, workspaceId: workspace.workspaceId };
+    if ('assignedSubtask' in view.slices)
+      view.slices.assignedSubtask = subtask ? [structuredClone(subtask)] : [];
+    if ('branchOrIntegration' in view.slices)
+      view.slices.branchOrIntegration = {
+        workspaceId: workspace.workspaceId,
+        mode: workspace.mode,
+      };
+    return view;
+  }
   const execution = state.parallelExecution;
   if (execution === undefined) return project(state, assignment.role, roster, channelContext);
   const wave = execution.activeWave;

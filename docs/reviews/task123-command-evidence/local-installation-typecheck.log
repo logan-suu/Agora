@@ -1,0 +1,7 @@
+
+> agora@0.0.0 typecheck /Users/logansu/Documents/Dev/Agora
+> tsc --noEmit
+
+tests/integration/phase12/phase12-3-installation.test.ts(178,7): error TS2532: Object is possibly 'undefined'.
+tests/integration/phase12/phase12-3-installation.test.ts(179,9): error TS2532: Object is possibly 'undefined'.
+ ELIFECYCLE  Command failed with exit code 2.

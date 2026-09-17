@@ -1,0 +1,269 @@
+{
+  "scenario": "journal",
+  "base": "/private/tmp/agora-task123-validation-Qf5Usc",
+  "startedAt": "2026-09-16T20:07:16.975Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 128332140
+  },
+  "sources": {
+    "packages/runtime/sandbox/native/local-process-control.c": "305da4f928dbf3c68a341c7f4d8c527fa1837e93e8e14ee93d0f3d8a07440f4c",
+    "packages/runtime/sandbox/native/local-command-supervision-probe.c": "cf160e9db608145fe575e28ebeafb143389bad394ac95ab1decb32b0b1a8fbf3",
+    "packages/runtime/sandbox/src/local-command-supervisor.ts": "0aad16b0bc0e74136ba3e5a52960124f63585f41f96db2e8776800cc9361ed6e",
+    "packages/runtime/sandbox/src/local-command-stop.ts": "593b93d5f0b3329c58d64d1534eb5454383550a8442eb52695c182ee9b212db0",
+    "packages/runtime/sandbox/src/local-command-output.ts": "e0839dcb0fe9e80be88df2a36dddb168d32bf8cc9da13ba78fc533fe531ee9d3",
+    "packages/runtime/sandbox/src/local-command-journal.ts": "a86b4433d2fda190a6b269250579b9886852935b0b6ab8a9d97066deba911f25",
+    "packages/runtime/sandbox/src/local-command-policy.ts": "2748c2147c6799eef535bbcbc618ec0b5733922a10d05472665c9731e86daa2d",
+    "tests/integration/phase12/local-command-supervision-fixture.ts": "6ab62365fa17a0b71f32982023565da9188751a0ce8a69419136d7d9424ad1a9",
+    "tests/integration/phase12/phase12-3-command-supervision.test.ts": "9f3c55ca942bca717f3aba1fdd91c513ecb99f2c5b635ffd9a3b957ef11529f5"
+  },
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "node": "v24.20.0",
+  "availableBefore": 45311291392,
+  "binaries": {
+    "helper": "ecfcad6f8981c59f149f0de74b854434ba127d51fa19660a8c34d098cf18bf1b",
+    "payload": "d78e1e51a9b51c3bc8fded4e9d346bd1ae1d011c36a33f3df00ef492249a7010"
+  },
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-Qf5Usc/payload\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-Qf5Usc\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-Qf5Usc/payload\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/journal\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-Qf5Usc/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "result": {
+    "receipt": {
+      "version": 2,
+      "bindingFailure": null,
+      "cause": "exit",
+      "executionMs": 609.661583000001,
+      "cleanupMs": 25.426541999993788,
+      "discoveryPasses": 3,
+      "discoveryFailed": false,
+      "mainResult": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      "stdout": {
+        "retainedBytes": 11,
+        "observedBytes": 11,
+        "sha256": "81f68f1605806eb880dc8162726812c61825c582bca891341558712872b75333",
+        "truncated": false,
+        "error": null
+      },
+      "stderr": {
+        "retainedBytes": 0,
+        "observedBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "truncated": false,
+        "error": null
+      },
+      "stop": {
+        "assurance": "registered-only",
+        "registeredState": "stopped",
+        "signals": [
+          "TERM"
+        ],
+        "durationMs": 10.622957999999926,
+        "states": [
+          "exited",
+          "exited",
+          "exited"
+        ]
+      },
+      "output": {
+        "mainResult": {
+          "exitCode": 0,
+          "signal": null,
+          "error": null
+        },
+        "stdout": {
+          "bytes": "tree-ready\n",
+          "observedBytes": 11,
+          "truncated": false,
+          "error": null
+        },
+        "stderr": {
+          "bytes": "",
+          "observedBytes": 0,
+          "truncated": false,
+          "error": null
+        },
+        "tailDurationMs": 48.493209000000206
+      },
+      "durable": true
+    },
+    "record": {
+      "commandId": "fixture-journal",
+      "workspaceId": "fixed-fixture",
+      "policyHash": "dd0170546276b4405aa820c780c15350869c71f189bd24c0648753b850cf45fd",
+      "inputHash": "941cd4d37179e82f857ca590c8f74c1f1a60fccc78dcdce8e8a7d414484401e7",
+      "roots": [
+        {
+          "path": "/private/tmp/agora-task123-validation-Qf5Usc/output",
+          "identity": "16777231:128332149"
+        }
+      ],
+      "revision": 4,
+      "birthIdentities": [
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          7039,
+          100023,
+          20471300
+        ],
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          7043,
+          100023,
+          20471307
+        ],
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          7044,
+          100023,
+          20471308
+        ]
+      ],
+      "birthRelations": [
+        {
+          "parent": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            7039,
+            100023,
+            20471300
+          ],
+          "child": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            7043,
+            100023,
+            20471307
+          ]
+        },
+        {
+          "parent": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            7043,
+            100023,
+            20471307
+          ],
+          "child": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            7044,
+            100023,
+            20471308
+          ]
+        }
+      ],
+      "observationReceipt": {
+        "version": 2,
+        "bindingFailure": null,
+        "cause": "exit",
+        "executionMs": 609.661583000001,
+        "cleanupMs": 25.426541999993788,
+        "discoveryPasses": 3,
+        "discoveryFailed": false,
+        "mainResult": {
+          "exitCode": 0,
+          "signal": null,
+          "error": null
+        },
+        "stdout": {
+          "retainedBytes": 11,
+          "observedBytes": 11,
+          "sha256": "81f68f1605806eb880dc8162726812c61825c582bca891341558712872b75333",
+          "truncated": false,
+          "error": null
+        },
+        "stderr": {
+          "retainedBytes": 0,
+          "observedBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false,
+          "error": null
+        },
+        "stop": {
+          "assurance": "registered-only",
+          "registeredState": "stopped",
+          "signals": [
+            "TERM"
+          ],
+          "durationMs": 10.622957999999926,
+          "states": [
+            "exited",
+            "exited",
+            "exited"
+          ]
+        }
+      },
+      "launchReceipt": null,
+      "binding": null,
+      "resourceState": "quarantined",
+      "reason": "discovery_incomplete"
+    },
+    "blocked": true,
+    "aliveAfterSupervision": false,
+    "errors": [
+      "unknown_process_parent",
+      "process_identity_reused",
+      "command_revision_conflict",
+      "invalid_command_journal",
+      "invalid_command_journal"
+    ]
+  },
+  "finalStop": {
+    "assurance": "registered-only",
+    "registeredState": "stopped",
+    "signals": [],
+    "durationMs": 5.49583399999392,
+    "states": [
+      "exited",
+      "exited",
+      "exited"
+    ]
+  },
+  "completedAt": "2026-09-16T20:07:17.751Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "output": [
+        null,
+        "",
+        ""
+      ],
+      "pid": 7063,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 45311291392,
+  "spaceDelta": 0
+}

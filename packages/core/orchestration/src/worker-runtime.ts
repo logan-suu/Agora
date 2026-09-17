@@ -17,6 +17,11 @@ import {
   type StepResult,
   supportsSafePointRequest,
 } from '@agora/runtime-executor';
+import type {
+  WorkspaceControlSession,
+  WorkspaceWorkerPort,
+  WorkspaceWorkerSession,
+} from '@agora/runtime-sandbox';
 import type { Assignment } from './coordinator';
 import { GlobalScheduler, type SlotLease } from './global-scheduler';
 import { planObjectionMutations } from './objection';
@@ -28,6 +33,17 @@ export interface WorkerRuntimeDeps {
   loadState?: () => Promise<AppState | undefined>;
   sessionIdForAssignment?: (assignment: Assignment) => string | undefined;
   buildExecutor(spec: RoleSpec, assign: Assignment, worktree?: WorktreeRef): Executor;
+  localWorkspace?: WorkspaceWorkerPort;
+  buildLocalControlExecutor?: (
+    spec: RoleSpec,
+    assignment: Assignment,
+    session: WorkspaceControlSession,
+  ) => Executor | Promise<Executor>;
+  buildLocalExecutor?: (
+    spec: RoleSpec,
+    assignment: Assignment,
+    session: WorkspaceWorkerSession,
+  ) => Executor | Promise<Executor>;
   resolveWorktree?: (state: AppState, assignment: Assignment) => Promise<WorktreeRef>;
   refreshWorktree?: (worktree: WorktreeRef) => Promise<WorktreeRef>;
   /** Trusted evidence producer; its mutations never originate from model output. */
@@ -35,6 +51,12 @@ export interface WorkerRuntimeDeps {
     state: AppState,
     assignment: Assignment,
     worktree: WorktreeRef | undefined,
+  ) => Promise<readonly Mutation[]>;
+  /** Fixed-input verification while the existing local worker lease is live. */
+  completeLocalAssignment?: (
+    state: AppState,
+    assignment: Assignment,
+    session: WorkspaceWorkerSession,
   ) => Promise<readonly Mutation[]>;
   buildChannelContext?: (
     state: AppState,
@@ -84,6 +106,7 @@ interface WorkerHandle {
   rejectDrain?: (error: unknown) => void;
   pause?: WorkerPauseControl;
   worktree?: WorktreeRef;
+  localSession?: WorkspaceWorkerSession | WorkspaceControlSession;
 }
 
 interface WorkerPauseControl {
@@ -327,7 +350,7 @@ export class WorkerRuntime {
     this.beginLeaseRelease(assign.workerId);
     const errors: unknown[] = [];
     try {
-      await this.runAssignment(join, assign, false);
+      await this.runAssignment(join, assign, false, lease);
     } catch (error) {
       errors.push(error);
       await this.markFailed(join, assign.workerId).catch((failure) => {
@@ -395,7 +418,7 @@ export class WorkerRuntime {
           join.recordNotStarted(assign.workerId);
           return;
         }
-        await this.runAssignment(join, assign, true);
+        await this.runAssignment(join, assign, true, lease);
       } catch (error) {
         join.recordFailure(assign.workerId, error);
         await this.markFailed(join, assign.workerId).catch((failure) =>
@@ -417,6 +440,25 @@ export class WorkerRuntime {
     state: AppState,
     batch: readonly Assignment[],
   ): Promise<AppState> {
+    if (state.localExecution !== undefined) {
+      if (
+        !this.deps.localWorkspace ||
+        batch.some((a) =>
+          ['PM', 'COORDINATOR'].includes(a.role)
+            ? !this.deps.localWorkspace?.openControl || !this.deps.buildLocalControlExecutor
+            : !this.deps.buildLocalExecutor,
+        ) ||
+        !this.deps.loadState ||
+        (!this.deps.transition && !this.deps.transitionStep)
+      )
+        throw new Error('local_workspace_companion_required');
+      if (
+        batch.some(
+          (assignment) => assignment.role === 'CODER' && assignment.subtaskId === undefined,
+        )
+      )
+        throw new Error('local_workspace_assignment_required');
+    }
     if (batch.length === 0) throw new Error('worker batch must be non-empty');
     const ids = new Set<string>();
     const subtaskIds = new Set<string>();
@@ -521,10 +563,14 @@ export class WorkerRuntime {
     join: CanonicalTaskJoin,
     assign: Assignment,
     parallel: boolean,
+    lease: SlotLease,
   ): Promise<void> {
     const spec = this.specOf(assign.role, await this.currentRoster());
     const beforeWorkspace = await join.latest();
-    const resolvedWorktree = await this.deps.resolveWorktree?.(beforeWorkspace, assign);
+    const local = beforeWorkspace.localExecution !== undefined;
+    const resolvedWorktree = local
+      ? undefined
+      : await this.deps.resolveWorktree?.(beforeWorkspace, assign);
     const running = await join.commit(async (current) => {
       const worker = current.workers.find((entry) => entry.workerId === assign.workerId);
       if (worker === undefined) throw new Error(`worker "${assign.workerId}" was not registered`);
@@ -539,7 +585,8 @@ export class WorkerRuntime {
       }
       const resumeSessionId =
         this.resumingWorkerSessions.get(assign.workerId) ??
-        this.deps.sessionIdForAssignment?.(assign);
+        this.deps.sessionIdForAssignment?.(assign) ??
+        (local ? (worker.sessionId ?? `session:${assign.workerId}`) : undefined);
       if (resumeSessionId !== undefined && !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(resumeSessionId)) {
         throw new Error('assigned sessionId must match [A-Za-z0-9][A-Za-z0-9._:-]*');
       }
@@ -562,27 +609,99 @@ export class WorkerRuntime {
     const worker = running.workers.find((entry) => entry.workerId === assign.workerId);
     if (worker === undefined)
       throw new Error(`worker "${assign.workerId}" disappeared after start`);
-    const executor = this.deps.buildExecutor(spec, assign, resolvedWorktree);
-    const handle: WorkerHandle = {
-      id: assign.workerId,
-      role: assign.role,
-      ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
-      sessionId: worker.sessionId ?? `session:${assign.workerId}`,
-      executor,
-      join,
-      done: false,
-      drainRequested: false,
-      ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
-    };
-    this.active.set(handle.id, handle);
+    let localSession: WorkspaceWorkerSession | undefined;
+    let controlSession: WorkspaceControlSession | undefined;
+    let handle: WorkerHandle | undefined;
+    const errors: unknown[] = [];
     try {
+      if (local && ['PM', 'COORDINATOR'].includes(assign.role)) {
+        if (!this.deps.localWorkspace?.openControl || !this.deps.buildLocalControlExecutor)
+          throw Error('local_control_companion_required');
+        controlSession = await this.deps.localWorkspace.openControl({
+          projectId: running.projectId,
+          taskId: running.taskId,
+          workerId: assign.workerId,
+          role: assign.role,
+          ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
+          sessionId: worker.sessionId ?? `session:${assign.workerId}`,
+          assertLease: () => this.scheduler.assertActive(lease),
+        });
+        if (
+          controlSession.kind !== 'control' ||
+          controlSession.sessionId !== (worker.sessionId ?? `session:${assign.workerId}`)
+        )
+          throw Error('local_control_binding_mismatch');
+      } else if (local) {
+        if (!this.deps.localWorkspace || !this.deps.buildLocalExecutor)
+          throw Error('local_workspace_companion_required');
+        localSession = await this.deps.localWorkspace.open({
+          projectId: running.projectId,
+          taskId: running.taskId,
+          workerId: assign.workerId,
+          role: assign.role,
+          ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
+          sessionId: worker.sessionId ?? `session:${assign.workerId}`,
+          assertLease: () => this.scheduler.assertActive(lease),
+        });
+        const workspace = localSession.workspace;
+        const current = await join.latest();
+        const binding = current.localExecution?.bindings.find(
+          (b) => b.workerId === assign.workerId && b.subtaskId === assign.subtaskId,
+        );
+        if (
+          localSession.sessionId !== (worker.sessionId ?? `session:${assign.workerId}`) ||
+          !binding ||
+          binding.workspaceId !== localSession.workspace.workspaceId ||
+          localSession.workspace.projectId !== running.projectId ||
+          localSession.workspace.taskId !== running.taskId ||
+          !current.localExecution?.workspaces.some(
+            (w) =>
+              Object.keys(w).length === Object.keys(workspace).length &&
+              Object.entries(w).every(
+                ([key, value]) => (workspace as unknown as Record<string, unknown>)[key] === value,
+              ),
+          )
+        )
+          throw Error('local_workspace_binding_mismatch');
+      }
+      let executor: Executor;
+      if (controlSession) {
+        const build = this.deps.buildLocalControlExecutor;
+        if (!build) throw Error('local_control_companion_required');
+        executor = await build(spec, assign, controlSession);
+      } else if (localSession) {
+        const build = this.deps.buildLocalExecutor;
+        if (!build) throw Error('local_workspace_companion_required');
+        executor = await build(spec, assign, localSession);
+      } else executor = this.deps.buildExecutor(spec, assign, resolvedWorktree);
+      handle = {
+        id: assign.workerId,
+        role: assign.role,
+        ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
+        sessionId: worker.sessionId ?? `session:${assign.workerId}`,
+        executor,
+        join,
+        done: false,
+        drainRequested: false,
+        ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
+        ...(localSession === undefined ? {} : { localSession }),
+        ...(controlSession === undefined ? {} : { localSession: controlSession }),
+      };
+      this.active.set(handle.id, handle);
       await this.loop(join, handle, parallel);
     } catch (error) {
-      handle.rejectDrain?.(error);
-      throw error;
+      handle?.rejectDrain?.(error);
+      errors.push(error);
     } finally {
-      this.active.delete(handle.id);
+      if (localSession || controlSession)
+        await (localSession ?? controlSession)?.close().catch((error) => {
+          errors.push(error);
+        });
+      if (handle) this.active.delete(handle.id);
     }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1)
+      throw new AggregateError(errors, 'Local worker execution and quiescence failed');
   }
 
   private specOf(role: string, roster: readonly RoleSpec[]): RoleSpec {
@@ -671,6 +790,10 @@ export class WorkerRuntime {
         }
         throw new WorkerStepError(error);
       }
+      if (handle.localSession) {
+        if (!result.reachedSafeBoundary) throw Error('local_workspace_safe_boundary_required');
+        await handle.localSession.checkpoint(result.kind === 'done' ? 'complete' : 'step');
+      }
       const boundaryWorktree =
         result.reachedSafeBoundary &&
         handle.worktree !== undefined &&
@@ -687,6 +810,12 @@ export class WorkerRuntime {
           (canonical.parallelExecution !== undefined &&
             (handle.role === 'CODER' || handle.role === 'TESTER'));
         if (isolated) validateParallelOutput(handle, result);
+        if (
+          result.mutations.some(
+            (mutation) => mutation.op === 'set' && mutation.field === 'localExecution',
+          )
+        )
+          throw new Error('model output cannot set localExecution');
         if (this.deps.handleOutput !== undefined && !handle.drainRequested && roleStillEnabled) {
           await this.deps.handleOutput(canonical, handle.role, result.output);
         }
@@ -696,7 +825,16 @@ export class WorkerRuntime {
           result,
         );
         const mutations = [...result.mutations, ...planned];
+        if (
+          handle.localSession &&
+          mutations.some((mutation) => mutation.op === 'set' && mutation.field === 'testResults')
+        )
+          throw Error('local_test_results_require_trusted_receipt');
         assertNoRequirementControlMessages(mutations);
+        if (
+          mutations.some((mutation) => mutation.op === 'set' && mutation.field === 'localExecution')
+        )
+          throw new Error('model output cannot set localExecution');
         if (
           mutations.some(
             (mutation) => mutation.op === 'set' && mutation.field === 'parallelExecution',
@@ -708,24 +846,38 @@ export class WorkerRuntime {
             (mutation) =>
               mutation.op === 'append' &&
               mutation.field === 'messages' &&
-              (mutation.value as { payload?: { kind?: string } })?.payload?.kind ===
-                'wave_validation',
+              ['wave_validation', 'workspace_validation'].includes(
+                (mutation.value as { payload?: { kind?: string } })?.payload?.kind ?? '',
+              ),
           )
         )
           throw new Error('model output cannot author validation receipts');
         if (isolated) validateParallelMutations(canonical, handle, mutations);
         const trusted =
           result.kind === 'done'
-            ? ((await this.deps.completeAssignment?.(
-                canonical,
-                {
-                  workerId: handle.id,
-                  role: handle.role,
-                  ...(handle.subtaskId === undefined ? {} : { subtaskId: handle.subtaskId }),
-                },
-                boundaryWorktree ?? handle.worktree,
-              )) ?? [])
+            ? handle.localSession && 'workspace' in handle.localSession
+              ? ((await this.deps.completeLocalAssignment?.(
+                  canonical,
+                  {
+                    workerId: handle.id,
+                    role: handle.role,
+                    ...(handle.subtaskId === undefined ? {} : { subtaskId: handle.subtaskId }),
+                  },
+                  handle.localSession,
+                )) ?? [])
+              : ((await this.deps.completeAssignment?.(
+                  canonical,
+                  {
+                    workerId: handle.id,
+                    role: handle.role,
+                    ...(handle.subtaskId === undefined ? {} : { subtaskId: handle.subtaskId }),
+                  },
+                  boundaryWorktree ?? handle.worktree,
+                )) ?? [])
             : [];
+        // Trusted verification may itself run tools. Persist its bounded close
+        // before committing done and releasing the worker's original lease.
+        if (result.kind === 'done') await handle.localSession?.close();
         return this.transitionStep(canonical, handle.role, [
           ...mutations,
           ...trusted,
@@ -774,6 +926,7 @@ export class WorkerRuntime {
 
   private async pauseForDrain(join: CanonicalTaskJoin, handle: WorkerHandle): Promise<string> {
     const safePointRef = await handle.executor.saveSafePoint();
+    await handle.localSession?.checkpoint('pause');
     await join.commit((current) =>
       this.transitionStep(current, handle.role, [
         mergeByIdMutation('workers', handle.id, {
@@ -791,6 +944,7 @@ export class WorkerRuntime {
     if (control === undefined) return true;
     try {
       const safePointRef = await handle.executor.saveSafePoint();
+      if (!handle.done) await handle.localSession?.checkpoint('pause');
       let status: WorkerPauseReceipt['status'] = 'paused';
       await join.commit(async (current) => {
         const worker = current.workers.find((entry) => entry.workerId === handle.id);

@@ -1,0 +1,32 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-start.test.ts (11 tests) 7227ms
+   ✓ registers the suspended executable before any constructor or project code runs  763ms
+   ✓ keeps project code suspended when the release authorization is revoked  580ms
+   ✓ does not release the executable when durable registration fails  610ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  762ms
+   ✓ records a failed exec without releasing any project code  557ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  317ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  611ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  679ms
+   ✓ persists the executable result independently of the bootstrap and survives reopening  755ms
+   ✓ never overwrites a terminal launch fact and rejects stale revisions  812ms
+   ✓ rejects persisted launch facts that contradict identities or release state  778ms
+ ✓ tests/integration/phase12/phase12-3-command-binding.test.ts (12 tests) 7866ms
+   ✓ stops registered execution when grant-revision changes  745ms
+   ✓ stops registered execution when worker changes  700ms
+   ✓ stops registered execution when writer-epoch changes  755ms
+   ✓ stops registered execution when authority-error changes  728ms
+   ✓ refuses to release project code after a root is replaced  622ms
+   ✓ stops on ancestor relocation and never follows the moved directory  776ms
+   ✓ rejects tool replacement before any process is launched  304ms
+   ✓ rechecks authority at completion instead of accepting a successful process exit  747ms
+   ✓ never executes a replaced process-control helper even during cleanup  1140ms
+   ✓ rejects old journal formats and malformed persisted root bindings  756ms
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  11:11:05
+   Duration  15.38s (transform 56ms, setup 0ms, collect 76ms, tests 15.09s, environment 0ms, prepare 59ms)
+

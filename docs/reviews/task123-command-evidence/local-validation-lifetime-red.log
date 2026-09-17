@@ -1,0 +1,88 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/core/orchestration/test/worker-runtime.test.ts (49 tests | 1 failed | 48 skipped) 10ms
+   × WorkerRuntime (Phase 0 degenerate single-worker path) > finishes trusted local validation before closing the worker capability 10ms
+     → expected [ 'open', 'build', …(2) ] to deeply equal [ 'open', 'build', …(4) ]
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > runs a local control role without creating a file workspace
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > opens a task-scoped local tester without inventing a subtask assignment
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > never sends a local workspace task into an unbound legacy executor
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects model-authored local authority on the serial path
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects model-authored local validation receipts on the serial path
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > derives fresh role-scoped ChannelContext before every worker step
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > honors a pause requested while asynchronous ChannelContext construction is pending
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > commits the current Step before checkpoint and keeps its lease across reproject
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > releases active leases and leaves undispatched workers pending for a human gate
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > does not install a pause epoch when its scope mismatches an active worker
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > cleans up remaining paused workers when one cohort checkpoint fails
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > honors a target drain requested while asynchronous ChannelContext construction is pending
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > merges every step mutation in order through applyMutations without mutating the input state
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > routes every worker step through the injected asynchronous state transition
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > handles structured step output before applying that step state transition
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > atomically combines a planned objection with its assistant message mutation
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > stops the loop exactly on a kind="done" step result
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > stops at the next step boundary when the assigned role becomes disabled
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > drains only the target role after its current step transition is committed
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > preserves done when a drain is requested during a completing step
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > reports an immediate no-op drain when the target role has no active worker
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > treats a naturally completed worker as quiescent without creating a late drain
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > throws when the roster does not contain the requested role
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > reloads canonical state before dependency validation and before building an executor
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects a 'blocked' subtask owned by 'CODER' before constructing an executor
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects a 'done' subtask owned by 'CODER' before constructing an executor
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > runs the complete batch concurrently up to maxParallel without dropping the tail
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > waits for an already-started sibling before returning an aggregate failure
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a provider failure after a real worker Git commit without losing recovery identity
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a head_refresh failure after a real worker Git commit without losing recovery identity
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a head_commit failure after a real worker Git commit without losing recovery identity
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > fails fast on malformed batches before constructing an executor
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects a persisted external executor assignment in Phase 9
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > restarts a paused worker only when its workerId is declared by the resume receipt
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > revalidates the canonical worker handle before executing a model step
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects invalid local parallel limits before work can start
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects a conflicting stable append identity instead of silently keeping the first value
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects 'global set' before it reaches the parallel commit
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects 'model-authored worker assignment part…' before it reaches the parallel commit
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects 'own subtask control-plane partition' before it reaches the parallel commit
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects 'another subtask partition' before it reaches the parallel commit
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > rejects 'coordinator-owned requirement partiti…' before it reaches the parallel commit
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > never saves safe points preemptively during an uninterrupted lifecycle
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > binds a workerId worktree before execution and persists its submitted HEAD on completion
+   ↓ WorkerRuntime (Phase 0 degenerate single-worker path) > accepts an equivalent persisted worktree regardless of object key insertion order
+   ↓ cancels the executor pause request on abort without injecting an uncommitted directive
+   ↓ uses a local companion with the actual live lease and closes it before lease release
+   ↓ does not mark a local worker done when its file or command boundary is incomplete
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/core/orchestration/test/worker-runtime.test.ts > WorkerRuntime (Phase 0 degenerate single-worker path) > finishes trusted local validation before closing the worker capability
+AssertionError: expected [ 'open', 'build', …(2) ] to deeply equal [ 'open', 'build', …(4) ]
+
+- Expected
++ Received
+
+  [
+    "open",
+    "build",
+    "checkpoint:complete",
+-   "trusted-verification",
+-   "checkpoint:step",
+    "close",
+  ]
+
+ ❯ packages/core/orchestration/test/worker-runtime.test.ts:183:28
+    181|     const fixture = createLocalRuntimeFixture({role: 'TESTER', trusted…
+    182|     await fixture.runtime.runOne(fixture.state(), fixture.assignment);
+    183|     expect(fixture.events).toEqual(['open', 'build', 'checkpoint:compl…
+       |                            ^
+    184|     expect(fixture.scheduler.activeCount).toBe(0);
+    185|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 48 skipped (49)
+   Start at  18:48:55
+   Duration  615ms (transform 215ms, setup 0ms, collect 500ms, tests 10ms, environment 0ms, prepare 26ms)
+

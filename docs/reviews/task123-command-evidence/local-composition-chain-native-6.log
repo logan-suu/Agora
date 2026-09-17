@@ -1,0 +1,27 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-composition.test.ts (1 test | 1 failed) 8936ms
+   × runs local composition through a real D4 Fork and D16 fixed artifact 8935ms
+     → .toMatch() expects to receive a string, but got undefined
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-composition.test.ts > runs local composition through a real D4 Fork and D16 fixed artifact
+TypeError: .toMatch() expects to receive a string, but got undefined
+ ❯ tests/integration/phase12/phase12-3-composition.test.ts:438:71
+    436|     evidence.reviewState = await state();
+    437|     const finalGate = (await state()).humanGate;
+    438|     expect(finalGate?.reason, JSON.stringify(evidence.reviewSummary)).…
+       |                                                                       ^
+    439|       /^completion_confirmation:/,
+    440|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  19:31:07
+   Duration  9.92s (transform 371ms, setup 0ms, collect 867ms, tests 8.94s, environment 0ms, prepare 30ms)
+

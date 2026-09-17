@@ -1,0 +1,65 @@
+{
+  "scenario": "workspace-reopen",
+  "base": "/private/tmp/agora-task123-validation-gdFrM7",
+  "startedAt": "2026-09-16T19:32:56.406Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 128298044
+  },
+  "node": "v24.20.0",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "sources": {
+    "packages/core/domain/src/local-workspace.ts": "9eb24898a8880c0d36ba0113645cf5f85083a8201311660e56062ce96e754b35",
+    "packages/runtime/sandbox/src/local-registry-file.ts": "6f4c92b4b89b938868a5bb8f6121b658051ff173017b53468ed724532b101a69",
+    "packages/runtime/sandbox/test/local-registry-file.test.ts": "8a0635ba156138cba899efe003c19af8fc6e0e1ff6245e7a6158e1dce95746b0",
+    "apps/desktop/src/storage.ts": "56f486294eb9ce68dd7628b02d3d4a2c8ba5d4c716f6eec487e0dcb370db32f2"
+  },
+  "snapshot": {
+    "schemaVersion": "local-workspaces-v1",
+    "revision": 2,
+    "roots": [],
+    "grants": [],
+    "workspaces": [
+      {
+        "schemaVersion": "workspace-v1",
+        "projectId": "project",
+        "taskId": "other-task",
+        "workspaceId": "other",
+        "rootId": "root",
+        "grantId": "grant",
+        "purpose": "coding",
+        "mode": "direct",
+        "baselineManifestId": "manifest"
+      },
+      {
+        "schemaVersion": "workspace-v1",
+        "projectId": "project",
+        "taskId": "task",
+        "workspaceId": "workspace",
+        "rootId": "root",
+        "grantId": "grant",
+        "purpose": "coding",
+        "mode": "direct",
+        "baselineManifestId": "manifest"
+      }
+    ],
+    "claims": [],
+    "operations": []
+  },
+  "passed": true,
+  "files": [
+    {
+      "path": "state/local-workspaces/registry.json",
+      "mode": 33152,
+      "sha256": "1523d3f7dfbaac80bc3af887bba44cd29424c0d777b8341f901788636464e6eb"
+    }
+  ],
+  "completedAt": "2026-09-16T19:32:56.472Z",
+  "cleanup": {
+    "removed": true,
+    "noHandles": true,
+    "noMounts": true
+  },
+  "spaceDelta": 98304
+}

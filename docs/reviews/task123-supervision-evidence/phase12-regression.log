@@ -1,0 +1,56 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-supervision.test.ts (6 tests) 34650ms
+   ✓ persists observed parent relations and stops descendants after the main process exits  1013ms
+   ✓ uses the default thirty-second execution limit and closes durable observation after timeout  30452ms
+   ✓ cancels a running process tree without extending the cleanup deadline  930ms
+   ✓ bounds observation when the registered identity is wrong without signaling the live process  596ms
+   ✓ rejects invalid parent relations atomically and refuses corrupted or old-version records  836ms
+   ✓ preserves blocking state when the final observation cannot be durably committed  822ms
+ ✓ tests/integration/phase12/phase12-3-command-stop.test.ts (6 tests) 13711ms
+   ✓ preserves KILL escalation when real helper launch latency approaches the TERM boundary  2482ms
+   ✓ stops only the registered process birth identity and escalates ignored TERM  1608ms
+   ✓ caps retained output without treating a successful exit as trusted completion  589ms
+   ✓ closes inherited pipes within the tail deadline while exposing incomplete output  7804ms
+   ✓ finishes a TERM-responsive registered process without sending KILL  560ms
+   ✓ returns needsAttention for a mismatched registered birth without sending a signal  667ms
+ ✓ tests/integration/phase12/phase12-3-transaction.test.ts (17 tests) 6845ms
+   ✓ durably preserves the baseline and exchanged inode before reporting applied  446ms
+   ✓ closes the operation without touching source or external objects: move-root-before-write  382ms
+   ✓ closes the operation without touching source or external objects: move-parent-before-swap  392ms
+   ✓ closes the operation without touching source or external objects: replace-root  403ms
+   ✓ invalidates a completed exchange after root movement without undoing the actual result  390ms
+   ✓ preserves a competing user edit and refuses a stale baseline  419ms
+   ✓ refuses linked external objects: symlink-target  404ms
+   ✓ refuses linked external objects: hardlink-target  457ms
+   ✓ does not repeat a filesystem mutation when replaying an identical action  395ms
+   ✓ checks root identity after the final asynchronous authorization check  401ms
+   ✓ also invalidates a parent moved during completion authorization  387ms
+   ✓ refuses a metadata-only edit after the baseline read  413ms
+   ✓ honors trusted authorization closure: revoke-before-write  403ms
+   ✓ honors trusted authorization closure: revoke-before-swap  368ms
+   ✓ refuses unsafe journal replay: replay-different-input  393ms
+   ✓ refuses unsafe journal replay: replay-corrupt-receipt  406ms
+   ✓ refuses unsafe journal replay: replay-missing-receipt  385ms
+ ✓ tests/integration/phase12/phase12-3-command-discovery.test.ts (5 tests) 2409ms
+   ✓ discovers a real child and grandchild without enrolling an unrelated sibling  681ms
+   ✓ retains a discovered grandchild after its parent exits and it is reparented  571ms
+   ✓ rejects a wrong parent birth and leaves the real tree alive  584ms
+   ✓ exposes helper failure as incomplete discovery without signaling the root  571ms
+ ✓ tests/integration/phase12/phase12-3.test.ts (5 tests) 1834ms
+   ✓ preserves both versions in a normal confined APFS exchange  396ms
+   ✓ refuses an exchange after the opened parent moves outside the authorized root  363ms
+   ✓ refuses an exchange after the opened root moves away from its authorized path  351ms
+   ✓ can prepare a transaction file through an opened handle inside the authorized root  357ms
+   ✓ distinguishes a refused new open from the original file handle after root movement  366ms
+ ✓ tests/integration/phase12/phase12-3-command-isolation.test.ts (2 tests) 782ms
+   ✓ confines native child and exec descendants to one private command write root  371ms
+   ✓ runs the pinned Node toolchain and preserves the boundary in its spawned child  411ms
+ ✓ tests/integration/phase12/phase12-3-command-journal.test.ts (5 tests) 656ms
+
+ Test Files  7 passed (7)
+      Tests  46 passed (46)
+   Start at  23:50:04
+   Duration  61.73s (transform 84ms, setup 0ms, collect 135ms, tests 60.89s, environment 0ms, prepare 184ms)
+

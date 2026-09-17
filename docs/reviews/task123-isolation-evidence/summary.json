@@ -1,0 +1,169 @@
+{
+  "recordedAt": "2026-09-16T03:00:21.224335+00:00",
+  "gitBase": "ea32c4c419eb326cc8f0f76b84f697b1ca2bc5b2",
+  "scope": "Internal command policy unit; no production workspace admission or supervisor. Full regression failed once; unchanged LRU reproduction passed. Preserve both results.",
+  "files": {
+    "build-native.log": {
+      "sha256": "15f0e79d2609c020672b91e2addd7c555a5aab46d34af02a74e31eb7c4700f15",
+      "bytes": 129
+    },
+    "cleanup-controller.mjs.txt": {
+      "sha256": "1be973c6a7c0052e2bbe2d943700fad16d8689fe2e8ce0e465c6ca11ce3e6c50",
+      "bytes": 6699
+    },
+    "full-regression-cleanup.json": {
+      "sha256": "43ba2397f8b41d3691e90c12314944cb9dfb0a91ab3a2cc1853e767c2c3e94c3",
+      "bytes": 794997
+    },
+    "full-regression.log": {
+      "sha256": "9ba5f17436b8c1e0a79ca75faed67d6c122f0162688a25fc61888b7f2a7db3ac",
+      "bytes": 31083
+    },
+    "isolation-3I1SuT.json": {
+      "sha256": "f388a98b452b61f9e4648b58e81e8742718c191d23e81b520b8008bc53a2f437",
+      "bytes": 6671
+    },
+    "isolation-7U3i07.json": {
+      "sha256": "05bd31c4443ca2ad9ecc53171f30e255411bf59a5a2d112bf966cada65eacc54",
+      "bytes": 6671
+    },
+    "isolation-8KbpMt.json": {
+      "sha256": "f2e12181998db279917dd4327d27f29e208447b566f5aa50ea45a5103ec94f6a",
+      "bytes": 9666
+    },
+    "isolation-ACOk8Y.json": {
+      "sha256": "03ca49fe3bbff4751ce2dae03346a7ea11b9fd991985c0efad594bae26650921",
+      "bytes": 9667
+    },
+    "isolation-Gm9lU1.json": {
+      "sha256": "748b2bcd7b8f7ecaa2f71001c71e784e6319fde04e0fd3ad51fda195aaf44295",
+      "bytes": 6671
+    },
+    "isolation-dbakev.json": {
+      "sha256": "2b4bc8334cd0a2771371135014fb8d02da9980f17190a6c62829bb5629f5855a",
+      "bytes": 9480
+    },
+    "isolation-lBr1bL.json": {
+      "sha256": "220c9586c716cf180594014fbcd9393b5232a0431844b11825af4fdf97cee3d6",
+      "bytes": 9666
+    },
+    "lint.log": {
+      "sha256": "d6119b8f83130a3082b9da4b564e6ca0f7fbca34f14512c1e53398050af5841b",
+      "bytes": 118
+    },
+    "local-checkpoint.json": {
+      "sha256": "4f4fd2f9914348201a03339cbac7b5a92ef950d05c77f195c443f50725ba6a76",
+      "bytes": 5198
+    },
+    "local-command-isolation-fixture.ts.txt": {
+      "sha256": "28c4056dbd06bc3217df5e984610904bc358c88a5da40ccff20b79bd11e603a4",
+      "bytes": 8744
+    },
+    "local-command-isolation-probe.c.txt": {
+      "sha256": "247bb29315abc53279cec90183def9d443efc260d3844e0f688fb61db7ff55cc",
+      "bytes": 3463
+    },
+    "local-command-policy.ts.txt": {
+      "sha256": "26233dc14b99574633af2a2a60275ad8bb020d3f2e4529973314e3716183288c",
+      "bytes": 3427
+    },
+    "lru-cleanup-controller.mjs.txt": {
+      "sha256": "377b7e2f219af8a31b4d6a3b5dad54c10c95832339e026171091898ee88cfd23",
+      "bytes": 6702
+    },
+    "lru-reproduction-cleanup.json": {
+      "sha256": "8cf1098885b771e0df5ef00bfd670c054889583c8253db048b54b56d231dd0f4",
+      "bytes": 15634
+    },
+    "lru-reproduction.log": {
+      "sha256": "ed7332e1cc6d727177f677a70ed90709dde1220ac67d46a7bb1d4b90e6e2aaa7",
+      "bytes": 521
+    },
+    "phase12-3-command-isolation.test.ts.txt": {
+      "sha256": "c6c788cbb0b1a7ec4aed50e84e0539f7c332a8d5bbea5658cbb6c553b41cc6f3",
+      "bytes": 2476
+    },
+    "phase12-regression.log": {
+      "sha256": "74891b19a6347a87f2ec775c5ba8a1bf1b49f34b1629215c2abfe3be315127ed",
+      "bytes": 2450
+    },
+    "stream-failure-analysis.json": {
+      "sha256": "2b0725ad4972e723317b7a264444b9d0d38c0d98db3e1de99acde5bc0ff1de14",
+      "bytes": 1938
+    },
+    "typecheck.log": {
+      "sha256": "31bca0e1de9f7370c83be8bf321cf3a80e619b1997255ee0410177c1cafa6144",
+      "bytes": 76
+    }
+  },
+  "records": [
+    {
+      "file": "isolation-3I1SuT.json",
+      "base": "/private/tmp/agora-task123-validation-3I1SuT",
+      "mode": "node",
+      "exitCode": 0,
+      "removed": true,
+      "exists": false
+    },
+    {
+      "file": "isolation-7U3i07.json",
+      "base": "/private/tmp/agora-task123-validation-7U3i07",
+      "mode": "node",
+      "exitCode": 0,
+      "removed": true,
+      "exists": false
+    },
+    {
+      "file": "isolation-8KbpMt.json",
+      "base": "/private/tmp/agora-task123-validation-8KbpMt",
+      "mode": "native",
+      "exitCode": 0,
+      "removed": true,
+      "exists": false
+    },
+    {
+      "file": "isolation-ACOk8Y.json",
+      "base": "/private/tmp/agora-task123-validation-ACOk8Y",
+      "mode": "native",
+      "exitCode": 0,
+      "removed": true,
+      "exists": false
+    },
+    {
+      "file": "isolation-Gm9lU1.json",
+      "base": "/private/tmp/agora-task123-validation-Gm9lU1",
+      "mode": "node",
+      "exitCode": 0,
+      "removed": true,
+      "exists": false
+    },
+    {
+      "file": "isolation-dbakev.json",
+      "base": "/private/tmp/agora-task123-validation-dbakev",
+      "mode": "native",
+      "exitCode": 0,
+      "removed": true,
+      "exists": false
+    },
+    {
+      "file": "isolation-lBr1bL.json",
+      "base": "/private/tmp/agora-task123-validation-lBr1bL",
+      "mode": "native",
+      "exitCode": 0,
+      "removed": true,
+      "exists": false
+    }
+  ],
+  "cleanup": {
+    "regressionDirectoriesRemoved": 153,
+    "regressionDirectoriesRetained": 31,
+    "isolatedFixturesRemoved": 7,
+    "temporaryControllersRemoved": true
+  },
+  "limitations": [
+    "No single all-green full pnpm test invocation for the current change yet.",
+    "Upstream stream truncation root cause remains inconclusive.",
+    "Full L01-L18 production-path G5 is not complete.",
+    "Historical record source hashes are not rewritten to the current source versions."
+  ]
+}

@@ -1,5 +1,11 @@
 import type { Decision } from './ledger';
 import {
+  currentLocalCompletionEvidence,
+  isLocalReviewBinding,
+  type LocalReviewBinding,
+  localValidationReceipt,
+} from './local-validation';
+import {
   canonicalJson,
   currentReviewDispatch,
   isReviewBinding,
@@ -12,6 +18,7 @@ export const DEFAULT_COMPLETION_APPROVAL_RATIONALE =
   'Leader approved the current completion candidate.';
 
 export type CompletionResolutionOption = 'approve_completion' | 'request_changes';
+export type CompletionEvidence = ReviewBinding | LocalReviewBinding;
 
 export interface BuildCompletionResolutionInput {
   actionId: string;
@@ -102,7 +109,8 @@ export function buildCompletionResolution(
       `completion resolution review "${input.reviewId}" is not the current REVIEWER verdict`,
     );
   }
-  if (state.parallelExecution !== undefined) currentCompletionEvidence(state);
+  if (state.parallelExecution !== undefined || state.localExecution !== undefined)
+    currentCompletionEvidence(state);
   const rationale = completionRationale(input.option, input.rationale);
   const resolutionDecisionId = `task-completion-resolution:${input.actionId}`;
   if (state.decisionLedger.some((decision) => decision.id === resolutionDecisionId)) {
@@ -187,7 +195,7 @@ export function deriveCompletionResolution(
     throw new Error(`completion resolution decision "${String(decisionId)}" drifted`);
   }
   if (
-    state.parallelExecution !== undefined &&
+    (state.parallelExecution !== undefined || state.localExecution !== undefined) &&
     canonicalJson(receipt?.completionEvidence) !== canonicalJson(currentCompletionEvidence(state))
   )
     throw new Error('completion resolution evidence drifted');
@@ -201,7 +209,8 @@ export function deriveCompletionResolution(
   };
 }
 
-export function currentCompletionEvidence(state: AppState): ReviewBinding {
+export function currentCompletionEvidence(state: AppState): CompletionEvidence {
+  if (state.localExecution !== undefined) return currentLocalCompletionEvidence(state);
   const binding = currentReviewDispatch(state)?.payload.reviewBinding;
   if (
     !isReviewBinding(binding) ||
@@ -267,6 +276,23 @@ export function deriveCompletionFeedback(state: AppState): CompletionResolutionV
       acceptedReceiptId: binding.validationReceiptId,
     };
   }
+  if (state.localExecution !== undefined) {
+    const binding = currentReviewDispatch(historical)?.payload.workspaceReviewBinding;
+    const resolutionMessage = state.messages[index];
+    if (!isLocalReviewBinding(binding) || !resolutionMessage)
+      throw Error('completion feedback requires historical file validation evidence');
+    // Later testing changes the current result without changing what the Leader
+    // reviewed. Keep the original timeline plus its independently checked resume
+    // marker; do not qualify the old file version as current completion evidence.
+    historical.messages = state.messages.filter(
+      (message, position) =>
+        position <= index || message.msgId === `human-gate-resumed:${resolutionMessage.msgId}`,
+    );
+    historical.testResults = localValidationReceipt(
+      historical,
+      binding.validationReceiptId,
+    ).results;
+  }
   const resolution = deriveCompletionResolution(historical, completion.reviewId);
   return resolution?.resumed ? structuredClone(resolution) : null;
 }
@@ -288,7 +314,7 @@ export function canonicalCompletionDecisionIds(state: AppState): ReadonlySet<str
     const end = nextDispatch?.payload.reviewCommentCursor;
     // The canonical message, intent, gate and Leader Decision are checked using
     // the historical review cursor. Current wave evidence is checked separately.
-    const { parallelExecution: _execution, ...legacyView } = state;
+    const { parallelExecution: _execution, localExecution: _local, ...legacyView } = state;
     const historical: AppState = {
       ...legacyView,
       messages: state.messages.slice(0, index + 1),

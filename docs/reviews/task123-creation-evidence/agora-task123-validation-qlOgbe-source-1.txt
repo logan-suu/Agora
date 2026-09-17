@@ -1,0 +1,581 @@
+/** Internal macOS replacement primitive; not exported as a workspace capability.
+ * The registry/MCP must supply an authenticated binding and durable authorization.
+ * Only this trusted native child receives source/staging permissions; it cannot fork.
+ */
+import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import {
+  closeSync,
+  constants,
+  existsSync,
+  fsyncSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, isAbsolute, join, parse, relative } from 'node:path';
+
+const byteLimit = 16 * 1024 * 1024;
+type Identity = { path: string; identity: string };
+export type LocalRootBinding = {
+  root: string;
+  chain: Identity[];
+  stagingIdentity: string;
+};
+export type ReplacementBasis = {
+  identity: string;
+  metadata: string;
+  content: string;
+};
+export type CreationBasis = { parentIdentity: string };
+export type LocalCreationReceipt = Omit<LocalReplacementReceipt, 'schemaVersion' | 'exchanged'> & {
+  schemaVersion: 'local-creation-primitive-v1';
+  created: boolean | null;
+};
+export type TransactionCheckpoint = 'before_prepare' | 'before_swap' | 'after_swap';
+export type LocalReplacementReceipt = {
+  schemaVersion: 'local-replacement-primitive-v1';
+  actionId: string;
+  inputHash: string;
+  stage: 'applied' | 'conflict' | 'recoveryRequired';
+  reason: string;
+  exchanged: boolean | null;
+  quiescent: boolean;
+  candidateName: string;
+  journalPath: string;
+  nativeExitCode: number | null;
+};
+type ReplacementRequest = {
+  actionId: string;
+  binding: LocalRootBinding;
+  path: string;
+  expected: ReplacementBasis;
+  content: string;
+  journalRoot: string;
+  helper: string;
+  /** Trusted control-plane check, never supplied by the model or project code. */
+  authorize: (checkpoint: 'admission' | TransactionCheckpoint | 'completion') => Promise<boolean>;
+};
+
+const digest = (bytes: string | Buffer) => createHash('sha256').update(bytes).digest('hex');
+function identity(path: string): Identity {
+  const stat = lstatSync(path, { bigint: true });
+  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('root_identity_changed');
+  return { path, identity: `${stat.dev}:${stat.ino}` };
+}
+
+/** Registration helper only: never call this to refresh an existing grant during execution. */
+export function inspectLocalRoot(root: string): LocalRootBinding {
+  if (!isAbsolute(root) || realpathSync(root) !== root || root === parse(root).root)
+    throw new Error('unsupported_workspace');
+  const chain: Identity[] = [];
+  for (let current = root; ; current = dirname(current)) {
+    chain.unshift(identity(current));
+    if (dirname(current) === current) break;
+  }
+  const staging = join(root, '.agora-operations');
+  const stat = lstatSync(staging);
+  if (stat.uid !== process.getuid?.() || (stat.mode & 0o777) !== 0o700)
+    throw new Error('unsupported_workspace');
+  return { root, chain, stagingIdentity: identity(staging).identity };
+}
+
+function verifyBinding(binding: LocalRootBinding): boolean {
+  try {
+    return (
+      binding.chain.length > 1 &&
+      binding.chain.at(-1)?.path === binding.root &&
+      binding.chain.every((entry) => identity(entry.path).identity === entry.identity) &&
+      identity(join(binding.root, '.agora-operations')).identity === binding.stagingIdentity
+    );
+  } catch {
+    return false;
+  }
+}
+
+function targetParents(binding: LocalRootBinding, path: string): Identity[] {
+  const parents: Identity[] = [];
+  let current = binding.root;
+  for (const segment of path.split('/').slice(0, -1)) {
+    current = join(current, segment);
+    parents.push(identity(current));
+  }
+  return parents;
+}
+
+function verifyParents(parents: Identity[]) {
+  try {
+    return parents.every((entry) => identity(entry.path).identity === entry.identity);
+  } catch {
+    return false;
+  }
+}
+
+function durableFile(path: string, bytes: string) {
+  const fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o400);
+  try {
+    writeFileSync(fd, bytes);
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  const parent = openSync(dirname(path), constants.O_RDONLY | constants.O_DIRECTORY);
+  try {
+    fsyncSync(parent);
+  } finally {
+    closeSync(parent);
+  }
+}
+
+const hasControlCharacter = (value: string) =>
+  [...value].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127);
+function literal(path: string) {
+  if (hasControlCharacter(path)) throw new Error('invalid_path');
+  return JSON.stringify(path);
+}
+
+function nativePolicy(helper: string, binding: LocalRootBinding, journal?: string) {
+  return [
+    '(version 1)',
+    '(deny default)',
+    `(allow process-exec (literal ${literal(helper)}))`,
+    '(allow sysctl-read)',
+    '(allow file-read* (literal "/"))',
+    '(allow file-read* (subpath "/usr/lib") (subpath "/System/Library"))',
+    // Fixed dyld read/map exceptions from Apple's dyld-support.sb; no project execution.
+    '(allow file-read* file-map-executable (subpath "/System/Volumes/Preboot/Cryptexes/OS") (subpath "/System/Cryptexes/OS"))',
+    `(allow file-map-executable (literal ${literal(helper)}) (subpath "/usr/lib") (subpath "/System/Library"))`,
+    `(allow file-read* (literal ${literal(helper)}) (subpath ${literal(binding.root)}))`,
+    // O_RDONLY directory handles require data permission for that directory only;
+    // these literal rules do not grant access to its other children.
+    ...binding.chain.map((entry) => `(allow file-read* (literal ${literal(entry.path)}))`),
+    ...(journal
+      ? [
+          `(allow file-read* (literal ${literal(join(journal, 'expected'))}) (literal ${literal(join(journal, 'replacement'))}))`,
+          `(allow file-write* (subpath ${literal(binding.root)}))`,
+        ]
+      : []),
+  ].join('\n');
+}
+
+function validatePath(path: string) {
+  if (
+    !path ||
+    isAbsolute(path) ||
+    hasControlCharacter(path) ||
+    path
+      .split('/')
+      .some(
+        (part) =>
+          !part ||
+          part === '.' ||
+          part === '..' ||
+          part === '.git' ||
+          part === '.agora-operations' ||
+          part === '.env' ||
+          part.startsWith('.env.'),
+      )
+  )
+    throw new Error('invalid_file_change');
+}
+
+/** Reads bytes and metadata from one native open; caller must authorize this read. */
+export function inspectLocalReplacementBasis(
+  binding: LocalRootBinding,
+  path: string,
+  helper: string,
+): ReplacementBasis {
+  validatePath(path);
+  if (process.platform !== 'darwin' || !isAbsolute(helper)) throw new Error('sandbox_unavailable');
+  if (!verifyBinding(binding)) throw new Error('root_identity_changed');
+  const parents = targetParents(binding, path);
+  const result = spawnSync(
+    '/usr/bin/sandbox-exec',
+    [
+      '-p',
+      nativePolicy(helper, binding),
+      helper,
+      binding.root,
+      binding.chain.map((entry) => entry.identity).join(','),
+      '.agora-operations',
+      binding.stagingIdentity,
+      path,
+      'inspect',
+      parents.map((entry) => entry.identity).join(','),
+    ],
+    {
+      cwd: '/',
+      env: { NODE_ENV: 'production', PATH: '/usr/bin:/bin', HOME: '/', TMPDIR: '/' },
+      maxBuffer: byteLimit * 2 + 16_384,
+      timeout: 30_000,
+    },
+  );
+  if (result.error || result.status !== 0)
+    throw new Error('native_read_failed', { cause: result.error ?? result.stderr.toString() });
+  const value = JSON.parse(result.stdout.toString());
+  if (
+    typeof value.hex !== 'string' ||
+    value.hex.length > byteLimit * 2 ||
+    !/^(?:[a-f0-9]{2})*$/.test(value.hex) ||
+    !/^\d+:\d+$/.test(value.identity) ||
+    !/^\d+:\d+:\d+:[a-f0-9]{64}$/.test(value.metadata)
+  )
+    throw new Error('invalid_native_read');
+  const bytes = Buffer.from(value.hex, 'hex');
+  const content = bytes.toString('utf8');
+  if (!Buffer.from(content).equals(bytes)) throw new Error('unsupported_file_encoding');
+  if (!verifyBinding(binding) || !verifyParents(parents)) throw new Error('root_identity_changed');
+  return { identity: value.identity, metadata: value.metadata, content };
+}
+
+/** Reads an absent leaf through the same pinned native directory chain. */
+export function inspectLocalCreationBasis(
+  binding: LocalRootBinding,
+  path: string,
+  helper: string,
+): CreationBasis {
+  validatePath(path);
+  if (process.platform !== 'darwin' || !isAbsolute(helper)) throw new Error('sandbox_unavailable');
+  if (!verifyBinding(binding)) throw new Error('root_identity_changed');
+  const parents = targetParents(binding, path);
+  const result = spawnSync(
+    '/usr/bin/sandbox-exec',
+    [
+      '-p',
+      nativePolicy(helper, binding),
+      helper,
+      binding.root,
+      binding.chain.map((entry) => entry.identity).join(','),
+      '.agora-operations',
+      binding.stagingIdentity,
+      path,
+      'inspect-absent',
+      parents.map((entry) => entry.identity).join(','),
+    ],
+    {
+      cwd: '/',
+      env: { NODE_ENV: 'production', PATH: '/usr/bin:/bin', HOME: '/', TMPDIR: '/' },
+      maxBuffer: 16_384,
+      timeout: 30_000,
+    },
+  );
+  if (result.error || result.status !== 0) throw new Error('native_read_failed');
+  const value = JSON.parse(result.stdout.toString());
+  if (
+    !value ||
+    Object.keys(value).length !== 1 ||
+    typeof value.parentIdentity !== 'string' ||
+    !/^\d+:\d+$/.test(value.parentIdentity) ||
+    value.parentIdentity !== (parents.at(-1) ?? binding.chain.at(-1))?.identity
+  )
+    throw new Error('invalid_native_read');
+  if (!verifyBinding(binding) || !verifyParents(parents)) throw new Error('root_identity_changed');
+  return { parentIdentity: value.parentIdentity };
+}
+
+export async function applyLocalReplacement(
+  request: ReplacementRequest,
+): Promise<LocalReplacementReceipt> {
+  return applyLocalTransaction(request, false) as Promise<LocalReplacementReceipt>;
+}
+
+export async function applyLocalCreation(
+  request: Omit<ReplacementRequest, 'expected'> & { expected: CreationBasis },
+): Promise<LocalCreationReceipt> {
+  const parentIdentity = request.expected.parentIdentity;
+  if (typeof parentIdentity !== 'string' || !/^\d+:\d+$/.test(parentIdentity))
+    throw new Error('invalid_file_change');
+  return applyLocalTransaction(
+    {
+      ...request,
+      expected: {
+        identity: parentIdentity,
+        metadata: '',
+        content: '',
+      },
+    },
+    true,
+  ) as Promise<LocalCreationReceipt>;
+}
+
+async function applyLocalTransaction(
+  request: ReplacementRequest,
+  creating: boolean,
+): Promise<LocalReplacementReceipt | LocalCreationReceipt> {
+  const schemaVersion = creating ? 'local-creation-primitive-v1' : 'local-replacement-primitive-v1';
+  const effectKey = creating ? 'created' : 'exchanged';
+  if (process.platform !== 'darwin') throw new Error('sandbox_unavailable');
+  const { actionId, path, content, journalRoot, helper, authorize } = request;
+  const binding = structuredClone(request.binding);
+  const expected = structuredClone(request.expected);
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(actionId)) throw new Error('invalid_action_id');
+  validatePath(path);
+  if (
+    Buffer.byteLength(content) > byteLimit ||
+    Buffer.byteLength(expected.content) > byteLimit ||
+    !/^\d+:\d+$/.test(expected.identity) ||
+    (!creating && !/^\d+:\d+:\d+:[a-f0-9]{64}$/.test(expected.metadata))
+  )
+    throw new Error('invalid_file_change');
+  if (!isAbsolute(helper) || !isAbsolute(journalRoot) || realpathSync(journalRoot) !== journalRoot)
+    throw new Error('untrusted_runtime_path');
+  const overlaps = (a: string, b: string) => {
+    const part = relative(a, b);
+    return !part || (!part.startsWith('../') && part !== '..' && !isAbsolute(part));
+  };
+  if (
+    overlaps(binding.root, journalRoot) ||
+    overlaps(journalRoot, binding.root) ||
+    overlaps(binding.root, realpathSync(helper))
+  )
+    throw new Error('untrusted_runtime_path');
+  const journalStat = lstatSync(journalRoot);
+  if (
+    !journalStat.isDirectory() ||
+    journalStat.uid !== process.getuid?.() ||
+    (journalStat.mode & 0o777) !== 0o700
+  )
+    throw new Error('untrusted_runtime_path');
+  if (!verifyBinding(binding)) throw new Error('root_identity_changed');
+  if (!(await authorize('admission'))) throw new Error('authorization_closed');
+  const parents = targetParents(binding, path);
+  const helperHash = digest(readFileSync(helper));
+  const input = {
+    actionId,
+    binding,
+    parents,
+    path,
+    expected,
+    content,
+    helperHash,
+    ...(creating ? { operation: 'create' } : {}),
+  };
+  const inputHash = digest(JSON.stringify(input));
+  const journalPath = join(journalRoot, actionId);
+  const receiptPath = join(journalPath, 'result.json');
+  if (existsSync(journalPath)) {
+    const prepared = JSON.parse(readFileSync(join(journalPath, 'prepared.json'), 'utf8'));
+    if (prepared.inputHash !== inputHash) throw new Error('operation_conflict');
+    if (!existsSync(receiptPath)) throw new Error('recovery_required');
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as
+      | LocalReplacementReceipt
+      | LocalCreationReceipt;
+    if (
+      receipt.schemaVersion !== schemaVersion ||
+      receipt.actionId !== actionId ||
+      receipt.inputHash !== inputHash ||
+      receipt.journalPath !== journalPath ||
+      !receipt.quiescent ||
+      !['applied', 'conflict', 'recoveryRequired'].includes(receipt.stage)
+    )
+      throw new Error('recovery_required');
+    if (
+      receipt.stage === 'applied' &&
+      (('created' in receipt ? receipt.created : receipt.exchanged) !== true ||
+        receipt.nativeExitCode !== 0 ||
+        receipt.reason !== 'none')
+    )
+      throw new Error('recovery_required');
+    if (
+      receipt.candidateName !== `${actionId}-candidate` ||
+      prepared.expectedHash !== digest(readFileSync(join(journalPath, 'expected'))) ||
+      prepared.replacementHash !== digest(readFileSync(join(journalPath, 'replacement'))) ||
+      prepared.expectedHash !== digest(expected.content) ||
+      prepared.replacementHash !== digest(content)
+    )
+      throw new Error('recovery_required');
+    if (!verifyBinding(binding) || !verifyParents(parents))
+      throw new Error('root_identity_changed');
+    return receipt;
+  }
+  mkdirSync(journalPath, { mode: 0o700 });
+  durableFile(join(journalPath, 'expected'), expected.content);
+  durableFile(join(journalPath, 'replacement'), content);
+  const policy = nativePolicy(helper, binding, journalPath);
+  durableFile(
+    join(journalPath, 'prepared.json'),
+    JSON.stringify({
+      schemaVersion,
+      actionId,
+      inputHash,
+      stage: 'prepared',
+      binding,
+      parents,
+      path,
+      ...(creating
+        ? { parentIdentity: expected.identity }
+        : {
+            expectedIdentity: expected.identity,
+            expectedMetadata: expected.metadata,
+          }),
+      expectedHash: digest(expected.content),
+      replacementHash: digest(content),
+      helperHash,
+      policyHash: digest(policy),
+      candidateName: `${actionId}-candidate`,
+    }),
+  );
+  const expectedFd = openSync(
+    join(journalPath, 'expected'),
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  );
+  const replacementFd = openSync(
+    join(journalPath, 'replacement'),
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  );
+  let child: ReturnType<typeof spawn>;
+  try {
+    child = spawn(
+      '/usr/bin/sandbox-exec',
+      [
+        '-p',
+        policy,
+        helper,
+        binding.root,
+        binding.chain.map((entry) => entry.identity).join(','),
+        '.agora-operations',
+        binding.stagingIdentity,
+        path,
+        creating ? 'absent' : expected.identity,
+        creating ? expected.identity : expected.metadata,
+        actionId,
+        parents.map((entry) => entry.identity).join(','),
+      ],
+      {
+        cwd: '/',
+        env: {
+          NODE_ENV: 'production',
+          PATH: '/usr/bin:/bin',
+          HOME: journalPath,
+          TMPDIR: journalPath,
+        },
+        stdio: ['pipe', 'pipe', 'pipe', expectedFd, replacementFd],
+      },
+    );
+  } finally {
+    closeSync(expectedFd);
+    closeSync(replacementFd);
+  }
+  let stdout = '',
+    stderr = '',
+    pending = '';
+  let protocolFailed = false;
+  let native:
+    | { stage: LocalReplacementReceipt['stage']; reason: string; exchanged: boolean }
+    | undefined;
+  let checkpointIndex = 0;
+  let closed = false;
+  child.stdin?.on('error', () => {
+    protocolFailed = true;
+  });
+  let authorizing: Promise<void> = Promise.resolve();
+  const checkpoints: TransactionCheckpoint[] = ['before_prepare', 'before_swap', 'after_swap'];
+  const timer = setTimeout(() => {
+    protocolFailed = true;
+    child.kill('SIGKILL');
+  }, 30_000);
+  const outcome = await new Promise<{ code: number | null; signal: string | null }>(
+    (resolveOutcome) => {
+      child.once('error', () => {
+        protocolFailed = true;
+      });
+      child.stderr?.on('data', (data: Buffer) => {
+        if (stderr.length + data.length > 16_384) {
+          protocolFailed = true;
+          child.kill('SIGKILL');
+        } else stderr += data.toString();
+      });
+      child.stdout?.on('data', (data: Buffer) => {
+        if (stdout.length + data.length > 16_384) {
+          protocolFailed = true;
+          child.kill('SIGKILL');
+          return;
+        }
+        stdout += data.toString();
+        pending += data.toString();
+        while (pending.includes('\n')) {
+          const newline = pending.indexOf('\n');
+          const line = pending.slice(0, newline);
+          pending = pending.slice(newline + 1);
+          authorizing = authorizing.then(async () => {
+            try {
+              const event = JSON.parse(line);
+              if (native) throw new Error('event_after_result');
+              if (event.event === 'checkpoint') {
+                if (event.name !== checkpoints[checkpointIndex++])
+                  throw new Error('checkpoint_order');
+                const allowed = await authorize(event.name);
+                if (!closed) child.stdin?.write(allowed ? 'x' : 'n');
+              } else if (
+                event.event === 'result' &&
+                ['applied', 'conflict', 'recoveryRequired'].includes(event.stage) &&
+                typeof event.reason === 'string' &&
+                /^[a-z_]+$/.test(event.reason) &&
+                typeof event[effectKey] === 'boolean'
+              ) {
+                native = { stage: event.stage, reason: event.reason, exchanged: event[effectKey] };
+              } else throw new Error('invalid_event');
+            } catch {
+              protocolFailed = true;
+              if (!closed) child.stdin?.end('n');
+            }
+          });
+        }
+      });
+      child.once('close', (code, signal) => {
+        closed = true;
+        clearTimeout(timer);
+        resolveOutcome({ code, signal });
+      });
+    },
+  );
+  await authorizing;
+  const receipt = {
+    schemaVersion,
+    actionId,
+    inputHash,
+    stage: native?.stage ?? 'recoveryRequired',
+    reason: native?.reason ?? 'native_failed',
+    [effectKey]: native?.exchanged ?? null,
+    quiescent: true,
+    candidateName: `${actionId}-candidate`,
+    journalPath,
+    nativeExitCode: outcome.code,
+  } as LocalReplacementReceipt | LocalCreationReceipt;
+  if (
+    protocolFailed ||
+    pending ||
+    !native ||
+    (native.stage === 'applied' &&
+      (outcome.code !== 0 || checkpointIndex !== 3 || !native.exchanged))
+  ) {
+    receipt.stage = 'recoveryRequired';
+    receipt.reason = 'native_failed';
+  }
+  if (receipt.stage === 'applied') {
+    if (!verifyBinding(binding) || !verifyParents(parents)) {
+      receipt.stage = 'recoveryRequired';
+      receipt.reason = 'root_identity_changed';
+    } else {
+      let allowed = false;
+      try {
+        allowed = await authorize('completion');
+      } catch {
+        /* Fail closed with a durable result. */
+      }
+      if (!allowed) {
+        receipt.stage = 'recoveryRequired';
+        receipt.reason = 'authorization_closed';
+      } else if (!verifyBinding(binding) || !verifyParents(parents)) {
+        receipt.stage = 'recoveryRequired';
+        receipt.reason = 'root_identity_changed';
+      }
+    }
+  }
+  durableFile(join(journalPath, 'native.json'), JSON.stringify({ ...outcome, stdout, stderr }));
+  durableFile(receiptPath, JSON.stringify(receipt));
+  return receipt;
+}

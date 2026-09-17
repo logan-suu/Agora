@@ -69,3 +69,61 @@ it('rejects corruption, wrong architecture and internal launcher replacement', a
   await symlink('../git/bin/git', join(root, 'bin/node'));
   await expect(verifyToolchain(root, 'arm64')).rejects.toThrow('toolchain_node_invalid');
 });
+
+it('requires every executable local helper before admitting local execution', async () => {
+  const { verifyLocalExecutionToolchain } = await import('../src/toolchain-installation.js');
+  const root = await mkdtemp(join(tmpdir(), 'agora123-tools-'));
+  roots.push(root);
+  const names = [
+    'node/bin/node',
+    'node/lib/node_modules/npm/bin/npm-cli.js',
+    'pnpm/bin/pnpm.cjs',
+    'git/bin/git',
+    'keychain',
+    'secure-files',
+    'local-root-inspection',
+    'local-root-initialization',
+    'local-file-transaction',
+    'local-command-bootstrap',
+    'local-process-control',
+  ];
+  for (const name of names) {
+    await mkdir(dirname(join(root, name)), { recursive: true });
+    await writeFile(join(root, name), name, { mode: 0o755 });
+  }
+  for (const name of ['git/libexec/git-core', 'git/share/git-core/templates', 'bin'])
+    await mkdir(join(root, name), { recursive: true });
+  async function manifest() {
+    await writeFile(
+      join(root, 'manifest.json'),
+      JSON.stringify({
+        format: 1,
+        arch: 'arm64',
+        platform: 'darwin',
+        versions: toolVersions,
+        files: await inventoryToolchain(root),
+      }),
+    );
+  }
+  await manifest();
+  expect(await verifyLocalExecutionToolchain(root, 'arm64')).toMatchObject({
+    inspector: join(root, 'local-root-inspection'),
+    initializer: join(root, 'local-root-initialization'),
+    filesHelper: join(root, 'local-file-transaction'),
+    tools: {
+      node: { path: join(root, 'node/bin/node'), version: toolVersions.node },
+      bootstrap: { path: join(root, 'local-command-bootstrap') },
+      processControl: { path: join(root, 'local-process-control') },
+    },
+  });
+  await chmod(join(root, 'local-process-control'), 0o644);
+  await manifest();
+  await expect(verifyLocalExecutionToolchain(root, 'arm64')).rejects.toThrow(
+    'toolchain_local_execution_invalid',
+  );
+  await rm(join(root, 'local-command-bootstrap'));
+  await manifest();
+  await expect(verifyLocalExecutionToolchain(root, 'arm64')).rejects.toThrow(
+    'toolchain_local_execution_invalid',
+  );
+});

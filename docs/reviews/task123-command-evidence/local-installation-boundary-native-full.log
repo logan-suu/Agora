@@ -1,0 +1,74 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (33 tests) 101388ms
+   ✓ confirms a durable grant through the real Leader POST: normal  651ms
+   ✓ confirms a durable grant through the real Leader POST: download  5002ms
+   ✓ confirms a durable grant through the real Leader POST: file-update  3392ms
+   ✓ confirms a durable grant through the real Leader POST: file-create  2253ms
+   ✓ confirms a durable grant through the real Leader POST: file-proof  2399ms
+   ✓ confirms a durable grant through the real Leader POST: command  4394ms
+   ✓ confirms a durable grant through the real Leader POST: mcp  4066ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-partial  4503ms
+   ✓ confirms a durable grant through the real Leader POST: reader  1919ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-command  4771ms
+   ✓ confirms a durable grant through the real Leader POST: trusted-validation  11033ms
+   ✓ confirms a durable grant through the real Leader POST: terminal-release-before  13131ms
+   ✓ confirms a durable grant through the real Leader POST: terminal-release-after  13544ms
+   ✓ confirms a durable grant through the real Leader POST: worker-companion  1634ms
+   ✓ confirms a durable grant through the real Leader POST: successor-companion  2487ms
+   ✓ confirms a durable grant through the real Leader POST: missing-closure-companion  1849ms
+   ✓ confirms a durable grant through the real Leader POST: tester-companion  1836ms
+   ✓ confirms a durable grant through the real Leader POST: reviewer-companion  1967ms
+   ✓ confirms a durable grant through the real Leader POST: pm-companion  1244ms
+   ✓ confirms a durable grant through the real Leader POST: coordinator-companion  1118ms
+   ✓ confirms a durable grant through the real Leader POST: batch  4002ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3893ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3631ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2632ms
+   ✓ confirms a durable grant through the real Leader POST: before  480ms
+   ✓ confirms a durable grant through the real Leader POST: after  504ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  416ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  500ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  468ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  434ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  442ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  357ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  425ms
+ ✓ tests/integration/phase12/phase12-3-command-start.test.ts (26 tests) 30898ms
+   ✓ initializes a cold helper before applying the shorter process-query deadline  1430ms
+   ✓ fails closed before bootstrap creation if helper initialization consumes the launch window  5445ms
+   ✓ rejects malformed helper readiness without attempting PID capture  605ms
+   ✓ recovers a transient read-only capture timeout without changing launch or call deadlines  1163ms
+   ✓ still rejects release authorization after a transient capture timeout  992ms
+   ✓ bounds persistent capture timeouts to three attempts and keeps resources quarantined  1522ms
+   ✓ does not retry a failed kernel query that did not time out  710ms
+   ✓ rechecks authority before retrying capture  917ms
+   ✓ does not execute a replacement helper on a capture retry  1004ms
+   ✓ honors cancellation between capture attempts  932ms
+   ✓ observes bootstrap exit before another PID capture can be attempted  1044ms
+   ✓ refuses a capture when a control-plane check exhausts the original startup window  5770ms
+   ✓ registers the suspended executable before any constructor or project code runs  789ms
+   ✓ keeps project code suspended when the release authorization is revoked  677ms
+   ✓ does not release the executable when durable registration fails  594ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  728ms
+   ✓ records a failed exec without releasing any project code  623ms
+   ✓ rejects policy drift at admission without creating a bootstrap process  313ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  617ms
+   ✓ keeps the real executable signal separate from the successful bootstrap exit  742ms
+   ✓ persists the executable result independently of the bootstrap and survives reopening  735ms
+   ✓ never overwrites a terminal launch fact and rejects stale revisions  757ms
+   ✓ rejects persisted launch facts that contradict identities or release state  772ms
+   ✓ preserves observed process facts without claiming a launch receipt when final persistence is blocked  798ms
+   ✓ waits for current asynchronous authority before releasing project code: async-release-revoked  641ms
+   ✓ waits for current asynchronous authority before releasing project code: async-authority-rejected  577ms
+ ✓ tests/integration/phase12/phase12-3-composition.test.ts (1 test) 20006ms
+   ✓ runs local composition through a real D4 Fork and D16 fixed artifact  20006ms
+ ✓ tests/integration/phase12/phase12-3-installation.test.ts (1 test) 3274ms
+   ✓ installs a pinned tarball with managed pnpm offline and builds/tests in a private copy  3274ms
+
+ Test Files  4 passed (4)
+      Tests  61 passed (61)
+   Start at  19:58:01
+   Duration  157.39s (transform 419ms, setup 0ms, collect 1.37s, tests 155.57s, environment 0ms, prepare 115ms)
+

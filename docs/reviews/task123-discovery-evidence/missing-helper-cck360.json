@@ -1,0 +1,303 @@
+{
+  "scenario": "missing-helper",
+  "base": "/private/tmp/agora-task123-validation-cck360",
+  "startedAt": "2026-09-16T03:46:46.977Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127868774
+  },
+  "sources": {
+    "packages/runtime/sandbox/native/local-process-control.c": "3a18c846c639f77b10da346ac53eaac1526af47f9233e68a94abfb18436b3d10",
+    "packages/runtime/sandbox/native/local-command-discovery-probe.c": "ad8cff015ddb84388b4b5f5b1c7b11135a5fb25ff899395aa744ea04608266a3",
+    "packages/runtime/sandbox/src/local-command-stop.ts": "e2e4d9fbbae63f7b0a20b1a5d4d6fad71ce6101762f099492dcecab2637efc3e",
+    "packages/runtime/sandbox/src/local-command-policy.ts": "26233dc14b99574633af2a2a60275ad8bb020d3f2e4529973314e3716183288c",
+    "packages/runtime/sandbox/src/local-command-journal.ts": "88baff2f33dca63ce1b277f8b8bd2d89f51a3acca166feaa1ca6ddd7610afbe0",
+    "tests/integration/phase12/local-command-discovery-fixture.ts": "4a8e1fb2fa6f4c2a8dc4bcbad84a3f82b7777275c40b0fe1c738ad72d4eee723",
+    "tests/integration/phase12/phase12-3-command-discovery.test.ts": "75d32c83f819e514bbcfea0c7d16d1739b86c39f3e48901b25262e93d992c289"
+  },
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "node": "v24.20.0",
+  "availableBefore": 46975602688,
+  "binaries": {
+    "helper": "863cd02faffc4936fcdf22bcbe7cc367eefd7fd7a5f86517fa06edcaca605834",
+    "payload": "d5a7be312a5769bf4dc4aa889bbdcc16b2a5512cb3481b962a6b095ede7b0e1a"
+  },
+  "siblingPolicy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-cck360/payload\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-cck360\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-cck360/payload\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-cck360/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-cck360/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/sibling-output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/journal\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "treePolicy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-cck360/payload\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-cck360\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-cck360/payload\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-cck360/source\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-cck360/input\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/source\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/input\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/journal\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/source/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/source/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/input/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-cck360/input/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "result": {
+    "discovery": {
+      "assurance": "bounded-observation",
+      "observationState": "observed",
+      "identities": [
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          91685,
+          100023,
+          18643209
+        ],
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          91687,
+          100023,
+          18643212
+        ],
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          91688,
+          100023,
+          18643213
+        ]
+      ],
+      "relations": [
+        {
+          "parent": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            91685,
+            100023,
+            18643209
+          ],
+          "child": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            91687,
+            100023,
+            18643212
+          ]
+        },
+        {
+          "parent": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            91687,
+            100023,
+            18643212
+          ],
+          "child": [
+            501,
+            501,
+            20,
+            501,
+            20,
+            91688,
+            100023,
+            18643213
+          ]
+        }
+      ],
+      "durationMs": 7.24329200000011
+    },
+    "rejected": {
+      "assurance": "bounded-observation",
+      "observationState": "needsAttention",
+      "identities": [
+        [
+          501,
+          501,
+          20,
+          501,
+          20,
+          91685,
+          100023,
+          18643209
+        ]
+      ],
+      "relations": [],
+      "durationMs": 0.20783299999993687
+    },
+    "treeAliveAfterRejection": true,
+    "reparented": false,
+    "stop": {
+      "assurance": "registered-only",
+      "registeredState": "stopped",
+      "signals": [
+        "TERM"
+      ],
+      "durationMs": 11.80462499999976,
+      "states": [
+        "exited",
+        "exited",
+        "exited"
+      ]
+    },
+    "siblingAlive": true,
+    "persistedBirths": [
+      [
+        501,
+        501,
+        20,
+        501,
+        20,
+        91685,
+        100023,
+        18643209
+      ],
+      [
+        501,
+        501,
+        20,
+        501,
+        20,
+        91687,
+        100023,
+        18643212
+      ],
+      [
+        501,
+        501,
+        20,
+        501,
+        20,
+        91688,
+        100023,
+        18643213
+      ]
+    ],
+    "blocked": true
+  },
+  "resourceRecord": {
+    "commandId": "fixture-missing-helper",
+    "workspaceId": "fixed-fixture",
+    "policyHash": "b73dfe0c9b426d1e3da3746543321983010f4eeae2695527368ecf6f327b75bb",
+    "inputHash": "941cd4d37179e82f857ca590c8f74c1f1a60fccc78dcdce8e8a7d414484401e7",
+    "roots": [
+      {
+        "path": "/private/tmp/agora-task123-validation-cck360/output",
+        "identity": "16777231:127868783"
+      }
+    ],
+    "revision": 4,
+    "birthIdentities": [
+      [
+        501,
+        501,
+        20,
+        501,
+        20,
+        91685,
+        100023,
+        18643209
+      ],
+      [
+        501,
+        501,
+        20,
+        501,
+        20,
+        91687,
+        100023,
+        18643212
+      ],
+      [
+        501,
+        501,
+        20,
+        501,
+        20,
+        91688,
+        100023,
+        18643213
+      ]
+    ],
+    "resourceState": "quarantined",
+    "reason": "discovery_incomplete"
+  },
+  "finalStop": {
+    "assurance": "registered-only",
+    "registeredState": "stopped",
+    "signals": [
+      "TERM"
+    ],
+    "durationMs": 8.61283400000002,
+    "states": [
+      "exited",
+      "exited",
+      "exited",
+      "exited"
+    ]
+  },
+  "outputs": [
+    {
+      "mainResult": {
+        "exitCode": null,
+        "signal": "SIGTERM",
+        "error": null
+      },
+      "stdout": {
+        "bytes": "ready\n",
+        "observedBytes": 6,
+        "truncated": false,
+        "error": null
+      },
+      "stderr": {
+        "bytes": "",
+        "observedBytes": 0,
+        "truncated": false,
+        "error": null
+      },
+      "tailDurationMs": 0.03712499999983265
+    },
+    {
+      "mainResult": {
+        "exitCode": null,
+        "signal": "SIGTERM",
+        "error": null
+      },
+      "stdout": {
+        "bytes": "ready\ntree-ready\n",
+        "observedBytes": 17,
+        "truncated": false,
+        "error": null
+      },
+      "stderr": {
+        "bytes": "",
+        "observedBytes": 0,
+        "truncated": false,
+        "error": null
+      },
+      "tailDurationMs": 0.018250000000080036
+    }
+  ],
+  "completedAt": "2026-09-16T03:46:47.442Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "output": [
+        null,
+        "",
+        ""
+      ],
+      "pid": 91706,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 46975471616,
+  "spaceDelta": -131072
+}

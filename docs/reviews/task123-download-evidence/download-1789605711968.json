@@ -1,0 +1,29 @@
+{
+  "startedAt": "2026-09-17T00:41:51.871Z",
+  "node": "v24.20.0",
+  "kind": "trusted-download-primitive-only",
+  "result": {
+    "size": 2625,
+    "sha256": "d3aedb2807967b7eb37fd11b03b7e3701e725af79c650d0812ff7213f8f882d9",
+    "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==",
+    "hops": [
+      {
+        "url": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
+        "address": "104.16.6.34",
+        "status": 200
+      }
+    ],
+    "authorityChecks": 3
+  },
+  "passed": true,
+  "sources": {
+    "packages/runtime/sandbox/src/local-download.ts": "1b0d9906667417f660e82dd1c660e72efaf08dc152106eb1da7d88f3df96df02",
+    "packages/runtime/sandbox/src/local-download-policy.ts": "4634b9114f19bc6aac7baa32151eda170604e795c91f61b2f4bfd49b0939f3f2",
+    "tests/integration/phase12/phase12-3-download.test.ts": "66fe9280325872b033c22d3dfa02c940c390038c13f2bf84d730134716df9a17"
+  },
+  "cleanup": {
+    "downloadOnDisk": false,
+    "packageExecuted": false,
+    "persistentDownloadCopies": 0
+  }
+}

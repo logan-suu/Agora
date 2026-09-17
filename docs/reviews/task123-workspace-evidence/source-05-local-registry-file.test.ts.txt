@@ -1,0 +1,464 @@
+// Real files and the actual desktop ownership lock. The closed fixture codec
+// validates storage only; it is not a product grant or authorization validator.
+// Fault wrappers first check the real owner, then perform documented filesystem
+// faults in this fixture. No storage or ownership method is replaced by a mock.
+
+import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import {
+  chmod,
+  link,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  rmdir,
+  statfs,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { expect, it } from 'vitest';
+import { acquireState } from '../../../../apps/desktop/src/storage';
+import { LocalRegistryFile, type LocalRegistrySnapshot } from '../src/local-registry-file';
+
+const hash = (bytes: string | Buffer) => createHash('sha256').update(bytes).digest('hex');
+const codec = (value: unknown) => {
+  const record = value as LocalRegistrySnapshot;
+  if (
+    ['roots', 'grants', 'workspaces', 'claims'].some(
+      (key) => (record[key as keyof LocalRegistrySnapshot] as unknown[]).length !== 0,
+    ) ||
+    record.operations.some((x) => typeof x !== 'string' || !/^fixed-[a-z]+$/.test(x))
+  )
+    throw new Error('invalid fixture');
+  return value;
+};
+
+// Deliberately leaves workspace validation to the real adapter boundary.
+const workspaceCodec = (value: unknown) => {
+  codec({ ...(value as LocalRegistrySnapshot), workspaces: [] });
+  return value;
+};
+const workspace = {
+  schemaVersion: 'workspace-v1',
+  projectId: 'project',
+  taskId: 'task',
+  workspaceId: 'workspace',
+  rootId: 'root',
+  grantId: 'grant',
+  purpose: 'coding',
+  mode: 'direct',
+  baselineManifestId: 'manifest',
+};
+
+it('persists immutable workspace identities across owner restarts', () =>
+  fixture('workspace-reopen', async ({ owner, root, evidence }) => {
+    const store = await LocalRegistryFile.open(owner, workspaceCodec, true);
+    const initial = await store.load();
+    await store.compareAndSwap(0, { ...initial, revision: 1, workspaces: [workspace] });
+    const other = { ...workspace, workspaceId: 'other', taskId: 'other-task' };
+    await store.compareAndSwap(1, {
+      ...initial,
+      revision: 2,
+      workspaces: [other, { ...workspace }],
+    });
+    await owner.release();
+    const reopenedOwner = await acquireState(root);
+    try {
+      const reopened = await LocalRegistryFile.open(reopenedOwner, workspaceCodec);
+      expect((await reopened.load()).workspaces).toEqual([other, workspace]);
+      await expect(
+        reopened.compareAndSwap(2, { ...initial, revision: 3, workspaces: [workspace] }),
+      ).rejects.toThrow('workspace_identity_changed');
+      expect((await reopened.load()).revision).toBe(2);
+      evidence.snapshot = await reopened.load();
+    } finally {
+      await reopenedOwner.release();
+    }
+  }));
+
+it('rejects malformed workspaces even when the injected codec accepts them', () =>
+  fixture('workspace-malformed', async ({ owner, file, evidence }) => {
+    const store = await LocalRegistryFile.open(owner, workspaceCodec, true);
+    const initial = await store.load();
+    for (const refs of [
+      [{ ...workspace, branch: 'fake' }],
+      [{ ...workspace, schemaVersion: 'v2' }],
+      [workspace, { ...workspace, projectId: 'other' }],
+    ]) {
+      await expect(
+        store.compareAndSwap(0, { ...initial, revision: 1, workspaces: refs }),
+      ).rejects.toThrow('invalid_local_registry');
+      expect(await store.load()).toEqual(initial);
+    }
+    const bad = { ...initial, workspaces: [{ ...workspace, path: '/outside' }] };
+    await writeFile(file, JSON.stringify({ snapshot: bad, sha256: hash(JSON.stringify(bad)) }));
+    await expect(store.load()).rejects.toThrow('invalid_local_registry');
+    await expect(LocalRegistryFile.open(owner, workspaceCodec)).rejects.toThrow(
+      'invalid_local_registry',
+    );
+    evidence.corruptHash = hash(await readFile(file));
+  }));
+
+it('checks workspace transitions inside the publication lock before changing disk', () =>
+  fixture('workspace-rebind', async ({ owner, directory, file, evidence }) => {
+    const store = await LocalRegistryFile.open(owner, workspaceCodec, true);
+    const initial = await store.load();
+    await store.compareAndSwap(0, { ...initial, revision: 1, workspaces: [workspace] });
+    const unchanged = await readFile(file, 'utf8');
+    for (const key of ['projectId', 'taskId', 'rootId', 'grantId', 'baselineManifestId']) {
+      await expect(
+        store.compareAndSwap(1, {
+          ...initial,
+          revision: 2,
+          workspaces: [{ ...workspace, [key]: 'different' }],
+        }),
+      ).rejects.toThrow('workspace_identity_changed');
+      expect(await readFile(file, 'utf8')).toBe(unchanged);
+      expect(await readdir(directory)).toEqual(['registry.json']);
+    }
+    const second = await LocalRegistryFile.open(owner, workspaceCodec);
+    await second.compareAndSwap(1, {
+      ...initial,
+      revision: 2,
+      workspaces: [workspace, { ...workspace, workspaceId: 'new' }],
+    });
+    await expect(
+      store.compareAndSwap(1, { ...initial, revision: 2, workspaces: [workspace] }),
+    ).rejects.toThrow('registry_revision_conflict');
+    await expect(
+      store.compareAndSwap(2, { ...initial, revision: 3, workspaces: [workspace] }),
+    ).rejects.toThrow('workspace_identity_changed');
+    evidence.snapshot = await store.load();
+  }));
+
+async function fixture(
+  name: string,
+  run: (context: {
+    owner: Awaited<ReturnType<typeof acquireState>>;
+    root: string;
+    directory: string;
+    file: string;
+    evidence: Record<string, unknown>;
+  }) => Promise<void>,
+) {
+  const base = await mkdtemp('/private/tmp/agora-task123-validation-');
+  const identity = await lstat(base),
+    before = await statfs('/private/tmp');
+  const root = join(base, 'state');
+  const owner = await acquireState(root);
+  const directory = join(root, 'local-workspaces'),
+    file = join(directory, 'registry.json');
+  const folder = resolve('docs/reviews/task123-registry-evidence');
+  await mkdir(folder, { recursive: true });
+  const evidence: Record<string, unknown> = {
+    scenario: name,
+    base,
+    startedAt: new Date().toISOString(),
+    identity: { uid: identity.uid, dev: identity.dev, ino: identity.ino },
+    node: process.version,
+    os: execFileSync('/usr/bin/sw_vers', [], { encoding: 'utf8' }),
+    sources: Object.fromEntries(
+      await Promise.all(
+        [
+          'packages/core/domain/src/local-workspace.ts',
+          'packages/runtime/sandbox/src/local-registry-file.ts',
+          'packages/runtime/sandbox/test/local-registry-file.test.ts',
+          'apps/desktop/src/storage.ts',
+        ].map(async (p) => [p, hash(await readFile(p))]),
+      ),
+    ),
+  };
+  try {
+    await run({ owner, root, directory, file, evidence });
+    evidence.passed = true;
+  } catch (error) {
+    evidence.error = error instanceof Error ? error.message : String(error);
+    throw error;
+  } finally {
+    await owner.release();
+    const files: { path: string; sha256?: string; target?: string; mode: number }[] = [];
+    async function capture(folder: string, prefix = '') {
+      for (const name of await readdir(folder)) {
+        const p = join(folder, name),
+          relative = join(prefix, name),
+          stat = await lstat(p);
+        if (stat.isDirectory()) await capture(p, relative);
+        else if (stat.isSymbolicLink())
+          files.push({ path: relative, mode: stat.mode, target: 'fixture-symlink' });
+        else if (stat.isFile())
+          files.push({ path: relative, mode: stat.mode, sha256: hash(await readFile(p)) });
+        else throw new Error('unexpected fixture object');
+      }
+    }
+    await capture(base);
+    evidence.files = files;
+    evidence.completedAt = new Date().toISOString();
+    const evidenceFile = join(folder, `${name}-${base.split('-').at(-1)}.json`);
+    await writeFile(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`);
+    const current = await lstat(base);
+    const handles = spawnSync('/usr/sbin/lsof', ['-nP', '+D', base], { encoding: 'utf8' });
+    const mounts = spawnSync('/sbin/mount', [], { encoding: 'utf8' });
+    const safe =
+      current.uid === identity.uid &&
+      current.dev === identity.dev &&
+      current.ino === identity.ino &&
+      !current.isSymbolicLink() &&
+      (await realpath(base)) === base &&
+      handles.status === 1 &&
+      !handles.stdout &&
+      !handles.stderr &&
+      mounts.status === 0 &&
+      !mounts.stdout.includes(base);
+    evidence.cleanup = {
+      removed: false,
+      noHandles: handles.status === 1 && !handles.stdout && !handles.stderr,
+      noMounts: mounts.status === 0 && !mounts.stdout.includes(base),
+    };
+    if (safe) {
+      await rm(base, { recursive: true });
+      evidence.cleanup = { ...(evidence.cleanup as object), removed: true };
+    }
+    const after = await statfs('/private/tmp');
+    evidence.spaceDelta = after.bavail * after.bsize - before.bavail * before.bsize;
+    await writeFile(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`);
+    expect(safe, 'fixture cleanup requires attention').toBe(true);
+  }
+}
+
+it('publishes and reopens durable revisions across actual desktop owner lifetimes', () =>
+  fixture('reopen', async ({ owner, root, file, evidence }) => {
+    const store = await LocalRegistryFile.open(owner, codec, true);
+    const before = await store.load();
+    const next = { ...before, revision: 1, operations: ['fixed-operation'] };
+    expect(await store.compareAndSwap(0, next)).toEqual(next);
+    const bytes = await readFile(file);
+    expect(JSON.parse(bytes.toString()).snapshot).toEqual(next);
+    await owner.release();
+    const second = await acquireState(root);
+    try {
+      const reopened = await LocalRegistryFile.open(second, codec);
+      expect(await reopened.load()).toEqual(next);
+      expect((await readFile(file)).equals(bytes)).toBe(true);
+      evidence.snapshot = await reopened.load();
+    } finally {
+      await second.release();
+    }
+  }));
+
+it('refuses another desktop owner and operations after ownership is released', () =>
+  fixture('owner', async ({ owner, root, file }) => {
+    const store = await LocalRegistryFile.open(owner, codec, true),
+      snapshot = await store.load();
+    const bytes = await readFile(file);
+    await expect(acquireState(root)).rejects.toThrow('state_in_use');
+    await owner.release();
+    await expect(store.load()).rejects.toThrow('state_owner_changed');
+    await expect(store.compareAndSwap(0, { ...snapshot, revision: 1 })).rejects.toThrow(
+      'state_owner_changed',
+    );
+    expect((await readFile(file)).equals(bytes)).toBe(true);
+  }));
+
+it('never resets a valid registry or initializes an existing incomplete directory', () =>
+  fixture('initialize', async ({ owner, directory, file }) => {
+    await mkdir(directory, { mode: 0o700 });
+    await expect(LocalRegistryFile.open(owner, codec, true)).rejects.toThrow(
+      'invalid_local_registry',
+    );
+    await rmdir(directory);
+    const store = await LocalRegistryFile.open(owner, codec, true);
+    await store.compareAndSwap(0, { ...(await store.load()), revision: 1 });
+    const bytes = await readFile(file);
+    expect((await (await LocalRegistryFile.open(owner, codec, true)).load()).revision).toBe(1);
+    expect((await readFile(file)).equals(bytes)).toBe(true);
+  }));
+
+it('rejects stale revisions without leaving a lock or modifying the current snapshot', () =>
+  fixture('stale', async ({ owner, directory, file }) => {
+    const store = await LocalRegistryFile.open(owner, codec, true),
+      initial = await store.load();
+    await store.compareAndSwap(0, { ...initial, revision: 1 });
+    const bytes = await readFile(file);
+    await expect(store.compareAndSwap(0, { ...initial, revision: 1 })).rejects.toThrow(
+      'registry_revision_conflict',
+    );
+    expect((await readFile(file)).equals(bytes)).toBe(true);
+    expect(await readdir(directory)).toEqual(['registry.json']);
+  }));
+
+it('serializes two file adapters using one real owner without lost updates', () =>
+  fixture('concurrent', async ({ owner }) => {
+    const a = await LocalRegistryFile.open(owner, codec, true),
+      b = await LocalRegistryFile.open(owner, codec);
+    const initial = await a.load();
+    const results = await Promise.allSettled([
+      a.compareAndSwap(0, { ...initial, revision: 1, operations: ['fixed-first'] }),
+      b.compareAndSwap(0, { ...initial, revision: 1, operations: ['fixed-second'] }),
+    ]);
+    expect(results.filter((x) => x.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((x) => x.status === 'rejected')).toHaveLength(1);
+    const result = await a.load();
+    expect(result.revision).toBe(1);
+    expect(result.operations).toHaveLength(1);
+  }));
+
+it('isolates pending input and returned data from later caller mutation', () =>
+  fixture('mutation', async ({ owner }) => {
+    const store = await LocalRegistryFile.open(owner, codec, true);
+    const next = { ...(await store.load()), revision: 1, operations: ['fixed-first'] };
+    const pending = store.compareAndSwap(0, next);
+    next.operations.push('fixed-second');
+    const returned = await pending;
+    returned.operations.push('fixed-third');
+    expect((await store.load()).operations).toEqual(['fixed-first']);
+  }));
+
+for (const fault of ['version', 'extra', 'record', 'checksum', 'overflow'] as const) {
+  it(`rejects ${fault} corruption even with an otherwise well-formed envelope`, () =>
+    fixture(fault, async ({ owner, file }) => {
+      const store = await LocalRegistryFile.open(owner, codec, true);
+      const wrapper = JSON.parse(await readFile(file, 'utf8'));
+      if (fault === 'version') wrapper.snapshot.schemaVersion = 'local-workspaces-v2';
+      if (fault === 'extra') wrapper.snapshot.unrecognized = true;
+      if (fault === 'record') wrapper.snapshot.grants.push({ grantId: 'fabricated' });
+      if (fault === 'overflow') wrapper.snapshot.revision = Number.MAX_SAFE_INTEGER + 1;
+      wrapper.sha256 =
+        fault === 'checksum' ? '0'.repeat(64) : hash(JSON.stringify(wrapper.snapshot));
+      await writeFile(file, JSON.stringify(wrapper));
+      await expect(store.load()).rejects.toThrow('invalid_local_registry');
+      await expect(LocalRegistryFile.open(owner, codec, true)).rejects.toThrow(
+        'invalid_local_registry',
+      );
+    }));
+}
+
+for (const residue of ['registry.lock', 'registry.pending-interrupted']) {
+  it(`retains and refuses interrupted state containing ${residue}`, () =>
+    fixture(residue.replaceAll('.', '-'), async ({ owner, directory, file }) => {
+      const store = await LocalRegistryFile.open(owner, codec, true),
+        initial = await store.load(),
+        bytes = await readFile(file);
+      await writeFile(join(directory, residue), 'fixed-interrupted-write', { mode: 0o600 });
+      await expect(store.load()).rejects.toThrow('registry_recovery_required');
+      await expect(store.compareAndSwap(0, { ...initial, revision: 1 })).rejects.toThrow(
+        'registry_recovery_required',
+      );
+      await expect(LocalRegistryFile.open(owner, codec, true)).rejects.toThrow(
+        'registry_recovery_required',
+      );
+      expect((await readFile(file)).equals(bytes)).toBe(true);
+      expect(await readFile(join(directory, residue), 'utf8')).toBe('fixed-interrupted-write');
+    }));
+}
+
+for (const fault of ['symlink', 'hardlink', 'file-mode', 'directory-mode']) {
+  it(`rejects ${fault} at the registry boundary`, () =>
+    fixture(fault, async ({ owner, directory, file, root }) => {
+      const store = await LocalRegistryFile.open(owner, codec, true);
+      if (fault === 'symlink') {
+        await rename(file, join(root, 'saved'));
+        await symlink(join(root, 'saved'), file);
+      }
+      if (fault === 'hardlink') await link(file, join(root, 'alias'));
+      if (fault === 'file-mode') await chmod(file, 0o644);
+      if (fault === 'directory-mode') await chmod(directory, 0o755);
+      await expect(store.load()).rejects.toThrow(
+        fault === 'directory-mode' ? 'registry_root_changed' : 'invalid_local_registry',
+      );
+    }));
+}
+
+it('refuses root replacement without following or overwriting the replacement', () =>
+  fixture('root-replaced', async ({ owner, root, directory }) => {
+    const store = await LocalRegistryFile.open(owner, codec, true),
+      initial = await store.load();
+    await rename(directory, join(root, 'saved'));
+    await mkdir(directory, { mode: 0o700 });
+    await writeFile(join(directory, 'sentinel'), 'fixed-user-content');
+    await expect(store.compareAndSwap(0, { ...initial, revision: 1 })).rejects.toThrow(
+      'registry_root_changed',
+    );
+    expect(await readdir(directory)).toEqual(['sentinel']);
+    expect(await readFile(join(directory, 'sentinel'), 'utf8')).toBe('fixed-user-content');
+  }));
+
+it('refuses revision exhaustion and rejects a transforming or missing codec', () =>
+  fixture('codec', async ({ owner, file }) => {
+    await expect(LocalRegistryFile.open(owner, undefined as never, true)).rejects.toThrow(
+      'registry_codec_required',
+    );
+    const store = await LocalRegistryFile.open(owner, codec, true),
+      snapshot = await store.load(),
+      bytes = await readFile(file);
+    await expect(store.compareAndSwap(Number.MAX_SAFE_INTEGER, snapshot)).rejects.toThrow(
+      'registry_revision_exhausted',
+    );
+    await expect(
+      LocalRegistryFile.open(owner, (x) => ({ ...(x as object), revision: 1 })),
+    ).rejects.toThrow('invalid_local_registry');
+    expect((await readFile(file)).equals(bytes)).toBe(true);
+  }));
+
+for (const fault of ['lose-owner', 'move-during-write', 'replace-lock'] as const) {
+  it(`keeps uncertain publication blocked after ${fault}`, () =>
+    fixture(fault, async ({ owner, root, directory, file, evidence }) => {
+      let armed = false,
+        injected = false;
+      const guarded = {
+        root: owner.root,
+        async assertHeld() {
+          await owner.assertHeld();
+          if (!armed || injected) return;
+          const names = await readdir(directory);
+          const pending = names.some((x) => x.startsWith('registry.pending-'));
+          const published =
+            !pending &&
+            names.includes('registry.lock') &&
+            JSON.parse(await readFile(file, 'utf8')).snapshot.revision === 1;
+          if ((fault === 'replace-lock' && published) || (fault !== 'replace-lock' && pending)) {
+            injected = true;
+            if (fault === 'lose-owner') await owner.release();
+            if (fault === 'move-during-write') {
+              await rename(directory, join(root, 'saved'));
+              await mkdir(directory, { mode: 0o700 });
+            }
+            if (fault === 'replace-lock') {
+              await rename(join(directory, 'registry.lock'), join(directory, 'saved-lock'));
+              await writeFile(join(directory, 'registry.lock'), 'fixed-replacement', {
+                mode: 0o600,
+              });
+            }
+          }
+        },
+      };
+      const store = await LocalRegistryFile.open(guarded, codec, true),
+        initial = await store.load();
+      armed = true;
+      await expect(store.compareAndSwap(0, { ...initial, revision: 1 })).rejects.toThrow();
+      expect(injected).toBe(true);
+      if (fault === 'move-during-write') {
+        expect(await readdir(directory)).toEqual([]);
+        await rmdir(directory);
+        await rename(join(root, 'saved'), directory);
+      }
+      const activeOwner = fault === 'lose-owner' ? await acquireState(root) : owner;
+      try {
+        await expect(LocalRegistryFile.open(activeOwner, codec)).rejects.toThrow(
+          'registry_recovery_required',
+        );
+        evidence.partialSnapshot = JSON.parse(await readFile(file, 'utf8'));
+        expect(evidence.partialSnapshot).toMatchObject({
+          snapshot: { revision: fault === 'replace-lock' ? 1 : 0 },
+        });
+        expect((await readdir(directory)).includes('registry.lock')).toBe(true);
+      } finally {
+        if (activeOwner !== owner) await activeOwner.release();
+      }
+    }));
+}

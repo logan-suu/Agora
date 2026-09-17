@@ -1,0 +1,245 @@
+{
+  "base": "/private/tmp/agora-task123-validation-HkgyIV",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128511489,
+    "uid": 501
+  },
+  "startedAt": "2026-09-17T00:54:32.588Z",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71\n",
+  "sources": {
+    "tests/integration/phase12/phase12-3-installation.test.ts": "30be23855acd88ec1d52f37740478c996eaee02459f5f9e2efed3a5415980ff0",
+    "packages/runtime/sandbox/src/local-command-policy.ts": "2748c2147c6799eef535bbcbc618ec0b5733922a10d05472665c9731e86daa2d",
+    "packages/runtime/sandbox/src/local-command-start.ts": "3b4524e7b9a4d8b8f969bfaaef51c647a3d872b8a1b2b2b6bfd1956028b4ff79",
+    "packages/runtime/sandbox/src/local-command-binding.ts": "6a79ae3e5a90108e15030f5b8437ad80f49ea3ce17415011333f64149427a18f",
+    "packages/runtime/sandbox/src/local-command-supervisor.ts": "fc8cb05b5fca978fd94f1db0da6c76cc47a953da4e9fd777aa4db57db0a02202",
+    "packages/runtime/sandbox/src/local-command-stop.ts": "ba3b59f1f302b3a5714911302618ec051cd2868e9d5a2b7f5513d0c3504cace7"
+  },
+  "scope": "Fixed installation mechanism qualification, not a completed product install port",
+  "toolchain": {
+    "state": "ready",
+    "versions": {
+      "node": "24.20.0",
+      "pnpm": "9.15.9",
+      "npm": "11.19.0",
+      "git": "2.53.0"
+    }
+  },
+  "toolchainManifest": "c3b48e8cf01eaabe76bada629694698ff3af61b26af97af366dd34f1107fd9b9",
+  "download": {
+    "sha256": "d3aedb2807967b7eb37fd11b03b7e3701e725af79c650d0812ff7213f8f882d9",
+    "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==",
+    "byteLength": 2625,
+    "hops": [
+      {
+        "url": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
+        "address": "104.16.3.34",
+        "status": 200
+      }
+    ]
+  },
+  "policy": "(version 1)\n(deny default)\n(allow process-fork)\n(allow process-exec (literal \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/node/bin/node\"))\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-HkgyIV/bootstrap\"))\n(allow sysctl-read)\n(allow file-read* file-map-executable (subpath \"/usr/lib\") (subpath \"/System/Library\") (subpath \"/System/Volumes/Preboot/Cryptexes/OS\") (subpath \"/System/Cryptexes/OS\"))\n(allow file-read-metadata (literal \"/private/tmp/agora-task123-validation-HkgyIV\"))\n(allow file-read-metadata (literal \"/private/tmp\"))\n(allow file-read-metadata (literal \"/private\"))\n(allow file-read-metadata (literal \"/\"))\n(allow file-read-metadata (literal \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64\"))\n(allow file-read-metadata (literal \"/Applications/Agora.app/Contents/Resources/toolchains\"))\n(allow file-read-metadata (literal \"/Applications/Agora.app/Contents/Resources\"))\n(allow file-read-metadata (literal \"/Applications/Agora.app/Contents\"))\n(allow file-read-metadata (literal \"/Applications/Agora.app\"))\n(allow file-read-metadata (literal \"/Applications\"))\n(allow file-read* (literal \"/\"))\n(allow file-read* file-map-executable (literal \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/node/bin/node\"))\n(allow file-read* file-map-executable (literal \"/private/tmp/agora-task123-validation-HkgyIV/bootstrap\"))\n(allow file-read* (subpath \"/private/tmp/agora-task123-validation-HkgyIV/inputs\"))\n(allow file-read* (subpath \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/pnpm\"))\n(allow file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-HkgyIV/output\"))\n(deny file-write* (subpath \"/private/tmp/agora-task123-validation-HkgyIV/inputs\"))\n(deny file-write* (subpath \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/pnpm\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-HkgyIV/private\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-HkgyIV/journal\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-HkgyIV/inputs/.git\"))\n(deny file-read* file-write* (subpath \"/private/tmp/agora-task123-validation-HkgyIV/inputs/.agora-operations\"))\n(deny file-read* file-write* (subpath \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/pnpm/.git\"))\n(deny file-read* file-write* (subpath \"/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64/pnpm/.agora-operations\"))\n(deny file-read* file-write* (regex #\"(^|/)\\.env($|[./])\"))",
+  "inputHashes": {
+    "build.cjs": "18e81f05f5b5fc74c605ffe6fefb6d67c26255d45e544826e435bc69086ae4ff",
+    "install.cjs": "2428bcf632a47d12feba1e1dc93b064eb4f3ae8a6928fe5ab5d634297792d5f8",
+    "package.json": "83f16bad6192a65c36808f1034a5026bdd9548a6af94b1c81ca803bb3e2ef44e",
+    "package.tgz": "d3aedb2807967b7eb37fd11b03b7e3701e725af79c650d0812ff7213f8f882d9",
+    "source.txt": "1beb6dbff81f8e9fd943092c8be12611c6dc42cca13eb1d61edbc37cfc0540a3",
+    "test.cjs": "f6094299b504d65be9b78c7ac84b07ca0dfbac5760e7c6d3f3a841e91c13f55b"
+  },
+  "result": {
+    "released": true,
+    "payloadResult": {
+      "exitCode": 1,
+      "signal": null
+    },
+    "observation": {
+      "version": 2,
+      "bindingFailure": null,
+      "cause": "exit",
+      "executionMs": 734.9676669999999,
+      "cleanupMs": 8.409875000000284,
+      "discoveryPasses": 2,
+      "discoveryFailed": false,
+      "discoveryFailures": [],
+      "closedDuringDiscovery": [],
+      "mainResult": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null
+      },
+      "stdout": {
+        "retainedBytes": 0,
+        "observedBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "truncated": false,
+        "error": null
+      },
+      "stderr": {
+        "retainedBytes": 78,
+        "observedBytes": 78,
+        "sha256": "835797ca2aa8971094c0756facb6cf65c68343eb1cca6856bf002d8edddcca46",
+        "truncated": false,
+        "error": null
+      },
+      "stop": {
+        "assurance": "registered-only",
+        "registeredState": "stopped",
+        "signals": [],
+        "durationMs": 4.2821249999997235,
+        "states": [
+          "exited",
+          "exited",
+          "exited"
+        ]
+      },
+      "output": {
+        "mainResult": {
+          "exitCode": 0,
+          "signal": null,
+          "error": null
+        },
+        "stdout": {
+          "bytes": {
+            "type": "Buffer",
+            "data": []
+          },
+          "observedBytes": 0,
+          "truncated": false,
+          "error": null
+        },
+        "stderr": {
+          "bytes": {
+            "type": "Buffer",
+            "data": [
+              226,
+              128,
+              137,
+              69,
+              82,
+              82,
+              79,
+              82,
+              226,
+              128,
+              137,
+              32,
+              85,
+              110,
+              107,
+              110,
+              111,
+              119,
+              110,
+              32,
+              111,
+              112,
+              116,
+              105,
+              111,
+              110,
+              58,
+              32,
+              39,
+              115,
+              104,
+              101,
+              108,
+              108,
+              45,
+              101,
+              109,
+              117,
+              108,
+              97,
+              116,
+              111,
+              114,
+              39,
+              10,
+              70,
+              111,
+              114,
+              32,
+              104,
+              101,
+              108,
+              112,
+              44,
+              32,
+              114,
+              117,
+              110,
+              58,
+              32,
+              112,
+              110,
+              112,
+              109,
+              32,
+              104,
+              101,
+              108,
+              112,
+              32,
+              105,
+              110,
+              115,
+              116,
+              97,
+              108,
+              108,
+              10
+            ]
+          },
+          "observedBytes": 78,
+          "truncated": false,
+          "error": null
+        },
+        "tailDurationMs": 0.0411669999998594
+      },
+      "durable": true
+    },
+    "startupStop": null,
+    "error": null,
+    "launchDurable": true,
+    "captureAttempts": [
+      {
+        "attempt": 1,
+        "durationMs": 4.90762500000028,
+        "outcome": "captured"
+      }
+    ],
+    "controlReady": {
+      "durationMs": 294.80829200000016,
+      "outcome": "ready"
+    }
+  },
+  "error": {
+    "message": " ERROR  Unknown option: 'shell-emulator'\nFor help, run: pnpm help install\n: expected { exitCode: 1, signal: null } to deeply equal { exitCode: +0, signal: null }",
+    "stack": "AssertionError:  ERROR  Unknown option: 'shell-emulator'\nFor help, run: pnpm help install\n: expected { exitCode: 1, signal: null } to deeply equal { exitCode: +0, signal: null }\n    at /Users/logansu/Documents/Dev/Agora/tests/integration/phase12/phase12-3-installation.test.ts:180:7\n    at file:///Users/logansu/Documents/Dev/Agora/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20"
+  },
+  "files": {
+    "bootstrap": "137255d88a7026217d85eeaec3782d079631fadeee88c8856caa797020289577",
+    "control": "ecfcad6f8981c59f149f0de74b854434ba127d51fa19660a8c34d098cf18bf1b",
+    "inputs/build.cjs": "18e81f05f5b5fc74c605ffe6fefb6d67c26255d45e544826e435bc69086ae4ff",
+    "inputs/install.cjs": "2428bcf632a47d12feba1e1dc93b064eb4f3ae8a6928fe5ab5d634297792d5f8",
+    "inputs/package.json": "83f16bad6192a65c36808f1034a5026bdd9548a6af94b1c81ca803bb3e2ef44e",
+    "inputs/package.tgz": "d3aedb2807967b7eb37fd11b03b7e3701e725af79c650d0812ff7213f8f882d9",
+    "inputs/source.txt": "1beb6dbff81f8e9fd943092c8be12611c6dc42cca13eb1d61edbc37cfc0540a3",
+    "inputs/test.cjs": "f6094299b504d65be9b78c7ac84b07ca0dfbac5760e7c6d3f3a841e91c13f55b",
+    "journal/commands.json": "424cdd7b6139df7a9aa0d6b3a76a8e38e4356c6326ff8564bff53ab020266457",
+    "output/build.cjs": "18e81f05f5b5fc74c605ffe6fefb6d67c26255d45e544826e435bc69086ae4ff",
+    "output/install.cjs": "2428bcf632a47d12feba1e1dc93b064eb4f3ae8a6928fe5ab5d634297792d5f8",
+    "output/package.json": "83f16bad6192a65c36808f1034a5026bdd9548a6af94b1c81ca803bb3e2ef44e",
+    "output/source.txt": "1beb6dbff81f8e9fd943092c8be12611c6dc42cca13eb1d61edbc37cfc0540a3",
+    "output/test.cjs": "f6094299b504d65be9b78c7ac84b07ca0dfbac5760e7c6d3f3a841e91c13f55b",
+    "private/credential": "bf3ff42630c5a00ce08c30671406d1fb19fc6f516fb370d3df1b01e771dca046"
+  },
+  "cleanup": {
+    "deleted": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 102400
+  }
+}

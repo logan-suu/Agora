@@ -1,0 +1,16 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/core/orchestration/test/worker-runtime.test.ts (43 tests) 908ms
+   ✓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a provider failure after a real worker Git commit without losing recovery identity  307ms
+ ✓ tests/integration/phase12/phase12-3-state-binding.test.ts (5 tests) 864ms
+ ✓ packages/runtime/state/test/json-task-state-store.test.ts (14 tests) 30ms
+ ✓ packages/runtime/executor/test/project.test.ts (33 tests) 8ms
+ ✓ packages/core/domain/test/local-execution.test.ts (17 tests) 4ms
+ ✓ packages/runtime/sandbox/test/local-registry-records.test.ts (9 tests) 4ms
+
+ Test Files  6 passed (6)
+      Tests  121 passed (121)
+   Start at  14:18:30
+   Duration  3.18s (transform 251ms, setup 0ms, collect 815ms, tests 1.82s, environment 0ms, prepare 143ms)
+

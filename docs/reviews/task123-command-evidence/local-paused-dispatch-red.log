@@ -1,0 +1,46 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/core/orchestration/test/orchestrator.test.ts (16 tests | 1 failed) 22ms
+   × does not dispatch another worker when an external pause has persisted a gate 4ms
+     → sequential routing requires exactly one in_progress CODER subtask, found 0
+   ✓ runOrchestration (Phase 0 fixed loop) > stops a failed singleton CODER without resetting its provider budget 4ms
+   ✓ runOrchestration (Phase 0 fixed loop) > preserves not-started assignments after an unknown failure at capacity one 7ms
+   ✓ runOrchestration (Phase 0 fixed loop) > does not retry a singleton infrastructure failure at workspace 0ms
+   ✓ runOrchestration (Phase 0 fixed loop) > does not retry a singleton infrastructure failure at completion 1ms
+   ✓ runOrchestration (Phase 0 fixed loop) > does not retry a singleton infrastructure failure at lease 0ms
+   ✓ runOrchestration (Phase 0 fixed loop) > dispatches a recovered multi-worker route through runParallel 0ms
+   ✓ runOrchestration (Phase 0 fixed loop) > runs the full CODER→TESTER loop, retries once on failure, and finalizes on pass 1ms
+   ✓ runOrchestration (Phase 0 fixed loop) > treats the incoming state as immutable input (pure orchestration) 0ms
+   ✓ runOrchestration (Phase 0 fixed loop) > writes shared state exclusively through applyMutations semantics (frozen input survives untouched) 1ms
+   ✓ runOrchestration (Phase 0 fixed loop) > routes entry, coordinator, and finalize mutations through the injected transition 0ms
+   ✓ runOrchestration · human_gate escalation hook (task 2.3) > halts on a seeded capped state without running any worker and records the escalation 0ms
+   ✓ runOrchestration · human_gate escalation hook (task 2.3) > survives the full capped CODER↔TESTER loop: exactly MAX loop-backs, then human_gate (no silent loop) 2ms
+   ✓ entry · complexity evaluation (task 4.1, spec §3) > evaluates and writes the complexity slice exactly once for a Tier 0 goal 0ms
+   ✓ entry · complexity evaluation (task 4.1, spec §3) > preserves an already-set complexity untouched so replays stay idempotent 0ms
+   ✓ entry · complexity evaluation (task 4.1, spec §3) > touches nothing besides complexity (writes go through applyMutations only) 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/core/orchestration/test/orchestrator.test.ts > does not dispatch another worker when an external pause has persisted a gate
+Error: sequential routing requires exactly one in_progress CODER subtask, found 0
+ ❯ activeCoderSubtaskId packages/core/orchestration/src/coordinator.ts:687:11
+    685|   const subtask = active[0];
+    686|   if (active.length !== 1 || subtask === undefined) {
+    687|     throw new Error(
+       |           ^
+    688|       `sequential routing requires exactly one in_progress CODER subta…
+    689|     );
+ ❯ advanceToTesting packages/core/orchestration/src/coordinator.ts:695:21
+ ❯ decide packages/core/orchestration/src/coordinator.ts:130:20
+ ❯ runOrchestration packages/core/orchestration/src/orchestrator.ts:49:22
+ ❯ packages/core/orchestration/test/orchestrator.test.ts:50:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 15 passed (16)
+   Start at  19:32:17
+   Duration  468ms (transform 163ms, setup 0ms, collect 344ms, tests 22ms, environment 0ms, prepare 27ms)
+

@@ -1,0 +1,59 @@
+{
+  "base": "/private/tmp/agora-task123-validation-5KFhJl",
+  "scenario": "replay",
+  "startedAt": "2026-09-16T05:03:06.989Z",
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127973567
+  },
+  "sources": {
+    "packages/runtime/sandbox/src/local-command-journal.ts": "3cd3ed97602ce0c6ffce503015e837532d97a7a3341aefd63f4947e466cd0110",
+    "tests/integration/phase12/local-command-journal-fixture.ts": "7d5acf4c1e5850e0710ffe3955064b776548450c9df134fc085114b4f1f16c36",
+    "tests/integration/phase12/phase12-3-command-journal.test.ts": "eb7ab94aa67469ea930a81b8fa240aeab5ea81c967b07e8682d574c07e3f501b"
+  },
+  "availableBefore": 46923878400,
+  "result": {
+    "errors": [
+      "command_replay_conflict",
+      "command_revision_conflict"
+    ],
+    "record": {
+      "commandId": "cmd-1",
+      "workspaceId": "workspace-1",
+      "policyHash": "823412d1eacb67956220e532959f0104603057c88704863ca38e7cd188fda812",
+      "inputHash": "c96c6d5be8d08a12e7b5cdc1b207fa6b2430974c86803d8891675e76fd992c20",
+      "roots": [
+        {
+          "path": "/private/tmp/agora-task123-validation-5KFhJl/output",
+          "identity": "16777231:127973569"
+        }
+      ],
+      "revision": 0,
+      "birthIdentities": [],
+      "birthRelations": [],
+      "observationReceipt": null,
+      "resourceState": "reserved",
+      "reason": null
+    }
+  },
+  "completedAt": "2026-09-16T05:03:07.006Z",
+  "cleanup": {
+    "removed": true,
+    "handles": {
+      "status": 1,
+      "signal": null,
+      "output": [
+        null,
+        "",
+        ""
+      ],
+      "pid": 9312,
+      "stdout": "",
+      "stderr": ""
+    },
+    "mountCheckPassed": true
+  },
+  "availableAfter": 46923878400,
+  "spaceDelta": 0
+}

@@ -1,0 +1,67 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/core/orchestration/test/worker-runtime.test.ts (42 tests) 911ms
+   ✓ WorkerRuntime (Phase 0 degenerate single-worker path) > classifies a provider failure after a real worker Git commit without losing recovery identity  307ms
+ ✓ packages/runtime/state/test/json-task-state-store.test.ts (14 tests) 29ms
+ ❯ packages/runtime/executor/test/project.test.ts (33 tests | 1 failed) 12ms
+   ✓ project (task 2.4, spec §7 slice table) > always includes the system-level onboardingContext outside RoleSpec projection declarations 1ms
+   ✓ project (task 2.4, spec §7 slice table) > adds only the caller-supplied defensive ChannelContext without changing the first three args 0ms
+   ✓ project (task 2.4, spec §7 slice table) > COORDINATOR global.summary carries phase/test and safe worker status summaries 0ms
+   ✓ project (task 2.4, spec §7 slice table) > COORDINATOR testSummary is null before any test run 0ms
+   ✓ project (task 2.4, spec §7 slice table) > COORDINATOR global.summary projects the complexity tier once entry evaluates it (task 4.2, 4.1 ruling ③ wiring) 0ms
+   ✓ project (task 2.4, spec §7 slice table) > PM gets goal, full requirements, and leader decisions with rationale attached (iron rule 3) 0ms
+   ✓ project (task 2.4, spec §7 slice table) > leaderDecisions defaults to [] on an empty ledger and yields defensive copies (WO) 0ms
+   ✓ project (task 2.4, spec §7 slice table) > ARCHITECT gets requirements, explicit-empty repoStructure (Phase 1), and conventions 0ms
+   ✓ project (task 2.4, spec §7 slice table) > does not project a requirement withdrawn by a canonical Leader ruling 1ms
+   ✓ project (task 2.4, spec §7 slice table) > injects a validated objection resolution into every role as a system slice 0ms
+   ✓ project (task 2.4, spec §7 slice table) > injects the latest validated Phase 9 Leader directive without raw display 0ms
+   ✓ project (task 2.4, spec §7 slice table) > CODER assignedSubtask lists only own non-done subtasks with worktree refs 0ms
+   ✓ project (task 2.4, spec §7 slice table) > CODER failingTests: zero shape when absent, full shape when present 0ms
+   ✓ project (task 2.4, spec §7 slice table) > CODER fileRefs: deduped path+line refs from failing tests, never code content (iron rule 2) 0ms
+   ✓ project (task 2.4, spec §7 slice table) > CODER architecture/conventions pass through as copies and default to {} when absent 0ms
+   ✓ project (task 2.4, spec §7 slice table) > TESTER acceptance: requirements acceptance only — no goal echo, no test internals 0ms
+   ✓ project (task 2.4, spec §7 slice table) > TESTER branchOrIntegration: cross-validates and defensively copies worktree refs 0ms
+   ✓ project (task 2.4, spec §7 slice table) > limits branchOrIntegration to the canonical Integration wave instead of historical subtasks 0ms
+   ✓ project (task 2.4, spec §7 slice table) > fails closed without Integration when sequential candidates point at different worktrees 0ms
+   ✓ project (task 2.4, spec §7 slice table) > TESTER interfaceContracts: architecture.interfaces passthrough with {} defaults 0ms
+   ✓ project (task 2.4, spec §7 slice table) > REVIEWER gets structured failure context without receiving raw coordinator messages 0ms
+   ✓ project (task 2.4, spec §7 slice table) > ARCHITECT and CODER receive only the latest structured review turn 0ms
+   ✓ project (task 2.4, spec §7 slice table) > iron rule 1 (R2): no role view ever carries the raw chat log 0ms
+   ✓ project (task 2.4, spec §7 slice table) > unknown declared slice throws instead of silently degrading 0ms
+   ✓ project (task 2.4, spec §7 slice table) > drift guard: every slice declared by DEFAULT_ROSTER is implemented 0ms
+   ✓ project · coordinationContext (task 4.4, role-sliced Ledger) > projects the complete structured Ledger to COORDINATOR as defensive copies 0ms
+   ✓ project · coordinationContext (task 4.4, role-sliced Ledger) > gives a worker only its plan steps, confirmed facts, and current instruction 0ms
+   ✓ project · coordinationContext (task 4.4, role-sliced Ledger) > filters plan steps for every business role and withholds another role instruction 0ms
+   ✓ project · coordinationContext (task 4.4, role-sliced Ledger) > returns explicit empty coordination contexts before the first Ledger event 0ms
+   ✓ project · coordinationContext (task 4.4, role-sliced Ledger) > fails closed instead of projecting undeclared Ledger fields 0ms
+   ✓ project slice compression (task 3.4, spec §7 cross-agent slice compression) > PM leaderDecisions collapses over threshold: head rationale travels, superseded rationale replaced by an id-bearing tombstone, WO copies kept 0ms
+   ✓ project slice compression (task 3.4, spec §7 cross-agent slice compression) > compressed tombstones keep every role view free of raw-log fields (iron rule 1) 0ms
+   × rejects mixed local and legacy workspace state before building model slices 4ms
+     → expected [Function] to throw error including 'mixed_workspace_authority' but got 'PHASE0_ROSTER is not defined'
+ ✓ packages/core/domain/test/local-execution.test.ts (17 tests) 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/runtime/executor/test/project.test.ts > rejects mixed local and legacy workspace state before building model slices
+AssertionError: expected [Function] to throw error including 'mixed_workspace_authority' but got 'PHASE0_ROSTER is not defined'
+
+Expected: "mixed_workspace_authority"
+Received: "PHASE0_ROSTER is not defined"
+
+ ❯ packages/runtime/executor/test/project.test.ts:1078:56
+    1076|     },
+    1077|   ];
+    1078|   expect(() => project(state, 'CODER', PHASE0_ROSTER)).toThrow('mixed_…
+       |                                                        ^
+    1079| });
+    1080| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 105 passed (106)
+   Start at  14:09:10
+   Duration  2.07s (transform 232ms, setup 0ms, collect 750ms, tests 956ms, environment 0ms, prepare 92ms)
+

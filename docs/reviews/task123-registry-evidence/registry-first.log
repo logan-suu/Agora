@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ packages/runtime/sandbox/test/local-registry-file.test.ts (22 tests) 3156ms
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  11:35:16
+   Duration  3.30s (transform 36ms, setup 0ms, collect 39ms, tests 3.16s, environment 0ms, prepare 31ms)
+

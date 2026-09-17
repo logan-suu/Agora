@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (23 tests | 22 skipped) 2274ms
+   ✓ confirms a durable grant through the real Leader POST: reader  2273ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 22 skipped (23)
+   Start at  18:29:24
+   Duration  3.24s (transform 366ms, setup 0ms, collect 839ms, tests 2.27s, environment 0ms, prepare 37ms)
+

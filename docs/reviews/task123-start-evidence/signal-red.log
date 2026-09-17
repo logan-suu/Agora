@@ -1,0 +1,45 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts (8 tests | 1 failed) 4750ms
+   ✓ registers the suspended executable before any constructor or project code runs  910ms
+   ✓ keeps project code suspended when the release authorization is revoked  561ms
+   ✓ does not release the executable when durable registration fails  530ms
+   ✓ closes the bootstrap control channel and inherited extra descriptors before project code  690ms
+   ✓ records a failed exec without releasing any project code  540ms
+   ✓ rejects policy drift at admission without creating a bootstrap process 280ms
+   ✓ rechecks durable state after the authorization callback before releasing the executable  561ms
+   × keeps the real executable signal separate from the successful bootstrap exit 679ms
+     → expected { exitCode: 7, signal: null } to deeply equal { exitCode: null, signal: 30 }
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-start.test.ts > keeps the real executable signal separate from the successful bootstrap exit
+AssertionError: expected { exitCode: 7, signal: null } to deeply equal { exitCode: null, signal: 30 }
+
+- Expected
++ Received
+
+  {
+-   "exitCode": null,
+-   "signal": 30,
++   "exitCode": 7,
++   "signal": null,
+  }
+
+ ❯ tests/integration/phase12/phase12-3-command-start.test.ts:65:39
+     63| it('keeps the real executable signal separate from the successful boot…
+     64|   const result = await probeLocalCommandStart('signal');
+     65|   expect(result.result.payloadResult).toEqual({ exitCode: null, signal…
+       |                                       ^
+     66|   expect(result.result.observation?.mainResult.exitCode).toBe(0);
+     67| }, 20_000);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+   Start at  00:29:36
+   Duration  4.91s (transform 42ms, setup 0ms, collect 47ms, tests 4.75s, environment 0ms, prepare 33ms)
+

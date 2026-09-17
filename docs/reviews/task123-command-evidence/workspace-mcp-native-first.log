@@ -1,0 +1,36 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-grant.test.ts (20 tests) 40668ms
+   ✓ confirms a durable grant through the real Leader POST: normal  1022ms
+   ✓ confirms a durable grant through the real Leader POST: file-update  3448ms
+   ✓ confirms a durable grant through the real Leader POST: file-create  2148ms
+   ✓ confirms a durable grant through the real Leader POST: file-proof  2469ms
+   ✓ confirms a durable grant through the real Leader POST: command  4103ms
+   ✓ confirms a durable grant through the real Leader POST: mcp  4247ms
+   ✓ confirms a durable grant through the real Leader POST: mcp-command  4720ms
+   ✓ confirms a durable grant through the real Leader POST: batch  4119ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3853ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3498ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2873ms
+   ✓ confirms a durable grant through the real Leader POST: before  515ms
+   ✓ confirms a durable grant through the real Leader POST: after  579ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  426ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  424ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  406ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  462ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  484ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  438ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  428ms
+ ✓ tests/integration/phase12/phase12-3-command-discovery.test.ts (5 tests) 2676ms
+   ✓ discovers a real child and grandchild without enrolling an unrelated sibling  801ms
+   ✓ retains a discovered grandchild after its parent exits and it is reparented  639ms
+   ✓ rejects a wrong parent birth and leaves the real tree alive  624ms
+   ✓ exposes helper failure as incomplete discovery without signaling the root  611ms
+ ✓ packages/tools/bridge/test/local-workspace-bridge.test.ts (2 tests) 18ms
+
+ Test Files  3 passed (3)
+      Tests  27 passed (27)
+   Start at  17:23:30
+   Duration  44.62s (transform 342ms, setup 0ms, collect 930ms, tests 43.36s, environment 0ms, prepare 79ms)
+

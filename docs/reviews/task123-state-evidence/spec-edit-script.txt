@@ -1,0 +1,11 @@
+from pathlib import Path
+p=Path('docs/详细设计方案.md')
+s=p.read_text()
+marker='###### 12.2.3.3 新端口与冻结接口'
+text='''**[2026-09-16 12.3串行状态接合细化]** `localExecution` 的封闭结构为 `{schemaVersion:'local-execution-v1', rootIds, workspaces, bindings, receipts}`：rootIds 为本任务不可变根ID集合；workspaces 为上述不可变引用集合且全部属于本任务；bindings 为 `{workerId, subtaskId, workspaceId, receiptId}`，同一worker只绑定一次，subtask必须存在并与WorkerState.subtaskId一致，receiptId必须指向本结构的规范回执；receipts 为 `{receiptId, actionId, inputHash, registryRevision}`，ID/action各自唯一，hash为64位小写十六进制。各集合上限4096，空集合合法；首次TaskState绑定不等于可执行授权。根/workspace/绑定/回执只可追加，不移除或重解释已有身份；新worker接手产生新绑定，技术撤权/隔离由registry持久记录决定，旧事实保留。registryRevision记录该动作prepared所在revision，最终committed仍须到registry按actionId/inputHash复核，不能以数字更大推断闭合。
+
+`applyMutations`只允许串行控制面set完整localExecution，并在整批结束时交叉校验task/project/root/workspace/worker/subtask/receipt；持久加载同验。worker模型在串行或并行模式均无此set权限。已带localExecution的状态不得移除此字段或与旧Subtask.worktree、Integration、parallelExecution及旧Git验证绑定混搭；支持本机linked-worktree的后续适配须按12.4显式接入。`TestResults.workspaceVersion`为可选的上述版本联合；本机结果必须携带属于本任务已登记模式的版本引用，旧路径不得借此伪装本机证据。该字段只是受信验证结果的版本引用，实际输入/receipt与D16复核仍由执行控制面负责，不能由类型校验替代。
+
+'''
+assert marker in s
+p.write_text(s.replace(marker,text+marker,1))

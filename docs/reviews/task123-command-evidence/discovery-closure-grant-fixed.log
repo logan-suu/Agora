@@ -1,0 +1,45 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts (17 tests | 1 failed) 34941ms
+   × confirms a durable grant through the real Leader POST: normal 5093ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ confirms a durable grant through the real Leader POST: file-create  3027ms
+   ✓ confirms a durable grant through the real Leader POST: file-proof  3875ms
+   ✓ confirms a durable grant through the real Leader POST: command  5510ms
+   ✓ confirms a durable grant through the real Leader POST: batch  3820ms
+   ✓ confirms a durable grant through the real Leader POST: batch-partial  3683ms
+   ✓ confirms a durable grant through the real Leader POST: batch-read-drift  3238ms
+   ✓ confirms a durable grant through the real Leader POST: batch-stale  2549ms
+   ✓ confirms a durable grant through the real Leader POST: before  485ms
+   ✓ confirms a durable grant through the real Leader POST: after  504ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-hash  419ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-selection  375ms
+   ✓ confirms a durable grant through the real Leader POST: wrong-scope  442ms
+   ✓ confirms a durable grant through the real Leader POST: stale-policy  576ms
+   ✓ confirms a durable grant through the real Leader POST: root-drift  500ms
+   ✓ confirms a durable grant through the real Leader POST: corrupt-proposal  428ms
+   ✓ confirms a durable grant through the real Leader POST: unsupported-action  413ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-grant.test.ts > confirms a durable grant through the real Leader POST: normal
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/integration/phase12/phase12-3-grant.test.ts:65:3
+     63|   'unsupported-action',
+     64| ])
+     65|   it(
+       |   ^
+     66|     `confirms a durable grant through the real Leader POST: ${scenario…
+     67|     async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+   Start at  17:16:30
+   Duration  36.12s (transform 467ms, setup 0ms, collect 986ms, tests 34.94s, environment 0ms, prepare 57ms)
+

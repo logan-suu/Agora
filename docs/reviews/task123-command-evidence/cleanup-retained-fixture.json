@@ -1,0 +1,25 @@
+{
+  "at": "2026-09-16T01:28:45.000Z",
+  "base": "/private/tmp/agora-task123-validation-UiqBqr",
+  "original": "process-group-UiqBqr.json",
+  "removed": true,
+  "availableBefore": 47559606272,
+  "identity": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127760031
+  },
+  "entries": [
+    "process-group-probe"
+  ],
+  "handles": {
+    "status": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  "mountsChecked": true,
+  "allChildrenWaited": true,
+  "binaryHash": "ac61905a0bbb61cb6de248edd8f533fd7dbf1cad7d18394f19598ee1555d7b5b",
+  "availableAfter": 47559626752,
+  "spaceDelta": 20480
+}

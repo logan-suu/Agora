@@ -1,0 +1,34 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-creation.test.ts (6 tests) 2426ms
+   ✓ creates a file with a durable no-replace result: normal  626ms
+   ✓ creates a file with a durable no-replace result: race  367ms
+   ✓ creates a file with a durable no-replace result: revoke  349ms
+   ✓ creates a file with a durable no-replace result: move-before  354ms
+   ✓ creates a file with a durable no-replace result: move-after  349ms
+   ✓ creates a file with a durable no-replace result: replay  376ms
+ ✓ tests/integration/phase12/phase12-3-transaction.test.ts (17 tests) 6724ms
+   ✓ durably preserves the baseline and exchanged inode before reporting applied  425ms
+   ✓ closes the operation without touching source or external objects: move-root-before-write  397ms
+   ✓ closes the operation without touching source or external objects: move-parent-before-swap  392ms
+   ✓ closes the operation without touching source or external objects: replace-root  372ms
+   ✓ invalidates a completed exchange after root movement without undoing the actual result  377ms
+   ✓ preserves a competing user edit and refuses a stale baseline  364ms
+   ✓ refuses linked external objects: symlink-target  398ms
+   ✓ refuses linked external objects: hardlink-target  446ms
+   ✓ does not repeat a filesystem mutation when replaying an identical action  394ms
+   ✓ checks root identity after the final asynchronous authorization check  406ms
+   ✓ also invalidates a parent moved during completion authorization  370ms
+   ✓ refuses a metadata-only edit after the baseline read  439ms
+   ✓ honors trusted authorization closure: revoke-before-write  376ms
+   ✓ honors trusted authorization closure: revoke-before-swap  367ms
+   ✓ refuses unsafe journal replay: replay-different-input  402ms
+   ✓ refuses unsafe journal replay: replay-corrupt-receipt  432ms
+   ✓ refuses unsafe journal replay: replay-missing-receipt  366ms
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  14:46:37
+   Duration  9.43s (transform 41ms, setup 0ms, collect 51ms, tests 9.15s, environment 0ms, prepare 64ms)
+

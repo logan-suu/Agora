@@ -1,0 +1,36 @@
+{
+  "base": "/private/tmp/agora-task123-validation-vb46ZX",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128566070
+  },
+  "startedAt": "2026-09-17T02:00:35.746Z",
+  "scope": "L03 supplemental actual IPC policy qualification; no Keychain secrets",
+  "sources": {
+    "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-ipc-evidence/probe.c": "fdb988d80c8b1435e956a27a4bc87d877486735f77eacd361de7944b748ac62e",
+    "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-ipc-evidence/ipc.validation.ts": "1c6a5f266ff7844f7f1be3c7e9e8cdbf56740357f66c31a02d438e7c6c62adc5",
+    "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/src/local-command-policy.ts": "3faffdbc34bff9b9fad94c164b2a6470c25e997a2b9191c8a5053984a7c7ffd1"
+  },
+  "baseline": {
+    "status": 0,
+    "signal": null,
+    "output": [
+      null,
+      "{\"actor\":\"parent\",\"securitydLookup\":1102,\"unixConnected\":true,\"unixErrno\":0}\n{\"actor\":\"child\",\"securitydLookup\":1102,\"unixConnected\":true,\"unixErrno\":0}\n",
+      ""
+    ],
+    "pid": 4048,
+    "stdout": "{\"actor\":\"parent\",\"securitydLookup\":1102,\"unixConnected\":true,\"unixErrno\":0}\n{\"actor\":\"child\",\"securitydLookup\":1102,\"unixConnected\":true,\"unixErrno\":0}\n",
+    "stderr": ""
+  },
+  "failure": "AssertionError: expected { actor: 'parent', …(3) } to match object { securitydLookup: +0, …(1) }\n(2 matching properties omitted from actual)",
+  "files": {
+    "probe": "aaddd145e6e1411df4acad13abd6d7ad547b1962fddd4118f3f354eb877b2d0b"
+  },
+  "cleanup": {
+    "deleted": true,
+    "noHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": -8192
+  }
+}

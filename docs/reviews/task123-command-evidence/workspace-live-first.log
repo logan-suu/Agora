@@ -1,0 +1,27 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-live-workspace.test.ts (1 test | 1 failed) 29846ms
+   × runs a fixed LRU task through live Harness and the controlled direct workspace 29845ms
+     → expected undefined to be defined
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-live-workspace.test.ts > runs a fixed LRU task through live Harness and the controlled direct workspace
+AssertionError: expected undefined to be defined
+ ❯ tests/integration/phase12/phase12-3-live-workspace.test.ts:285:20
+    283|         run.stdout.includes('# fail 0'),
+    284|     );
+    285|     expect(passed).toBeDefined();
+       |                    ^
+    286|     if (!passed) throw Error('no trusted passing command');
+    287|     const registered = (await control.snapshot()).roots[0];
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  17:43:52
+   Duration  30.81s (transform 349ms, setup 0ms, collect 841ms, tests 29.85s, environment 0ms, prepare 33ms)
+

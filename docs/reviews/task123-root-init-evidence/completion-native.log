@@ -1,0 +1,47 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/runtime/sandbox/test/local-root-initialization.test.ts (10 tests | 3 failed) 5132ms
+   ✓ initializes a registered staging directory without adopting existing data: normal  555ms
+   ✓ initializes a registered staging directory without adopting existing data: existing  465ms
+   ✓ initializes a registered staging directory without adopting existing data: revoke  504ms
+   ✓ initializes a registered staging directory without adopting existing data: move-before  527ms
+   ✓ initializes a registered staging directory without adopting existing data: move-after  501ms
+   ✓ initializes a registered staging directory without adopting existing data: replay  511ms
+   ✓ initializes a registered staging directory without adopting existing data: missing-receipt  505ms
+   × initializes a registered staging directory without adopting existing data: move-completion 512ms
+     → expected true to be false // Object.is equality
+   × initializes a registered staging directory without adopting existing data: replace-staging-completion 527ms
+     → expected true to be false // Object.is equality
+   × initializes a registered staging directory without adopting existing data: revoke-after 524ms
+     → expected true to be false // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/runtime/sandbox/test/local-root-initialization.test.ts > initializes a registered staging directory without adopting existing data: move-completion
+ FAIL  packages/runtime/sandbox/test/local-root-initialization.test.ts > initializes a registered staging directory without adopting existing data: replace-staging-completion
+ FAIL  packages/runtime/sandbox/test/local-root-initialization.test.ts > initializes a registered staging directory without adopting existing data: revoke-after
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ packages/runtime/sandbox/test/local-root-initialization.test.ts:131:94
+    129|           ),
+    130|         );
+    131|         expect(existsSync(join(existsSync(moved) ? moved : directory, …
+       |                                                                                              ^
+    132|           scenario === 'move-after',
+    133|         );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 7 passed (10)
+   Start at  14:54:58
+   Duration  5.34s (transform 82ms, setup 0ms, collect 103ms, tests 5.13s, environment 0ms, prepare 27ms)
+

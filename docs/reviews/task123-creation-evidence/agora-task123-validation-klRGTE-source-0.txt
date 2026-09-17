@@ -1,0 +1,393 @@
+/* Trusted single-file replacement primitive. Never executes project programs.
+ * fd 3: immutable expected bytes; fd 4: immutable replacement bytes.
+ * The host durably journals intent and authorizes each checkpoint on stdin.
+ * This internal primitive is not a grant registry or a public workspace port. */
+#define _DARWIN_C_SOURCE
+#include <CommonCrypto/CommonDigest.h>
+#include <copyfile.h>
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/acl.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
+#include <sys/xattr.h>
+#include <unistd.h>
+
+#define LIMIT 128
+#define PATH_CAP 4096
+#define FILE_CAP (16 * 1024 * 1024)
+static int directories[LIMIT], directory_count;
+static struct stat directory_ids[LIMIT];
+static char directory_names[LIMIT][PATH_CAP];
+static int root_fd, staging_fd, original_fd = -1;
+static struct stat staging_id, expected_id;
+static const char *root_path, *target_path, *staging_name;
+static int exchanged, creating;
+static char baseline_metadata[128];
+
+static void finish(const char *stage, const char *reason, int code) {
+  /* The process cannot fork. The host waits for exit, which closes all descriptors;
+   * this provisional result line alone is never evidence of quiescence. */
+  printf("{\"event\":\"result\",\"stage\":\"%s\",\"reason\":\"%s\",\"%s\":%s}\n",
+         stage, reason, creating ? "created" : "exchanged", exchanged ? "true" : "false");
+  fflush(stdout);
+  exit(code);
+}
+static void failure(const char *reason) { finish("recoveryRequired", reason, 1); }
+static int same(const struct stat *a, const struct stat *b) {
+  return a->st_dev == b->st_dev && a->st_ino == b->st_ino;
+}
+static int open_directory(int parent, const char *name) {
+  return openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+}
+static void remember(int fd, const char *name) {
+  if (fd < 0) fprintf(stderr, "directory_open:%d\n", errno);
+  if (fd < 0 || directory_count >= LIMIT || strlen(name) >= PATH_CAP)
+    failure("root_identity_changed");
+  directories[directory_count] = fd;
+  strcpy(directory_names[directory_count], name);
+  if (fstat(fd, &directory_ids[directory_count])) failure("root_identity_changed");
+  directory_count++;
+}
+static void verify_directories(void) {
+  struct stat current;
+  for (int i = 0; i < directory_count; i++) {
+    int result = i == 0 ? lstat("/", &current) :
+      fstatat(directories[i - 1], directory_names[i], &current, AT_SYMLINK_NOFOLLOW);
+    if (result || !S_ISDIR(current.st_mode) || !same(&current, &directory_ids[i]))
+      failure("root_identity_changed");
+  }
+  if (fstatat(root_fd, staging_name, &current, AT_SYMLINK_NOFOLLOW) ||
+      !S_ISDIR(current.st_mode) || !same(&current, &staging_id))
+    failure("root_identity_changed");
+}
+static void checkpoint(const char *name) {
+  printf("{\"event\":\"checkpoint\",\"name\":\"%s\",\"exchanged\":%s}\n",
+         name, exchanged ? "true" : "false");
+  fflush(stdout);
+  char ack;
+  if (read(STDIN_FILENO, &ack, 1) != 1 || ack != 'x') failure("authorization_closed");
+  verify_directories();
+}
+static void parse_identity(const char *text, struct stat *st) {
+  uintmax_t dev, ino;
+  char tail;
+  if (sscanf(text, "%ju:%ju%c", &dev, &ino, &tail) != 2) failure("invalid_request");
+  st->st_dev = (dev_t)dev;
+  st->st_ino = (ino_t)ino;
+}
+static void pin_root(const char *chain) {
+  if (root_path[0] != '/' || strlen(root_path) >= PATH_CAP || strlen(chain) >= PATH_CAP)
+    failure("invalid_request");
+  char path[PATH_CAP], identities[PATH_CAP];
+  strcpy(path, root_path + 1);
+  strcpy(identities, chain);
+  remember(open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC), "");
+  char *save = NULL;
+  for (char *part = strtok_r(path, "/", &save); part; part = strtok_r(NULL, "/", &save)) {
+    if (!strcmp(part, ".") || !strcmp(part, "..")) failure("invalid_request");
+    remember(open_directory(directories[directory_count - 1], part), part);
+  }
+  char *id_save = NULL;
+  int i = 0;
+  for (char *part = strtok_r(identities, ",", &id_save); part; part = strtok_r(NULL, ",", &id_save)) {
+    struct stat identity = {0};
+    parse_identity(part, &identity);
+    if (i >= directory_count || !same(&identity, &directory_ids[i++])) failure("root_identity_changed");
+  }
+  if (i != directory_count) failure("root_identity_changed");
+  root_fd = directories[directory_count - 1];
+  struct statfs filesystem;
+  if (fstatfs(root_fd, &filesystem) || strcmp(filesystem.f_fstypename, "apfs"))
+    failure("unsupported_workspace");
+}
+static void pin_parents(const char *expected_parents) {
+  if (!*target_path || target_path[0] == '/' || strlen(target_path) >= PATH_CAP)
+    failure("invalid_request");
+  char components[PATH_CAP];
+  strcpy(components, target_path);
+  char *part_start = components;
+  for (;;) {
+    char *slash = strchr(part_start, '/');
+    if (slash) *slash = 0;
+    if (!*part_start || !strcmp(part_start, ".") || !strcmp(part_start, "..") ||
+        !strcmp(part_start, ".agora-operations") || !strcmp(part_start, ".git") ||
+        !strcmp(part_start, ".env") || !strncmp(part_start, ".env.", 5)) failure("invalid_request");
+    if (!slash) break;
+    part_start = slash + 1;
+  }
+  int first = directory_count;
+  char path[PATH_CAP];
+  strcpy(path, target_path);
+  char *last = strrchr(path, '/');
+  if (last) {
+    *last = 0;
+    char *save = NULL;
+    for (char *part = strtok_r(path, "/", &save); part; part = strtok_r(NULL, "/", &save))
+      remember(open_directory(directories[directory_count - 1], part), part);
+  }
+  if (strlen(expected_parents) >= PATH_CAP) failure("invalid_request");
+  char ids[PATH_CAP]; strcpy(ids, expected_parents);
+  char *save = NULL;
+  int index = first;
+  for (char *part = strtok_r(ids, ",", &save); part; part = strtok_r(NULL, ",", &save)) {
+    struct stat expected = {0};
+    parse_identity(part, &expected);
+    if (index >= directory_count || !same(&expected, &directory_ids[index++]))
+      failure("root_identity_changed");
+  }
+  if (index != directory_count) failure("root_identity_changed");
+}
+static int supported_file(int fd, struct stat *st) {
+  if (fstat(fd, st) || !S_ISREG(st->st_mode) || st->st_nlink != 1 ||
+      st->st_uid != getuid() || (st->st_mode & 07000) || st->st_flags ||
+      st->st_size < 0 || st->st_size > FILE_CAP) {
+    fprintf(stderr, "file_stat_unsupported:%d\n", errno); return 0;
+  }
+  /* Extended attributes are hashed and copied; nonempty ACLs remain unsupported. */
+  acl_t acl = acl_get_fd_np(fd, ACL_TYPE_EXTENDED);
+  if (!acl) { fprintf(stderr, "file_acl_missing:%d\n", errno); return errno == ENOENT; }
+  acl_entry_t entry;
+  int result = acl_get_entry(acl, ACL_FIRST_ENTRY, &entry);
+  int error = errno;
+  acl_free(acl);
+  if (result != -1 || error != EINVAL) fprintf(stderr, "file_acl_entries:%d:%d\n", result, error);
+  return result == -1 && error == EINVAL;
+}
+static int compare_names(const void *a, const void *b) {
+  return strcmp(*(const char *const *)a, *(const char *const *)b);
+}
+struct listing_entry { char name[256]; const char *kind; };
+static int compare_entries(const void *a, const void *b) {
+  return strcmp(((const struct listing_entry *)a)->name, ((const struct listing_entry *)b)->name);
+}
+static int list_directory(void) {
+  int fd = directories[directory_count - 1];
+  struct stat before, after;
+  if (fstat(fd, &before)) failure("directory_read_failed");
+  DIR *stream = fdopendir(dup(fd));
+  if (!stream) failure("directory_read_failed");
+  struct listing_entry *entries = calloc(4096, sizeof(*entries));
+  if (!entries) failure("directory_read_failed");
+  size_t count = 0;
+  for (;;) {
+    errno = 0;
+    struct dirent *entry = readdir(stream);
+    if (!entry) { if (errno) failure("directory_read_failed"); break; }
+    if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
+    if (count == 4096 || strlen(entry->d_name) >= sizeof(entries[count].name)) failure("directory_limit");
+    strcpy(entries[count].name, entry->d_name);
+    struct stat st;
+    if (fstatat(fd, entry->d_name, &st, AT_SYMLINK_NOFOLLOW)) failure("directory_version_conflict");
+    entries[count].kind = !strcmp(entry->d_name, ".agora-operations") || !strcmp(entry->d_name, ".git") ||
+      !strcmp(entry->d_name, ".env") || !strncmp(entry->d_name, ".env.", 5) ? "excluded" :
+      S_ISDIR(st.st_mode) && !st.st_flags ? "directory" :
+      S_ISREG(st.st_mode) && st.st_nlink == 1 && !st.st_flags ? "file" : "unsupported";
+    count++;
+  }
+  closedir(stream);
+  if (fstat(fd, &after) || before.st_mtimespec.tv_sec != after.st_mtimespec.tv_sec ||
+      before.st_mtimespec.tv_nsec != after.st_mtimespec.tv_nsec ||
+      before.st_ctimespec.tv_sec != after.st_ctimespec.tv_sec ||
+      before.st_ctimespec.tv_nsec != after.st_ctimespec.tv_nsec) failure("directory_version_conflict");
+  verify_directories();
+  qsort(entries, count, sizeof(*entries), compare_entries);
+  printf("{\"identity\":\"%ju:%ju\",\"entries\":[", (uintmax_t)before.st_dev, (uintmax_t)before.st_ino);
+  for (size_t i = 0; i < count; i++) {
+    printf("%s{\"hex\":\"", i ? "," : "");
+    for (const unsigned char *p = (const unsigned char *)entries[i].name; *p; p++) printf("%02x", *p);
+    printf("\",\"kind\":\"%s\"}", entries[i].kind);
+  }
+  puts("]}");
+  free(entries);
+  return 0;
+}
+static int metadata(int fd, char result[128]) {
+  struct stat st;
+  if (!supported_file(fd, &st)) return 0;
+  char names[65536], *sorted[1024];
+  ssize_t count = flistxattr(fd, names, sizeof(names), 0);
+  if (count < 0) return 0;
+  size_t entries = 0;
+  for (size_t offset = 0; offset < (size_t)count;) {
+    size_t length = strnlen(names + offset, (size_t)count - offset);
+    if (!length || offset + length >= (size_t)count || entries == 1024) return 0;
+    sorted[entries++] = names + offset;
+    offset += length + 1;
+  }
+  qsort(sorted, entries, sizeof(char *), compare_names);
+  CC_SHA256_CTX hash;
+  CC_SHA256_Init(&hash);
+  for (size_t i = 0; i < entries; i++) {
+    unsigned char value[65536];
+    ssize_t size = fgetxattr(fd, sorted[i], value, sizeof(value), 0, 0);
+    if (size < 0) return 0;
+    uint64_t length = (uint64_t)size;
+    CC_SHA256_Update(&hash, sorted[i], (CC_LONG)strlen(sorted[i]) + 1);
+    CC_SHA256_Update(&hash, &length, sizeof(length));
+    CC_SHA256_Update(&hash, value, (CC_LONG)size);
+  }
+  unsigned char bytes[CC_SHA256_DIGEST_LENGTH];
+  char hex[65];
+  CC_SHA256_Final(bytes, &hash);
+  for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) snprintf(hex + i * 2, 3, "%02x", bytes[i]);
+  snprintf(result, 128, "%u:%u:%u:%s", st.st_mode, st.st_uid, st.st_gid, hex);
+  return 1;
+}
+static int bytes_equal(int a, int b) {
+  char aa[65536], bb[65536];
+  off_t offset = 0;
+  for (;;) {
+    ssize_t an = pread(a, aa, sizeof(aa), offset), bn = pread(b, bb, sizeof(bb), offset);
+    if (an < 0 || bn < 0 || an != bn || (an && memcmp(aa, bb, (size_t)an))) return 0;
+    if (!an) return 1;
+    offset += an;
+    if (offset > FILE_CAP) return 0;
+  }
+}
+static int same_version(int fd, int bytes, const struct stat *identity) {
+  struct stat before, after;
+  char observed_metadata[128];
+  if (!supported_file(fd, &before) || !same(&before, identity) ||
+      before.st_mode != identity->st_mode || before.st_uid != identity->st_uid ||
+      before.st_gid != identity->st_gid || !metadata(fd, observed_metadata) ||
+      strcmp(observed_metadata, baseline_metadata) || !bytes_equal(fd, bytes) || fstat(fd, &after)) return 0;
+  return same(&before, &after) && before.st_size == after.st_size &&
+    before.st_mtimespec.tv_sec == after.st_mtimespec.tv_sec &&
+    before.st_mtimespec.tv_nsec == after.st_mtimespec.tv_nsec &&
+    before.st_ctimespec.tv_sec == after.st_ctimespec.tv_sec &&
+    before.st_ctimespec.tv_nsec == after.st_ctimespec.tv_nsec;
+}
+static int open_target(void) {
+  const char *leaf = strrchr(target_path, '/');
+  return openat(directories[directory_count - 1], leaf ? leaf + 1 : target_path,
+                O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
+}
+
+int main(int argc, char **argv) {
+  if (argc != 10 && argc != 8) return 64;
+  root_path = argv[1]; staging_name = argv[3]; target_path = argv[5];
+  int inspecting = argc == 8 && !strcmp(argv[6], "inspect");
+  int inspecting_absent = argc == 8 && !strcmp(argv[6], "inspect-absent");
+  int listing = argc == 8 && !strcmp(argv[6], "list");
+  creating = argc == 10 && !strcmp(argv[6], "absent");
+  if (strchr(staging_name, '/') || strcmp(staging_name, ".agora-operations") ||
+      (!inspecting && !inspecting_absent && !listing && (argc != 10 ||
+        strspn(argv[8], "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_") != strlen(argv[8]) ||
+        !*argv[8] || strlen(argv[8]) > 80))) failure("invalid_request");
+  pin_root(argv[2]);
+  staging_fd = open_directory(root_fd, staging_name);
+  if (staging_fd < 0 || fstat(staging_fd, &staging_id)) failure("root_identity_changed");
+  struct stat wanted = {0};
+  parse_identity(argv[4], &wanted);
+  if (!same(&wanted, &staging_id) || staging_id.st_uid != getuid() ||
+      (staging_id.st_mode & 0777) != 0700) failure("root_identity_changed");
+  pin_parents(argv[(inspecting || inspecting_absent || listing) ? 7 : 9]);
+  verify_directories();
+  if (listing) return list_directory();
+  original_fd = open_target();
+  if (creating || inspecting_absent) {
+    if (original_fd >= 0 || errno != ENOENT) finish("conflict", "file_version_conflict", 1);
+    verify_directories();
+    if (inspecting_absent) {
+      printf("{\"parentIdentity\":\"%ju:%ju\"}\n", (uintmax_t)directory_ids[directory_count-1].st_dev, (uintmax_t)directory_ids[directory_count-1].st_ino);
+      return 0;
+    }
+    parse_identity(argv[7], &wanted);
+    if (!same(&wanted, &directory_ids[directory_count-1])) finish("conflict", "file_version_conflict", 1);
+  }
+  if (!creating && (original_fd < 0 || !supported_file(original_fd, &expected_id)))
+    finish("conflict", "unsupported_file", 1);
+  if (!creating && !metadata(original_fd, baseline_metadata)) finish("conflict", "unsupported_metadata", 1);
+  if (inspecting) {
+    unsigned char *content = malloc((size_t)expected_id.st_size + 1);
+    if (!content) failure("read_failed");
+    if (pread(original_fd, content, (size_t)expected_id.st_size + 1, 0) != expected_id.st_size)
+      failure("file_version_conflict");
+    struct stat after;
+    char after_metadata[128];
+    if (fstat(original_fd, &after) || after.st_size != expected_id.st_size ||
+        after.st_mtimespec.tv_sec != expected_id.st_mtimespec.tv_sec ||
+        after.st_mtimespec.tv_nsec != expected_id.st_mtimespec.tv_nsec ||
+        after.st_ctimespec.tv_sec != expected_id.st_ctimespec.tv_sec ||
+        after.st_ctimespec.tv_nsec != expected_id.st_ctimespec.tv_nsec ||
+        !metadata(original_fd, after_metadata) || strcmp(after_metadata, baseline_metadata))
+      failure("file_version_conflict");
+    verify_directories();
+    printf("{\"identity\":\"%ju:%ju\",\"metadata\":\"%s\",\"hex\":\"",
+           (uintmax_t)expected_id.st_dev, (uintmax_t)expected_id.st_ino, baseline_metadata);
+    for (off_t i = 0; i < expected_id.st_size; i++) printf("%02x", content[i]);
+    puts("\"}");
+    free(content);
+    return 0;
+  }
+  if (!creating) {
+    parse_identity(argv[6], &wanted);
+    if (!same(&wanted, &expected_id) || strcmp(baseline_metadata, argv[7]) ||
+        !same_version(original_fd, 3, &expected_id))
+      finish("conflict", "file_version_conflict", 1);
+  }
+
+  checkpoint("before_prepare");
+  char candidate[128], relative_candidate[256];
+  snprintf(candidate, sizeof(candidate), "%s-candidate", argv[8]);
+  snprintf(relative_candidate, sizeof(relative_candidate), "%s/%s", staging_name, candidate);
+  int output = openat(staging_fd, candidate, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
+  if (output < 0) failure("candidate_unavailable");
+  char data[65536];
+  off_t offset = 0;
+  for (;;) {
+    ssize_t n = pread(4, data, sizeof(data), offset);
+    if (n < 0 || offset + n > FILE_CAP) failure("candidate_failed");
+    if (!n) break;
+    ssize_t written = 0;
+    while (written < n) {
+      verify_directories();
+      ssize_t count = write(output, data + written, (size_t)(n - written));
+      if (count <= 0) failure("candidate_failed");
+      written += count;
+    }
+    offset += n;
+  }
+  verify_directories();
+  if (!creating && fchown(output, expected_id.st_uid, expected_id.st_gid)) failure("candidate_failed");
+  verify_directories();
+  if (fchmod(output, creating ? 0644 : expected_id.st_mode & 0777)) failure("candidate_failed");
+  verify_directories();
+  if (!creating && fcopyfile(original_fd, output, NULL, COPYFILE_XATTR)) failure("candidate_failed");
+  verify_directories();
+  if (fsync(output)) failure("candidate_failed");
+  struct stat candidate_id;
+  if (creating && !metadata(output, baseline_metadata)) failure("candidate_failed");
+  if (fstat(output, &candidate_id) || close(output) || fsync(staging_fd)) failure("candidate_failed");
+  /* No writable data descriptor survives installation into the source directory. */
+  checkpoint("before_swap");
+  int current = open_target();
+  if (creating ? (current >= 0 || errno != ENOENT) : (current < 0 || !same_version(current, 3, &expected_id)))
+    finish("conflict", "file_version_conflict", 1);
+  if (current >= 0) close(current);
+  verify_directories();
+  if (renameatx_np(root_fd, relative_candidate, root_fd, target_path,
+                  (creating ? RENAME_EXCL : RENAME_SWAP) | RENAME_NOFOLLOW_ANY | RENAME_RESOLVE_BENEATH)) {
+    if (creating && errno == EEXIST) finish("conflict", "file_version_conflict", 1);
+    failure("exchange_refused");
+  }
+  exchanged = 1;
+  checkpoint("after_swap");
+  int displaced = creating ? -1 : openat(staging_fd, candidate, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
+  current = open_target();
+  if ((!creating && (displaced < 0 || !same_version(displaced, 3, &expected_id))) ||
+      current < 0 || !same_version(current, 4, &candidate_id)) failure("post_exchange_conflict");
+  if (displaced >= 0) close(displaced);
+  close(current);
+  if (original_fd >= 0) close(original_fd);
+  verify_directories();
+  if (fsync(staging_fd) || fsync(directories[directory_count - 1])) failure("flush_failed");
+  verify_directories();
+  finish("applied", "none", 0);
+}

@@ -1,0 +1,333 @@
+/** Internal authorized initialization primitive. Caller must close the Leader
+ * grant/proposal transaction separately before exposing workspace capabilities. */
+import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import {
+  closeSync,
+  constants,
+  existsSync,
+  fsyncSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, isAbsolute, join, relative } from 'node:path';
+import { localRecordHash } from './local-registry-records';
+import type { SelectedLocalRootInspection } from './local-root-inspection';
+
+type Checkpoint = 'admission' | 'before_initialize' | 'after_initialize' | 'completion';
+export interface LocalRootInitializationReceipt {
+  schemaVersion: 'local-root-initialization-v1';
+  actionId: string;
+  inputHash: string;
+  journalPath: string;
+  stage: 'applied' | 'conflict' | 'recoveryRequired';
+  reason: string;
+  created: boolean | null;
+  stagingIdentity: string | null;
+  quiescent: boolean;
+  nativeExitCode: number | null;
+}
+type Request = {
+  actionId: string;
+  inspection: SelectedLocalRootInspection;
+  authorityHash: string;
+  journalRoot: string;
+  helper: string;
+  authorize: (checkpoint: Checkpoint) => Promise<boolean>;
+};
+const hash = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
+function durable(path: string, data: unknown) {
+  const fd = openSync(
+    path,
+    constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+    0o400,
+  );
+  try {
+    writeFileSync(fd, JSON.stringify(data));
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  const parent = openSync(
+    dirname(path),
+    constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+  );
+  try {
+    fsyncSync(parent);
+  } finally {
+    closeSync(parent);
+  }
+}
+const nested = (a: string, b: string) => {
+  const p = relative(a, b);
+  return !p || (!p.startsWith('../') && p !== '..' && !isAbsolute(p));
+};
+const safe = (p: string) =>
+  isAbsolute(p) &&
+  p !== '/' &&
+  ![...p].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127) &&
+  realpathSync(p) === p;
+function verify(root: SelectedLocalRootInspection) {
+  try {
+    return (
+      root.chain.length > 1 &&
+      root.chain.length <= 128 &&
+      root.chain[0]?.path === '/' &&
+      root.chain.at(-1)?.path === root.path &&
+      root.chain.every((entry, i) => {
+        const stat = lstatSync(entry.path, { bigint: true });
+        return (
+          (i === 0 || dirname(entry.path) === root.chain[i - 1]?.path) &&
+          stat.isDirectory() &&
+          !stat.isSymbolicLink() &&
+          `${stat.dev}:${stat.ino}` === entry.identity &&
+          Number(stat.mode) === entry.mode &&
+          Number(stat.uid) === entry.uid
+        );
+      })
+    );
+  } catch {
+    return false;
+  }
+}
+function helperIdentity(helper: string) {
+  const stat = lstatSync(helper, { bigint: true });
+  if (!stat.isFile() || stat.nlink !== 1n || (stat.mode & 0o022n) !== 0n || !(stat.mode & 0o111n))
+    throw new Error('untrusted_runtime_path');
+  return `${stat.dev}:${stat.ino}:${stat.mode}:${stat.uid}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
+}
+export async function initializeLocalRoot(
+  request: Request,
+): Promise<LocalRootInitializationReceipt> {
+  if (process.platform !== 'darwin') throw new Error('sandbox_unavailable');
+  const { actionId, authorityHash, journalRoot, helper, authorize } = request;
+  localRecordHash(request.inspection);
+  const inspection = structuredClone(request.inspection);
+  if (
+    !/^[A-Za-z0-9_-]{1,80}$/.test(actionId) ||
+    !/^[a-f0-9]{64}$/.test(authorityHash) ||
+    inspection.schemaVersion !== 'local-root-inspection-v1' ||
+    inspection.filesystem !== 'apfs' ||
+    inspection.local !== true ||
+    !/^[a-f0-9]{32}$/.test(inspection.volumeId)
+  )
+    throw new Error('invalid_initialization');
+  if (
+    !safe(journalRoot) ||
+    !safe(helper) ||
+    !safe(inspection.path) ||
+    nested(inspection.path, journalRoot) ||
+    nested(journalRoot, inspection.path) ||
+    nested(inspection.path, helper)
+  )
+    throw new Error('untrusted_runtime_path');
+  const journalStat = lstatSync(journalRoot);
+  if (
+    !journalStat.isDirectory() ||
+    journalStat.uid !== process.getuid?.() ||
+    (journalStat.mode & 0o777) !== 0o700
+  )
+    throw new Error('untrusted_runtime_path');
+  const helperBefore = helperIdentity(helper),
+    helperHash = hash(readFileSync(helper));
+  if (!verify(inspection)) throw new Error('root_identity_changed');
+  if (!(await authorize('admission'))) throw new Error('authorization_closed');
+  if (!verify(inspection) || helperIdentity(helper) !== helperBefore)
+    throw new Error('root_identity_changed');
+  const inputHash = localRecordHash({ actionId, authorityHash, inspection, helperHash });
+  const journalPath = join(journalRoot, actionId),
+    receiptPath = join(journalPath, 'result.json');
+  if (existsSync(journalPath)) {
+    const prepared = JSON.parse(readFileSync(join(journalPath, 'prepared.json'), 'utf8'));
+    if (prepared.inputHash !== inputHash) throw new Error('operation_conflict');
+    if (!existsSync(receiptPath)) throw new Error('recovery_required');
+    const result = JSON.parse(readFileSync(receiptPath, 'utf8')) as LocalRootInitializationReceipt;
+    if (
+      result.schemaVersion !== 'local-root-initialization-v1' ||
+      result.inputHash !== inputHash ||
+      result.actionId !== actionId ||
+      result.journalPath !== journalPath ||
+      result.quiescent !== true ||
+      !['applied', 'conflict', 'recoveryRequired'].includes(result.stage) ||
+      (result.stage === 'applied' &&
+        (result.created !== true ||
+          result.reason !== 'none' ||
+          result.nativeExitCode !== 0 ||
+          typeof result.stagingIdentity !== 'string' ||
+          !/^\d+:\d+$/.test(result.stagingIdentity)))
+    )
+      throw new Error('recovery_required');
+    if (result.stage === 'applied') {
+      const stat = lstatSync(join(inspection.path, '.agora-operations'), { bigint: true });
+      if (
+        !stat.isDirectory() ||
+        stat.isSymbolicLink() ||
+        `${stat.dev}:${stat.ino}` !== result.stagingIdentity ||
+        (stat.mode & 0o777n) !== 0o700n ||
+        stat.uid !== BigInt(process.getuid?.() ?? -1)
+      )
+        throw new Error('recovery_required');
+    }
+    return result;
+  }
+  mkdirSync(journalPath, { mode: 0o700 });
+  const staging = join(inspection.path, '.agora-operations');
+  const policy = [
+    '(version 1)',
+    '(deny default)',
+    `(allow process-exec (literal ${JSON.stringify(helper)}))`,
+    '(allow sysctl-read)',
+    '(allow file-read* file-map-executable (subpath "/usr/lib") (subpath "/System/Library") (subpath "/System/Volumes/Preboot/Cryptexes/OS") (subpath "/System/Cryptexes/OS"))',
+    `(allow file-read* file-map-executable (literal ${JSON.stringify(helper)}))`,
+    ...inspection.chain.map((p) => `(allow file-read* (literal ${JSON.stringify(p.path)}))`),
+    `(allow file-read* file-write-create file-write-mode (literal ${JSON.stringify(staging)}))`,
+  ].join('\n');
+  durable(join(journalPath, 'prepared.json'), {
+    schemaVersion: 'local-root-initialization-v1',
+    stage: 'prepared',
+    actionId,
+    inputHash,
+    inspection,
+    authorityHash,
+    helperHash,
+    policyHash: hash(policy),
+  });
+  const child = spawn(
+    '/usr/bin/sandbox-exec',
+    ['-p', policy, helper, inspection.path, inspection.chain.map((p) => p.identity).join(',')],
+    {
+      cwd: '/',
+      env: { PATH: '/usr/bin:/bin', HOME: '/', TMPDIR: '/' },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    },
+  );
+  let stdout = '',
+    stderr = '',
+    pending = '',
+    index = 0,
+    failed = false,
+    closed = false;
+  let result:
+    | Pick<LocalRootInitializationReceipt, 'stage' | 'reason' | 'created' | 'stagingIdentity'>
+    | undefined;
+  let chain = Promise.resolve();
+  child.stdin.on('error', () => {
+    failed = true;
+  });
+  const timer = setTimeout(() => {
+    failed = true;
+    child.kill('SIGKILL');
+  }, 5000);
+  const outcome = await new Promise<{ code: number | null; signal: string | null }>((resolve) => {
+    child.once('error', () => {
+      failed = true;
+    });
+    child.stderr.on('data', (data: Buffer) => {
+      if (stderr.length + data.length > 16384) {
+        failed = true;
+        child.kill('SIGKILL');
+      } else stderr += data.toString();
+    });
+    child.stdout.on('data', (data: Buffer) => {
+      if (stdout.length + data.length > 16384) {
+        failed = true;
+        child.kill('SIGKILL');
+        return;
+      }
+      stdout += data.toString();
+      pending += data.toString();
+      while (pending.includes('\n')) {
+        const end = pending.indexOf('\n'),
+          line = pending.slice(0, end);
+        pending = pending.slice(end + 1);
+        chain = chain.then(async () => {
+          try {
+            const event = JSON.parse(line);
+            if (result) throw new Error('event_after_result');
+            if (
+              event.event === 'checkpoint' &&
+              event.name === ['before_initialize', 'after_initialize'][index++]
+            ) {
+              const allowed = await authorize(event.name);
+              // Keep the native effect fact accurate: the helper itself checks drift.
+              if (!closed) child.stdin.write(allowed ? 'x' : 'n');
+            } else if (
+              event.event === 'result' &&
+              ['applied', 'conflict', 'recoveryRequired'].includes(event.stage) &&
+              typeof event.reason === 'string' &&
+              /^[a-z_]+$/.test(event.reason) &&
+              typeof event.created === 'boolean' &&
+              (event.stagingIdentity === null ||
+                (typeof event.stagingIdentity === 'string' &&
+                  /^\d+:\d+$/.test(event.stagingIdentity)))
+            ) {
+              result = {
+                stage: event.stage,
+                reason: event.reason,
+                created: event.created,
+                stagingIdentity: event.stagingIdentity,
+              };
+            } else throw new Error('invalid_native_event');
+          } catch {
+            failed = true;
+            if (!closed) child.stdin.end('n');
+          }
+        });
+      }
+    });
+    child.once('close', (code, signal) => {
+      closed = true;
+      clearTimeout(timer);
+      resolve({ code, signal });
+    });
+  });
+  await chain;
+  const receipt: LocalRootInitializationReceipt = {
+    schemaVersion: 'local-root-initialization-v1',
+    actionId,
+    inputHash,
+    journalPath,
+    stage: result?.stage ?? 'recoveryRequired',
+    reason: result?.reason ?? 'native_failed',
+    created: result?.created ?? null,
+    stagingIdentity: result?.stagingIdentity ?? null,
+    quiescent: true,
+    nativeExitCode: outcome.code,
+  };
+  if (
+    failed ||
+    pending ||
+    !result ||
+    (receipt.stage === 'applied' &&
+      (outcome.code !== 0 ||
+        index !== 2 ||
+        receipt.created !== true ||
+        receipt.stagingIdentity === null))
+  ) {
+    receipt.stage = 'recoveryRequired';
+    receipt.reason = 'native_failed';
+  }
+  if (receipt.stage === 'applied') {
+    let allowed = false;
+    try {
+      allowed =
+        verify(inspection) &&
+        helperIdentity(helper) === helperBefore &&
+        (await authorize('completion')) &&
+        verify(inspection);
+    } catch {
+      /* Preserve observed effects on uncertain completion. */
+    }
+    if (!allowed) {
+      receipt.stage = 'recoveryRequired';
+      receipt.reason = 'authorization_or_identity_changed';
+    }
+  }
+  durable(join(journalPath, 'native.json'), { ...outcome, stdout, stderr });
+  durable(receiptPath, receipt);
+  return receipt;
+}

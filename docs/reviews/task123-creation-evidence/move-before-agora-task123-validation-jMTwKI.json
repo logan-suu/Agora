@@ -1,0 +1,50 @@
+{
+  "scenario": "move-before",
+  "base": "/private/tmp/agora-task123-validation-jMTwKI",
+  "identity": {
+    "dev": 16777231,
+    "ino": 128444967
+  },
+  "startedAt": "2026-09-16T23:05:13.004Z",
+  "binaryHash": "e9b908fed4aaa491ab5ba77d3b18e77a9587ea4fe06270e27f93d51281a71f31",
+  "receipt": {
+    "schemaVersion": "local-creation-primitive-v1",
+    "actionId": "create-fixed",
+    "inputHash": "f07dc88bb2bfb2a384659593bb00269944a6c3ded93862bf42b882b6765bb79b",
+    "stage": "recoveryRequired",
+    "reason": "root_identity_changed",
+    "created": false,
+    "quiescent": true,
+    "candidateName": "create-fixed-candidate",
+    "journalPath": "/private/tmp/agora-task123-validation-jMTwKI/journal/create-fixed",
+    "nativeExitCode": 1
+  },
+  "journal": {
+    "expected": "",
+    "native.json": "{\"code\":1,\"signal\":null,\"stdout\":\"{\\\"event\\\":\\\"checkpoint\\\",\\\"name\\\":\\\"before_prepare\\\",\\\"exchanged\\\":false}\\n{\\\"event\\\":\\\"checkpoint\\\",\\\"name\\\":\\\"before_swap\\\",\\\"exchanged\\\":false}\\n{\\\"event\\\":\\\"result\\\",\\\"stage\\\":\\\"recoveryRequired\\\",\\\"reason\\\":\\\"root_identity_changed\\\",\\\"created\\\":false}\\n\",\"stderr\":\"file_acl_missing:2\\n\"}",
+    "prepared.json": "{\"schemaVersion\":\"local-creation-primitive-v1\",\"actionId\":\"create-fixed\",\"inputHash\":\"f07dc88bb2bfb2a384659593bb00269944a6c3ded93862bf42b882b6765bb79b\",\"stage\":\"prepared\",\"binding\":{\"root\":\"/private/tmp/agora-task123-validation-jMTwKI/project\",\"chain\":[{\"path\":\"/\",\"identity\":\"16777231:2\"},{\"path\":\"/private\",\"identity\":\"16777231:76454369\"},{\"path\":\"/private/tmp\",\"identity\":\"16777231:119551154\"},{\"path\":\"/private/tmp/agora-task123-validation-jMTwKI\",\"identity\":\"16777231:128444967\"},{\"path\":\"/private/tmp/agora-task123-validation-jMTwKI/project\",\"identity\":\"16777231:128444968\"}],\"stagingIdentity\":\"16777231:128444969\"},\"parents\":[],\"path\":\"new.js\",\"parentIdentity\":\"16777231:128444968\",\"expectedHash\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"replacementHash\":\"a1aa40193c4ae8ee28a3fd402ac194f1ca2155b61c168eeac2b8e7dfc0fe7a56\",\"helperHash\":\"e9b908fed4aaa491ab5ba77d3b18e77a9587ea4fe06270e27f93d51281a71f31\",\"policyHash\":\"4c82cade352de19b9e6e0b8eb82298e037febe45eafb7d53aa7b11598827d50e\",\"candidateName\":\"create-fixed-candidate\"}",
+    "replacement": "fixed candidate",
+    "result.json": "{\"schemaVersion\":\"local-creation-primitive-v1\",\"actionId\":\"create-fixed\",\"inputHash\":\"f07dc88bb2bfb2a384659593bb00269944a6c3ded93862bf42b882b6765bb79b\",\"stage\":\"recoveryRequired\",\"reason\":\"root_identity_changed\",\"created\":false,\"quiescent\":true,\"candidateName\":\"create-fixed-candidate\",\"journalPath\":\"/private/tmp/agora-task123-validation-jMTwKI/journal/create-fixed\",\"nativeExitCode\":1}"
+  },
+  "passed": true,
+  "sources": {
+    "packages/runtime/sandbox/native/local-file-transaction.c": {
+      "sha256": "d7da93a33fdb70ab22744b3f87e32d07ec1d1fd1faff862dda12747ee12ca667",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-creation-evidence/agora-task123-validation-jMTwKI-source-0.txt"
+    },
+    "packages/runtime/sandbox/src/local-file-transaction.ts": {
+      "sha256": "2d9885c4558140b37c81e1cf6db1e251cde719458008adece969fa4d8b606097",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-creation-evidence/agora-task123-validation-jMTwKI-source-1.txt"
+    },
+    "tests/integration/phase12/phase12-3-creation.test.ts": {
+      "sha256": "d2e279bbed365725156b8d19f9131650a4bde85c3bdb0792bf71add9283e4272",
+      "snapshot": "/Users/logansu/Documents/Dev/Agora/docs/reviews/task123-creation-evidence/agora-task123-validation-jMTwKI-source-2.txt"
+    }
+  },
+  "cleanup": {
+    "deleted": true,
+    "noOpenHandles": true,
+    "noMounts": true,
+    "availableBytesDelta": 40960
+  }
+}

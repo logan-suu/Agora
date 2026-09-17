@@ -1,0 +1,28 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ packages/runtime/sandbox/test/local-root-inspection.test.ts (1 test | 1 failed) 490ms
+   × inspects APFS identity without creating a staging directory or granting access 490ms
+     → unsupported_workspace
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/runtime/sandbox/test/local-root-inspection.test.ts > inspects APFS identity without creating a staging directory or granting access
+Error: unsupported_workspace
+ ❯ inspectSelectedLocalRoot packages/runtime/sandbox/src/local-root-inspection.ts:82:11
+     80|   });
+     81|   if (result.error || result.status !== 0)
+     82|     throw new Error(result.status === 66 ? 'unsupported_workspace' : '…
+       |           ^
+     83|   let data: SelectedLocalRootInspection;
+     84|   try {
+ ❯ packages/runtime/sandbox/test/local-root-inspection.test.ts:49:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  14:34:57
+   Duration  612ms (transform 17ms, setup 0ms, collect 17ms, tests 490ms, environment 0ms, prepare 26ms)
+

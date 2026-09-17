@@ -1,0 +1,14 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ tests/integration/phase12/phase12-3-command-discovery.test.ts (4 tests) 3170ms
+   ✓ discovers a real child and grandchild without enrolling an unrelated sibling  1240ms
+   ✓ retains a discovered grandchild after its parent exits and it is reparented  712ms
+   ✓ rejects a wrong parent birth and leaves the real tree alive  605ms
+   ✓ exposes helper failure as incomplete discovery without signaling the root  612ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  22:46:44
+   Duration  3.33s (transform 36ms, setup 0ms, collect 40ms, tests 3.17s, environment 0ms, prepare 35ms)
+

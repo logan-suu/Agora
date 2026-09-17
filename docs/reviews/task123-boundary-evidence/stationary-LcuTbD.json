@@ -1,0 +1,35 @@
+{
+  "scenario": "stationary",
+  "base": "/private/tmp/agora-task123-validation-LcuTbD",
+  "sourceHash": "b5be029f04be270d27ba287569f2cc1970aa4a1ca2265dd720e14c773cbe6a61",
+  "source": "/Users/logansu/Documents/Dev/Agora/packages/runtime/sandbox/native/local-boundary-probe.c",
+  "os": "25F71",
+  "arch": "arm64",
+  "controllerNode": "v24.20.0",
+  "ownership": {
+    "uid": 501,
+    "dev": 16777231,
+    "ino": 127714926
+  },
+  "availableBefore": 46917009408,
+  "binaryHash": "7e31e67b69ea94e9b6ed9e693c720fb7539d4fabb447aa43efe2c2f6443cc28e",
+  "policy": "(version 1)\n(deny default)\n(allow process-exec (literal \"/private/tmp/agora-task123-validation-LcuTbD/boundary-probe\"))\n(allow sysctl-read)\n(allow file-read* (subpath \"/usr/lib\") (subpath \"/System/Library\"))\n(allow file-read* (literal \"/private/tmp/agora-task123-validation-LcuTbD/boundary-probe\") (subpath \"/private/tmp/agora-task123-validation-LcuTbD/project\"))\n(allow file-write* (subpath \"/private/tmp/agora-task123-validation-LcuTbD/project\"))",
+  "pid": 56839,
+  "result": {
+    "exitCode": 71,
+    "signal": null,
+    "ready": false,
+    "filesystem": null,
+    "stdout": "",
+    "stderr": "sandbox-exec: sandbox_apply: Operation not permitted\n",
+    "target": "original",
+    "backup": "candidate"
+  },
+  "quiescent": true,
+  "completedAt": "2026-09-15T23:27:32.881Z",
+  "cleanup": {
+    "removed": true,
+    "availableAfter": 46916968448,
+    "spaceDelta": -40960
+  }
+}

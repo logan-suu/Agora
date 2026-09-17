@@ -1,0 +1,35 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ❯ tests/integration/phase12/phase12-3-command-stop.test.ts (6 tests | 1 failed | 5 skipped) 7854ms
+   × preserves KILL escalation when real helper launch latency approaches the TERM boundary 7853ms
+     → spawnSync /private/tmp/agora-task123-validation-MtMl7a/control ETIMEDOUT
+   ↓ stops only the registered process birth identity and escalates ignored TERM
+   ↓ caps retained output without treating a successful exit as trusted completion
+   ↓ closes inherited pipes within the tail deadline while exposing incomplete output
+   ↓ finishes a TERM-responsive registered process without sending KILL
+   ↓ returns needsAttention for a mismatched registered birth without sending a signal
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase12/phase12-3-command-stop.test.ts > preserves KILL escalation when real helper launch latency approaches the TERM boundary
+Error: spawnSync /private/tmp/agora-task123-validation-MtMl7a/control ETIMEDOUT
+ ❯ invoke packages/runtime/sandbox/src/local-command-stop.ts:22:5
+     20|   if (process.platform !== 'darwin') throw new Error('sandbox_unavaila…
+     21|   return JSON.parse(
+     22|     execFileSync(helper, args, {
+       |     ^
+     23|       encoding: 'utf8',
+     24|       timeout: Math.max(1, Math.min(250, Math.floor(timeout))),
+ ❯ captureLocalProcess packages/runtime/sandbox/src/local-command-stop.ts:46:18
+ ❯ probeLocalCommandStop tests/integration/phase12/local-command-stop-fixture.ts:169:16
+ ❯ tests/integration/phase12/phase12-3-command-stop.test.ts:6:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 skipped (6)
+   Start at  23:00:55
+   Duration  8.01s (transform 38ms, setup 0ms, collect 39ms, tests 7.85s, environment 0ms, prepare 35ms)
+

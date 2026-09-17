@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/logansu/Documents/Dev/Agora
+
+ ✓ apps/web/test/intent.test.ts (46 tests) 5ms
+ ✓ packages/core/domain/test/workspace-control.test.ts (22 tests) 3ms
+
+ Test Files  2 passed (2)
+      Tests  68 passed (68)
+   Start at  14:49:52
+   Duration  310ms (transform 79ms, setup 0ms, collect 103ms, tests 8ms, environment 0ms, prepare 48ms)
+
