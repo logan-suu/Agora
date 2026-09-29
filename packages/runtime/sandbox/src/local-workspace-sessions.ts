@@ -1,15 +1,29 @@
 /** Trusted worker capability lifetime. No global scheduler, role routing or
  * Harness loop is implemented here: the runtime supplies a live lease closure. */
-import type { WorkspaceCall, WorkspaceVersionV1 } from '@agora/core-domain';
+
+import type { AppState, WorkspaceCall, WorkspaceVersionV1, WorktreeRef } from '@agora/core-domain';
 import {
   currentApprovedReviewId,
+  currentCompletionEvidence,
   currentLocalCompletionEvidence,
+  deliveryReaderAssignment,
+  deliveryRepairAssignment,
   deriveCompletionResolution,
+  isReviewBinding,
+  isWorkspaceVersionV1,
+  isWorktreeRef,
+  validationReceipt,
 } from '@agora/core-domain';
 import type { LocalBindingCoordinator } from './local-binding-coordinator';
+import { readCompletedWorktree } from './local-completed-worktree';
 import type { LocalControlObjects } from './local-control-objects';
+import type { LocalDeliveryCandidates } from './local-delivery-candidates';
+import type { LocalDeliveryRepairs } from './local-delivery-repairs';
 import { qualifyLocalExecution } from './local-execution-probe';
+import { localFileArtifactKey, parseLocalFileArtifact } from './local-file-artifact';
 import { type LocalFixedInput, LocalFixedInputs } from './local-fixed-inputs';
+import { commitLocalGitWorktree } from './local-git-commit';
+import type { LocalGitWorkspaceOptions } from './local-git-workspaces';
 import type { LocalRegistryOwner } from './local-registry-file';
 import {
   isLocalBindingOperation,
@@ -25,6 +39,7 @@ import { LocalWorkspaceCommands } from './local-workspace-commands';
 import { LocalWorkspaceFiles } from './local-workspace-files';
 import { serializeWorkspaceOperation } from './local-workspace-operation';
 import { bindLocalWorkspaceTools } from './local-workspace-tools';
+import type { WorkspaceCommandRequest } from './workspace-port';
 import type {
   WorkspaceControlSession,
   WorkspaceFileArtifact,
@@ -43,6 +58,7 @@ type Options = {
   versions: LocalVersionStore;
   filesHelper: string;
   tools?: LocalCommandTools;
+  gitOptions?: LocalGitWorkspaceOptions;
   verifyGrant(scope: Scope, grantId: string): Promise<void>;
   /** Composition-owned selection of the already confirmed grant. */
   grantForAssignment(admission: WorkspaceWorkerAdmission): Promise<string>;
@@ -50,6 +66,11 @@ type Options = {
   versionForAssignment?(
     admission: WorkspaceWorkerAdmission,
   ): Promise<WorkspaceVersionV1 | undefined>;
+  /** Host-owned private proof for each linked REVIEWER read admission. */
+  verifyReviewCandidate?(state: AppState, workerId: string): Promise<WorkspaceVersionV1>;
+  deliveryCandidates?: Pick<LocalDeliveryCandidates, 'validationBinding'>;
+  deliveryRepairs?: Pick<LocalDeliveryRepairs, 'workspaceBinding' | 'validationBinding'>;
+  verifyRepairSource?(state: AppState, workerId: string): Promise<void>;
 };
 type Active = {
   admission: WorkspaceWorkerAdmission;
@@ -106,6 +127,12 @@ export class LocalWorkspaceSessions
         if (!service) throw Error('workspace_claim_closure_unavailable');
         return service.proveClaimClosed(claim);
       },
+      options.gitOptions,
+      options.verifyReviewCandidate,
+      options.objects,
+      options.deliveryCandidates,
+      options.deliveryRepairs,
+      options.verifyRepairSource,
     );
     const files = new LocalWorkspaceFiles(authority, options.objects, options.filesHelper);
     const writer = await LocalWorkspaceApply.open(
@@ -134,7 +161,27 @@ export class LocalWorkspaceSessions
     if (!this.commands) throw Error('workspace_command_unavailable');
     return this.commands.verifyCommand(scope, receiptId);
   }
+  /** Read-only proof for a retained same-task writer claim. This does not
+   * release the claim or authorize a successor/session to execute. */
+  async verifyClosedClaim(scope: Scope, claim: LocalClaimRecord): Promise<string> {
+    if (
+      claim.projectId !== scope.projectId ||
+      claim.taskId !== scope.taskId ||
+      claim.status !== 'active' ||
+      claim.kind !== undefined
+    )
+      throw Error('workspace_claim_closure_unavailable');
+    const snapshot = await this.options.control.snapshot();
+    const matches = snapshot.claims.filter((entry) => entry.claimId === claim.claimId);
+    if (matches.length !== 1 || localRecordHash(matches[0]) !== localRecordHash(claim))
+      throw Error('workspace_claim_closure_invalid');
+    const proof = await this.proveClaimClosed(claim);
+    if (localRecordHash(await this.options.control.snapshot()) !== localRecordHash(snapshot))
+      throw Error('workspace_claim_closure_invalid');
+    return proof;
+  }
   private async proveClaimClosed(claim: LocalClaimRecord): Promise<string> {
+    if (claim.kind !== undefined) throw Error('workspace_claim_closure_unavailable');
     if (this.active.has(key(claim))) throw Error('workspace_busy');
     const state = await this.options.control.assertClosed(claim);
     const worker = state.workers.find((w) => w.workerId === claim.workerId);
@@ -174,12 +221,67 @@ export class LocalWorkspaceSessions
     if (matches.length !== 1) throw Error('workspace_claim_closure_unavailable');
     return matches[0] as string;
   }
+  readCompletedWorktree(scope: Scope & { workerId: string }) {
+    return readCompletedWorktree(scope, {
+      ...this.options,
+      verifyClosure: (claim) => this.proveClaimClosed(claim),
+    });
+  }
   verifyCurrentVersion(scope: Scope & { workspaceId: string }, version: WorkspaceVersionV1) {
     return this.authority.verifyCurrentVersion(scope, version);
   }
+  private completionBinding(
+    state: AppState,
+    git: boolean,
+  ): {
+    validationReceiptId: string;
+    sourceWorkspaceId: string;
+    workspaceVersion: WorkspaceVersionV1;
+    controlFingerprint: string;
+    roundId?: string;
+  } {
+    if (!git) return currentLocalCompletionEvidence(state);
+    const evidence = currentCompletionEvidence(state);
+    const version = state.testResults?.workspaceVersion;
+    if (
+      !state.localExecution?.git ||
+      !isReviewBinding(evidence) ||
+      !isWorkspaceVersionV1(version) ||
+      version.kind !== 'git' ||
+      version.commit !== evidence.commit
+    )
+      throw Error('local_git_completion_evidence_changed');
+    const receipt = validationReceipt(state, evidence.validationReceiptId);
+    const assignment = state.localExecution.bindings.find((b) => b.workerId === receipt.workerId);
+    const workspace = state.localExecution.workspaces.find(
+      (w) => w.workspaceId === assignment?.workspaceId,
+    );
+    if (workspace?.mode !== 'linked-worktree' || workspace.purpose !== 'validation')
+      throw Error('local_git_completion_evidence_changed');
+    return {
+      validationReceiptId: evidence.validationReceiptId,
+      sourceWorkspaceId: workspace.workspaceId,
+      workspaceVersion: structuredClone(version),
+      controlFingerprint: evidence.controlFingerprint,
+    };
+  }
   async archiveCompletion(scope: Scope): Promise<WorkspaceFileArtifact> {
+    return this.archiveFixedCompletion(scope);
+  }
+  /** Host-only companion; the verifier must read the private native command and
+   * exact accepted Git proof. This is never exposed as a model or HTTP argument. */
+  async archiveGitCompletion(
+    scope: Scope,
+    verify: (state: AppState) => Promise<WorkspaceVersionV1>,
+  ): Promise<WorkspaceFileArtifact> {
+    return this.archiveFixedCompletion(scope, verify);
+  }
+  private async archiveFixedCompletion(
+    scope: Scope,
+    verifyGit?: (state: AppState) => Promise<WorkspaceVersionV1>,
+  ): Promise<WorkspaceFileArtifact> {
     const state = await this.options.control.assertClosed(scope);
-    const binding = currentLocalCompletionEvidence(state);
+    const binding = this.completionBinding(state, verifyGit !== undefined);
     const approval = deriveCompletionResolution(state, currentApprovedReviewId(state));
     if (
       state.phase !== 'done' ||
@@ -195,10 +297,29 @@ export class LocalWorkspaceSessions
       (w) => w.workspaceId === binding.sourceWorkspaceId,
     );
     if (!workspace) throw Error('workspace_assignment_mismatch');
-    const qualified = await this.verifyCurrentVersion(
-      { ...scope, workspaceId: workspace.workspaceId },
-      binding.workspaceVersion,
-    );
+    const qualify = async () => {
+      if (!verifyGit)
+        return this.verifyCurrentVersion(
+          { ...scope, workspaceId: workspace.workspaceId },
+          binding.workspaceVersion,
+        );
+      const verified = await verifyGit(state);
+      if (localRecordHash(verified) !== localRecordHash(binding.workspaceVersion))
+        throw Error('local_git_completion_evidence_changed');
+      await this.options.verifyGrant(scope, workspace.grantId);
+      const snapshot = await this.options.control.snapshot();
+      const grant = snapshot.grants.find(
+        (g) => g.grantId === workspace.grantId && g.projectId === scope.projectId,
+      );
+      if (
+        grant?.status !== 'active' ||
+        grant.rootId !== workspace.rootId ||
+        localRecordHash(await this.options.control.assertClosed(scope)) !== localRecordHash(state)
+      )
+        throw Error('local_git_completion_evidence_changed');
+      return { policyHash: grant.policyHash };
+    };
+    const qualified = await qualify();
     const versionScope = { ...scope, rootId: workspace.rootId, policyHash: qualified.policyHash };
     const identity = {
       schemaVersion: 'workspace-file-artifact-v1' as const,
@@ -207,8 +328,11 @@ export class LocalWorkspaceSessions
       validationReceiptId: binding.validationReceiptId,
       approvalActionId: approval.actionId,
       workspaceVersion: binding.workspaceVersion,
+      ...(binding.roundId === undefined
+        ? {}
+        : { roundId: binding.roundId, reviewId: currentApprovedReviewId(state) }),
     };
-    const key = localRecordHash({ kind: 'task-file-artifact', ...scope });
+    const key = localFileArtifactKey(identity);
     const inputs = await LocalFixedInputs.open(
       this.options.owner,
       this.options.objects,
@@ -219,7 +343,8 @@ export class LocalWorkspaceSessions
       const current = await this.options.control.assertClosed(scope);
       return (
         current.phase === 'done' &&
-        localRecordHash(currentLocalCompletionEvidence(current)) === localRecordHash(binding) &&
+        localRecordHash(this.completionBinding(current, verifyGit !== undefined)) ===
+          localRecordHash(binding) &&
         localRecordHash(deriveCompletionResolution(current, currentApprovedReviewId(current))) ===
           localRecordHash(approval)
       );
@@ -227,7 +352,7 @@ export class LocalWorkspaceSessions
     const previous = await this.options.objects.getReference(key);
     let artifact: WorkspaceFileArtifact;
     if (previous) {
-      artifact = (await this.options.objects.get(previous)) as WorkspaceFileArtifact;
+      artifact = parseLocalFileArtifact(await this.options.objects.get(previous), key);
       const { receiptId, path, fixedInputHash, ...stored } = artifact;
       if (receiptId !== `artifact:${key}` || localRecordHash(stored) !== localRecordHash(identity))
         throw Error('local_artifact_conflict');
@@ -249,16 +374,22 @@ export class LocalWorkspaceSessions
       };
       await this.options.objects.bindReference(key, await this.options.objects.put(artifact));
     }
-    await this.verifyCurrentVersion(
-      { ...scope, workspaceId: workspace.workspaceId },
-      binding.workspaceVersion,
-    );
+    await qualify();
     if (!(await check())) throw Error('local_completion_evidence_changed');
     return artifact;
   }
   async releaseCompleted(scope: Scope): Promise<void> {
     await this.recoverCompletion(scope);
-    const artifact = await this.archiveCompletion(scope);
+    await this.releaseArtifact(scope, await this.archiveCompletion(scope));
+  }
+  async releaseGitCompleted(
+    scope: Scope,
+    verify: (state: AppState) => Promise<WorkspaceVersionV1>,
+  ): Promise<void> {
+    await this.recoverCompletion(scope);
+    await this.releaseArtifact(scope, await this.archiveGitCompletion(scope, verify));
+  }
+  private async releaseArtifact(scope: Scope, artifact: WorkspaceFileArtifact): Promise<void> {
     const actionId = `release:${localRecordHash({ scope, artifact: artifact.receiptId })}`;
     const snapshot = await this.options.control.snapshot();
     const previous = snapshot.operations.find((o) => o.actionId === actionId);
@@ -298,22 +429,34 @@ export class LocalWorkspaceSessions
         roots: snapshot.roots,
         grants: snapshot.grants,
         workspaces: snapshot.workspaces,
+        linkedRoots: snapshot.linkedRoots ?? [],
         claims,
       },
     });
   }
   async recoverCompletion(scope: Scope): Promise<void> {
-    const key = localRecordHash({ kind: 'task-file-artifact', ...scope });
-    const artifactHash = await this.options.objects.getReference(key);
-    if (!artifactHash) return;
-    const artifact = (await this.options.objects.get(artifactHash)) as WorkspaceFileArtifact;
-    if (
-      artifact.schemaVersion !== 'workspace-file-artifact-v1' ||
-      artifact.projectId !== scope.projectId ||
-      artifact.taskId !== scope.taskId ||
-      artifact.receiptId !== `artifact:${key}`
-    )
-      throw Error('local_artifact_conflict');
+    const legacyKey = localFileArtifactKey(scope);
+    for (const ref of await this.options.objects.references()) {
+      const value = (await this.options.objects.get(
+        ref.valueHash,
+      )) as Partial<WorkspaceFileArtifact>;
+      if (
+        ref.key !== legacyKey &&
+        !(
+          value?.schemaVersion === 'workspace-file-artifact-v1' &&
+          value.projectId === scope.projectId &&
+          value.taskId === scope.taskId
+        )
+      )
+        continue;
+      const artifact = parseLocalFileArtifact(value, ref.key);
+      await this.recoverArtifactRelease(scope, artifact);
+    }
+  }
+  private async recoverArtifactRelease(
+    scope: Scope,
+    artifact: WorkspaceFileArtifact,
+  ): Promise<void> {
     const actionId = `release:${localRecordHash({ scope, artifact: artifact.receiptId })}`;
     const previous = (await this.options.control.snapshot()).operations.find(
       (o) => o.actionId === actionId,
@@ -416,7 +559,7 @@ export class LocalWorkspaceSessions
     const coding = admission.role === 'CODER';
     if (!coding && !['ARCHITECT', 'TESTER', 'REVIEWER'].includes(admission.role))
       throw Error('workspace_worker_role_unavailable');
-    if (coding && admission.subtaskId === undefined) throw Error('workspace_assignment_mismatch');
+
     const identity = key(admission);
     if (this.active.has(identity)) throw Error('workspace_worker_already_active');
     const active: Active = { admission, closing: false, closed: false };
@@ -424,6 +567,12 @@ export class LocalWorkspaceSessions
     try {
       const state = await control.assertClosed(admission);
       const worker = state.workers.find((w) => w.workerId === admission.workerId);
+      if (
+        coding &&
+        admission.subtaskId === undefined &&
+        !deliveryRepairAssignment(state, admission.workerId)
+      )
+        throw Error('workspace_assignment_mismatch');
       if (
         !worker ||
         worker.role !== admission.role ||
@@ -449,7 +598,17 @@ export class LocalWorkspaceSessions
         (w) => w.workspaceId === existing?.workspaceId,
       );
       if (!existing) {
+        const delivery = deliveryReaderAssignment(state, admission.workerId);
+        const deliveryReader = delivery !== undefined && delivery.role === admission.role;
+        if (
+          state.localExecution?.git &&
+          ['CODER', 'TESTER', 'REVIEWER'].includes(admission.role) &&
+          !deliveryReader
+        )
+          throw Error('workspace_assignment_mismatch');
         const selected = await this.options.versionForAssignment?.(admission);
+        if (deliveryReader && selected === undefined)
+          throw Error('delivery_candidate_version_required');
         if (admission.role === 'REVIEWER' && selected === undefined)
           throw Error('workspace_review_version_required');
         const version =
@@ -490,10 +649,25 @@ export class LocalWorkspaceSessions
         !workspace ||
         workspace.grantId !== grantId ||
         workspace.rootId !== root.rootId ||
-        workspace.mode !== 'direct' ||
+        (workspace.mode === 'linked-worktree' &&
+          (!this.options.gitOptions ||
+            !['CODER', 'TESTER', 'REVIEWER'].includes(admission.role))) ||
         workspace.purpose !== (coding ? 'coding' : 'validation')
       )
         throw Error('workspace_assignment_mismatch');
+      if (workspace.mode === 'linked-worktree' && admission.role === 'REVIEWER') {
+        const selected = await this.options.versionForAssignment?.(admission);
+        if (
+          !this.options.verifyReviewCandidate ||
+          selected?.kind !== 'git' ||
+          !isWorktreeRef(worker.worktree) ||
+          selected.commit !== worker.worktree.headCommit
+        )
+          throw Error('local_git_review_proof_unavailable');
+        const verified = await this.options.verifyReviewCandidate(state, admission.workerId);
+        if (localRecordHash(verified) !== localRecordHash(selected))
+          throw Error('local_git_review_binding_changed');
+      }
       const current = await control.snapshot();
       const claims = current.claims.filter(
         (c) =>
@@ -503,7 +677,9 @@ export class LocalWorkspaceSessions
           c.taskId === admission.taskId &&
           c.status === 'active',
       );
-      if (coding ? claims.length !== 1 || !claims[0] : claims.length !== 0)
+      const writer =
+        coding || (workspace.mode === 'linked-worktree' && admission.role === 'TESTER');
+      if (writer ? claims.length !== 1 || !claims[0] : claims.length !== 0)
         throw Error('authorization_closed');
       const call: WorkspaceCall = {
         projectId: admission.projectId,
@@ -512,7 +688,7 @@ export class LocalWorkspaceSessions
         workspaceId: workspace.workspaceId,
         actionId: `session:${localRecordHash({ identity, sessionId: admission.sessionId })}`,
         grantRevision: grant.revision,
-        writerEpoch: coding ? (claims[0]?.writerEpoch as number) : 0,
+        writerEpoch: writer ? (claims[0]?.writerEpoch as number) : 0,
       };
       active.call = call;
       await this.authority.assertCall(call, 'read');
@@ -531,7 +707,7 @@ export class LocalWorkspaceSessions
           canonicalSourceRef: admitted.sourceReceiptId,
           quiescent: true,
           assurance: 'bounded',
-          claimRetained: coding,
+          claimRetained: writer,
         };
         const ref = localRecordHash({
           kind: 'worker-boundary',
@@ -553,11 +729,149 @@ export class LocalWorkspaceSessions
         writer: this.writer,
         ...(this.commands ? { commands: this.commands } : {}),
       });
+      let completing: Promise<WorktreeRef> | undefined;
+      const completeWorktree =
+        workspace.mode !== 'linked-worktree' || admission.role === 'REVIEWER'
+          ? undefined
+          : () => {
+              if (active.closed || active.closing)
+                return Promise.reject(Error('workspace_worker_capability_closed'));
+              admission.assertLease();
+              completing ??= serializeWorkspaceOperation(call, async () => {
+                const admitted = await this.authority.assertCall(call, 'edit');
+                await this.writer.assertLifecycleQuiescent(call);
+                const snapshot = await control.snapshot(),
+                  state = await control.assertClosed(call);
+                const worker = state.workers.find((w) => w.workerId === call.workerId);
+                const record = snapshot.linkedRoots?.find(
+                  (r) => r.workspaceId === call.workspaceId,
+                );
+                const sourceRoot = snapshot.roots.find(
+                  (r) => r.rootId === admitted.workspace.rootId && r.projectId === call.projectId,
+                );
+                const git = this.options.gitOptions && structuredClone(this.options.gitOptions);
+                if (
+                  !git ||
+                  !record ||
+                  !sourceRoot ||
+                  !worker ||
+                  !isWorktreeRef(worker.worktree) ||
+                  admitted.workspace.mode !== 'linked-worktree'
+                )
+                  throw Error('workspace_assignment_mismatch');
+                const currentRef = structuredClone(worker.worktree);
+                const authorize = async () => {
+                  admission.assertLease();
+                  await this.options.verifyGrant(call, admitted.grant.grantId);
+                  const current = await control.assertClosed(call);
+                  if (
+                    (await control.snapshot()).revision !== snapshot.revision ||
+                    localRecordHash(current.localExecution) !==
+                      localRecordHash(state.localExecution) ||
+                    localRecordHash(
+                      current.workers.find((w) => w.workerId === call.workerId) ?? null,
+                    ) !== localRecordHash(worker)
+                  )
+                    throw Error('workspace_assignment_mismatch');
+                  admission.assertLease();
+                  return true;
+                };
+                const scope = {
+                  projectId: call.projectId,
+                  taskId: call.taskId,
+                  rootId: admitted.workspace.rootId,
+                  policyHash: admitted.grant.policyHash,
+                };
+                const version = await versions.capture(scope, admitted.binding, authorize);
+                const manifest = await versions.read(version, scope);
+                const files: { path: string; content: Buffer; executable: boolean }[] = [];
+                for (const file of manifest.files)
+                  files.push({
+                    path: file.path,
+                    content: await objects.getBytes(file.contentHash),
+                    executable: file.version.executable,
+                  });
+                const input = {
+                  schemaVersion: 'worker-git-completion-v1',
+                  ...call,
+                  sessionId: admission.sessionId,
+                  version,
+                  worktree: currentRef,
+                  sourceReceiptId: admitted.sourceReceiptId,
+                  git,
+                };
+                const key = localRecordHash({
+                  kind: 'worker-git-completion',
+                  ...call,
+                  sessionId: admission.sessionId,
+                });
+                await objects.bindReference(key, await objects.put(input));
+                await versions.verify(version, scope, admitted.binding, authorize);
+                const receipt = await commitLocalGitWorktree({
+                  ...git,
+                  projectId: call.projectId,
+                  taskId: call.taskId,
+                  root: sourceRoot.path,
+                  actionId: `worker-commit:${key}`,
+                  workspaceId: call.workspaceId,
+                  creationActionId: record.creation.actionId,
+                  expectedHead: currentRef.headCommit ?? currentRef.baseCommit,
+                  stagingIdentity: record.staging.identity,
+                  files,
+                  directories: manifest.directories.map((d) => d.path).filter(Boolean),
+                  authorize,
+                });
+                await versions.verify(version, scope, admitted.binding, authorize);
+                const worktree = { ...currentRef, headCommit: receipt.commit };
+                await objects.bindReference(
+                  localRecordHash({ key, stage: 'completed' }),
+                  await objects.put({ inputHash: localRecordHash(input), receipt, worktree }),
+                );
+                await authorize();
+                return worktree;
+              });
+              return completing.then((ref) => structuredClone(ref));
+            };
       let closing: Promise<void> | undefined;
       return {
         sessionId: admission.sessionId,
         workspace: structuredClone(workspace),
-        tools,
+        tools: {
+          ...tools,
+          apply: (...args) => {
+            if (completing) return Promise.reject(Error('workspace_worker_writes_closed'));
+            return tools.apply(...args);
+          },
+          run: (action, request) => {
+            if (completing && request.toolId !== 'node')
+              return Promise.reject(Error('workspace_worker_writes_closed'));
+            return tools.run(action, request);
+          },
+        },
+        ...(completeWorktree ? { completeWorktree } : {}),
+        ...(workspace.mode === 'linked-worktree' &&
+        workspace.purpose === 'validation' &&
+        admission.role === 'TESTER'
+          ? {
+              inspectCommittedGit: async (actionId: string) => {
+                if (active.closed || active.closing || !completing)
+                  throw Error('workspace_validation_commit_required');
+                admission.assertLease();
+                await completing;
+                const operation = { ...call, actionId };
+                return serializeWorkspaceOperation(operation, () =>
+                  this.authority.captureCommandGitVersion(operation, objects),
+                );
+              },
+              runFixedGitValidation: async (actionId: string, request: WorkspaceCommandRequest) => {
+                if (active.closed || active.closing || !this.commands || !completing)
+                  throw Error('workspace_validation_commit_required');
+                admission.assertLease();
+                await completing;
+                return this.commands.runFixedGitValidation({ ...call, actionId }, request);
+              },
+            }
+          : {}),
         checkpoint: async (reason) => {
           if (active.closed || active.closing) throw Error('workspace_worker_capability_closed');
           await serializeWorkspaceOperation(call, async () => {

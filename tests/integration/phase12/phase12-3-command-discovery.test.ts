@@ -3,6 +3,15 @@ import { expect, it } from 'vitest';
 import { discoverLocalProcessCohort } from '../../../packages/runtime/sandbox/src/local-command-stop';
 import { probeLocalCommandDiscovery } from './local-command-discovery-fixture';
 
+it('does not enroll an already exited snapshot child awaiting parent reaping', async () => {
+  const result = await probeLocalCommandDiscovery('zombie');
+  expect(result.discovery.observationState).toBe('observed');
+  expect(result.discovery.identities).toHaveLength(1);
+  expect(result.discovery.relations).toEqual([]);
+  expect(result.stop.registeredState).toBe('stopped');
+  expect(result.siblingAlive).toBe(true);
+}, 20_000);
+
 it('discovers a real child and grandchild without enrolling an unrelated sibling', async () => {
   const result = await probeLocalCommandDiscovery('tree');
   expect(result.discovery.observationState).toBe('observed');

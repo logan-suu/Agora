@@ -2,6 +2,9 @@ import type { AppState, Mutation, RoleSpec, WorkerState, WorktreeRef } from '@ag
 import {
   applyMutations,
   assertNoRequirementControlMessages,
+  deliveryReaderAssignment,
+  deliveryRepairAssignment,
+  isWorktreeRef,
   mergeByIdMutation,
 } from '@agora/core-domain';
 import {
@@ -454,7 +457,10 @@ export class WorkerRuntime {
         throw new Error('local_workspace_companion_required');
       if (
         batch.some(
-          (assignment) => assignment.role === 'CODER' && assignment.subtaskId === undefined,
+          (assignment) =>
+            assignment.role === 'CODER' &&
+            assignment.subtaskId === undefined &&
+            deliveryRepairAssignment(state, assignment.workerId) === undefined,
         )
       )
         throw new Error('local_workspace_assignment_required');
@@ -568,9 +574,14 @@ export class WorkerRuntime {
     const spec = this.specOf(assign.role, await this.currentRoster());
     const beforeWorkspace = await join.latest();
     const local = beforeWorkspace.localExecution !== undefined;
-    const resolvedWorktree = local
-      ? undefined
-      : await this.deps.resolveWorktree?.(beforeWorkspace, assign);
+    const linked =
+      beforeWorkspace.localExecution?.git !== undefined &&
+      deliveryReaderAssignment(beforeWorkspace, assign.workerId) === undefined &&
+      deliveryRepairAssignment(beforeWorkspace, assign.workerId) === undefined &&
+      ['CODER', 'TESTER', 'REVIEWER'].includes(assign.role);
+    const resolvedWorktree =
+      !local || linked ? await this.deps.resolveWorktree?.(beforeWorkspace, assign) : undefined;
+    if (linked && resolvedWorktree === undefined) throw Error('local_git_resolver_required');
     const running = await join.commit(async (current) => {
       const worker = current.workers.find((entry) => entry.workerId === assign.workerId);
       if (worker === undefined) throw new Error(`worker "${assign.workerId}" was not registered`);
@@ -601,7 +612,8 @@ export class WorkerRuntime {
         }),
         ...(resolvedWorktree === undefined ||
         assign.subtaskId === undefined ||
-        (current.parallelExecution !== undefined && assign.role !== 'CODER')
+        ((current.parallelExecution !== undefined || current.localExecution?.git !== undefined) &&
+          assign.role !== 'CODER')
           ? []
           : [mergeByIdMutation('subtasks', assign.subtaskId, { worktree: resolvedWorktree })]),
       ]);
@@ -794,6 +806,35 @@ export class WorkerRuntime {
         if (!result.reachedSafeBoundary) throw Error('local_workspace_safe_boundary_required');
         await handle.localSession.checkpoint(result.kind === 'done' ? 'complete' : 'step');
       }
+      if (
+        result.kind === 'done' &&
+        handle.localSession &&
+        'workspace' in handle.localSession &&
+        handle.localSession.workspace.mode === 'linked-worktree' &&
+        ['CODER', 'TESTER'].includes(handle.role)
+      ) {
+        if (!handle.localSession.completeWorktree || !handle.worktree)
+          throw Error('local_git_commit_companion_required');
+        const committed = await handle.localSession.completeWorktree();
+        if (
+          !isWorktreeRef(committed) ||
+          !committed.headCommit ||
+          committed.path !== handle.worktree.path ||
+          committed.branch !== handle.worktree.branch ||
+          committed.baseCommit !== handle.worktree.baseCommit
+        )
+          throw Error('local_git_commit_identity_mismatch');
+        await join.commit(async (canonical) => {
+          this.assertCanonicalHandle(canonical, handle);
+          return this.transitionStep(canonical, handle.role, [
+            mergeByIdMutation('workers', handle.id, { worktree: committed }),
+            ...(handle.role === 'CODER' && handle.subtaskId !== undefined
+              ? [mergeByIdMutation('subtasks', handle.subtaskId, { worktree: committed })]
+              : []),
+          ]);
+        });
+        handle.worktree = committed;
+      }
       const boundaryWorktree =
         result.reachedSafeBoundary &&
         handle.worktree !== undefined &&
@@ -846,9 +887,14 @@ export class WorkerRuntime {
             (mutation) =>
               mutation.op === 'append' &&
               mutation.field === 'messages' &&
-              ['wave_validation', 'workspace_validation'].includes(
-                (mutation.value as { payload?: { kind?: string } })?.payload?.kind ?? '',
-              ),
+              [
+                'wave_validation',
+                'workspace_validation',
+                'workspace_delivery_application',
+                'workspace_delivery_completion',
+                'delivery_repair_dispatch',
+                'workspace_delivery_repair_candidate',
+              ].includes((mutation.value as { payload?: { kind?: string } })?.payload?.kind ?? ''),
           )
         )
           throw new Error('model output cannot author validation receipts');
@@ -889,7 +935,9 @@ export class WorkerRuntime {
             : [mergeByIdMutation('workers', handle.id, { worktree: boundaryWorktree })]),
           ...(boundaryWorktree === undefined ||
           handle.subtaskId === undefined ||
-          (canonical.parallelExecution !== undefined && handle.role !== 'CODER')
+          ((canonical.parallelExecution !== undefined ||
+            canonical.localExecution?.git !== undefined) &&
+            handle.role !== 'CODER')
             ? []
             : [mergeByIdMutation('subtasks', handle.subtaskId, { worktree: boundaryWorktree })]),
         ]);
@@ -1271,7 +1319,8 @@ function assertAssignmentWorktree(
   for (const persisted of [
     worker.worktree,
     assignment.subtaskId === undefined ||
-    (state.parallelExecution !== undefined && assignment.role !== 'CODER')
+    ((state.parallelExecution !== undefined || state.localExecution?.git !== undefined) &&
+      assignment.role !== 'CODER')
       ? undefined
       : state.subtasks.find((entry) => entry.id === assignment.subtaskId)?.worktree,
   ]) {

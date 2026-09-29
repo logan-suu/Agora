@@ -1,6 +1,6 @@
 /** Strict data validation only; registration does not create a live capability. */
 import { createHash } from 'node:crypto';
-import { dirname, isAbsolute, normalize } from 'node:path';
+import { dirname, isAbsolute, join, normalize } from 'node:path';
 import {
   assertLocalExecutionTransition,
   assertWorkspaceRefsTransition,
@@ -12,6 +12,10 @@ import {
   parseWorkspaceControl,
   type WorkspaceRefV1,
 } from '@agora/core-domain';
+import {
+  assertDeliveryTransition,
+  type LocalDeliveryTransition,
+} from './local-delivery-transition';
 
 export interface LocalRootRecord {
   rootId: string;
@@ -24,6 +28,26 @@ export interface LocalRootRecord {
   chain: { path: string; identity: string }[];
   staging: { path: string; identity: string } | null;
   inspectionHash: string;
+}
+/** Physical location of an owned worktree, never a second user grant. */
+export interface LocalLinkedRootRecord {
+  workspaceId: string;
+  projectId: string;
+  taskId: string;
+  rootId: string;
+  grantId: string;
+  path: string;
+  volumeId: string;
+  dev: string;
+  inode: string;
+  chain: { path: string; identity: string }[];
+  staging: { path: string; identity: string };
+  inspectionHash: string;
+  commonDir: { id: string; path: string; identity: string };
+  metadata: { path: string; identity: string };
+  creation: { actionId: string; receiptHash: string };
+  initialization: { actionId: string; receiptHash: string };
+  bindingReceiptId: string;
 }
 export interface LocalGrantRecord {
   grantId: string;
@@ -40,17 +64,36 @@ export interface LocalGrantRecord {
   status: 'active' | 'revoking' | 'revoked';
   revocationActionId: string | null;
 }
-export interface LocalClaimRecord {
+interface LocalClaimIdentity {
   claimId: string;
   projectId: string;
   taskId: string;
   workspaceId: string;
-  workerId: string;
   writerEpoch: number;
   createdActionId: string;
   status: 'active' | 'draining' | 'quarantined' | 'released';
   closureReceiptId: string | null;
 }
+export type LocalWorkerClaimRecord = LocalClaimIdentity & { workerId: string; kind?: never };
+export type LocalIntegrationClaimRecord = LocalClaimIdentity & {
+  kind: 'integration';
+  integrationId: string;
+  waveId: string;
+  planHash: string;
+  grantRevision: number;
+  workerId?: never;
+};
+export type LocalDeliveryClaimRecord = LocalClaimIdentity & {
+  kind: 'delivery';
+  deliveryProposalId: string;
+  inputHash: string;
+  grantRevision: number;
+  workerId?: never;
+};
+export type LocalClaimRecord =
+  | LocalWorkerClaimRecord
+  | LocalIntegrationClaimRecord
+  | LocalDeliveryClaimRecord;
 export interface LocalBindingOperation {
   actionId: string;
   inputHash: string;
@@ -63,6 +106,7 @@ export interface LocalBindingOperation {
   nextLocalExecution: LocalExecutionV1;
   sourceMessageId: string;
   sourceMessage?: Message;
+  deliveryTransition?: LocalDeliveryTransition;
 }
 export interface LocalRootInitializationOperation {
   kind: 'root-initialization';
@@ -99,6 +143,7 @@ export interface LocalRegistryRecords {
   workspaces: WorkspaceRefV1[];
   claims: LocalClaimRecord[];
   operations: LocalRegistryOperation[];
+  linkedRoots?: LocalLinkedRootRecord[];
 }
 function fail(): never {
   throw new Error('invalid_local_registry_records');
@@ -229,6 +274,77 @@ function rootRecord(v: unknown): LocalRootRecord {
     fail();
   return v as LocalRootRecord;
 }
+export function parseLocalLinkedRoot(v: unknown): LocalLinkedRootRecord {
+  json(v);
+  const r = object(v, [
+    'workspaceId',
+    'projectId',
+    'taskId',
+    'rootId',
+    'grantId',
+    'path',
+    'volumeId',
+    'dev',
+    'inode',
+    'chain',
+    'staging',
+    'inspectionHash',
+    'commonDir',
+    'metadata',
+    'creation',
+    'initialization',
+    'bindingReceiptId',
+  ]);
+  if (
+    !['workspaceId', 'projectId', 'taskId', 'rootId', 'grantId', 'bindingReceiptId'].every((k) =>
+      id(r[k]),
+    )
+  )
+    fail();
+  // Reuse the physical root/parent-chain invariants without registering a grant.
+  rootRecord({
+    rootId: r.rootId,
+    projectId: r.projectId,
+    selectionRef: r.workspaceId,
+    path: r.path,
+    volumeId: r.volumeId,
+    dev: r.dev,
+    inode: r.inode,
+    chain: r.chain,
+    staging: r.staging,
+    inspectionHash: r.inspectionHash,
+  });
+  if (
+    r.staging === null ||
+    (r.staging as { path: string }).path !== join(r.path as string, '.agora-operations')
+  )
+    fail();
+  const common = object(r.commonDir, ['id', 'path', 'identity']);
+  const metadata = object(r.metadata, ['path', 'identity']);
+  if (
+    !path(common.path) ||
+    common.path === '/' ||
+    !identity(common.identity) ||
+    common.id !== `common:${localRecordHash({ path: common.path, identity: common.identity })}` ||
+    !path(metadata.path) ||
+    !identity(metadata.identity) ||
+    dirname(metadata.path) !== join(common.path, 'worktrees') ||
+    common.identity.split(':')[0] !== r.dev ||
+    metadata.identity.split(':')[0] !== r.dev ||
+    common.identity === metadata.identity
+  )
+    fail();
+  for (const name of ['creation', 'initialization']) {
+    const proof = object(r[name], ['actionId', 'receiptHash']);
+    if (!id(proof.actionId) || !hash(proof.receiptHash)) fail();
+  }
+  if (
+    (r.creation as { actionId: string }).actionId ===
+    (r.initialization as { actionId: string }).actionId
+  )
+    fail();
+  return structuredClone(v) as LocalLinkedRootRecord;
+}
 function grantRecord(v: unknown): LocalGrantRecord {
   const r = object(v, [
     'grantId',
@@ -272,21 +388,34 @@ function grantRecord(v: unknown): LocalGrantRecord {
   return v as LocalGrantRecord;
 }
 function claimRecord(v: unknown): LocalClaimRecord {
+  const control = v !== null && typeof v === 'object' && Object.hasOwn(v, 'kind');
+  const delivery = control && Reflect.get(v as object, 'kind') === 'delivery';
   const r = object(v, [
     'claimId',
     'projectId',
     'taskId',
     'workspaceId',
-    'workerId',
+    ...(control
+      ? delivery
+        ? ['kind', 'deliveryProposalId', 'inputHash', 'grantRevision']
+        : ['kind', 'integrationId', 'waveId', 'planHash', 'grantRevision']
+      : ['workerId']),
     'writerEpoch',
     'createdActionId',
     'status',
     'closureReceiptId',
   ]);
   if (
-    !['claimId', 'projectId', 'taskId', 'workspaceId', 'workerId', 'createdActionId'].every((k) =>
-      id(r[k]),
-    ) ||
+    !['claimId', 'projectId', 'taskId', 'workspaceId', 'createdActionId'].every((k) => id(r[k])) ||
+    (control
+      ? delivery
+        ? !id(r.deliveryProposalId) || !hash(r.inputHash) || !integer(r.grantRevision)
+        : r.kind !== 'integration' ||
+          !id(r.integrationId) ||
+          !id(r.waveId) ||
+          !hash(r.planHash) ||
+          !integer(r.grantRevision)
+      : !id(r.workerId)) ||
     !integer(r.writerEpoch) ||
     !['active', 'draining', 'quarantined', 'released'].includes(r.status as string) ||
     (r.status === 'released' ? !id(r.closureReceiptId) : r.closureReceiptId !== null)
@@ -352,6 +481,9 @@ function bindingOperationRecord(v: unknown): LocalBindingOperation {
     'nextLocalExecution',
     'sourceMessageId',
     ...(v && typeof v === 'object' && Object.hasOwn(v, 'sourceMessage') ? ['sourceMessage'] : []),
+    ...(v && typeof v === 'object' && Object.hasOwn(v, 'deliveryTransition')
+      ? ['deliveryTransition']
+      : []),
   ]);
   if (
     !['actionId', 'receiptId', 'projectId', 'taskId', 'sourceMessageId'].every((k) => id(r[k])) ||
@@ -373,6 +505,36 @@ function bindingOperationRecord(v: unknown): LocalBindingOperation {
     });
   }
   const ref = r.nextLocalExecution.receipts.find((x) => x.receiptId === r.receiptId);
+  if (Object.hasOwn(r, 'deliveryTransition'))
+    assertDeliveryTransition(
+      r.deliveryTransition,
+      r.nextLocalExecution,
+      r.sourceMessage as Message | undefined,
+    );
+  const delivery = r.deliveryTransition as LocalDeliveryTransition | undefined;
+  if (delivery?.kind === 'delivery-repair-start-v1') {
+    const round = r.nextLocalExecution.delivery?.rounds.at(-1);
+    const workspace = r.nextLocalExecution.workspaces.find(
+      (w) => w.workspaceId === delivery.workspaceId,
+    );
+    if (
+      r.actionId !== delivery.dispatch.msgId ||
+      r.sourceMessageId !== round?.actionId ||
+      r.projectId !== workspace?.projectId ||
+      r.taskId !== workspace?.taskId
+    )
+      fail();
+  }
+  if (delivery?.kind === 'delivery-application-complete-v1') {
+    const receipt = delivery.message.payload;
+    if (
+      receipt.completionActionId !== r.actionId ||
+      receipt.applyActionId !== r.sourceMessageId ||
+      receipt.projectId !== r.projectId ||
+      receipt.taskId !== r.taskId
+    )
+      fail();
+  }
   if (
     !ref ||
     ref.actionId !== r.actionId ||
@@ -444,6 +606,8 @@ function operationRecord(v: unknown): LocalRegistryOperation {
 
 export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
   json(value);
+  const hasLinked =
+    value !== null && typeof value === 'object' && Object.hasOwn(value, 'linkedRoots');
   const r = object(value, [
     'schemaVersion',
     'revision',
@@ -452,6 +616,7 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
     'workspaces',
     'claims',
     'operations',
+    ...(hasLinked ? ['linkedRoots'] : []),
   ]);
   if (
     r.schemaVersion !== 'local-workspaces-v1' ||
@@ -460,6 +625,7 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
   )
     fail();
   const workspaces = r.workspaces;
+  const linkedRoots = hasLinked ? array(r.linkedRoots).map(parseLocalLinkedRoot) : [];
   const roots = array(r.roots).map(rootRecord),
     grants = array(r.grants).map(grantRecord),
     claims = array(r.claims).map(claimRecord),
@@ -472,6 +638,19 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
   unique(operations, (x) => x.actionId);
   unique(operations, (x) => x.receiptId);
   unique(operations, (x) => x.preparedRevision);
+  unique(linkedRoots, (x) => x.workspaceId);
+  unique(linkedRoots, (x) => x.path);
+  unique(linkedRoots, (x) => `${x.dev}:${x.inode}`);
+  unique(linkedRoots, (x) => x.metadata.path);
+  unique(linkedRoots, (x) => x.metadata.identity);
+  unique(
+    linkedRoots.flatMap((x) => [x.creation.actionId, x.initialization.actionId]),
+    (x) => x,
+  );
+  unique(
+    workspaces.filter((w) => w.mode === 'linked-worktree'),
+    (w) => `${w.commonDirId}:${w.branch}`,
+  );
   for (const g of grants)
     if (!roots.some((root) => root.rootId === g.rootId && root.projectId === g.projectId)) fail();
   for (const w of r.workspaces)
@@ -482,6 +661,68 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
       )
     )
       fail();
+  for (const w of workspaces) {
+    const physical = linkedRoots.find((x) => x.workspaceId === w.workspaceId);
+    if (w.mode === 'direct' ? physical !== undefined : physical === undefined) fail();
+  }
+  for (const physical of linkedRoots) {
+    const w = workspaces.find((w) => w.workspaceId === physical.workspaceId);
+    const root = roots.find((root) => root.rootId === physical.rootId);
+    const op = operations.find((o) => o.receiptId === physical.bindingReceiptId);
+    if (
+      w?.mode !== 'linked-worktree' ||
+      !root ||
+      w.projectId !== physical.projectId ||
+      w.taskId !== physical.taskId ||
+      w.rootId !== physical.rootId ||
+      w.grantId !== physical.grantId ||
+      w.commonDirId !== physical.commonDir.id ||
+      root.volumeId !== physical.volumeId ||
+      root.dev !== physical.dev ||
+      !op ||
+      !isLocalBindingOperation(op) ||
+      op.projectId !== physical.projectId ||
+      op.taskId !== physical.taskId ||
+      !op.nextLocalExecution.git?.worktrees.some(
+        (m) =>
+          m.workspaceId === w.workspaceId &&
+          m.path === physical.path &&
+          m.receiptId === physical.bindingReceiptId,
+      )
+    )
+      fail();
+    // A canonical path and inode must tell the same story, including ancestors.
+    const all = [...roots, ...linkedRoots];
+    for (const other of all) {
+      if (other === physical) continue;
+      if (
+        physical.chain.some(
+          (e) => e.identity === `${other.dev}:${other.inode}` || e.path === other.path,
+        ) ||
+        other.chain.some(
+          (e) => e.identity === `${physical.dev}:${physical.inode}` || e.path === physical.path,
+        )
+      )
+        fail();
+    }
+    for (const other of linkedRoots) {
+      if (
+        (other.commonDir.path === physical.commonDir.path ||
+          other.commonDir.identity === physical.commonDir.identity) &&
+        localRecordHash(other.commonDir) !== localRecordHash(physical.commonDir)
+      )
+        fail();
+    }
+    const sourcePath = physical.path;
+    for (const control of [physical.commonDir, physical.metadata])
+      if (
+        control.identity === `${physical.dev}:${physical.inode}` ||
+        control.path === sourcePath ||
+        control.path.startsWith(`${sourcePath}/`) ||
+        sourcePath.startsWith(`${control.path}/`)
+      )
+        fail();
+  }
   for (const c of claims)
     if (
       !workspaces.some(
@@ -489,28 +730,31 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
           w.workspaceId === c.workspaceId &&
           w.projectId === c.projectId &&
           w.taskId === c.taskId &&
-          w.purpose !== 'validation',
+          (c.kind === 'delivery'
+            ? w.purpose === 'delivery' && w.mode === 'direct'
+            : c.kind === 'integration'
+              ? w.purpose === 'integration' && w.mode === 'linked-worktree'
+              : w.purpose !== 'integration' && w.purpose !== 'delivery') &&
+          (w.purpose !== 'validation' || w.mode === 'linked-worktree'),
       )
     )
       fail();
   const occupied = claims.filter((c) => c.status !== 'released');
+  const physicalFor = (claim: LocalClaimRecord) => {
+    const w = workspaces.find((w) => w.workspaceId === claim.workspaceId);
+    return w?.mode === 'linked-worktree'
+      ? linkedRoots.find((r) => r.workspaceId === w.workspaceId)
+      : roots.find((r) => r.rootId === w?.rootId);
+  };
   for (let i = 0; i < occupied.length; i++)
     for (let j = 0; j < i; j++) {
-      const a = roots.find((root) =>
-        workspaces.some(
-          (w) => w.workspaceId === occupied[i]?.workspaceId && w.rootId === root.rootId,
-        ),
-      );
-      const b = roots.find((root) =>
-        workspaces.some(
-          (w) => w.workspaceId === occupied[j]?.workspaceId && w.rootId === root.rootId,
-        ),
-      );
+      const a = physicalFor(occupied[i] as LocalClaimRecord);
+      const b = physicalFor(occupied[j] as LocalClaimRecord);
       if (
         !a ||
         !b ||
-        a.chain.some((e) => e.identity === `${b.dev}:${b.inode}`) ||
-        b.chain.some((e) => e.identity === `${a.dev}:${a.inode}`)
+        a.chain.some((e) => e.identity === `${b.dev}:${b.inode}` || e.path === b.path) ||
+        b.chain.some((e) => e.identity === `${a.dev}:${a.inode}` || e.path === a.path)
       )
         fail();
     }
@@ -546,6 +790,18 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
       fail();
     for (const w of o.nextLocalExecution.workspaces)
       if (!workspaces.some((current) => localRecordHash(w) === localRecordHash(current))) fail();
+    for (const mapping of o.nextLocalExecution.git?.worktrees ?? [])
+      if (
+        !linkedRoots.some(
+          (physical) =>
+            physical.workspaceId === mapping.workspaceId &&
+            physical.projectId === o.projectId &&
+            physical.taskId === o.taskId &&
+            physical.path === mapping.path &&
+            physical.bindingReceiptId === mapping.receiptId,
+        )
+      )
+        fail();
   }
   for (const root of roots)
     if (
@@ -568,6 +824,23 @@ export function assertLocalRegistryTransition(previous: unknown, next: unknown):
     after = parseLocalRegistry(next);
   if (after.revision !== before.revision + 1 || !Number.isSafeInteger(after.revision)) fail();
   assertWorkspaceRefsTransition(before.workspaces, after.workspaces);
+  for (const physical of before.linkedRoots ?? []) {
+    const current = after.linkedRoots?.find((x) => x.workspaceId === physical.workspaceId);
+    if (!current || localRecordHash(current) !== localRecordHash(physical)) fail();
+  }
+  for (const physical of after.linkedRoots ?? []) {
+    if (before.linkedRoots?.some((x) => x.workspaceId === physical.workspaceId)) continue;
+    if (
+      before.workspaces.some((w) => w.workspaceId === physical.workspaceId) ||
+      !after.operations.some(
+        (o) =>
+          o.receiptId === physical.bindingReceiptId &&
+          o.stage === 'prepared' &&
+          o.preparedRevision === after.revision,
+      )
+    )
+      fail();
+  }
   for (const root of after.roots) {
     const old = before.roots.find((r) => r.rootId === root.rootId);
     if (!old) {

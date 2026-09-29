@@ -5,6 +5,7 @@ import {
   assertLocalExecutionState,
   type CoordinationLedgerPayload,
   currentReviewDispatch,
+  deliveryRepairAssignment,
   deriveCompletionFeedback,
   deriveLeaderDirective,
   deriveObjectionResolutions,
@@ -118,6 +119,8 @@ export function projectForAssignment(
     const subtask = state.subtasks.find((entry) => entry.id === assignment.subtaskId);
     if (!binding || !workspace || (assignment.subtaskId !== undefined && !subtask))
       throw Error('local_workspace_assignment_missing');
+    const repair = deliveryRepairAssignment(state, assignment.workerId);
+    if (repair) view.slices.deliveryRepair = structuredClone(repair.source);
     view.slices.localWorkspace = structuredClone(workspace);
     view.slices.assignment = { ...assignment, workspaceId: workspace.workspaceId };
     if ('assignedSubtask' in view.slices)
@@ -462,6 +465,9 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
 }
 
 function branchOrIntegration(state: AppState): unknown {
+  // Local assignment projection supplies its canonical workspace reference below.
+  // Legacy sequential selection cannot represent independent local tester roots.
+  if (state.localExecution !== undefined) return { worktrees: [], integration: null };
   const candidates =
     state.integration === undefined
       ? sequentialWorktreeCandidates(state)

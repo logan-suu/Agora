@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 import {
   type AppState,
@@ -47,6 +48,30 @@ export class JsonTaskStateStore implements TaskStateStore {
   }
 
   async commit(scope: TaskScope, mutations: readonly Mutation[]): Promise<TaskStateCommit> {
+    return this.#commit(scope, mutations);
+  }
+
+  /** Trusted single-instance companion; the frozen TaskStateStore port is unchanged.
+   * Compare and reduce under the same queue that serializes ordinary commits. */
+  async compareAndCommit(
+    scope: TaskScope,
+    expected: AppState,
+    mutations: readonly Mutation[],
+  ): Promise<TaskStateCommit> {
+    this.#validateScope(scope);
+    this.#assertValidState(scope, expected);
+    return this.#commit(
+      structuredClone(scope),
+      structuredClone(mutations),
+      structuredClone(expected),
+    );
+  }
+
+  async #commit(
+    scope: TaskScope,
+    mutations: readonly Mutation[],
+    expected?: AppState,
+  ): Promise<TaskStateCommit> {
     this.#validateScope(scope);
 
     return this.#enqueue(scope, async () => {
@@ -57,6 +82,8 @@ export class JsonTaskStateStore implements TaskStateStore {
         );
       }
 
+      if (expected !== undefined && !isDeepStrictEqual(current, expected))
+        throw new Error('task_state_comparison_conflict');
       const state = applyMutations(current, mutations);
       const changed = JSON.stringify(state) !== JSON.stringify(current);
       if (changed) await this.#writeSnapshot(scope, state);

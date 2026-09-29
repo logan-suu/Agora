@@ -31,3 +31,37 @@ it('maps read-only local roles without granting source writes or generic shell a
     );
   }
 });
+
+it('grants linked TESTER only its existing write whitelist and describes its private workspace', async () => {
+  const { localWorkspaceRole } = await import('../src/local-runtime-contract');
+  const tester = DEFAULT_ROSTER.find((entry) => entry.role === 'TESTER');
+  const coder = DEFAULT_ROSTER.find((entry) => entry.role === 'CODER');
+  if (!tester || !coder) throw Error('missing role');
+  const mapped = localWorkspaceRole(tester, 'linked-worktree');
+  expect(mapped.tools).toEqual(['workspace.read', 'workspace.apply', 'workspace.run']);
+  expect(mapped.systemPrompt).toContain('independent validation worktree');
+  expect(mapped.systemPrompt).toContain('readReceiptId');
+  expect(mapped.systemPrompt).not.toContain('localWorkspace is an immutable snapshot');
+  expect(localWorkspaceRole({ ...tester, tools: ['fs.read'] }, 'linked-worktree').tools).toEqual([
+    'workspace.read',
+  ]);
+  expect(localWorkspaceRole({ ...tester, tools: [] }, 'linked-worktree').tools).toEqual([]);
+  expect(localWorkspaceRole(coder, 'linked-worktree').systemPrompt).toContain(
+    'private linked worktree',
+  );
+  expect(localWorkspaceRole(tester).tools).not.toContain('workspace.apply');
+});
+
+it('keeps a linked REVIEWER on the bound Git candidate with read-only tools', async () => {
+  const { localWorkspaceRole } = await import('../src/local-runtime-contract');
+  const reviewer = DEFAULT_ROSTER.find((entry) => entry.role === 'REVIEWER');
+  if (!reviewer) throw Error('missing reviewer');
+  const mapped = localWorkspaceRole(reviewer, 'linked-worktree');
+  expect(mapped.tools).toEqual(['workspace.read']);
+  expect(mapped.systemPrompt).toContain('validated Git candidate');
+  expect(mapped.systemPrompt).toContain('Leader');
+  expect(
+    localWorkspaceRole({ ...reviewer, tools: ['fs.write', 'sandbox.run'] }, 'linked-worktree')
+      .tools,
+  ).toEqual([]);
+});

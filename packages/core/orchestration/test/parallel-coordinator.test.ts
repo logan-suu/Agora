@@ -2,8 +2,15 @@ import {
   type AppState,
   appendMutation,
   applyMutations,
+  buildCompletionResolution,
   createInitialAppState,
+  currentCompletionEvidence,
+  currentLocalDeliveryCandidate,
+  deriveCompletionFeedback,
+  deriveCompletionResolution,
   type Integration,
+  isWorktreeRef,
+  type LocalExecutionV1,
   mergeByIdMutation,
   setMutation,
   validationSourceReceipt,
@@ -669,4 +676,241 @@ it('prioritizes a blocking REVIEWER objection over advisory continuation', () =>
     kind: 'human_gate',
     request: { reason: 'blocking_objection:blocking-review' },
   });
+});
+
+// Pure completion routing evidence; native file/Git proofs remain host-owned.
+it('selects accepted Git completion evidence for native linked tasks without confusing file rounds', () => {
+  let state = awaitingReview();
+  const expected = currentCompletionEvidence(state);
+  const base = required(state.parallelExecution).initialBase;
+  const local: LocalExecutionV1 = {
+    schemaVersion: 'local-execution-v1',
+    rootIds: ['native-root'],
+    bindings: [],
+    receipts: [
+      {
+        receiptId: 'binding:native',
+        actionId: 'native',
+        inputHash: 'a'.repeat(64),
+        registryRevision: 1,
+      },
+    ],
+    workspaces: [],
+    git: { version: 1, initialWorkspaceId: 'workspace-0', worktrees: [] },
+    delivery: {
+      schemaVersion: 'local-delivery-v1',
+      goal: 'apply_to_directory',
+      rootId: 'native-root',
+      currentRoundId: null,
+      rounds: [],
+    },
+  };
+  const register = (ref: WorktreeRef, purpose: 'coding' | 'validation' | 'integration') => {
+    const git = required(local.git);
+    const previous = git.worktrees.find((w) => w.path === ref.path);
+    if (previous) return previous.workspaceId;
+    const workspaceId = `workspace-${local.workspaces.length}`;
+    local.workspaces.push({
+      schemaVersion: 'workspace-v1',
+      projectId: state.projectId,
+      taskId: state.taskId,
+      workspaceId,
+      rootId: 'native-root',
+      grantId: 'grant',
+      purpose,
+      mode: 'linked-worktree',
+      commonDirId: 'common',
+      branch: ref.branch,
+      baseCommit: ref.baseCommit,
+    });
+    git.worktrees.push({ workspaceId, path: ref.path, receiptId: 'binding:native' });
+    return workspaceId;
+  };
+  register({ path: '/native-base', branch: base.branch, baseCommit: base.commit }, 'integration');
+  register(required(state.integration).integrationWorktree, 'integration');
+  for (const worker of state.workers) {
+    if (!isWorktreeRef(worker.worktree)) continue;
+    const workspaceId = register(
+      worker.worktree,
+      worker.role === 'CODER' ? 'coding' : 'validation',
+    );
+    local.bindings.push({
+      workerId: worker.workerId,
+      workspaceId,
+      receiptId: 'binding:native',
+      ...(worker.subtaskId ? { subtaskId: worker.subtaskId } : {}),
+    });
+  }
+  state = applyMutations(state, [
+    setMutation('testResults', {
+      ...required(state.testResults),
+      workspaceVersion: {
+        kind: 'git',
+        commit: 'd'.repeat(40),
+        manifestId: 'manifest:native',
+        manifestHash: 'a'.repeat(64),
+      },
+    }),
+    setMutation('localExecution', local),
+  ]);
+  expect(currentCompletionEvidence(state)).toEqual(expected);
+  expect(currentLocalDeliveryCandidate(state)).toEqual({
+    evidence: expected,
+    version: state.testResults?.workspaceVersion,
+    roundId: null,
+  });
+  const missingVersion = structuredClone(state);
+  delete required(missingVersion.testResults).workspaceVersion;
+  expect(() => currentLocalDeliveryCandidate(missingVersion)).toThrow();
+  const wrongCommit = structuredClone(state);
+  const wrongVersion = required(required(wrongCommit.testResults).workspaceVersion);
+  if (wrongVersion.kind !== 'git') throw Error('expected Git fixture');
+  wrongVersion.commit = 'c'.repeat(40);
+  expect(() => currentLocalDeliveryCandidate(wrongCommit)).toThrow();
+  state = applyMutations(state, [
+    appendMutation('reviewComments', {
+      id: 'native-approval',
+      kind: 'verdict',
+      verdict: 'approved',
+    }),
+  ]);
+  expect(
+    buildCompletionResolution(state, {
+      actionId: 'native-approve',
+      reviewId: 'native-approval',
+      option: 'approve_completion',
+      ts: 200,
+    }).action.reviewId,
+  ).toBe('native-approval');
+  const built = buildCompletionResolution(state, {
+    actionId: 'native-approve',
+    reviewId: 'native-approval',
+    option: 'approve_completion',
+    ts: 200,
+  });
+  const historical = structuredClone(state);
+  historical.decisionLedger.push(built.decision);
+  historical.messages.push(
+    {
+      msgId: 'native-approve',
+      fromRole: 'leader',
+      channelId: 'main',
+      type: 'chat',
+      ts: 200,
+      display: 'Approve',
+      payload: {
+        kind: 'leader_intent',
+        action: { status: 'applied' },
+        intent: {
+          kind: 'resolve_human_gate',
+          gateId: 'human-gate:native-approval',
+          option: 'approve_completion',
+        },
+        completionResolution: built.action,
+        resolution: {
+          gateId: 'human-gate:native-approval',
+          option: 'approve_completion',
+          safePointRefs: [],
+          resumeSessionId: 'human-gate-resume:native-approve',
+          completionEvidence: expected,
+        },
+      },
+    },
+    {
+      msgId: 'human-gate-resumed:native-approve',
+      fromRole: 'COORDINATOR',
+      channelId: 'main',
+      type: 'announce',
+      ts: 201,
+      display: 'Resumed',
+      payload: {
+        kind: 'human_gate_resumed',
+        actionId: 'native-approve',
+        gateId: 'human-gate:native-approval',
+        resumeSessionId: 'human-gate-resume:native-approve',
+      },
+    },
+  );
+  const feedback = deriveCompletionFeedback(historical);
+  expect(feedback?.resumed).toBe(true);
+  const delivery = required(required(historical.localExecution).delivery);
+  const files = {
+    kind: 'files' as const,
+    manifestId: 'manifest:new',
+    manifestHash: 'b'.repeat(64),
+  };
+  delivery.rounds.push({
+    roundId: 'round:new',
+    actionId: 'revalidate',
+    deliveryComparisonId: 'comparison:new',
+    inputHash: 'b'.repeat(64),
+    grantId: 'grant',
+    grantRevision: 1,
+    sourceReceiptId: required(state.parallelExecution?.acceptedReceiptId),
+    sourceVersion: required(state.testResults?.workspaceVersion),
+    candidateVersion: files,
+    targetVersion: files,
+    targetIndexHash: null,
+    controlFingerprint: 'f'.repeat(64),
+  });
+  delivery.currentRoundId = 'round:new';
+  historical.phase = 'testing';
+  delete historical.testResults;
+  historical.messages.push({
+    msgId: 'delivery-test:new',
+    fromRole: 'COORDINATOR',
+    channelId: 'main',
+    type: 'announce',
+    ts: 202,
+    display: 'Revalidate',
+    payload: {
+      kind: 'delivery_validation_dispatch',
+      nextRole: 'TESTER',
+      roundId: 'round:new',
+      workspaceVersion: files,
+      workerIds: ['worker:delivery-test:new:0'],
+    },
+  });
+  const retained = structuredClone(historical);
+  expect(() => deriveCompletionResolution(historical, 'native-approval')).toThrow();
+  expect(deriveCompletionFeedback(historical)).toEqual(feedback);
+  expect(historical).toEqual(retained);
+  historical.messages.push({
+    msgId: 'delivery-review:new',
+    fromRole: 'COORDINATOR',
+    channelId: 'main',
+    type: 'announce',
+    ts: 203,
+    display: 'Review new candidate',
+    payload: {
+      nextRole: 'REVIEWER',
+      reviewCommentCursor: historical.reviewComments.length,
+      workspaceReviewBinding: { invalid: true },
+    },
+  });
+  expect(deriveCompletionFeedback(historical)).toEqual(feedback);
+  const missingResume = structuredClone(historical);
+  missingResume.messages = missingResume.messages.filter(
+    (m) => m.msgId !== 'human-gate-resumed:native-approve',
+  );
+  expect(deriveCompletionFeedback(missingResume)).toBeNull();
+  const wrongReceipt = structuredClone(historical);
+  required(
+    wrongReceipt.messages.find((m) => m.msgId === state.parallelExecution?.acceptedReceiptId),
+  ).payload.controlFingerprint = '0'.repeat(64);
+  expect(() => deriveCompletionFeedback(wrongReceipt)).toThrow();
+  const damaged = structuredClone(historical);
+  required(damaged.messages.find((m) => m.msgId === 'native-approve')).payload.resolution = {};
+  expect(() => deriveCompletionFeedback(damaged)).toThrow();
+  const dispatch = required(
+    [...state.messages].reverse().find((m) => m.payload.nextRole === 'REVIEWER'),
+  );
+  dispatch.payload.workspaceReviewBinding = { kind: 'invalid' };
+  expect(() => currentCompletionEvidence(state)).toThrow();
+  delete dispatch.payload.workspaceReviewBinding;
+  const receipt = required(
+    state.messages.find((m) => m.msgId === state.parallelExecution?.acceptedReceiptId),
+  );
+  receipt.payload.controlFingerprint = '0'.repeat(64);
+  expect(() => currentCompletionEvidence(state)).toThrow();
 });

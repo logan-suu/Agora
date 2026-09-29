@@ -56,9 +56,19 @@ export class LocalControlObjects {
   }
   private async assertRoot() {
     await this.owner.assertHeld();
-    for (const entry of this.chain)
-      if (localRecordHash(await identity(entry.path)) !== localRecordHash(entry))
-        throw Error('control_objects_root_changed');
+    await Promise.all(
+      this.chain.map(async (entry) => {
+        const current = await identity(entry.path);
+        if (
+          current.path !== entry.path ||
+          current.dev !== entry.dev ||
+          current.ino !== entry.ino ||
+          current.uid !== entry.uid ||
+          current.mode !== entry.mode
+        )
+          throw Error('control_objects_root_changed');
+      }),
+    );
     const own = this.chain[0];
     if (!own || own.uid !== process.getuid?.() || (own.mode & 0o777) !== 0o700)
       throw Error('control_objects_root_changed');
@@ -185,9 +195,9 @@ export class LocalControlObjects {
         before.size > limit
       )
         throw Error();
-      await fd.sync();
-      await sync(this.root);
-      const buffer = Buffer.alloc(limit + 1);
+      // The exclusive write path already syncs objects before publishing a
+      // reference. Reads verify identity and hashes without flushing storage.
+      const buffer = Buffer.alloc(before.size + 1);
       let length = 0;
       while (length < buffer.length) {
         const { bytesRead } = await fd.read(buffer, length, buffer.length - length, null);

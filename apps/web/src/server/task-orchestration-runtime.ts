@@ -1,6 +1,12 @@
 import {
   type AppState,
+  assertCurrentDeliveryApplication,
+  canonicalJson,
+  currentDeliveryApplicationMessage,
+  type DeliveryRepairSource,
+  deliveryValidationDispatch,
   type HumanGateRequest,
+  localDeliveryAwaitsApplication,
   type Mutation,
   mergeByIdMutation,
   type RequirementProposalView,
@@ -51,6 +57,7 @@ export interface TaskSummary extends TaskScope {
   artifactPath: string | null;
   messageCount: number;
   requirementProposal?: RequirementProposalView;
+  deliveryStatus?: 'approved_awaiting_application';
   error?: string;
 }
 
@@ -69,6 +76,11 @@ export interface TaskComposition {
   parallelContext?: (
     state: AppState,
   ) => Promise<{ initialBase: { branch: string; commit: string }; controlFingerprint: string }>;
+  prepareLocalValidation?: (state: AppState) => Promise<AppState>;
+  admitLocalValidation?: (state: AppState, workerId: string) => Promise<AppState>;
+  prepareLocalDeliveryRepair?: (state: AppState, source: DeliveryRepairSource) => Promise<AppState>;
+  completeLocalDeliveryRepair?: (state: AppState, workerId: string) => Promise<AppState>;
+  finalizeLocalDelivery?: (state: AppState) => Promise<AppState>;
   saveSafePoints(): Promise<readonly string[]>;
   suspend(): Promise<void>;
   archiveArtifact(): Promise<ArchivedArtifact>;
@@ -101,6 +113,7 @@ export interface TaskOrchestrationRuntimeOptions {
 }
 
 interface ActiveRun {
+  deliveryFinalizationOnly?: boolean;
   goal: string;
   status: Exclude<TaskRunStatus, 'interrupted'>;
   composition: TaskComposition | undefined;
@@ -140,6 +153,7 @@ export class LocalStoppingError extends Error {
 /** Single-instance task lifecycle registry; D17 concurrency is owned by the shared scheduler. */
 export class TaskOrchestrationRuntime {
   readonly #runs = new Map<string, ActiveRun>();
+  readonly #deliveryStarts = new Set<string>();
   readonly #maxActiveCompositions: number;
   #lifecycleQueue: Promise<void> = Promise.resolve();
   #draining = false;
@@ -287,6 +301,94 @@ export class TaskOrchestrationRuntime {
     });
   }
 
+  /** Trusted post-registration hook only. Ordinary start/replay never calls
+   * this entry; the caller must have just closed the explicit Leader action. */
+  async startDeliveryRound(registered: AppState): Promise<void> {
+    return this.#startDeliveryControl(registered, false);
+  }
+
+  /** Explicit completion-only entry after a new application fact. It cannot
+   * dispatch a worker or reinterpret an old action as new execution intent. */
+  async startDeliveryFinalization(registered: AppState): Promise<void> {
+    return this.#startDeliveryControl(registered, true);
+  }
+
+  async #startDeliveryControl(registered: AppState, finalizationOnly: boolean): Promise<void> {
+    await this.#enqueueLifecycle(async () => {
+      this.#assertAcceptingWork();
+      const selected = finalizationOnly ? undefined : deliveryValidationDispatch(registered);
+      const application = finalizationOnly
+        ? currentDeliveryApplicationMessage(registered)
+        : undefined;
+      if (finalizationOnly) {
+        if (!application || !localDeliveryAwaitsApplication(registered))
+          throw Error('delivery_launch_requires_application');
+        assertCurrentDeliveryApplication(registered, application);
+      } else if (!selected) throw Error('delivery_launch_requires_registration');
+      const scope = { projectId: registered.projectId, taskId: registered.taskId };
+      const launchId = JSON.stringify([
+        scope.projectId,
+        scope.taskId,
+        finalizationOnly ? application?.msgId : selected?.round.actionId,
+      ]);
+      if (this.#deliveryStarts.has(launchId)) return;
+      const state = await this.messages.store.load(scope);
+      const oldRun = this.#runs.get(scopeKey(scope));
+      if (
+        !state ||
+        canonicalJson(state) !== canonicalJson(registered) ||
+        (!finalizationOnly && (state.phase !== 'testing' || state.nextRole !== 'TESTER')) ||
+        state.humanGate ||
+        state.workers.some(
+          (w) =>
+            w.workerId === selected?.workerId ||
+            ['pending', 'running', 'paused'].includes(w.status),
+        ) ||
+        oldRun?.composition ||
+        oldRun?.pendingFinalization ||
+        oldRun?.pendingSuspension ||
+        oldRun?.status === 'running'
+      )
+        throw Error('delivery_launch_not_ready');
+      this.#assertCompositionCapacity();
+      const transition: StateTransition = async (_old, mutations) =>
+        (await this.messages.commitMutations(scope, mutations)).state;
+      const composition = await this.createComposition({
+        scope,
+        goal: state.goal,
+        loadState: () => this.messages.store.load(scope),
+        transition,
+        transitionStep: (_old, role, mutations) =>
+          this.messages
+            .commitWorkerStepMutations(scope, role, mutations)
+            .then((commit) => commit.state),
+        handleOutput: (current, role, output) =>
+          this.messages.handleWorkerOutput(current, role, output),
+        buildChannelContext: (current, role) =>
+          this.messages.workerStepChannelContextFor(current, role),
+        loadRoster: () => this.messages.enabledRoleSpecs(scope.projectId),
+      });
+      const run: ActiveRun = {
+        deliveryFinalizationOnly: finalizationOnly,
+        goal: state.goal,
+        status: 'running',
+        composition,
+        promise: Promise.resolve(),
+        artifactPath: undefined,
+        pendingFinalization: undefined,
+        error: undefined,
+      };
+      this.#deliveryStarts.add(launchId);
+      this.#runs.set(scopeKey(scope), run);
+      run.promise = this.#executeRun(
+        scope,
+        run,
+        (await this.messages.store.load(scope)) ?? state,
+        transition,
+      );
+    });
+  }
+
   async summary(scope: TaskScope): Promise<TaskSummary | undefined> {
     const state = await this.messages.store.load(scope);
     if (state === undefined) return undefined;
@@ -296,7 +398,7 @@ export class TaskOrchestrationRuntime {
         state,
         state.phase === 'done'
           ? 'completed'
-          : !requiresHumanGateAttention(state)
+          : !requiresHumanGateAttention(state) && !localDeliveryAwaitsApplication(state)
             ? 'interrupted'
             : 'needs_attention',
       );
@@ -527,6 +629,7 @@ export class TaskOrchestrationRuntime {
     try {
       const finalState = await runOrchestration(initialState, {
         workerRuntime: composition.workerRuntime,
+        ...(run.deliveryFinalizationOnly ? { deliveryFinalizationOnly: true } : {}),
         roster: composition.roster,
         ...(composition.loadRoster === undefined ? {} : { loadRoster: composition.loadRoster }),
         transition,
@@ -534,9 +637,25 @@ export class TaskOrchestrationRuntime {
         ...(composition.parallelContext === undefined
           ? {}
           : { parallelContext: composition.parallelContext }),
+        ...(composition.prepareLocalValidation === undefined
+          ? {}
+          : { prepareLocalValidation: composition.prepareLocalValidation }),
+        ...(composition.admitLocalValidation === undefined
+          ? {}
+          : { admitLocalValidation: composition.admitLocalValidation }),
+        ...(composition.prepareLocalDeliveryRepair === undefined
+          ? {}
+          : { prepareLocalDeliveryRepair: composition.prepareLocalDeliveryRepair }),
+        ...(composition.completeLocalDeliveryRepair === undefined
+          ? {}
+          : { completeLocalDeliveryRepair: composition.completeLocalDeliveryRepair }),
+        ...(composition.finalizeLocalDelivery === undefined
+          ? {}
+          : { finalizeLocalDelivery: composition.finalizeLocalDelivery }),
         suspendAtHumanGate: (_state, request) => this.#suspendAtHumanGate(scope, request),
       });
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
+      suspendFailedParallel = localDeliveryAwaitsApplication(finalState);
     } catch (error) {
       run.diagnostics ??= {};
       run.diagnostics.execution = error;
@@ -544,7 +663,11 @@ export class TaskOrchestrationRuntime {
       const persisted = await this.messages.store.load(scope).catch(() => undefined);
       if (
         persisted !== undefined &&
-        (requiresHumanGateAttention(persisted) || persisted.parallelExecution !== undefined)
+        (requiresHumanGateAttention(persisted) ||
+          persisted.parallelExecution !== undefined ||
+          run.deliveryFinalizationOnly ||
+          (persisted.phase === 'review' &&
+            persisted.localExecution?.delivery?.goal === 'apply_to_directory'))
       ) {
         terminalStatus = 'needs_attention';
         suspendFailedParallel = !requiresHumanGateAttention(persisted);
@@ -749,6 +872,9 @@ function summaryFrom(
     testResults: state.testResults ?? null,
     artifactPath: archivedArtifactPath ?? artifactPath ?? null,
     messageCount: state.messages.length,
+    ...(localDeliveryAwaitsApplication(state)
+      ? { deliveryStatus: 'approved_awaiting_application' as const }
+      : {}),
     ...(requirementProposal ? { requirementProposal } : {}),
     ...(error === undefined ? {} : { error }),
   };

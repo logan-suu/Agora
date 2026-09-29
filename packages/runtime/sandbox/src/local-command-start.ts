@@ -37,6 +37,8 @@ type Options = {
     stage: 'admission' | 'spawn' | 'register' | 'release' | 'running' | 'completion',
   ) => Promise<boolean>;
   timeoutMs?: number;
+  /** One deadline for trusted startup; linked Git admission uses the longer bounded path. */
+  startupWindowMs?: 5_000 | 15_000;
   signal?: AbortSignal;
 };
 
@@ -117,14 +119,15 @@ function protocol(channel: Duplex, child: ChildProcess, deadline: number) {
   return {
     async line(until = deadline): Promise<string> {
       for (;;) {
-        if (failure) throw new Error('command_bootstrap_failed');
+        if (failure) throw new Error('command_bootstrap_channel_error');
         const newline = buffer.indexOf('\n');
         if (newline >= 0) {
           const result = buffer.slice(0, newline);
           buffer = buffer.slice(newline + 1);
           return result;
         }
-        if (closed || performance.now() >= until) throw new Error('command_bootstrap_failed');
+        if (closed) throw new Error('command_bootstrap_channel_closed');
+        if (performance.now() >= until) throw new Error('command_bootstrap_reply_deadline');
         await new Promise<void>((resolve) => {
           const timer = setTimeout(resolve, Math.max(1, until - performance.now()));
           wake = () => {
@@ -186,6 +189,9 @@ export async function runHeldLocalCommand(options: Options) {
         (!Number.isInteger(options.timeoutMs) ||
           options.timeoutMs < 1 ||
           options.timeoutMs > 30_000)) ||
+      (options.startupWindowMs !== undefined &&
+        options.startupWindowMs !== 5_000 &&
+        options.startupWindowMs !== 15_000) ||
       !current ||
       current.revision !== options.revision ||
       current.resourceState !== 'reserved' ||
@@ -203,7 +209,7 @@ export async function runHeldLocalCommand(options: Options) {
       options.binding.snapshot(),
     );
     const startedAt = performance.now();
-    const deadline = startedAt + 5000;
+    const deadline = startedAt + (options.startupWindowMs ?? 5_000);
     try {
       prepareLocalProcessControl(options.helper, deadline, () => options.binding.controlAllowed());
       controlReady = { durationMs: performance.now() - startedAt, outcome: 'ready' };
@@ -249,6 +255,8 @@ export async function runHeldLocalCommand(options: Options) {
     await authorized('spawn');
     channel.write('s');
     const line = await reader.line();
+    const spawnFailure = /^failed:([0-9]{1,3})$/.exec(line);
+    if (spawnFailure) throw new Error(`command_bootstrap_spawn_errno_${spawnFailure[1]}`);
     if (!/^child:[1-9][0-9]{0,9}$/.test(line)) throw new Error('command_bootstrap_failed');
     const pid = Number(line.slice(6));
     // The private bootstrap nominates a PID; the kernel must prove its parent relation.

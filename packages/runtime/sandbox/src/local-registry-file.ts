@@ -28,6 +28,7 @@ export interface LocalRegistrySnapshot {
   workspaces: unknown[];
   claims: unknown[];
   operations: unknown[];
+  linkedRoots?: unknown[];
 }
 
 type Identity = { path: string; dev: number; ino: number; uid: number; mode: number };
@@ -69,6 +70,9 @@ export class LocalRegistryFile {
   private readonly file: string;
   private readonly lock: string;
   private readonly chain: Identity[] = [];
+  // Cache data decoding only. Every read still opens and checks the current file,
+  // ownership, root chain and recovery markers; authorization is never cached.
+  private decoded: { bytes: string; snapshot: LocalRegistrySnapshot } | undefined;
 
   private constructor(
     private readonly owner: LocalRegistryOwner,
@@ -145,15 +149,18 @@ export class LocalRegistryFile {
       const bytes = JSON.stringify(value);
       if (typeof bytes !== 'string' || Buffer.byteLength(bytes) > maxBytes) throw new Error();
       const cloned = JSON.parse(bytes) as LocalRegistrySnapshot;
+      const fields = [...keys, ...(Object.hasOwn(cloned, 'linkedRoots') ? ['linkedRoots'] : [])];
       if (
         !cloned ||
         Array.isArray(cloned) ||
-        Object.keys(cloned).length !== keys.length ||
-        !keys.every((key) => Object.hasOwn(cloned, key)) ||
+        Object.keys(cloned).length !== fields.length ||
+        !fields.every((key) => Object.hasOwn(cloned, key)) ||
         cloned.schemaVersion !== 'local-workspaces-v1' ||
         !safeRevision(cloned.revision) ||
         !isWorkspaceRefsV1(cloned.workspaces) ||
-        arrays.some((key) => !Array.isArray(cloned[key]) || cloned[key].length > 4096)
+        arrays.some((key) => !Array.isArray(cloned[key]) || cloned[key].length > 4096) ||
+        (Object.hasOwn(cloned, 'linkedRoots') &&
+          (!Array.isArray(cloned.linkedRoots) || cloned.linkedRoots.length > 4096))
       )
         throw new Error();
       // Record parsing is mandatory and must reject rather than silently migrate/normalize.
@@ -168,16 +175,18 @@ export class LocalRegistryFile {
   private async assertRoot() {
     await this.owner.assertHeld();
     try {
-      for (const prior of this.chain) {
-        const current = await directory(prior.path);
-        if (
-          current.dev !== prior.dev ||
-          current.ino !== prior.ino ||
-          current.uid !== prior.uid ||
-          current.mode !== prior.mode
-        )
-          throw new Error();
-      }
+      await Promise.all(
+        this.chain.map(async (prior) => {
+          const current = await directory(prior.path);
+          if (
+            current.dev !== prior.dev ||
+            current.ino !== prior.ino ||
+            current.uid !== prior.uid ||
+            current.mode !== prior.mode
+          )
+            throw new Error();
+        }),
+      );
       const root = this.chain[0];
       if (!root || root.uid !== process.getuid?.() || (root.mode & 0o777) !== 0o700)
         throw new Error();
@@ -211,16 +220,21 @@ export class LocalRegistryFile {
         stat.size > maxBytes
       )
         throw new Error();
-      const wrapper = JSON.parse(await readBounded(fd));
-      if (
-        !wrapper ||
-        Object.keys(wrapper).length !== 2 ||
-        !Object.hasOwn(wrapper, 'snapshot') ||
-        !Object.hasOwn(wrapper, 'sha256') ||
-        wrapper.sha256 !== digest(JSON.stringify(wrapper.snapshot))
-      )
-        throw new Error();
-      const result = this.validate(wrapper.snapshot);
+      const bytes = await readBounded(fd);
+      let result: LocalRegistrySnapshot;
+      if (this.decoded?.bytes === bytes) result = this.decoded.snapshot;
+      else {
+        const wrapper = JSON.parse(bytes);
+        if (
+          !wrapper ||
+          Object.keys(wrapper).length !== 2 ||
+          !Object.hasOwn(wrapper, 'snapshot') ||
+          !Object.hasOwn(wrapper, 'sha256') ||
+          wrapper.sha256 !== digest(JSON.stringify(wrapper.snapshot))
+        )
+          throw new Error();
+        result = this.validate(wrapper.snapshot);
+      }
       const after = await fd.stat();
       const current = await lstat(this.file);
       if (
@@ -236,8 +250,10 @@ export class LocalRegistryFile {
         throw new Error();
       await this.assertRoot();
       await this.assertNoPending(locked);
-      return result;
+      this.decoded = { bytes, snapshot: result };
+      return structuredClone(result);
     } catch (error) {
+      this.decoded = undefined;
       if (
         error instanceof Error &&
         ['registry_recovery_required', 'registry_root_changed', 'state_owner_changed'].includes(

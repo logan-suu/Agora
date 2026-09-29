@@ -6,6 +6,18 @@ import { performance } from 'node:perf_hooks';
 import { setTimeout as delay } from 'node:timers/promises';
 
 export type LocalProcessIdentity = readonly number[];
+export const discoveryReasons = [
+  'snapshot',
+  'child_pid',
+  'child_token_before',
+  'child_query',
+  'child_token_after',
+  'child_identity',
+  'capacity',
+  'duplicate',
+  'parent_final',
+] as const;
+export type DiscoveryReason = (typeof discoveryReasons)[number];
 type ProcessState = 'alive' | 'exited' | 'identityMismatch' | 'unknown';
 type Observation = { state: ProcessState; signalSent: boolean; errno: number };
 export type RegisteredStopReceipt = {
@@ -39,7 +51,7 @@ export function prepareLocalProcessControl(
 ): void {
   if (process.platform !== 'darwin' || !admit()) throw new Error('command_control_unavailable');
   const remaining = Math.floor(deadline - performance.now());
-  if (remaining < 1 || remaining > 5000) throw new Error('command_control_unavailable');
+  if (remaining < 1 || remaining > 15_000) throw new Error('command_control_unavailable');
   try {
     const ready = JSON.parse(
       execFileSync(helper, ['ready'], {
@@ -117,6 +129,7 @@ export type LocalProcessDiscovery = {
   observationState: 'observed' | 'needsAttention';
   observations: {
     identity: LocalProcessIdentity;
+    reason?: DiscoveryReason;
     state:
       | 'observed'
       | 'exited'
@@ -143,12 +156,17 @@ export function checkDiscoveryClosure(
   const closed: LocalProcessIdentity[] = [];
   const failures: {
     identity: LocalProcessIdentity;
+    reason?: DiscoveryReason;
     state: Exclude<LocalProcessDiscovery['observations'][number]['state'], 'observed'>;
   }[] = [];
   for (const item of discovery.observations) {
     if (item.state === 'observed') continue;
     if (item.state !== 'exited') {
-      failures.push({ identity: item.identity, state: item.state });
+      failures.push({
+        identity: item.identity,
+        state: item.state,
+        ...(item.reason ? { reason: item.reason } : {}),
+      });
       continue;
     }
     if (deadline - performance.now() < 250) {
@@ -200,11 +218,14 @@ export function discoverLocalProcessCohort(
       const result = invoke(helper, ['children', ...parent.map(String)], remaining, admit) as {
         state?: unknown;
         children?: unknown;
+        reason?: unknown;
       };
       if (
         !result ||
         !['observed', 'exited', 'identityMismatch', 'unknown'].includes(String(result.state)) ||
         !Array.isArray(result.children) ||
+        (result.reason !== undefined &&
+          !discoveryReasons.includes(result.reason as DiscoveryReason)) ||
         result.children.length > 256 ||
         result.children.some((child) => !validIdentity(child)) ||
         (result.state !== 'observed' && result.state !== 'unknown' && result.children.length > 0)
@@ -213,6 +234,7 @@ export function discoverLocalProcessCohort(
       observations.push({
         identity: parent,
         state: result.state as LocalProcessDiscovery['observations'][number]['state'],
+        ...(result.reason ? { reason: result.reason as DiscoveryReason } : {}),
       });
       if (result.state !== 'observed') uncertain = true;
       for (const child of result.children as LocalProcessIdentity[]) {

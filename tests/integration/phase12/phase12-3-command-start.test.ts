@@ -111,6 +111,20 @@ it('refuses a capture when a control-plane check exhausts the original startup w
   expect(value.afterRelease).toBe(false);
 }, 20_000);
 
+it('keeps the ordinary five-second startup window when a linked-style check is slow', async () => {
+  const value = await probeLocalCommandStart('linked-window');
+  expect(value.result.error).toBe('command_capture_deadline');
+  expect(value.result.released).toBe(false);
+  expect(value.afterRelease).toBe(false);
+}, 20_000);
+
+it('uses one bounded fifteen-second window for repeated linked-worktree admission checks', async () => {
+  const value = await probeLocalCommandStart('linked-window', 15_000);
+  expect(value.result.released).toBe(true);
+  expect(value.result.payloadResult).toEqual({ exitCode: 7, signal: null });
+  expect(value.registeredAtRelease).toBe(2);
+}, 25_000);
+
 it('registers the suspended executable before any constructor or project code runs', async () => {
   const result = await probeLocalCommandStart('run');
   expect(result.beforeRelease).toBe(false);
@@ -154,7 +168,8 @@ it('records a failed exec without releasing any project code', async () => {
   const result = await probeLocalCommandStart('bad-executable');
   expect(result.result.released).toBe(false);
   expect(result.afterRelease).toBe(false);
-  expect(result.result.error).toBe('command_bootstrap_failed');
+  expect(result.result.error).toMatch(/^command_bootstrap_spawn_errno_[0-9]{1,3}$/);
+  expect(result.record?.launchReceipt?.error).toBe(result.result.error);
   expect(result.blocked).toBe(true);
 }, 20_000);
 

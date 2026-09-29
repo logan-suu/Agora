@@ -25,6 +25,7 @@ describe('Leader workspace control grammar', () => {
     ['takeover', { ...common, workspaceId: 'workspace', paths: ['src/index.ts', '中文/文件.ts'] }],
     ['return', { ...common, takeoverReceiptId: 'takeover' }],
     ['apply', { ...common, deliveryProposalId: 'delivery', inputHash: 'a'.repeat(64) }],
+    ['revalidate', { ...common, deliveryComparisonId: 'comparison', inputHash: 'a'.repeat(64) }],
     ['undo', { ...common, fileApplyReceiptId: 'receipt', inputHash: 'a'.repeat(64) }],
   ])('parses the closed %s shape without granting execution', (verb, value) => {
     expect(parseWorkspaceControl(text(verb as string, value))).toEqual({
@@ -73,6 +74,21 @@ describe('Leader workspace control grammar', () => {
       '"projectId":"other","projectId":"project"',
     );
     expect(() => parseWorkspaceControl(`/workspace grant ${serialized}`)).toThrow(
+      'invalid_workspace_control',
+    );
+  });
+  it('rejects broadened or stale-shaped revalidation commands before control dispatch', () => {
+    const valid = { ...common, deliveryComparisonId: 'comparison', inputHash: 'a'.repeat(64) };
+    for (const value of [
+      { ...valid, deliveryComparisonId: '../other' },
+      { ...valid, inputHash: 'short' },
+      { ...valid, expectedRevision: -1 },
+      { ...valid, grantId: 'grant' },
+    ])
+      expect(() => parseWorkspaceControl(text('revalidate', value))).toThrow(
+        'invalid_workspace_control',
+      );
+    expect(() => parseWorkspaceControl(`${text('revalidate', valid)} trailing`)).toThrow(
       'invalid_workspace_control',
     );
   });

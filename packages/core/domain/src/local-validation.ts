@@ -1,11 +1,14 @@
 /** Immutable evidence data. Only trusted validation services may produce these
  * messages; parsing data does not grant filesystem or execution authority. */
+
+import { deliveryValidationDispatch } from './delivery-validation-dispatch';
 import { assertLocalExecutionState } from './local-execution';
 import { isWorkspaceVersionV1, type WorkspaceVersionV1 } from './local-workspace';
 import { canonicalJson, currentReviewDispatch, isStrictTestResults } from './parallel-execution';
 import type { AppState, Message, TestResults } from './state';
 
 export interface LocalValidationReceipt {
+  roundId?: string;
   kind: 'workspace_validation';
   version: 1;
   projectId: string;
@@ -26,6 +29,7 @@ export interface LocalValidationReceipt {
   execution: { exitCode: number; timedOut: false; quiescent: true };
 }
 export interface LocalReviewBinding {
+  roundId?: string;
   kind: 'workspace_review';
   version: 1;
   validationReceiptId: string;
@@ -91,6 +95,7 @@ export function isLocalValidationReceipt(v: unknown): v is LocalValidationReceip
       'testPaths',
       'results',
       'execution',
+      ...(Object.hasOwn(v, 'roundId') ? ['roundId'] : []),
     ]) ||
     v.kind !== 'workspace_validation' ||
     v.version !== 1 ||
@@ -110,7 +115,9 @@ export function isLocalValidationReceipt(v: unknown): v is LocalValidationReceip
       'dependenciesHash',
       'commandInputHash',
     ].every((key) => hash(v[key])) ||
-    v.sourceWorkspaceId === v.validationWorkspaceId ||
+    (Object.hasOwn(v, 'roundId')
+      ? !id(v.roundId) || v.sourceWorkspaceId !== v.validationWorkspaceId
+      : v.sourceWorkspaceId === v.validationWorkspaceId) ||
     !isWorkspaceVersionV1(v.workspaceVersion) ||
     v.workspaceVersion.kind !== 'files' ||
     !Array.isArray(v.testPaths) ||
@@ -145,9 +152,11 @@ export function isLocalReviewBinding(v: unknown): v is LocalReviewBinding {
       'sourceWorkspaceId',
       'workspaceVersion',
       'controlFingerprint',
+      ...(Object.hasOwn(v, 'roundId') ? ['roundId'] : []),
     ]) &&
     v.kind === 'workspace_review' &&
     v.version === 1 &&
+    (!Object.hasOwn(v, 'roundId') || id(v.roundId)) &&
     id(v.validationReceiptId) &&
     id(v.sourceWorkspaceId) &&
     hash(v.controlFingerprint) &&
@@ -175,6 +184,19 @@ export function localValidationReceipt(state: AppState, receiptId: string): Loca
   )
     throw Error('invalid_local_validation_receipt');
   const receipt = message.payload;
+  const delivery =
+    receipt.roundId === undefined
+      ? undefined
+      : deliveryValidationDispatch(state, receipt.roundId, receipt.dispatchId);
+  if (
+    receipt.roundId !== undefined &&
+    (!delivery ||
+      delivery.workerId !== receipt.workerId ||
+      delivery.message.msgId !== receipt.dispatchId ||
+      delivery.round.controlFingerprint !== receipt.controlFingerprint ||
+      !equal(delivery.workspaceVersion, receipt.workspaceVersion))
+  )
+    throw Error('local_validation_binding_changed');
   const dispatches = state.messages.filter((m) => m.msgId === receipt.dispatchId);
   const dispatch = dispatches[0];
   const worker = state.workers.filter((w) => w.workerId === receipt.workerId);
@@ -200,7 +222,7 @@ export function localValidationReceipt(state: AppState, receiptId: string): Loca
     binding[0]?.workspaceId !== receipt.validationWorkspaceId ||
     binding[0]?.subtaskId !== worker[0]?.subtaskId ||
     source?.length !== 1 ||
-    source[0]?.purpose !== 'coding' ||
+    source[0]?.purpose !== (delivery ? 'validation' : 'coding') ||
     source[0]?.mode !== 'direct' ||
     validation?.length !== 1 ||
     validation[0]?.purpose !== 'validation' ||
@@ -232,6 +254,7 @@ export function localReviewBindingForValidation(state: AppState): LocalReviewBin
     sourceWorkspaceId: receipt.sourceWorkspaceId,
     workspaceVersion: receipt.workspaceVersion,
     controlFingerprint: receipt.controlFingerprint,
+    ...(receipt.roundId === undefined ? {} : { roundId: receipt.roundId }),
   };
 }
 
@@ -250,8 +273,64 @@ export function currentLocalCompletionEvidence(state: AppState): LocalReviewBind
     !equal(state.testResults, receipt.results) ||
     !equal(binding.workspaceVersion, receipt.workspaceVersion) ||
     binding.sourceWorkspaceId !== receipt.sourceWorkspaceId ||
-    binding.controlFingerprint !== receipt.controlFingerprint
+    binding.controlFingerprint !== receipt.controlFingerprint ||
+    binding.roundId !== receipt.roundId
   )
     throw Error('local_completion_evidence_changed');
   return structuredClone(binding);
+}
+
+/** Select a fresh fixed-C reader; historical workers never inherit this round. */
+export function deliveryReaderAssignment(state: AppState, workerId: string) {
+  const tests = state.messages.filter(
+    (m) => m.payload.kind === 'delivery_validation_dispatch' && `worker:${m.msgId}:0` === workerId,
+  );
+  if (tests.length > 1) throw Error('delivery_dispatch_invalid');
+  const test = tests[0];
+  if (test) {
+    if (typeof test.payload.roundId !== 'string') throw Error('delivery_dispatch_invalid');
+    const selected = deliveryValidationDispatch(state, test.payload.roundId, test.msgId);
+    if (!selected) throw Error('delivery_dispatch_invalid');
+    return { ...selected, role: 'TESTER' as const };
+  }
+  const reviews = state.messages.filter(
+    (m) => m.payload.nextRole === 'REVIEWER' && `worker:${m.msgId}:0` === workerId,
+  );
+  if (!reviews.length) return undefined;
+  if (reviews.length !== 1) throw Error('delivery_review_dispatch_invalid');
+  const dispatch = reviews[0];
+  const binding = dispatch?.payload.workspaceReviewBinding;
+  if (!isLocalReviewBinding(binding) || binding.roundId === undefined) {
+    if (
+      state.localExecution?.delivery?.currentRoundId &&
+      currentReviewDispatch(state)?.msgId === dispatch?.msgId
+    )
+      throw Error('delivery_review_dispatch_invalid');
+    return undefined;
+  }
+  const receipt = localValidationReceipt(state, binding.validationReceiptId);
+  const selected = deliveryValidationDispatch(state, binding.roundId, receipt.dispatchId);
+  const worker = state.workers.find((w) => w.workerId === workerId);
+  if (
+    !selected ||
+    !dispatch ||
+    dispatch.fromRole !== 'COORDINATOR' ||
+    dispatch.channelId !== 'main' ||
+    dispatch.type !== 'announce' ||
+    !equal(dispatch.payload.workerIds, [workerId]) ||
+    binding.sourceWorkspaceId !== receipt.sourceWorkspaceId ||
+    receipt.roundId !== binding.roundId ||
+    !equal(binding.workspaceVersion, selected.workspaceVersion) ||
+    !equal(binding.workspaceVersion, receipt.workspaceVersion) ||
+    binding.controlFingerprint !== receipt.controlFingerprint ||
+    binding.controlFingerprint !== selected.round.controlFingerprint ||
+    !receipt.results.passed ||
+    state.messages.findIndex((m) => m.msgId === binding.validationReceiptId) >=
+      state.messages.indexOf(dispatch) ||
+    (worker &&
+      ['pending', 'running', 'paused'].includes(worker.status) &&
+      currentReviewDispatch(state)?.msgId !== dispatch.msgId)
+  )
+    throw Error('delivery_review_dispatch_invalid');
+  return { ...selected, message: dispatch, workerId, role: 'REVIEWER' as const };
 }

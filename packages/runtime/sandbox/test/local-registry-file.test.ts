@@ -25,6 +25,12 @@ import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
 import { acquireState } from '../../../../apps/desktop/src/storage';
 import { LocalRegistryFile, type LocalRegistrySnapshot } from '../src/local-registry-file';
+import {
+  assertLocalRegistryTransition,
+  isLocalBindingOperation,
+  parseLocalRegistry,
+} from '../src/local-registry-records';
+import { linkedRegistryFixture } from './local-linked-registry-fixture';
 
 const hash = (bytes: string | Buffer) => createHash('sha256').update(bytes).digest('hex');
 const codec = (value: unknown) => {
@@ -147,7 +153,11 @@ async function fixture(
     evidence: Record<string, unknown>;
   }) => Promise<void>,
 ) {
-  const base = await mkdtemp('/private/tmp/agora-task123-validation-');
+  const base = await mkdtemp(
+    name.startsWith('linked-')
+      ? '/private/tmp/agora-task124-registry-'
+      : '/private/tmp/agora-task123-validation-',
+  );
   const identity = await lstat(base),
     before = await statfs('/private/tmp');
   const root = join(base, 'state');
@@ -230,6 +240,105 @@ async function fixture(
     expect(safe, 'fixture cleanup requires attention').toBe(true);
   }
 }
+
+it('durably preserves physical bindings and prepared closure across owner restarts', () =>
+  fixture('linked-reopen', async ({ owner, root, evidence }) => {
+    const store = await LocalRegistryFile.open(
+      owner,
+      parseLocalRegistry,
+      true,
+      assertLocalRegistryTransition,
+    );
+    const data = parseLocalRegistry(linkedRegistryFixture());
+    const setup = parseLocalRegistry({
+      ...data,
+      revision: 1,
+      roots: data.roots.map((r) => ({ ...r, staging: null })),
+      workspaces: [],
+      claims: [],
+      operations: [],
+      linkedRoots: [],
+    });
+    await store.compareAndSwap(0, setup);
+    const initialization = data.operations.find((o) => !isLocalBindingOperation(o));
+    if (!initialization) throw Error('missing fixture initialization');
+    await store.compareAndSwap(1, {
+      ...setup,
+      revision: 2,
+      operations: [
+        { ...initialization, stage: 'prepared', preparedRevision: 2, nativeReceipt: null },
+      ],
+    });
+    const ready = {
+      ...setup,
+      revision: 3,
+      roots: data.roots,
+      operations: [{ ...initialization, preparedRevision: 2 }],
+    };
+    await store.compareAndSwap(2, ready);
+    const binding = data.operations.find(isLocalBindingOperation);
+    if (!binding) throw Error('missing fixture binding');
+    binding.preparedRevision = 4;
+    binding.stage = 'prepared';
+    for (const receipt of binding.nextLocalExecution.receipts) receipt.registryRevision = 4;
+    const prepared = parseLocalRegistry({ ...data, operations: [...ready.operations, binding] });
+    await store.compareAndSwap(3, prepared);
+    await owner.release();
+    const reopenedOwner = await acquireState(root);
+    try {
+      const reopened = await LocalRegistryFile.open(
+        reopenedOwner,
+        parseLocalRegistry,
+        false,
+        assertLocalRegistryTransition,
+      );
+      expect(await reopened.load()).toEqual(prepared);
+      const committed = {
+        ...prepared,
+        revision: 5,
+        operations: [...ready.operations, { ...binding, stage: 'committed' }],
+      };
+      await reopened.compareAndSwap(4, committed);
+      expect((await reopened.load()).linkedRoots).toEqual(data.linkedRoots);
+      const corrupted = structuredClone(committed);
+      corrupted.revision = 6;
+      const physical = corrupted.linkedRoots?.[0];
+      if (!physical) throw Error('missing fixture physical root');
+      physical.initialization.receiptHash = 'f'.repeat(64);
+      await expect(reopened.compareAndSwap(5, corrupted)).rejects.toThrow(
+        'invalid_local_registry_records',
+      );
+      expect(await reopened.load()).toEqual(committed);
+      evidence.snapshot = await reopened.load();
+    } finally {
+      await reopenedOwner.release();
+    }
+  }));
+
+it('bounds repeated codec work while rejecting changed bytes and caller mutation', () =>
+  fixture('parsed-read', async ({ owner, file, evidence }) => {
+    let calls = 0;
+    const counted = (value: unknown) => {
+      calls++;
+      return codec(value);
+    };
+    const store = await LocalRegistryFile.open(owner, counted, true);
+    const first = await store.load();
+    const warmed = calls;
+    first.operations.push('fixed-caller');
+    for (let i = 0; i < 4; i++) expect((await store.load()).operations).toEqual([]);
+    expect(calls).toBe(warmed);
+    const original = await readFile(file, 'utf8');
+    const bad = JSON.parse(original);
+    bad.snapshot.operations = ['invalid-data'];
+    bad.sha256 = hash(JSON.stringify(bad.snapshot));
+    await writeFile(file, JSON.stringify(bad));
+    await expect(store.load()).rejects.toThrow('invalid_local_registry');
+    await writeFile(file, original);
+    expect((await store.load()).operations).toEqual([]);
+    expect(calls).toBeGreaterThan(warmed);
+    evidence.codecCalls = calls;
+  }));
 
 it('publishes and reopens durable revisions across actual desktop owner lifetimes', () =>
   fixture('reopen', async ({ owner, root, file, evidence }) => {

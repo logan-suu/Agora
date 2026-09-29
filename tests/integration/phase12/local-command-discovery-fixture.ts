@@ -34,7 +34,7 @@ import {
   stopRegisteredLocalProcesses,
 } from '../../../packages/runtime/sandbox/src/local-command-stop';
 
-type Scenario = 'tree' | 'reparent' | 'wrong-parent' | 'missing-helper';
+type Scenario = 'tree' | 'reparent' | 'wrong-parent' | 'missing-helper' | 'zombie';
 const hash = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 const available = () => {
   const stat = statfsSync('/private/tmp');
@@ -133,12 +133,12 @@ export async function probeLocalCommandDiscovery(scenario: Scenario) {
         deniedRoots: [join(base, 'journal')],
       });
     const policies = { tree: policyFor('tree'), sibling: policyFor('sibling') };
-    const launch = async (mode: 'tree' | 'sibling') => {
+    const launch = async (mode: 'tree' | 'sibling', payloadMode: string = mode) => {
       const outputRoot = join(base, mode === 'tree' ? 'output' : 'sibling-output');
       const policy = policies[mode];
       evidence[`${mode}Policy`] = policy;
       lastLaunchAt = Date.now();
-      const child = spawn('/usr/bin/sandbox-exec', ['-p', policy, payload, mode], {
+      const child = spawn('/usr/bin/sandbox-exec', ['-p', policy, payload, payloadMode], {
         cwd: base,
         env: { NODE_ENV: 'test', HOME: outputRoot, TMPDIR: outputRoot },
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -165,7 +165,7 @@ export async function probeLocalCommandDiscovery(scenario: Scenario) {
     });
     const sibling = await launch('sibling');
     sibling.child.stdin.end('x');
-    const tree = await launch('tree');
+    const tree = await launch('tree', scenario === 'zombie' ? 'zombie' : 'tree');
     record = journal.registerBirth(record.commandId, record.revision, tree.identity);
     const ready = marker(tree.child, 'tree-ready');
     tree.child.stdin.write('x');
@@ -223,7 +223,7 @@ export async function probeLocalCommandDiscovery(scenario: Scenario) {
     evidence.resourceRecord = record;
     fullyStopped =
       discovery.observationState === 'observed' &&
-      discovery.identities.length === 3 &&
+      discovery.identities.length === (scenario === 'zombie' ? 1 : 3) &&
       stop.registeredState === 'stopped';
     return result;
   } catch (error) {

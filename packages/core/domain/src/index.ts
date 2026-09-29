@@ -1,10 +1,19 @@
 export * from './channel';
 export * from './channel-summary';
+export * from './coding-worker-lineage';
 export * from './completion-resolution';
 export * from './coordination-ledger';
+export * from './delivery-repair-source';
+export * from './delivery-validation-dispatch';
 export * from './handoff';
+export * from './integration-acknowledgement';
+export * from './integration-completion';
+export * from './integration-preparation';
+export * from './integration-selection';
 export * from './leader-directive';
 export * from './ledger';
+export * from './local-delivery-application';
+export * from './local-delivery-repair';
 export * from './local-execution';
 export * from './local-validation';
 export * from './local-workspace';
@@ -17,5 +26,4 @@ export * from './reducer';
 export * from './requirement-proposal';
 export * from './roster';
 export * from './state';
-
 export { parseWorkspaceControl, type WorkspaceControlIntent } from './workspace-control';

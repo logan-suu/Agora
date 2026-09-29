@@ -13,6 +13,8 @@ import {
   applyMutations,
   currentApprovedReviewId,
   currentReviewDispatch,
+  deliveryRepairAssignment,
+  deliveryValidationDispatch,
   deriveCompletionResolution,
   deriveObjectionResolutions,
   isFileRef,
@@ -20,6 +22,7 @@ import {
   mergeByIdMutation,
   setMutation,
 } from '@agora/core-domain';
+import { deliveryRepairSource } from './delivery-repair-source';
 import { decideParallel, type ParallelDecisionContext } from './parallel-coordinator';
 import { buildCoordinationLedger, MAX_STALLS } from './progress-ledger';
 import { currentReviewAdvisory } from './review-continuation';
@@ -49,8 +52,11 @@ export type Route =
       batch: readonly [Assignment, Assignment, ...Assignment[]];
       parallel: true;
     }
+  | { kind: 'validate_delivery_repair'; workerId: string }
+  | { kind: 'repair_delivery'; source: NonNullable<ReturnType<typeof deliveryRepairSource>> }
   | { kind: 'integrate' }
   | { kind: 'human_gate'; request: HumanGateRequest }
+  | { kind: 'await_application' }
   | { kind: 'finalize' };
 
 type DraftRoute =
@@ -98,8 +104,120 @@ export function decide(state: AppState, options?: DecideOptions): CoordinatorDec
     now: options?.now ?? (() => Date.now()),
   };
   const blockingObjection = pendingBlockingObjectionGate(state);
+  const delivery = deliveryValidationDispatch(state);
+  const repair =
+    delivery && blockingObjection === undefined ? deliveryRepairSource(state) : undefined;
+  if (repair) {
+    const escalation = ifIterationLimit(state, clock);
+    if (escalation) return attachCoordinationArtifacts(state, escalation, clock, options?.roster);
+    return { route: { kind: 'repair_delivery', source: repair }, mutations: [] };
+  }
+  if (delivery && blockingObjection === undefined && state.phase === 'coding') {
+    const repairs = state.workers.flatMap((worker) => {
+      const assignment = deliveryRepairAssignment(state, worker.workerId);
+      return assignment?.source.validationReceiptId ===
+        `workspace-validation:${delivery.message.msgId}` &&
+        assignment.source.roundId === delivery.round.roundId
+        ? [assignment]
+        : [];
+    });
+    const assignment = repairs[0];
+    if (
+      repairs.length !== 1 ||
+      !assignment ||
+      state.humanGate ||
+      state.workers.some(
+        (w) =>
+          w.workerId !== assignment.worker.workerId &&
+          ['pending', 'running', 'paused'].includes(w.status),
+      )
+    )
+      throw Error('delivery_repair_not_closed');
+    if (assignment.worker.status === 'done')
+      return {
+        route: { kind: 'validate_delivery_repair', workerId: assignment.worker.workerId },
+        mutations: [],
+      };
+    if (
+      assignment.worker.status !== 'pending' &&
+      !(
+        assignment.worker.status === 'paused' &&
+        options?.resumingWorkerIds?.includes(assignment.worker.workerId)
+      )
+    )
+      throw Error('delivery_repair_not_closed');
+    if (!hasRole(options?.roster, 'CODER'))
+      return attachCoordinationArtifacts(
+        state,
+        unavailableRoleGate(state, clock, 'CODER'),
+        clock,
+        options?.roster,
+      );
+    return {
+      route: {
+        kind: 'worker',
+        parallel: false,
+        batch: [{ role: 'CODER', workerId: assignment.worker.workerId }],
+      },
+      mutations: [],
+    };
+  }
+  if (delivery && blockingObjection === undefined && state.phase === 'testing') {
+    const worker = state.workers.find((entry) => entry.workerId === delivery.workerId);
+    if (
+      state.workers.some(
+        (entry) =>
+          entry.workerId !== delivery.workerId &&
+          ['pending', 'running', 'paused'].includes(entry.status),
+      )
+    )
+      throw Error('delivery_previous_run_not_closed');
+    if (!worker || worker.status === 'pending') {
+      if (state.testResults !== undefined) throw Error('delivery_validation_not_closed');
+      return {
+        route: {
+          kind: 'worker',
+          parallel: false,
+          batch: [{ role: 'TESTER', workerId: delivery.workerId }],
+        },
+        mutations: [],
+      };
+    }
+    if (worker.role !== 'TESTER' || worker.status !== 'done')
+      throw Error('delivery_validation_not_closed');
+    const binding = localReviewBindingForValidation(state);
+    if (binding.roundId !== delivery.round.roundId) throw Error('delivery_validation_not_closed');
+    const draft: DraftCoordinatorDecision = {
+      route: { kind: 'worker', parallel: false, batch: [{ role: 'REVIEWER' }] },
+      mutations: [
+        setMutation('phase', 'review'),
+        setMutation('nextRole', 'REVIEWER'),
+        appendMutation(
+          'messages',
+          announce(
+            clock,
+            {
+              nextRole: 'REVIEWER',
+              reviewCommentCursor: state.reviewComments.length,
+              workspaceReviewBinding: binding,
+            },
+            'Validate the reviewed delivery candidate against its current requirements.',
+          ),
+        ),
+      ],
+    };
+    if (!hasRole(options?.roster, 'REVIEWER'))
+      return attachCoordinationArtifacts(
+        state,
+        unavailableRoleGate(state, clock, 'REVIEWER'),
+        clock,
+        options?.roster,
+      );
+    return attachCoordinationArtifacts(state, draft, clock, options?.roster);
+  }
   if (
     blockingObjection === undefined &&
+    delivery === undefined &&
     (state.parallelExecution !== undefined ||
       (options?.parallel !== undefined &&
         state.complexity?.tier === 2 &&
@@ -341,9 +459,12 @@ function nextSpeakerFor(route: DraftRoute): string | null {
     case 'worker':
       return route.batch[0].role;
     case 'human_gate':
+    case 'await_application':
       return 'LEADER';
     case 'finalize':
     case 'integrate':
+    case 'repair_delivery':
+    case 'validate_delivery_repair':
       return null;
   }
 }
@@ -367,6 +488,10 @@ function instructionFor(decision: DraftCoordinatorDecision): string {
   if (decision.route.kind === 'human_gate') {
     return `Await Leader resolution for ${decision.route.request.reason}`;
   }
+  if (decision.route.kind === 'validate_delivery_repair')
+    return 'Validate the closed delivery repair';
+  if (decision.route.kind === 'repair_delivery') return 'Prepare a scoped delivery repair';
+  if (decision.route.kind === 'await_application') return 'Version approved; awaiting application';
   const speaker = nextSpeakerFor(decision.route);
   if (speaker !== null) return `Continue with ${speaker}`;
   return decision.route.kind === 'finalize' ? 'Finalize the task result' : 'Integrate task outputs';
@@ -450,7 +575,30 @@ function attachCoordinationArtifacts(
     display: `Coordinator Ledger r${ledger.revision}: stall=${ledger.stallCount}/${MAX_STALLS}`,
     ts: clock.now(),
   };
-  const route = materializeRoute(decision.route, ledgerMessage.msgId);
+  const delivery = deliveryValidationDispatch(state);
+  const reviewDispatch =
+    delivery &&
+    decision.route.kind === 'worker' &&
+    decision.route.batch.length === 1 &&
+    decision.route.batch[0].role === 'REVIEWER'
+      ? [...mutations]
+          .reverse()
+          .find(
+            (mutation) =>
+              mutation.op === 'append' &&
+              mutation.field === 'messages' &&
+              (mutation.value as Message).type === 'announce' &&
+              (mutation.value as Message).payload.nextRole === 'REVIEWER',
+          )
+      : undefined;
+  const reviewMessage =
+    reviewDispatch?.op === 'append' ? (reviewDispatch.value as Message) : undefined;
+  const route = materializeRoute(decision.route, reviewMessage?.msgId ?? ledgerMessage.msgId);
+  if (reviewMessage && route.kind === 'worker')
+    reviewMessage.payload = {
+      ...reviewMessage.payload,
+      workerIds: route.batch.map((entry) => entry.workerId),
+    };
   const dispatchTs = clock.now();
   const workerMutations =
     route.kind === 'worker'
@@ -1040,6 +1188,14 @@ function evaluateReview(
       );
     }
     if (resolution.option === 'approve_completion') {
+      if (state.localExecution?.delivery?.goal === 'apply_to_directory') {
+        return {
+          route: { kind: 'await_application' },
+          mutations: [],
+          completionCandidate: true,
+          requestSatisfied: false,
+        };
+      }
       return {
         route: { kind: 'finalize' },
         mutations: [],

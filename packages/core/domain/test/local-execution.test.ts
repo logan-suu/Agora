@@ -49,8 +49,95 @@ const state = () => ({
     { id: 'code', title: 'fixed code', ownerRole: 'CODER', status: 'todo' as const, dependsOn: [] },
   ],
 });
+const files = (manifestId: string) => ({
+  kind: 'files' as const,
+  manifestId,
+  manifestHash: 'b'.repeat(64),
+});
+const delivery = () => ({
+  schemaVersion: 'local-delivery-v1' as const,
+  goal: 'apply_to_directory' as const,
+  rootId: 'root',
+  currentRoundId: 'round-one',
+  rounds: [
+    {
+      roundId: 'round-one',
+      actionId: 'revalidate-one',
+      deliveryComparisonId: 'comparison-one',
+      inputHash: 'a'.repeat(64),
+      grantId: 'grant',
+      grantRevision: 1,
+      sourceReceiptId: 'validation-one',
+      sourceVersion: files('artifact'),
+      candidateVersion: files('candidate'),
+      targetVersion: files('user'),
+      targetIndexHash: null,
+      controlFingerprint: 'c'.repeat(64),
+    },
+  ],
+});
 
 describe('canonical local execution references', () => {
+  it('persists a fixed delivery round as data without changing worker execution state', () => {
+    const initial = applyMutations(state(), [setMutation('localExecution', local())]);
+    const next = applyMutations(initial, [
+      setMutation('localExecution', { ...local(), delivery: delivery() }),
+    ]);
+    expect(next.localExecution?.delivery?.currentRoundId).toBe('round-one');
+    expect(next.phase).toBe(initial.phase);
+    expect(next.workers).toEqual(initial.workers);
+  });
+  it('preserves old rounds and keeps the current pointer on the latest appended round', () => {
+    const initial = applyMutations(state(), [
+      setMutation('localExecution', { ...local(), delivery: delivery() }),
+    ]);
+    const appended = delivery();
+    appended.rounds.push({
+      ...first(appended.rounds),
+      roundId: 'round-two',
+      actionId: 'revalidate-two',
+      deliveryComparisonId: 'comparison-two',
+      candidateVersion: files('candidate-two'),
+    });
+    appended.currentRoundId = 'round-two';
+    const next = applyMutations(initial, [
+      setMutation('localExecution', { ...local(), delivery: appended }),
+    ]);
+    expect(next.localExecution?.delivery?.rounds).toHaveLength(2);
+    for (const altered of [
+      { ...appended, currentRoundId: 'round-one' },
+      { ...appended, rounds: appended.rounds.slice(1) },
+      {
+        ...appended,
+        rounds: [
+          { ...first(appended.rounds), candidateVersion: files('changed') },
+          first(appended.rounds.slice(1)),
+        ],
+      },
+      { ...appended, goal: 'artifact_only' },
+      { ...appended, rootId: 'different' },
+    ])
+      expect(() =>
+        applyMutations(initial, [setMutation('localExecution', { ...local(), delivery: altered })]),
+      ).toThrow();
+    expect(() => applyMutations(next, [setMutation('localExecution', local())])).toThrow();
+  });
+  it('rejects duplicate revalidation actions, wrong roots and untrusted version references', () => {
+    const value = delivery();
+    const duplicate = { ...first(value.rounds), roundId: 'round-two' };
+    for (const broken of [
+      { ...value, rounds: [...value.rounds, duplicate], currentRoundId: 'round-two' },
+      { ...value, rootId: 'unknown' },
+      {
+        ...value,
+        rounds: [{ ...first(value.rounds), targetVersion: { ...files('user'), kind: 'git' } }],
+      },
+      { ...value, rounds: [{ ...first(value.rounds), inputHash: 'short' }] },
+    ])
+      expect(() =>
+        applyMutations(state(), [setMutation('localExecution', { ...local(), delivery: broken })]),
+      ).toThrow();
+  });
   it('allows a task-scoped reader without inventing a coder subtask, and keeps absence immutable', () => {
     const value: LocalExecutionV1 = local();
     const candidate: AppState = state();

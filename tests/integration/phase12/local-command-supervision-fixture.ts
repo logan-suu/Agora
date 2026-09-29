@@ -218,6 +218,7 @@ export async function probeLocalCommandSupervision(scenario: Scenario) {
     const reopened = new LocalCommandJournal(join(base, 'journal')).snapshot();
     record = reopened.records[0] as typeof record;
     const aliveAfterSupervision = inspectLocalProcess(helper, actual).state === 'alive';
+    let diagnosticRoundtrip: unknown;
     if (scenario === 'journal') {
       const path = join(base, 'journal', 'commands.json');
       const original = readFileSync(path);
@@ -232,9 +233,32 @@ export async function probeLocalCommandSupervision(scenario: Scenario) {
       old.sha256 = sha(JSON.stringify(old.data));
       writeFileSync(path, JSON.stringify(old));
       reject(() => new LocalCommandJournal(join(base, 'journal')));
+      // Fixed journal corruption probes never authorize a process or tool call.
+      const diagnostic = JSON.parse(original.toString());
+      diagnostic.data.records[0].observationReceipt.discoveryFailures = [
+        { identity: actual, state: 'unknown', reason: 'child_token_before' },
+      ];
+      diagnostic.data.records[0].observationReceipt.discoveryFailed = true;
+      diagnostic.data.records[0].observationReceipt.cause = 'observation_failed';
+      diagnostic.data.records[0].reason = 'control_failure';
+      diagnostic.sha256 = sha(JSON.stringify(diagnostic.data));
+      writeFileSync(path, JSON.stringify(diagnostic));
+      diagnosticRoundtrip = new LocalCommandJournal(join(base, 'journal')).snapshot();
+      diagnostic.data.records[0].observationReceipt.discoveryFailures[0].reason =
+        'raw command text';
+      diagnostic.sha256 = sha(JSON.stringify(diagnostic.data));
+      writeFileSync(path, JSON.stringify(diagnostic));
+      reject(() => new LocalCommandJournal(join(base, 'journal')));
       writeFileSync(path, original);
     }
-    const result = { receipt, record, blocked: reopened.blocked, aliveAfterSupervision, errors };
+    const result = {
+      receipt,
+      record,
+      blocked: reopened.blocked,
+      aliveAfterSupervision,
+      errors,
+      diagnosticRoundtrip,
+    };
     evidence.result = {
       ...result,
       receipt: {

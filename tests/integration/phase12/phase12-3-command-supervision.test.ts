@@ -50,7 +50,20 @@ it('rejects invalid parent relations atomically and refuses corrupted or old-ver
     'command_revision_conflict',
     'invalid_command_journal',
     'invalid_command_journal',
+    'invalid_command_journal',
   ]);
+  expect(result.diagnosticRoundtrip).toMatchObject({
+    blocked: true,
+    records: [
+      {
+        reason: 'control_failure',
+        observationReceipt: {
+          discoveryFailed: true,
+          discoveryFailures: [{ state: 'unknown', reason: 'child_token_before' }],
+        },
+      },
+    ],
+  });
   expect(result.record.birthRelations).toHaveLength(2);
   expect(result.receipt.stop.registeredState).toBe('stopped');
   expect(result.blocked).toBe(true);

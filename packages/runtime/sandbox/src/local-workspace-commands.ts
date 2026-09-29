@@ -11,7 +11,13 @@ export type { WorkspaceCommandRequest } from './workspace-port';
 import { createHash } from 'node:crypto';
 import { lstat, mkdir, readdir, readFile, realpath, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { isWorkspaceCall, isWorkspaceVersionV1, type WorkspaceCall } from '@agora/core-domain';
+import {
+  isLocalTestPath,
+  isWorkspaceCall,
+  isWorkspaceVersionV1,
+  type WorkspaceCall,
+  type WorkspaceVersionV1,
+} from '@agora/core-domain';
 import { type LocalCommandAuthority, LocalCommandBinding } from './local-command-binding';
 import { LocalCommandJournal } from './local-command-journal';
 import { buildLocalCommandPolicy } from './local-command-policy';
@@ -82,7 +88,7 @@ const authorityValue = (
   toolchainHash: admitted.grant.toolchainHash,
   networkHash: admitted.grant.networkHash,
 });
-function validRequest(value: WorkspaceCommandRequest) {
+function validRequest(value: WorkspaceCommandRequest, allowGit = false) {
   return (
     value &&
     Object.keys(value).sort().join(',') ===
@@ -94,13 +100,42 @@ function validRequest(value: WorkspaceCommandRequest) {
     value.argv.every((arg) => typeof arg === 'string' && !arg.includes('\0')) &&
     Buffer.byteLength(JSON.stringify(value.argv)) <= 65536 &&
     isWorkspaceVersionV1(value.inputVersion) &&
-    value.inputVersion.kind === 'files' &&
+    (value.inputVersion.kind === 'files' ||
+      (allowGit && value.inputVersion.kind === 'git' && value.toolId === 'node')) &&
     value.outputRoot === 'private-per-operation' &&
     value.networkGrantId === null &&
     Number.isInteger(value.timeoutMs) &&
     value.timeoutMs >= 1 &&
     value.timeoutMs <= 30000
   );
+}
+function fixedGitValidationRequest(
+  version: WorkspaceVersionV1,
+  files: readonly { path: string }[],
+  excludedPaths: readonly string[],
+): WorkspaceCommandRequest {
+  if (version.kind !== 'git') throw Error('invalid_local_validation_version');
+  if (
+    files.some(
+      (file) => /\.(?:test|spec)\.[^/]+$/.test(file.path) && !isLocalTestPath(file.path),
+    ) ||
+    excludedPaths.some((path) => /\.(?:test|spec)\.[^/]+$/.test(path))
+  )
+    throw Error('local_validation_test_set_unavailable');
+  const paths = files
+    .map((file) => file.path)
+    .filter(isLocalTestPath)
+    .sort();
+  if (!paths.length || paths.length > 253 || new Set(paths).size !== paths.length)
+    throw Error('local_validation_test_set_unavailable');
+  return {
+    toolId: 'node',
+    argv: ['--test', '--test-reporter=tap', ...paths.map((path) => `@input/${path}`)],
+    inputVersion: structuredClone(version),
+    outputRoot: 'private-per-operation',
+    networkGrantId: null,
+    timeoutMs: 30000,
+  };
 }
 function localNodeArguments(inputRoot: string, outputRoot: string, argv: string[]): string[] {
   return argv.map((arg) => {
@@ -444,10 +479,49 @@ export class LocalWorkspaceCommands {
     }
     return serializeWorkspaceOperation(call, () => this.run(call, request, packages));
   }
+  /** Host-only TESTER command. The model-facing runCommand remains files-only. */
+  async runFixedGitValidation(
+    input: WorkspaceCall,
+    inputRequest: WorkspaceCommandRequest,
+  ): Promise<WorkspaceCommandResult> {
+    localRecordHash({ input, inputRequest });
+    if (
+      !isWorkspaceCall(input) ||
+      !validRequest(inputRequest, true) ||
+      inputRequest.inputVersion.kind !== 'git'
+    )
+      throw Error('invalid_workspace_command');
+    const call = structuredClone(input),
+      request = structuredClone(inputRequest);
+    const admitted = await this.authority.assertCall(call, 'run');
+    if (
+      admitted.workspace.mode !== 'linked-worktree' ||
+      admitted.workspace.purpose !== 'validation'
+    )
+      throw Error('workspace_validation_required');
+    const scope = {
+      projectId: call.projectId,
+      taskId: call.taskId,
+      rootId: admitted.root.rootId,
+      policyHash: admitted.grant.policyHash,
+    };
+    await this.authority.verifyCommandGitVersion(call, request.inputVersion, this.objects);
+    const manifest = await this.versions.read(request.inputVersion, scope);
+    const expected = fixedGitValidationRequest(
+      request.inputVersion,
+      manifest.files,
+      manifest.excludedPaths,
+    );
+    if (localRecordHash(request) !== localRecordHash(expected))
+      throw Error('invalid_local_validation_command');
+    await this.authority.verifyCommandGitVersion(call, request.inputVersion, this.objects);
+    return serializeWorkspaceOperation(call, () => this.run(call, request, undefined, true));
+  }
   private async run(
     call: WorkspaceCall,
     request: WorkspaceCommandRequest,
     packages?: WorkspaceDownloadReceipt[],
+    fixedGitValidation = false,
   ): Promise<WorkspaceCommandResult> {
     const key = workspaceFileActionKey(call);
     await this.files.assertQuiescent(call, key);
@@ -461,8 +535,8 @@ export class LocalWorkspaceCommands {
       expected = authorityValue(call, admitted);
     if (
       admitted.workspace.purpose === 'validation' &&
-      (admitted.workspace.mode !== 'direct' ||
-        request.inputVersion.manifestId !== admitted.workspace.baselineManifestId)
+      admitted.workspace.mode === 'direct' &&
+      request.inputVersion.manifestId !== admitted.workspace.baselineManifestId
     )
       throw Error('workspace_validation_input_changed');
     const grantPolicy = validateLocalGrantPolicy(
@@ -487,7 +561,9 @@ export class LocalWorkspaceCommands {
       rootId: admitted.root.rootId,
       policyHash: admitted.grant.policyHash,
     };
-    await this.versions.verify(request.inputVersion, versionScope, admitted.binding, current);
+    if (fixedGitValidation)
+      await this.authority.verifyCommandGitVersion(call, request.inputVersion, this.objects);
+    else await this.versions.verify(request.inputVersion, versionScope, admitted.binding, current);
     if (!this.filesHelper) {
       const manifest = await this.versions.read(request.inputVersion, versionScope);
       if (
@@ -646,6 +722,7 @@ export class LocalWorkspaceCommands {
       journal: this.journal,
       revision: reservation.revision,
       timeoutMs: request.timeoutMs,
+      startupWindowMs: admitted.workspace.mode === 'linked-worktree' ? 15_000 : 5_000,
       authorize: () => true,
       authorizeCurrent: current,
     });
@@ -661,7 +738,10 @@ export class LocalWorkspaceCommands {
       if (request.toolId === 'pnpm-install' && this.tools.pnpm)
         await verifyManagedPnpm(this.tools.pnpm, this.tools.manifestHash);
       qualificationFailure = 'source_version_changed';
-      await this.versions.verify(request.inputVersion, versionScope, admitted.binding, current);
+      if (fixedGitValidation)
+        await this.authority.verifyCommandGitVersion(call, request.inputVersion, this.objects);
+      else
+        await this.versions.verify(request.inputVersion, versionScope, admitted.binding, current);
       qualified = true;
       qualificationFailure = 'none';
     } catch {
@@ -779,7 +859,7 @@ export class LocalWorkspaceCommands {
         'authorityHash,call,canonicalSourceRef,dependencyInputHash,inputHash,request,schemaVersion' ||
       value.schemaVersion !== 'workspace-command-prepared-v1' ||
       !isWorkspaceCall(value.call) ||
-      !validRequest(value.request) ||
+      !validRequest(value.request, true) ||
       !/^[a-f0-9]{64}$/.test(value.inputHash) ||
       (value.dependencyInputHash !== null && !/^[a-f0-9]{64}$/.test(value.dependencyInputHash)) ||
       !/^[a-f0-9]{64}$/.test(value.authorityHash)

@@ -209,6 +209,21 @@ export class MessageRuntime {
     return (await this.#summaryReconciler.reconcile(scope)) ?? initialized;
   }
 
+  /** Internal complete-State CAS for closed workspace control recipes. The
+   * caller holds runTaskSerial; frozen TaskStateStore signatures stay unchanged. */
+  async compareAndCommitControl(
+    scope: TaskScope,
+    expected: AppState,
+    mutations: readonly Mutation[],
+  ): Promise<MutationCommitResult> {
+    const prior = new Set(expected.messages.map((message) => message.msgId));
+    const result = await this.store.compareAndCommit(scope, expected, mutations);
+    const publishedMessages = result.state.messages.filter((message) => !prior.has(message.msgId));
+    const bus = new SseMessageBus(this.stream);
+    for (const message of publishedMessages) await bus.publish({ ...scope, message });
+    return { ...result, publishedMessages };
+  }
+
   commitMutations(scope: TaskScope, mutations: readonly Mutation[]): Promise<MutationCommitResult> {
     return this.#service.commitMutations(scope, mutations);
   }
@@ -307,6 +322,12 @@ export class MessageRuntime {
         400,
       );
     return this.#enqueueLeader(scope, () => this.#commitLeaderMessage(scope, input));
+  }
+
+  /** Trusted task-control work shares the Leader queue, so a validation
+   * preparation cannot interleave a new Leader mutation between proofs. */
+  runTaskSerial<T>(scope: TaskScope, operation: () => Promise<T>): Promise<T> {
+    return this.#enqueueLeader(scope, operation);
   }
 
   async #commitLeaderMessage(

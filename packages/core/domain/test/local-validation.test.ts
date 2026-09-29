@@ -8,6 +8,7 @@ import {
 } from '../src/completion-resolution';
 import {
   currentLocalCompletionEvidence,
+  deliveryReaderAssignment,
   isLocalValidationReceipt,
   type LocalValidationReceipt,
   localValidationReceipt,
@@ -132,72 +133,103 @@ function state(): AppState {
   return value;
 }
 describe('local immutable validation evidence', () => {
-  it('preserves verified historical Leader feedback after new testing changes the current result', () => {
-    const candidate = state();
-    const built = buildCompletionResolution(candidate, {
-      actionId: 'return',
-      reviewId: 'verdict',
-      option: 'request_changes',
-      rationale: 'Cover zero capacity',
-      ts: 4,
-    });
-    candidate.decisionLedger.push(built.decision);
-    candidate.messages.push(
-      {
-        msgId: 'return',
-        fromRole: 'leader',
-        channelId: 'main',
-        type: 'chat',
+  it.each([false, true])(
+    'preserves historical local feedback with retained parallel metadata=%s',
+    (retainedParallel) => {
+      const candidate = state();
+      if (retainedParallel) {
+        candidate.parallelExecution = {
+          version: 1,
+          planId: 'historical-plan',
+          initialBase: { branch: 'base', commit: 'f'.repeat(40) },
+        };
+        const local = required(candidate.localExecution);
+        local.workspaces.push({
+          schemaVersion: 'workspace-v1',
+          projectId: 'project',
+          taskId: 'task',
+          workspaceId: 'initial',
+          rootId: 'root',
+          grantId: 'grant',
+          mode: 'linked-worktree',
+          purpose: 'integration',
+          commonDirId: 'common',
+          branch: 'base',
+          baseCommit: 'f'.repeat(40),
+        });
+        local.git = {
+          version: 1,
+          initialWorkspaceId: 'initial',
+          worktrees: [
+            { workspaceId: 'initial', path: '/owned/initial', receiptId: 'binding:tester' },
+          ],
+        };
+      }
+      const built = buildCompletionResolution(candidate, {
+        actionId: 'return',
+        reviewId: 'verdict',
+        option: 'request_changes',
+        rationale: 'Cover zero capacity',
         ts: 4,
-        display: 'Request changes',
-        payload: {
-          kind: 'leader_intent',
-          action: { status: 'applied' },
-          intent: {
-            kind: 'resolve_human_gate',
-            gateId: 'human-gate:verdict',
-            option: 'request_changes',
-            argument: 'Cover zero capacity',
+      });
+      candidate.decisionLedger.push(built.decision);
+      candidate.messages.push(
+        {
+          msgId: 'return',
+          fromRole: 'leader',
+          channelId: 'main',
+          type: 'chat',
+          ts: 4,
+          display: 'Request changes',
+          payload: {
+            kind: 'leader_intent',
+            action: { status: 'applied' },
+            intent: {
+              kind: 'resolve_human_gate',
+              gateId: 'human-gate:verdict',
+              option: 'request_changes',
+              argument: 'Cover zero capacity',
+            },
+            completionResolution: built.action,
+            resolution: {
+              gateId: 'human-gate:verdict',
+              option: 'request_changes',
+              argument: 'Cover zero capacity',
+              safePointRefs: ['safe'],
+              resumeSessionId: 'human-gate-resume:return',
+              completionEvidence: currentCompletionEvidence(candidate),
+            },
           },
-          completionResolution: built.action,
-          resolution: {
+        },
+        {
+          msgId: 'human-gate-resumed:return',
+          fromRole: 'COORDINATOR',
+          channelId: 'main',
+          type: 'announce',
+          ts: 5,
+          display: 'Resumed',
+          payload: {
+            kind: 'human_gate_resumed',
+            actionId: 'return',
             gateId: 'human-gate:verdict',
-            option: 'request_changes',
-            argument: 'Cover zero capacity',
-            safePointRefs: ['safe'],
             resumeSessionId: 'human-gate-resume:return',
-            completionEvidence: currentCompletionEvidence(candidate),
           },
         },
-      },
-      {
-        msgId: 'human-gate-resumed:return',
-        fromRole: 'COORDINATOR',
-        channelId: 'main',
-        type: 'announce',
-        ts: 5,
-        display: 'Resumed',
-        payload: {
-          kind: 'human_gate_resumed',
-          actionId: 'return',
-          gateId: 'human-gate:verdict',
-          resumeSessionId: 'human-gate-resume:return',
-        },
-      },
-    );
-    expect(deriveCompletionFeedback(candidate)?.rationale).toBe('Cover zero capacity');
-    candidate.testResults = {
-      passed: false,
-      total: 1,
-      failed: 1,
-      failures: [{ test: 'zero', message: 'failed', file: 'cache.test.cjs', line: 1 }],
-      workspaceVersion: { ...version, manifestHash: '0'.repeat(64) },
-    };
-    candidate.messages.push({ ...required(candidate.messages[0]), msgId: 'new-test', ts: 6 });
-    expect(() => deriveCompletionResolution(candidate, 'verdict')).toThrow();
-    expect(deriveCompletionFeedback(candidate)?.rationale).toBe('Cover zero capacity');
-    expect([...canonicalCompletionDecisionIds(candidate)]).toEqual([built.decision.id]);
-  });
+      );
+      expect(deriveCompletionFeedback(candidate)?.rationale).toBe('Cover zero capacity');
+      candidate.testResults = {
+        passed: false,
+        total: 1,
+        failed: 1,
+        failures: [{ test: 'zero', message: 'failed', file: 'cache.test.cjs', line: 1 }],
+        workspaceVersion: { ...version, manifestHash: '0'.repeat(64) },
+      };
+      candidate.messages.push({ ...required(candidate.messages[0]), msgId: 'new-test', ts: 6 });
+      expect(() => deriveCompletionResolution(candidate, 'verdict')).toThrow();
+      expect(deriveCompletionFeedback(candidate)?.rationale).toBe('Cover zero capacity');
+      expect([...canonicalCompletionDecisionIds(candidate)]).toEqual([built.decision.id]);
+    },
+  );
   it('uses the same file evidence for D16 and refuses a candidate without that evidence', () => {
     const candidate = state();
     expect(currentCompletionEvidence(candidate)).toEqual(
@@ -334,4 +366,107 @@ describe('local immutable validation evidence', () => {
       expect(() => currentLocalCompletionEvidence(changed)).toThrow();
     }
   });
+});
+
+it('binds a delivery receipt to C without inventing a coding workspace', async () => {
+  const { parseWorkspaceControl } = await import('../src/workspace-control');
+  const candidate = state();
+  const local = required(candidate.localExecution);
+  const workerId = 'worker:test-dispatch:0';
+  required(candidate.workers[0]).workerId = workerId;
+  required(local.bindings[0]).workerId = workerId;
+  const display = `/workspace revalidate ${JSON.stringify({ projectId: 'project', taskId: 'task', actionId: 'revalidate', expectedRevision: 2, deliveryComparisonId: 'comparison:fixed', inputHash: '1'.repeat(64) })}`;
+  local.receipts.push({
+    receiptId: 'binding:revalidate',
+    actionId: 'revalidate',
+    inputHash: '2'.repeat(64),
+    registryRevision: 3,
+  });
+  local.delivery = {
+    schemaVersion: 'local-delivery-v1',
+    rootId: 'root',
+    goal: 'artifact_only',
+    currentRoundId: 'round',
+    rounds: [
+      {
+        roundId: 'round',
+        actionId: 'revalidate',
+        deliveryComparisonId: 'comparison:fixed',
+        inputHash: '1'.repeat(64),
+        grantId: 'grant',
+        grantRevision: 0,
+        sourceReceiptId: 'older-validation',
+        sourceVersion: version,
+        candidateVersion: version,
+        targetVersion: version,
+        targetIndexHash: null,
+        controlFingerprint: receipt.controlFingerprint,
+      },
+    ],
+  };
+  candidate.messages.unshift({
+    msgId: 'revalidate',
+    fromRole: 'leader',
+    channelId: 'main',
+    type: 'chat',
+    ts: 0,
+    display,
+    payload: {
+      kind: 'leader_intent',
+      intent: parseWorkspaceControl(display),
+      action: { status: 'applied' },
+    },
+  });
+  required(candidate.messages[1]).payload = {
+    kind: 'delivery_validation_dispatch',
+    nextRole: 'TESTER',
+    roundId: 'round',
+    workerIds: [workerId],
+    workspaceVersion: version,
+  };
+  const roundReceipt = { ...receipt, workerId, sourceWorkspaceId: 'validation', roundId: 'round' };
+  required(candidate.messages[2]).payload = roundReceipt;
+  required(candidate.messages[3]).payload.workspaceReviewBinding = {
+    kind: 'workspace_review',
+    version: 1,
+    validationReceiptId: 'workspace-validation:test-dispatch',
+    sourceWorkspaceId: 'validation',
+    workspaceVersion: version,
+    controlFingerprint: receipt.controlFingerprint,
+    roundId: 'round',
+  };
+  expect(isLocalValidationReceipt(roundReceipt)).toBe(true);
+  expect(localValidationReceipt(candidate, 'workspace-validation:test-dispatch')).toEqual(
+    roundReceipt,
+  );
+  expect(currentLocalCompletionEvidence(candidate)).toMatchObject({ roundId: 'round' });
+  const reviewerId = `worker:${required(candidate.messages[3]).msgId}:0`;
+  required(candidate.messages[3]).payload.workerIds = [reviewerId];
+  expect(deliveryReaderAssignment(candidate, workerId)?.role).toBe('TESTER');
+  expect(deliveryReaderAssignment(candidate, reviewerId)).toMatchObject({
+    role: 'REVIEWER',
+    round: { roundId: 'round' },
+  });
+  expect(deliveryReaderAssignment(candidate, 'old-reviewer')).toBeUndefined();
+  const forgedReviewer = structuredClone(candidate);
+  required(forgedReviewer.messages[3]).payload.workerIds = ['old-reviewer'];
+  expect(() => deliveryReaderAssignment(forgedReviewer, reviewerId)).toThrow(
+    'delivery_review_dispatch_invalid',
+  );
+  const staleReview = structuredClone(candidate);
+  delete (
+    required(staleReview.messages[3]).payload.workspaceReviewBinding as Record<string, unknown>
+  ).roundId;
+  expect(() => deliveryReaderAssignment(staleReview, reviewerId)).toThrow();
+  const wrong = structuredClone(candidate);
+  required(wrong.messages[2]).payload.roundId = 'other';
+  expect(() => localValidationReceipt(wrong, 'workspace-validation:test-dispatch')).toThrow();
+  const oldApproval = structuredClone(candidate);
+  delete (
+    required(oldApproval.messages[3]).payload.workspaceReviewBinding as Record<string, unknown>
+  ).roundId;
+  expect(() => currentLocalCompletionEvidence(oldApproval)).toThrow(
+    'local_completion_evidence_changed',
+  );
+  expect(isLocalValidationReceipt({ ...roundReceipt, roundId: undefined })).toBe(false);
 });

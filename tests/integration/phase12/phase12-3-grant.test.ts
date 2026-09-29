@@ -18,7 +18,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
-import { createInitialAppState, mergeByIdMutation } from '@agora/core-domain';
+import { createInitialAppState, mergeByIdMutation, setMutation } from '@agora/core-domain';
 import { GlobalScheduler, WorkerRuntime } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { createLocalWorkspaceCatalog } from '@agora/tools-bridge';
@@ -71,6 +71,26 @@ for (const scenario of [
   'reader',
   'mcp-command',
   'trusted-validation',
+  'delivery-comparison',
+  'delivery-revalidation',
+  'delivery-revalidation-proposal',
+  'delivery-revalidation-admission',
+  'delivery-revalidation-effects',
+  'delivery-revalidation-receipt',
+  'delivery-revalidation-receipt-recovery',
+  'delivery-revalidation-apply-post',
+  'delivery-revalidation-finalize',
+  'delivery-revalidation-partial',
+  'delivery-revalidation-missing-completion',
+  'delivery-revalidation-failed',
+  'delivery-revalidation-repaired',
+  'delivery-revalidation-repair-orchestration',
+  'delivery-revalidation-live',
+  'delivery-revalidation-leader-repair-live',
+  'delivery-revalidation-reviewer-repair-live',
+  'delivery-revalidation-repair-live',
+  'delivery-revalidation-live-apply-first',
+  'delivery-revalidation-live-approval-first',
   'terminal-release-before',
   'terminal-release-after',
   'worker-companion',
@@ -97,6 +117,14 @@ for (const scenario of [
   it(
     `confirms a durable grant through the real Leader POST: ${scenario}`,
     async () => {
+      const liveDelivery = [
+        'delivery-revalidation-live',
+        'delivery-revalidation-leader-repair-live',
+        'delivery-revalidation-reviewer-repair-live',
+        'delivery-revalidation-repair-live',
+        'delivery-revalidation-live-apply-first',
+        'delivery-revalidation-live-approval-first',
+      ].includes(scenario);
       const companion = scenario.endsWith('-companion');
       const companionRole =
         scenario === 'tester-companion'
@@ -110,6 +138,26 @@ for (const scenario of [
                 : 'CODER';
       const validationScenario = [
         'trusted-validation',
+        'delivery-comparison',
+        'delivery-revalidation',
+        'delivery-revalidation-proposal',
+        'delivery-revalidation-admission',
+        'delivery-revalidation-effects',
+        'delivery-revalidation-receipt',
+        'delivery-revalidation-receipt-recovery',
+        'delivery-revalidation-apply-post',
+        'delivery-revalidation-finalize',
+        'delivery-revalidation-partial',
+        'delivery-revalidation-missing-completion',
+        'delivery-revalidation-failed',
+        'delivery-revalidation-repaired',
+        'delivery-revalidation-repair-orchestration',
+        'delivery-revalidation-live',
+        'delivery-revalidation-leader-repair-live',
+        'delivery-revalidation-reviewer-repair-live',
+        'delivery-revalidation-repair-live',
+        'delivery-revalidation-live-apply-first',
+        'delivery-revalidation-live-approval-first',
         'terminal-release-before',
         'terminal-release-after',
       ].includes(scenario);
@@ -216,14 +264,30 @@ console.log('fixed input build and test passed');
         const runtime = new MessageRuntime(join(owner.root, 'tasks'), stream, DEFAULT_ROSTER);
         await runtime.initializeState(
           scope,
-          createInitialAppState(scope.taskId, 'fixed grant control', scope.projectId),
+          createInitialAppState(
+            scope.taskId,
+            liveDelivery
+              ? `Revalidate the unchanged sentinel file: its exact UTF-8 content must be fixed user content. Preserve sentinel.test.cjs, verify.cjs and the independent delivery-user-note.txt edit. Acceptance is the existing two sentinel.test.cjs tests. Inspect the manifest and relevant files and report real problems without expanding scope into sandbox implementation or new security experiments. The trusted runtime runs the existing tests after the TESTER turn; REVIEWER assesses these same requirements.${scenario === 'delivery-revalidation-reviewer-repair-live' ? ' Also require review-note.txt containing the exact literal string "reviewed delivery" (UTF-8, no trailing newline). This differs from sentinel, which must remain "fixed user content". Inspect the literal contents using workspace_read. The existing two tests remain unchanged; the trusted runtime executes them. Any explicit test command must run that same test file, without inventing alternate acceptance probes.' : ''}`
+              : 'fixed grant control',
+            scope.projectId,
+          ),
         );
+        if (liveDelivery) {
+          const { evaluateComplexity } = await import('@agora/core-orchestration');
+          const initialized = await runtime.store.load(scope);
+          if (!initialized) throw Error('missing_live_fixture');
+          await runtime.commitMutations(scope, [
+            setMutation('complexity', evaluateComplexity({ goal: initialized.goal })),
+          ]);
+        }
         let interrupted = false,
           registering = false;
         const control = await LocalBindingCoordinator.open(
           owner,
           {
             load: (s) => runtime.store.load(s),
+            compareAndCommit: (s, expected, mutations) =>
+              runtime.compareAndCommitControl(s, expected, mutations),
             commit: async (s, mutations) => {
               expect(mutations.map((m) => `${m.op}:${m.field}`)).toEqual(
                 registering ? ['set:localExecution'] : ['append:messages', 'set:localExecution'],
@@ -355,6 +419,13 @@ console.log('fixed input build and test passed');
           expect(response.status).toBe(executionScenario || scenario === 'normal' ? 202 : 409);
           if (success) {
             if (scenario === 'before' || scenario === 'after') {
+              const stalled = await control.snapshot();
+              const stalledGrant = stalled.grants[0];
+              if (!stalledGrant) throw Error('missing_prepared_grant');
+              await expect(controller.assertGrant(scope, stalledGrant.grantId)).rejects.toThrow(
+                'registry_recovery_required',
+              );
+              expect(await control.snapshot()).toEqual(stalled);
               const state = await runtime.store.load(scope);
               expect(state?.messages.some((m) => m.msgId === body.actionId)).toBe(
                 scenario === 'after',
@@ -1089,6 +1160,94 @@ console.log('fixed input build and test passed');
                         root,
                         sourceWorkspaceId: workspace.workspaceId,
                         interruptedRelease: scenario.startsWith('terminal-release-'),
+                        compareDelivery: [
+                          'delivery-comparison',
+                          'delivery-revalidation',
+                          'delivery-revalidation-proposal',
+                          'delivery-revalidation-admission',
+                          'delivery-revalidation-effects',
+                          'delivery-revalidation-receipt',
+                          'delivery-revalidation-receipt-recovery',
+                          'delivery-revalidation-apply-post',
+                          'delivery-revalidation-finalize',
+                          'delivery-revalidation-partial',
+                          'delivery-revalidation-missing-completion',
+                          'delivery-revalidation-failed',
+                          'delivery-revalidation-repaired',
+                          'delivery-revalidation-repair-orchestration',
+                          'delivery-revalidation-live',
+                          'delivery-revalidation-leader-repair-live',
+                          'delivery-revalidation-reviewer-repair-live',
+                          'delivery-revalidation-repair-live',
+                          'delivery-revalidation-live-apply-first',
+                          'delivery-revalidation-live-approval-first',
+                        ].includes(scenario),
+                        revalidateDelivery: scenario.startsWith('delivery-revalidation'),
+                        deliveryExpectedPass: ![
+                          'delivery-revalidation-failed',
+                          'delivery-revalidation-repaired',
+                          'delivery-revalidation-repair-orchestration',
+                          'delivery-revalidation-repair-live',
+                        ].includes(scenario),
+                        deliveryRepairValidation: scenario === 'delivery-revalidation-repaired',
+                        deliveryRepairLive: [
+                          'delivery-revalidation-repair-live',
+                          'delivery-revalidation-leader-repair-live',
+                          'delivery-revalidation-reviewer-repair-live',
+                        ].includes(scenario),
+                        deliveryRejectCompletion:
+                          scenario === 'delivery-revalidation-leader-repair-live',
+                        deliveryReviewRepair:
+                          scenario === 'delivery-revalidation-reviewer-repair-live',
+                        deliveryRepairOrchestration:
+                          scenario === 'delivery-revalidation-repair-orchestration',
+                        deliveryLiveHarness: liveDelivery,
+                        deliveryLiveApplication:
+                          scenario === 'delivery-revalidation-live-apply-first'
+                            ? 'before_approval'
+                            : [
+                                  'delivery-revalidation-live-approval-first',
+                                  'delivery-revalidation-reviewer-repair-live',
+                                ].includes(scenario)
+                              ? 'after_approval'
+                              : undefined,
+                        deliveryApplicationPreview: [
+                          'delivery-revalidation-proposal',
+                          'delivery-revalidation-admission',
+                          'delivery-revalidation-effects',
+                          'delivery-revalidation-receipt',
+                          'delivery-revalidation-receipt-recovery',
+                          'delivery-revalidation-apply-post',
+                          'delivery-revalidation-finalize',
+                          'delivery-revalidation-partial',
+                          'delivery-revalidation-missing-completion',
+                        ].includes(scenario),
+                        deliveryApplicationAdmission: [
+                          'delivery-revalidation-admission',
+                          'delivery-revalidation-effects',
+                          'delivery-revalidation-receipt',
+                          'delivery-revalidation-receipt-recovery',
+                          'delivery-revalidation-apply-post',
+                          'delivery-revalidation-finalize',
+                          'delivery-revalidation-partial',
+                          'delivery-revalidation-missing-completion',
+                        ].includes(scenario),
+                        deliveryApplicationEffects:
+                          scenario === 'delivery-revalidation-finalize'
+                            ? 'finalize'
+                            : scenario === 'delivery-revalidation-apply-post'
+                              ? 'post'
+                              : scenario === 'delivery-revalidation-receipt-recovery'
+                                ? 'receipt-recovery'
+                                : scenario === 'delivery-revalidation-receipt'
+                                  ? 'receipt'
+                                  : scenario === 'delivery-revalidation-effects'
+                                    ? 'success'
+                                    : scenario === 'delivery-revalidation-partial'
+                                      ? 'partial'
+                                      : scenario === 'delivery-revalidation-missing-completion'
+                                        ? 'missing-completion'
+                                        : undefined,
                       });
                     } else {
                       const commands = await LocalWorkspaceCommands.open(
@@ -1638,6 +1797,25 @@ console.log('fixed input build and test passed');
           'packages/runtime/sandbox/src/local-registry-records.ts',
           'apps/web/src/server/message-runtime.ts',
           'apps/web/src/server/message-handlers.ts',
+          'apps/web/src/server/local-direct-delivery-composition.ts',
+          'apps/web/src/server/local-direct-delivery-sources.ts',
+          'packages/runtime/sandbox/src/local-delivery-current.ts',
+          'packages/runtime/sandbox/src/local-delivery-comparison-record.ts',
+          'tests/integration/phase12/local-delivery-comparison-fixture.ts',
+          'tests/integration/phase12/local-delivery-validation-fixture.ts',
+          'tests/integration/phase12/local-delivery-repair-writer-fixture.ts',
+          'apps/web/src/server/local-delivery-repair-control.ts',
+          'apps/web/src/server/local-delivery-repair-completion.ts',
+          'apps/web/src/server/local-delivery-repair-services.ts',
+          'tests/integration/phase12/local-delivery-repair-orchestration-fixture.ts',
+          'packages/core/orchestration/src/coordinator.ts',
+          'packages/core/orchestration/src/orchestrator.ts',
+          'apps/web/src/server/local-validation.ts',
+          'tests/integration/phase12/local-delivery-harness-fixture.ts',
+          'packages/core/domain/src/delivery-validation-dispatch.ts',
+          'apps/web/src/server/local-delivery-revalidation.ts',
+          'apps/web/src/server/local-delivery-application-proposals.ts',
+          'tests/integration/phase12/local-validation-fixture.ts',
           'tests/integration/phase12/phase12-3-grant.test.ts',
         ].map((p) => [p, hash(readFileSync(p))]),
       );
@@ -1672,26 +1850,83 @@ console.log('fixed input build and test passed');
       writeFileSync(target, JSON.stringify(evidence, null, 2));
       if (failure) throw failure;
     },
-    ['download', 'installation'].includes(scenario)
-      ? 60000
+    [
+      'delivery-revalidation-repaired',
+      'delivery-revalidation-repair-orchestration',
+      'delivery-revalidation-receipt',
+      'delivery-revalidation-receipt-recovery',
+      'delivery-revalidation-apply-post',
+      'delivery-revalidation-finalize',
+    ].includes(scenario)
+      ? 180000
       : [
-            'command',
-            'generation',
-            'mcp',
-            'mcp-partial',
-            'reader',
-            'mcp-command',
-            'worker-companion',
-            'successor-companion',
-            'missing-closure-companion',
-            'tester-companion',
-            'reviewer-companion',
-            'trusted-validation',
-            'terminal-release-before',
-            'terminal-release-after',
-            'pm-companion',
-            'coordinator-companion',
+            'delivery-revalidation-proposal',
+            'delivery-revalidation-admission',
+            'delivery-revalidation-effects',
+            'delivery-revalidation-receipt',
+            'delivery-revalidation-receipt-recovery',
+            'delivery-revalidation-apply-post',
+            'delivery-revalidation-finalize',
+            'delivery-revalidation-partial',
+            'delivery-revalidation-missing-completion',
           ].includes(scenario)
-        ? 20_000
-        : 5_000,
+        ? 120000
+        : [
+              'delivery-revalidation-live',
+              'delivery-revalidation-leader-repair-live',
+              'delivery-revalidation-reviewer-repair-live',
+              'delivery-revalidation-repair-live',
+              'delivery-revalidation-live-apply-first',
+              'delivery-revalidation-live-approval-first',
+            ].includes(scenario)
+          ? 360000
+          : [
+                'download',
+                'installation',
+                'delivery-revalidation',
+                'delivery-revalidation-proposal',
+                'delivery-revalidation-admission',
+                'delivery-revalidation-effects',
+                'delivery-revalidation-receipt',
+                'delivery-revalidation-receipt-recovery',
+                'delivery-revalidation-apply-post',
+                'delivery-revalidation-finalize',
+                'delivery-revalidation-partial',
+                'delivery-revalidation-missing-completion',
+                'delivery-revalidation-failed',
+                'delivery-revalidation-repaired',
+                'delivery-revalidation-repair-orchestration',
+              ].includes(scenario)
+            ? 60000
+            : [
+                  'command',
+                  'generation',
+                  'mcp',
+                  'mcp-partial',
+                  'reader',
+                  'mcp-command',
+                  'worker-companion',
+                  'successor-companion',
+                  'missing-closure-companion',
+                  'tester-companion',
+                  'reviewer-companion',
+                  'trusted-validation',
+                  'delivery-comparison',
+                  'delivery-revalidation',
+                  'delivery-revalidation-proposal',
+                  'delivery-revalidation-admission',
+                  'delivery-revalidation-effects',
+                  'delivery-revalidation-receipt',
+                  'delivery-revalidation-receipt-recovery',
+                  'delivery-revalidation-apply-post',
+                  'delivery-revalidation-finalize',
+                  'delivery-revalidation-partial',
+                  'delivery-revalidation-missing-completion',
+                  'terminal-release-before',
+                  'terminal-release-after',
+                  'pm-companion',
+                  'coordinator-companion',
+                ].includes(scenario)
+              ? 20_000
+              : 5_000,
   );

@@ -51,6 +51,7 @@ static const char *inspect(audit_token_t expected) {
  * bracket the current parent relation before any membership can be returned. */
 static void children(audit_token_t parent) {
   const char *state = inspect(parent);
+  const char *reason = NULL;
   audit_token_t found[256];
   size_t count = 0;
   if (!strcmp(state, "alive")) {
@@ -58,6 +59,7 @@ static void children(audit_token_t parent) {
     size_t size = 0;
     struct kinfo_proc *snapshot = NULL;
     state = "unknown";
+    reason = "snapshot";
     if (sysctl(mib, 4, NULL, &size, NULL, 0) == 0 && size > 0 &&
         size <= 16 * 1024 * 1024 - 256 * sizeof(struct kinfo_proc)) {
       size += 256 * sizeof(struct kinfo_proc);
@@ -66,35 +68,52 @@ static void children(audit_token_t parent) {
       if (snapshot && sysctl(mib, 4, snapshot, &size, NULL, 0) == 0 &&
           size <= capacity && size % sizeof(*snapshot) == 0) {
         state = "observed";
+        reason = NULL;
         for (size_t i = 0; i < size / sizeof(*snapshot); i++) {
           if (snapshot[i].kp_eproc.e_ppid != (pid_t)parent.val[5]) continue;
+          /* An already exited snapshot entry is not an executable candidate.
+           * Registered births are still checked separately. Never use a later
+           * exit to excuse a failed identity query for a nominated live child. */
+          if (snapshot[i].kp_proc.p_stat == SZOMB) continue;
           pid_t pid = snapshot[i].kp_proc.p_pid;
           audit_token_t before = {{0}}, after = {{0}};
           struct kinfo_proc current = {0};
           size_t current_size = sizeof(current);
           int one[] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, pid};
-          if (pid <= 1 || !token_for_pid(pid, &before) ||
-              sysctl(one, 4, &current, &current_size, NULL, 0) != 0 ||
-              current_size != sizeof(current) || !token_for_pid(pid, &after) ||
-              memcmp(&before, &after, sizeof(before)) || before.val[5] != (unsigned)pid ||
-              before.val[1] != getuid() || current.kp_proc.p_pid != pid ||
-              current.kp_eproc.e_ppid != (pid_t)parent.val[5] || count == 256) {
+          const char *failure = NULL;
+          if (pid <= 1) failure = "child_pid";
+          else if (!token_for_pid(pid, &before)) failure = "child_token_before";
+          else if (sysctl(one, 4, &current, &current_size, NULL, 0) != 0 ||
+                   current_size != sizeof(current)) failure = "child_query";
+          else if (!token_for_pid(pid, &after)) failure = "child_token_after";
+          else if (memcmp(&before, &after, sizeof(before)) ||
+                   before.val[5] != (unsigned)pid || before.val[1] != getuid() ||
+                   current.kp_proc.p_pid != pid ||
+                   current.kp_eproc.e_ppid != (pid_t)parent.val[5]) failure = "child_identity";
+          else if (count == 256) failure = "capacity";
+          if (failure) {
             state = "unknown";
+            if (!reason) reason = failure;
             continue;
           }
           int duplicate = 0;
           for (size_t j = 0; j < count; j++)
             if (!memcmp(&found[j], &before, sizeof(before))) duplicate = 1;
-          if (duplicate) { state = "unknown"; continue; }
+          if (duplicate) { state = "unknown"; if (!reason) reason = "duplicate"; continue; }
           found[count++] = before;
         }
       }
     }
     free(snapshot);
     const char *final = inspect(parent);
-    if (strcmp(final, "alive")) { state = final; count = 0; }
+    if (strcmp(final, "alive")) {
+      if (strcmp(state, "unknown")) { state = final; reason = "parent_final"; }
+      count = 0;
+    }
   }
-  printf("{\"state\":\"%s\",\"children\":[", state);
+  printf("{\"state\":\"%s\",", state);
+  if (reason) printf("\"reason\":\"%s\",", reason);
+  printf("\"children\":[");
   for (size_t j = 0; j < count; j++) {
     printf("%s[", j ? "," : "");
     for (int i = 0; i < 8; i++) printf("%s%u", i ? "," : "", found[j].val[i]);

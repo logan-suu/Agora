@@ -35,7 +35,7 @@ export async function createLocalWorkspaceExecutor(input: {
     'tools' | 'allowTools' | 'readTestResults' | 'readSubtaskStatus'
   >;
 }) {
-  const spec = localWorkspaceRole(input.spec);
+  const spec = localWorkspaceRole(input.spec, input.session.workspace.mode);
   if (input.session.workspace.purpose !== (spec.role === 'CODER' ? 'coding' : 'validation'))
     throw Error('local_workspace_role_binding_mismatch');
   const capabilities = spec.tools.map((tool) => {

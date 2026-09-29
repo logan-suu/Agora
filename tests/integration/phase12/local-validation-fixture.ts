@@ -4,12 +4,19 @@
 // turn only; replay still validates its format and scope before checking files.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { appendMutation, applyMutations, mergeByIdMutation, setMutation } from '@agora/core-domain';
+import {
+  appendMutation,
+  applyMutations,
+  mergeByIdMutation,
+  setMutation,
+  type WorkspaceVersionV1,
+} from '@agora/core-domain';
 import { decide, type GlobalScheduler } from '@agora/core-orchestration';
 import { DEFAULT_ROSTER } from '@agora/roles-definitions';
 import { expect } from 'vitest';
 import { LocalValidationService } from '../../../apps/web/src/server/local-validation';
 import type { MessageRuntime } from '../../../apps/web/src/server/message-runtime';
+import { localRecordHash } from '../../../packages/runtime/sandbox/src/local-registry-records';
 import { LocalWorkspaceSessions } from '../../../packages/runtime/sandbox/src/local-workspace-sessions';
 
 export async function exerciseLocalValidation(input: {
@@ -19,6 +26,27 @@ export async function exerciseLocalValidation(input: {
   root: string;
   sourceWorkspaceId: string;
   interruptedRelease?: boolean;
+  compareDelivery?: boolean;
+  revalidateDelivery?: boolean;
+  deliveryExpectedPass?: boolean;
+  deliveryRepairValidation?: boolean;
+  deliveryRepairOrchestration?: boolean;
+  deliveryRepairLive?: boolean;
+  deliveryRejectCompletion?: boolean;
+  deliveryReviewRepair?: boolean;
+  deliveryLiveHarness?: boolean;
+  deliveryLiveApplication?: 'before_approval' | 'after_approval' | undefined;
+  deliveryApplicationPreview?: boolean;
+  deliveryApplicationAdmission?: boolean;
+  deliveryApplicationEffects?:
+    | 'success'
+    | 'receipt'
+    | 'receipt-recovery'
+    | 'post'
+    | 'finalize'
+    | 'partial'
+    | 'missing-completion'
+    | undefined;
 }) {
   const scope = { projectId: 'project', taskId: 'task' };
   const load = async () => {
@@ -26,7 +54,14 @@ export async function exerciseLocalValidation(input: {
     if (!state) throw Error('missing state');
     return state;
   };
-  const local = await LocalWorkspaceSessions.create(input.options);
+  let changedVersion: WorkspaceVersionV1 | undefined;
+  const local = await LocalWorkspaceSessions.create({
+    ...input.options,
+    versionForAssignment: async (admission) => {
+      const selected = changedVersion ?? (await input.options.versionForAssignment?.(admission));
+      return selected;
+    },
+  });
   await input.runtime.commitMutations(scope, [
     mergeByIdMutation('workers', 'worker', { sessionId: 'session:worker' }),
   ]);
@@ -40,6 +75,51 @@ export async function exerciseLocalValidation(input: {
     assertLease: () => input.scheduler.assertActive(coderLease),
   });
   try {
+    if (
+      input.compareDelivery &&
+      input.deliveryApplicationEffects !== 'finalize' &&
+      !input.deliveryLiveApplication
+    ) {
+      const claim = (await input.options.control.snapshot()).claims.find(
+        (entry) => entry.workerId === 'worker' && entry.status === 'active',
+      );
+      if (!claim) throw Error('missing_coder_claim');
+      await expect(local.verifyClosedClaim(scope, claim)).rejects.toThrow('workspace_busy');
+      await expect(
+        local.verifyClosedClaim(scope, { ...claim, writerEpoch: claim.writerEpoch + 1 }),
+      ).rejects.toThrow('workspace_claim_closure_invalid');
+      await expect(
+        local.verifyClosedClaim({ ...scope, taskId: 'another-task' }, claim),
+      ).rejects.toThrow('workspace_claim_closure_unavailable');
+    }
+    if (input.deliveryApplicationEffects) {
+      for (const path of ['agent-created.txt', 'agent-other.txt']) {
+        const read = await coder.tools.read(
+          `tool:${localRecordHash({ scope, kind: 'create-read', path })}`,
+          path,
+        );
+        if (read.kind !== 'absent') throw Error('unexpected fixture file');
+        const result = await coder.tools.apply(
+          `tool:${localRecordHash({ scope, kind: 'create', path })}`,
+          [
+            {
+              path,
+              expected: read.version,
+              readReceiptId: read.readReceiptId,
+              content: `accepted ${path}`,
+              encoding: 'utf8',
+            },
+          ],
+          [],
+        );
+        expect(result.stage).toBe('applied');
+      }
+    }
+    if (input.deliveryApplicationEffects) {
+      changedVersion = (
+        await coder.tools.inspect(`tool:${localRecordHash({ scope, kind: 'inspect-created' })}`)
+      ).version;
+    }
     await coder.checkpoint('complete');
   } finally {
     await coder.close();
@@ -110,6 +190,17 @@ export async function exerciseLocalValidation(input: {
       .find((m) => m.payload.nextRole === 'REVIEWER');
     expect(review?.payload.workspaceReviewBinding).toEqual(binding);
     expect(await service.verifyCompletion(await load())).toEqual(binding);
+    let deliveryComparison: unknown;
+    if (
+      input.compareDelivery &&
+      input.deliveryApplicationEffects !== 'finalize' &&
+      !input.deliveryLiveApplication
+    ) {
+      const { exerciseDirectDeliveryComparison } = await import(
+        './local-delivery-comparison-fixture'
+      );
+      deliveryComparison = await exerciseDirectDeliveryComparison({ ...input, local });
+    }
     await input.runtime.commitMutations(scope, [
       appendMutation('reviewComments', {
         id: 'local-verdict',
@@ -231,6 +322,31 @@ export async function exerciseLocalValidation(input: {
       'file_version_conflict',
     );
     expect(readFileSync(join(input.root, 'sentinel'), 'utf8')).toBe('external newer contents');
+    let deliveryValidation: unknown;
+    if (input.revalidateDelivery) {
+      if (input.deliveryExpectedPass !== false) {
+        // A separate external edit leaves the tested source intact. The failing
+        // variant retains the broken source and must fail the original tests.
+        writeFileSync(join(input.root, 'sentinel'), previous);
+        writeFileSync(join(input.root, 'delivery-user-note.txt'), 'preserve this independent edit');
+      }
+      const { exerciseDeliveryValidation } = await import('./local-delivery-validation-fixture');
+      deliveryValidation = await exerciseDeliveryValidation({
+        ...input,
+        local,
+        liveHarness: input.deliveryLiveHarness === true,
+        liveApplication: input.deliveryLiveApplication,
+        applicationPreview: input.deliveryApplicationPreview === true,
+        applicationAdmission: input.deliveryApplicationAdmission === true,
+        applicationEffects: input.deliveryApplicationEffects,
+        expectedPass: input.deliveryExpectedPass !== false,
+        repairValidation: input.deliveryRepairValidation === true,
+        repairOrchestration: input.deliveryRepairOrchestration === true,
+        repairLive: input.deliveryRepairLive === true,
+        rejectCompletion: input.deliveryRejectCompletion === true,
+        reviewRepair: input.deliveryReviewRepair === true,
+      });
+    }
     return {
       archived,
       receipt,
@@ -238,6 +354,8 @@ export async function exerciseLocalValidation(input: {
       previous,
       externalEditPreserved: true,
       leaseCount: input.scheduler.activeCount,
+      ...(deliveryComparison ? { deliveryComparison } : {}),
+      ...(deliveryValidation ? { deliveryValidation } : {}),
     };
   } finally {
     await session.close();

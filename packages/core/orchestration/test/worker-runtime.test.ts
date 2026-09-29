@@ -258,7 +258,13 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
     ).rejects.toThrow('model output cannot set localExecution');
   });
 
-  it('rejects model-authored local validation receipts on the serial path', async () => {
+  it.each([
+    'workspace_validation',
+    'workspace_delivery_application',
+    'workspace_delivery_completion',
+    'delivery_repair_dispatch',
+    'workspace_delivery_repair_candidate',
+  ])('rejects model-authored receipt %s on the serial path', async (kind) => {
     const fake = new FakeExecutor([
       stepOf('done', [
         appendMutation('messages', {
@@ -266,7 +272,7 @@ describe('WorkerRuntime (Phase 0 degenerate single-worker path)', () => {
           channelId: 'main',
           fromRole: 'COORDINATOR',
           type: 'announce',
-          payload: { kind: 'workspace_validation' },
+          payload: { kind },
           display: 'Fabricated pass',
           ts: 1,
         }),
