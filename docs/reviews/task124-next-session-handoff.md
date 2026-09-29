@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-已授权的实现与技术验收完成，详见[最终验收报告](task124-final-acceptance.md)。当前无测试运行；Leader已授权提交推送，正在交付。继续使用现有 `codex/feat-local-worktree-integration` 工作树，保留全部改动；任务依人工PR合并规则保持`in_progress`。
+已授权的实现与技术验收完成，详见[最终验收报告](task124-final-acceptance.md)。当前无测试运行；功能提交`9d2b8fb`已推送，[PR #88](https://github.com/logan-suu/Agora/pull/88)已创建，等待人工审阅合并。继续使用现有 `codex/feat-local-worktree-integration` 工作树，保留全部改动；任务依人工PR合并规则保持`in_progress`。
 
 完整session90159已自然退出0：298个文件、2458项测试及另7项追踪测试全部通过，零失败/跳过；实际文件集合与预期一致。typecheck/lint、追踪校验及差异检查通过。运行期间252个变更/未跟踪文件hash不变。不要再轮询旧会话或重复启动完整回归。
 
@@ -19,6 +19,6 @@
 
 ## 下一步及边界
 
-用户已批准完整回归范围，见[范围清单](task124-full-regression-scope.md)，无需重新索取相同测试授权。用户已明确要求“提交推送”，按agora-commit执行交付，禁止自动合并；人工合并后agora-pr-merge才标done。没有必要仅因新会话重跑已验证、未变源码的完整测试。
+用户已批准完整回归范围，见[范围清单](task124-full-regression-scope.md)，无需重新索取相同测试授权。用户已明确要求“提交推送”，agora-commit交付已完成（PR #88，base=dev-1.0.0），禁止自动合并；人工合并后agora-pr-merge才标done。没有必要仅因新会话重跑已验证、未变源码的完整测试。
 
 本任务不代替12.5接管交还、12.6普通项目入口或12.7阶段出口。保持Go `deepseek-v4-flash`、原断言/期限/真实依赖，不恢复正式Benchmark。旧根`/private/tmp/agora-task123-validation-bX9Okg`无本轮归属证据，保留；旧Docker资源、正常依赖、缓存、用户项目及产品数据不清理。

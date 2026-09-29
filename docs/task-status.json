@@ -1720,7 +1720,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-4-linked-workspace.test.ts",
-          "notes": "实现与已授权技术验收完成。完整session90159：298文件2458测试＋追踪7项全过，零失败/跳过；静态检查通过，运行源码hash一致。首次Git终审/应用、新轮复验、三类返工、累计第二波、D16/应用/归档及恢复实测通过。200个专用根已清理。早先deadline及apply-first根因仍inconclusive，原失败保留。无活动测试；Leader已授权提交推送，正在交付，人工合并后标done，不抢跑后续任务。报告见 docs/reviews/task124-final-acceptance.md；历史见 docs/task-history/12.4.md；交接见 docs/reviews/task124-next-session-handoff.md。",
+          "notes": "实现与已授权技术验收完成。完整session90159：298文件2458测试＋追踪7项全过，零失败/跳过；静态检查通过，运行源码hash一致。首次Git终审/应用、新轮复验、三类返工、累计第二波、D16/应用/归档及恢复实测通过。200个专用根已清理。早先deadline及apply-first根因仍inconclusive，原失败保留。功能提交9d2b8fb已推送；PR https://github.com/logan-suu/Agora/pull/88（base=dev-1.0.0），等待人工合并后标done，不抢跑后续任务。报告见 docs/reviews/task124-final-acceptance.md；历史见 docs/task-history/12.4.md；交接见 docs/reviews/task124-next-session-handoff.md。",
           "last_updated": "2026-09-29"
         },
         {
