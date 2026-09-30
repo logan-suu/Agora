@@ -1,6 +1,6 @@
 # Task 12.4 PR #88 修复验收
 
-2026-09-29。分支`codex/feat-local-worktree-integration`，[PR #88](https://github.com/logan-suu/Agora/pull/88)，base=`dev-1.0.0`。本轮修复首次TESTER失败与REVIEWER退回后的原生编码来源登记；任务保持`in_progress`，不自动合并，不声明Phase 12出口。
+2026-09-29。分支`codex/feat-local-worktree-integration`，[PR #88](https://github.com/logan-suu/Agora/pull/88)，base=`dev-1.0.0`。本轮修复首次TESTER失败与REVIEWER退回后的原生编码来源登记，实现提交`cbd9afe4e22a83072a07e949214f3e9d95a78745`已推送；任务保持`in_progress`，不自动合并，不声明Phase 12出口。
 
 ## 修复与实测
 

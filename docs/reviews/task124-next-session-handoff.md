@@ -8,4 +8,4 @@ PR #88首次TESTER失败/REVIEWER退回来源登记修复已完成验收，继�
 
 本机合并冲突到持久gate及原base返工仍缺完整接合，保持拒绝，不宣称冲突闭环通过。本任务不替代12.5、12.6或12.7出口，不恢复正式Benchmark。
 
-用户已授权修复及提交推送。门禁结束后将本轮修复提交推送并更新现有[PR #88](https://github.com/logan-suu/Agora/pull/88)（base=dev-1.0.0），不自动合并；人工合并后agora-pr-merge才标done。当前修复交付hash由本历史末条记录。
+修复提交`cbd9afe4e22a83072a07e949214f3e9d95a78745`已推送，增量交付现有[PR #88](https://github.com/logan-suu/Agora/pull/88)（base=dev-1.0.0），不自动合并；人工合并后agora-pr-merge才标done。交付记录见任务历史末条；后续文档提交只补记交付事实。
