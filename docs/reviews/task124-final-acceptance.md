@@ -1,41 +1,36 @@
-# Task 12.4 工作树验收结果
+# Task 12.4 PR #88 修复验收
 
-2026-09-29。当前分支：`codex/feat-local-worktree-integration`。本任务范围内的实现、真实链路验证及完整回归已完成，可审阅工作树已保留；功能提交`9d2b8fb`已推送并创建[PR #88](https://github.com/logan-suu/Agora/pull/88)（base=`dev-1.0.0`），任务按人工合并规则保持`in_progress`。这不是Phase 12出口或发布验收。
+2026-09-29。分支`codex/feat-local-worktree-integration`，[PR #88](https://github.com/logan-suu/Agora/pull/88)，base=`dev-1.0.0`。本轮修复首次TESTER失败与REVIEWER退回后的原生编码来源登记；任务保持`in_progress`，不自动合并，不声明Phase 12出口。
 
-## 最终验证
+## 修复与实测
 
-完整命令 `pnpm run test --reporter=verbose --bail=1`，session90159自然退出0，用时13676.06秒：**298个文件、2458项测试全部通过，另7项追踪测试通过，零失败、零跳过**。实际文件集合与预期298文件完全一致，没有筛选、缺项或额外文件。运行前保存的252个变更/未跟踪文件hash在运行结束时全部一致。
+来源回执`sourceReceiptId`与历史成功的`acceptedReceiptId`分开。规范失败/退回来源保留代码与测试，仍须证明私有原生命令、精确Git版本、工作树身份和派发顺序；失败来源不会推进成功验收。宿主登记屏障在worker取得执行额度之前完成全批新绑定，并对已有绑定重验私有来源证明。
 
-`pnpm typecheck`、`pnpm lint`通过；Lint检查755个文件。追踪索引检查有效，差异空白检查通过。原模型、断言、期限及真实依赖保持；模型为OpenCode Go / `deepseek-v4-flash`。完整范围经Leader明确批准，见[范围清单](task124-full-regression-scope.md)。正式Benchmark未运行。
+新增原生回归在完整测试中通过：失败来源登记94293ms；首次失败→修复代码→累计集成→独立TESTER1127518ms；REVIEWER退回来源登记86449ms（判定是显式控制输入，不冒充该项执行模型审阅）。既有第二波baseline/发布/确认/交接/独立验证/累计回执/REVIEWER全部通过。实际失败测试保留，用户HEAD/index保护不变。
 
-## 任务能力与证据
+复核另发现提交返回态保留`worktree: undefined`、JSON持久态省略该字段，严格记录hash会误拒绝合法返工。真实红灯45.94秒确认根因，改用既有领域规范比较任务State；登记请求与原生记录仍严格校验。测试直接使用commit返回态并断言存在已清除字段；两条来源定向80761/82662ms通过，随后完整回归再次覆盖。
 
-| 验收能力 | 当前证据 |
-| --- | --- |
-| 固定完整基线、独立编码worktree、原生身份/授权/lease准入 | linked-workspace、coding-baseline、coding-retry及原生Git/helper测试通过；用户修改、HEAD/index保护与漂移拒绝覆盖 |
-| 累计集成、不可变候选、唯一发布/确认、响应丢失恢复 | IntegrationService、handoff、publication、acknowledgement、tree-batch及来源/完成证明通过 |
-| 初始/恢复TESTER登记屏障与后续累计波次 | 独立登记精确重放通过；第二波baseline/published/ack/集成交接/TESTER/回执/REVIEWER共7项通过，最后一项1140070ms |
-| 首次Git真实终审、固定产物与实际应用 | 真实审阅→D16→同候选归档335818ms；原候选直接应用245013ms，不创建多余轮次；Git新轮复验应用255784ms |
-| 同task新轮、新worker/Context/lease，旧事实不改写 | 普通目录复验53478ms；先应用后终审56114ms；实际应用、部分失败、缺完成标记、旧动作重放和归档保护通过 |
-| 受控返工后重新验证及交付 | 普通目录Leader/REVIEWER/TESTER触发真实返工分别222936/226082/246265ms；Git来源Leader返工435666ms通过 |
-| 既有路径回归 | Phase 0真实LRU、受控本机LRU、真实Docker及Phase 9/10安全点、Fork、累计验证与交付回归包含于完整2458项 |
+## 完整回归与交付检查
 
-## 门禁与边界
+`pnpm run test --reporter=verbose --bail=1`，session24420自然退出0，15337.61秒：**298文件、2462项测试，另7项追踪测试全部通过，零失败、零跳过**。实际文件集合与预期298文件完全一致。源码784文件hash在完整运行结束时全部相同。
 
-G1：对照详设§12.2.5/§12.2.5.1、开发计划12.4及本任务复评检查；既有Executor、SandboxManager、TaskStateStore、MessageBus、Channel接口定义与HEAD逐字节相同。新增能力使用内部companion/受信控制端口，公开冻结签名未改。G3/G4：静态及完整测试通过。G5：上述真实Harness、MCP、Git、Seatbelt、文件事务和Docker链路实测；不以替身替代真实验收。G6：结果、失败及修复历史见[12.4历史](../task-history/12.4.md)。G7：固定夹具载荷与原生越界/凭据隔离测试通过，变更文件未发现凭据文件或私钥头；该静态筛查不是独立安全审计。
+完整回归结束后，仅将构造接缝中的可选`codingPreparation`捕获为局部变量以消除非空断言警告；没有改变登记、权限或验证规则。受影响构造/启动屏障3文件18项再次通过；最终typecheck、lint（756文件，零警告）通过。此交付收尾与全量源码快照的唯一非文档差异单独记录，不声称收尾前后源码逐字节相同。
 
-本任务不开放12.6/Phase13普通项目入口，不代替12.5接管交还或12.7阶段出口，不恢复旧引擎任务，不声明正式Benchmark指标。首次候选真实审阅用例从固定已验证候选开始，要求候选及非REVIEWER worker不变；它不是任意初始编码返工宿主的验收。新轮返工已另以真实链路验证，不放宽缺工作区绑定时的拒绝。
+真实模型沿用OpenCode Go / `deepseek-v4-flash`、原参数/期限/断言。首次Git审阅/D16/归档336610ms、原候选直接应用251783ms、Git新轮复验应用256190ms、GitLeader返工422697ms通过；普通目录三类返工和先应用后终审通过。Phase 0真实LRU82585ms、Harness真实单轮7363ms、真实Docker及既有Phase 9/10回归通过。未运行正式Benchmark。
 
-## 失败保留与修复
+R9冻结接口未改变，无新依赖。全部254个PR交付文件窄范围凭据路径、私钥头与常见token格式筛查无匹配；这不是独立安全认证。规格约束与失败根因见[任务历史](../task-history/12.4.md)。
 
-- 历史基线读取的零新增引用断言曾混入显式U捕获。已分开边界，保留原严格断言，并增加唯一元数据引用/幂等/不变性断言；完整回归20754ms通过。
-- 首次Git真实REVIEWER指出算术测试不覆盖交付文件。保留原算术断言和单项测试计数，补充精确文件字节校验与结构化需求；定向310994ms及本轮335818ms通过。没有强制模型批准或放宽D16。
-- 早先Git deadline与apply-first缺gate的原始原因仍为inconclusive；本轮对应985820ms和56114ms通过，不据重跑成功改写历史失败。新失败诊断在清理前保留规范状态和D15安全Trace。
+## 仍保留的边界与失败
 
-## 证据、清理与交付
+- 本机合并冲突→持久gate→原base返工尚缺完整接合，继续拒绝；没有以单独放宽lineage冒充支持。本次通过声明限于验证回执来源返工，不声明所有原生返工路径完成。
+- 不开放12.6/Phase13普通项目入口，不替代12.5接管交还、12.7出口，不恢复旧引擎任务。首次固定候选审阅夹具不代表通用初始编码宿主已验收。
+- 旧Git deadline和apply-first缺gate根因仍inconclusive，失败证据保留；重跑通过不等于查明历史根因。原算术断言、文件字节覆盖、安全边界和期限均保留。
+- session29294因上述返回态缺陷主动中断（64项已通过，exit143），不计完整G4通过。修复前session90159的298文件2458项仅作历史基线，不替代本轮证据。
 
-忽略目录的最小可复核入口：`test-outputs/task124/full-regression-final-checkpoint.json`、`file-coverage-full-source-snapshot.json`、`full-regression-cleanup-audit.json`及完整日志`task124-full-regression-file-coverage.log`。日志SHA256：`277fba051ae626ba9363cc5af12684716693a1bc9bdb8b29521ba37cc224ca82`；源码快照SHA256：`cef32aeb7643a3f9fbebe309e40f48b4739e237cf8076aecdd9a99f91504f99c`。完整失败日志和旧检查点仍在任务历史引用中。
+## 证据与清理
 
-本轮核对200份独立根清理记录：均已删除，原路径均不存在，owner/句柄/挂载检查及空间观察保留在原审计中。另1份进度快照指向其中同一根，不重复计数。全盘可用空间变化不当作专用目录字节总和。剩余`/private/tmp/agora-task123-validation-bX9Okg`无本轮归属证据，保持不动；Docker只读检查只见两周前或更早资源，未删除既有资源。正常依赖、共享缓存、用户项目、产品数据不清理。
+忽略目录入口：`test-outputs/task124/pr88-full-final-checkpoint.json`、`pr88-regression-source-2.json`、`pr88-full-cleanup-audit.json`、`pr88-full-regression-2.log`及`pr88-delivery-composition.log`。完整日志SHA256：`668f58f76d70c5164d44d0fa2641d243bd7f1c26efd7d956beb330688e53fdbb`；完整运行源码快照SHA256：`c28f5473e9423e8790266dd702aa5f68fafdb0be2d8bbd165a0b600a452efdb3`。
 
-日常原始输出继续放在Git忽略的`test-outputs/`；本报告是当前结论，复评文档保留契约解释用途，交接改为短当前状态，完整历史保留失败与过程。2026-09-29 Leader明确要求“提交推送”；功能提交`9d2b8fb`及PR #88已交付，等待人工审阅合并，代码任务仅在人类合并后标done。
+本轮203个专用根均有已停用/无句柄/无挂载及删除证据，路径均不存在；另1份进度快照只是重复引用。中断根jxHz1B另保留454文件hash和JSON控制/事务记录后删除358870逻辑字节。全盘空间变化不当作专用目录字节总和。旧根bX9Okg无归属证据，既有Docker资源、正常依赖、缓存、用户项目与产品数据均保留。
+
+PR保留6份仍有独立用途的review文档，原始日志不进入PR。删除无活动引用的过时格式化输出和已撤回冲突原型绿灯输出10份；数量/逻辑字节/hash见`pr88-artifact-cleanup.json`。保留红灯、原生证明、版本快照和未解决故障证据。

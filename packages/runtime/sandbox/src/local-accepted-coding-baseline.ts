@@ -1,4 +1,5 @@
-/** Read a later coding wave from its accepted validation tree, never the initial B. */
+/** Read a coding wave from its canonical validation source, including failed tests.
+ * Source provenance does not advance accepted progress. */
 import { isWorktreeRef, readCodingWorkerLineage, validationReceipt } from '@agora/core-domain';
 import type { LocalBindingRequest } from './local-binding-coordinator';
 import { withLocalGitSession } from './local-git-session';
@@ -34,8 +35,8 @@ export async function readAcceptedCodingBaseline(
   const state = await control.assertClosed(scope);
   const snapshot = await control.snapshot();
   const lineage = readCodingWorkerLineage(state);
-  if (!lineage.acceptedReceiptId) return fail();
-  const accepted = validationReceipt(state, lineage.acceptedReceiptId);
+  if (!lineage.sourceReceiptId) return fail();
+  const accepted = validationReceipt(state, lineage.sourceReceiptId);
   const local = state.localExecution;
   const assignment = lineage.assignments.find((a) => a.workerId === scope.workerId);
   const worker = state.workers.find((entry) => entry.workerId === scope.workerId);
@@ -266,7 +267,8 @@ export async function readAcceptedCodingBaseline(
     version: request.version,
     codingVersion: request.version,
     manifest,
-    acceptedReceiptId: lineage.acceptedReceiptId,
+    sourceReceiptId: lineage.sourceReceiptId,
+    ...(lineage.acceptedReceiptId ? { acceptedReceiptId: lineage.acceptedReceiptId } : {}),
     codingBatch: { inputHash, bindingHash, receipt },
   });
 }

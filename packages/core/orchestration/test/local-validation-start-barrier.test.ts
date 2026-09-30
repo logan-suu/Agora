@@ -213,3 +213,42 @@ it('routes recovered pending TESTER through the same barrier and rejects drift',
   ).rejects.toThrow('local_validation_admission_changed');
   expect(f.runOne).not.toHaveBeenCalled();
 });
+
+it('registers missing native coding bindings before handing the batch to WorkerRuntime', async () => {
+  const before = withLocalGit(completed());
+  before.phase = 'coding';
+  before.nextRole = 'CODER';
+  delete before.integration;
+  for (const w of before.workers) w.status = 'pending';
+  const local = before.localExecution;
+  if (!local) throw Error('missing local fixture');
+  const bindings = local.bindings;
+  local.bindings = [];
+  const calls: string[] = [];
+  const runParallel = vi.fn(async () => {
+    calls.push('worker');
+    throw Error('worker-boundary');
+  });
+  const runtime = { resumableWorkerIds: [], runParallel } as unknown as WorkerRuntime;
+  const coderRoster = [{ ...roster[0], role: 'CODER' }] as RoleSpec[];
+  await expect(
+    runOrchestration(before, {
+      workerRuntime: runtime,
+      roster: coderRoster,
+      parallelContext: async () => context,
+    }),
+  ).rejects.toThrow('local_coding_preparation_required');
+  expect(runParallel).not.toHaveBeenCalled();
+  await expect(
+    runOrchestration(before, {
+      workerRuntime: runtime,
+      roster: coderRoster,
+      parallelContext: async () => context,
+      prepareLocalCoding: async (current) => {
+        calls.push('register');
+        return { ...current, localExecution: { ...local, bindings } };
+      },
+    }),
+  ).rejects.toThrow('worker-boundary');
+  expect(calls).toEqual(['register', 'worker']);
+});

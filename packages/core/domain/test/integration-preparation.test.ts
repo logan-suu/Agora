@@ -3,7 +3,20 @@ import { expect, it } from 'vitest';
 import { planIntegrationPreparation } from '../src/integration-preparation';
 import { applyMutations } from '../src/reducer';
 import { isWorktreeRef } from '../src/state';
-import { base, fixture } from './integration-fixture';
+import { base, fixture as originalFixture } from './integration-fixture';
+
+function fixture() {
+  const state = originalFixture();
+  const renamed = new Map(state.workers.map((w, i) => [w.workerId, `worker:wave:${i}`]));
+  for (const w of state.workers) w.workerId = renamed.get(w.workerId) ?? w.workerId;
+  const wave = state.parallelExecution?.activeWave;
+  if (wave) wave.coderWorkerIds = wave.coderWorkerIds.map((id) => renamed.get(id) ?? id);
+  const message = state.messages.find((m) => m.msgId === 'wave');
+  if (message) message.payload.workerIds = state.workers.map((w) => w.workerId);
+  for (const b of state.integration?.pendingBranches ?? [])
+    b.workerId = renamed.get(b.workerId) ?? b.workerId;
+  return state;
+}
 
 function input() {
   const before = fixture();

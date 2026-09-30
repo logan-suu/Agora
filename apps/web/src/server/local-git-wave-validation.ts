@@ -404,13 +404,14 @@ export class LocalGitWaveValidationService {
     return structuredClone(saved.value.version);
   }
 
-  /** Reprove the accepted source for later coding registration or integration reads. */
+  /** Reprove the canonical selected source; failed validation is never acceptance. */
   async verifiedAcceptedVersion(
     state: AppState,
     receipt: WaveValidationReceipt,
     requested: WorkspaceVersionV1,
   ): Promise<void> {
-    const acceptedId = state.parallelExecution?.acceptedReceiptId;
+    const lineage = readCodingWorkerLineage(state);
+    const acceptedId = lineage.sourceReceiptId;
     const wave = state.parallelExecution?.activeWave;
     const validation = wave?.validation;
     const integration = state.integration;
@@ -434,7 +435,7 @@ export class LocalGitWaveValidationService {
       dispatch.payload.attempt === wave.attempt &&
       dispatch.payload.integrationId === validation.integrationId &&
       dispatch.payload.inputCommit === validation.inputCommit &&
-      equal(dispatch.payload.subtaskIds, wave.subtaskIds) &&
+      equal(dispatch.payload.subtaskIds, validationSubtaskIds(state, wave)) &&
       validation.workerId === `worker:${validation.dispatchId}:0` &&
       state.workers.some(
         (worker) =>
@@ -445,14 +446,11 @@ export class LocalGitWaveValidationService {
     if (
       (!['coding', 'integrating'].includes(state.phase) && !provingCurrentValidation) ||
       !acceptedId ||
-      !receipt.results.passed ||
       requested.kind !== 'git' ||
       requested.commit !== receipt.worktree.headCommit ||
       !equal(receipt, validationReceipt(state, acceptedId))
     )
       throw Error('local_git_accepted_source_changed');
-    const lineage = readCodingWorkerLineage(state);
-    if (lineage.acceptedReceiptId !== acceptedId) throw Error('local_git_accepted_source_changed');
     const verified = await this.verifyReceiptHead(state, acceptedId);
     if (!equal(verified, requested) || !equal(await this.load(), state))
       throw Error('local_git_accepted_source_changed');

@@ -33,6 +33,7 @@ export interface OrchestrationDeps {
   parallelContext?: (state: AppState) => Promise<ParallelDecisionContext>;
   /** Trusted task-serial control publishes the unique first validation plan,
    * registers its worktree, and confirms preparation before normal routing. */
+  prepareLocalCoding?: (state: AppState) => Promise<AppState>;
   prepareLocalValidation?: (state: AppState) => Promise<AppState>;
   /** Re-prove the same pending TESTER on first and recovered dispatch before
    * handing it to WorkerRuntime, which would otherwise acquire a lease. */
@@ -172,6 +173,30 @@ export async function runOrchestration(
       }
       case 'worker':
         try {
+          if (
+            state.localExecution?.git &&
+            state.phase === 'coding' &&
+            !deliveryValidationDispatch(state) &&
+            route.batch.some((a) => a.role === 'CODER')
+          ) {
+            const missing = route.batch.some(
+              (a) => !state.localExecution?.bindings.some((b) => b.workerId === a.workerId),
+            );
+            if (missing && !deps.prepareLocalCoding)
+              throw Error('local_coding_preparation_required');
+            if (deps.prepareLocalCoding) {
+              const prepared = await deps.prepareLocalCoding(state);
+              if (
+                canonicalJson({ ...prepared, localExecution: state.localExecution }) !==
+                  canonicalJson(state) ||
+                route.batch.some(
+                  (a) => !prepared.localExecution?.bindings.some((b) => b.workerId === a.workerId),
+                )
+              )
+                throw Error('local_coding_preparation_changed');
+              state = prepared;
+            }
+          }
           const validation = state.parallelExecution?.activeWave?.validation;
           if (
             state.localExecution?.git !== undefined &&

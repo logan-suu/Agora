@@ -26,18 +26,15 @@ export function planIntegrationPreparation(
   target: WorktreeRef,
 ): Mutation[] {
   const execution = before.parallelExecution;
-  const acceptedLineage = execution?.acceptedReceiptId
-    ? readCodingWorkerLineage(before)
-    : undefined;
-  const expectedBase = acceptedLineage?.base ?? execution?.initialBase;
+  const lineage = readCodingWorkerLineage(before);
+  const expectedBase = lineage.base;
   if (
     Object.keys(plan).sort().join(',') !== 'base,integrationId,pendingBranches,waveId' ||
     before.phase !== 'coding' ||
     before.integration !== undefined ||
     before.humanGate ||
     !execution ||
-    execution.activeWave?.attempt !== 1 ||
-    execution.activeWave.waveId !== plan.waveId ||
+    execution.activeWave?.waveId !== plan.waveId ||
     canonicalJson(expectedBase) !== canonicalJson(plan.base) ||
     target.baseCommit !== plan.base.commit ||
     target.headCommit !== plan.base.commit ||

@@ -45,7 +45,7 @@ import {
   createLocalWorkspaceExecutor,
 } from './local-workspace-executor';
 import type { ModelSettingsService } from './model-settings';
-import type { TaskCompositionFactory } from './task-orchestration-runtime';
+import type { TaskComposition, TaskCompositionFactory } from './task-orchestration-runtime';
 
 type Scope = { projectId: string; taskId: string };
 type Prepared = {
@@ -81,6 +81,8 @@ type Options = {
     'adapter' | 'provider' | 'deepseek' | 'compatible' | 'approval' | 'maxToolCallsPerTurn'
   >;
   /** Host-owned task-serial preparation. Never supplied by a model or HTTP. */
+  codingPreparation?: { prepare(state: AppState): Promise<AppState> };
+  integrate?: TaskComposition['integrate'];
   validationPreparation?: {
     prepare(state: AppState): Promise<AppState>;
     admit(state: AppState, workerId: string): Promise<AppState>;
@@ -493,8 +495,13 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
         scheduler,
       );
       const deliveryFinalization = options.deliveryFinalization;
+      const codingPreparation = options.codingPreparation;
       return {
         initialState: await load(scope),
+        ...(codingPreparation
+          ? { prepareLocalCoding: (state: AppState) => codingPreparation.prepare(state) }
+          : {}),
+        ...(options.integrate ? { integrate: options.integrate } : {}),
         workerRuntime,
         ...(nativeParallel && gitValidation && baseReader
           ? {

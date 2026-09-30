@@ -12,6 +12,7 @@ import {
   isWorktreeRef,
   type LocalExecutionV1,
   mergeByIdMutation,
+  readCodingWorkerLineage,
   setMutation,
   validationSourceReceipt,
   validationSubtaskIds,
@@ -186,6 +187,14 @@ describe('Phase 9 wave coordinator', () => {
     const verdict = reviewed(reviewing, ['A']);
     const repairing = applyMutations(verdict, decide(verdict, options()).mutations);
     expect(repairing.parallelExecution?.activeWave?.subtaskIds).toEqual(['A']);
+    const lineage = readCodingWorkerLineage(repairing);
+    expect(lineage.sourceReceiptId).toBe(
+      failedAgain.parallelExecution?.activeWave?.validation?.receiptId,
+    );
+    expect(lineage.acceptedReceiptId).toBeUndefined();
+    expect(
+      validationSubtaskIds(repairing, required(repairing.parallelExecution?.activeWave)),
+    ).toEqual(['A', 'B']);
     const bWorkers = repairing.workers.filter((worker) => worker.subtaskId === 'B');
     const fixed = testedWave(repairing);
     const receipt = fixed.messages.find(
@@ -401,6 +410,47 @@ describe('Phase 9 wave coordinator', () => {
     expect(retry.parallelExecution?.activeWave?.validation).toBeUndefined();
     expect(retry.subtasks.find((subtask) => subtask.id === 'C')?.status).toBe('todo');
     expect(retry.iterationCount).toBe(1);
+    const lineage = readCodingWorkerLineage(retry);
+    expect(lineage.base).toEqual(retry.parallelExecution?.activeWave?.base);
+    expect(lineage.sourceReceiptId).toBe(
+      failed.parallelExecution?.activeWave?.validation?.receiptId,
+    );
+    expect(lineage.acceptedReceiptId).toBeUndefined();
+    const drift = structuredClone(retry);
+    const dispatch = [...drift.messages].reverse().find((m) => m.payload.kind === 'coding_retry');
+    if (!dispatch) throw Error('missing retry');
+    dispatch.payload.failedReceiptId = 'missing';
+    expect(() => readCodingWorkerLineage(drift)).toThrow();
+    for (const change of [
+      (state: AppState) => {
+        const retryFact = state.messages.find((m) => m.msgId === dispatch.msgId);
+        if (retryFact) retryFact.fromRole = 'CODER';
+      },
+      (state: AppState) => {
+        const oldTester = state.workers.find(
+          (w) => w.workerId === failed.parallelExecution?.activeWave?.validation?.workerId,
+        );
+        if (oldTester) oldTester.status = 'running';
+      },
+      (state: AppState) => {
+        const oldCoder = state.workers.find(
+          (w) => w.workerId === first.parallelExecution?.activeWave?.coderWorkerIds[0],
+        );
+        if (oldCoder) oldCoder.status = 'failed';
+      },
+      (state: AppState) => {
+        const index = state.messages.findIndex((m) => m.msgId === lineage.sourceReceiptId);
+        state.messages.push(...state.messages.splice(index, 1));
+      },
+      (state: AppState) => {
+        const wave = state.parallelExecution?.activeWave;
+        if (wave) wave.attempt++;
+      },
+    ]) {
+      const altered = structuredClone(retry);
+      change(altered);
+      expect(() => readCodingWorkerLineage(altered)).toThrow();
+    }
   });
 
   it('requires fresh evidence after semantic change but preserves priority-only dispatch membership', () => {

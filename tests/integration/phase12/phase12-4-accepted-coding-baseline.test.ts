@@ -2,6 +2,7 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
+  type AppState,
   appendMutation,
   isWaveValidationReceipt,
   mergeByIdMutation,
@@ -15,6 +16,7 @@ import {
   planIntegrationWave,
 } from '@agora/core-orchestration';
 import { expect, it } from 'vitest';
+import { LocalCodingPreparation } from '../../../apps/web/src/server/local-coding-preparation';
 import { LocalGitWaveValidationService } from '../../../apps/web/src/server/local-git-wave-validation';
 import { LocalInitialValidationPreparation } from '../../../apps/web/src/server/local-initial-validation';
 import { LocalGitWorkspaces } from '../../../packages/runtime/sandbox/src/local-git-workspaces';
@@ -46,6 +48,8 @@ import { registeredFixture } from './local-linked-workspace-fixture';
 
 async function runAcceptedScenario(
   scenario: 'baseline' | 'published' | 'ack' | 'handoff' | 'validation' | 'receipt' | 'review',
+  failedSource = false,
+  reviewerSource = false,
 ) {
   await fixture(async (f) =>
     registeredFixture(f, async (ctx) => {
@@ -55,8 +59,24 @@ async function runAcceptedScenario(
           join(f.privateRoot, 'accepted-wave-stage.json'),
           JSON.stringify({ scenario, stage, elapsedMs: Math.round(performance.now() - started) }),
         );
+      const initialCoderId = failedSource || reviewerSource ? 'worker:wave:0' : 'coder';
+      const codingSubtask = failedSource || reviewerSource ? 'code' : 'B';
+      let codingWaveId = failedSource ? 'wave' : 'next-wave';
+      let codingAttempt = failedSource ? 2 : 1;
+      let returnedDispatch: AppState | undefined;
+      if (failedSource || reviewerSource)
+        await ctx.store.commit(ctx.scope, [
+          mergeByIdMutation('workers', 'coder', { status: 'failed' }),
+          mergeByIdMutation('workers', initialCoderId, {
+            role: 'CODER',
+            executor: 'harness',
+            status: 'pending',
+            subtaskId: 'code',
+            startedTs: 1,
+          }),
+        ]);
       const testerId = 'worker:dispatch:0';
-      const coderId = 'worker:next-wave:0';
+      let coderId = 'worker:next-wave:0';
       await ctx.store.commit(ctx.scope, [
         mergeByIdMutation('workers', testerId, {
           role: 'TESTER',
@@ -69,7 +89,11 @@ async function runAcceptedScenario(
         ...ctx.request,
         expectedRevision: (await ctx.control.snapshot()).revision,
         targets: ctx.request.targets.map((target) =>
-          target.purpose === 'validation' ? { ...target, workerId: testerId } : target,
+          target.purpose === 'validation'
+            ? { ...target, workerId: testerId }
+            : target.purpose === 'coding'
+              ? { ...target, workerId: initialCoderId }
+              : target,
         ),
       });
       const initial = await ctx.control.assertClosed(ctx.scope);
@@ -93,7 +117,9 @@ async function runAcceptedScenario(
         throw Error('missing real linked workspaces');
       writeFileSync(
         join(validationRoot.path, 'follow-up.test.cjs'),
-        "const { test } = require('node:test'); const { strictEqual } = require('node:assert'); test('follow-up', () => strictEqual(2 + 2, 4));\n",
+        failedSource
+          ? "const { test } = require('node:test'); const { strictEqual } = require('node:assert'); const { readFileSync } = require('node:fs'); const { join } = require('node:path'); test('follow-up', () => { strictEqual(2 + 2, 4); strictEqual(readFileSync(join(__dirname, 'file.txt'), 'utf8'), 'repaired\\n'); });\n"
+          : "const { test } = require('node:test'); const { strictEqual } = require('node:assert'); test('follow-up', () => strictEqual(2 + 2, 4));\n",
       );
       const userHead = f.git(['rev-parse', 'HEAD']);
       const userIndex = readFileSync(join(f.root, '.git/index'));
@@ -118,7 +144,7 @@ async function runAcceptedScenario(
         version: 1 as const,
         subtasks: [
           { id: 'code', title: 'First', dependsOn: [] },
-          { id: 'B', title: 'Second', dependsOn: ['code'] },
+          ...(reviewerSource ? [] : [{ id: 'B', title: 'Second', dependsOn: ['code'] }]),
         ],
       };
       await ctx.store.commit(ctx.scope, [
@@ -137,7 +163,7 @@ async function runAcceptedScenario(
           dependsOn: ['code'],
           status: 'todo',
         }),
-        mergeByIdMutation('workers', 'coder', {
+        mergeByIdMutation('workers', initialCoderId, {
           status: 'done',
           worktree: coderRef,
           subtaskId: 'code',
@@ -156,7 +182,7 @@ async function runAcceptedScenario(
             attempt: 1,
             base: { branch: integration.branch, commit: integration.baseCommit },
             subtaskIds: ['code'],
-            coderWorkerIds: ['coder'],
+            coderWorkerIds: [initialCoderId],
             validation: {
               dispatchId: 'dispatch',
               workerId: testerId,
@@ -172,11 +198,11 @@ async function runAcceptedScenario(
           base: { branch: integration.branch, commit: integration.baseCommit },
           integrationWorktree: integrationRef,
           pendingBranches: [
-            { workerId: 'coder', subtaskId: 'code', topologicalRank: 0, worktree: coderRef },
+            { workerId: initialCoderId, subtaskId: 'code', topologicalRank: 0, worktree: coderRef },
           ],
           mergedBranches: [
             {
-              workerId: 'coder',
+              workerId: initialCoderId,
               subtaskId: 'code',
               branch: coderRef.branch,
               headCommit: integration.baseCommit,
@@ -203,7 +229,15 @@ async function runAcceptedScenario(
           type: 'announce',
           display: 'First wave',
           ts: 2,
-          payload: { kind: 'coding_wave' },
+          payload: {
+            kind: 'coding_wave',
+            planId: 'plan',
+            nextRole: 'CODER',
+            attempt: 1,
+            base: { branch: integration.branch, commit: integration.baseCommit },
+            subtaskIds: ['code'],
+            workerIds: [initialCoderId],
+          },
         }),
         appendMutation('messages', {
           msgId: 'dispatch',
@@ -298,51 +332,118 @@ async function runAcceptedScenario(
       if (!isWaveValidationReceipt(receiptMessage?.payload)) throw Error('missing native receipt');
       const accepted = receiptMessage.payload;
       const base = { branch: accepted.worktree.branch, commit: accepted.worktree.headCommit };
-      await ctx.store.commit(ctx.scope, [
-        mergeByIdMutation('workers', testerId, { status: 'done' }),
-        mergeByIdMutation('subtasks', 'code', { status: 'done' }),
-        mergeByIdMutation('subtasks', 'B', { status: 'in_progress' }),
-        mergeByIdMutation('workers', coderId, {
-          role: 'CODER',
-          executor: 'harness',
-          status: 'pending',
-          subtaskId: 'B',
-          startedTs: 4,
-        }),
-        appendMutation('messages', {
-          msgId: 'next-wave',
-          channelId: 'main',
-          fromRole: 'COORDINATOR',
-          type: 'announce',
-          display: 'Second wave',
-          ts: 4,
-          payload: {
-            kind: 'coding_wave',
+      if (reviewerSource) {
+        expect(accepted.results.passed).toBe(true);
+        await ctx.store.commit(ctx.scope, [
+          mergeByIdMutation('workers', testerId, { status: 'done' }),
+        ]);
+        let sequence = 0;
+        if (!validated.parallelExecution) throw Error('missing validated execution');
+        const options = {
+          newId: () => `review-control-${++sequence}`,
+          now: () => 4 + sequence,
+          parallel: {
+            initialBase: validated.parallelExecution.initialBase,
+            controlFingerprint: accepted.controlFingerprint,
+          },
+        };
+        await ctx.store.commit(
+          ctx.scope,
+          decide(await ctx.control.assertClosed(ctx.scope), options).mutations,
+        );
+        const reviewing = await ctx.control.assertClosed(ctx.scope);
+        const reviewer = reviewing.workers.find((worker) => worker.role === 'REVIEWER');
+        if (!reviewer) throw Error('missing review dispatch');
+        await service.verifiedReviewVersion(reviewing, reviewer.workerId);
+        // The verdict is explicit control input; native provenance is real, not model execution.
+        await ctx.store.commit(ctx.scope, [
+          mergeByIdMutation('workers', reviewer.workerId, { status: 'done' }),
+          appendMutation('reviewComments', {
+            id: 'review-rework-verdict',
+            kind: 'verdict',
+            verdict: 'changes_requested',
+            issueScope: 'implementation',
+            summary: 'Repair the first contribution',
+            subtaskIds: ['code'],
+          }),
+        ]);
+        returnedDispatch = (
+          await ctx.store.commit(
+            ctx.scope,
+            decide(await ctx.control.assertClosed(ctx.scope), options).mutations,
+          )
+        ).state;
+        const wave = (await ctx.control.assertClosed(ctx.scope)).parallelExecution?.activeWave;
+        if (!wave?.coderWorkerIds[0]) throw Error('missing review rework wave');
+        codingWaveId = wave.waveId;
+        codingAttempt = wave.attempt;
+        coderId = wave.coderWorkerIds[0];
+      } else if (failedSource) {
+        expect(accepted.results).toMatchObject({ passed: false, total: 1, failed: 1 });
+        await ctx.store.commit(ctx.scope, [
+          mergeByIdMutation('workers', testerId, { status: 'done' }),
+        ]);
+        const current = await ctx.control.assertClosed(ctx.scope);
+        if (!current.parallelExecution) throw Error('missing retry execution');
+        returnedDispatch = (
+          await ctx.store.commit(
+            ctx.scope,
+            decide(current, {
+              newId: () => 'next-wave',
+              now: () => 4,
+              parallel: {
+                initialBase: current.parallelExecution.initialBase,
+                controlFingerprint: accepted.controlFingerprint,
+              },
+            }).mutations,
+          )
+        ).state;
+      } else
+        await ctx.store.commit(ctx.scope, [
+          mergeByIdMutation('workers', testerId, { status: 'done' }),
+          mergeByIdMutation('subtasks', 'code', { status: 'done' }),
+          mergeByIdMutation('subtasks', 'B', { status: 'in_progress' }),
+          mergeByIdMutation('workers', coderId, {
+            role: 'CODER',
+            executor: 'harness',
+            status: 'pending',
+            subtaskId: 'B',
+            startedTs: 4,
+          }),
+          appendMutation('messages', {
+            msgId: 'next-wave',
+            channelId: 'main',
+            fromRole: 'COORDINATOR',
+            type: 'announce',
+            display: 'Second wave',
+            ts: 4,
+            payload: {
+              kind: 'coding_wave',
+              planId: 'plan',
+              nextRole: 'CODER',
+              attempt: 1,
+              base,
+              subtaskIds: ['B'],
+              workerIds: [coderId],
+            },
+          }),
+          setMutation('parallelExecution', {
+            version: 1,
             planId: 'plan',
-            nextRole: 'CODER',
-            attempt: 1,
-            base,
-            subtaskIds: ['B'],
-            workerIds: [coderId],
-          },
-        }),
-        setMutation('parallelExecution', {
-          version: 1,
-          planId: 'plan',
-          initialBase: { branch: integration.branch, commit: integration.baseCommit },
-          acceptedReceiptId: 'wave-validation:dispatch',
-          activeWave: {
-            waveId: 'next-wave',
-            attempt: 1,
-            base,
-            subtaskIds: ['B'],
-            coderWorkerIds: [coderId],
-          },
-        }),
-        setMutation('phase', 'coding'),
-        setMutation('nextRole', 'CODER'),
-        setMutation('integration', undefined),
-      ]);
+            initialBase: { branch: integration.branch, commit: integration.baseCommit },
+            acceptedReceiptId: 'wave-validation:dispatch',
+            activeWave: {
+              waveId: 'next-wave',
+              attempt: 1,
+              base,
+              subtaskIds: ['B'],
+              coderWorkerIds: [coderId],
+            },
+          }),
+          setMutation('phase', 'coding'),
+          setMutation('nextRole', 'CODER'),
+          setMutation('integration', undefined),
+        ]);
       const manager = new LocalGitWorkspaces({
         ...ctx,
         verifyAcceptedVersion: (state, receipt, version) =>
@@ -350,18 +451,44 @@ async function runAcceptedScenario(
       });
       const version = validated.testResults?.workspaceVersion;
       if (version?.kind !== 'git') throw Error('missing accepted Git version');
-      await manager.registerCodingWave({
-        ...ctx.scope,
-        actionId: 'register-second-wave',
-        waveId: 'next-wave',
-        attempt: 1,
-        sourceWorkspaceId: validation.workspaceId,
-        rootId: ctx.root.rootId,
-        grantId: ctx.grant.grantId,
-        expectedRevision: (await ctx.control.snapshot()).revision,
-        version,
-        targets: [{ workspaceId: 'coding-second', purpose: 'coding', workerId: coderId }],
-      });
+      let codingPreparation: LocalCodingPreparation | undefined;
+      if ((failedSource || reviewerSource) && scenario === 'baseline') {
+        const preparation = new LocalCodingPreparation({
+          control: ctx.control,
+          objects: ctx.objects,
+          workspaces: manager,
+          verifyReceipt: (state, receiptId) => service.verifyReceiptHead(state, receiptId),
+          runTaskSerial: (scope, operation) =>
+            serializeWorkspaceOperation(
+              { ...scope, workspaceId: 'coding-task-control' },
+              operation,
+            ),
+        });
+        codingPreparation = preparation;
+        if (!returnedDispatch) throw Error('missing returned coding dispatch');
+        expect(
+          returnedDispatch.subtasks.some(
+            (s) => Object.hasOwn(s, 'worktree') && s.worktree === undefined,
+          ),
+        ).toBe(true);
+        const prepared = await preparation.prepare(returnedDispatch);
+        expect(prepared.parallelExecution?.acceptedReceiptId).toBe(
+          reviewerSource ? 'wave-validation:dispatch' : undefined,
+        );
+        expect(await preparation.prepare(prepared)).toEqual(prepared);
+      } else
+        await manager.registerCodingWave({
+          ...ctx.scope,
+          actionId: 'register-second-wave',
+          waveId: codingWaveId,
+          attempt: codingAttempt,
+          sourceWorkspaceId: validation.workspaceId,
+          rootId: ctx.root.rootId,
+          grantId: ctx.grant.grantId,
+          expectedRevision: (await ctx.control.snapshot()).revision,
+          version,
+          targets: [{ workspaceId: 'coding-second', purpose: 'coding', workerId: coderId }],
+        });
       mark('coding-registered');
       const before = await ctx.control.assertClosed(ctx.scope);
       const registry = await ctx.control.snapshot();
@@ -396,6 +523,7 @@ async function runAcceptedScenario(
       if (scenario === 'baseline') {
         renameSync(privateEvidence, `${privateEvidence}.held`);
         try {
+          if (codingPreparation) await expect(codingPreparation.prepare(before)).rejects.toThrow();
           await expect(
             manager.readAcceptedCodingBaseline({ ...ctx.scope, workerId: coderId }),
           ).rejects.toThrow();
@@ -412,7 +540,10 @@ async function runAcceptedScenario(
           writeFileSync(sourceFile, 'working\n');
         }
         const child = registry.linkedRoots?.find(
-          (record) => record.workspaceId === 'coding-second',
+          (record) =>
+            record.workspaceId ===
+            before.localExecution?.bindings.find((binding) => binding.workerId === coderId)
+              ?.workspaceId,
         );
         if (!child) throw Error('missing second-wave coding root');
         const childFile = join(child.path, 'file.txt');
@@ -440,7 +571,7 @@ async function runAcceptedScenario(
           ...ctx.scope,
           workerId: coderId,
           role: 'CODER',
-          subtaskId: 'B',
+          subtaskId: codingSubtask,
           sessionId: 'session:second-coder',
           assertLease: () => scheduler.assertActive(coderLease),
         });
@@ -479,12 +610,28 @@ async function runAcceptedScenario(
               [],
             );
           }
+          if (failedSource) {
+            const read = await coder.tools.read(`tool:${hash('repair-read')}`, 'file.txt');
+            await coder.tools.apply(
+              `tool:${hash('repair-write')}`,
+              [
+                {
+                  path: 'file.txt',
+                  expected: read.version,
+                  readReceiptId: read.readReceiptId,
+                  content: 'repaired\n',
+                  encoding: 'utf8',
+                },
+              ],
+              [],
+            );
+          }
           await coder.checkpoint('complete');
           const completed = await coder.completeWorktree?.();
           if (!completed?.headCommit) throw Error('missing completed second CODER tree');
           await ctx.store.commit(ctx.scope, [
             mergeByIdMutation('workers', coderId, { worktree: completed }),
-            mergeByIdMutation('subtasks', 'B', { worktree: completed }),
+            mergeByIdMutation('subtasks', codingSubtask, { worktree: completed }),
           ]);
         } finally {
           await coder.close();
@@ -499,8 +646,8 @@ async function runAcceptedScenario(
       const integrationRegistration = {
         ...ctx.scope,
         actionId: 'register-second-integration',
-        waveId: 'next-wave',
-        attempt: 1,
+        waveId: codingWaveId,
+        attempt: codingAttempt,
         sourceWorkspaceId: validation.workspaceId,
         rootId: ctx.root.rootId,
         grantId: ctx.grant.grantId,
@@ -524,7 +671,7 @@ async function runAcceptedScenario(
       expect(f.git(['rev-parse', 'HEAD'])).toBe(userHead);
       const ready = await ctx.control.assertClosed(ctx.scope);
       const wavePlan = planIntegrationWave(ready, {
-        waveId: 'next-wave',
+        waveId: codingWaveId,
         workerIds: [coderId],
         baseBranch: base.branch,
       });
@@ -687,8 +834,8 @@ async function runAcceptedScenario(
           ];
           const scope = {
             ...ctx.scope,
-            waveId: 'next-wave',
-            attempt: 1,
+            waveId: codingWaveId,
+            attempt: codingAttempt,
             integrationId: prepared.call.integrationId,
           };
           const records = new LocalValidationPreparationRecords(ctx.objects);
@@ -949,9 +1096,25 @@ async function runAcceptedScenario(
   );
 }
 
+it(
+  'registers a failed validation source without advancing accepted progress',
+  () => runAcceptedScenario('baseline', true),
+  600_000,
+);
+it(
+  'repairs and revalidates the first failed Git wave through independent TESTER',
+  () => runAcceptedScenario('receipt', true),
+  3_600_000,
+);
+it(
+  'registers a canonical REVIEWER rework from its verified validation tree',
+  () => runAcceptedScenario('baseline', false, true),
+  600_000,
+);
+
 it.each(['baseline', 'published', 'ack'] as const)(
   'proves accepted second-wave source: %s',
-  runAcceptedScenario,
+  (scenario) => runAcceptedScenario(scenario),
   600_000,
 );
 

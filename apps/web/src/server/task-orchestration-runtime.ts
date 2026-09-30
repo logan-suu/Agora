@@ -76,6 +76,7 @@ export interface TaskComposition {
   parallelContext?: (
     state: AppState,
   ) => Promise<{ initialBase: { branch: string; commit: string }; controlFingerprint: string }>;
+  prepareLocalCoding?: (state: AppState) => Promise<AppState>;
   prepareLocalValidation?: (state: AppState) => Promise<AppState>;
   admitLocalValidation?: (state: AppState, workerId: string) => Promise<AppState>;
   prepareLocalDeliveryRepair?: (state: AppState, source: DeliveryRepairSource) => Promise<AppState>;
@@ -637,6 +638,9 @@ export class TaskOrchestrationRuntime {
         ...(composition.parallelContext === undefined
           ? {}
           : { parallelContext: composition.parallelContext }),
+        ...(composition.prepareLocalCoding === undefined
+          ? {}
+          : { prepareLocalCoding: composition.prepareLocalCoding }),
         ...(composition.prepareLocalValidation === undefined
           ? {}
           : { prepareLocalValidation: composition.prepareLocalValidation }),

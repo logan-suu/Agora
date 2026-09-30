@@ -1,6 +1,6 @@
 /** Bind an initial validation source to the current wave's cumulative base.
  * Physical completion, Git version and the durable dispatch are proved elsewhere. */
-import { type AppState, validationReceipt } from '@agora/core-domain';
+import { type AppState, readCodingWorkerLineage, validationReceipt } from '@agora/core-domain';
 
 export function assertValidationSourceWave(
   state: AppState,
@@ -12,7 +12,8 @@ export function assertValidationSourceWave(
   const initialWorkspaceId = state.localExecution?.git?.initialWorkspaceId;
   if (!execution || !integration || !initialWorkspaceId)
     throw Error('workspace_validation_source_mismatch');
-  const acceptedId = execution.acceptedReceiptId;
+  const lineage = execution.activeWave ? readCodingWorkerLineage(state) : undefined;
+  const acceptedId = lineage ? lineage.sourceReceiptId : execution.acceptedReceiptId;
   if (acceptedId === undefined) {
     if (
       sourceWorkspaceId !== initialWorkspaceId ||
@@ -24,7 +25,7 @@ export function assertValidationSourceWave(
   }
   const accepted = validationReceipt(state, acceptedId);
   if (
-    !accepted.results.passed ||
+    (!lineage && !accepted.results.passed) ||
     sourceWorkspaceId === initialWorkspaceId ||
     sourceBaseCommit !== accepted.worktree.headCommit ||
     integration.base.branch !== accepted.worktree.branch ||

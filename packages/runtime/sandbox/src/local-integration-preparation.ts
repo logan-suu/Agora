@@ -119,8 +119,8 @@ export class LocalIntegrationPreparation {
         (() => {
           const registration = request.registration as WaveRegistration;
           const lineage = readCodingWorkerLineage(beforeCall);
-          const accepted = lineage.acceptedReceiptId
-            ? validationReceipt(beforeCall, lineage.acceptedReceiptId)
+          const accepted = lineage.sourceReceiptId
+            ? validationReceipt(beforeCall, lineage.sourceReceiptId)
             : undefined;
           const sourceWorkspaceId = beforeCall.localExecution?.bindings.find(
             (binding) => binding.workerId === accepted?.workerId,

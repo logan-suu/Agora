@@ -388,7 +388,7 @@ export class LocalGitWorkspaces {
       !Number.isSafeInteger(input.expectedRevision) ||
       input.expectedRevision < 0 ||
       !Number.isSafeInteger(input.attempt) ||
-      input.attempt !== 1 ||
+      input.attempt < 1 ||
       !isWorkspaceVersionV1(input.version) ||
       input.version.kind !== 'git' ||
       !Array.isArray(input.targets) ||
@@ -868,7 +868,8 @@ export class LocalGitWorkspaces {
         record.bindingReceiptId !== mapping.receiptId
       )
         throw Error('workspace_wave_source_mismatch');
-      const acceptedId = state.parallelExecution?.acceptedReceiptId;
+      const lineage = readCodingWorkerLineage(state);
+      const acceptedId = lineage.sourceReceiptId;
       if (acceptedId === undefined) {
         if (
           workspace.workspaceId !== local.git?.initialWorkspaceId ||
@@ -880,7 +881,6 @@ export class LocalGitWorkspaces {
         const accepted = validationReceipt(state, acceptedId);
         if (
           workspace.purpose !== 'validation' ||
-          !accepted.results.passed ||
           accepted.worktree.path !== record.path ||
           accepted.worktree.branch !== workspace.branch ||
           accepted.worktree.headCommit !== wave.base.commit
@@ -894,7 +894,7 @@ export class LocalGitWorkspaces {
           structuredClone(request.version),
         );
       }
-      await new LocalGitVersionStore(objects, versions).verify(request.version, scope, {
+      const currentSource = {
         ...this.git,
         projectId: request.projectId,
         taskId: request.taskId,
@@ -907,7 +907,12 @@ export class LocalGitWorkspaces {
         creationActionId: record.creation.actionId,
         bindingReceiptId: record.bindingReceiptId,
         authorize,
-      });
+      };
+      await new LocalGitVersionStore(objects, versions).verify(
+        request.version,
+        scope,
+        currentSource,
+      );
       await authorize();
       sourceCommit = wave.base.commit;
     };
@@ -1148,7 +1153,7 @@ function assertIntegrationWave(state: AppState, request: WaveRequest): void {
   if (
     state.phase !== 'coding' ||
     state.integration !== undefined ||
-    !lineage.acceptedReceiptId ||
+    !lineage.sourceReceiptId ||
     !wave ||
     wave.waveId !== request.waveId ||
     wave.attempt !== request.attempt ||

@@ -227,7 +227,9 @@ it('rejects a future, failed, or rework receipt as an accepted next-wave base', 
   const wave = rework.state.messages.at(-1);
   if (wave?.payload.kind !== 'coding_wave') throw Error('missing coding wave');
   wave.payload.reworkSourceMsgId = 'review-rework';
-  expect(() => readCodingWorkerLineage(rework.state)).toThrow('coding_lineage_unsupported');
+  expect(() => readCodingWorkerLineage(rework.state)).toThrow(
+    'validation scope requires an earlier canonical review rework',
+  );
 });
 
 it('derives initial assignments and repeated partial retries without mutating state', () => {
