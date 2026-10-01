@@ -1707,7 +1707,7 @@
           "id": "12.4",
           "title": "实现本机 Worktree 并行与验证集成",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1",
             "docs/详细设计方案.md §12.1/§12.2",
@@ -1720,14 +1720,14 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-4-linked-workspace.test.ts",
-          "notes": "PR #88续修已推送，实现提交7d299b598030be8c1bc707ad9f56453c61a3ba2f。已接通本机冲突→Leader gate→原B返工，并修复REVIEWER历史/同回复ID碰撞准入与当前dispatchId投影。完整第六轮300文件2476项+追踪7项全绿，19376.71秒，796项hash未变；G3、73项定向和958项快速回归通过。551个结束根清理，8份过时输出1155字节删除；历史未知模型错误证据保留。详见 docs/task-history/12.4.md；docs/reviews/task124-final-acceptance.md；docs/reviews/task124-next-session-handoff.md。PR：https://github.com/logan-suu/Agora/pull/88。人工合并前保持in_progress，不替代12.7出口。",
+          "notes": "PR #88已人工合并至dev-1.0.0，合并提交7d2fa4474f08834380d34d09ff1de6e9933d2fd7，实现提交7d299b598030be8c1bc707ad9f56453c61a3ba2f。合并树与已验收PR头一致，796项源码配置hash复核未变。G1/G3/G4/G5/G6/G7通过：全量300文件2476项+追踪7项全绿，typecheck/lint通过；真实本机冲突→Leader gate→原B返工、累计独立TESTER/REVIEWER及OpenCode Go/deepseek-v4-flash链路通过。551个结束根及8份过时输出已留证清理，历史未知模型错误证据保留。详见 docs/task-history/12.4.md；docs/reviews/task124-final-acceptance.md。PR：https://github.com/logan-suu/Agora/pull/88。12.5依赖已满足；12.7阶段出口仍待独立验收。",
           "last_updated": "2026-09-30"
         },
         {
           "id": "12.5",
           "title": "保护已有修改并实现基础人工接管交还",
           "story": null,
-          "status": "pending",
+          "status": "ready",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.5",
             "docs/详细设计方案.md §12.2",
@@ -1741,7 +1741,7 @@
           ],
           "test_file": "tests/integration/phase12/phase12-5.test.ts",
           "notes": "任务类型：code。记录未提交修改基线，验证外部编辑、冲突、撤销范围和安全点接管；相关工作暂停，独立工作继续，交还重新读取，不覆盖用户工作。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
-          "last_updated": "2026-09-13"
+          "last_updated": "2026-09-30"
         },
         {
           "id": "12.6",
