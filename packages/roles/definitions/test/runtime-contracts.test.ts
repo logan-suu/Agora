@@ -46,6 +46,17 @@ describe('architectTurnMutations structured transport', () => {
 describe('reviewerTurnMutations structured transport', () => {
   const verdict = '[{"id":"rv-live","kind":"verdict","verdict":"approved","summary":"looks good"}]';
 
+  it('rejects historical verdict identities before append deduplication can discard them', () => {
+    expect(() => reviewerTurnMutations(verdict, ['rv-live'])).toThrow(/fresh/);
+    expect(reviewerTurnMutations(verdict, ['rv-previous'])).toHaveLength(1);
+  });
+
+  it('rejects a verdict identity shared with another entry in the same response', () => {
+    const entries = JSON.parse(verdict);
+    entries.unshift({ id: 'rv-live', kind: 'comment', summary: 'A separate observation' });
+    expect(() => reviewerTurnMutations(JSON.stringify(entries))).toThrow(/unique/);
+  });
+
   it('accepts one JSON code fence while preserving strict verdict validation', () => {
     expect(reviewerTurnMutations(`\`\`\`json\n${verdict}\n\`\`\``)).toHaveLength(1);
     expect(reviewerTurnMutations(`\`\`\`json\n${verdict}\`\`\``)).toHaveLength(1);

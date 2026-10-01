@@ -37,11 +37,17 @@ export const SIX_ROLE_HANDOFF: Readonly<Partial<Record<string, string>>> = {
     '\n\n[Working rules]\n- All file paths are relative to the worktree root (the `path` argument of fs_read/fs_write).\n- Use fs_write to create test files, then sandbox_run to execute them (e.g. `node --test <file>`).\n- After running, use fs_write to store the structured result at the worktree root in `test-results.json` with this exact JSON shape: {"passed": true, "total": 2, "failed": 0, "failures": []}\n- On failure, set passed=false and report every failure as {"test":"test name","message":"observed failure","file":"cache.test.mjs","line":4}, using the actual worktree-relative file and line; use file="" and line=0 only when the tool reports no source location. Do not use strings, omit location fields, or claim success after a failed test.',
   REVIEWER:
     WORKTREE_GIT_GUIDANCE +
-    '\n\n[Working rules]\n- Your grant is read-only: fs_read to inspect files, git_diff with ref `HEAD~1` to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- For an ordinary handoff, end your turn with a single JSON array containing exactly one verdict entry shaped {"id":"rv-...","kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."}; other entries are optional comments. The verdict id must be unique for this review dispatch and match `[A-Za-z0-9][A-Za-z0-9._:-]*` so it can safely bind a D16 completion gate. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested. A test_failure_root_cause review must return changes_requested. When reviewScope is projected, inspect the complete cumulative artifact and its full subtask index. Preserve inherited cumulative tests at their existing paths; never request their deletion, renaming, relocation, or consolidation into replacement files. The independent validation TESTER owns cumulative acceptance tests. A cosmetic difference from an Architect-suggested test layout is a comment, not a blocking defect, when current requirements and test coverage are satisfied. If an explicit current requirement mandates an additional entry point, request an additive change that preserves inherited tests; use architecture feedback for an incompatible plan instead of ordering a prohibited migration. For changes_requested, optionally include a non-empty unique subtaskIds array of exact current-plan ids; those tasks and all dependent successors will reopen. Omit subtaskIds only when the whole plan needs rework.\n- ORDINARY HANDOFF OUTPUT CONTRACT: return the raw JSON array only. Do not output prose or markdown before or after it（最终回复只能是原始 JSON 数组，前后不得附加解释或 Markdown）.',
+    '\n\n[Working rules]\n- Your grant is read-only: fs_read to inspect files, git_diff with ref `HEAD~1` to see the committed change, and lint_check to run Biome over worktree-relative paths (the worktree argument is injected).\n- For an ordinary handoff, end your turn with a single JSON array containing exactly one verdict entry shaped {"id":"rv-...","kind":"verdict","verdict":"approved"|"changes_requested","issueScope":"implementation"|"architecture","summary":"..."}; other entries are optional comments. Use the current reviewContext.dispatchId to construct a fresh verdict id; never reuse an earlier review id or share the verdict id with a comment. The verdict id must be unique for this review dispatch and match `[A-Za-z0-9][A-Za-z0-9._:-]*` so it can safely bind a D16 completion gate. issueScope is optional for backward compatibility and defaults to implementation; use architecture only with changes_requested. A test_failure_root_cause review must return changes_requested. When reviewScope is projected, inspect the complete cumulative artifact and its full subtask index. Preserve inherited cumulative tests at their existing paths; never request their deletion, renaming, relocation, or consolidation into replacement files. The independent validation TESTER owns cumulative acceptance tests. A cosmetic difference from an Architect-suggested test layout is a comment, not a blocking defect, when current requirements and test coverage are satisfied. If an explicit current requirement mandates an additional entry point, request an additive change that preserves inherited tests; use architecture feedback for an incompatible plan instead of ordering a prohibited migration. For changes_requested, optionally include a non-empty unique subtaskIds array of exact current-plan ids; those tasks and all dependent successors will reopen. Omit subtaskIds only when the whole plan needs rework.\n- ORDINARY HANDOFF OUTPUT CONTRACT: return the raw JSON array only. Do not output prose or markdown before or after it（最终回复只能是原始 JSON 数组，前后不得附加解释或 Markdown）.',
 };
 
 /** Static role-owned guidance for bounded, tool-free output regeneration. */
 export const SIX_ROLE_FORMAT_REPAIR: Readonly<Partial<Record<string, string>>> = {
+  REVIEWER:
+    'Return one JSON array with exactly one verdict entry and optional comments. ' +
+    'The verdict needs a fresh safe id, kind="verdict", verdict and summary. ' +
+    'Use the current reviewContext.dispatchId to distinguish this review from earlier reviews. ' +
+    'Never reuse an earlier verdict id or share its id with a comment. ' +
+    'Preserve the actual findings and verdict; correct only the structured handoff.',
   ARCHITECT:
     'The top-level object must have exactly two sibling keys: architecture and conventions. ' +
     'conventions belongs at the top-level, never at architecture.conventions. Close the architecture object before writing the conventions key. ' +
@@ -107,7 +113,10 @@ export function architectTurnMutations(text: string | null): Mutation[] {
   return [setMutation('architecture', architecture), setMutation('conventions', conventions)];
 }
 
-export function reviewerTurnMutations(text: string | null): Mutation[] {
+export function reviewerTurnMutations(
+  text: string | null,
+  previousReviewIds: readonly string[] = [],
+): Mutation[] {
   const parsed = parseTurnJson(text, 'REVIEWER');
   if (!Array.isArray(parsed))
     throw new Error('REVIEWER final message must be a JSON array of review entries');
@@ -151,12 +160,20 @@ export function reviewerTurnMutations(text: string | null): Mutation[] {
   if (verdictCount !== 1) {
     throw new Error(`REVIEWER final message must contain exactly one verdict; got ${verdictCount}`);
   }
+  const verdictId = entries.find((entry) => entry.kind === 'verdict')?.id;
+  if (typeof verdictId !== 'string') throw new Error('REVIEWER verdict requires an id');
+  if (entries.filter((entry) => entry.id === verdictId).length !== 1)
+    throw new Error('REVIEWER verdict id must be unique within its response');
+  if (previousReviewIds.includes(verdictId))
+    throw new Error('REVIEWER verdict needs a fresh id not used by an earlier review entry');
   return entries.map((entry) => appendMutation('reviewComments', entry));
 }
 
 /** Per-role final-text interpreters wired into HarnessExecutor. */
 export const SIX_ROLE_TURN_MUTATION_READERS: Readonly<
-  Partial<Record<string, (text: string | null) => Mutation[]>>
+  Partial<
+    Record<string, (text: string | null, previousReviewIds?: readonly string[]) => Mutation[]>
+  >
 > = {
   PM: pmTurnMutations,
   ARCHITECT: architectTurnMutations,

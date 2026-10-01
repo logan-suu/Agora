@@ -20,6 +20,7 @@ export async function completedCoders(
     seedDirectories?: boolean;
     canonicalPlan?: boolean;
     singleWorker?: boolean;
+    conflictingFile?: boolean;
   } = {},
 ) {
   const { manager, request, state } = await firstCodingWave(
@@ -57,7 +58,7 @@ export async function completedCoders(
         sessionId,
         assertLease: () => scheduler.assertActive(lease),
       });
-      const path = `result-${index}.txt`;
+      const path = hooks.conflictingFile ? 'shared-result.txt' : `result-${index}.txt`;
       const file = await session.tools.read(`tool:${hash(`read-${index}`)}`, path);
       await session.tools.apply(
         `tool:${hash(`write-${index}`)}`,

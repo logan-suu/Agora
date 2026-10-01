@@ -3,6 +3,7 @@
  */
 import { isWorktreeRef } from '@agora/core-domain';
 import type { LocalBindingCoordinator } from './local-binding-coordinator';
+import { readConflictReworkHistory } from './local-conflict-rework-records';
 import type { LocalControlObjects } from './local-control-objects';
 import type { LocalGitWorkspaceOptions } from './local-git-workspaces';
 import {
@@ -17,6 +18,11 @@ import {
   completionKey,
   readIntegrationCompletionPlan,
 } from './local-integration-completion-records';
+import {
+  conflictHandoffKey,
+  readIntegrationConflictHandoffPlan,
+} from './local-integration-conflict-handoff-records';
+import { conflictKey, readIntegrationConflictPlan } from './local-integration-conflict-records';
 import { handoffKey, readIntegrationHandoffPlan } from './local-integration-handoff-records';
 import { verifyLocalLinkedRoot } from './local-linked-root';
 import {
@@ -72,6 +78,9 @@ export class LocalIntegrationAuthority {
   private readonly git: LocalGitWorkspaceOptions;
   private completionCall?: LocalIntegrationCall;
   private handoff = false;
+  private conflict = false;
+  private conflictHandoff = false;
+  private conflictRework = false;
   private preparation?: {
     control: ValidationPreparationProofReader;
     reference: ValidationPreparationReference;
@@ -83,6 +92,22 @@ export class LocalIntegrationAuthority {
   completionReader(call: LocalIntegrationCall): LocalIntegrationAuthority {
     const reader = new LocalIntegrationAuthority(this.options);
     reader.completionCall = structuredClone(call);
+    return reader;
+  }
+  /** Read-only admission bound to an exact native conflict transition. */
+  conflictReader(call: LocalIntegrationCall): LocalIntegrationAuthority {
+    const reader = this.completionReader(call);
+    reader.conflict = true;
+    return reader;
+  }
+  conflictHandoffReader(call: LocalIntegrationCall): LocalIntegrationAuthority {
+    const reader = this.conflictReader(call);
+    reader.conflictHandoff = true;
+    return reader;
+  }
+  conflictReworkReader(call: LocalIntegrationCall): LocalIntegrationAuthority {
+    const reader = this.conflictHandoffReader(call);
+    reader.conflictRework = true;
     return reader;
   }
   /** Read original evidence through an exact, durably recorded closure transition. */
@@ -243,6 +268,14 @@ export class LocalIntegrationAuthority {
     const completionCall = this.completionCall;
     const preparation = this.preparation;
     const authorize = async () => {
+      if (
+        completionCall &&
+        this.conflictHandoff &&
+        ((await this.options.objects.getReference(conflictHandoffKey(completionCall, 'plan'))) !==
+          qualified.conflictHandoffPlanHash ||
+          (await this.options.objects.getReference(conflictHandoffKey(completionCall, 'invalid'))))
+      )
+        throw Error('integration_conflict_handoff_recovery_required');
       await this.options.assertControl(call);
       await this.options.verifyGrant(call, grantId);
       if (
@@ -261,11 +294,20 @@ export class LocalIntegrationAuthority {
       }
       if (
         completionCall &&
+        !this.conflict &&
         ((await this.options.objects.getReference(completionKey(completionCall, 'plan'))) !==
           qualified.completionPlanHash ||
           (await this.options.objects.getReference(completionKey(completionCall, 'invalid'))))
       )
         throw Error('integration_completion_recovery_required');
+      if (
+        completionCall &&
+        this.conflict &&
+        ((await this.options.objects.getReference(conflictKey(completionCall, 'plan'))) !==
+          qualified.conflictPlanHash ||
+          (await this.options.objects.getReference(conflictKey(completionCall, 'invalid'))))
+      )
+        throw Error('integration_conflict_recovery_required');
       if (
         completionCall &&
         this.handoff &&
@@ -445,10 +487,33 @@ export class LocalIntegrationAuthority {
             historical?.releasedRegistry ?? liveSnapshot,
           )
         : undefined;
-    const snapshot = handoff?.registry ?? liveSnapshot;
+    const conflictRework =
+      completionCall && this.conflictRework
+        ? await readConflictReworkHistory(
+            this.options.objects,
+            completionCall,
+            liveState,
+            liveSnapshot,
+          )
+        : undefined;
+    const conflictHandoff =
+      completionCall && this.conflictHandoff
+        ? await readIntegrationConflictHandoffPlan(
+            this.options.objects,
+            completionCall,
+            conflictRework?.released.state ?? liveState,
+            conflictRework?.released.snapshot ?? liveSnapshot,
+          )
+        : undefined;
+    const snapshot = conflictHandoff?.registry ?? handoff?.registry ?? liveSnapshot;
+    const conflict =
+      conflictHandoff?.conflict ??
+      (completionCall && this.conflict
+        ? await readIntegrationConflictPlan(this.options.objects, completionCall, liveState)
+        : undefined);
     const completion =
       handoff?.completion ??
-      (completionCall
+      (completionCall && !this.conflict
         ? await readIntegrationCompletionPlan(this.options.objects, completionCall, liveState)
         : undefined);
     if (
@@ -456,7 +521,9 @@ export class LocalIntegrationAuthority {
       (closing || published || completion.plan.registryRevision !== snapshot.revision)
     )
       throw Error('integration_completion_recovery_required');
-    const state = completion?.before ?? liveState;
+    if (conflict && (closing || published || conflict.plan.registryRevision !== snapshot.revision))
+      throw Error('integration_conflict_recovery_required');
+    const state = conflict?.before ?? completion?.before ?? liveState;
     const integration = state.integration;
     const workspace = snapshot.workspaces.find(
       (w) =>
@@ -581,6 +648,12 @@ export class LocalIntegrationAuthority {
       !grant.actions.includes('edit')
     )
       throw Error('authorization_closed');
+    if (
+      conflictRework &&
+      (!liveSnapshot.roots.some((r) => localRecordHash(r) === localRecordHash(root)) ||
+        !liveSnapshot.grants.some((g) => localRecordHash(g) === localRecordHash(grant)))
+    )
+      throw Error('integration_conflict_rework_mismatch');
     const initialization = snapshot.operations.find(
       (o) => !isLocalBindingOperation(o) && o.rootId === root.rootId && o.grantId === grant.grantId,
     );
@@ -591,6 +664,14 @@ export class LocalIntegrationAuthority {
     )
       throw Error('workspace_root_not_initialized');
     const check = async () => {
+      if (
+        completionCall &&
+        conflictHandoff &&
+        ((await this.options.objects.getReference(conflictHandoffKey(completionCall, 'plan'))) !==
+          conflictHandoff.planHash ||
+          (await this.options.objects.getReference(conflictHandoffKey(completionCall, 'invalid'))))
+      )
+        throw Error('integration_conflict_handoff_recovery_required');
       await this.options.assertControl(scope);
       await this.options.verifyGrant(scope, grant.grantId);
       if (historical && this.preparation) {
@@ -602,6 +683,14 @@ export class LocalIntegrationAuthority {
         )
           throw Error('initial_validation_preparation_state_changed');
       }
+      if (
+        completionCall &&
+        conflict &&
+        ((await this.options.objects.getReference(conflictKey(completionCall, 'plan'))) !==
+          conflict.planHash ||
+          (await this.options.objects.getReference(conflictKey(completionCall, 'invalid'))))
+      )
+        throw Error('integration_conflict_recovery_required');
       const current = await control.assertClosed(scope);
       if (
         (await control.snapshot()).revision !== liveSnapshot.revision ||
@@ -670,6 +759,8 @@ export class LocalIntegrationAuthority {
       liveRegistryRevision: liveSnapshot.revision,
       ...(historical ? { preparationStage: historical.stage } : {}),
       completionPlanHash: completion?.planHash,
+      conflictPlanHash: conflict?.planHash,
+      conflictHandoffPlanHash: conflictHandoff?.planHash,
       handoffPlanHash: handoff?.planHash,
       snapshot,
       integration,

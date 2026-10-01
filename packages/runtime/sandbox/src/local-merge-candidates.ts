@@ -34,6 +34,10 @@ import type { LocalVersionScope, LocalVersionStore } from './local-version-store
 import { serializeWorkspaceOperation } from './local-workspace-operation';
 
 type Merge = Parameters<typeof readLocalGitMergeTree>[0];
+export type LocalMergeConflict = {
+  candidate: LocalGitMergeCandidate;
+  result: { kind: 'conflict'; source: 'git' | 'directories'; paths: string[] };
+};
 type Request = { scope: LocalVersionScope; actionId: string; merge: Merge };
 export type LocalMergeCandidate = {
   schemaVersion: 'local-merge-candidate-v1';
@@ -151,6 +155,11 @@ export class LocalMergeCandidates {
     return true;
   }
   async materialize(input: Request): Promise<LocalMergeCandidate> {
+    const result = await this.materializeOutcome(input);
+    if (!('version' in result)) throw Error('local_git_merge_conflict');
+    return result;
+  }
+  async materializeOutcome(input: Request): Promise<LocalMergeCandidate | LocalMergeConflict> {
     localRecordHash({ scope: input.scope, actionId: input.actionId });
     const scope = structuredClone(input.scope),
       actionId = input.actionId;
@@ -281,7 +290,8 @@ export class LocalMergeCandidates {
     const check = () => this.check(merge.authorize);
     await check();
     const source = await readLocalGitMergeTree({ ...merge, authorize: check });
-    if (source.result.kind !== 'merged') throw Error('local_git_merge_conflict');
+    if (source.result.kind !== 'merged')
+      return { candidate: source.candidate, result: source.result };
     const contents = source.result;
     if (contents.files.length + contents.directories.length + 1 > 4096)
       throw Error('workspace_version_limit');

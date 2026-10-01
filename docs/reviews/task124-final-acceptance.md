@@ -1,36 +1,38 @@
-# Task 12.4 PR #88 修复验收
+# Task 12.4 PR #88 增量验收（2026-09-30，America/Chicago）
 
-2026-09-29。分支`codex/feat-local-worktree-integration`，[PR #88](https://github.com/logan-suu/Agora/pull/88)，base=`dev-1.0.0`。本轮修复首次TESTER失败与REVIEWER退回后的原生编码来源登记，实现提交`cbd9afe4e22a83072a07e949214f3e9d95a78745`已推送；任务保持`in_progress`，不自动合并，不声明Phase 12出口。
+当前代码门禁已通过，待提交推送；[PR #88](https://github.com/logan-suu/Agora/pull/88) 保持人工合并。任务12.4保持in_progress，不据此标记Phase12出口或开放普通项目入口。
 
-## 修复与实测
+## 修复范围
 
-来源回执`sourceReceiptId`与历史成功的`acceptedReceiptId`分开。规范失败/退回来源保留代码与测试，仍须证明私有原生命令、精确Git版本、工作树身份和派发顺序；失败来源不会推进成功验收。宿主登记屏障在worker取得执行额度之前完成全批新绑定，并对已有绑定重验私有来源证明。
+- 接通本机真实冲突证据→规范conflict State→写入关闭证明→持久Leader gate；结果不确定时只复核不可变证据，不重复文件副作用，漂移保持拒绝。
+- Leader明确request_rework后，从原始B基线创建替换worker和新attempt，保留其他贡献者、历史worker/收据/产物；来源必须由原Git manifest、关闭证明和规范裁决交叉验证，不重新捕获用户编辑或把已合入前缀当原B。
+- 修正历史基线证明与当前受信State的校验接缝，原有当前授权、revision和grant检查保留。
+- REVIEWER普通输出拒绝历史review身份和同响应verdict/comment身份碰撞，组合根绑定规范State，投影只增加当前结构化dispatchId；沿用最多两次无工具格式恢复，不自动改ID/结论，不放宽Coordinator、reducer或D16。原回复未保留，因此不声称识别了历史失败的具体碰撞ID；两类入口漏洞均有确定性红灯。
+- 同步Phase2精确投影断言，核对两轮各自的实际派发ID与不复用，原channelId/fromRole隔离断言保持。
 
-新增原生回归在完整测试中通过：失败来源登记94293ms；首次失败→修复代码→累计集成→独立TESTER1127518ms；REVIEWER退回来源登记86449ms（判定是显式控制输入，不冒充该项执行模型审阅）。既有第二波baseline/发布/确认/交接/独立验证/累计回执/REVIEWER全部通过。实际失败测试保留，用户HEAD/index保护不变。
+## 最终验证
 
-复核另发现提交返回态保留`worktree: undefined`、JSON持久态省略该字段，严格记录hash会误拒绝合法返工。真实红灯45.94秒确认根因，改用既有领域规范比较任务State；登记请求与原生记录仍严格校验。测试直接使用commit返回态并断言存在已清除字段；两条来源定向80761/82662ms通过，随后完整回归再次覆盖。
+完整无过滤 `pnpm run test --reporter=verbose --bail=1`，session68049自然退出0：**300文件2476项 + 7项追踪测试全部通过，零失败/跳过，19376.71秒**。运行源796项hash在结束时全部不变；无运行后产品源码修改。Node v24.20.0、pnpm9.15.9；真实模型使用OpenCode Go / deepseek-v4-flash，原参数、断言和360秒模型期限保持。
 
-## 完整回归与交付检查
+新增真实冲突evidence838016ms、原B返工1615335ms；累计来源组10项通过（首次失败Git修复1424199ms、独立累计TESTER1460125ms、REVIEWER1445107ms）。真实Git Leader修复432276ms、普通目录Leader234336ms/REVIEWER265187ms/TESTER172848ms修复通过。Phase0真实模型、既有Docker、Phase9/10回归均通过。新增冲突用例采用固定Leader控制事实和真实本机Git/APFS/Seatbelt、领域gate/收据、替换worker与集成；不冒充新增模型自主冲突修复，也不另行声称该夹具已跑返工后TESTER。独立TESTER与模型链路由其他回归提供证据。未运行正式Benchmark。
 
-`pnpm run test --reporter=verbose --bail=1`，session24420自然退出0，15337.61秒：**298文件、2462项测试，另7项追踪测试全部通过，零失败、零跳过**。实际文件集合与预期298文件完全一致。源码784文件hash在完整运行结束时全部相同。
+定向4文件73项、领域/执行器/角色/Web快速回归92文件958项通过；完整回归已再次包含它们。G3通过，任务索引检查通过，R9冻结接口/依赖不变。新投影为结构化控制事实，不含原始群聊。
 
-完整回归结束后，仅将构造接缝中的可选`codingPreparation`捕获为局部变量以消除非空断言警告；没有改变登记、权限或验证规则。受影响构造/启动屏障3文件18项再次通过；最终typecheck、lint（756文件，零警告）通过。此交付收尾与全量源码快照的唯一非文档差异单独记录，不声称收尾前后源码逐字节相同。
+| 证据 | 位置 / SHA-256 |
+| --- | --- |
+| 完整日志 | test-outputs/task124/pr88-conflict-full-regression-6.log；a31eea1d148d2130a09857ac29a039a7537ee986d8e4df4e49a4c97bb6a76302 |
+| 796项冻结快照 | test-outputs/task124/pr88-conflict-full-source-6.json；45e8ac50ec8bd17e8498f3de0eb7c289370687a629febaca69af5e6d5c076529 |
+| 结果与清理 | pr88-conflict-full-result-6.json、pr88-conflict-cleanup-audit.json、pr88-conflict-artifact-cleanup.json（均在test-outputs/task124） |
+| 完整过程 | [任务历史](../task-history/12.4.md) |
 
-真实模型沿用OpenCode Go / `deepseek-v4-flash`、原参数/期限/断言。首次Git审阅/D16/归档336610ms、原候选直接应用251783ms、Git新轮复验应用256190ms、GitLeader返工422697ms通过；普通目录三类返工和先应用后终审通过。Phase 0真实LRU82585ms、Harness真实单轮7363ms、真实Docker及既有Phase 9/10回归通过。未运行正式Benchmark。
+## 历史失败与范围
 
-R9冻结接口未改变，无新依赖。全部254个PR交付文件窄范围凭据路径、私钥头与常见token格式筛查无匹配；这不是独立安全认证。规格约束与失败根因见[任务历史](../task-history/12.4.md)。
+前五轮均不计完整G4。首次历史State误用已修复；第二轮ZEzKXl原错误被清理异常覆盖、第三轮OZgVQO模型请求失败的具体原因仍inconclusive。第四轮无新verdict/gate导致失败，新增身份校验堵住确定性可复现的碰撞漏洞，但原始最终回复缺失。第五轮508项通过后因旧Phase2断言遗漏dispatchId停止，实际生产输出符合新规格；精确补齐断言后第六轮全绿。更早Git deadline/apply-first缺gate等失败记录保留，不把重跑通过解释为查明全部历史原因。
 
-## 仍保留的边界与失败
+不替代12.5接管交还、12.6产品入口、12.7阶段出口，不跨D19迁移边界。无自动合并。
 
-- 本机合并冲突→持久gate→原base返工尚缺完整接合，继续拒绝；没有以单独放宽lineage冒充支持。本次通过声明限于验证回执来源返工，不声明所有原生返工路径完成。
-- 不开放12.6/Phase13普通项目入口，不替代12.5接管交还、12.7出口，不恢复旧引擎任务。首次固定候选审阅夹具不代表通用初始编码宿主已验收。
-- 旧Git deadline和apply-first缺gate根因仍inconclusive，失败证据保留；重跑通过不等于查明历史根因。原算术断言、文件字节覆盖、安全边界和期限均保留。
-- session29294因上述返回态缺陷主动中断（64项已通过，exit143），不计完整G4通过。修复前session90159的298文件2458项仅作历史基线，不替代本轮证据。
+## 产物与清理
 
-## 证据与清理
+本次续修各轮共551个已结束专用根均已核验归属、无句柄/挂载并删除，无缺失最终证据的活动根。每根hash/来源与空间记录保留；全局剩余空间变化不冒充精确回收量。旧无归属bX9Okg、用户项目、正常依赖、共享缓存、已安装应用、产品数据及既有Docker资源不动。
 
-忽略目录入口：`test-outputs/task124/pr88-full-final-checkpoint.json`、`pr88-regression-source-2.json`、`pr88-full-cleanup-audit.json`、`pr88-full-regression-2.log`及`pr88-delivery-composition.log`。完整日志SHA256：`668f58f76d70c5164d44d0fa2641d243bd7f1c26efd7d956beb330688e53fdbb`；完整运行源码快照SHA256：`c28f5473e9423e8790266dd702aa5f68fafdb0be2d8bbd165a0b600a452efdb3`。
-
-本轮203个专用根均有已停用/无句柄/无挂载及删除证据，路径均不存在；另1份进度快照只是重复引用。中断根jxHz1B另保留454文件hash和JSON控制/事务记录后删除358870逻辑字节。全盘空间变化不当作专用目录字节总和。旧根bX9Okg无归属证据，既有Docker资源、正常依赖、缓存、用户项目与产品数据均保留。
-
-PR保留6份仍有独立用途的review文档，原始日志不进入PR。删除无活动引用的过时格式化输出和已撤回冲突原型绿灯输出10份；数量/逻辑字节/hash见`pr88-artifact-cleanup.json`。保留红灯、原生证明、版本快照和未解决故障证据。
+审查PR全部270个现存变更文件，窄范围凭据路径/私钥头/常见token格式无匹配，不声称独立安全认证。6份评审文档保留不同的契约、验收、授权、交接和故障解释用途；原始输出留Git忽略目录。删除8份无活动引用、已被最终结果覆盖的成功静态检查/旧绿色输出，共1155逻辑字节，删除前记录hash。所有红灯、失败、不可替代原生证明、冻结快照和未解决故障证据保留。此前基线交付的203根和10文件11828字节清理属历史记录，不重复累加为本次清理。

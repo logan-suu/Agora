@@ -20,6 +20,9 @@ type Options = {
     LocalGitWorkspaces,
     'registerCodingWave' | 'resolveAssignment' | 'readAcceptedCodingBaseline' | 'readCodingBaseline'
   >;
+  readConflictBase?(
+    state: AppState,
+  ): Promise<{ version: WorkspaceVersionV1; sourceWorkspaceId: string; actionId: string }>;
   verifyReceipt(state: AppState, receiptId: string): Promise<WorkspaceVersionV1>;
   runTaskSerial<T>(scope: Scope, operation: () => Promise<T>): Promise<T>;
 };
@@ -51,16 +54,39 @@ export class LocalCodingPreparation {
       );
       if (missing.length) {
         // A partially registered batch cannot silently choose a new transaction.
-        if (missing.length !== pending.length || !lineage.sourceReceiptId)
+        if (
+          missing.length !== pending.length ||
+          (!lineage.sourceReceiptId && !lineage.conflictReworks.length)
+        )
           throw Error('local_coding_registration_required');
-        const receipt = validationReceipt(expected, lineage.sourceReceiptId);
-        const sourceId = expected.localExecution.bindings.find(
-          (b) => b.workerId === receipt.workerId,
-        )?.workspaceId;
+        const receipt = lineage.sourceReceiptId
+          ? validationReceipt(expected, lineage.sourceReceiptId)
+          : undefined;
+        const original =
+          lineage.conflictReworks.at(-1)?.attempt === lineage.attempt
+            ? await this.options.readConflictBase?.(expected)
+            : undefined;
+        const sourceId = receipt
+          ? expected.localExecution.bindings.find((b) => b.workerId === receipt.workerId)
+              ?.workspaceId
+          : original?.sourceWorkspaceId;
         const source = expected.localExecution.workspaces.find((w) => w.workspaceId === sourceId);
-        if (source?.mode !== 'linked-worktree' || source.purpose !== 'validation')
+        if (
+          source?.mode !== 'linked-worktree' ||
+          source.purpose !== (receipt ? 'validation' : 'integration')
+        )
           throw Error('local_coding_source_required');
-        const version = await this.options.verifyReceipt(expected, lineage.sourceReceiptId);
+        const version = receipt
+          ? await this.options.verifyReceipt(expected, lineage.sourceReceiptId as string)
+          : original?.version;
+        if (
+          !version ||
+          (lineage.conflictReworks.at(-1)?.attempt === lineage.attempt &&
+            (!original ||
+              original.sourceWorkspaceId !== source.workspaceId ||
+              !same(original.version, version)))
+        )
+          throw Error('local_git_conflict_verifier_required');
         const identity = {
           ...scope,
           waveId: lineage.waveId,

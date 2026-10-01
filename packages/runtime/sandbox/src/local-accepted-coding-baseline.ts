@@ -136,7 +136,7 @@ export async function readAcceptedCodingBaseline(
     request.grantId !== grant.grantId ||
     !('waveId' in request) ||
     request.waveId !== lineage.waveId ||
-    request.attempt !== lineage.attempt ||
+    request.attempt !== assignment.attempt ||
     request.sourceWorkspaceId !== source.workspaceId ||
     request.version.kind !== 'git' ||
     request.version.commit !== lineage.base.commit ||

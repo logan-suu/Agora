@@ -243,8 +243,8 @@ it('derives initial assignments and repeated partial retries without mutating st
   const before = structuredClone(f.state);
   const result = readCodingWorkerLineage(f.state);
   expect(result.assignments).toEqual([
-    { workerId: 'worker:retry-again:0', subtaskId: 'A', dispatchId: 'retry-again' },
-    { workerId: 'worker:wave:1', subtaskId: 'B', dispatchId: 'wave' },
+    { workerId: 'worker:retry-again:0', subtaskId: 'A', dispatchId: 'retry-again', attempt: 1 },
+    { workerId: 'worker:wave:1', subtaskId: 'B', dispatchId: 'wave', attempt: 1 },
   ]);
   if (result.assignments[0]) result.assignments[0].workerId = 'mutated';
   expect(f.state).toEqual(before);
@@ -379,4 +379,107 @@ it.each<[string, (f: ReturnType<typeof fixture>, dispatch: Message) => void]>([
   const dispatch = retry(f);
   change(f, dispatch);
   expect(() => readCodingWorkerLineage(f.state)).toThrow();
+});
+
+it('replays only the Leader conflict receipt and retains the original base and other contributors', () => {
+  const f = fixture();
+  const refs = f.state.workers.map((worker, i) => ({
+    branch: `branch-${i}`,
+    baseCommit: base.commit,
+    headCommit: String(i + 1).repeat(40),
+    path: `/owned/${worker.workerId}`,
+  }));
+  for (const [i, worker] of f.state.workers.entries()) {
+    worker.status = 'done';
+    const ref = refs[i];
+    if (!ref) throw Error('missing ref');
+    worker.worktree = ref;
+  }
+  const old = f.wave.coderWorkerIds[1] as string;
+  const integration = {
+    integrationId: 'conflicted',
+    waveId: f.wave.waveId,
+    base,
+    integrationWorktree: {
+      branch: base.branch,
+      baseCommit: base.commit,
+      headCommit: 'c'.repeat(40),
+      path: '/owned/integration',
+    },
+    pendingBranches: f.state.workers.map((w, i) => ({
+      workerId: w.workerId,
+      subtaskId: w.subtaskId,
+      topologicalRank: 0,
+      worktree: refs[i],
+    })),
+    mergedBranches: [
+      {
+        workerId: f.wave.coderWorkerIds[0],
+        subtaskId: 'A',
+        branch: refs[0]?.branch,
+        headCommit: refs[0]?.headCommit,
+        mergeCommit: 'c'.repeat(40),
+      },
+    ],
+    conflicts: [
+      {
+        workerId: old,
+        subtaskId: 'B',
+        branch: refs[1]?.branch,
+        headCommit: refs[1]?.headCommit,
+        files: ['shared.txt'],
+      },
+    ],
+    status: 'conflict',
+  };
+  const actionId = 'fix-conflict',
+    gateId = 'human-gate:conflicted';
+  const resolution: Message = {
+    ...message(actionId, {
+      kind: 'leader_intent',
+      action: { status: 'applied' },
+      intent: { kind: 'resolve_human_gate', gateId, option: 'request_rework', argument: old },
+      resolution: {
+        gateId,
+        option: 'request_rework',
+        argument: old,
+        safePointRefs: [],
+        resumeSessionId: `human-gate-resume:${actionId}`,
+        integrationRework: integration,
+      },
+    }),
+    fromRole: 'leader',
+    type: 'chat',
+  };
+  f.state.messages.push(resolution);
+  const replacement = `worker:integration-rework:${actionId}:0`;
+  f.state.workers.push({
+    workerId: replacement,
+    role: 'CODER',
+    executor: 'harness',
+    status: 'pending',
+    subtaskId: 'B',
+    startedTs: 2,
+  });
+  f.wave.coderWorkerIds = f.wave.coderWorkerIds.map((id, i) => (i === 1 ? replacement : id));
+  f.wave.attempt = 2;
+  const lineage = readCodingWorkerLineage(f.state);
+  expect(lineage.base).toEqual(base);
+  expect(lineage.assignments.map((a) => a.workerId)).toEqual(f.wave.coderWorkerIds);
+  expect(lineage.assignments.map((a) => a.attempt)).toEqual([1, 2]);
+  expect(lineage).not.toHaveProperty('sourceReceiptId');
+  for (const changed of ['role', 'gate', 'contributor', 'base'] as const) {
+    const bad = structuredClone(f.state),
+      m = bad.messages.at(-1);
+    if (!m) throw Error('missing message');
+    if (changed === 'role') m.fromRole = 'CODER';
+    else if (changed === 'gate') (m.payload.intent as { gateId: string }).gateId = 'foreign';
+    else if (changed === 'contributor')
+      (m.payload.resolution as { argument: string }).argument = 'foreign';
+    else
+      (
+        m.payload.resolution as { integrationRework: { base: typeof base } }
+      ).integrationRework.base.commit = 'f'.repeat(40);
+    expect(() => readCodingWorkerLineage(bad)).toThrow();
+  }
 });

@@ -13,6 +13,9 @@ import type {
   LocalIntegrationCall,
 } from './local-integration-authority';
 import type { LocalIntegrationCompletion } from './local-integration-completion';
+import type { LocalIntegrationConflictHandoff } from './local-integration-conflict-handoff';
+import { conflictHandoffKey } from './local-integration-conflict-handoff-records';
+import { conflictKey } from './local-integration-conflict-records';
 import type { LocalIntegrationPublication } from './local-integration-publication';
 import { localRecordHash } from './local-registry-records';
 
@@ -31,6 +34,7 @@ export class LocalIntegrationProgress {
       authority: LocalIntegrationAuthority;
       publication: LocalIntegrationPublication;
       completion: LocalIntegrationCompletion;
+      conflictHandoff?: LocalIntegrationConflictHandoff;
     },
   ) {
     this.call = structuredClone(options.call);
@@ -59,6 +63,17 @@ export class LocalIntegrationProgress {
     )
       throw Error('integration_progress_plan_mismatch');
     if (integration.status === 'done') return state;
+    if (await this.options.objects.getReference(conflictHandoffKey(this.call, 'plan'))) {
+      if (!this.options.conflictHandoff) throw Error('integration_conflict_handoff_required');
+      const closed = await this.options.conflictHandoff.release(this.call);
+      return closed.state;
+    }
+    if (await this.options.objects.getReference(conflictKey(this.call, 'plan'))) {
+      return this.options.publication.acknowledgeConflict({
+        call: this.call,
+        actionId: 'recover-conflict',
+      });
+    }
     if (integration.status !== 'merging') throw Error('integration_progress_not_ready');
     // A previous acknowledgement may have committed but lost its response or
     // confirmation marker. Recover that original slot, never the next source.
@@ -93,9 +108,18 @@ export class LocalIntegrationProgress {
     const request = existing
       ? await this.original(key)
       : { call: this.call, actionId: `integrate:${key}` };
-    if (!existing) await this.options.publication.applyNext(request);
+    if (!existing) {
+      const outcome = await this.options.publication.applyOutcome(request);
+      if (outcome.schemaVersion === 'local-integration-conflict-candidate-v1')
+        return this.options.publication.acknowledgeConflict(request);
+    }
     await this.options.publication.acknowledgePublished(request);
     return this.options.control.assertClosed(this.call);
+  }
+  async closeConflict(expected: AppState) {
+    await this.current(expected);
+    if (!this.options.conflictHandoff) throw Error('integration_conflict_handoff_required');
+    return (await this.options.conflictHandoff.release(this.call)).state;
   }
   async complete(expected: AppState) {
     await this.current(expected);

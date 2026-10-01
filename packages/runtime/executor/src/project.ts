@@ -440,9 +440,11 @@ function sliceOf(state: AppState, role: RoleId, slice: string): unknown {
     }
     case 'reviewContext': {
       const control = latestCoordinatorControlMessage(state);
+      const dispatch = currentReviewDispatch(state);
       const reason = typeof control?.payload.reason === 'string' ? control.payload.reason : null;
       const recordedStreak = control?.payload.failureStreak;
       return {
+        ...(dispatch ? { dispatchId: dispatch.msgId } : {}),
         mode: reason === 'repeated_test_failures' ? 'test_failure_root_cause' : 'quality_review',
         reason,
         failureStreak:

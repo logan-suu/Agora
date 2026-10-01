@@ -190,7 +190,7 @@ export async function readInitialCodingBaseline(
     ) ||
     !('waveId' in coding.request) ||
     coding.request.waveId !== lineage.waveId ||
-    coding.request.attempt !== lineage.attempt ||
+    coding.request.attempt !== assignment.attempt ||
     coding.request.sourceWorkspaceId !== initial.workspaceId ||
     coding.request.version.kind !== 'git' ||
     coding.request.version.commit !== lineage.base.commit ||
@@ -226,6 +226,7 @@ export async function readInitialCodingBaseline(
   const refs: WorktreeRef[] = [
     ...state.workers.flatMap((w) => (typeof w.worktree === 'object' ? [w.worktree] : [])),
     ...(state.integration ? [state.integration.integrationWorktree] : []),
+    ...lineage.conflictReworks.map((r) => r.integration.integrationWorktree),
     ...(state.parallelExecution?.activeWave?.validation
       ? [state.parallelExecution.activeWave.validation.worktree]
       : []),
@@ -234,7 +235,12 @@ export async function readInitialCodingBaseline(
     return fail();
   const heads = new Set(refs.map((ref) => ref.headCommit ?? ref.baseCommit));
   if (heads.size > 1) return fail();
-  if (proof && proof.prepared.request.call.workspaceId !== initial.workspaceId) return fail();
+  if (
+    proof &&
+    proof.prepared.request.call.workspaceId !== initial.workspaceId &&
+    !lineage.conflictReworks.length
+  )
+    return fail();
   const current = {
     ...gitOptions,
     projectId: scope.projectId,
@@ -244,7 +250,9 @@ export async function readInitialCodingBaseline(
     workspace: initial,
     record,
     expectedHead:
-      proof?.result.publication.commit ??
+      (proof?.prepared.request.call.workspaceId === initial.workspaceId
+        ? proof.result.publication.commit
+        : undefined) ??
       refs[0]?.headCommit ??
       refs[0]?.baseCommit ??
       initial.baseCommit,

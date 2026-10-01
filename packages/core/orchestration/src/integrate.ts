@@ -13,6 +13,7 @@ import {
   mergeByIdMutation,
   planIntegrationAcknowledgement,
   planIntegrationCompletion,
+  planIntegrationConflict,
   selectIntegrationBranch,
   setMutation,
   type WorktreeRef,
@@ -55,6 +56,7 @@ export interface IntegrationProgressPort {
   advance(state: AppState): Promise<AppState>;
   complete(state: AppState): Promise<AppState>;
   verify(state: AppState): Promise<AppState>;
+  closeConflict?(state: AppState): Promise<AppState>;
 }
 export function planIntegrationWave(
   state: AppState,
@@ -206,6 +208,23 @@ export class IntegrationService {
     return { state: current };
   }
 
+  private async provenConflict(
+    state: AppState,
+    input: IntegrateWaveInput,
+    progress: IntegrationProgressPort,
+  ): Promise<IntegrateWaveResult> {
+    const closed = progress.closeConflict ? await progress.closeConflict(state) : state;
+    if (
+      closed.integration?.status !== 'conflict' ||
+      canonicalJson({ ...closed, localExecution: state.localExecution }) !== canonicalJson(state)
+    )
+      throw Error('integration_progress_changed');
+    return {
+      state: closed,
+      gateRequest: conflictGate(closed.integration, input.now ?? Date.now()),
+    };
+  }
+
   private async integrateProvenWave(
     state: AppState,
     input: IntegrateWaveInput,
@@ -229,6 +248,7 @@ export class IntegrationService {
         throw Error('integration_progress_changed');
       return { state: verified };
     }
+    if (integration.status === 'conflict') return this.provenConflict(current, input, progress);
     if (integration.status !== 'merging') throw Error('integration_progress_not_ready');
     while ((current.integration?.mergedBranches.length ?? 0) < plan.pendingBranches.length) {
       const before = current;
@@ -236,6 +256,18 @@ export class IntegrationService {
       if (!original) throw Error('integration_progress_missing');
       const selection = selectIntegrationBranch(before, plan.integrationId);
       const next = await progress.advance(before);
+      if (next.integration?.status === 'conflict') {
+        const conflict = next.integration.conflicts[0];
+        if (!conflict) throw Error('integration_progress_missing');
+        const mutations = planIntegrationConflict(
+          before,
+          { projectId: before.projectId, taskId: before.taskId, integration: original, selection },
+          conflict.files,
+        );
+        if (canonicalJson(applyMutations(before, mutations)) !== canonicalJson(next))
+          throw Error('integration_progress_changed');
+        return this.provenConflict(next, input, progress);
+      }
       const commit = next.integration?.mergedBranches.at(-1)?.mergeCommit;
       if (!commit) throw Error('integration_progress_missing');
       const mutations = planIntegrationAcknowledgement(

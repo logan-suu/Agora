@@ -2,7 +2,9 @@
  * the serial task queue. Partial file/Git recovery and delivery remain closed. */
 import {
   type AppState,
+  applyMutations,
   type Mutation,
+  planIntegrationConflict,
   selectIntegrationBranch,
   type WorkspaceVersionV1,
 } from '@agora/core-domain';
@@ -28,6 +30,14 @@ import type {
   LocalIntegrationCall,
 } from './local-integration-authority';
 import type { LocalIntegrationCandidates } from './local-integration-candidates';
+import { completionApplications } from './local-integration-completion-records';
+import { readIntegrationConflictHandoffPlan } from './local-integration-conflict-handoff-records';
+import {
+  conflictKey,
+  conflictReceipt,
+  type IntegrationConflictPlan,
+  readIntegrationConflictPlan,
+} from './local-integration-conflict-records';
 import type { LocalIntegrationTreeBatch } from './local-integration-tree-batch';
 import { localRecordHash } from './local-registry-records';
 import type { LocalFileManifest, LocalVersionStore } from './local-version-store';
@@ -78,6 +88,12 @@ export class LocalIntegrationPublication {
     this.gitVersions = new LocalGitVersionStore(options.objects, options.versions);
   }
   async applyNext(input: Request): Promise<LocalIntegrationPublicationReceipt> {
+    const result = await this.applyOutcome(input);
+    if (result.schemaVersion !== 'local-integration-application-result-v1')
+      throw Error('local_git_merge_conflict');
+    return result;
+  }
+  async applyOutcome(input: Request) {
     localRecordHash(input);
     if (
       Object.keys(input).sort().join(',') !== 'actionId,call' ||
@@ -94,6 +110,130 @@ export class LocalIntegrationPublication {
     );
   }
   /** Explicitly confirm a fully completed publication. Never repeat file/Git effects. */
+  async readConflict(call: LocalIntegrationCall): Promise<AppState> {
+    return this.verifyConflict(call, false);
+  }
+  async readConflictHandoff(call: LocalIntegrationCall): Promise<AppState> {
+    return this.verifyConflict(call, true);
+  }
+  private async verifyConflict(input: LocalIntegrationCall, handoff: boolean): Promise<AppState> {
+    const call = structuredClone(input),
+      { objects, control, candidates } = this.options;
+    const current = await control.assertClosed(call),
+      registry = await control.snapshot();
+    const proof = handoff
+      ? (await readIntegrationConflictHandoffPlan(objects, call, current, registry)).conflict
+      : await readIntegrationConflictPlan(objects, call, current);
+    if (!proof.confirmed || proof.mutations.length)
+      throw Error('integration_conflict_recovery_required');
+    const reader = handoff
+      ? candidates.conflictHandoffReader(call)
+      : candidates.conflictReader(call);
+    if (
+      !equal(
+        await reader.readOutcome({ call, actionId: proof.plan.actionId }),
+        proof.plan.candidate,
+      ) ||
+      !equal(
+        completionApplications(await reader.readConfirmedPrefix(call)),
+        proof.plan.applications,
+      ) ||
+      !equal(await control.assertClosed(call), current) ||
+      !equal(await control.snapshot(), registry)
+    )
+      throw Error('integration_conflict_evidence_changed');
+    return current;
+  }
+  /** Commit only a proven conflict; a separate orchestration boundary opens the gate. */
+  async acknowledgeConflict(input: Request): Promise<AppState> {
+    const request = structuredClone(input),
+      call = request.call;
+    return serializeWorkspaceOperation(
+      { ...call, workspaceId: `application:${call.integrationId}` },
+      async () => {
+        const { objects, control, state, authority, candidates } = this.options;
+        if (!state) throw Error('integration_acknowledgement_unavailable');
+        const live = await control.assertClosed(call);
+        if (!(await objects.getReference(conflictKey(call, 'plan')))) {
+          const checkpoint = await authority.readCheckpoint(call);
+          const selection = selectIntegrationBranch(live, call.integrationId);
+          const actionId = `candidate:${applicationSlot(call, selection)}`;
+          const candidate = await candidates.readOutcome({ call, actionId });
+          if (
+            candidate.schemaVersion !== 'local-integration-conflict-candidate-v1' ||
+            !live.integration ||
+            !equal(checkpoint.state, live)
+          )
+            throw Error('integration_conflict_recovery_required');
+          const mutations = planIntegrationConflict(
+            live,
+            {
+              projectId: call.projectId,
+              taskId: call.taskId,
+              integration: live.integration,
+              selection,
+            },
+            candidate.conflict.result.paths,
+          );
+          const prefix = await candidates.readConfirmedPrefix(call);
+          const plan: IntegrationConflictPlan = {
+            schemaVersion: 'local-integration-conflict-plan-v1',
+            call,
+            beforeHash: await objects.put(live),
+            afterHash: localRecordHash(applyMutations(live, mutations)),
+            registryRevision: checkpoint.snapshot.revision,
+            actionId,
+            candidate,
+            applications: completionApplications(prefix),
+          };
+          await checkpoint.authorize();
+          await objects.bindReference(conflictKey(call, 'plan'), await objects.put(plan));
+        }
+        const proof = await readIntegrationConflictPlan(objects, call, live);
+        const verify = async () => {
+          const reader = candidates.conflictReader(call);
+          if (
+            !equal(
+              await reader.readOutcome({ call, actionId: proof.plan.actionId }),
+              proof.plan.candidate,
+            ) ||
+            !equal(
+              completionApplications(await reader.readConfirmedPrefix(call)),
+              proof.plan.applications,
+            )
+          )
+            throw Error('integration_conflict_evidence_changed');
+        };
+        await verify();
+        // A response can be lost after durable commit; leave the fixed plan for recovery.
+        const committed = proof.mutations.length
+          ? await state.compareAndCommit(call, proof.before, proof.mutations)
+          : undefined;
+        try {
+          if (committed && (!committed.changed || !equal(committed.state, proof.after)))
+            throw Error('integration_conflict_state_changed');
+          await verify();
+          const current = await control.assertClosed(call);
+          const checked = await readIntegrationConflictPlan(objects, call, current);
+          if (checked.mutations.length) throw Error('integration_conflict_state_changed');
+          await objects.bindReference(
+            conflictKey(call, 'confirmed'),
+            await objects.put(conflictReceipt(proof.planHash, proof.plan)),
+          );
+          return current;
+        } catch (error) {
+          await objects.bindReference(
+            conflictKey(call, 'invalid'),
+            await objects.put({
+              schemaVersion: 'local-integration-conflict-invalid-v1',
+              planHash: proof.planHash,
+            }),
+          );
+          throw error;
+        }
+      },
+    );
+  }
   async acknowledgePublished(input: Request): Promise<LocalIntegrationPublicationReceipt> {
     localRecordHash(input);
     const request = structuredClone(input);
@@ -232,7 +372,7 @@ export class LocalIntegrationPublication {
       throw error;
     }
   }
-  private async execute(request: Request): Promise<LocalIntegrationPublicationReceipt> {
+  private async execute(request: Request) {
     const { call } = request;
     const { control, authority, candidates, batches, objects, versions } = this.options;
     if (await objects.getReference(applicationAction(request)))
@@ -257,7 +397,8 @@ export class LocalIntegrationPublication {
     const candidateActionId = `candidate:${key}`,
       treeActionId = `apply:${key}`,
       publishActionId = `publish:${key}`;
-    const candidate = await candidates.prepareNext({ call, actionId: candidateActionId });
+    const candidate = await candidates.prepareOutcome({ call, actionId: candidateActionId });
+    if (candidate.schemaVersion === 'local-integration-conflict-candidate-v1') return candidate;
     if (!equal(candidate.sources.selection, selection))
       throw Error('integration_selection_changed');
     const sourceRecord = checkpoint.snapshot.linkedRoots?.find(

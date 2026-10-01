@@ -15,8 +15,25 @@ export function assertValidationSourceWave(
   const lineage = execution.activeWave ? readCodingWorkerLineage(state) : undefined;
   const acceptedId = lineage ? lineage.sourceReceiptId : execution.acceptedReceiptId;
   if (acceptedId === undefined) {
+    if (sourceWorkspaceId !== initialWorkspaceId) {
+      const workspace = state.localExecution?.workspaces.find(
+        (w) => w.workspaceId === sourceWorkspaceId,
+      );
+      const mapping = state.localExecution?.git?.worktrees.find(
+        (w) => w.workspaceId === sourceWorkspaceId,
+      );
+      if (
+        !lineage?.conflictReworks.length ||
+        workspace?.mode !== 'linked-worktree' ||
+        workspace.purpose !== 'integration' ||
+        workspace.branch !== integration.integrationWorktree.branch ||
+        workspace.baseCommit !== integration.base.commit ||
+        mapping?.path !== integration.integrationWorktree.path
+      )
+        throw Error('workspace_validation_source_mismatch');
+    }
     if (
-      sourceWorkspaceId !== initialWorkspaceId ||
+      (sourceWorkspaceId !== initialWorkspaceId && !lineage?.conflictReworks.length) ||
       sourceBaseCommit !== execution.initialBase.commit ||
       integration.base.commit !== execution.initialBase.commit
     )

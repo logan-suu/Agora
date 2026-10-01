@@ -122,11 +122,15 @@ export class LocalIntegrationPreparation {
           const accepted = lineage.sourceReceiptId
             ? validationReceipt(beforeCall, lineage.sourceReceiptId)
             : undefined;
-          const sourceWorkspaceId = beforeCall.localExecution?.bindings.find(
-            (binding) => binding.workerId === accepted?.workerId,
-          )?.workspaceId;
+          const sourceWorkspaceId = accepted
+            ? beforeCall.localExecution?.bindings.find(
+                (binding) => binding.workerId === accepted.workerId,
+              )?.workspaceId
+            : lineage.conflictReworks.length
+              ? beforeCall.localExecution?.git?.initialWorkspaceId
+              : undefined;
           return (
-            !accepted ||
+            (!accepted && !lineage.conflictReworks.length) ||
             registration.waveId !== wave.waveId ||
             registration.attempt !== lineage.attempt ||
             registration.sourceWorkspaceId !== sourceWorkspaceId ||

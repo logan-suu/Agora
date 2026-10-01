@@ -289,7 +289,11 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
     let latest: HarnessExecutor | undefined;
     let closed = false;
     let artifactPath = bootstrap.cwd;
-    const executorOptions = (source: RoleSpec, resumeSessionId?: string) => {
+    const executorOptions = (
+      source: RoleSpec,
+      resumeSessionId?: string,
+      previousReviews: AppState['reviewComments'] = initialState.reviewComments,
+    ) => {
       const route =
         routes?.get(source.role) ??
         (modelBinding?.defaultModel ? { model: modelBinding.defaultModel } : undefined);
@@ -300,6 +304,9 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
         ...(route ? { model: route.model } : options.model ? { model: options.model } : {}),
       };
       const reader = SIX_ROLE_TURN_MUTATION_READERS[source.role];
+      const previousReviewIds = previousReviews.flatMap((entry) =>
+        typeof entry.id === 'string' ? [entry.id] : [],
+      );
       const configured: HarnessExecutorOptions = {
         ...(route?.compatible
           ? {
@@ -317,9 +324,9 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
         },
         ...(reader
           ? {
-              readTurnMutations: ({ text }) => reader(text),
+              readTurnMutations: ({ text }) => reader(text, previousReviewIds),
               validateTurnOutput: ({ text }) => {
-                reader(text);
+                reader(text, previousReviewIds);
               },
               ...(SIX_ROLE_FORMAT_REPAIR[source.role]
                 ? { outputFormatHint: SIX_ROLE_FORMAT_REPAIR[source.role] }
@@ -467,8 +474,10 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
             restore(assignment.workerId, spec.role, session) ??
             remember(createLocalControlExecutor({ ...executorOptions(spec), session })),
           buildLocalExecutor: async (spec, assignment, session) => {
+            let previousReviews: AppState['reviewComments'] | undefined;
             if (spec.role === 'REVIEWER') {
               const state = await load(scope);
+              previousReviews = state.reviewComments;
               if (gitTask(state) && !deliveryReaderAssignment(state, assignment.workerId)) {
                 if (!gitValidation) throw Error('local_git_review_proof_unavailable');
                 await gitValidation.verifiedReviewVersion(state, assignment.workerId);
@@ -481,7 +490,12 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
             }
             return (
               restore(assignment.workerId, spec.role, session) ??
-              remember(await createLocalWorkspaceExecutor({ ...executorOptions(spec), session }))
+              remember(
+                await createLocalWorkspaceExecutor({
+                  ...executorOptions(spec, undefined, previousReviews),
+                  session,
+                }),
+              )
             );
           },
           completeLocalAssignment: async (state, assignment, session) => {

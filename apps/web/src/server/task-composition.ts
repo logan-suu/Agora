@@ -282,6 +282,8 @@ export function createWebTaskCompositionFactory(
       if (catalog === undefined)
         throw new Error(`tool catalog is unavailable for worker "${workerId}"`);
       const assignedState = assignmentStates.get(workerId) ?? resume?.state;
+      if (spec.role === 'REVIEWER' && assignedState === undefined)
+        throw new Error('REVIEWER output requires its canonical assignment state');
       const parallelTester =
         assignedState?.parallelExecution?.activeWave?.validation?.workerId === workerId;
       const logicalTools = parallelTester
@@ -303,6 +305,9 @@ export function createWebTaskCompositionFactory(
       if (modelRoutes && !route) throw new Error('task deployment model binding is unavailable');
       if (route) executorSpec.model = route.model;
       const turnMutations = SIX_ROLE_TURN_MUTATION_READERS[spec.role];
+      const previousReviewIds = (assignedState?.reviewComments ?? []).flatMap((entry) =>
+        typeof entry.id === 'string' ? [entry.id] : [],
+      );
       const executor = new HarnessExecutor(executorSpec, {
         ...(route?.compatible
           ? {
@@ -325,10 +330,10 @@ export function createWebTaskCompositionFactory(
         ...(turnMutations === undefined
           ? {}
           : {
-              readTurnMutations: ({ text }) => turnMutations(text),
+              readTurnMutations: ({ text }) => turnMutations(text, previousReviewIds),
               outputFormatHint: SIX_ROLE_FORMAT_REPAIR[spec.role],
               validateTurnOutput: ({ text }) => {
-                turnMutations(text);
+                turnMutations(text, previousReviewIds);
               },
             }),
       });
@@ -505,6 +510,7 @@ export function createWebTaskCompositionFactory(
     ): Promise<WorktreeRef> => {
       assignmentStates.set(assignment.workerId, state);
       if (activeWorkspace === undefined) {
+        assignmentStates.set('legacy:shared', state);
         if (legacyWorktreeRef === undefined)
           throw new Error('legacy worktree reference is missing');
         return legacyWorktreeRef;

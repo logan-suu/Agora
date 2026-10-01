@@ -1,3 +1,4 @@
+import { readIntegrationRework } from './integration-rework';
 import {
   assertParallelState,
   canonicalJson,
@@ -82,6 +83,7 @@ export function readCodingWorkerLineage(state: AppState) {
     subtaskId,
     workerId: originalWorkerIds[index] as string,
     dispatchId: origin.msgId,
+    attempt: 1,
   }));
   const verifyNew = (workerId: string, subtaskId: string, m: Message, index: number) => {
     const worker = state.workers.find((w) => w.workerId === workerId);
@@ -95,9 +97,58 @@ export function readCodingWorkerLineage(state: AppState) {
     seen.add(workerId);
   };
   for (const [i, a] of assignments.entries()) verifyNew(a.workerId, a.subtaskId, origin, i);
+  const conflictReworks: (NonNullable<ReturnType<typeof readIntegrationRework>> & {
+    attempt: number;
+  })[] = [];
   let lastTransition = originIndex;
   for (const [index, m] of state.messages.entries()) {
     const p = m.payload;
+    const rework = readIntegrationRework(m);
+    if (rework?.integration.waveId === wave.waveId) {
+      const old = rework.integration,
+        position = assignments.findIndex((a) => a.workerId === rework.conflict.workerId);
+      if (
+        index <= lastTransition ||
+        position < 0 ||
+        !equal(old.base, base) ||
+        old.pendingBranches.length !== assignments.length ||
+        old.pendingBranches.some((branch) => {
+          const assignment = assignments.find((a) => a.workerId === branch.workerId);
+          const worker = state.workers.find((w) => w.workerId === branch.workerId);
+          return (
+            !assignment ||
+            assignment.subtaskId !== branch.subtaskId ||
+            worker?.status !== 'done' ||
+            worker.role !== 'CODER' ||
+            worker.subtaskId !== branch.subtaskId ||
+            !equal(worker.worktree, branch.worktree) ||
+            branch.worktree.baseCommit !== base.commit
+          );
+        })
+      )
+        throw Error('coding_lineage_mismatch');
+      const previous = assignments[position];
+      const worker = state.workers.find((w) => w.workerId === rework.replacementId);
+      if (
+        !previous ||
+        seen.has(rework.replacementId) ||
+        worker?.role !== 'CODER' ||
+        worker.subtaskId !== previous.subtaskId ||
+        conflictReworks.some((r) => r.integration.integrationId === old.integrationId)
+      )
+        throw Error('coding_lineage_mismatch');
+      attempt++;
+      seen.add(rework.replacementId);
+      assignments[position] = {
+        ...previous,
+        workerId: rework.replacementId,
+        dispatchId: `integration-rework:${m.msgId}`,
+        attempt,
+      };
+      conflictReworks.push({ ...rework, attempt });
+      lastTransition = index;
+      continue;
+    }
     if (p.kind !== 'coding_retry' || p.waveId !== wave.waveId) continue;
     if (
       index <= lastTransition ||
@@ -140,7 +191,7 @@ export function readCodingWorkerLineage(state: AppState) {
       for (const [i, assignment] of assignments.entries()) {
         const workerId = p.workerIds[i] as string;
         verifyNew(workerId, assignment.subtaskId, m, i);
-        assignments[i] = { ...assignment, workerId, dispatchId: m.msgId };
+        assignments[i] = { ...assignment, workerId, dispatchId: m.msgId, attempt };
       }
     } else {
       if (
@@ -169,7 +220,7 @@ export function readCodingWorkerLineage(state: AppState) {
           workerId = p.workerIds[replacementIndex];
         if (!assignment || !workerId) throw Error('coding_lineage_mismatch');
         verifyNew(workerId, assignment.subtaskId, m, replacementIndex);
-        assignments[position] = { ...assignment, workerId, dispatchId: m.msgId };
+        assignments[position] = { ...assignment, workerId, dispatchId: m.msgId, attempt };
       }
     }
     lastTransition = index;
@@ -191,5 +242,6 @@ export function readCodingWorkerLineage(state: AppState) {
     ...(acceptedId === undefined ? {} : { acceptedReceiptId: acceptedId }),
     ...(sourceReceiptId === undefined ? {} : { sourceReceiptId }),
     assignments,
+    conflictReworks,
   });
 }

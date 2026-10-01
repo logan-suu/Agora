@@ -1,5 +1,5 @@
 /** Read current branch provenance without granting merge or delivery authority. */
-import { readCodingWorkerLineage, selectIntegrationBranch } from '@agora/core-domain';
+import { selectIntegrationBranch } from '@agora/core-domain';
 import type { LocalGitWorkspaces } from './local-git-workspaces';
 import type { ApplicationRequest } from './local-integration-application-records';
 import type {
@@ -60,13 +60,12 @@ export class LocalIntegrationSources {
       taskId: call.taskId,
       workerId: selection.branch.workerId,
     };
-    const baseline = published
-      ? readCodingWorkerLineage(before.state).sourceReceiptId
-        ? await this.options.workspaces.readAcceptedCodingBaseline(scope)
-        : await this.options.workspaces.readPublishedCodingBaseline(scope, published)
-      : readCodingWorkerLineage(before.state).sourceReceiptId
-        ? await this.options.workspaces.readAcceptedCodingBaseline(scope)
-        : await this.options.workspaces.readCodingBaseline(scope);
+    const baseline = await this.options.workspaces.readIntegrationCodingBaseline(
+      scope,
+      this.options.authority,
+      call,
+      published,
+    );
     const source = await this.options.sessions.readCompletedWorktree({
       projectId: call.projectId,
       taskId: call.taskId,

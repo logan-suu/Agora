@@ -2,7 +2,7 @@
   "version": "1.5",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-29",
+  "last_updated": "2026-09-30",
   "current_phase": 12,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
@@ -1720,8 +1720,8 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-4-linked-workspace.test.ts",
-          "notes": "修复提交cbd9afe已推送至PR #88：首次TESTER失败/REVIEWER退回的来源与成功accepted分离，保留失败测试，worker前登记/私有证明重验；提交返回态比较误拒绝已修复。完整298文件2462项+追踪7项通过，零失败/跳过；收尾类型收窄另3文件18项通过，typecheck/lint零警告。203个专用根清理。本机冲突gate闭环仍未验收；保持in_progress待人工合并。报告docs/reviews/task124-final-acceptance.md；历史docs/task-history/12.4.md；https://github.com/logan-suu/Agora/pull/88。",
-          "last_updated": "2026-09-29"
+          "notes": "PR #88续修门禁通过，待提交推送。已接通本机冲突→Leader gate→原B返工，并修复REVIEWER历史/同回复ID碰撞准入与当前dispatchId投影。完整第六轮300文件2476项+追踪7项全绿，19376.71秒，796项hash未变；G3、73项定向和958项快速回归通过。551个结束根清理，8份过时输出1155字节删除；历史未知模型错误证据保留。详见 docs/task-history/12.4.md；docs/reviews/task124-final-acceptance.md；docs/reviews/task124-next-session-handoff.md。此前交付68698dd，当前增量待推送。人工合并前保持in_progress，不替代12.7出口。",
+          "last_updated": "2026-09-30"
         },
         {
           "id": "12.5",

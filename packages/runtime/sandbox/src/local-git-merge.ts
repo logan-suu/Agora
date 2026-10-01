@@ -183,7 +183,7 @@ const logicalTree = (contents: CompleteContents) => ({
 
 /** The caller supplies canonical complete baseline facts. Git verifies its file
  * contents and unique merge base, but cannot authenticate historical empty directories. */
-export async function readLocalGitMergeTree(input: CompleteOptions) {
+export async function readLocalGitMergeTree(input: CompleteOptions, existingOnly = false) {
   if (
     !input.baseline ||
     !isGitObjectId(input.baseline.commit) ||
@@ -244,6 +244,7 @@ export async function readLocalGitMergeTree(input: CompleteOptions) {
           };
     },
     baseline,
+    existingOnly,
   );
 }
 
@@ -251,6 +252,7 @@ async function withLocalGitMerge<T>(
   input: Options,
   consume: (candidate: LocalGitMergeCandidate, session: LocalGitSession) => Promise<T>,
   baseline?: CompleteOptions['baseline'],
+  existingOnly = false,
 ): Promise<T> {
   const target = copySide(input.target),
     source = copySide(input.source);
@@ -317,6 +319,8 @@ async function withLocalGitMerge<T>(
     };
     const prepared = join(privateRoot, `${key}.merge-prepared.json`),
       completed = join(privateRoot, `${key}.merge-completed.json`);
+    if (existingOnly && (!existsSync(prepared) || !existsSync(completed)))
+      throw Error('local_git_recovery_required');
     let proof: LocalGitMergeCandidate['result'] | undefined;
     const derive = async (replay: boolean) => {
       const merged = await session.mergeObjects(target.head, source.head, replay);

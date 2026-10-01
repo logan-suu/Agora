@@ -2,6 +2,7 @@
  * delivery mutation is authorized by this evidence. Partial publication stays closed. */
 import type { WorkspaceVersionV1 } from '@agora/core-domain';
 import type { LocalControlObjects } from './local-control-objects';
+import { readLocalGitMergeTree } from './local-git-merge';
 import { readLocalGitPublicationHistory } from './local-git-publish';
 import { LocalGitVersionStore } from './local-git-version-store';
 import type { LocalGitWorkspaceOptions } from './local-git-workspaces';
@@ -16,7 +17,11 @@ import type {
 } from './local-integration-authority';
 import type { LocalIntegrationSources } from './local-integration-sources';
 import type { LocalIntegrationTreeBatch } from './local-integration-tree-batch';
-import type { LocalMergeCandidate, LocalMergeCandidates } from './local-merge-candidates';
+import type {
+  LocalMergeCandidate,
+  LocalMergeCandidates,
+  LocalMergeConflict,
+} from './local-merge-candidates';
 import { localRecordHash } from './local-registry-records';
 import type {
   ValidationPreparationProofReader,
@@ -43,6 +48,19 @@ export type LocalIntegrationCandidate = {
   targetVersion: WorkspaceVersionV1;
   candidate: LocalMergeCandidate;
 };
+export type LocalIntegrationConflictCandidate = Omit<
+  LocalIntegrationCandidate,
+  'schemaVersion' | 'candidate'
+> & {
+  schemaVersion: 'local-integration-conflict-candidate-v1';
+  conflict: LocalMergeConflict;
+};
+type Outcome = LocalIntegrationCandidate | LocalIntegrationConflictCandidate;
+function merged(outcome: Outcome): LocalIntegrationCandidate {
+  if (outcome.schemaVersion !== 'local-integration-candidate-v1')
+    throw Error('local_git_merge_conflict');
+  return outcome;
+}
 const equal = (a: unknown, b: unknown) => localRecordHash(a) === localRecordHash(b);
 const phase = (key: string, stage: string) =>
   localRecordHash({ kind: 'integration-candidate', key, stage });
@@ -68,6 +86,15 @@ export class LocalIntegrationCandidates {
     const authority = this.options.authority.completionReader(call);
     return this.withReader(authority);
   }
+  conflictReader(call: LocalIntegrationCall) {
+    return this.withReader(this.options.authority.conflictReader(call));
+  }
+  conflictHandoffReader(call: LocalIntegrationCall) {
+    return this.withReader(this.options.authority.conflictHandoffReader(call));
+  }
+  conflictReworkReader(call: LocalIntegrationCall) {
+    return this.withReader(this.options.authority.conflictReworkReader(call));
+  }
   handoffReader(call: LocalIntegrationCall) {
     return this.withReader(this.options.authority.handoffReader(call));
   }
@@ -89,18 +116,26 @@ export class LocalIntegrationCandidates {
     });
   }
   async prepareNext(input: Request): Promise<LocalIntegrationCandidate> {
+    return merged(await this.request(input, false));
+  }
+  async prepareOutcome(input: Request): Promise<Outcome> {
     return this.request(input, false);
+  }
+  async readOutcome(input: Request): Promise<Outcome> {
+    return this.request(input, true);
   }
   /** Verify the original candidate after file effects, while Git and canonical
    * control still name the original target. This never prepares missing work. */
   async readPrepared(input: Request): Promise<LocalIntegrationCandidate> {
-    return this.request(input, true);
+    return merged(await this.request(input, true));
   }
   async readPublished(request: ApplicationRequest): Promise<LocalIntegrationCandidate> {
     const proof = await readCompletedApplication(this.options.objects, request);
     const input = { call: request.call, actionId: proof.prepared.candidateActionId };
-    return serializeWorkspaceOperation(request.call, () =>
-      this.prepare(input, true, structuredClone(request)),
+    return merged(
+      await serializeWorkspaceOperation(request.call, () =>
+        this.prepare(input, true, structuredClone(request)),
+      ),
     );
   }
   /** Authenticate every immutable predecessor; only the current authority admits
@@ -140,11 +175,13 @@ export class LocalIntegrationCandidates {
         })
       )
         throw Error('integration_application_evidence_changed');
-      const candidate = await this.prepare(
-        { call, actionId: prepared.candidateActionId },
-        true,
-        published,
-        prepared.request,
+      const candidate = merged(
+        await this.prepare(
+          { call, actionId: prepared.candidateActionId },
+          true,
+          published,
+          prepared.request,
+        ),
       );
       if (
         !equal(candidate, prepared.candidate) ||
@@ -206,7 +243,7 @@ export class LocalIntegrationCandidates {
       throw Error('integration_application_evidence_changed');
     return prefix;
   }
-  private async request(input: Request, readOnly: boolean): Promise<LocalIntegrationCandidate> {
+  private async request(input: Request, readOnly: boolean): Promise<Outcome> {
     localRecordHash(input);
     if (
       Object.keys(input).sort().join(',') !== 'actionId,call' ||
@@ -233,7 +270,7 @@ export class LocalIntegrationCandidates {
     readOnly: boolean,
     published?: ApplicationRequest,
     historical?: ApplicationRequest,
-  ): Promise<LocalIntegrationCandidate> {
+  ): Promise<Outcome> {
     const { authority, sources, objects, candidates, versions } = this.options;
     const { call, actionId } = request;
     const key = localRecordHash({
@@ -397,7 +434,7 @@ export class LocalIntegrationCandidates {
     };
     const savedResultHash = readOnly ? await objects.getReference(resultKey) : undefined;
     const savedResult = savedResultHash
-      ? ((await objects.get(savedResultHash)) as LocalIntegrationCandidate)
+      ? ((await objects.get(savedResultHash)) as Outcome)
       : undefined;
     if (
       readOnly &&
@@ -407,34 +444,48 @@ export class LocalIntegrationCandidates {
         !equal(savedResult.targetVersion, targetVersion))
     )
       throw Error('integration_candidate_recovery_required');
-    const candidate = savedResult
-      ? await candidates.readCompleted({
-          receipt: savedResult.candidate,
-          git: {
-            ...this.git,
-            ...scope,
-            root: root.path,
-            actionId: `read-candidate:${key}`,
-            authorize,
-          },
-        })
-      : await candidates.materialize({ scope, actionId: `candidate:${key}`, merge });
+    const candidate =
+      savedResult?.schemaVersion === 'local-integration-candidate-v1'
+        ? await candidates.readCompleted({
+            receipt: savedResult.candidate,
+            git: {
+              ...this.git,
+              ...scope,
+              root: root.path,
+              actionId: `read-candidate:${key}`,
+              authorize,
+            },
+          })
+        : savedResult
+          ? await readLocalGitMergeTree(merge, true)
+          : await candidates.materializeOutcome({ scope, actionId: `candidate:${key}`, merge });
+    const native = candidate.candidate;
     if (
-      candidate.actionId !== `candidate:${key}` ||
-      !equal(candidate.scope, scope) ||
-      candidate.candidate.actionId !== `merge:${key}` ||
-      candidate.candidate.targetHead !== target.expectedHead ||
-      candidate.candidate.sourceHead !== merge.source.head
+      native.actionId !== `merge:${key}` ||
+      native.targetHead !== target.expectedHead ||
+      native.sourceHead !== merge.source.head
     )
       throw Error('integration_candidate_recovery_required');
-    const result: LocalIntegrationCandidate = {
-      schemaVersion: 'local-integration-candidate-v1',
+    const common = {
       ...(predecessor ? { predecessor } : {}),
       inputHash,
       sources: selected,
       targetVersion,
-      candidate,
     };
+    let result: Outcome;
+    if ('version' in candidate) {
+      if (candidate.actionId !== `candidate:${key}` || !equal(candidate.scope, scope))
+        throw Error('integration_candidate_recovery_required');
+      result = { schemaVersion: 'local-integration-candidate-v1', ...common, candidate };
+    } else {
+      if (candidate.result.kind !== 'conflict')
+        throw Error('integration_candidate_recovery_required');
+      result = {
+        schemaVersion: 'local-integration-conflict-candidate-v1',
+        ...common,
+        conflict: candidate as LocalMergeConflict,
+      };
+    }
     const resultHash = localRecordHash(result);
     const completed = {
       schemaVersion: 'local-integration-candidate-completed-v1',

@@ -9,7 +9,7 @@ import {
   deliveryValidationDispatch,
   latestCoordinationLedger,
 } from '@agora/core-domain';
-import type { GlobalScheduler } from '@agora/core-orchestration';
+import { type GlobalScheduler, ParallelBatchError } from '@agora/core-orchestration';
 import { HarnessTraceReader } from '@agora/runtime-executor';
 import { expect } from 'vitest';
 import { LocalDeliveryApplication } from '../../../apps/web/src/server/local-delivery-application';
@@ -197,7 +197,44 @@ export async function exerciseDeliveryHarness(input: {
       };
     },
   });
-  const tasks = new TaskOrchestrationRuntime(runtime, factory);
+  const workerFailures: { name: string; message: string; stack?: string }[] = [];
+  const capture = (failure: unknown): void => {
+    if (failure instanceof Error) {
+      workerFailures.push({
+        name: failure.name,
+        message: failure.message,
+        ...(failure.stack ? { stack: failure.stack } : {}),
+      });
+      if (failure instanceof AggregateError) failure.errors.forEach(capture);
+      if (failure instanceof ParallelBatchError)
+        failure.failures.forEach((worker) => {
+          capture(worker.cause);
+        });
+      if (failure.cause) capture(failure.cause);
+    }
+  };
+  const tasks = new TaskOrchestrationRuntime(runtime, async (request) => {
+    const composition = await factory(request);
+    const runOne = composition.workerRuntime.runOne.bind(composition.workerRuntime);
+    composition.workerRuntime.runOne = async (...args) => {
+      try {
+        return await runOne(...args);
+      } catch (error) {
+        capture(error);
+        throw error;
+      }
+    };
+    const runParallel = composition.workerRuntime.runParallel.bind(composition.workerRuntime);
+    composition.workerRuntime.runParallel = async (...args) => {
+      try {
+        return await runParallel(...args);
+      } catch (error) {
+        capture(error);
+        throw error;
+      }
+    };
+    return composition;
+  });
   const originalArtifacts = await options.objects.references();
   if (input.register) started = await input.register(tasks);
   else await tasks.startDeliveryRound(started);
@@ -452,6 +489,7 @@ export async function exerciseDeliveryHarness(input: {
           provider: 'opencode-go',
           model: live.model,
           failure: error instanceof Error ? error.message : String(error),
+          workerFailures,
           summary: await tasks.summary(scope),
           phase: state.phase,
           humanGate: state.humanGate,

@@ -24,6 +24,10 @@ import type { LocalGitSessionOptions } from './local-git-session';
 import { LocalGitVersionStore } from './local-git-version-store';
 import { createLocalGitWorktree } from './local-git-worktree';
 import type { ApplicationRequest } from './local-integration-application-records';
+import type {
+  LocalIntegrationAuthority,
+  LocalIntegrationCall,
+} from './local-integration-authority';
 import { initializeLocalLinkedRoot, verifyLocalLinkedRoot } from './local-linked-root';
 import {
   isLocalBindingOperation,
@@ -66,6 +70,10 @@ type Options = {
   versions: LocalVersionStore;
   verifyGrant(scope: Scope, grantId: string): Promise<void>;
   gitOptions: LocalGitWorkspaceOptions;
+  /** Original base proof for a canonical native conflict replacement; never caller supplied. */
+  readConflictBase?(
+    state: AppState,
+  ): Promise<{ version: WorkspaceVersionV1; sourceWorkspaceId: string; actionId: string }>;
   /** Must verify canonical command evidence and its exact Git version, not model claims. */
   verifyAcceptedVersion?(
     state: AppState,
@@ -93,8 +101,8 @@ type Options = {
 };
 export type LocalCodingBaselineOptions = Pick<
   Options,
-  'control' | 'objects' | 'versions' | 'verifyGrant' | 'gitOptions' | 'verifyAcceptedVersion'
->;
+  'objects' | 'versions' | 'verifyGrant' | 'gitOptions' | 'verifyAcceptedVersion'
+> & { control: Pick<LocalBindingCoordinator, 'assertClosed' | 'snapshot'> };
 const id = (v: unknown) => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(v);
 const exact = (v: object, keys: string) => Object.keys(v).sort().join(',') === keys;
 
@@ -130,6 +138,57 @@ export class LocalGitWorkspaces {
 
   readCodingBaseline(input: Scope & { workerId: string }) {
     return readInitialCodingBaseline({ ...this.options, gitOptions: this.git }, input);
+  }
+
+  /** Historical baseline only through a proof-bound integration reader. No writer is created. */
+  async readIntegrationCodingBaseline(
+    input: Scope & { workerId: string },
+    authority: LocalIntegrationAuthority,
+    call: LocalIntegrationCall,
+    published?: ApplicationRequest,
+  ) {
+    const checkpoint = () =>
+      published ? authority.readPublishedCheckpoint(published) : authority.readCheckpoint(call);
+    const before = await checkpoint();
+    if (
+      input.projectId !== call.projectId ||
+      input.taskId !== call.taskId ||
+      !before.integration.pendingBranches.some((b) => b.workerId === input.workerId)
+    )
+      throw Error('coding_baseline_proof_mismatch');
+    const checked = async () => {
+      await before.authorize();
+      return before;
+    };
+    const control: LocalCodingBaselineOptions['control'] = {
+      assertClosed: async (scope) => {
+        if (scope.projectId !== call.projectId || scope.taskId !== call.taskId)
+          throw Error('coding_baseline_proof_mismatch');
+        return (await checked()).state;
+      },
+      snapshot: async () => (await checked()).snapshot,
+    };
+    const verifyAcceptedVersion = this.options.verifyAcceptedVersion;
+    const options: LocalCodingBaselineOptions = {
+      ...this.options,
+      gitOptions: this.git,
+      control,
+    };
+    if (verifyAcceptedVersion) {
+      options.verifyAcceptedVersion = async (_historical, receipt, version) => {
+        await checked();
+        // The baseline is historical, but command evidence must still be
+        // admitted against the current canonical selection and state.
+        const current = await this.options.control.assertClosed(input);
+        await verifyAcceptedVersion(current, receipt, version);
+        await checked();
+      };
+    }
+    const result = readCodingWorkerLineage(before.state).sourceReceiptId
+      ? await readAcceptedCodingBaseline(options, input)
+      : await readInitialCodingBaseline(options, input, published);
+    await checked();
+    return result;
   }
 
   readAcceptedCodingBaseline(input: Scope & { workerId: string }) {
@@ -908,11 +967,21 @@ export class LocalGitWorkspaces {
         bindingReceiptId: record.bindingReceiptId,
         authorize,
       };
-      await new LocalGitVersionStore(objects, versions).verify(
-        request.version,
-        scope,
-        currentSource,
-      );
+      if (lineage.conflictReworks.at(-1)?.attempt === lineage.attempt) {
+        if (!this.options.readConflictBase) throw Error('local_git_conflict_verifier_required');
+        const original = await this.options.readConflictBase(state);
+        if (
+          original.sourceWorkspaceId !== workspace.workspaceId ||
+          localRecordHash(original.version) !== localRecordHash(request.version)
+        )
+          throw Error('workspace_wave_source_mismatch');
+      } else {
+        await new LocalGitVersionStore(objects, versions).verify(
+          request.version,
+          scope,
+          currentSource,
+        );
+      }
       await authorize();
       sourceCommit = wave.base.commit;
     };
@@ -1153,7 +1222,7 @@ function assertIntegrationWave(state: AppState, request: WaveRequest): void {
   if (
     state.phase !== 'coding' ||
     state.integration !== undefined ||
-    !lineage.sourceReceiptId ||
+    (!lineage.sourceReceiptId && !lineage.conflictReworks.length) ||
     !wave ||
     wave.waveId !== request.waveId ||
     wave.attempt !== request.attempt ||
