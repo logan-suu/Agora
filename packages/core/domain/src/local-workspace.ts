@@ -8,7 +8,7 @@ export type WorkspaceRefV1 = {
   workspaceId: string;
   rootId: string;
   grantId: string;
-  purpose: 'coding' | 'validation' | 'integration';
+  purpose: 'coding' | 'validation' | 'integration' | 'delivery';
 } & (
   | { mode: 'direct'; baselineManifestId: string }
   | { mode: 'linked-worktree'; commonDirId: string; branch: string; baseCommit: string }
@@ -109,12 +109,13 @@ export function isWorkspaceRefV1(value: unknown): value is WorkspaceRefV1 {
     !record(value) ||
     value.schemaVersion !== 'workspace-v1' ||
     !refIds.every((key) => id(value[key])) ||
-    !['coding', 'validation', 'integration'].includes(value.purpose as string)
+    !['coding', 'validation', 'integration', 'delivery'].includes(value.purpose as string)
   )
     return false;
   if (value.mode === 'direct')
     return exact(value, [...refCommon, 'baselineManifestId']) && id(value.baselineManifestId);
   return (
+    value.purpose !== 'delivery' &&
     value.mode === 'linked-worktree' &&
     exact(value, [...refCommon, 'commonDirId', 'branch', 'baseCommit']) &&
     id(value.commonDirId) &&

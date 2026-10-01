@@ -1,0 +1,52 @@
+/** Bind an initial validation source to the current wave's cumulative base.
+ * Physical completion, Git version and the durable dispatch are proved elsewhere. */
+import { type AppState, readCodingWorkerLineage, validationReceipt } from '@agora/core-domain';
+
+export function assertValidationSourceWave(
+  state: AppState,
+  sourceWorkspaceId: string,
+  sourceBaseCommit: string,
+): void {
+  const execution = state.parallelExecution;
+  const integration = state.integration;
+  const initialWorkspaceId = state.localExecution?.git?.initialWorkspaceId;
+  if (!execution || !integration || !initialWorkspaceId)
+    throw Error('workspace_validation_source_mismatch');
+  const lineage = execution.activeWave ? readCodingWorkerLineage(state) : undefined;
+  const acceptedId = lineage ? lineage.sourceReceiptId : execution.acceptedReceiptId;
+  if (acceptedId === undefined) {
+    if (sourceWorkspaceId !== initialWorkspaceId) {
+      const workspace = state.localExecution?.workspaces.find(
+        (w) => w.workspaceId === sourceWorkspaceId,
+      );
+      const mapping = state.localExecution?.git?.worktrees.find(
+        (w) => w.workspaceId === sourceWorkspaceId,
+      );
+      if (
+        !lineage?.conflictReworks.length ||
+        workspace?.mode !== 'linked-worktree' ||
+        workspace.purpose !== 'integration' ||
+        workspace.branch !== integration.integrationWorktree.branch ||
+        workspace.baseCommit !== integration.base.commit ||
+        mapping?.path !== integration.integrationWorktree.path
+      )
+        throw Error('workspace_validation_source_mismatch');
+    }
+    if (
+      (sourceWorkspaceId !== initialWorkspaceId && !lineage?.conflictReworks.length) ||
+      sourceBaseCommit !== execution.initialBase.commit ||
+      integration.base.commit !== execution.initialBase.commit
+    )
+      throw Error('workspace_validation_source_mismatch');
+    return;
+  }
+  const accepted = validationReceipt(state, acceptedId);
+  if (
+    (!lineage && !accepted.results.passed) ||
+    sourceWorkspaceId === initialWorkspaceId ||
+    sourceBaseCommit !== accepted.worktree.headCommit ||
+    integration.base.branch !== accepted.worktree.branch ||
+    integration.base.commit !== accepted.worktree.headCommit
+  )
+    throw Error('workspace_validation_source_mismatch');
+}

@@ -11,6 +11,7 @@ const names = [
   ...(process.platform === 'darwin'
     ? [
         'local-root-inspection',
+        'local-git-metadata',
         'local-root-initialization',
         'local-file-transaction',
         'local-command-bootstrap',

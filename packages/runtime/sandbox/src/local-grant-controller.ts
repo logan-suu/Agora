@@ -3,6 +3,7 @@
 import { isAbsolute, relative } from 'node:path';
 import {
   type AppState,
+  assertLocalExecutionTransition,
   type LocalExecutionV1,
   type Message,
   parseWorkspaceControl,
@@ -97,6 +98,8 @@ export class LocalGrantController {
   async assertGrant(scope: Scope, grantId: string): Promise<void> {
     const canonicalScope = { projectId: scope.projectId, taskId: scope.taskId };
     const snapshot = await this.control.snapshot();
+    if (snapshot.operations.some((operation) => operation.stage === 'prepared'))
+      throw Error('registry_recovery_required');
     const grant = snapshot.grants.find(
       (g) => g.grantId === grantId && g.projectId === scope.projectId,
     );
@@ -109,9 +112,16 @@ export class LocalGrantController {
       source.sourceMessage.msgId !== grant.leaderMessageId
     )
       throw Error('workspace_control_source_invalid');
-    await this.commit(canonicalScope, source.sourceMessage);
+    await this.verifyOrCommit(canonicalScope, source.sourceMessage, true);
   }
-  async commit(scope: Scope, sourceMessage: Message): Promise<AppState> {
+  commit(scope: Scope, sourceMessage: Message): Promise<AppState> {
+    return this.verifyOrCommit(scope, sourceMessage, false);
+  }
+  private async verifyOrCommit(
+    scope: Scope,
+    sourceMessage: Message,
+    readOnly: boolean,
+  ): Promise<AppState> {
     scope = structuredClone(scope);
     const message = structuredClone(sourceMessage);
     const intent = parseWorkspaceControl(message.display);
@@ -198,9 +208,19 @@ export class LocalGrantController {
         }) !== localRecordHash(grant)
       )
         throw Error('operation_conflict');
+      if (readOnly) {
+        if (previous.stage !== 'committed') throw Error('registry_recovery_required');
+        if (storedGrant.status !== 'active') throw Error('authorization_closed');
+        const state = await this.control.assertClosed(scope);
+        assertLocalExecutionTransition(previous.nextLocalExecution, state.localExecution);
+        if ((await this.control.snapshot()).revision !== snapshot.revision)
+          throw Error('registry_revision_conflict');
+        return state;
+      }
       await this.control.recover(previous.actionId, previous.inputHash);
       return this.control.assertClosed(scope);
     }
+    if (readOnly) throw Error('workspace_control_source_invalid');
     if (snapshot.revision !== proposal.expectedRevision) throw Error('workspace_proposal_stale');
     if (
       snapshot.roots.some(

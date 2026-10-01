@@ -11,6 +11,11 @@ import {
   type Message,
   type Mutation,
 } from '@agora/core-domain';
+import {
+  assertDeliveryTransitionFacts,
+  deliveryStartMutations,
+  type LocalDeliveryTransition,
+} from './local-delivery-transition';
 import { LocalRegistryFile, type LocalRegistryOwner } from './local-registry-file';
 import {
   assertLocalControlMessage,
@@ -30,15 +35,21 @@ interface CanonicalTasks {
     scope: Scope,
     mutations: readonly Mutation[],
   ): Promise<{ state: AppState; changed: boolean }>;
+  compareAndCommit?(
+    scope: Scope,
+    expected: AppState,
+    mutations: readonly Mutation[],
+  ): Promise<{ state: AppState; changed: boolean }>;
 }
 export type LocalBindingRequest = Scope & {
   actionId: string;
   sourceMessageId: string;
   sourceMessage?: Message;
+  deliveryTransition?: LocalDeliveryTransition;
   expectedRevision: number;
   /** No receipt for this action yet; the coordinator creates its canonical reference. */
   nextLocalExecution: LocalExecutionV1;
-  records: Pick<LocalRegistryRecords, 'roots' | 'grants' | 'workspaces' | 'claims'>;
+  records: Pick<LocalRegistryRecords, 'roots' | 'grants' | 'workspaces' | 'claims' | 'linkedRoots'>;
 };
 const requestKeys = [
   'projectId',
@@ -62,6 +73,8 @@ function leader(state: AppState, msgId: string) {
 }
 function source(state: AppState, operation: LocalBindingOperation) {
   leader(state, operation.sourceMessageId);
+  if (operation.deliveryTransition)
+    assertDeliveryTransitionFacts(state, operation.deliveryTransition);
   if (
     operation.sourceMessage &&
     localRecordHash(state.messages.find((m) => m.msgId === operation.sourceMessageId)) !==
@@ -111,7 +124,9 @@ export class LocalBindingCoordinator {
     return run;
   }
   async snapshot() {
-    return parseLocalRegistry(await this.registry.load());
+    // This adapter is constructed only with parseLocalRegistry. load validates
+    // every new byte sequence and returns an isolated data copy.
+    return (await this.registry.load()) as LocalRegistryRecords;
   }
 
   commitBinding(input: LocalBindingRequest): Promise<LocalBindingOperation> {
@@ -120,6 +135,7 @@ export class LocalBindingCoordinator {
     const keys = [
       ...requestKeys,
       ...(Object.hasOwn(input, 'sourceMessage') ? ['sourceMessage'] : []),
+      ...(Object.hasOwn(input, 'deliveryTransition') ? ['deliveryTransition'] : []),
     ];
     if (
       Object.keys(input).length !== keys.length ||
@@ -129,7 +145,10 @@ export class LocalBindingCoordinator {
       ) ||
       !Number.isSafeInteger(input.expectedRevision) ||
       input.expectedRevision < 0 ||
-      Object.keys(input.records).sort().join(',') !== 'claims,grants,roots,workspaces'
+      Object.keys(input.records).sort().join(',') !==
+        (Object.hasOwn(input.records, 'linkedRoots')
+          ? 'claims,grants,linkedRoots,roots,workspaces'
+          : 'claims,grants,roots,workspaces')
     )
       return Promise.reject(new Error('workspace_control_input_invalid'));
     const request = structuredClone(input);
@@ -156,10 +175,46 @@ export class LocalBindingCoordinator {
       )
         throw new Error('registry_revision_conflict');
       const state = canonicalTask(await this.tasks.load(request), request);
+      if (
+        request.deliveryTransition &&
+        (!this.tasks.compareAndCommit ||
+          request.deliveryTransition.beforeStateHash !== localRecordHash(state))
+      )
+        throw Error('delivery_transition_state_changed');
       if (request.sourceMessage) {
         if (state.messages.some((m) => m.msgId === request.sourceMessageId))
           throw new Error('workspace_binding_conflict');
       } else leader(state, request.sourceMessageId);
+      if (request.deliveryTransition?.kind === 'delivery-application-complete-v1') {
+        const receipt = request.deliveryTransition.message.payload;
+        const claim = current.claims.find((c) => c.claimId === receipt.claimId);
+        const expectedRecords = {
+          roots: current.roots,
+          grants: current.grants,
+          workspaces: current.workspaces,
+          linkedRoots: current.linkedRoots ?? [],
+          claims: current.claims.map((c) =>
+            c.claimId === receipt.claimId
+              ? { ...c, status: 'released', closureReceiptId: receipt.closureReceiptId }
+              : c,
+          ),
+        };
+        if (
+          claim?.kind !== 'delivery' ||
+          claim.status !== 'active' ||
+          claim.projectId !== request.projectId ||
+          claim.taskId !== request.taskId ||
+          claim.workspaceId !== receipt.workspaceId ||
+          claim.createdActionId !== receipt.applyActionId ||
+          claim.deliveryProposalId !== receipt.deliveryProposalId ||
+          claim.inputHash !== receipt.inputHash ||
+          claim.grantRevision !== receipt.grantRevision ||
+          request.actionId !== receipt.completionActionId ||
+          request.sourceMessageId !== receipt.applyActionId ||
+          localRecordHash(request.records) !== localRecordHash(expectedRecords)
+        )
+          throw Error('delivery_application_release_mismatch');
+      }
       const preparedRevision = current.revision + 1;
       const receiptId = `binding:${request.actionId}`;
       if (receiptId.length > 128) throw new Error('workspace_control_input_invalid');
@@ -175,6 +230,14 @@ export class LocalBindingCoordinator {
           ? [{ op: 'append' as const, field: 'messages' as const, value: request.sourceMessage }]
           : []),
         { op: 'set', field: 'localExecution', value: nextLocalExecution },
+        ...(request.deliveryTransition
+          ? deliveryStartMutations(
+              state,
+              nextLocalExecution,
+              request.deliveryTransition,
+              request.sourceMessage as Message,
+            )
+          : []),
       ]);
       const operation: LocalBindingOperation = {
         actionId: request.actionId,
@@ -188,6 +251,7 @@ export class LocalBindingCoordinator {
         nextLocalExecution,
         sourceMessageId: request.sourceMessageId,
         ...(request.sourceMessage ? { sourceMessage: request.sourceMessage } : {}),
+        ...(request.deliveryTransition ? { deliveryTransition: request.deliveryTransition } : {}),
       };
       const next = parseLocalRegistry({
         ...current,
@@ -196,9 +260,9 @@ export class LocalBindingCoordinator {
         operations: [...current.operations, operation],
       });
       // A control request cannot alter another project's capability records.
-      for (const name of ['roots', 'grants', 'workspaces', 'claims'] as const) {
+      for (const name of ['roots', 'grants', 'workspaces', 'claims', 'linkedRoots'] as const) {
         const others = (items: LocalRegistryRecords[typeof name]) =>
-          items.filter((v) => v.projectId !== request.projectId);
+          (items ?? []).filter((v) => v.projectId !== request.projectId);
         if (localRecordHash(others(current[name])) !== localRecordHash(others(next[name])))
           throw new Error('workspace_control_scope_mismatch');
       }
@@ -213,6 +277,32 @@ export class LocalBindingCoordinator {
       const operation = snapshot.operations.find((o) => o.actionId === actionId);
       if (!operation || !isLocalBindingOperation(operation) || operation.inputHash !== inputHash)
         throw new Error('operation_conflict');
+      return this.finish(operation);
+    });
+  }
+
+  /** Close only the registry half of an already canonical delivery transition.
+   * Unlike general recovery, this cannot replay a State mutation program when
+   * the original target/control preconditions have not been freshly proven. */
+  recoverCommittedDelivery(actionId: string, inputHash: string): Promise<LocalBindingOperation> {
+    return this.serial(async () => {
+      const snapshot = await this.snapshot();
+      const operation = snapshot.operations.find((o) => o.actionId === actionId);
+      if (
+        !operation ||
+        !isLocalBindingOperation(operation) ||
+        !operation.deliveryTransition ||
+        operation.inputHash !== inputHash
+      )
+        throw Error('operation_conflict');
+      const state = canonicalTask(await this.tasks.load(operation), operation);
+      if (
+        !receipt(state, operation) ||
+        (operation.stage === 'prepared' &&
+          localHash(state) !== localRecordHash(operation.nextLocalExecution))
+      )
+        throw Error('delivery_application_recovery_required');
+      source(state, operation);
       return this.finish(operation);
     });
   }
@@ -308,12 +398,28 @@ export class LocalBindingCoordinator {
         state.messages.some((m) => m.msgId === operation.sourceMessageId)
       )
         throw new Error('workspace_binding_conflict');
-      await this.tasks.commit(operation, [
+      const mutations: Mutation[] = [
         ...(operation.sourceMessage
           ? [{ op: 'append' as const, field: 'messages' as const, value: operation.sourceMessage }]
           : []),
         { op: 'set', field: 'localExecution', value: operation.nextLocalExecution },
-      ]);
+        ...(operation.deliveryTransition
+          ? deliveryStartMutations(
+              state,
+              operation.nextLocalExecution,
+              operation.deliveryTransition,
+              operation.sourceMessage as Message,
+            )
+          : []),
+      ];
+      if (operation.deliveryTransition) {
+        if (
+          !this.tasks.compareAndCommit ||
+          operation.deliveryTransition.beforeStateHash !== localRecordHash(state)
+        )
+          throw Error('delivery_transition_state_changed');
+        await this.tasks.compareAndCommit(operation, state, mutations);
+      } else await this.tasks.commit(operation, mutations);
       state = canonicalTask(await this.tasks.load(operation), operation);
     }
     if (

@@ -94,7 +94,7 @@ export class LocalWorkspaceFiles {
       taskId: call.taskId,
       actionId: call.actionId,
     });
-    if (admitted.workspace.purpose === 'validation')
+    if (admitted.workspace.mode === 'direct' && admitted.workspace.purpose === 'validation')
       return this.readSnapshot(call, path, admitted, actionKey);
     const existing = await this.objects.getReference(actionKey);
     if (existing) {

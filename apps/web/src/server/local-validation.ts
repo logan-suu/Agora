@@ -10,6 +10,8 @@ import {
   canonicalJson,
   currentApprovedReviewId,
   currentLocalCompletionEvidence,
+  deliveryRepairAssignment,
+  deliveryValidationDispatch,
   deriveCompletionResolution,
   isLocalValidationReceipt,
   type LocalReviewBinding,
@@ -24,6 +26,7 @@ import type {
   WorkspaceWorkerSession,
 } from '@agora/runtime-sandbox';
 import { localValidationCommand, parseLocalValidationResult } from './local-validation-command';
+import { controlFingerprint as gitControlFingerprint } from './wave-validation';
 
 const hash = (value: unknown) => createHash('sha256').update(canonicalJson(value)).digest('hex');
 const equal = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
@@ -78,19 +81,44 @@ export class LocalValidationService {
     private readonly evidence: WorkspaceValidationEvidencePort,
     private readonly load: () => Promise<AppState>,
   ) {}
-  private assertIdleSource(state: AppState, sourceWorkspaceId: string) {
+  private fingerprint(state: AppState) {
+    return state.localExecution?.delivery?.currentRoundId && state.localExecution.git
+      ? gitControlFingerprint(state)
+      : localControlFingerprint(state);
+  }
+  private assertIdleSource(
+    state: AppState,
+    sourceWorkspaceId: string,
+    roundId?: string,
+    repairWorkerId?: string,
+    sourceDispatchId?: string,
+  ) {
     const source = state.localExecution?.workspaces.find(
       (w) => w.workspaceId === sourceWorkspaceId,
     );
     if (
-      source?.purpose !== 'coding' ||
+      source?.purpose !== (roundId === undefined ? 'coding' : 'validation') ||
       source.mode !== 'direct' ||
       state.workers.some(
         (worker) =>
-          worker.role === 'CODER' && ['pending', 'running', 'paused'].includes(worker.status),
+          worker.role === 'CODER' &&
+          worker.workerId !== repairWorkerId &&
+          ['pending', 'running', 'paused'].includes(worker.status),
       )
     )
       throw Error('local_validation_source_not_ready');
+    if (roundId !== undefined) {
+      const delivery = deliveryValidationDispatch(state, roundId, sourceDispatchId);
+      if (
+        delivery?.round.roundId !== roundId ||
+        delivery.round.controlFingerprint !== this.fingerprint(state) ||
+        !state.localExecution?.bindings.some(
+          (binding) =>
+            binding.workerId === delivery.workerId && binding.workspaceId === sourceWorkspaceId,
+        )
+      )
+        throw Error('local_validation_source_not_ready');
+    }
     return source;
   }
   async complete(
@@ -99,7 +127,10 @@ export class LocalValidationService {
     sourceWorkspaceId: string,
     session: WorkspaceWorkerSession,
   ): Promise<readonly Mutation[]> {
-    const source = this.assertIdleSource(state, sourceWorkspaceId);
+    const delivery = deliveryValidationDispatch(state);
+    if (delivery && delivery.workerId !== workerId)
+      throw Error('local_validation_assignment_mismatch');
+    const source = this.assertIdleSource(state, sourceWorkspaceId, delivery?.round.roundId);
     const currentDispatch = dispatch(state);
     const worker = state.workers.find((w) => w.workerId === workerId);
     const binding = state.localExecution?.bindings.find((b) => b.workerId === workerId);
@@ -119,7 +150,7 @@ export class LocalValidationService {
       await this.verify(state, receiptId);
       return [];
     }
-    const fingerprint = localControlFingerprint(state);
+    const fingerprint = this.fingerprint(state);
     const identity = {
       projectId: state.projectId,
       taskId: state.taskId,
@@ -146,6 +177,7 @@ export class LocalValidationService {
     const receipt: LocalValidationReceipt = {
       kind: 'workspace_validation',
       version: 1,
+      ...(delivery ? { roundId: delivery.round.roundId } : {}),
       ...identity,
       sourceWorkspaceId,
       validationWorkspaceId: session.workspace.workspaceId,
@@ -167,7 +199,7 @@ export class LocalValidationService {
       latest.taskId !== state.taskId ||
       latest.phase !== 'testing' ||
       dispatch(latest)?.msgId !== currentDispatch.msgId ||
-      localControlFingerprint(latest) !== fingerprint ||
+      this.fingerprint(latest) !== fingerprint ||
       !equal(latest.localExecution, state.localExecution)
     )
       throw Error('local_validation_control_changed');
@@ -187,11 +219,45 @@ export class LocalValidationService {
     return mutations;
   }
   async verify(state: AppState, receiptId: string): Promise<LocalValidationReceipt> {
-    const receipt = localValidationReceipt(state, receiptId);
-    this.assertIdleSource(state, receipt.sourceWorkspaceId);
+    return this.verifyReceipt(state, receiptId);
+  }
+  /** A registered repair writer cannot alter its original immutable reader.
+   * This narrow proof path does not grant general validation during coding. */
+  async verifyRepairSource(state: AppState, workerId: string): Promise<void> {
+    const assignment = deliveryRepairAssignment(state, workerId);
+    if (!assignment) throw Error('delivery_repair_assignment_changed');
+    const receipt = await this.verifyReceipt(
+      state,
+      assignment.source.validationReceiptId,
+      workerId,
+    );
     if (
-      localControlFingerprint(state) !== receipt.controlFingerprint ||
-      dispatch(state)?.msgId !== receipt.dispatchId
+      receipt.roundId !== assignment.source.roundId ||
+      receipt.sourceWorkspaceId !== assignment.source.sourceWorkspaceId ||
+      !equal(receipt.workspaceVersion, assignment.source.workspaceVersion) ||
+      receipt.controlFingerprint !== assignment.source.controlFingerprint
+    )
+      throw Error('delivery_repair_source_changed');
+  }
+  private async verifyReceipt(
+    state: AppState,
+    receiptId: string,
+    repairWorkerId?: string,
+  ): Promise<LocalValidationReceipt> {
+    const receipt = localValidationReceipt(state, receiptId);
+    this.assertIdleSource(
+      state,
+      receipt.sourceWorkspaceId,
+      receipt.roundId,
+      repairWorkerId,
+      repairWorkerId ? receipt.dispatchId : undefined,
+    );
+    if (
+      this.fingerprint(state) !== receipt.controlFingerprint ||
+      (repairWorkerId
+        ? deliveryValidationDispatch(state, receipt.roundId, receipt.dispatchId)?.message
+        : dispatch(state)
+      )?.msgId !== receipt.dispatchId
     )
       throw Error('local_validation_control_changed');
     const source = await this.evidence.verifyCurrentVersion(
@@ -238,6 +304,7 @@ export class LocalValidationService {
       sourceWorkspaceId: receipt.sourceWorkspaceId,
       workspaceVersion: receipt.workspaceVersion,
       controlFingerprint: receipt.controlFingerprint,
+      ...(receipt.roundId === undefined ? {} : { roundId: receipt.roundId }),
     };
   }
   async verifyCompletion(state: AppState) {
@@ -264,7 +331,9 @@ export class LocalValidationService {
       !equal(artifact.workspaceVersion, binding.workspaceVersion) ||
       artifact.sourceWorkspaceId !== binding.sourceWorkspaceId ||
       artifact.validationReceiptId !== binding.validationReceiptId ||
-      artifact.approvalActionId !== approval.actionId
+      artifact.approvalActionId !== approval.actionId ||
+      artifact.roundId !== binding.roundId ||
+      (binding.roundId !== undefined && artifact.reviewId !== currentApprovedReviewId(state))
     )
       throw Error('local_artifact_conflict');
     const latest = await this.load();

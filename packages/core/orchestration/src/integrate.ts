@@ -2,11 +2,19 @@ import { createHash } from 'node:crypto';
 
 import {
   type AppState,
+  applyMutations,
+  canonicalJson,
   type HumanGateRequest,
   type Integration,
   type IntegrationBranch,
+  type IntegrationWavePlan,
+  integrationIdentityInput,
   type Mutation,
   mergeByIdMutation,
+  planIntegrationAcknowledgement,
+  planIntegrationCompletion,
+  planIntegrationConflict,
+  selectIntegrationBranch,
   setMutation,
   type WorktreeRef,
 } from '@agora/core-domain';
@@ -41,13 +49,44 @@ export type IntegrationTransition = (
   mutations: readonly Mutation[],
 ) => Promise<AppState>;
 
+export type { IntegrationWavePlan } from '@agora/core-domain';
+/** Trusted companion owns native publication and its canonical State commits. */
+export interface IntegrationProgressPort {
+  prepare(state: AppState, plan: IntegrationWavePlan): Promise<AppState>;
+  advance(state: AppState): Promise<AppState>;
+  complete(state: AppState): Promise<AppState>;
+  verify(state: AppState): Promise<AppState>;
+  closeConflict?(state: AppState): Promise<AppState>;
+}
+export function planIntegrationWave(
+  state: AppState,
+  input: IntegrateWaveInput,
+): IntegrationWavePlan {
+  const pendingBranches = plannedBranches(state, input.workerIds);
+  const baseCommit = commonBaseCommit(pendingBranches);
+  return {
+    integrationId: integrationIdentity(state.taskId, input.waveId, baseCommit, pendingBranches),
+    waveId: input.waveId,
+    base: { branch: input.baseBranch ?? 'main', commit: baseCommit },
+    pendingBranches,
+  };
+}
+
 export class IntegrationService {
   constructor(
-    private readonly workspace: IntegrationWorkspacePort,
-    private readonly transition: IntegrationTransition,
+    private readonly workspace: IntegrationWorkspacePort | undefined,
+    private readonly transition: IntegrationTransition | undefined,
+    private readonly progress?: IntegrationProgressPort,
   ) {}
 
+  static withProgress(progress: IntegrationProgressPort) {
+    return new IntegrationService(undefined, undefined, progress);
+  }
+
   async integrateWave(state: AppState, input: IntegrateWaveInput): Promise<IntegrateWaveResult> {
+    if (this.progress) return this.integrateProvenWave(state, input, this.progress);
+    if (!this.workspace || !this.transition) throw Error('integration_workspace_unavailable');
+    const workspace = this.workspace;
     const branches = plannedBranches(state, input.workerIds);
     const baseCommit = commonBaseCommit(branches);
     const baseBranch = input.baseBranch ?? 'main';
@@ -112,10 +151,7 @@ export class IntegrationService {
           integration.pendingBranches.indexOf(branch) + 1,
         );
         const containsLaterBranch = await someAsync(laterBranches, (later) =>
-          this.workspace.isAncestor(
-            later.worktree.headCommit as string,
-            target.headCommit as string,
-          ),
+          workspace.isAncestor(later.worktree.headCommit as string, target.headCommit as string),
         );
         const parents = await this.workspace.parentsOf(target.headCommit);
         const fastForward =
@@ -170,6 +206,91 @@ export class IntegrationService {
     integration = { ...integration, resultCommit, status: 'done' };
     current = await this.transition(current, [setMutation('integration', integration)]);
     return { state: current };
+  }
+
+  private async provenConflict(
+    state: AppState,
+    input: IntegrateWaveInput,
+    progress: IntegrationProgressPort,
+  ): Promise<IntegrateWaveResult> {
+    const closed = progress.closeConflict ? await progress.closeConflict(state) : state;
+    if (
+      closed.integration?.status !== 'conflict' ||
+      canonicalJson({ ...closed, localExecution: state.localExecution }) !== canonicalJson(state)
+    )
+      throw Error('integration_progress_changed');
+    return {
+      state: closed,
+      gateRequest: conflictGate(closed.integration, input.now ?? Date.now()),
+    };
+  }
+
+  private async integrateProvenWave(
+    state: AppState,
+    input: IntegrateWaveInput,
+    progress: IntegrationProgressPort,
+  ): Promise<IntegrateWaveResult> {
+    const plan = planIntegrationWave(state, input);
+    let current = await progress.prepare(state, plan);
+    const integration = current.integration;
+    if (!integration) throw Error('integration_progress_missing');
+    assertSamePlan(
+      integration,
+      plan.integrationId,
+      plan.waveId,
+      plan.base.branch,
+      plan.base.commit,
+      plan.pendingBranches,
+    );
+    if (integration.status === 'done') {
+      const verified = await progress.verify(current);
+      if (canonicalJson(verified) !== canonicalJson(current))
+        throw Error('integration_progress_changed');
+      return { state: verified };
+    }
+    if (integration.status === 'conflict') return this.provenConflict(current, input, progress);
+    if (integration.status !== 'merging') throw Error('integration_progress_not_ready');
+    while ((current.integration?.mergedBranches.length ?? 0) < plan.pendingBranches.length) {
+      const before = current;
+      const original = before.integration;
+      if (!original) throw Error('integration_progress_missing');
+      const selection = selectIntegrationBranch(before, plan.integrationId);
+      const next = await progress.advance(before);
+      if (next.integration?.status === 'conflict') {
+        const conflict = next.integration.conflicts[0];
+        if (!conflict) throw Error('integration_progress_missing');
+        const mutations = planIntegrationConflict(
+          before,
+          { projectId: before.projectId, taskId: before.taskId, integration: original, selection },
+          conflict.files,
+        );
+        if (canonicalJson(applyMutations(before, mutations)) !== canonicalJson(next))
+          throw Error('integration_progress_changed');
+        return this.provenConflict(next, input, progress);
+      }
+      const commit = next.integration?.mergedBranches.at(-1)?.mergeCommit;
+      if (!commit) throw Error('integration_progress_missing');
+      const mutations = planIntegrationAcknowledgement(
+        before,
+        {
+          projectId: before.projectId,
+          taskId: before.taskId,
+          integration: original,
+          selection,
+        },
+        { previousCommit: original.integrationWorktree.headCommit ?? original.base.commit, commit },
+      );
+      if (canonicalJson(applyMutations(before, mutations)) !== canonicalJson(next))
+        throw Error('integration_progress_changed');
+      current = next;
+    }
+    const after = await progress.complete(current);
+    if (
+      canonicalJson(applyMutations(current, planIntegrationCompletion(current, current))) !==
+      canonicalJson(after)
+    )
+      throw Error('integration_progress_changed');
+    return { state: after };
   }
 }
 
@@ -267,9 +388,7 @@ function integrationIdentity(
   branches: readonly IntegrationBranch[],
 ): string {
   const digest = createHash('sha256')
-    .update(
-      `${taskId}\u0000${waveId}\u0000${baseCommit}\u0000${branches.map((entry) => entry.workerId).join('\u0000')}`,
-    )
+    .update(integrationIdentityInput(taskId, waveId, baseCommit, branches))
     .digest('hex');
   return `integration-${digest.slice(0, 24)}`;
 }

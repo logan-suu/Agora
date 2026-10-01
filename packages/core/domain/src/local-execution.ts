@@ -1,3 +1,15 @@
+import { deliveryRepairAssignment } from './local-delivery-repair';
+import {
+  assertLocalDeliveryTransition,
+  isLocalDeliveryStateV1,
+  type LocalDeliveryStateV1,
+} from './local-delivery-round';
+import {
+  assertLocalGitState,
+  assertLocalGitTransition,
+  isLocalGitBinding,
+  type LocalGitBinding,
+} from './local-git-bindings';
 import {
   assertWorkspaceRefsTransition,
   isWorkspaceRefsV1,
@@ -25,6 +37,8 @@ export interface LocalExecutionV1 {
   workspaces: WorkspaceRefV1[];
   bindings: LocalWorkerBinding[];
   receipts: LocalExecutionReceiptRef[];
+  git?: LocalGitBinding;
+  delivery?: LocalDeliveryStateV1;
 }
 const id = (v: unknown): v is string =>
   typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(v);
@@ -50,8 +64,21 @@ const list = (v: unknown): v is unknown[] =>
   ).every((d) => d?.enumerable && Object.hasOwn(d, 'value'));
 
 export function isLocalExecutionV1(value: unknown): value is LocalExecutionV1 {
+  const hasGit = value !== null && typeof value === 'object' && Object.hasOwn(value, 'git');
+  const hasDelivery =
+    value !== null && typeof value === 'object' && Object.hasOwn(value, 'delivery');
   if (
-    !fields(value, ['schemaVersion', 'rootIds', 'workspaces', 'bindings', 'receipts']) ||
+    !fields(value, [
+      'schemaVersion',
+      'rootIds',
+      'workspaces',
+      'bindings',
+      'receipts',
+      ...(hasGit ? ['git'] : []),
+      ...(hasDelivery ? ['delivery'] : []),
+    ]) ||
+    (hasGit && !isLocalGitBinding(value.git)) ||
+    (hasDelivery && !isLocalDeliveryStateV1(value.delivery)) ||
     value.schemaVersion !== 'local-execution-v1' ||
     !list(value.rootIds) ||
     !value.rootIds.every(id) ||
@@ -97,6 +124,19 @@ export function isLocalExecutionV1(value: unknown): value is LocalExecutionV1 {
     receipts.add(receipt.receiptId);
     actions.add(receipt.actionId);
   }
+  const local = value as unknown as LocalExecutionV1;
+  if (
+    local.delivery !== undefined &&
+    (!local.rootIds.includes(local.delivery.rootId) ||
+      local.delivery.rounds.some(
+        (round) =>
+          !local.workspaces.some(
+            (workspace) =>
+              workspace.rootId === local.delivery?.rootId && workspace.grantId === round.grantId,
+          ),
+      ))
+  )
+    return false;
   return true;
 }
 
@@ -109,10 +149,11 @@ export function assertLocalExecutionState(state: AppState): void {
   }
   if (!isLocalExecutionV1(local)) throw new Error('invalid_local_execution');
   if (
-    state.integration !== undefined ||
-    state.parallelExecution !== undefined ||
-    state.workers.some((w) => w.worktree !== undefined) ||
-    state.subtasks.some((s) => s.worktree !== undefined)
+    local.git === undefined &&
+    (state.integration !== undefined ||
+      state.parallelExecution !== undefined ||
+      state.workers.some((w) => w.worktree !== undefined) ||
+      state.subtasks.some((s) => s.worktree !== undefined))
   )
     throw new Error('mixed_workspace_authority');
   const roots = new Set(local.rootIds);
@@ -128,17 +169,25 @@ export function assertLocalExecutionState(state: AppState): void {
     const workers = state.workers.filter((w) => w.workerId === binding.workerId);
     const subtasks = state.subtasks.filter((s) => s.id === binding.subtaskId);
     const workspace = workspaces.get(binding.workspaceId);
+    const repair =
+      binding.subtaskId === undefined &&
+      workers[0]?.role === 'CODER' &&
+      deliveryRepairAssignment(state, binding.workerId) !== undefined;
+
     if (
+      workspace?.purpose === 'delivery' ||
       workers.length !== 1 ||
       workers[0]?.subtaskId !== binding.subtaskId ||
       (binding.subtaskId !== undefined && subtasks.length !== 1) ||
       (binding.subtaskId === undefined &&
-        (workspace?.purpose === 'coding' || workers[0]?.role === 'CODER')) ||
+        (workspace?.purpose === 'coding' || workers[0]?.role === 'CODER') &&
+        !repair) ||
       !workspace ||
       !receipts.has(binding.receiptId)
     )
       throw new Error('invalid_local_worker_binding');
   }
+  if (local.git !== undefined) assertLocalGitState(state, local);
   if (state.testResults !== undefined) {
     const version = state.testResults.workspaceVersion;
     if (
@@ -159,6 +208,8 @@ export function assertLocalExecutionTransition(
   if (previous === undefined) return;
   if (!isLocalExecutionV1(previous)) throw new Error('invalid_local_execution');
   assertWorkspaceRefsTransition(previous.workspaces, next.workspaces);
+  assertLocalGitTransition(previous.git, next.git);
+  assertLocalDeliveryTransition(previous.delivery, next.delivery);
   if (previous.rootIds.some((id) => !next.rootIds.includes(id)))
     throw new Error('local_root_identity_changed');
   for (const [oldItems, newItems, key] of [

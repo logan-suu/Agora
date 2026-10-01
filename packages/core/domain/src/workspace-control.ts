@@ -8,6 +8,7 @@ export type WorkspaceControlIntent = { kind: 'workspace_control' } & Common &
     | { verb: 'takeover'; workspaceId: string; paths: string[] }
     | { verb: 'return'; takeoverReceiptId: string }
     | { verb: 'apply'; deliveryProposalId: string; inputHash: string }
+    | { verb: 'revalidate'; deliveryComparisonId: string; inputHash: string }
     | { verb: 'undo'; fileApplyReceiptId: string; inputHash: string }
   );
 const common = ['projectId', 'taskId', 'actionId', 'expectedRevision'];
@@ -17,6 +18,7 @@ const fields = {
   takeover: ['workspaceId', 'paths'],
   return: ['takeoverReceiptId'],
   apply: ['deliveryProposalId', 'inputHash'],
+  revalidate: ['deliveryComparisonId', 'inputHash'],
   undo: ['fileApplyReceiptId', 'inputHash'],
 } as const;
 function reject(): never {
@@ -48,7 +50,9 @@ function path(v: unknown): v is string {
 export function parseWorkspaceControl(display: string): WorkspaceControlIntent | undefined {
   if (!/^\/workspace(?:\s|$)/.test(display)) return undefined;
   if (display.length > 65536) reject();
-  const match = /^\/workspace (grant|revoke|takeover|return|apply|undo) ([\s\S]+)$/.exec(display);
+  const match = /^\/workspace (grant|revoke|takeover|return|apply|revalidate|undo) ([\s\S]+)$/.exec(
+    display,
+  );
   if (!match) reject();
   const verb = match[1] as keyof typeof fields;
   const body = match[2] as string;

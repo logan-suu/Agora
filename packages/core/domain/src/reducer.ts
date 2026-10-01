@@ -194,6 +194,25 @@ function applyAppend(state: AppState, field: AppendField, value: unknown): AppSt
       const message = value;
       const existing = state.messages.find((candidate) => candidate.msgId === message.msgId);
       if (
+        ['delivery_repair_dispatch', 'workspace_delivery_repair_candidate'].some(
+          (kind) => message.payload?.kind === kind || existing?.payload?.kind === kind,
+        ) &&
+        existing !== undefined &&
+        !deepEqual(existing, message)
+      )
+        throw Error('immutable delivery repair receipt conflicts with its canonical message');
+      if (
+        (['workspace_delivery_application', 'workspace_delivery_completion'].includes(
+          message.payload?.kind as string,
+        ) ||
+          ['workspace_delivery_application', 'workspace_delivery_completion'].includes(
+            existing?.payload?.kind as string,
+          )) &&
+        existing !== undefined &&
+        !deepEqual(existing, message)
+      )
+        throw Error('immutable delivery application receipt conflicts with its canonical message');
+      if (
         (message.payload?.kind === 'wave_validation' ||
           existing?.payload?.kind === 'wave_validation') &&
         existing !== undefined &&

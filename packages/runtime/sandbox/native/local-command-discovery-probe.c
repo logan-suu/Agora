@@ -14,6 +14,16 @@ int main(int argc, char **argv) {
   char byte;
   if (read(STDIN_FILENO, &byte, 1) != 1) return 65;
   if (!strcmp(argv[1], "sibling")) for (;;) pause();
+  if (!strcmp(argv[1], "zombie")) {
+    pid_t zombie = fork();
+    if (zombie < 0) return 73;
+    if (zombie == 0) _exit(0);
+    siginfo_t info = {0};
+    if (waitid(P_PID, zombie, &info, WEXITED | WNOWAIT) != 0) return 74;
+    puts("tree-ready");
+    fflush(stdout);
+    for (;;) pause();
+  }
   int ready[2];
   if (pipe(ready) != 0) return 66;
   pid_t child = fork();

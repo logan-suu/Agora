@@ -2,7 +2,12 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { appendMutation, createInitialAppState, type Message } from '@agora/core-domain';
+import {
+  appendMutation,
+  createInitialAppState,
+  type Message,
+  setMutation,
+} from '@agora/core-domain';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { JsonTaskStateStore, type TaskScope } from '../src/index';
@@ -36,6 +41,110 @@ afterEach(async () => {
 });
 
 describe('JsonTaskStateStore', () => {
+  it('retains immutable delivery-round references across a fresh store instance', async () => {
+    const root = await temporaryRoot();
+    const store = new JsonTaskStateStore(root);
+    const initial = createInitialAppState('task-a', 'goal', 'project-a');
+    await store.initialize(scope(), initial);
+    const version = (manifestId: string) => ({
+      kind: 'files' as const,
+      manifestId,
+      manifestHash: 'b'.repeat(64),
+    });
+    const round = {
+      roundId: 'round-one',
+      actionId: 'revalidate-one',
+      deliveryComparisonId: 'comparison-one',
+      inputHash: 'a'.repeat(64),
+      grantId: 'grant',
+      grantRevision: 1,
+      sourceReceiptId: 'validation-one',
+      sourceVersion: version('artifact'),
+      candidateVersion: version('candidate'),
+      targetVersion: version('user'),
+      targetIndexHash: null,
+      controlFingerprint: 'c'.repeat(64),
+    };
+    const localExecution = {
+      schemaVersion: 'local-execution-v1' as const,
+      rootIds: ['root'],
+      workspaces: [
+        {
+          schemaVersion: 'workspace-v1' as const,
+          projectId: 'project-a',
+          taskId: 'task-a',
+          workspaceId: 'workspace',
+          rootId: 'root',
+          grantId: 'grant',
+          purpose: 'validation' as const,
+          mode: 'direct' as const,
+          baselineManifestId: 'baseline',
+        },
+      ],
+      bindings: [],
+      receipts: [],
+      delivery: {
+        schemaVersion: 'local-delivery-v1' as const,
+        goal: 'apply_to_directory' as const,
+        rootId: 'root',
+        currentRoundId: 'round-one',
+        rounds: [round],
+      },
+    };
+    await store.commit(scope(), [setMutation('localExecution', localExecution)]);
+    const reopened = new JsonTaskStateStore(root);
+    const persisted = await reopened.load(scope());
+    expect(persisted?.localExecution?.delivery?.rounds).toEqual([round]);
+    expect(persisted?.localExecution?.delivery?.currentRoundId).toBe('round-one');
+    if (!persisted) throw Error('missing persisted delivery state');
+    await expect(
+      reopened.compareAndCommit(scope(), persisted, [
+        setMutation('localExecution', {
+          ...localExecution,
+          delivery: {
+            ...localExecution.delivery,
+            rounds: [{ ...round, candidateVersion: version('changed') }],
+          },
+        }),
+      ]),
+    ).rejects.toThrow('local_delivery_history_changed');
+    expect((await reopened.load(scope()))?.localExecution?.delivery?.rounds).toEqual([round]);
+  });
+  it('compares the complete expected snapshot inside the commit queue', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const initial = createInitialAppState('task-a', 'goal', 'project-a');
+    await store.initialize(scope(), initial);
+    const concurrent = store.commit(scope(), [appendMutation('messages', message('first'))]);
+    const stale = store.compareAndCommit(scope(), initial, [
+      appendMutation('messages', message('stale')),
+    ]);
+    await concurrent;
+    await expect(stale).rejects.toThrow('task_state_comparison_conflict');
+    const current = await store.load(scope());
+    expect(current?.messages.map((m) => m.msgId)).toEqual(['first']);
+    if (!current) throw Error('missing initialized state');
+    const committed = await store.compareAndCommit(scope(), current, [
+      appendMutation('messages', message('second')),
+    ]);
+    expect(committed.changed).toBe(true);
+    expect(committed.state.messages.map((m) => m.msgId)).toEqual(['first', 'second']);
+    await expect(store.compareAndCommit(scope(), committed.state, [])).resolves.toEqual({
+      state: committed.state,
+      changed: false,
+    });
+  });
+
+  it('pins conditional commit inputs before entering the queue', async () => {
+    const store = new JsonTaskStateStore(await temporaryRoot());
+    const initial = createInitialAppState('task-a', 'goal', 'project-a');
+    await store.initialize(scope(), initial);
+    const value = message('pinned');
+    const result = store.compareAndCommit(scope(), initial, [appendMutation('messages', value)]);
+    initial.goal = 'changed after admission';
+    value.display = 'changed after admission';
+    expect((await result).state.messages[0]?.display).toBe('display-pinned');
+  });
+
   it('rejects an invalid message batch atomically without changing the snapshot', async () => {
     const root = await temporaryRoot();
     const store = new JsonTaskStateStore(root);

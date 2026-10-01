@@ -6,6 +6,7 @@ export * from './phase0-tools';
 export * from './recoverable-sandbox-manager';
 export * from './sandbox-manager';
 export * from './types';
+export type * from './validation-dispatch-port';
 export * from './workspace-adapter';
 export type * from './workspace-port';
 export type * from './workspace-worker-port';

@@ -1,7 +1,9 @@
 import type { WorkspaceCommandResult, WorkspaceInspection } from '@agora/runtime-sandbox';
 import { describe, expect, it } from 'vitest';
 import {
+  localGitValidationCommand,
   localValidationCommand,
+  parseLocalGitValidationResult,
   parseLocalValidationResult,
 } from '../src/server/local-validation-command';
 
@@ -103,5 +105,60 @@ describe('fixed local Node validation', () => {
       failed: 1,
       workspaceVersion: version,
     });
+  });
+});
+
+describe('fixed Git Worktree Node validation input', () => {
+  const commit = '1'.repeat(40);
+  const gitVersion = {
+    kind: 'git' as const,
+    commit,
+    manifestId: `manifest:${'2'.repeat(64)}`,
+    manifestHash: '2'.repeat(64),
+  };
+  const gitInspection = (paths: string[]): WorkspaceInspection => ({
+    ...inspection(paths),
+    version: gitVersion,
+  });
+
+  it('fixes the complete supported test set to the qualified Git commit', () => {
+    expect(
+      localGitValidationCommand(gitInspection(['lib.js', 'b.spec.mjs', 'a.test.cjs']), commit),
+    ).toMatchObject({
+      toolId: 'node',
+      argv: ['--test', '--test-reporter=tap', '@input/a.test.cjs', '@input/b.spec.mjs'],
+      inputVersion: gitVersion,
+      timeoutMs: 30000,
+    });
+    for (const candidate of [
+      gitInspection([]),
+      gitInspection(['a.test.cjs', 'a.test.cjs']),
+      gitInspection(['a.test.cjs', 'b.test.ts']),
+      { ...gitInspection(['a.test.cjs']), excludedPaths: ['hidden.test.js'] },
+      inspection(['a.test.cjs']),
+    ])
+      expect(() => localGitValidationCommand(candidate, commit)).toThrow();
+    expect(() =>
+      localGitValidationCommand(gitInspection(['a.test.cjs']), '3'.repeat(40)),
+    ).toThrow();
+  });
+
+  it('accepts only a complete TAP result for the fixed Git version', () => {
+    const run = { ...execution(), inputVersion: gitVersion };
+    expect(parseLocalGitValidationResult(run, gitVersion)).toEqual({
+      passed: true,
+      total: 1,
+      failed: 0,
+      failures: [],
+      workspaceVersion: gitVersion,
+    });
+    for (const patch of [
+      { timedOut: true },
+      { quiescent: false },
+      { stdout: run.stdout.replace('# skipped 0', '# skipped 1') },
+      { inputVersion: version },
+      { inputVersion: { ...gitVersion, commit: '3'.repeat(40) } },
+    ])
+      expect(() => parseLocalGitValidationResult({ ...run, ...patch }, gitVersion)).toThrow();
   });
 });

@@ -1,9 +1,10 @@
 // The scripted provider isolates malformed model output; the real Harness loop,
 // projection hook, tool restrictions and turn boundaries remain under test.
-import { createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
+import { applyMutations, createInitialAppState, PHASE0_ROSTER } from '@agora/core-domain';
 import {
   architectTurnMutations,
   DEFAULT_ROSTER,
+  reviewerTurnMutations,
   SIX_ROLE_FORMAT_REPAIR,
 } from '@agora/roles-definitions';
 import { LocalTempSandbox } from '@agora/runtime-sandbox';
@@ -39,6 +40,52 @@ const validate = ({ text }: { text: string | null }) => {
 };
 
 describe('bounded structured output repair', () => {
+  it('regenerates a reused review verdict before it can disappear during State append', async () => {
+    const reviewer = DEFAULT_ROSTER.find((role) => role.role === 'REVIEWER');
+    if (!reviewer) throw new Error('missing REVIEWER');
+    const verdict = { kind: 'verdict', verdict: 'approved', summary: 'Verified fixed input.' };
+    const bad = JSON.stringify([{ ...verdict, id: 'local-verdict' }]);
+    const good = JSON.stringify([{ ...verdict, id: 'rv-current-dispatch' }]);
+    const adapter = new Replies([bad, good]);
+    const reader = vi.fn(({ text }: { text: string | null }) =>
+      reviewerTurnMutations(text, ['local-verdict']),
+    );
+    const executor = new HarnessExecutor(reviewer, {
+      adapter,
+      outputFormatHint: SIX_ROLE_FORMAT_REPAIR.REVIEWER ?? '',
+      validateTurnOutput: ({ text }) => {
+        reviewerTurnMutations(text, ['local-verdict']);
+      },
+      readTurnMutations: reader,
+    });
+    try {
+      const result = await executor.step({
+        ...context,
+        view: { role: 'REVIEWER', slices: { reviewContext: { dispatchId: 'current-dispatch' } } },
+      });
+      expect(adapter.calls).toHaveLength(2);
+      expect(adapter.calls[1]?.tools ?? []).toEqual([]);
+      expect(JSON.stringify(adapter.calls[1]?.messages)).toContain('fresh safe id');
+      expect(reader).toHaveBeenCalledExactlyOnceWith({ text: good });
+      expect(result.mutations).toContainEqual({
+        op: 'append',
+        field: 'reviewComments',
+        value: { ...verdict, id: 'rv-current-dispatch' },
+      });
+      const previous = { id: 'local-verdict', kind: 'verdict', verdict: 'approved' };
+      const state = {
+        ...createInitialAppState('review-repair', 'Fixed input'),
+        reviewComments: [previous],
+      };
+      expect(applyMutations(state, result.mutations).reviewComments).toEqual([
+        previous,
+        { ...verdict, id: 'rv-current-dispatch' },
+      ]);
+      expect(state.reviewComments).toEqual([previous]);
+    } finally {
+      await executor.dispose();
+    }
+  });
   it('carries the role contract into repair of nested conventions without changing their values', async () => {
     const architect = DEFAULT_ROSTER.find((role) => role.role === 'ARCHITECT');
     if (!architect) throw new Error('missing ARCHITECT');

@@ -134,6 +134,14 @@ export function deriveCompletionResolution(
   state: AppState,
   reviewId: string,
 ): CompletionResolutionView | undefined {
+  return deriveResolution(state, reviewId, currentCompletionEvidence);
+}
+
+function deriveResolution(
+  state: AppState,
+  reviewId: string,
+  evidenceFor: (state: AppState) => CompletionEvidence,
+): CompletionResolutionView | undefined {
   if (currentApprovedReviewId(state) !== reviewId) {
     throw new Error(
       `completion resolution review "${reviewId}" is not the current REVIEWER verdict`,
@@ -196,7 +204,7 @@ export function deriveCompletionResolution(
   }
   if (
     (state.parallelExecution !== undefined || state.localExecution !== undefined) &&
-    canonicalJson(receipt?.completionEvidence) !== canonicalJson(currentCompletionEvidence(state))
+    canonicalJson(receipt?.completionEvidence) !== canonicalJson(evidenceFor(state))
   )
     throw new Error('completion resolution evidence drifted');
   return {
@@ -209,9 +217,33 @@ export function deriveCompletionResolution(
   };
 }
 
+function usesLocalFileCompletion(state: AppState): boolean {
+  return (
+    state.localExecution !== undefined &&
+    (state.localExecution.git === undefined ||
+      state.localExecution.delivery?.currentRoundId != null ||
+      currentReviewDispatch(state)?.payload.workspaceReviewBinding !== undefined)
+  );
+}
+
 export function currentCompletionEvidence(state: AppState): CompletionEvidence {
-  if (state.localExecution !== undefined) return currentLocalCompletionEvidence(state);
-  const binding = currentReviewDispatch(state)?.payload.reviewBinding;
+  const dispatch = currentReviewDispatch(state);
+  if (
+    dispatch?.payload.workspaceReviewBinding !== undefined &&
+    dispatch.payload.reviewBinding !== undefined
+  )
+    throw Error('ambiguous_completion_evidence');
+  if (usesLocalFileCompletion(state)) return currentLocalCompletionEvidence(state);
+  if (dispatch?.payload.workspaceReviewBinding !== undefined)
+    throw Error('native_completion_evidence_required');
+  return nativeCompletionEvidence(state);
+}
+
+function nativeCompletionEvidence(state: AppState): ReviewBinding {
+  const dispatch = currentReviewDispatch(state);
+  if (dispatch?.payload.workspaceReviewBinding !== undefined)
+    throw Error('ambiguous_completion_evidence');
+  const binding = dispatch?.payload.reviewBinding;
   if (
     !isReviewBinding(binding) ||
     binding.planId !== state.parallelExecution?.planId ||
@@ -260,10 +292,25 @@ export function deriveCompletionFeedback(state: AppState): CompletionResolutionV
     throw new Error('completion feedback requires a valid historical review cursor');
   const historical: AppState = {
     ...state,
-    messages: state.messages.slice(0, nextIndex < 0 ? undefined : nextIndex),
+    // Local bindings remain immutable across rounds. Retain repair identity
+    // facts needed to validate those bindings; they cannot select a review,
+    // replace validation evidence or resolve a completion gate.
+    messages: state.messages.filter(
+      (message, position) =>
+        nextIndex < 0 ||
+        position < nextIndex ||
+        message.payload.kind === 'delivery_repair_dispatch',
+    ),
     reviewComments: state.reviewComments.slice(0, cursor),
   };
-  if (state.parallelExecution !== undefined) {
+  // Historical evidence follows the original dispatch, not today's round
+  // pointer. Keep the actual local history intact; this view cannot authorize
+  // current completion or execution.
+  const dispatch = currentReviewDispatch(historical);
+  const fileEvidence = dispatch?.payload.workspaceReviewBinding !== undefined;
+  if (fileEvidence && dispatch?.payload.reviewBinding !== undefined)
+    throw Error('ambiguous_completion_evidence');
+  if (state.parallelExecution !== undefined && !fileEvidence) {
     const binding = currentReviewDispatch(historical)?.payload.reviewBinding;
     if (!isReviewBinding(binding))
       throw new Error('completion feedback requires historical validation evidence');
@@ -276,7 +323,7 @@ export function deriveCompletionFeedback(state: AppState): CompletionResolutionV
       acceptedReceiptId: binding.validationReceiptId,
     };
   }
-  if (state.localExecution !== undefined) {
+  if (fileEvidence) {
     const binding = currentReviewDispatch(historical)?.payload.workspaceReviewBinding;
     const resolutionMessage = state.messages[index];
     if (!isLocalReviewBinding(binding) || !resolutionMessage)
@@ -286,14 +333,20 @@ export function deriveCompletionFeedback(state: AppState): CompletionResolutionV
     // marker; do not qualify the old file version as current completion evidence.
     historical.messages = state.messages.filter(
       (message, position) =>
-        position <= index || message.msgId === `human-gate-resumed:${resolutionMessage.msgId}`,
+        position <= index ||
+        message.msgId === `human-gate-resumed:${resolutionMessage.msgId}` ||
+        message.payload.kind === 'delivery_repair_dispatch',
     );
     historical.testResults = localValidationReceipt(
       historical,
       binding.validationReceiptId,
     ).results;
   }
-  const resolution = deriveCompletionResolution(historical, completion.reviewId);
+  const resolution = deriveResolution(
+    historical,
+    completion.reviewId,
+    fileEvidence ? currentLocalCompletionEvidence : nativeCompletionEvidence,
+  );
   return resolution?.resumed ? structuredClone(resolution) : null;
 }
 
@@ -371,4 +424,19 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
+}
+
+/** Application eligibility is separate from immutable D16 approval. Until the
+ * trusted application protocol closes, approval alone never completes delivery. */
+export function localDeliveryAwaitsApplication(state: AppState): boolean {
+  if (state.localExecution?.delivery?.goal !== 'apply_to_directory' || state.phase !== 'review')
+    return false;
+  const dispatch = currentReviewDispatch(state);
+  const cursor = dispatch?.payload.reviewCommentCursor;
+  if (typeof cursor !== 'number') return false;
+  const verdicts = state.reviewComments.slice(cursor).filter((entry) => entry.kind === 'verdict');
+  if (verdicts.length === 0 || (verdicts.length === 1 && verdicts[0]?.verdict !== 'approved'))
+    return false;
+  const resolution = deriveCompletionResolution(state, currentApprovedReviewId(state));
+  return resolution?.option === 'approve_completion' && resolution.resumed;
 }

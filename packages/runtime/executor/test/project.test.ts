@@ -753,6 +753,7 @@ describe('project (task 2.4, spec §7 slice table)', () => {
     expect(reviewer.conventions).toEqual({ style: 'biome' });
     expect(reviewer.architecture).toEqual({ modules: ['cache'] });
     expect(reviewer.reviewContext).toEqual({
+      dispatchId: 'm-root-cause',
       mode: 'test_failure_root_cause',
       reason: 'repeated_test_failures',
       failureStreak: 2,
@@ -763,7 +764,7 @@ describe('project (task 2.4, spec §7 slice table)', () => {
       { file: 'src/b.test.ts', lines: [1] },
     ]);
     expect(JSON.stringify(reviewer)).not.toContain('SENTINEL-RAW-ANNOUNCEMENT');
-    expect(JSON.stringify(reviewer)).not.toContain('m-root-cause');
+    expect(JSON.stringify(reviewer)).not.toContain('"display"');
     const bare = slicesOf(makeState(), 'REVIEWER');
     expect(bare.branchOrIntegration).toEqual({ worktrees: [], integration: null });
     expect(bare.conventions).toEqual({});

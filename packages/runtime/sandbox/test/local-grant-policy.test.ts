@@ -42,3 +42,9 @@ it('retains disabled-network grants and rejects extra disabled-network fields', 
     } as typeof disabled),
   ).toThrow();
 });
+
+it('accepts deletion only as an explicit Leader policy action', () => {
+  const explicit = { ...policy, actions: [...policy.actions, 'remove' as const] };
+  expect(validateLocalGrantPolicy(explicit).actions).toContain('remove');
+  expect(validateLocalGrantPolicy(policy).actions).not.toContain('remove');
+});

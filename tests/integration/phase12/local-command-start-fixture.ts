@@ -53,10 +53,11 @@ type Scenario =
   | 'capture-tool'
   | 'capture-cancel'
   | 'capture-deadline'
+  | 'linked-window'
   | 'control-ready-delayed'
   | 'control-ready-timeout'
   | 'control-ready-invalid';
-export async function probeLocalCommandStart(scenario: Scenario) {
+export async function probeLocalCommandStart(scenario: Scenario, startupWindowMs?: 5_000 | 15_000) {
   if (process.platform !== 'darwin' || process.arch !== 'arm64')
     throw new Error('Apple Silicon validation required; no fallback.');
   const base = mkdtempSync('/private/tmp/agora-task123-validation-');
@@ -178,6 +179,7 @@ export async function probeLocalCommandStart(scenario: Scenario) {
     });
     let beforeRelease = false;
     let registeredAtRelease = 0;
+    let linkedWindowDelayApplied = false;
     const checkpoints: string[] = [];
     const result = await runHeldLocalCommand({
       bootstrap,
@@ -189,6 +191,7 @@ export async function probeLocalCommandStart(scenario: Scenario) {
       journal,
       commandId: reservation.commandId,
       revision: reservation.revision,
+      ...(startupWindowMs === undefined ? {} : { startupWindowMs }),
       binding: new LocalCommandBinding(
         {
           commandId: reservation.commandId,
@@ -221,6 +224,10 @@ export async function probeLocalCommandStart(scenario: Scenario) {
         checkpoints.push(stage);
         if (scenario === 'capture-deadline' && stage === 'spawn')
           execFileSync('/bin/sleep', ['5.1']);
+        if (scenario === 'linked-window' && stage === 'spawn' && !linkedWindowDelayApplied) {
+          linkedWindowDelayApplied = true;
+          execFileSync('/bin/sleep', ['5.1']);
+        }
         if (stage === 'register' && scenario === 'journal-failure')
           writeFileSync(join(base, 'journal', 'commands.lock'), 'fixed-lock', {
             flag: 'wx',

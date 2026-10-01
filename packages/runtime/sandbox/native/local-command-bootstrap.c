@@ -34,7 +34,9 @@ int main(int argc, char **argv) {
   if (!error) error = posix_spawn(&child, argv[1], &actions, &attr, argv + 1, environ);
   posix_spawn_file_actions_destroy(&actions);
   posix_spawnattr_destroy(&attr);
-  if (error) { dprintf(3, "failed\n"); return 68; }
+  /* A bounded POSIX error number distinguishes a denied spawn from a lost
+   * control channel without exposing project stderr or changing admission. */
+  if (error) { dprintf(3, "failed:%d\n", error); return 68; }
   if (dprintf(3, "child:%d\n", child) < 0) return 69;
   int status = 0;
   pid_t waited;

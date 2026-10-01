@@ -78,3 +78,15 @@ it('rejects old journal formats and malformed persisted root bindings', async ()
   expect(result.journalErrors).toEqual(['invalid_command_journal', 'invalid_command_journal']);
   expect(result.record.binding).not.toBeNull();
 }, 20_000);
+
+it('initializes the separate cleanup helper before its short signal deadline', async () => {
+  const result = await probeLocalCommandBinding('control-drift-cold');
+  expect(result.cleanupReady?.firstOperation).toBe('ready');
+  expect(result.cleanupReady?.durationMs).toBeGreaterThanOrEqual(350);
+  expect(result.result.released).toBe(true);
+  expect(result.result.observation?.bindingFailure).toBe('tool_changed');
+  expect(result.result.observation?.stop.registeredState).toBe('needsAttention');
+  expect(result.result.observation?.stop.signals).toEqual([]);
+  expect(result.trapExecuted).toBe(false);
+  expect(result.fixtureStop?.registeredState).toBe('stopped');
+}, 20_000);

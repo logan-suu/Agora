@@ -1,4 +1,4 @@
-/* Trusted single-file replacement primitive. Never executes project programs.
+/* Trusted file and empty-directory transactions. Never executes project programs.
  * fd 3: immutable expected bytes; fd 4: immutable replacement bytes.
  * The host durably journals intent and authorizes each checkpoint on stdin.
  * This internal primitive is not a grant registry or a public workspace port. */
@@ -27,14 +27,23 @@ static char directory_names[LIMIT][PATH_CAP];
 static int root_fd, staging_fd, original_fd = -1;
 static struct stat staging_id, expected_id;
 static const char *root_path, *target_path, *staging_name;
-static int exchanged, creating;
-static char baseline_metadata[128];
+static int exchanged, creating, removing;
+static char baseline_metadata[128], candidate_metadata[128];
+static int directory_operation, directory_known;
+static struct stat result_directory;
+static char result_directory_metadata[128];
 
 static void finish(const char *stage, const char *reason, int code) {
   /* The process cannot fork. The host waits for exit, which closes all descriptors;
    * this provisional result line alone is never evidence of quiescence. */
-  printf("{\"event\":\"result\",\"stage\":\"%s\",\"reason\":\"%s\",\"%s\":%s}\n",
-         stage, reason, creating ? "created" : "exchanged", exchanged ? "true" : "false");
+  printf("{\"event\":\"result\",\"stage\":\"%s\",\"reason\":\"%s\",\"%s\":%s",
+         stage, reason, creating ? "created" : removing ? "removed" : "exchanged", exchanged ? "true" : "false");
+  if (directory_operation) {
+    if (directory_known) printf(",\"directory\":{\"identity\":\"%ju:%ju\",\"metadata\":\"%s\"}",
+      (uintmax_t)result_directory.st_dev, (uintmax_t)result_directory.st_ino, result_directory_metadata);
+    else printf(",\"directory\":null");
+  }
+  puts("}");
   fflush(stdout);
   exit(code);
 }
@@ -154,10 +163,10 @@ static void pin_parents(const char *expected_parents) {
   }
   if (index != directory_count) failure("root_identity_changed");
 }
-static int supported_file(int fd, struct stat *st) {
-  if (fstat(fd, st) || !S_ISREG(st->st_mode) || st->st_nlink != 1 ||
+static int supported_object(int fd, struct stat *st, int directory) {
+  if (fstat(fd, st) || (directory ? !S_ISDIR(st->st_mode) : (!S_ISREG(st->st_mode) || st->st_nlink != 1)) ||
       st->st_uid != getuid() || (st->st_mode & 07000) || st->st_flags ||
-      st->st_size < 0 || st->st_size > FILE_CAP) {
+      (!directory && (st->st_size < 0 || st->st_size > FILE_CAP))) {
     fprintf(stderr, "file_stat_unsupported:%d\n", errno); return 0;
   }
   /* Extended attributes are hashed and copied; nonempty ACLs remain unsupported. */
@@ -170,6 +179,7 @@ static int supported_file(int fd, struct stat *st) {
   if (result != -1 || error != EINVAL) fprintf(stderr, "file_acl_entries:%d:%d\n", result, error);
   return result == -1 && error == EINVAL;
 }
+static int supported_file(int fd, struct stat *st) { return supported_object(fd, st, 0); }
 static int compare_names(const void *a, const void *b) {
   return strcmp(*(const char *const *)a, *(const char *const *)b);
 }
@@ -217,9 +227,9 @@ static int list_directory(void) {
   free(entries);
   return 0;
 }
-static int metadata(int fd, char result[128]) {
+static int object_metadata(int fd, char result[128], int directory) {
   struct stat st;
-  if (!supported_file(fd, &st)) return 0;
+  if (!supported_object(fd, &st, directory)) return 0;
   char names[65536], *sorted[1024];
   ssize_t count = flistxattr(fd, names, sizeof(names), 0);
   if (count < 0) return 0;
@@ -249,6 +259,7 @@ static int metadata(int fd, char result[128]) {
   snprintf(result, 128, "%u:%u:%u:%s", st.st_mode, st.st_uid, st.st_gid, hex);
   return 1;
 }
+static int metadata(int fd, char result[128]) { return object_metadata(fd, result, 0); }
 static int bytes_equal(int a, int b) {
   char aa[65536], bb[65536];
   off_t offset = 0;
@@ -260,13 +271,13 @@ static int bytes_equal(int a, int b) {
     if (offset > FILE_CAP) return 0;
   }
 }
-static int same_version(int fd, int bytes, const struct stat *identity) {
+static int same_version(int fd, int bytes, const struct stat *identity, const char *expected_metadata) {
   struct stat before, after;
   char observed_metadata[128];
   if (!supported_file(fd, &before) || !same(&before, identity) ||
       before.st_mode != identity->st_mode || before.st_uid != identity->st_uid ||
       before.st_gid != identity->st_gid || !metadata(fd, observed_metadata) ||
-      strcmp(observed_metadata, baseline_metadata) || !bytes_equal(fd, bytes) || fstat(fd, &after)) return 0;
+      strcmp(observed_metadata, expected_metadata) || !bytes_equal(fd, bytes) || fstat(fd, &after)) return 0;
   return same(&before, &after) && before.st_size == after.st_size &&
     before.st_mtimespec.tv_sec == after.st_mtimespec.tv_sec &&
     before.st_mtimespec.tv_nsec == after.st_mtimespec.tv_nsec &&
@@ -279,15 +290,150 @@ static int open_target(void) {
                 O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
 }
 
+/* Never filter exclusions: even one hidden entry makes a directory nonempty. */
+static int empty_directory(int fd) {
+  int read_fd = open_directory(fd, ".");
+  if (read_fd < 0) return 0;
+  DIR *stream = fdopendir(read_fd);
+  if (!stream) { close(read_fd); return 0; }
+  int empty = 1;
+  for (;;) {
+    errno = 0;
+    struct dirent *entry = readdir(stream);
+    if (!entry) { if (errno) empty = 0; break; }
+    if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) { empty = 0; break; }
+  }
+  closedir(stream);
+  return empty;
+}
+static int directory_version(int fd, const struct stat *wanted, const char *wanted_metadata,
+                             struct stat *observed, char observed_metadata[128]) {
+  struct stat after;
+  if (!supported_object(fd, observed, 1) || (wanted && !same(observed, wanted)) ||
+      !object_metadata(fd, observed_metadata, 1) ||
+      (wanted_metadata && strcmp(wanted_metadata, observed_metadata)) ||
+      !empty_directory(fd) || fstat(fd, &after)) return 0;
+  return same(observed, &after) && observed->st_mtimespec.tv_sec == after.st_mtimespec.tv_sec &&
+    observed->st_mtimespec.tv_nsec == after.st_mtimespec.tv_nsec &&
+    observed->st_ctimespec.tv_sec == after.st_ctimespec.tv_sec &&
+    observed->st_ctimespec.tv_nsec == after.st_ctimespec.tv_nsec;
+}
+static int target_absent(void) {
+  struct stat current;
+  const char *leaf = strrchr(target_path, '/');
+  return fstatat(directories[directory_count - 1], leaf ? leaf + 1 : target_path,
+                 &current, AT_SYMLINK_NOFOLLOW) == -1 && errno == ENOENT;
+}
+static void record_directory(const struct stat *st, const char *value) {
+  result_directory = *st;
+  strcpy(result_directory_metadata, value);
+  directory_known = 1;
+}
+static int directory_transaction(char **argv, int inspecting, int verifying) {
+  struct stat wanted = {0}, observed;
+  char value[128], candidate[128], relative_candidate[256];
+  snprintf(candidate, sizeof(candidate), "%s-candidate", inspecting ? "unused" : argv[8]);
+  snprintf(relative_candidate, sizeof(relative_candidate), "%s/%s", staging_name, candidate);
+  if (inspecting) {
+    int fd = open_target();
+    if (fd < 0 || !directory_version(fd, NULL, NULL, &observed, value))
+      failure("directory_version_conflict");
+    close(fd);
+    verify_directories();
+    printf("{\"identity\":\"%ju:%ju\",\"metadata\":\"%s\"}\n",
+      (uintmax_t)observed.st_dev, (uintmax_t)observed.st_ino, value);
+    return 0;
+  }
+  if (verifying) {
+    parse_identity(argv[6], &wanted);
+    int fd = creating ? open_target() : open_directory(staging_fd, candidate);
+    if (fd < 0 || !directory_version(fd, &wanted, argv[7], &observed, value))
+      failure("post_directory_conflict");
+    close(fd);
+    if (removing && !target_absent()) failure("post_directory_conflict");
+    verify_directories();
+    record_directory(&observed, value);
+    exchanged = 1;
+    finish("applied", "none", 0);
+  }
+  if (creating) {
+    parse_identity(argv[7], &wanted);
+    if (!same(&wanted, &directory_ids[directory_count - 1]) || !target_absent())
+      finish("conflict", "directory_version_conflict", 1);
+  } else {
+    parse_identity(argv[6], &wanted);
+    int fd = open_target();
+    if (fd < 0 || !directory_version(fd, &wanted, argv[7], &observed, value))
+      finish("conflict", "directory_version_conflict", 1);
+    close(fd);
+    record_directory(&observed, value);
+  }
+  checkpoint("before_prepare");
+  if (creating) {
+    if (mkdirat(staging_fd, candidate, 0700)) failure("candidate_unavailable");
+    int fd = open_directory(staging_fd, candidate);
+    if (fd < 0) failure("candidate_failed");
+    verify_directories();
+    if (fchmod(fd, 0755) || fsync(fd) || !directory_version(fd, NULL, NULL, &observed, value))
+      failure("candidate_failed");
+    record_directory(&observed, value);
+    close(fd);
+    verify_directories();
+    if (fsync(staging_fd)) failure("flush_failed");
+  } else {
+    struct stat occupied;
+    if (!fstatat(staging_fd, candidate, &occupied, AT_SYMLINK_NOFOLLOW) || errno != ENOENT)
+      failure("candidate_unavailable");
+  }
+  checkpoint("before_swap");
+  int fd = creating ? open_directory(staging_fd, candidate) : open_target();
+  if (fd < 0 || !directory_version(fd, &result_directory, result_directory_metadata, &observed, value) ||
+      (creating && !target_absent())) finish("conflict", "directory_version_conflict", 1);
+  close(fd);
+  verify_directories();
+  if (renameatx_np(root_fd, creating ? relative_candidate : target_path,
+                  root_fd, creating ? target_path : relative_candidate,
+                  RENAME_EXCL | RENAME_NOFOLLOW_ANY | RENAME_RESOLVE_BENEATH)) {
+    if (creating && errno == EEXIST) finish("conflict", "directory_version_conflict", 1);
+    failure("directory_move_refused");
+  }
+  exchanged = 1;
+  checkpoint("after_swap");
+  fd = creating ? open_target() : open_directory(staging_fd, candidate);
+  if (fd < 0 || !directory_version(fd, &result_directory, result_directory_metadata, &observed, value) ||
+      (removing && !target_absent())) failure("post_directory_conflict");
+  close(fd);
+  verify_directories();
+  if (fsync(staging_fd) || fsync(directories[directory_count - 1])) failure("flush_failed");
+  verify_directories();
+  finish("applied", "none", 0);
+  return 0;
+}
+
 int main(int argc, char **argv) {
-  if (argc != 10 && argc != 8) return 64;
+  if (argc != 12 && argc != 10 && argc != 8) return 64;
   root_path = argv[1]; staging_name = argv[3]; target_path = argv[5];
   int inspecting = argc == 8 && !strcmp(argv[6], "inspect");
   int inspecting_absent = argc == 8 && !strcmp(argv[6], "inspect-absent");
   int listing = argc == 8 && !strcmp(argv[6], "list");
-  creating = argc == 10 && !strcmp(argv[6], "absent");
+  int inspecting_directory = argc == 8 && !strcmp(argv[6], "inspect-empty-directory");
+  directory_operation = argc == 12 && (!strcmp(argv[10], "mkdir") || !strcmp(argv[10], "rmdir") ||
+    !strcmp(argv[10], "verify-mkdir") || !strcmp(argv[10], "verify-rmdir"));
+  int verifying_directory = directory_operation && !strncmp(argv[10], "verify-", 7);
+  creating = (argc >= 10 && !strcmp(argv[6], "absent")) ||
+    (directory_operation && !strcmp(argv[10], "verify-mkdir"));
+  int verifying_removal = argc == 12 && !strcmp(argv[10], "verify-remove");
+  removing = argc == 12 && (!strcmp(argv[10], "remove") || verifying_removal ||
+    (directory_operation && !creating));
+  const char *mode_change = argc == 12 ? argv[11] : "keep";
+  if (argc == 12 && (
+      (!directory_operation && (creating ? strcmp(argv[10], "create") : strcmp(argv[10], "replace") && !removing)) ||
+      (strcmp(mode_change, "keep") && strcmp(mode_change, "executable") && strcmp(mode_change, "plain")) ||
+      ((removing || directory_operation) && strcmp(mode_change, "keep")) ||
+      (directory_operation && !verifying_directory &&
+       (creating ? strcmp(argv[10], "mkdir") : strcmp(argv[10], "rmdir"))))) failure("invalid_request");
   if (strchr(staging_name, '/') || strcmp(staging_name, ".agora-operations") ||
-      (!inspecting && !inspecting_absent && !listing && (argc != 10 ||
+      (!inspecting && !inspecting_absent && !listing && !inspecting_directory && ((argc != 10 && argc != 12) ||
         strspn(argv[8], "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_") != strlen(argv[8]) ||
         !*argv[8] || strlen(argv[8]) > 80))) failure("invalid_request");
   pin_root(argv[2]);
@@ -297,9 +443,27 @@ int main(int argc, char **argv) {
   parse_identity(argv[4], &wanted);
   if (!same(&wanted, &staging_id) || staging_id.st_uid != getuid() ||
       (staging_id.st_mode & 0777) != 0700) failure("root_identity_changed");
-  pin_parents(argv[(inspecting || inspecting_absent || listing) ? 7 : 9]);
+  pin_parents(argv[(inspecting || inspecting_absent || listing || inspecting_directory) ? 7 : 9]);
   verify_directories();
+  if (directory_operation || inspecting_directory)
+    return directory_transaction(argv, inspecting_directory, verifying_directory);
   if (listing) return list_directory();
+  if (verifying_removal) {
+    char candidate[128];
+    snprintf(candidate, sizeof(candidate), "%s-candidate", argv[8]);
+    int preserved = openat(staging_fd, candidate, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
+    parse_identity(argv[6], &wanted);
+    if (preserved < 0 || !supported_file(preserved, &expected_id) ||
+        !same(&wanted, &expected_id) || !metadata(preserved, baseline_metadata) ||
+        strcmp(baseline_metadata, argv[7]) ||
+        !same_version(preserved, 3, &expected_id, baseline_metadata)) failure("post_remove_conflict");
+    close(preserved);
+    int current = open_target();
+    if (current >= 0 || errno != ENOENT) failure("post_remove_conflict");
+    verify_directories();
+    exchanged = 1;
+    finish("applied", "none", 0);
+  }
   original_fd = open_target();
   if (creating || inspecting_absent) {
     if (original_fd >= 0 || errno != ENOENT) finish("conflict", "file_version_conflict", 1);
@@ -339,7 +503,7 @@ int main(int argc, char **argv) {
   if (!creating) {
     parse_identity(argv[6], &wanted);
     if (!same(&wanted, &expected_id) || strcmp(baseline_metadata, argv[7]) ||
-        !same_version(original_fd, 3, &expected_id))
+        !same_version(original_fd, 3, &expected_id, baseline_metadata))
       finish("conflict", "file_version_conflict", 1);
   }
 
@@ -347,6 +511,33 @@ int main(int argc, char **argv) {
   char candidate[128], relative_candidate[256];
   snprintf(candidate, sizeof(candidate), "%s-candidate", argv[8]);
   snprintf(relative_candidate, sizeof(relative_candidate), "%s/%s", staging_name, candidate);
+  if (removing) {
+    struct stat occupied;
+    if (!fstatat(staging_fd, candidate, &occupied, AT_SYMLINK_NOFOLLOW) || errno != ENOENT)
+      failure("candidate_unavailable");
+    checkpoint("before_swap");
+    int current = open_target();
+    if (current < 0 || !same_version(current, 3, &expected_id, baseline_metadata))
+      finish("conflict", "file_version_conflict", 1);
+    close(current);
+    verify_directories();
+    if (renameatx_np(root_fd, target_path, root_fd, relative_candidate,
+                    RENAME_EXCL | RENAME_NOFOLLOW_ANY | RENAME_RESOLVE_BENEATH))
+      failure("quarantine_refused");
+    exchanged = 1;
+    checkpoint("after_swap");
+    int displaced = openat(staging_fd, candidate, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
+    if (displaced < 0 || !same_version(displaced, 3, &expected_id, baseline_metadata))
+      failure("post_remove_conflict");
+    close(displaced);
+    current = open_target();
+    if (current >= 0 || errno != ENOENT) failure("post_remove_conflict");
+    close(original_fd);
+    verify_directories();
+    if (fsync(staging_fd) || fsync(directories[directory_count - 1])) failure("flush_failed");
+    verify_directories();
+    finish("applied", "none", 0);
+  }
   int output = openat(staging_fd, candidate, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
   if (output < 0) failure("candidate_unavailable");
   char data[65536];
@@ -367,18 +558,23 @@ int main(int argc, char **argv) {
   verify_directories();
   if (!creating && fchown(output, expected_id.st_uid, expected_id.st_gid)) failure("candidate_failed");
   verify_directories();
-  if (fchmod(output, creating ? 0644 : expected_id.st_mode & 0777)) failure("candidate_failed");
+  mode_t output_mode = creating ? 0644 : expected_id.st_mode & 0777;
+  if (!strcmp(mode_change, "executable")) output_mode |= 0111;
+  else if (!strcmp(mode_change, "plain")) output_mode &= ~0111;
+  if (fchmod(output, output_mode)) failure("candidate_failed");
   verify_directories();
   if (!creating && fcopyfile(original_fd, output, NULL, COPYFILE_XATTR)) failure("candidate_failed");
   verify_directories();
   if (fsync(output)) failure("candidate_failed");
   struct stat candidate_id;
-  if (creating && !metadata(output, baseline_metadata)) failure("candidate_failed");
+  if (!metadata(output, candidate_metadata)) failure("candidate_failed");
+  if (!creating && strcmp(strchr(candidate_metadata, ':'), strchr(baseline_metadata, ':')))
+    failure("candidate_metadata_changed");
   if (fstat(output, &candidate_id) || close(output) || fsync(staging_fd)) failure("candidate_failed");
   /* No writable data descriptor survives installation into the source directory. */
   checkpoint("before_swap");
   int current = open_target();
-  if (creating ? (current >= 0 || errno != ENOENT) : (current < 0 || !same_version(current, 3, &expected_id)))
+  if (creating ? (current >= 0 || errno != ENOENT) : (current < 0 || !same_version(current, 3, &expected_id, baseline_metadata)))
     finish("conflict", "file_version_conflict", 1);
   if (current >= 0) close(current);
   verify_directories();
@@ -391,8 +587,8 @@ int main(int argc, char **argv) {
   checkpoint("after_swap");
   int displaced = creating ? -1 : openat(staging_fd, candidate, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
   current = open_target();
-  if ((!creating && (displaced < 0 || !same_version(displaced, 3, &expected_id))) ||
-      current < 0 || !same_version(current, 4, &candidate_id)) failure("post_exchange_conflict");
+  if ((!creating && (displaced < 0 || !same_version(displaced, 3, &expected_id, baseline_metadata))) ||
+      current < 0 || !same_version(current, 4, &candidate_id, candidate_metadata)) failure("post_exchange_conflict");
   if (displaced >= 0) close(displaced);
   close(current);
   if (original_fd >= 0) close(original_fd);

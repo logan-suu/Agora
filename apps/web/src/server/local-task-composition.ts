@@ -4,8 +4,12 @@ import {
   type AppState,
   currentLocalCompletionEvidence,
   currentReviewDispatch,
+  type DeliveryRepairSource,
+  deliveryReaderAssignment,
+  deliveryValidationDispatch,
   localValidationReceipt,
   type RoleSpec,
+  type WaveValidationReceipt,
   type WorkspaceVersionV1,
 } from '@agora/core-domain';
 import {
@@ -30,17 +34,30 @@ import type {
   WorkspaceWorkerAdmission,
   WorkspaceWorkerSession,
 } from '@agora/runtime-sandbox';
+import type { LocalGitWorkspaces } from '../../../../packages/runtime/sandbox/src/local-git-workspaces';
 import type { LocalWorkspaceSessions } from '../../../../packages/runtime/sandbox/src/local-workspace-sessions';
+import { LocalGitWaveValidationService } from './local-git-wave-validation';
+import { readLocalParallelContext } from './local-parallel-context';
 import { LocalValidationService } from './local-validation';
+import { completeLocalTesterAssignment } from './local-validation-routing';
 import {
   createLocalControlExecutor,
   createLocalWorkspaceExecutor,
 } from './local-workspace-executor';
 import type { ModelSettingsService } from './model-settings';
-import type { TaskCompositionFactory } from './task-orchestration-runtime';
+import type { TaskComposition, TaskCompositionFactory } from './task-orchestration-runtime';
 
 type Scope = { projectId: string; taskId: string };
-type Prepared = { local: LocalWorkspaceSessions; cwd: string; sessionRoot: string };
+type Prepared = {
+  local: LocalWorkspaceSessions;
+  cwd: string;
+  sessionRoot: string;
+  /** Trusted, task-private evidence root for a Git validation wave. */
+  artifactsRoot?: string;
+  /** Host-owned Git registration and resolver; never a model-facing tool. */
+  gitWorkspaces?: Pick<LocalGitWorkspaces, 'registerReviewer' | 'resolveAssignment'> &
+    Partial<Pick<LocalGitWorkspaces, 'readInitialBase'>>;
+};
 type Options = {
   loadState(scope: Scope): Promise<AppState | undefined>;
   bindCompletionVerifier(verify: (scope: Scope, state: AppState) => Promise<void>): void;
@@ -49,6 +66,12 @@ type Options = {
     versionForAssignment: (
       admission: WorkspaceWorkerAdmission,
     ) => Promise<WorkspaceVersionV1 | undefined>,
+    verifyReviewCandidate: (state: AppState, workerId: string) => Promise<WorkspaceVersionV1>,
+    verifyAcceptedVersion: (
+      state: AppState,
+      receipt: WaveValidationReceipt,
+      version: WorkspaceVersionV1,
+    ) => Promise<void>,
   ): Promise<Prepared>;
   scheduler?: GlobalScheduler;
   model?: string;
@@ -57,6 +80,21 @@ type Options = {
     HarnessExecutorOptions,
     'adapter' | 'provider' | 'deepseek' | 'compatible' | 'approval' | 'maxToolCallsPerTurn'
   >;
+  /** Host-owned task-serial preparation. Never supplied by a model or HTTP. */
+  codingPreparation?: { prepare(state: AppState): Promise<AppState> };
+  integrate?: TaskComposition['integrate'];
+  validationPreparation?: {
+    prepare(state: AppState): Promise<AppState>;
+    admit(state: AppState, workerId: string): Promise<AppState>;
+  };
+  deliveryRepair?: {
+    prepare(state: AppState, source: DeliveryRepairSource): Promise<AppState>;
+    complete(state: AppState, workerId: string): Promise<AppState>;
+  };
+  deliveryFinalization?: {
+    finalize(state: AppState): Promise<AppState>;
+    verify(state: AppState): Promise<void>;
+  };
 };
 const key = (scope: Scope) => JSON.stringify([scope.projectId, scope.taskId]);
 const localHandoff: Record<string, string> = {
@@ -91,6 +129,8 @@ function latestValidation(state: AppState) {
   if (!dispatch) throw Error('local_review_requires_validation');
   return `workspace-validation:${dispatch.msgId}`;
 }
+const gitTask = (state: AppState) =>
+  state.parallelExecution !== undefined || state.localExecution?.git !== undefined;
 /** The deferred port is inert during Agent factory Fork. It can only call tools
  * after WorkerRuntime has acquired a new lease and supplied its fresh session. */
 function deferredTools() {
@@ -122,6 +162,7 @@ function deferredTools() {
 }
 export function createLocalTaskCompositionFactory(options: Options): TaskCompositionFactory {
   const scheduler = options.scheduler ?? new GlobalScheduler();
+  const validationPreparation = options.validationPreparation;
   const prepared = new Map<string, Promise<Prepared>>();
   const load = async (scope: Scope) => requireState(await options.loadState(scope), scope);
   const get = async (scope: Scope) => {
@@ -129,15 +170,59 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
     const id = key(scope);
     let pending = prepared.get(id);
     if (!pending) {
+      let reviewProof:
+        | ((state: AppState, workerId: string) => Promise<WorkspaceVersionV1>)
+        | undefined;
+      let acceptedProof:
+        | ((
+            state: AppState,
+            receipt: WaveValidationReceipt,
+            version: WorkspaceVersionV1,
+          ) => Promise<void>)
+        | undefined;
+      const verifyReviewCandidate = (state: AppState, workerId: string) => {
+        if (!reviewProof) return Promise.reject(Error('local_git_review_proof_unavailable'));
+        return reviewProof(state, workerId);
+      };
+      const verifyAcceptedVersion = (
+        state: AppState,
+        receipt: WaveValidationReceipt,
+        version: WorkspaceVersionV1,
+      ) => {
+        if (!acceptedProof) return Promise.reject(Error('local_git_accepted_proof_unavailable'));
+        return acceptedProof(state, receipt, version);
+      };
       pending = options
-        .prepare(scope, async (admission) => {
-          if (admission.projectId !== scope.projectId || admission.taskId !== scope.taskId)
-            throw Error('workspace_task_scope_mismatch');
-          if (admission.role !== 'REVIEWER') return undefined;
-          const state = await load(scope);
-          return localValidationReceipt(state, latestValidation(state)).workspaceVersion;
-        })
+        .prepare(
+          scope,
+          async (admission) => {
+            if (admission.projectId !== scope.projectId || admission.taskId !== scope.taskId)
+              throw Error('workspace_task_scope_mismatch');
+            const state = await load(scope);
+            const delivery = deliveryReaderAssignment(state, admission.workerId);
+            if (delivery) {
+              if (admission.role !== delivery.role)
+                throw Error('delivery_candidate_assignment_mismatch');
+              return delivery.workspaceVersion;
+            }
+            if (admission.role !== 'REVIEWER') return undefined;
+            if (gitTask(state)) return verifyReviewCandidate(state, admission.workerId);
+            return localValidationReceipt(state, latestValidation(state)).workspaceVersion;
+          },
+          verifyReviewCandidate,
+          verifyAcceptedVersion,
+        )
         .then(async (runtime) => {
+          if (runtime.artifactsRoot) {
+            const validation = new LocalGitWaveValidationService(
+              runtime.local,
+              () => load(scope),
+              runtime.artifactsRoot,
+            );
+            reviewProof = (state, workerId) => validation.verifiedReviewVersion(state, workerId);
+            acceptedProof = (state, receipt, version) =>
+              validation.verifiedAcceptedVersion(state, receipt, version);
+          }
           await runtime.local.ensureReady();
           return runtime;
         });
@@ -149,8 +234,18 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
     return pending;
   };
   options.bindCompletionVerifier(async (scope, state) => {
+    if (gitTask(state) && !deliveryValidationDispatch(state) && !state.localExecution?.git)
+      throw Error('local_git_completion_proof_required');
     const bootstrap = await get(scope);
-    await new LocalValidationService(bootstrap.local, () => load(scope)).verifyCompletion(state);
+    if (gitTask(state) && !deliveryValidationDispatch(state)) {
+      if (!bootstrap.artifactsRoot) throw Error('local_git_completion_proof_required');
+      await new LocalGitWaveValidationService(
+        bootstrap.local,
+        () => load(scope),
+        bootstrap.artifactsRoot,
+      ).verifyCompletion(state);
+    } else
+      await new LocalValidationService(bootstrap.local, () => load(scope)).verifyCompletion(state);
   });
   return async (input) => {
     const { scope, resume } = input;
@@ -158,9 +253,25 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
     if (initialState.goal !== input.goal) throw Error('local_task_goal_mismatch');
     const bootstrap = await get(scope);
     const validation = new LocalValidationService(bootstrap.local, () => load(scope));
+    const gitValidation = bootstrap.artifactsRoot
+      ? new LocalGitWaveValidationService(
+          bootstrap.local,
+          () => load(scope),
+          bootstrap.artifactsRoot,
+        )
+      : undefined;
     await bootstrap.local.recoverCompletion(scope);
-    if (resume?.receipt.option === 'approve_completion')
-      await validation.verifyCompletion(initialState);
+    const deliveryRepair = options.deliveryRepair;
+    const nativeParallel = gitTask(initialState) && !deliveryValidationDispatch(initialState);
+    const baseReader = bootstrap.gitWorkspaces?.readInitialBase?.bind(bootstrap.gitWorkspaces);
+    if (nativeParallel && (!gitValidation || !baseReader))
+      throw Error('local_git_parallel_context_required');
+    if (resume?.receipt.option === 'approve_completion') {
+      if (gitTask(initialState) && !deliveryValidationDispatch(initialState)) {
+        if (!gitValidation) throw Error('local_git_completion_proof_required');
+        await gitValidation.verifyCompletion(initialState);
+      } else await validation.verifyCompletion(initialState);
+    }
     const modelBinding = await options.modelSettings?.freeze(
       scope,
       input.goal,
@@ -178,7 +289,11 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
     let latest: HarnessExecutor | undefined;
     let closed = false;
     let artifactPath = bootstrap.cwd;
-    const executorOptions = (source: RoleSpec, resumeSessionId?: string) => {
+    const executorOptions = (
+      source: RoleSpec,
+      resumeSessionId?: string,
+      previousReviews: AppState['reviewComments'] = initialState.reviewComments,
+    ) => {
       const route =
         routes?.get(source.role) ??
         (modelBinding?.defaultModel ? { model: modelBinding.defaultModel } : undefined);
@@ -189,6 +304,9 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
         ...(route ? { model: route.model } : options.model ? { model: options.model } : {}),
       };
       const reader = SIX_ROLE_TURN_MUTATION_READERS[source.role];
+      const previousReviewIds = previousReviews.flatMap((entry) =>
+        typeof entry.id === 'string' ? [entry.id] : [],
+      );
       const configured: HarnessExecutorOptions = {
         ...(route?.compatible
           ? {
@@ -206,9 +324,9 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
         },
         ...(reader
           ? {
-              readTurnMutations: ({ text }) => reader(text),
+              readTurnMutations: ({ text }) => reader(text, previousReviewIds),
               validateTurnOutput: ({ text }) => {
-                reader(text);
+                reader(text, previousReviewIds);
               },
               ...(SIX_ROLE_FORMAT_REPAIR[source.role]
                 ? { outputFormatHint: SIX_ROLE_FORMAT_REPAIR[source.role] }
@@ -333,6 +451,22 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
               }
             : {}),
           localWorkspace: bootstrap.local,
+          resolveWorktree: async (state, assignment) => {
+            if (!gitTask(state) || !['CODER', 'TESTER', 'REVIEWER'].includes(assignment.role))
+              throw Error('local_git_resolver_required');
+            if (!bootstrap.gitWorkspaces) throw Error('local_git_resolver_required');
+            const target = { ...scope, workerId: assignment.workerId };
+            if (assignment.role === 'REVIEWER') {
+              if (!gitValidation) throw Error('local_git_review_proof_unavailable');
+              const version = await gitValidation.verifiedReviewVersion(state, assignment.workerId);
+              await bootstrap.gitWorkspaces.registerReviewer(target);
+              const worktree = await bootstrap.gitWorkspaces.resolveAssignment(target);
+              if (version.kind !== 'git' || worktree.headCommit !== version.commit)
+                throw Error('local_git_review_binding_changed');
+              return worktree;
+            }
+            return bootstrap.gitWorkspaces.resolveAssignment(target);
+          },
           buildExecutor: () => {
             throw Error('local_legacy_executor_forbidden');
           },
@@ -340,39 +474,82 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
             restore(assignment.workerId, spec.role, session) ??
             remember(createLocalControlExecutor({ ...executorOptions(spec), session })),
           buildLocalExecutor: async (spec, assignment, session) => {
+            let previousReviews: AppState['reviewComments'] | undefined;
             if (spec.role === 'REVIEWER') {
               const state = await load(scope);
-              const receiptId = latestValidation(state);
-              await validation.verify(state, receiptId);
-              if (currentReviewDispatch(state)?.payload.workspaceReviewBinding)
-                currentLocalCompletionEvidence(state);
+              previousReviews = state.reviewComments;
+              if (gitTask(state) && !deliveryReaderAssignment(state, assignment.workerId)) {
+                if (!gitValidation) throw Error('local_git_review_proof_unavailable');
+                await gitValidation.verifiedReviewVersion(state, assignment.workerId);
+              } else {
+                const receiptId = latestValidation(state);
+                await validation.verify(state, receiptId);
+                if (currentReviewDispatch(state)?.payload.workspaceReviewBinding)
+                  currentLocalCompletionEvidence(state);
+              }
             }
             return (
               restore(assignment.workerId, spec.role, session) ??
-              remember(await createLocalWorkspaceExecutor({ ...executorOptions(spec), session }))
+              remember(
+                await createLocalWorkspaceExecutor({
+                  ...executorOptions(spec, undefined, previousReviews),
+                  session,
+                }),
+              )
             );
           },
           completeLocalAssignment: async (state, assignment, session) => {
             if (assignment.role !== 'TESTER') return [];
-            const source = [...(state.localExecution?.workspaces ?? [])]
-              .reverse()
-              .find(
-                (w) =>
-                  w.purpose === 'coding' &&
-                  w.rootId === session.workspace.rootId &&
-                  w.grantId === session.workspace.grantId,
-              );
-            if (!source) throw Error('local_validation_source_not_ready');
-            return validation.complete(state, assignment.workerId, source.workspaceId, session);
+            return completeLocalTesterAssignment(state, assignment.workerId, session, {
+              direct: validation,
+              ...(gitValidation ? { git: gitValidation } : {}),
+            });
           },
         },
         scheduler,
       );
+      const deliveryFinalization = options.deliveryFinalization;
+      const codingPreparation = options.codingPreparation;
       return {
         initialState: await load(scope),
+        ...(codingPreparation
+          ? { prepareLocalCoding: (state: AppState) => codingPreparation.prepare(state) }
+          : {}),
+        ...(options.integrate ? { integrate: options.integrate } : {}),
         workerRuntime,
+        ...(nativeParallel && gitValidation && baseReader
+          ? {
+              parallelContext: (state: AppState) =>
+                readLocalParallelContext(state, {
+                  readInitialBase: baseReader,
+                  verifyReceipt: (current, receiptId) =>
+                    gitValidation.verifyReceiptHead(current, receiptId),
+                  load: () => load(scope),
+                }),
+            }
+          : {}),
+        ...(deliveryRepair
+          ? {
+              prepareLocalDeliveryRepair: (state: AppState, source: DeliveryRepairSource) =>
+                deliveryRepair.prepare(state, source),
+              completeLocalDeliveryRepair: (state: AppState, workerId: string) =>
+                deliveryRepair.complete(state, workerId),
+            }
+          : {}),
+        ...(deliveryFinalization
+          ? {
+              finalizeLocalDelivery: (state: AppState) => deliveryFinalization.finalize(state),
+            }
+          : {}),
         roster: DEFAULT_ROSTER,
         ...(input.loadRoster ? { loadRoster: input.loadRoster } : {}),
+        ...(validationPreparation
+          ? {
+              prepareLocalValidation: (state: AppState) => validationPreparation.prepare(state),
+              admitLocalValidation: (state: AppState, workerId: string) =>
+                validationPreparation.admit(state, workerId),
+            }
+          : {}),
         get artifactPath() {
           return artifactPath;
         },
@@ -380,7 +557,17 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
         suspend: dispose,
         dispose,
         archiveArtifact: async () => {
-          const artifact = await validation.archive(await load(scope), bootstrap.local);
+          const state = await load(scope);
+          if (state.localExecution?.delivery?.goal === 'apply_to_directory') {
+            if (!options.deliveryFinalization) throw Error('local_delivery_finalization_required');
+            await options.deliveryFinalization.verify(state);
+          }
+          const nativeGit = gitTask(state) && !deliveryValidationDispatch(state);
+          if (nativeGit && !gitValidation) throw Error('local_git_completion_proof_required');
+          const artifact =
+            nativeGit && gitValidation
+              ? await gitValidation.archive(state, bootstrap.local)
+              : await validation.archive(state, bootstrap.local);
           artifactPath = artifact.path;
           return { path: artifact.path, worktrees: [] };
         },

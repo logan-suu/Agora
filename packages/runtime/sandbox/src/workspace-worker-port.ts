@@ -1,6 +1,6 @@
 /** L3 worker lifecycle companion. A closure proves current lease ownership;
  * serialized worker IDs or grant revisions cannot replace this capability. */
-import type { WorkspaceRefV1, WorkspaceVersionV1 } from '@agora/core-domain';
+import type { WorkspaceRefV1, WorkspaceVersionV1, WorktreeRef } from '@agora/core-domain';
 import type {
   BoundWorkspaceTools,
   WorkspaceCommandRequest,
@@ -38,6 +38,17 @@ export interface WorkspaceWorkerSession {
   readonly sessionId: string;
   readonly workspace: WorkspaceRefV1;
   readonly tools: BoundWorkspaceTools;
+  /** Trusted safe-boundary commit. Seals source writes; Runtime must persist its
+   * returned HEAD before validation/close. Never exposed as a model tool. */
+  completeWorktree?(): Promise<WorktreeRef>;
+  /** Host-only inspection of the committed Git HEAD and complete file set. */
+  inspectCommittedGit?(actionId: string): Promise<WorkspaceInspection>;
+  /** Host-only fixed TESTER command after completeWorktree and canonical HEAD
+   * persistence. This is not part of BoundWorkspaceTools or the model catalog. */
+  runFixedGitValidation?(
+    actionId: string,
+    request: WorkspaceCommandRequest,
+  ): Promise<WorkspaceCommandResult>;
   /** Verify authority and no incomplete file/command operation at a safe boundary. */
   checkpoint(reason: 'step' | 'pause' | 'complete'): Promise<void>;
   /** Close new tool admission and persist bounded quiescence before returning.
@@ -55,6 +66,9 @@ export interface WorkspaceControlSession {
   close(): Promise<void>;
 }
 export interface WorkspaceFileArtifact {
+  /** Present together only for independently archived delivery rounds. */
+  roundId?: string;
+  reviewId?: string;
   schemaVersion: 'workspace-file-artifact-v1';
   receiptId: string;
   projectId: string;

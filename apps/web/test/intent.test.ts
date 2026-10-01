@@ -418,4 +418,20 @@ describe('workspace control transport boundary', () => {
       reason: 'invalid_workspace_control',
     });
   });
+  it('recognizes revalidation data but keeps execution closed without a bound controller', () => {
+    const intent = parseLeaderIntent(
+      `/workspace revalidate ${JSON.stringify({ projectId: 'project', taskId: 'task', actionId: 'new-round', expectedRevision: 2, deliveryComparisonId: 'comparison', inputHash: 'a'.repeat(64) })}`,
+    );
+    expect(intent).toMatchObject({
+      kind: 'workspace_control',
+      verb: 'revalidate',
+      deliveryComparisonId: 'comparison',
+    });
+    expect(
+      planLeaderIntent(intent, createInitialAppState('task', 'goal', 'project'), roster),
+    ).toMatchObject({
+      action: { status: 'rejected', reason: 'workspace_controller_required' },
+      mutations: [],
+    });
+  });
 });

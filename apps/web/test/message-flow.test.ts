@@ -1,5 +1,7 @@
 // Test seam: one case pauses the real TaskStateStore.load call to make the
 // snapshot-to-subscription race deterministic; the JSON store, commit, and stream stay real.
+// Workspace control tests use a persistence-only port to isolate SSE ordering and
+// failure projection; real native delivery is covered by Phase 12 acceptance.
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -46,6 +48,96 @@ afterEach(async () => {
 });
 
 describe('persisted HTTP + SSE message flow', () => {
+  it.each(['success', 'after-commit', 'before-commit'] as const)(
+    'publishes only durable workspace control facts: %s',
+    async (mode) => {
+      const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+      const scope = { projectId: 'project-a', taskId: 'task-a' };
+      await runtime.initializeState(
+        scope,
+        createInitialAppState(scope.taskId, 'fixed', scope.projectId),
+      );
+      const events: unknown[] = [];
+      const unsubscribe = runtime.stream.subscribe({ ...scope, channelId: 'main' }, (event) =>
+        events.push(event),
+      );
+      runtime.bindWorkspaceControlPort({
+        commit: async (s, message) => {
+          const prior = await runtime.store.load(s);
+          if (!prior) throw Error('missing');
+          if (prior.messages.some((m) => m.msgId === message.msgId)) return prior;
+          if (mode === 'before-commit') throw Error('fixture_before_control_commit');
+          const committed = await runtime.compareAndCommitControl(s, prior, [
+            appendMutation('messages', message),
+          ]);
+          if (mode === 'after-commit') throw Error('fixture_after_control_commit');
+          return committed.state;
+        },
+      });
+      const request = () =>
+        postRequest({
+          ...scope,
+          channelId: 'main',
+          msgId: 'apply',
+          display: `/workspace apply ${JSON.stringify({ ...scope, actionId: 'apply', expectedRevision: 0, deliveryProposalId: 'proposal:fixed', inputHash: 'a'.repeat(64) })}`,
+        });
+      try {
+        const response = await createPostMessage(runtime)(request());
+        expect(response.status).toBe(mode === 'success' ? 202 : 409);
+        expect(events).toHaveLength(mode === 'before-commit' ? 0 : 1);
+        if (mode !== 'before-commit') {
+          expect(events[0]).toMatchObject({
+            type: 'message',
+            data: { msgId: 'apply', fromRole: 'leader' },
+          });
+          expect(events[0]).not.toHaveProperty('data.payload');
+          const replay = await createPostMessage(runtime)(request());
+          expect(replay.status).toBe(202);
+          expect(await replay.json()).toMatchObject({ published: false });
+          expect(events).toHaveLength(1);
+        }
+      } finally {
+        unsubscribe();
+      }
+    },
+  );
+
+  it('serializes trusted validation preparation with Leader messages for the same task', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initializeState(
+      scope,
+      createInitialAppState(scope.taskId, 'Task task-a', scope.projectId),
+    );
+    let entered!: () => void;
+    let release!: () => void;
+    const inside = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const preparation = runtime.runTaskSerial(scope, async () => {
+      entered();
+      await hold;
+      return 'prepared';
+    });
+    await inside;
+    const leader = runtime.commitLeaderMessage(scope, {
+      msgId: 'leader-during-preparation',
+      channelId: 'main',
+      display: 'Please continue',
+      ts: 1,
+    });
+    expect((await runtime.store.load(scope))?.messages).toHaveLength(0);
+    release();
+    await expect(preparation).resolves.toBe('prepared');
+    await expect(leader).resolves.toMatchObject({ published: true });
+    expect((await runtime.store.load(scope))?.messages.map((message) => message.msgId)).toEqual([
+      'leader-during-preparation',
+    ]);
+  });
+
   it('pauses before atomically applying and reprojecting a Phase 9 priority command', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };

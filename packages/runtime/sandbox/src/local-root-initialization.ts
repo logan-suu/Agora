@@ -114,6 +114,22 @@ function helperIdentity(helper: string) {
     throw new Error('untrusted_runtime_path');
   return `${stat.dev}:${stat.ino}:${stat.mode}:${stat.uid}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
 }
+export function localRootInitializationPolicy(
+  inspection: SelectedLocalRootInspection,
+  helper: string,
+): string {
+  const staging = join(inspection.path, '.agora-operations');
+  return [
+    '(version 1)',
+    '(deny default)',
+    `(allow process-exec (literal ${JSON.stringify(helper)}))`,
+    '(allow sysctl-read)',
+    '(allow file-read* file-map-executable (subpath "/usr/lib") (subpath "/System/Library") (subpath "/System/Volumes/Preboot/Cryptexes/OS") (subpath "/System/Cryptexes/OS"))',
+    `(allow file-read* file-map-executable (literal ${JSON.stringify(helper)}))`,
+    ...inspection.chain.map((p) => `(allow file-read* (literal ${JSON.stringify(p.path)}))`),
+    `(allow file-read* file-write-create file-write-mode (literal ${JSON.stringify(staging)}))`,
+  ].join('\n');
+}
 export async function initializeLocalRoot(
   request: Request,
 ): Promise<LocalRootInitializationReceipt> {
@@ -189,17 +205,7 @@ export async function initializeLocalRoot(
     return result;
   }
   mkdirSync(journalPath, { mode: 0o700 });
-  const staging = join(inspection.path, '.agora-operations');
-  const policy = [
-    '(version 1)',
-    '(deny default)',
-    `(allow process-exec (literal ${JSON.stringify(helper)}))`,
-    '(allow sysctl-read)',
-    '(allow file-read* file-map-executable (subpath "/usr/lib") (subpath "/System/Library") (subpath "/System/Volumes/Preboot/Cryptexes/OS") (subpath "/System/Cryptexes/OS"))',
-    `(allow file-read* file-map-executable (literal ${JSON.stringify(helper)}))`,
-    ...inspection.chain.map((p) => `(allow file-read* (literal ${JSON.stringify(p.path)}))`),
-    `(allow file-read* file-write-create file-write-mode (literal ${JSON.stringify(staging)}))`,
-  ].join('\n');
+  const policy = localRootInitializationPolicy(inspection, helper);
   durable(join(journalPath, 'prepared.json'), {
     schemaVersion: 'local-root-initialization-v1',
     stage: 'prepared',

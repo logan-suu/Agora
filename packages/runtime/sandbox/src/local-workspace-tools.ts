@@ -78,7 +78,7 @@ export function bindLocalWorkspaceTools(options: {
           return result;
         }
         const version =
-          admitted.workspace.purpose === 'validation'
+          admitted.workspace.mode === 'direct' && admitted.workspace.purpose === 'validation'
             ? localSnapshotVersion(admitted.workspace)
             : await versions.capture(versionScope, admitted.binding, async () => {
                 const current = await authority.assertCall(scope, 'read');

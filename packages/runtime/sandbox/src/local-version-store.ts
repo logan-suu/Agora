@@ -5,6 +5,8 @@ import {
   type FileVersionV1,
   isFileChangeV1,
   isFileVersionV1,
+  isGitObjectId,
+  isGitSafeBranch,
   isWorkspaceVersionV1,
   type WorkspaceRefV1,
   type WorkspaceVersionV1,
@@ -33,6 +35,16 @@ export interface LocalFileManifest extends LocalVersionScope {
   directories: Directory[];
   files: { path: string; version: RegularVersion; contentHash: string }[];
   excludedPaths: string[];
+}
+export interface LocalGitManifest extends LocalVersionScope {
+  schemaVersion: 'local-git-manifest-v1';
+  filesVersion: Extract<WorkspaceVersionV1, { kind: 'files' }>;
+  workspaceId: string;
+  physicalHash: string;
+  commonDirId: string;
+  branch: string;
+  commit: string;
+  tree: string;
 }
 type Authorize = (stage: 'admission' | 'read' | 'verification' | 'completion') => Promise<boolean>;
 const digest = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
@@ -130,10 +142,47 @@ export class LocalVersionStore {
     // Object publication may yield; only the durable bytes are fixed, not the live root.
     return { kind: 'files', manifestId: `manifest:${hash}`, manifestHash: hash };
   }
+  async readGitManifest(
+    version: WorkspaceVersionV1,
+    scope: LocalVersionScope,
+  ): Promise<LocalGitManifest> {
+    scopeValid(scope);
+    version = structuredClone(version);
+    scope = structuredClone(scope);
+    if (
+      !isWorkspaceVersionV1(version) ||
+      version.kind !== 'git' ||
+      version.manifestId !== `manifest:${version.manifestHash}`
+    )
+      throw Error('invalid_workspace_version');
+    const manifest = (await this.objects.get(version.manifestHash)) as LocalGitManifest;
+    if (
+      !manifest ||
+      Object.keys(manifest).sort().join(',') !==
+        'branch,commit,commonDirId,filesVersion,physicalHash,policyHash,projectId,rootId,schemaVersion,taskId,tree,workspaceId' ||
+      manifest.schemaVersion !== 'local-git-manifest-v1' ||
+      !isWorkspaceVersionV1(manifest.filesVersion) ||
+      manifest.filesVersion.kind !== 'files' ||
+      !id(manifest.workspaceId) ||
+      !/^[a-f0-9]{64}$/.test(manifest.physicalHash) ||
+      !/^common:[a-f0-9]{64}$/.test(manifest.commonDirId) ||
+      !isGitSafeBranch(manifest.branch) ||
+      !isGitObjectId(manifest.commit) ||
+      manifest.commit !== version.commit ||
+      !isGitObjectId(manifest.tree)
+    )
+      throw Error('invalid_workspace_version');
+    for (const key of ['projectId', 'taskId', 'rootId', 'policyHash'] as const)
+      if (manifest[key] !== scope[key]) throw Error('workspace_version_scope_mismatch');
+    await this.read(manifest.filesVersion, scope);
+    return manifest;
+  }
   async read(version: WorkspaceVersionV1, scope: LocalVersionScope): Promise<LocalFileManifest> {
     scopeValid(scope);
     version = structuredClone(version);
     scope = structuredClone(scope);
+    if (isWorkspaceVersionV1(version) && version.kind === 'git')
+      return this.read((await this.readGitManifest(version, scope)).filesVersion, scope);
     if (
       !isWorkspaceVersionV1(version) ||
       version.kind !== 'files' ||
@@ -243,6 +292,8 @@ export class LocalVersionStore {
     root = structuredClone(root);
     scope = structuredClone(scope);
     version = structuredClone(version);
+    // Live Git qualification also needs the owned metadata proof in LocalGitVersionStore.
+    if (version.kind !== 'files') throw Error('git_workspace_verifier_required');
     await this.verifyManifest(await this.read(version, scope), root, authorize);
   }
   private async verifyManifest(

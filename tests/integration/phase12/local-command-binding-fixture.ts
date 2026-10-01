@@ -16,6 +16,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
   type BindingFailure,
@@ -24,7 +25,10 @@ import {
 import { LocalCommandJournal } from '../../../packages/runtime/sandbox/src/local-command-journal';
 import { buildLocalCommandPolicy } from '../../../packages/runtime/sandbox/src/local-command-policy';
 import { runHeldLocalCommand } from '../../../packages/runtime/sandbox/src/local-command-start';
-import { stopRegisteredLocalProcesses } from '../../../packages/runtime/sandbox/src/local-command-stop';
+import {
+  prepareLocalProcessControl,
+  stopRegisteredLocalProcesses,
+} from '../../../packages/runtime/sandbox/src/local-command-stop';
 import { fixedAuthority } from './local-command-start-fixture';
 
 const sha = (bytes: string | Buffer) => createHash('sha256').update(bytes).digest('hex');
@@ -44,6 +48,7 @@ type Scenario =
   | 'arguments'
   | 'completion'
   | 'control-drift'
+  | 'control-drift-cold'
   | 'binding-journal';
 export async function probeLocalCommandBinding(scenario: Scenario) {
   const base = mkdtempSync('/private/tmp/agora-task123-validation-');
@@ -62,6 +67,7 @@ export async function probeLocalCommandBinding(scenario: Scenario) {
     'packages/runtime/sandbox/src/local-command-stop.ts',
     'tests/integration/phase12/local-command-binding-fixture.ts',
     'tests/integration/phase12/phase12-3-command-binding.test.ts',
+    'tests/integration/phase12/local-cleanup-control-probe.c',
   ];
   const evidence: Record<string, unknown> = {
     scenario,
@@ -76,6 +82,7 @@ export async function probeLocalCommandBinding(scenario: Scenario) {
   };
   let pending: ReturnType<typeof runHeldLocalCommand> | undefined;
   let fixtureStop: Awaited<ReturnType<typeof stopRegisteredLocalProcesses>> | null = null;
+  let cleanupReady: { durationMs: number; firstOperation: string | null } | null = null;
   const cancel = new AbortController();
   try {
     const [helper, bootstrap, payload] = ['control', 'bootstrap', 'payload'].map((name) =>
@@ -96,8 +103,19 @@ export async function probeLocalCommandBinding(scenario: Scenario) {
       [helper, bootstrap, payload].map((p) => [p, sha(readFileSync(p))]),
     );
     const cleanupHelper = join(base, 'cleanup-control');
-    if (scenario === 'control-drift') {
+    if (scenario.startsWith('control-drift')) {
       copyFileSync(helper, cleanupHelper);
+      if (scenario === 'control-drift-cold')
+        execFileSync('/usr/bin/clang', [
+          '-std=c11',
+          '-Wall',
+          '-Wextra',
+          '-Werror',
+          '-mmacosx-version-min=15.0',
+          sources.at(-1) as string,
+          '-o',
+          cleanupHelper,
+        ]);
       const trapSource = 'packages/runtime/sandbox/native/local-command-control-drift-probe.c';
       execFileSync('/usr/bin/clang', [
         '-std=c11',
@@ -115,6 +133,22 @@ export async function probeLocalCommandBinding(scenario: Scenario) {
         binaryHash: sha(readFileSync(join(base, 'control-trap'))),
         cleanupHelperHash: sha(readFileSync(cleanupHelper)),
       };
+      // Initialize the separate trusted fixture executable before any payload
+      // exists. This never extends the product's query or stop deadlines.
+      const expectedHash = sha(readFileSync(cleanupHelper));
+      const started = performance.now();
+      prepareLocalProcessControl(
+        cleanupHelper,
+        started + 5000,
+        () => sha(readFileSync(cleanupHelper)) === expectedHash,
+      );
+      cleanupReady = {
+        durationMs: performance.now() - started,
+        firstOperation: existsSync(`${cleanupHelper}.loaded`)
+          ? readFileSync(`${cleanupHelper}.loaded`, 'utf8')
+          : null,
+      };
+      evidence.cleanupReady = cleanupReady;
     }
     const parent = join(base, 'project-parent');
     mkdirSync(parent, { mode: 0o700 });
@@ -196,6 +230,7 @@ export async function probeLocalCommandBinding(scenario: Scenario) {
       'authority-error',
       'ancestor',
       'control-drift',
+      'control-drift-cold',
     ].includes(scenario);
     if (running) {
       const deadline = Date.now() + 3000;
@@ -205,7 +240,7 @@ export async function probeLocalCommandBinding(scenario: Scenario) {
       if (scenario === 'worker') persist({ ...initial, workerId: 'different-worker' });
       if (scenario === 'writer-epoch') persist({ ...initial, writerEpoch: 1 });
       if (scenario === 'authority-error') writeFileSync(authorityPath, 'invalid-json');
-      if (scenario === 'control-drift') renameSync(join(base, 'control-trap'), helper);
+      if (scenario.startsWith('control-drift')) renameSync(join(base, 'control-trap'), helper);
       if (scenario === 'ancestor') {
         renameSync(parent, join(base, 'moved-parent'));
         mkdirSync(parent, { mode: 0o700 });
@@ -217,7 +252,7 @@ export async function probeLocalCommandBinding(scenario: Scenario) {
     const result = await pending;
     const record = journal.snapshot().records[0];
     if (!record) throw new Error('fixture_record_missing');
-    if (scenario === 'control-drift') {
+    if (scenario.startsWith('control-drift')) {
       // Test-only cleanup uses a separately preserved trusted helper after the
       // product controller returned needsAttention; production has no fallback.
       fixtureStop = await stopRegisteredLocalProcesses(cleanupHelper, record.birthIdentities);
@@ -253,6 +288,7 @@ export async function probeLocalCommandBinding(scenario: Scenario) {
       stickyChecks,
       trapExecuted: existsSync(`${helper}.executed`),
       fixtureStop,
+      cleanupReady,
       journalErrors,
       replacementUnchanged:
         scenario !== 'ancestor' ||

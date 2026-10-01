@@ -4,7 +4,7 @@ import { localRecordHash } from './local-registry-records';
 
 export interface LocalGrantPolicy {
   version: 'seatbelt-apfs-v1';
-  actions: ('read' | 'edit' | 'run' | 'generate' | 'install')[];
+  actions: ('read' | 'edit' | 'run' | 'generate' | 'install' | 'remove')[];
   toolchain: { manifestHash: string };
   network: { mode: 'disabled' } | LocalDownloadPolicy;
   outputs: { kind: 'private-per-operation' };
@@ -17,7 +17,9 @@ export function validateLocalGrantPolicy(value: LocalGrantPolicy) {
     !Array.isArray(value.actions) ||
     !value.actions.length ||
     new Set(value.actions).size !== value.actions.length ||
-    value.actions.some((a) => !['read', 'edit', 'run', 'generate', 'install'].includes(a)) ||
+    value.actions.some(
+      (a) => !['read', 'edit', 'run', 'generate', 'install', 'remove'].includes(a),
+    ) ||
     Object.keys(value.toolchain).join(',') !== 'manifestHash' ||
     !/^[a-f0-9]{64}$/.test(value.toolchain.manifestHash) ||
     localRecordHash(value.outputs) !== localRecordHash({ kind: 'private-per-operation' })

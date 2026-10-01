@@ -23,7 +23,12 @@ import {
   type CommandBindingSnapshot,
   validCommandBinding,
 } from './local-command-binding';
-import type { LocalProcessIdentity, RegisteredStopReceipt } from './local-command-stop';
+import {
+  type DiscoveryReason,
+  discoveryReasons,
+  type LocalProcessIdentity,
+  type RegisteredStopReceipt,
+} from './local-command-stop';
 
 export type StoredCommandObservation = {
   version: 2;
@@ -36,6 +41,7 @@ export type StoredCommandObservation = {
   closedDuringDiscovery?: LocalProcessIdentity[];
   discoveryFailures?: {
     identity: LocalProcessIdentity;
+    reason?: DiscoveryReason;
     state: 'exited' | 'identityMismatch' | 'unknown' | 'deadline' | 'queryFailed' | 'limit';
   }[];
   mainResult: { exitCode: number | null; signal: string | null; error: string | null };
@@ -145,7 +151,9 @@ function validObservation(
         value.discoveryFailures.every(
           (entry) =>
             entry &&
-            Object.keys(entry).sort().join(',') === 'identity,state' &&
+            (Object.keys(entry).sort().join(',') === 'identity,state' ||
+              (Object.keys(entry).sort().join(',') === 'identity,reason,state' &&
+                discoveryReasons.includes(entry.reason as DiscoveryReason))) &&
             birth(entry.identity) &&
             ['exited', 'identityMismatch', 'unknown', 'deadline', 'queryFailed', 'limit'].includes(
               entry.state,

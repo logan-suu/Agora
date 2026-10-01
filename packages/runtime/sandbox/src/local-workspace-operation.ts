@@ -3,7 +3,7 @@ import type { WorkspaceCall } from '@agora/core-domain';
 
 const queues = new Map<string, Promise<void>>();
 export async function serializeWorkspaceOperation<T>(
-  call: WorkspaceCall,
+  call: Pick<WorkspaceCall, 'projectId' | 'taskId' | 'workspaceId'>,
   work: () => Promise<T>,
 ): Promise<T> {
   const key = JSON.stringify([call.projectId, call.taskId, call.workspaceId]);

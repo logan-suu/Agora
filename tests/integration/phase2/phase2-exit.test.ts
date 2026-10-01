@@ -844,8 +844,16 @@ describe('Phase 2 exit: feedback escalation reaches informed REVIEWER and ARCHIT
       (call) => completedActionsOf(call) === 0,
     );
     expect(reviewerStarts).toHaveLength(2);
+    const dispatches = final.messages.filter(
+      (message) =>
+        message.fromRole === 'COORDINATOR' &&
+        message.type === 'announce' &&
+        message.payload.nextRole === 'REVIEWER',
+    );
+    expect(dispatches).toHaveLength(2);
     const rootCause = projectionViewOf(reviewerStarts[0] as GenerateOptions).slices;
     expect(rootCause?.reviewContext).toEqual({
+      dispatchId: dispatches[0]?.msgId,
       mode: 'test_failure_root_cause',
       reason: 'repeated_test_failures',
       failureStreak: 2,
@@ -854,6 +862,9 @@ describe('Phase 2 exit: feedback escalation reaches informed REVIEWER and ARCHIT
     expect(rootCause?.fileRefs).toEqual([{ file: 'math.test.js', lines: [9] }]);
     expect(JSON.stringify(rootCause)).not.toContain('channelId');
     expect(JSON.stringify(rootCause)).not.toContain('fromRole');
+    const nextReview = projectionViewOf(reviewerStarts[1] as GenerateOptions).slices;
+    expect(nextReview?.reviewContext).toMatchObject({ dispatchId: dispatches[1]?.msgId });
+    expect(dispatches[1]?.msgId).not.toBe(dispatches[0]?.msgId);
   });
 
   it('projects the exact architecture verdict and current design to the redesign turn', () => {

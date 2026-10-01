@@ -8,17 +8,29 @@ import { basename, join, resolve } from 'node:path';
 import {
   createInitialAppState,
   type LocalExecutionV1,
+  latestCoordinationLedger,
   type Message,
   type Mutation,
+  parseWorkspaceControl,
+  setMutation,
 } from '@agora/core-domain';
 import { JsonTaskStateStore } from '@agora/runtime-state';
 import { expect, it } from 'vitest';
 import { acquireState } from '../../../apps/desktop/src/storage';
+import { buildCoordinationLedger } from '../../../packages/core/orchestration/src/progress-ledger';
 import {
   LocalBindingCoordinator,
   type LocalBindingRequest,
 } from '../../../packages/runtime/sandbox/src/local-binding-coordinator';
 import { LocalControlObjects } from '../../../packages/runtime/sandbox/src/local-control-objects';
+import { LocalRegistryFile } from '../../../packages/runtime/sandbox/src/local-registry-file';
+import {
+  assertLocalRegistryTransition,
+  isLocalBindingOperation,
+  localRecordHash,
+  parseLocalRegistry,
+} from '../../../packages/runtime/sandbox/src/local-registry-records';
+import { linkedRegistryFixture } from '../../../packages/runtime/sandbox/test/local-linked-registry-fixture';
 
 const scope = { projectId: 'project', taskId: 'task' };
 const empty = (): LocalExecutionV1 => ({
@@ -47,7 +59,11 @@ async function fixture(
     base: string;
   }) => Promise<void>,
 ) {
-  const base = await mkdtemp('/private/tmp/agora-task123-validation-');
+  const base = await mkdtemp(
+    name.startsWith('linked-')
+      ? '/private/tmp/agora-task124-registry-'
+      : '/private/tmp/agora-task123-validation-',
+  );
   const initialIdentity = await lstat(base);
   const owner = await acquireState(join(base, 'state'));
   const store = new JsonTaskStateStore(join(owner.root, 'tasks'));
@@ -152,6 +168,105 @@ it('closes both real stores and replays without a second receipt', () =>
       reopened.commitBinding({ ...request(), sourceMessageId: 'other' }),
     ).rejects.toThrow('operation_conflict');
   }));
+
+it.each(['normal', 'before', 'after'] as const)('closes linked physical references: %s', (point) =>
+  fixture(`linked-${point}`, async ({ control, store, owner }) => {
+    const data = parseLocalRegistry(linkedRegistryFixture());
+    await control.commitBinding({
+      ...request(),
+      actionId: 'grant-action',
+      nextLocalExecution: { ...empty(), rootIds: ['source'] },
+      records: {
+        roots: data.roots.map((r) => ({ ...r, staging: null })),
+        grants: data.grants.map((g) => ({ ...g, leaderMessageId: 'leader-message' })),
+        claims: [],
+        workspaces: [],
+      },
+    });
+    const registry = await LocalRegistryFile.open(
+      owner,
+      parseLocalRegistry,
+      false,
+      assertLocalRegistryTransition,
+    );
+    const initialized = data.operations.find((o) => !isLocalBindingOperation(o));
+    if (!initialized) throw Error('missing fixture initialization');
+    const snapshot = await registry.load();
+    const init = { ...initialized, preparedRevision: 3, sourceMessageId: 'leader-message' };
+    await registry.compareAndSwap(2, {
+      ...snapshot,
+      revision: 3,
+      operations: [...snapshot.operations, { ...init, stage: 'prepared', nativeReceipt: null }],
+    });
+    await registry.compareAndSwap(3, {
+      ...snapshot,
+      roots: data.roots,
+      revision: 4,
+      operations: [...snapshot.operations, init],
+    });
+    const old = (await control.assertClosed(scope)).localExecution;
+    const example = data.operations.find(isLocalBindingOperation);
+    if (!old || !example) throw Error('missing fixture binding');
+    const current = await control.snapshot();
+    const input: LocalBindingRequest = {
+      ...request(),
+      actionId: 'register',
+      expectedRevision: current.revision,
+      nextLocalExecution: { ...example.nextLocalExecution, bindings: [], receipts: old.receipts },
+      records: {
+        roots: current.roots,
+        grants: current.grants,
+        claims: [],
+        workspaces: data.workspaces,
+        linkedRoots: data.linkedRoots ?? [],
+      },
+    };
+    let injected = false;
+    const interrupted = await LocalBindingCoordinator.open(owner, {
+      load: (s) => store.load(s),
+      commit: async (s, mutations) => {
+        if (!injected && point === 'before') {
+          injected = true;
+          throw Error('fixed linked interruption');
+        }
+        const result = await store.commit(s, mutations);
+        if (!injected && point === 'after') {
+          injected = true;
+          throw Error('fixed linked interruption');
+        }
+        return result;
+      },
+    });
+    if (point === 'normal') await interrupted.commitBinding(input);
+    else {
+      await expect(interrupted.commitBinding(input)).rejects.toThrow('fixed linked interruption');
+      await expect(control.assertClosed(scope)).rejects.toThrow('registry_recovery_required');
+    }
+    const closed = await control.commitBinding(input);
+    expect(closed.stage).toBe('committed');
+    expect((await control.assertClosed(scope)).localExecution?.git).toEqual(
+      example.nextLocalExecution.git,
+    );
+    expect((await control.snapshot()).linkedRoots).toEqual(data.linkedRoots);
+    expect((await control.snapshot()).revision).toBe(6);
+    expect(await control.commitBinding(input)).toEqual(closed);
+    const latest = await control.snapshot();
+    // Existing callers omit the extension; unrelated registration must preserve it.
+    await control.commitBinding({
+      ...request(),
+      actionId: 'later',
+      expectedRevision: latest.revision,
+      nextLocalExecution: (await control.assertClosed(scope)).localExecution as LocalExecutionV1,
+      records: {
+        roots: latest.roots,
+        grants: latest.grants,
+        workspaces: latest.workspaces,
+        claims: latest.claims,
+      },
+    });
+    expect((await control.snapshot()).linkedRoots).toEqual(data.linkedRoots);
+  }),
+);
 
 it.each(['before', 'after'] as const)(
   'recovers interruption %s the canonical TaskState commit',
@@ -425,3 +540,230 @@ it('persists immutable control objects by content and verifies them after reopen
     await expect(objects.get(hash)).rejects.toThrow('invalid_control_object');
     await expect(objects.put(value)).rejects.toThrow('invalid_control_object');
   }));
+
+it.each(['normal', 'before', 'after', 'drift'] as const)(
+  'commits a delivery round atomically across %s interruption',
+  (point) =>
+    fixture(`linked-delivery-round-${point}`, async ({ control, store, owner }) => {
+      const data = parseLocalRegistry(linkedRegistryFixture());
+      await control.commitBinding({
+        ...request(),
+        actionId: 'grant-action',
+        nextLocalExecution: { ...empty(), rootIds: ['source'] },
+        records: {
+          roots: data.roots.map((root) => ({ ...root, staging: null })),
+          grants: data.grants.map((grant) => ({ ...grant, leaderMessageId: 'leader-message' })),
+          workspaces: [],
+          claims: [],
+        },
+      });
+      const registryFile = await LocalRegistryFile.open(
+        owner,
+        parseLocalRegistry,
+        false,
+        assertLocalRegistryTransition,
+      );
+      const initialized = data.operations.find((operation) => !isLocalBindingOperation(operation));
+      if (!initialized) throw Error('missing_initialization');
+      const initialRegistry = await registryFile.load();
+      const initialization = {
+        ...initialized,
+        preparedRevision: 3,
+        sourceMessageId: 'leader-message',
+      };
+      await registryFile.compareAndSwap(2, {
+        ...initialRegistry,
+        revision: 3,
+        operations: [
+          ...initialRegistry.operations,
+          { ...initialization, stage: 'prepared', nativeReceipt: null },
+        ],
+      });
+      await registryFile.compareAndSwap(3, {
+        ...initialRegistry,
+        revision: 4,
+        roots: data.roots,
+        operations: [...initialRegistry.operations, initialization],
+      });
+      const root = data.roots[0];
+      if (!root) throw Error('missing_fixture_root');
+      const previous = await control.assertClosed(scope);
+      const workspace = {
+        schemaVersion: 'workspace-v1' as const,
+        ...scope,
+        workspaceId: 'direct',
+        rootId: root.rootId,
+        grantId: 'grant',
+        purpose: 'coding' as const,
+        mode: 'direct' as const,
+        baselineManifestId: `manifest:${'a'.repeat(64)}`,
+      };
+      const snapshot = await control.snapshot();
+      await control.commitBinding({
+        ...request(),
+        actionId: 'register-direct',
+        expectedRevision: snapshot.revision,
+        nextLocalExecution: {
+          ...(previous.localExecution as LocalExecutionV1),
+          workspaces: [workspace],
+        },
+        records: {
+          roots: snapshot.roots,
+          grants: snapshot.grants,
+          workspaces: [workspace],
+          claims: [],
+        },
+      });
+      await store.commit(scope, [setMutation('phase', 'done'), setMutation('iterationCount', 5)]);
+      const before = await control.assertClosed(scope);
+      const registry = await control.snapshot();
+      const action = {
+        ...scope,
+        actionId: 'revalidate',
+        expectedRevision: registry.revision,
+        deliveryComparisonId: 'comparison:fixed',
+        inputHash: 'b'.repeat(64),
+      };
+      const display = `/workspace revalidate ${JSON.stringify(action)}`;
+      const message: Message = {
+        msgId: action.actionId,
+        fromRole: 'leader',
+        channelId: 'main',
+        type: 'chat',
+        ts: 1,
+        display,
+        payload: {
+          kind: 'leader_intent',
+          intent: parseWorkspaceControl(display),
+          action: { status: 'applied' },
+        },
+      };
+      const version = {
+        kind: 'files' as const,
+        manifestId: `manifest:${'a'.repeat(64)}`,
+        manifestHash: 'a'.repeat(64),
+      };
+      if (!before.localExecution) throw Error('missing_execution');
+      const next: LocalExecutionV1 = {
+        ...before.localExecution,
+        delivery: {
+          schemaVersion: 'local-delivery-v1',
+          goal: 'artifact_only',
+          rootId: 'source',
+          currentRoundId: 'round:one',
+          rounds: [
+            {
+              roundId: 'round:one',
+              actionId: action.actionId,
+              deliveryComparisonId: action.deliveryComparisonId,
+              inputHash: action.inputHash,
+              grantId: 'grant',
+              grantRevision: 0,
+              sourceReceiptId: 'validation:old',
+              sourceVersion: version,
+              candidateVersion: version,
+              targetVersion: version,
+              targetIndexHash: null,
+              controlFingerprint: 'c'.repeat(64),
+            },
+          ],
+        },
+      };
+      const dispatch: Message = {
+        msgId: 'delivery-test:one',
+        fromRole: 'COORDINATOR',
+        channelId: 'main',
+        type: 'announce',
+        ts: 1,
+        display: 'Validate the new fixed candidate',
+        payload: {
+          kind: 'delivery_validation_dispatch',
+          nextRole: 'TESTER',
+          roundId: 'round:one',
+          workerIds: ['worker:delivery-test:one:0'],
+          workspaceVersion: version,
+        },
+      };
+      const ledger: Message = {
+        msgId: 'delivery-ledger:one',
+        fromRole: 'COORDINATOR',
+        channelId: 'main',
+        type: 'chat',
+        ts: 1,
+        display: 'New validation round',
+        payload: buildCoordinationLedger(
+          { ...before, phase: 'testing' },
+          {
+            nextSpeaker: 'TESTER',
+            instruction: 'Validate the fixed candidate',
+            completionCandidate: false,
+            requestSatisfied: false,
+          },
+        ),
+      };
+      const input: LocalBindingRequest = {
+        ...scope,
+        actionId: action.actionId,
+        sourceMessageId: message.msgId,
+        sourceMessage: message,
+        expectedRevision: registry.revision,
+        nextLocalExecution: next,
+        records: {
+          roots: registry.roots,
+          grants: registry.grants,
+          workspaces: registry.workspaces,
+          claims: registry.claims,
+        },
+        deliveryTransition: {
+          kind: 'delivery-round-start-v1',
+          beforeStateHash: localRecordHash(before),
+          ledger,
+          dispatch,
+        },
+      };
+      let injected = false;
+      const interrupted = await LocalBindingCoordinator.open(owner, {
+        load: (s) => store.load(s),
+        commit: (s, mutations) => store.commit(s, mutations),
+        compareAndCommit: async (s, expected, mutations) => {
+          if (!injected) {
+            injected = true;
+            if (point === 'drift') {
+              await store.commit(s, [setMutation('iterationCount', 6)]);
+            }
+            if (point === 'before') throw Error('fixed interruption');
+          }
+          const result = await store.compareAndCommit(s, expected, mutations);
+          if (point === 'after') throw Error('fixed interruption');
+          return result;
+        },
+      });
+      if (point === 'normal') await interrupted.commitBinding(input);
+      else {
+        await expect(interrupted.commitBinding(input)).rejects.toThrow();
+        const snapshot = await store.load(scope);
+        expect(snapshot?.messages.some((m) => m.msgId === action.actionId)).toBe(point === 'after');
+        expect(snapshot?.phase).toBe(point === 'after' ? 'testing' : 'done');
+        if (point === 'drift') {
+          await expect(control.commitBinding(input)).rejects.toThrow(
+            'delivery_transition_state_changed',
+          );
+          expect((await store.load(scope))?.iterationCount).toBe(6);
+          expect((await control.snapshot()).operations.at(-1)?.stage).toBe('prepared');
+          return;
+        }
+        await control.commitBinding(input);
+      }
+      const started = await control.assertClosed(scope);
+      expect(started.phase).toBe('testing');
+      expect(started.nextRole).toBe('TESTER');
+      expect(started.iterationCount).toBe(5);
+      expect(started.workers).toEqual(before.workers);
+      expect(latestCoordinationLedger(started)?.progress.isRequestSatisfied.answer).toBe(false);
+      const reopened = await LocalBindingCoordinator.open(owner, store);
+      await store.commit(scope, [setMutation('phase', 'done')]);
+      const later = await store.load(scope);
+      await reopened.commitBinding(input);
+      expect(await reopened.assertClosed(scope)).toEqual(later);
+    }),
+);
