@@ -22,6 +22,11 @@ import {
 } from '@agora/runtime-executor';
 import type {
   WorkspaceControlSession,
+  WorkspaceRangeActivity,
+  WorkspaceRangeAdmissionPort,
+  WorkspaceRangeResumeRequest,
+  WorkspaceRangeWorkerReceipt,
+  WorkspaceRangeWorkerRequest,
   WorkspaceWorkerPort,
   WorkspaceWorkerSession,
 } from '@agora/runtime-sandbox';
@@ -37,6 +42,13 @@ export interface WorkerRuntimeDeps {
   sessionIdForAssignment?: (assignment: Assignment) => string | undefined;
   buildExecutor(spec: RoleSpec, assign: Assignment, worktree?: WorktreeRef): Executor;
   localWorkspace?: WorkspaceWorkerPort;
+  rangeAdmission?: WorkspaceRangeAdmissionPort;
+  /** Trusted composition closes the selected executor AND its MCP catalog. */
+  closeRangeExecutor?: (
+    executor: Executor,
+    assignment: Assignment,
+    safePointRef: string,
+  ) => Promise<void>;
   buildLocalControlExecutor?: (
     spec: RoleSpec,
     assignment: Assignment,
@@ -271,9 +283,21 @@ export class WorkerRuntime {
   private readonly leaseReleases = new Map<string, LeaseReleaseControl>();
   private readonly preemptor: Preemptor;
   private taskPause: TaskPauseControl | undefined;
+  private readonly rangeHeldWorkers = new Map<string, string>();
+  private readonly rangeHolds = new Map<
+    string,
+    { fingerprint: string; result: Promise<WorkspaceRangeWorkerReceipt> }
+  >();
   private suspended = false;
   private readonly maxParallel: number;
-  private readonly resumingWorkerSessions: ReadonlyMap<string, string>;
+  private readonly resumingWorkerSessions: Map<string, string>;
+  private readonly rangeResumes = new Map<
+    string,
+    {
+      scope: WorkspaceRangeResumeRequest;
+      verify: (workerId: string, phase: 'register' | 'execute') => Promise<void>;
+    }
+  >();
 
   constructor(
     private readonly deps: WorkerRuntimeDeps,
@@ -327,6 +351,230 @@ export class WorkerRuntime {
 
   get hasActivePause(): boolean {
     return this.taskPause !== undefined;
+  }
+
+  rangeActivity(scope: { projectId: string; taskId: string }): WorkspaceRangeActivity {
+    const scheduler = this.scheduler.activity(scope);
+    return {
+      ...scheduler,
+      activeWorkerIds: [...this.active.values()]
+        .filter((h) => h.join.projectId === scope.projectId && h.join.taskId === scope.taskId)
+        .map((h) => h.id)
+        .sort(),
+    };
+  }
+
+  /** A range hold suspends only its fixed cohort. The persistent registry barrier
+   * is installed by the caller first; this method does not wait in a task queue. */
+  holdRangeWorkers(input: WorkspaceRangeWorkerRequest): Promise<WorkspaceRangeWorkerReceipt> {
+    const request = { ...input, workerIds: [...input.workerIds].sort() };
+    const fingerprint = JSON.stringify(request);
+    const existing = this.rangeHolds.get(request.actionId);
+    if (existing)
+      return existing.fingerprint === fingerprint
+        ? existing.result
+        : Promise.reject(Error('range_hold_conflict'));
+    const result = this.closeRangeWorkers(request);
+    this.rangeHolds.set(request.actionId, { fingerprint, result });
+    return result;
+  }
+
+  private async closeRangeWorkers(
+    request: WorkspaceRangeWorkerRequest,
+  ): Promise<WorkspaceRangeWorkerReceipt> {
+    if (
+      ![request.projectId, request.taskId, request.actionId, ...request.workerIds].every(
+        (id) => typeof id === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(id),
+      ) ||
+      new Set(request.workerIds).size !== request.workerIds.length
+    )
+      throw Error('invalid_range_hold');
+    const closeExecutor = this.deps.closeRangeExecutor;
+    if (this.taskPause || !closeExecutor) throw Error('range_hold_lifecycle_unavailable');
+    const state = await this.deps.loadState?.();
+    if (
+      this.taskPause ||
+      !state ||
+      state.projectId !== request.projectId ||
+      state.taskId !== request.taskId ||
+      state.humanGate
+    )
+      throw Error('range_hold_scope_or_gate_conflict');
+    const handles = request.workerIds.map((workerId) => {
+      const handle = this.active.get(workerId);
+      if (
+        !handle ||
+        handle.join.projectId !== request.projectId ||
+        handle.join.taskId !== request.taskId ||
+        handle.pause ||
+        this.rangeHeldWorkers.has(workerId)
+      )
+        throw Error('range_hold_conflict');
+      const release = this.leaseReleases.get(workerId);
+      if (!release) throw Error('range_hold_lease_missing');
+      return { handle, release };
+    });
+    for (const { handle } of handles) {
+      this.rangeHeldWorkers.set(handle.id, request.actionId);
+      this.queuedAcquires.get(handle.id)?.abort(Error('range hold cancelled queued acquire'));
+    }
+    const settled = await Promise.allSettled(
+      handles.map(async ({ handle, release }) => {
+        const receipt = await this.requestWorkerPause(
+          request,
+          handle.id,
+          request.actionId,
+          'human_gate',
+        );
+        if (!receipt.safePointRef) throw Error('range_hold_safe_point_missing');
+        await handle.localSession?.close();
+        await closeExecutor(
+          handle.executor,
+          {
+            workerId: handle.id,
+            role: handle.role,
+            ...(handle.subtaskId === undefined ? {} : { subtaskId: handle.subtaskId }),
+          },
+          receipt.safePointRef,
+        );
+        handle.pause?.resolveOutcome('suspend');
+        await release.promise;
+        return {
+          workerId: handle.id,
+          sessionId: handle.sessionId,
+          status: receipt.status,
+          safePointRef: receipt.safePointRef,
+          closed: true as const,
+          leaseReleased: true as const,
+        };
+      }),
+    );
+    const failures = settled.filter((x): x is PromiseRejectedResult => x.status === 'rejected');
+    if (failures.length)
+      throw new AggregateError(
+        failures.map((x) => x.reason),
+        'range_hold_needs_attention',
+      );
+    return {
+      projectId: request.projectId,
+      taskId: request.taskId,
+      actionId: request.actionId,
+      workers: settled.flatMap((x) => (x.status === 'fulfilled' ? [x.value] : [])),
+    };
+  }
+
+  /** Native barriers can retain queued workers with no active handle. Routing
+   * may continue only already assigned, dependency-ready independent workers. */
+  async rangeDispatch(state: AppState): Promise<{ workerIds: string[] } | undefined> {
+    const held = [...this.rangeHeldWorkers.keys()].some(
+      (id) =>
+        state.workers.some((w) => w.workerId === id && ['running', 'paused'].includes(w.status)) &&
+        !this.resumingWorkerSessions.has(id),
+    );
+    const blocked = await this.deps.rangeAdmission?.isBlocked?.(state);
+    if (!held && !blocked) return undefined;
+    const workerIds: string[] = [];
+    for (const worker of state.workers) {
+      if (!this.canStartWorker(worker) || this.rangeHeldWorkers.has(worker.workerId)) continue;
+      const subtask =
+        worker.subtaskId === undefined
+          ? undefined
+          : state.subtasks.find((s) => s.id === worker.subtaskId);
+      if (
+        worker.subtaskId !== undefined &&
+        (subtask?.status !== 'in_progress' ||
+          !subtask.dependsOn.every((id) =>
+            state.subtasks.some((s) => s.id === id && s.status === 'done'),
+          ))
+      )
+        continue;
+      if (
+        this.deps.rangeAdmission &&
+        !(await this.deps.rangeAdmission.canAcquire({
+          projectId: state.projectId,
+          taskId: state.taskId,
+          workerId: worker.workerId,
+        }))
+      )
+        continue;
+      workerIds.push(worker.workerId);
+    }
+    return { workerIds };
+  }
+
+  /** Trusted live registration. A canonical/private proof verifier is mandatory;
+   * no model output or historical read calls this capability. */
+  async registerRangeResumes(
+    input: WorkspaceRangeResumeRequest,
+    verify: (workerId: string, phase: 'register' | 'execute') => Promise<void>,
+  ): Promise<void> {
+    const request = { ...input, workers: input.workers.map((w) => ({ ...w })) };
+    const state = await this.deps.loadState?.();
+    if (
+      !state ||
+      state.projectId !== request.projectId ||
+      state.taskId !== request.taskId ||
+      state.humanGate ||
+      this.taskPause ||
+      this.suspended ||
+      !request.workers.length ||
+      request.workers.length > 4096 ||
+      new Set(request.workers.map((w) => w.workerId)).size !== request.workers.length ||
+      !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(request.actionId)
+    )
+      throw Error('range_resume_conflict');
+    for (const plan of request.workers) {
+      const worker = state.workers.find((w) => w.workerId === plan.workerId);
+      if (
+        worker?.status !== 'paused' ||
+        worker.sessionId !== plan.sourceSessionId ||
+        worker.safePoint !== plan.sourceSafePointRef ||
+        plan.resumeSessionId === plan.sourceSessionId ||
+        !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(plan.resumeSessionId) ||
+        this.active.has(plan.workerId) ||
+        this.queuedAcquires.has(plan.workerId) ||
+        this.resumingWorkerSessions.has(plan.workerId) ||
+        (this.rangeHeldWorkers.has(plan.workerId) &&
+          this.rangeHeldWorkers.get(plan.workerId) !== request.actionId)
+      )
+        throw Error('range_resume_conflict');
+      await verify(plan.workerId, 'register');
+    }
+    const after = await this.deps.loadState?.();
+    if (
+      !after ||
+      JSON.stringify(after) !== JSON.stringify(state) ||
+      after.humanGate ||
+      this.taskPause
+    )
+      throw Error('range_resume_conflict');
+    for (const plan of request.workers) {
+      this.resumingWorkerSessions.set(plan.workerId, plan.resumeSessionId);
+      this.rangeResumes.set(plan.workerId, { scope: request, verify });
+      this.rangeHeldWorkers.delete(plan.workerId);
+    }
+  }
+
+  private async verifyRangeResume(workerId: string): Promise<void> {
+    const registration = this.rangeResumes.get(workerId);
+    if (!registration) return;
+    const state = await this.deps.loadState?.(),
+      plan = registration.scope.workers.find((w) => w.workerId === workerId),
+      worker = state?.workers.find((w) => w.workerId === workerId);
+    if (
+      !state ||
+      state.humanGate ||
+      this.taskPause ||
+      !plan ||
+      !worker ||
+      state.projectId !== registration.scope.projectId ||
+      state.taskId !== registration.scope.taskId ||
+      worker.status !== 'paused' ||
+      worker.sessionId !== plan.sourceSessionId ||
+      worker.safePoint !== plan.sourceSafePointRef
+    )
+      throw Error('range_resume_conflict');
+    await registration.verify(workerId, 'execute');
   }
 
   get resumableWorkerIds(): readonly string[] {
@@ -571,136 +819,165 @@ export class WorkerRuntime {
     parallel: boolean,
     lease: SlotLease,
   ): Promise<void> {
-    const spec = this.specOf(assign.role, await this.currentRoster());
-    const beforeWorkspace = await join.latest();
-    const local = beforeWorkspace.localExecution !== undefined;
-    const linked =
-      beforeWorkspace.localExecution?.git !== undefined &&
-      deliveryReaderAssignment(beforeWorkspace, assign.workerId) === undefined &&
-      deliveryRepairAssignment(beforeWorkspace, assign.workerId) === undefined &&
-      ['CODER', 'TESTER', 'REVIEWER'].includes(assign.role);
-    const resolvedWorktree =
-      !local || linked ? await this.deps.resolveWorktree?.(beforeWorkspace, assign) : undefined;
-    if (linked && resolvedWorktree === undefined) throw Error('local_git_resolver_required');
-    const running = await join.commit(async (current) => {
-      const worker = current.workers.find((entry) => entry.workerId === assign.workerId);
-      if (worker === undefined) throw new Error(`worker "${assign.workerId}" was not registered`);
-      this.assertAssignmentMatches(worker, assign);
-      if (!this.canStartWorker(worker)) {
-        throw new Error(
-          `worker "${assign.workerId}" cannot start from canonical status "${worker.status}"`,
-        );
-      }
-      if (assign.subtaskId !== undefined) {
-        this.assertReadySubtask(current, assign.subtaskId);
-      }
-      const resumeSessionId =
-        this.resumingWorkerSessions.get(assign.workerId) ??
-        this.deps.sessionIdForAssignment?.(assign) ??
-        (local ? (worker.sessionId ?? `session:${assign.workerId}`) : undefined);
-      if (resumeSessionId !== undefined && !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(resumeSessionId)) {
-        throw new Error('assigned sessionId must match [A-Za-z0-9][A-Za-z0-9._:-]*');
-      }
-      if (resolvedWorktree !== undefined) {
-        assertAssignmentWorktree(current, assign, resolvedWorktree);
-      }
-      return this.transitionStep(current, assign.role, [
-        mergeByIdMutation('workers', assign.workerId, {
-          status: 'running',
-          ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
-          ...(resumeSessionId === undefined ? {} : { sessionId: resumeSessionId }),
-        }),
-        ...(resolvedWorktree === undefined ||
-        assign.subtaskId === undefined ||
-        ((current.parallelExecution !== undefined || current.localExecution?.git !== undefined) &&
-          assign.role !== 'CODER')
-          ? []
-          : [mergeByIdMutation('subtasks', assign.subtaskId, { worktree: resolvedWorktree })]),
-      ]);
-    });
-    const worker = running.workers.find((entry) => entry.workerId === assign.workerId);
-    if (worker === undefined)
-      throw new Error(`worker "${assign.workerId}" disappeared after start`);
     let localSession: WorkspaceWorkerSession | undefined;
     let controlSession: WorkspaceControlSession | undefined;
     let handle: WorkerHandle | undefined;
     const errors: unknown[] = [];
     try {
-      if (local && ['PM', 'COORDINATOR'].includes(assign.role)) {
-        if (!this.deps.localWorkspace?.openControl || !this.deps.buildLocalControlExecutor)
-          throw Error('local_control_companion_required');
-        controlSession = await this.deps.localWorkspace.openControl({
-          projectId: running.projectId,
-          taskId: running.taskId,
-          workerId: assign.workerId,
-          role: assign.role,
-          ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
-          sessionId: worker.sessionId ?? `session:${assign.workerId}`,
-          assertLease: () => this.scheduler.assertActive(lease),
+      const prepare = async (runLegacyLoop = false) => {
+        const spec = this.specOf(assign.role, await this.currentRoster());
+        await this.verifyRangeResume(assign.workerId);
+        const beforeWorkspace = await join.latest();
+        const local = beforeWorkspace.localExecution !== undefined;
+        const linked =
+          beforeWorkspace.localExecution?.git !== undefined &&
+          deliveryReaderAssignment(beforeWorkspace, assign.workerId) === undefined &&
+          deliveryRepairAssignment(beforeWorkspace, assign.workerId) === undefined &&
+          ['CODER', 'TESTER', 'REVIEWER'].includes(assign.role);
+        const resolvedWorktree =
+          !local || linked ? await this.deps.resolveWorktree?.(beforeWorkspace, assign) : undefined;
+        if (linked && resolvedWorktree === undefined) throw Error('local_git_resolver_required');
+        const running = await join.commit(async (current) => {
+          const worker = current.workers.find((entry) => entry.workerId === assign.workerId);
+          if (worker === undefined)
+            throw new Error(`worker "${assign.workerId}" was not registered`);
+          this.assertAssignmentMatches(worker, assign);
+          if (!this.canStartWorker(worker)) {
+            throw new Error(
+              `worker "${assign.workerId}" cannot start from canonical status "${worker.status}"`,
+            );
+          }
+          if (assign.subtaskId !== undefined) {
+            this.assertReadySubtask(current, assign.subtaskId);
+          }
+          const resumeSessionId =
+            this.resumingWorkerSessions.get(assign.workerId) ??
+            this.deps.sessionIdForAssignment?.(assign) ??
+            (local ? (worker.sessionId ?? `session:${assign.workerId}`) : undefined);
+          if (
+            resumeSessionId !== undefined &&
+            !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(resumeSessionId)
+          ) {
+            throw new Error('assigned sessionId must match [A-Za-z0-9][A-Za-z0-9._:-]*');
+          }
+          if (resolvedWorktree !== undefined) {
+            assertAssignmentWorktree(current, assign, resolvedWorktree);
+          }
+          return this.transitionStep(current, assign.role, [
+            mergeByIdMutation('workers', assign.workerId, {
+              status: 'running',
+              ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
+              ...(resumeSessionId === undefined ? {} : { sessionId: resumeSessionId }),
+            }),
+            ...(resolvedWorktree === undefined ||
+            assign.subtaskId === undefined ||
+            ((current.parallelExecution !== undefined ||
+              current.localExecution?.git !== undefined) &&
+              assign.role !== 'CODER')
+              ? []
+              : [mergeByIdMutation('subtasks', assign.subtaskId, { worktree: resolvedWorktree })]),
+          ]);
         });
-        if (
-          controlSession.kind !== 'control' ||
-          controlSession.sessionId !== (worker.sessionId ?? `session:${assign.workerId}`)
-        )
-          throw Error('local_control_binding_mismatch');
-      } else if (local) {
-        if (!this.deps.localWorkspace || !this.deps.buildLocalExecutor)
-          throw Error('local_workspace_companion_required');
-        localSession = await this.deps.localWorkspace.open({
-          projectId: running.projectId,
-          taskId: running.taskId,
-          workerId: assign.workerId,
-          role: assign.role,
-          ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
-          sessionId: worker.sessionId ?? `session:${assign.workerId}`,
-          assertLease: () => this.scheduler.assertActive(lease),
-        });
-        const workspace = localSession.workspace;
-        const current = await join.latest();
-        const binding = current.localExecution?.bindings.find(
-          (b) => b.workerId === assign.workerId && b.subtaskId === assign.subtaskId,
-        );
-        if (
-          localSession.sessionId !== (worker.sessionId ?? `session:${assign.workerId}`) ||
-          !binding ||
-          binding.workspaceId !== localSession.workspace.workspaceId ||
-          localSession.workspace.projectId !== running.projectId ||
-          localSession.workspace.taskId !== running.taskId ||
-          !current.localExecution?.workspaces.some(
-            (w) =>
-              Object.keys(w).length === Object.keys(workspace).length &&
-              Object.entries(w).every(
-                ([key, value]) => (workspace as unknown as Record<string, unknown>)[key] === value,
-              ),
+        if (this.rangeResumes.has(assign.workerId)) {
+          this.rangeResumes.delete(assign.workerId);
+          this.resumingWorkerSessions.delete(assign.workerId);
+        }
+        const worker = running.workers.find((entry) => entry.workerId === assign.workerId);
+        if (worker === undefined)
+          throw new Error(`worker "${assign.workerId}" disappeared after start`);
+        if (local && ['PM', 'COORDINATOR'].includes(assign.role)) {
+          if (!this.deps.localWorkspace?.openControl || !this.deps.buildLocalControlExecutor)
+            throw Error('local_control_companion_required');
+          controlSession = await this.deps.localWorkspace.openControl({
+            projectId: running.projectId,
+            taskId: running.taskId,
+            workerId: assign.workerId,
+            role: assign.role,
+            ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
+            sessionId: worker.sessionId ?? `session:${assign.workerId}`,
+            assertLease: () => this.scheduler.assertActive(lease),
+          });
+          if (
+            controlSession.kind !== 'control' ||
+            controlSession.sessionId !== (worker.sessionId ?? `session:${assign.workerId}`)
           )
-        )
-          throw Error('local_workspace_binding_mismatch');
-      }
-      let executor: Executor;
-      if (controlSession) {
-        const build = this.deps.buildLocalControlExecutor;
-        if (!build) throw Error('local_control_companion_required');
-        executor = await build(spec, assign, controlSession);
-      } else if (localSession) {
-        const build = this.deps.buildLocalExecutor;
-        if (!build) throw Error('local_workspace_companion_required');
-        executor = await build(spec, assign, localSession);
-      } else executor = this.deps.buildExecutor(spec, assign, resolvedWorktree);
-      handle = {
-        id: assign.workerId,
-        role: assign.role,
-        ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
-        sessionId: worker.sessionId ?? `session:${assign.workerId}`,
-        executor,
-        join,
-        done: false,
-        drainRequested: false,
-        ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
-        ...(localSession === undefined ? {} : { localSession }),
-        ...(controlSession === undefined ? {} : { localSession: controlSession }),
+            throw Error('local_control_binding_mismatch');
+        } else if (local) {
+          if (!this.deps.localWorkspace || !this.deps.buildLocalExecutor)
+            throw Error('local_workspace_companion_required');
+          localSession = await this.deps.localWorkspace.open({
+            projectId: running.projectId,
+            taskId: running.taskId,
+            workerId: assign.workerId,
+            role: assign.role,
+            ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
+            sessionId: worker.sessionId ?? `session:${assign.workerId}`,
+            assertLease: () => this.scheduler.assertActive(lease),
+          });
+          const workspace = localSession.workspace;
+          const current = await join.latest();
+          const binding = current.localExecution?.bindings.find(
+            (b) => b.workerId === assign.workerId && b.subtaskId === assign.subtaskId,
+          );
+          if (
+            localSession.sessionId !== (worker.sessionId ?? `session:${assign.workerId}`) ||
+            !binding ||
+            binding.workspaceId !== localSession.workspace.workspaceId ||
+            localSession.workspace.projectId !== running.projectId ||
+            localSession.workspace.taskId !== running.taskId ||
+            !current.localExecution?.workspaces.some(
+              (w) =>
+                Object.keys(w).length === Object.keys(workspace).length &&
+                Object.entries(w).every(
+                  ([key, value]) =>
+                    (workspace as unknown as Record<string, unknown>)[key] === value,
+                ),
+            )
+          )
+            throw Error('local_workspace_binding_mismatch');
+        }
+        let executor: Executor;
+        if (controlSession) {
+          const build = this.deps.buildLocalControlExecutor;
+          if (!build) throw Error('local_control_companion_required');
+          executor = await build(spec, assign, controlSession);
+        } else if (localSession) {
+          const build = this.deps.buildLocalExecutor;
+          if (!build) throw Error('local_workspace_companion_required');
+          executor = await build(spec, assign, localSession);
+        } else executor = this.deps.buildExecutor(spec, assign, resolvedWorktree);
+        handle = {
+          id: assign.workerId,
+          role: assign.role,
+          ...(assign.subtaskId === undefined ? {} : { subtaskId: assign.subtaskId }),
+          sessionId: worker.sessionId ?? `session:${assign.workerId}`,
+          executor,
+          join,
+          done: false,
+          drainRequested: false,
+          ...(resolvedWorktree === undefined ? {} : { worktree: resolvedWorktree }),
+          ...(localSession === undefined ? {} : { localSession }),
+          ...(controlSession === undefined ? {} : { localSession: controlSession }),
+        };
+        this.active.set(handle.id, handle);
+        if (runLegacyLoop) await this.loop(join, handle, parallel);
+        return handle;
       };
-      this.active.set(handle.id, handle);
-      await this.loop(join, handle, parallel);
+      const admission = this.deps.rangeAdmission;
+      if (admission?.activate) {
+        const started = await admission.activate(
+          {
+            projectId: join.projectId,
+            taskId: join.taskId,
+            workerId: assign.workerId,
+          },
+          () => prepare(),
+        );
+        if (started) await this.loop(join, started, parallel);
+      } else {
+        // Keep legacy loop dispatch at the original canonical commit boundary.
+        await prepare(true);
+      }
     } catch (error) {
       handle?.rejectDrain?.(error);
       errors.push(error);
@@ -802,6 +1079,12 @@ export class WorkerRuntime {
         }
         throw new WorkerStepError(error);
       }
+      if (this.rangeHeldWorkers.has(handle.id) && result.kind === 'done') {
+        // The official turn is complete, but range takeover has closed further
+        // source admission. Preserve its output and defer commit/test/completion
+        // tools and qualification until the explicitly returned version is used.
+        result = { ...result, kind: 'llm' };
+      }
       if (handle.localSession) {
         if (!result.reachedSafeBoundary) throw Error('local_workspace_safe_boundary_required');
         await handle.localSession.checkpoint(result.kind === 'done' ? 'complete' : 'step');
@@ -890,6 +1173,9 @@ export class WorkerRuntime {
               [
                 'wave_validation',
                 'workspace_validation',
+                'workspace_version_change',
+                'workspace_range_resume',
+                'workspace_undo_result',
                 'workspace_delivery_application',
                 'workspace_delivery_completion',
                 'delivery_repair_dispatch',
@@ -923,12 +1209,21 @@ export class WorkerRuntime {
             : [];
         // Trusted verification may itself run tools. Persist its bounded close
         // before committing done and releasing the worker's original lease.
+        const completedSafePoint =
+          result.kind === 'done' && handle.localSession
+            ? await handle.executor.saveSafePoint()
+            : undefined;
         if (result.kind === 'done') await handle.localSession?.close();
         return this.transitionStep(canonical, handle.role, [
           ...mutations,
           ...trusted,
           ...(result.kind === 'done'
-            ? [mergeByIdMutation('workers', handle.id, { status: 'done' })]
+            ? [
+                mergeByIdMutation('workers', handle.id, {
+                  status: 'done',
+                  ...(completedSafePoint === undefined ? {} : { safePoint: completedSafePoint }),
+                }),
+              ]
             : []),
           ...(boundaryWorktree === undefined
             ? []
@@ -1211,6 +1506,11 @@ export class WorkerRuntime {
     workerId: string,
   ): Promise<SlotLease | undefined> {
     while (true) {
+      if (this.rangeHeldWorkers.has(workerId)) return undefined;
+      const scope = { projectId, taskId, workerId };
+      await this.verifyRangeResume(workerId);
+      if (this.deps.rangeAdmission && !(await this.deps.rangeAdmission.canAcquire(scope)))
+        return undefined;
       const pause = this.taskPause;
       if (pause !== undefined) {
         const outcome = await pause.closed;
@@ -1220,8 +1520,24 @@ export class WorkerRuntime {
       const controller = new AbortController();
       this.queuedAcquires.set(workerId, controller);
       try {
-        return await this.scheduler.acquire(projectId, taskId, workerId, controller.signal);
+        const lease = await this.scheduler.acquire(projectId, taskId, workerId, controller.signal);
+        let admitted = true;
+        try {
+          await this.verifyRangeResume(workerId);
+          admitted = this.deps.rangeAdmission
+            ? await this.deps.rangeAdmission.canAcquire(scope)
+            : true;
+        } catch (error) {
+          await this.scheduler.release(lease);
+          throw error;
+        }
+        if (!admitted) {
+          await this.scheduler.release(lease);
+          return undefined;
+        }
+        return lease;
       } catch (error) {
+        if (isAbortError(error) && this.rangeHeldWorkers.has(workerId)) return undefined;
         const interrupted = this.taskPause;
         if (!isAbortError(error) || interrupted === undefined) throw error;
         const outcome = await interrupted.closed;

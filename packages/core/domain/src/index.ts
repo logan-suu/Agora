@@ -29,3 +29,7 @@ export * from './requirement-proposal';
 export * from './roster';
 export * from './state';
 export { parseWorkspaceControl, type WorkspaceControlIntent } from './workspace-control';
+export * from './workspace-dependencies';
+export * from './workspace-range-resume';
+export * from './workspace-undo-result';
+export * from './workspace-version-change';

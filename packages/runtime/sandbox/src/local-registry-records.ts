@@ -16,6 +16,12 @@ import {
   assertDeliveryTransition,
   type LocalDeliveryTransition,
 } from './local-delivery-transition';
+import {
+  assertLocalRangeTransition,
+  type LocalRangeHold,
+  localRangesOverlap,
+  parseLocalRangeHold,
+} from './local-range-records';
 
 export interface LocalRootRecord {
   rootId: string;
@@ -90,10 +96,18 @@ export type LocalDeliveryClaimRecord = LocalClaimIdentity & {
   grantRevision: number;
   workerId?: never;
 };
+export type LocalUndoClaimRecord = LocalClaimIdentity & {
+  kind: 'undo';
+  fileApplyReceiptId: string;
+  inputHash: string;
+  grantRevision: number;
+  workerId?: never;
+};
 export type LocalClaimRecord =
   | LocalWorkerClaimRecord
   | LocalIntegrationClaimRecord
-  | LocalDeliveryClaimRecord;
+  | LocalDeliveryClaimRecord
+  | LocalUndoClaimRecord;
 export interface LocalBindingOperation {
   actionId: string;
   inputHash: string;
@@ -136,7 +150,7 @@ export function isLocalBindingOperation(
   return !('kind' in value);
 }
 export interface LocalRegistryRecords {
-  schemaVersion: 'local-workspaces-v1';
+  schemaVersion: 'local-workspaces-v1' | 'local-workspaces-v2';
   revision: number;
   roots: LocalRootRecord[];
   grants: LocalGrantRecord[];
@@ -144,6 +158,8 @@ export interface LocalRegistryRecords {
   claims: LocalClaimRecord[];
   operations: LocalRegistryOperation[];
   linkedRoots?: LocalLinkedRootRecord[];
+  /** Mandatory in v2, forbidden in v1. */
+  rangeHolds?: LocalRangeHold[];
 }
 function fail(): never {
   throw new Error('invalid_local_registry_records');
@@ -390,15 +406,18 @@ function grantRecord(v: unknown): LocalGrantRecord {
 function claimRecord(v: unknown): LocalClaimRecord {
   const control = v !== null && typeof v === 'object' && Object.hasOwn(v, 'kind');
   const delivery = control && Reflect.get(v as object, 'kind') === 'delivery';
+  const undo = control && Reflect.get(v as object, 'kind') === 'undo';
   const r = object(v, [
     'claimId',
     'projectId',
     'taskId',
     'workspaceId',
     ...(control
-      ? delivery
-        ? ['kind', 'deliveryProposalId', 'inputHash', 'grantRevision']
-        : ['kind', 'integrationId', 'waveId', 'planHash', 'grantRevision']
+      ? undo
+        ? ['kind', 'fileApplyReceiptId', 'inputHash', 'grantRevision']
+        : delivery
+          ? ['kind', 'deliveryProposalId', 'inputHash', 'grantRevision']
+          : ['kind', 'integrationId', 'waveId', 'planHash', 'grantRevision']
       : ['workerId']),
     'writerEpoch',
     'createdActionId',
@@ -408,13 +427,18 @@ function claimRecord(v: unknown): LocalClaimRecord {
   if (
     !['claimId', 'projectId', 'taskId', 'workspaceId', 'createdActionId'].every((k) => id(r[k])) ||
     (control
-      ? delivery
-        ? !id(r.deliveryProposalId) || !hash(r.inputHash) || !integer(r.grantRevision)
-        : r.kind !== 'integration' ||
-          !id(r.integrationId) ||
-          !id(r.waveId) ||
-          !hash(r.planHash) ||
+      ? undo
+        ? !id(r.fileApplyReceiptId) ||
+          !/^(apply|batch|tree):[a-f0-9]{64}$/.test(r.fileApplyReceiptId as string) ||
+          !hash(r.inputHash) ||
           !integer(r.grantRevision)
+        : delivery
+          ? !id(r.deliveryProposalId) || !hash(r.inputHash) || !integer(r.grantRevision)
+          : r.kind !== 'integration' ||
+            !id(r.integrationId) ||
+            !id(r.waveId) ||
+            !hash(r.planHash) ||
+            !integer(r.grantRevision)
       : !id(r.workerId)) ||
     !integer(r.writerEpoch) ||
     !['active', 'draining', 'quarantined', 'released'].includes(r.status as string) ||
@@ -608,6 +632,10 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
   json(value);
   const hasLinked =
     value !== null && typeof value === 'object' && Object.hasOwn(value, 'linkedRoots');
+  const v2 =
+    value !== null &&
+    typeof value === 'object' &&
+    Reflect.get(value, 'schemaVersion') === 'local-workspaces-v2';
   const r = object(value, [
     'schemaVersion',
     'revision',
@@ -617,15 +645,23 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
     'claims',
     'operations',
     ...(hasLinked ? ['linkedRoots'] : []),
+    ...(v2 ? ['rangeHolds'] : []),
   ]);
   if (
-    r.schemaVersion !== 'local-workspaces-v1' ||
+    (!v2 && r.schemaVersion !== 'local-workspaces-v1') ||
     !integer(r.revision) ||
     !isWorkspaceRefsV1(r.workspaces)
   )
     fail();
   const workspaces = r.workspaces;
   const linkedRoots = hasLinked ? array(r.linkedRoots).map(parseLocalLinkedRoot) : [];
+  const rangeHolds = v2 ? array(r.rangeHolds).map(parseLocalRangeHold) : [];
+  unique(rangeHolds, (x) => x.plan.takeoverId);
+  unique(rangeHolds, (x) => x.plan.sourceMessage.msgId);
+  unique(
+    rangeHolds.filter((x) => x.returnMessage !== null),
+    (x) => x.returnMessage?.msgId,
+  );
   const roots = array(r.roots).map(rootRecord),
     grants = array(r.grants).map(grantRecord),
     claims = array(r.claims).map(claimRecord),
@@ -665,6 +701,43 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
     const physical = linkedRoots.find((x) => x.workspaceId === w.workspaceId);
     if (w.mode === 'direct' ? physical !== undefined : physical === undefined) fail();
   }
+  for (const hold of rangeHolds) {
+    const plan = hold.plan;
+    const workspace = workspaces.find(
+      (w) =>
+        w.workspaceId === plan.workspaceId &&
+        w.projectId === plan.projectId &&
+        w.taskId === plan.taskId &&
+        w.rootId === plan.rootId &&
+        w.grantId === plan.grantId,
+    );
+    const physical =
+      workspace?.mode === 'linked-worktree'
+        ? linkedRoots.find((x) => x.workspaceId === workspace.workspaceId)
+        : roots.find((x) => x.rootId === workspace?.rootId);
+    const grant = grants.find((x) => x.grantId === plan.grantId && x.projectId === plan.projectId);
+    if (
+      !workspace ||
+      !physical ||
+      !grant ||
+      grant.revision < plan.grantRevision ||
+      localRecordHash(plan.physical) !==
+        localRecordHash({
+          path: physical.path,
+          identity: `${physical.dev}:${physical.inode}`,
+          chain: physical.chain,
+        }) ||
+      plan.expectedRevision >= (r.revision as number)
+    )
+      fail();
+  }
+  const blocked = rangeHolds.filter((x) => x.stage !== 'released');
+  for (let i = 0; i < blocked.length; i++)
+    for (let j = 0; j < i; j++) {
+      const a = blocked[i],
+        b = blocked[j];
+      if (!a || !b || localRangesOverlap(a.plan.physical, b.plan.physical)) fail();
+    }
   for (const physical of linkedRoots) {
     const w = workspaces.find((w) => w.workspaceId === physical.workspaceId);
     const root = roots.find((root) => root.rootId === physical.rootId);
@@ -730,11 +803,13 @@ export function parseLocalRegistry(value: unknown): LocalRegistryRecords {
           w.workspaceId === c.workspaceId &&
           w.projectId === c.projectId &&
           w.taskId === c.taskId &&
-          (c.kind === 'delivery'
-            ? w.purpose === 'delivery' && w.mode === 'direct'
-            : c.kind === 'integration'
-              ? w.purpose === 'integration' && w.mode === 'linked-worktree'
-              : w.purpose !== 'integration' && w.purpose !== 'delivery') &&
+          (c.kind === 'undo'
+            ? true
+            : c.kind === 'delivery'
+              ? w.purpose === 'delivery' && w.mode === 'direct'
+              : c.kind === 'integration'
+                ? w.purpose === 'integration' && w.mode === 'linked-worktree'
+                : w.purpose !== 'integration' && w.purpose !== 'delivery') &&
           (w.purpose !== 'validation' || w.mode === 'linked-worktree'),
       )
     )
@@ -823,6 +898,22 @@ export function assertLocalRegistryTransition(previous: unknown, next: unknown):
   const before = parseLocalRegistry(previous),
     after = parseLocalRegistry(next);
   if (after.revision !== before.revision + 1 || !Number.isSafeInteger(after.revision)) fail();
+  if (
+    before.schemaVersion === 'local-workspaces-v2' &&
+    after.schemaVersion !== before.schemaVersion
+  )
+    fail();
+  assertLocalRangeTransition(before.rangeHolds ?? [], after.rangeHolds ?? []);
+  for (const hold of after.rangeHolds ?? []) {
+    if (before.rangeHolds?.some((x) => x.plan.takeoverId === hold.plan.takeoverId)) continue;
+    const grant = before.grants.find((x) => x.grantId === hold.plan.grantId);
+    if (
+      hold.plan.expectedRevision !== before.revision ||
+      grant?.status !== 'active' ||
+      grant.revision !== hold.plan.grantRevision
+    )
+      fail();
+  }
   assertWorkspaceRefsTransition(before.workspaces, after.workspaces);
   for (const physical of before.linkedRoots ?? []) {
     const current = after.linkedRoots?.find((x) => x.workspaceId === physical.workspaceId);

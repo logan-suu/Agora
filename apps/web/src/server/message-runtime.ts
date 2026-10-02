@@ -111,6 +111,9 @@ export class RequirementInputError extends Error {
 export class WorkspaceControlInputError extends Error {}
 export interface WorkspaceControlPort {
   commit(scope: TaskScope, message: Message): Promise<AppState>;
+  /** Long closure/capture runs after the canonical Leader queue is released.
+   * Called only for a fresh committed message, never for a replay. */
+  afterCommit?(scope: TaskScope, message: Message): Promise<AppState | undefined>;
 }
 
 export class MessageRuntime {
@@ -321,7 +324,35 @@ export class MessageRuntime {
         'This message ID prefix is reserved for server proposals.',
         400,
       );
-    return this.#enqueueLeader(scope, () => this.#commitLeaderMessage(scope, input));
+    const port = this.#workspaceControl;
+    const result = await this.#enqueueLeader(scope, () => this.#commitLeaderMessage(scope, input));
+    if (
+      result.published &&
+      result.action.status === 'applied' &&
+      (result.message.payload.intent as { kind?: string } | undefined)?.kind ===
+        'workspace_control' &&
+      port?.afterCommit
+    ) {
+      try {
+        const state = await port.afterCommit(scope, result.message);
+        if (state) {
+          if (
+            state.projectId !== scope.projectId ||
+            state.taskId !== scope.taskId ||
+            state.messages.filter((m) => m.msgId === result.message.msgId).length !== 1 ||
+            JSON.stringify(state.messages.find((m) => m.msgId === result.message.msgId)) !==
+              JSON.stringify(result.message)
+          )
+            throw Error('workspace_control_source_invalid');
+          return { ...result, state };
+        }
+      } catch (error) {
+        throw new WorkspaceControlInputError(
+          error instanceof Error ? error.message : 'workspace_control_failed',
+        );
+      }
+    }
+    return result;
   }
 
   /** Trusted task-control work shares the Leader queue, so a validation

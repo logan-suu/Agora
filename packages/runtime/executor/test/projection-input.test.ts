@@ -142,6 +142,65 @@ it('replaces the authoritative system projection on the next turn after injectIn
   }
 });
 
+it.each([
+  {
+    name: 'current worker and child',
+    workerId: 'worker',
+    child: 'resumed',
+    parent: 'parent',
+    expected: true,
+  },
+  {
+    name: 'another worker',
+    workerId: 'other',
+    child: 'resumed',
+    parent: 'parent',
+    expected: false,
+  },
+  {
+    name: 'historical child',
+    workerId: 'worker',
+    child: 'old-child',
+    parent: 'parent',
+    expected: false,
+  },
+  { name: 'self parent', workerId: 'worker', child: 'resumed', parent: 'resumed', expected: false },
+])('scopes the return startup to $name without reissuing it after tools', async (input) => {
+  const f = await fixture(2);
+  const view = assignedView('return-wire', 'current private assignment');
+  view.slices.localWorkspace = { workspaceId: 'workspace' };
+  view.slices.assignment = { workerId: 'worker', role: 'CODER', subtaskId: 'assigned' };
+  view.slices.workspaceRangeResumes = [
+    {
+      workerId: input.workerId,
+      sourceSessionId: input.parent,
+      resumeSessionId: input.child,
+    },
+  ];
+  try {
+    await f.executor.step({ sessionId: 'resumed', view });
+    expect(f.adapter.calls).toHaveLength(3);
+    for (const call of f.adapter.calls) {
+      const users = call.messages.filter(
+        (message) =>
+          message.role === 'user' && message.content.some((block) => block.type === 'text'),
+      );
+      expect(users).toHaveLength(1);
+      const startup = JSON.stringify(users);
+      expect(startup.includes('[workspace-return-turn]')).toBe(input.expected);
+      expect(startup).not.toContain('current private assignment');
+      expect(startup).not.toContain('workspaceRangeResumes');
+      if (input.expected) {
+        expect(startup).toContain('parent session are historical');
+        expect(startup).toContain('current tools');
+      }
+      expect(call.system).toContain(JSON.stringify(view));
+    }
+  } finally {
+    await f.dispose();
+  }
+});
+
 it('preserves the full current projection after official automatic pressure compaction', async () => {
   const f = await fixture(4, 'Large tool evidence line.\n'.repeat(900), 16000);
   const view = assignedView('projection-pressure', 'authoritative goal after compaction');
@@ -158,3 +217,27 @@ it('preserves the full current projection after official automatic pressure comp
     await f.dispose();
   }
 });
+
+it.each(['workspace', 'assignment', 'role'])(
+  'does not announce a return without the matching local %s context',
+  async (missing) => {
+    const f = await fixture(0);
+    const view = assignedView('return-scope', 'current assignment');
+    if (missing !== 'workspace') view.slices.localWorkspace = { workspaceId: 'workspace' };
+    if (missing !== 'assignment')
+      view.slices.assignment = {
+        workerId: 'worker',
+        role: missing === 'role' ? 'TESTER' : 'CODER',
+      };
+    view.slices.workspaceRangeResumes = [
+      { workerId: 'worker', sourceSessionId: 'parent', resumeSessionId: 'resumed' },
+    ];
+    try {
+      await f.executor.step({ sessionId: 'resumed', view });
+      expect(f.adapter.calls).toHaveLength(1);
+      expect(JSON.stringify(f.adapter.calls[0]?.messages)).not.toContain('[workspace-return-turn]');
+    } finally {
+      await f.dispose();
+    }
+  },
+);

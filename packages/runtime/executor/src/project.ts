@@ -4,6 +4,7 @@ import {
   adoptedExecutionPlan,
   assertLocalExecutionState,
   type CoordinationLedgerPayload,
+  canonicalWorkspaceDependencies,
   currentReviewDispatch,
   deliveryRepairAssignment,
   deriveCompletionFeedback,
@@ -19,6 +20,8 @@ import {
   validationReceipt,
   validationSubtaskIds,
   type WorktreeRef,
+  workspaceRangeResumes,
+  workspaceVersionChanges,
 } from '@agora/core-domain';
 import type { ProjectionView } from './base';
 import {
@@ -63,6 +66,29 @@ export function project(
   slices.onboardingContext = deriveOnboardingContext(state, role);
   slices.leaderDirective = deriveLeaderDirective(state);
   slices.completionFeedback = deriveCompletionFeedback(state);
+  const changes = workspaceVersionChanges(state);
+  if (changes.length)
+    slices.workspaceVersionChanges = changes.map((c) => ({
+      changeId: c.changeId,
+      sourceMsgId: c.source.msgId,
+      workspaceIds: c.workspaceIds,
+      heldVersion: c.heldVersion,
+      returnedVersion: c.returnedVersion,
+      invalidatedValidationIds: c.invalidatedValidationIds,
+    }));
+  const resumes = workspaceRangeResumes(state).filter((r) =>
+    state.workers.some((w) => w.workerId === r.workerId && w.role === role),
+  );
+  if (resumes.length)
+    slices.workspaceRangeResumes = resumes.map(
+      ({ resumeId, changeId, workerId, sourceSessionId, resumeSessionId }) => ({
+        resumeId,
+        changeId,
+        workerId,
+        sourceSessionId,
+        resumeSessionId,
+      }),
+    );
   slices.objectionResolutions = deriveObjectionResolutions(state)
     .filter((entry) => entry.status === 'resolved')
     .map((entry) => {
@@ -119,6 +145,30 @@ export function projectForAssignment(
     const subtask = state.subtasks.find((entry) => entry.id === assignment.subtaskId);
     if (!binding || !workspace || (assignment.subtaskId !== undefined && !subtask))
       throw Error('local_workspace_assignment_missing');
+    const dependencies = new Set(
+      canonicalWorkspaceDependencies(state, assignment.workerId).map((w) => w.workspaceId),
+    );
+    if (view.slices.workspaceVersionChanges)
+      view.slices.workspaceVersionChanges = workspaceVersionChanges(state)
+        .filter((c) => c.workspaceIds.some((id) => dependencies.has(id)))
+        .map((c) => ({
+          changeId: c.changeId,
+          sourceMsgId: c.source.msgId,
+          workspaceIds: c.workspaceIds.filter((id) => dependencies.has(id)),
+          heldVersion: c.heldVersion,
+          returnedVersion: c.returnedVersion,
+          invalidatedValidationIds: c.invalidatedValidationIds,
+        }));
+    if (view.slices.workspaceRangeResumes)
+      view.slices.workspaceRangeResumes = workspaceRangeResumes(state)
+        .filter((r) => r.workerId === assignment.workerId)
+        .map(({ resumeId, changeId, workerId, sourceSessionId, resumeSessionId }) => ({
+          resumeId,
+          changeId,
+          workerId,
+          sourceSessionId,
+          resumeSessionId,
+        }));
     const repair = deliveryRepairAssignment(state, assignment.workerId);
     if (repair) view.slices.deliveryRepair = structuredClone(repair.source);
     view.slices.localWorkspace = structuredClone(workspace);

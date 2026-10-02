@@ -25,6 +25,7 @@ import {
 import { conflictKey, readIntegrationConflictPlan } from './local-integration-conflict-records';
 import { handoffKey, readIntegrationHandoffPlan } from './local-integration-handoff-records';
 import { verifyLocalLinkedRoot } from './local-linked-root';
+import { assertLocalRangeAdmission } from './local-range-admission';
 import {
   isLocalBindingOperation,
   type LocalIntegrationClaimRecord,
@@ -556,6 +557,12 @@ export class LocalIntegrationAuthority {
       integration.integrationWorktree.baseCommit !== workspace.baseCommit
     )
       throw Error('integration_assignment_mismatch');
+    if (!closing)
+      assertLocalRangeAdmission(
+        liveSnapshot,
+        workspace,
+        liveState.localExecution?.workspaces ?? [],
+      );
     const proof = published
       ? await readCompletedApplication(this.options.objects, published)
       : undefined;

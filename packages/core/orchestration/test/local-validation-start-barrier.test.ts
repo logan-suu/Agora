@@ -1,4 +1,5 @@
-// Port fakes isolate the L2 routing order. Real native/Git preparation and
+// Execution-boundary spies isolate L2 routing order while range dispatch uses
+// the real WorkerRuntime. Real native/Git preparation and
 // confirmation are exercised by the Phase 12 integration fixture (R11/G5).
 import { type AppState, applyMutations, type RoleSpec } from '@agora/core-domain';
 import { expect, it, vi } from 'vitest';
@@ -8,7 +9,7 @@ import { selectIntegrationBranch } from '../../domain/src/integration-selection'
 import { fixture } from '../../domain/test/integration-fixture';
 import { runOrchestration } from '../src/orchestrator';
 import { createInitialValidationDispatchPlan } from '../src/validation-dispatch-plan';
-import type { WorkerRuntime } from '../src/worker-runtime';
+import { WorkerRuntime } from '../src/worker-runtime';
 
 const context = {
   initialBase: { branch: 'initial', commit: 'a'.repeat(40) },
@@ -143,14 +144,21 @@ function setup() {
     calls.push('worker');
     return { ...state, phase: 'done' as const };
   });
-  const runtime = {
-    resumableWorkerIds: [],
-    runOne,
-    runParallel: vi.fn(async () => {
-      throw Error('unexpected parallel start');
-    }),
-  } as unknown as WorkerRuntime;
+  const runtime = routingRuntime();
+  vi.spyOn(runtime, 'runOne').mockImplementation(runOne);
+  vi.spyOn(runtime, 'runParallel').mockImplementation(async () => {
+    throw Error('unexpected parallel start');
+  });
   return { before, after, calls, runOne, runtime };
+}
+
+function routingRuntime() {
+  return new WorkerRuntime({
+    roster,
+    buildExecutor: () => {
+      throw Error('unexpected executor construction');
+    },
+  });
 }
 
 it('requires trusted preparation before committing a first local Git TESTER dispatch', async () => {
@@ -229,7 +237,8 @@ it('registers missing native coding bindings before handing the batch to WorkerR
     calls.push('worker');
     throw Error('worker-boundary');
   });
-  const runtime = { resumableWorkerIds: [], runParallel } as unknown as WorkerRuntime;
+  const runtime = routingRuntime();
+  vi.spyOn(runtime, 'runParallel').mockImplementation(runParallel);
   const coderRoster = [{ ...roster[0], role: 'CODER' }] as RoleSpec[];
   await expect(
     runOrchestration(before, {

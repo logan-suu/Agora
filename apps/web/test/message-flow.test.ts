@@ -102,6 +102,59 @@ describe('persisted HTTP + SSE message flow', () => {
     },
   );
 
+  it('waits for fresh range closure outside the Leader queue and never repeats it for a replay', async () => {
+    const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
+    const scope = { projectId: 'project-a', taskId: 'task-a' };
+    await runtime.initializeState(
+      scope,
+      createInitialAppState(scope.taskId, 'fixed', scope.projectId),
+    );
+    let entered = () => {},
+      release = () => {},
+      closes = 0;
+    const inside = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    runtime.bindWorkspaceControlPort({
+      commit: async (s, message) => {
+        const state = await runtime.store.load(s);
+        if (!state) throw Error('missing');
+        if (state.messages.some((m) => m.msgId === message.msgId)) return state;
+        return (
+          await runtime.compareAndCommitControl(s, state, [appendMutation('messages', message)])
+        ).state;
+      },
+      afterCommit: async () => {
+        closes++;
+        entered();
+        await hold;
+        return undefined;
+      },
+    });
+    const input = {
+      msgId: 'range-take',
+      channelId: 'main',
+      ts: 1,
+      display: `/workspace takeover ${JSON.stringify({ ...scope, actionId: 'range-take', expectedRevision: 0, workspaceId: 'coding', paths: ['file.txt'] })}`,
+    };
+    const pending = runtime.commitLeaderMessage(scope, input);
+    try {
+      await inside;
+      const serial = runtime.runTaskSerial(scope, async () => 'queue-is-free');
+      await expect(serial).resolves.toBe('queue-is-free');
+      const replay = await runtime.commitLeaderMessage(scope, { ...input, ts: 999 });
+      expect(replay.published).toBe(false);
+      expect(closes).toBe(1);
+    } finally {
+      release();
+      await pending;
+    }
+    expect(closes).toBe(1);
+  });
+
   it('serializes trusted validation preparation with Leader messages for the same task', async () => {
     const runtime = createMessageRuntime(await temporaryRoot(), new ChannelStream());
     const scope = { projectId: 'project-a', taskId: 'task-a' };

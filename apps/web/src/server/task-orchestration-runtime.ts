@@ -14,6 +14,8 @@ import {
   requirementProposalView,
   setMutation,
   validationReceipt,
+  workspaceRangeResumes,
+  workspaceVersionChanges,
 } from '@agora/core-domain';
 import {
   assertHumanGateResumedMarker,
@@ -28,6 +30,10 @@ import {
 } from '@agora/core-orchestration';
 import type { PauseReceipt, PauseRequest } from '@agora/core-preemption';
 import type { TaskScope } from '@agora/runtime-state';
+import type {
+  LocalRangeForkEvidence,
+  LocalRangeForkPlan,
+} from '../../../../packages/runtime/sandbox/src/local-range-resume-controller';
 import { humanGateAlreadyResumed } from './human-gate-replay';
 import { localBootstrap } from './local-startup';
 import type { MessageRuntime } from './message-runtime';
@@ -82,6 +88,10 @@ export interface TaskComposition {
   prepareLocalDeliveryRepair?: (state: AppState, source: DeliveryRepairSource) => Promise<AppState>;
   completeLocalDeliveryRepair?: (state: AppState, workerId: string) => Promise<AppState>;
   finalizeLocalDelivery?: (state: AppState) => Promise<AppState>;
+  workspaceRange?: {
+    prepareFork(plan: LocalRangeForkPlan, state: AppState): Promise<void>;
+    readFork(plan: LocalRangeForkPlan, fresh: boolean): Promise<LocalRangeForkEvidence>;
+  };
   saveSafePoints(): Promise<readonly string[]>;
   suspend(): Promise<void>;
   archiveArtifact(): Promise<ArchivedArtifact>;
@@ -107,6 +117,8 @@ export type TaskCompositionFactory = (input: {
     actionId: string;
     receipt: HumanGateResolutionReceipt;
   };
+  /** Trusted fresh return continuation; never synthesized from a D4 receipt. */
+  rangeReturn?: { takeoverId: string };
 }) => Promise<TaskComposition>;
 
 export interface TaskOrchestrationRuntimeOptions {
@@ -114,6 +126,7 @@ export interface TaskOrchestrationRuntimeOptions {
 }
 
 interface ActiveRun {
+  rangeReturn?: { takeoverId: string; started: boolean };
   deliveryFinalizationOnly?: boolean;
   goal: string;
   status: Exclude<TaskRunStatus, 'interrupted'>;
@@ -410,6 +423,136 @@ export class TaskOrchestrationRuntime {
   async waitForIdle(scope: TaskScope): Promise<void> {
     await this.#runs.get(scopeKey(scope))?.promise;
   }
+  /** Live host companion. An absent composition supplies no worker capability. */
+  rangeWorkerRuntime(scope: TaskScope): WorkerRuntime | undefined {
+    return this.#runs.get(scopeKey(scope))?.composition?.workerRuntime;
+  }
+  async prepareRangeFork(plan: LocalRangeForkPlan, expected: AppState): Promise<void> {
+    await this.#enqueueLifecycle(async () => {
+      this.#assertAcceptingWork();
+      const scope = { projectId: plan.projectId, taskId: plan.taskId },
+        state = await this.messages.store.load(scope),
+        changes = state ? workspaceVersionChanges(state) : [];
+      if (
+        !state ||
+        canonicalJson(state) !== canonicalJson(expected) ||
+        state.humanGate ||
+        state.phase === 'done' ||
+        !changes.some(
+          (c) =>
+            c.changeId === plan.changeId &&
+            c.takeoverId === plan.takeoverId &&
+            c.returnActionId === plan.returnActionId &&
+            c.affectedWorkerIds.includes(plan.workerId),
+        )
+      )
+        throw Error('range_host_return_not_ready');
+      const run = await this.#prepareRangeComposition(scope, state, plan.takeoverId);
+      const range = run.composition?.workspaceRange;
+      if (!range) throw Error('range_host_factory_unavailable');
+      await range.prepareFork(plan, state);
+    });
+  }
+  async #prepareRangeComposition(
+    scope: TaskScope,
+    state: AppState,
+    takeoverId: string,
+  ): Promise<ActiveRun> {
+    let run = this.#runs.get(scopeKey(scope));
+    if (
+      run?.pendingSuspension ||
+      run?.pendingFinalization ||
+      run?.status === 'completed' ||
+      run?.status === 'failed'
+    )
+      throw Error('range_host_return_not_ready');
+    if (!run?.composition) {
+      if (run?.status === 'running') throw Error('range_host_run_not_settled');
+      this.#assertCompositionCapacity();
+      const transition: StateTransition = async (_old, mutations) =>
+        (await this.messages.commitMutations(scope, mutations)).state;
+      const composition = await this.createComposition({
+        scope,
+        goal: state.goal,
+        loadState: () => this.messages.store.load(scope),
+        transition,
+        transitionStep: (_old, role, mutations) =>
+          this.messages.commitWorkerStepMutations(scope, role, mutations).then((c) => c.state),
+        handleOutput: (current, role, output) =>
+          this.messages.handleWorkerOutput(current, role, output),
+        buildChannelContext: (current, role) =>
+          this.messages.workerStepChannelContextFor(current, role),
+        loadRoster: () => this.messages.enabledRoleSpecs(scope.projectId),
+        rangeReturn: { takeoverId },
+      });
+      run = {
+        goal: state.goal,
+        status: 'needs_attention',
+        composition,
+        promise: Promise.resolve(),
+        artifactPath: undefined,
+        pendingFinalization: undefined,
+        error: undefined,
+      };
+      this.#runs.set(scopeKey(scope), run);
+    }
+    if (run.rangeReturn && run.rangeReturn.takeoverId !== takeoverId && !run.rangeReturn.started)
+      throw Error('range_host_return_conflict');
+    run.rangeReturn = { takeoverId, started: false };
+    return run;
+  }
+  async readRangeFork(plan: LocalRangeForkPlan, fresh: boolean): Promise<LocalRangeForkEvidence> {
+    const composition = this.#runs.get(scopeKey(plan))?.composition;
+    if (!composition?.workspaceRange) throw Error('range_host_factory_unavailable');
+    return composition.workspaceRange.readFork(plan, fresh);
+  }
+  /** Called only after the fresh controller has registered every selected task.
+   * Ordinary start/replay and cold state reads never reach this continuation. */
+  async startRangeReturn(scope: TaskScope, takeoverId: string): Promise<void> {
+    await this.#enqueueLifecycle(async () => {
+      this.#assertAcceptingWork();
+      let run = this.#runs.get(scopeKey(scope));
+      const state = await this.messages.store.load(scope);
+      if (run?.rangeReturn?.takeoverId === takeoverId && run.rangeReturn.started) return;
+      if (!state || state.humanGate || state.phase === 'done')
+        throw Error('range_host_return_not_ready');
+      const changes = workspaceVersionChanges(state).filter((c) => c.takeoverId === takeoverId),
+        selected = new Set(changes.flatMap((c) => c.affectedWorkerIds)),
+        pending = state.workers.filter((w) => selected.has(w.workerId) && w.status === 'pending');
+      if (!changes.length) throw Error('range_host_return_not_ready');
+      if ((!run?.composition || run.rangeReturn?.takeoverId !== takeoverId) && pending.length)
+        run = await this.#prepareRangeComposition(scope, state, takeoverId);
+      if (!run?.composition || run.rangeReturn?.takeoverId !== takeoverId)
+        throw Error('range_host_return_not_ready');
+      const markers = workspaceRangeResumes(state).filter((r) => r.takeoverId === takeoverId),
+        workers = markers.filter((r) =>
+          state.workers.some(
+            (w) =>
+              w.workerId === r.workerId &&
+              w.status === 'paused' &&
+              w.sessionId === r.sourceSessionId,
+          ),
+        );
+      if (
+        (!workers.length && !pending.length) ||
+        state.workers.some(
+          (w) =>
+            selected.has(w.workerId) &&
+            w.status === 'paused' &&
+            !workers.some((m) => m.workerId === w.workerId),
+        ) ||
+        workers.some((w) => !run.composition?.workerRuntime.resumableWorkerIds.includes(w.workerId))
+      )
+        throw Error('range_host_registration_incomplete');
+      run.rangeReturn.started = true;
+      if (run.status === 'running') return;
+      run.status = 'running';
+      run.error = undefined;
+      const transition: StateTransition = async (_old, mutations) =>
+        (await this.messages.commitMutations(scope, mutations)).state;
+      run.promise = this.#executeRun(scope, run, state, transition);
+    });
+  }
 
   async drain(): Promise<void> {
     this.#draining = true;
@@ -660,6 +803,20 @@ export class TaskOrchestrationRuntime {
       });
       terminalStatus = finalState.phase === 'done' ? 'completed' : 'needs_attention';
       suspendFailedParallel = localDeliveryAwaitsApplication(finalState);
+      if (terminalStatus === 'needs_attention' && !finalState.humanGate) {
+        const range = await composition.workerRuntime.rangeDispatch(finalState);
+        if (range && !range.workerIds.length) {
+          const activity = composition.workerRuntime.rangeActivity(scope);
+          if (
+            activity.activeWorkerIds.length ||
+            activity.leasedWorkerIds.length ||
+            activity.queuedWorkerIds.length
+          ) {
+            terminalError = 'range_composition_still_active';
+            suspendFailedParallel = false;
+          } else suspendFailedParallel = true;
+        }
+      }
     } catch (error) {
       run.diagnostics ??= {};
       run.diagnostics.execution = error;

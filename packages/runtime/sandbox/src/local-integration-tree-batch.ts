@@ -38,6 +38,7 @@ import type {
   LocalIntegrationAuthority,
   LocalIntegrationCall,
 } from './local-integration-authority';
+import { readNativeInstalledFile } from './local-native-file-effect';
 import type { LocalRegistryOwner } from './local-registry-file';
 import {
   type LocalDeliveryClaimRecord,
@@ -308,6 +309,197 @@ export class LocalControlledTreeBatch {
       anchor,
       true,
     );
+  }
+  /** Original, closed native effects remain readable after invalidation, grant
+   * closure or later edits. No current claim, source read, retry or repair runs. */
+  async readActual(
+    scope: { projectId: string; taskId: string; workspaceId: string },
+    receiptId: string,
+  ) {
+    await this.assertRoot();
+    if (!/^tree:[a-f0-9]{64}$/.test(receiptId)) throw Error('tree_batch_evidence_changed');
+    const key = receiptId.slice(5),
+      preparedHash = await this.objects.getReference(key),
+      resultHash = await this.objects.getReference(phase(key, 'result'));
+    if (!preparedHash || !resultHash) throw Error('tree_batch_recovery_required');
+    const p = await this.decode(preparedHash);
+    if (
+      p.call.projectId !== scope.projectId ||
+      p.call.taskId !== scope.taskId ||
+      p.call.workspaceId !== scope.workspaceId ||
+      keyFor(p.call, p.actionId) !== key
+    )
+      throw Error('tree_batch_evidence_changed');
+    const result = await this.terminal(p, resultHash, true);
+    if (result.items.length !== result.attempted) throw Error('tree_batch_recovery_required');
+    const original = await this.versions.read(p.plan.current, p.plan.scope);
+    const effects = [];
+    for (const [index, entry] of result.items.entries()) {
+      const item = (await this.objects.get(entry.recordHash)) as Item;
+      const startHash = await this.objects.getReference(phase(key, `start:${index}`));
+      if (!startHash) throw Error('tree_batch_recovery_required');
+      const start = (await this.objects.get(startHash)) as {
+        operation: TreeOperation;
+        expected: {
+          identity?: string;
+          metadata?: string;
+          parentIdentity?: string;
+          contentHash?: string;
+        };
+        contentHash: string | null;
+      };
+      const op = start.operation,
+        native = item.native;
+      const effect =
+        'created' in native
+          ? native.created
+          : 'removed' in native
+            ? native.removed
+            : native.exchanged;
+      if (typeof effect !== 'boolean' || !native.quiescent)
+        throw Error('tree_batch_recovery_required');
+      const before = original.files.find((f) => f.path === op.path);
+      const baselineContentRef = before?.contentHash ?? null;
+      const baseline = baselineContentRef
+        ? await this.objects.getBytes(baselineContentRef)
+        : Buffer.alloc(0);
+      const write = p.plan.writes.find((w) => w.path === op.path);
+      const expected = before?.version ?? {
+        kind: 'absent' as const,
+        parentIdentity: start.expected.parentIdentity ?? '',
+        name: op.path.split('/').at(-1) as string,
+      };
+      if (
+        before &&
+        (start.expected.identity !== before.version.identity ||
+          start.expected.contentHash !== before.contentHash ||
+          !start.expected.metadata ||
+          !equal(
+            localFileVersion({
+              identity: start.expected.identity,
+              metadata: start.expected.metadata,
+              content: baseline,
+            }),
+            before.version,
+          ))
+      )
+        throw Error('tree_batch_evidence_changed');
+      let installedVersion: FileVersionV1 | null = null,
+        installedMetadata: string | null = null;
+      if (op.op === 'put') {
+        if (
+          !write ||
+          op.after?.kind !== 'file' ||
+          start.contentHash !== write.contentHash ||
+          (native.schemaVersion !== 'local-creation-primitive-v1' &&
+            native.schemaVersion !== 'local-replacement-primitive-v1')
+        )
+          throw Error('tree_batch_evidence_changed');
+        const proof = await readNativeInstalledFile({
+          native,
+          journalRoot: this.root,
+          bindingHash: localRecordHash(p.binding),
+          path: op.path,
+          expected,
+          baselineMetadata: before ? (start.expected.metadata ?? null) : null,
+          baseline,
+          candidate: await this.objects.getBytes(write.contentHash),
+          executable: op.after.file.executable,
+          assertPrivateRoot: () => this.assertRoot(),
+        });
+        if (proof.effect !== effect || (effect && !proof.installedVersion))
+          throw Error('tree_batch_recovery_required');
+        installedVersion = proof.installedVersion;
+        installedMetadata = proof.installedMetadata;
+      } else {
+        const prepared = JSON.parse(
+          readFileSync(join(native.journalPath, 'prepared.json'), 'utf8'),
+        );
+        const expectedBytes = readFileSync(join(native.journalPath, 'expected'));
+        if (
+          !equal(prepared.binding, p.binding) ||
+          prepared.path !== op.path ||
+          prepared.actionId !== native.actionId ||
+          prepared.helperHash !== p.helperHash ||
+          prepared.inputHash !== native.inputHash ||
+          prepared.expectedHash !== sha(expectedBytes) ||
+          prepared.replacementHash !== sha(Buffer.alloc(0)) ||
+          (op.op === 'remove' && !baseline.equals(expectedBytes)) ||
+          (op.op !== 'remove' && expectedBytes.length !== 0)
+        )
+          throw Error('tree_batch_evidence_changed');
+        const creating = op.op === 'mkdir';
+        const expectedNative = {
+          identity: creating ? start.expected.parentIdentity : start.expected.identity,
+          metadata: creating ? '' : start.expected.metadata,
+          content: op.op === 'remove' ? baseline : '',
+        };
+        if (
+          (creating
+            ? prepared.parentIdentity !== expectedNative.identity
+            : prepared.expectedIdentity !== expectedNative.identity ||
+              prepared.expectedMetadata !== expectedNative.metadata) ||
+          sha(
+            Buffer.from(
+              JSON.stringify({
+                actionId: native.actionId,
+                binding: p.binding,
+                parents: prepared.parents,
+                path: op.path,
+                expected: expectedNative,
+                content: '',
+                helperHash: p.helperHash,
+                operation: op.op,
+              }),
+            ),
+          ) !== native.inputHash
+        )
+          throw Error('tree_batch_evidence_changed');
+        if (effect && (native.stage !== 'applied' || native.nativeExitCode !== 0))
+          throw Error('tree_batch_recovery_required');
+        if (effect && 'directory' in native && !native.directory)
+          throw Error('tree_batch_recovery_required');
+      }
+      effects.push({
+        path: op.path,
+        operation: op.op,
+        effect,
+        itemHash: entry.recordHash,
+        startHash,
+        native: structuredClone(native),
+        baselineVersion: op.op === 'rmdir' ? null : expected,
+        baselineContentRef,
+        baselineMetadata: start.expected.metadata ?? null,
+        baselineDirectory:
+          op.op === 'rmdir'
+            ? { identity: start.expected.identity, metadata: start.expected.metadata }
+            : null,
+        directory: 'directory' in native ? native.directory : null,
+        candidateContentRef: write?.contentHash ?? null,
+        installedVersion,
+        installedMetadata,
+      });
+    }
+    // A terminal prefix has no omitted or extra attempted child. Half journals
+    // are recovery work, never an invitation to infer inverse operations.
+    for (let i = result.attempted; i < (p.plan.comparison.operations?.length ?? 0); i++)
+      if (
+        (await this.objects.getReference(phase(key, `start:${i}`))) ||
+        (await this.objects.getReference(phase(key, `item:${i}`)))
+      )
+        throw Error('tree_batch_recovery_required');
+    await this.assertRoot();
+    return {
+      schemaVersion: 'local-actual-tree-effects-v1' as const,
+      receiptId,
+      preparedHash,
+      resultHash,
+      call: structuredClone(p.call),
+      binding: structuredClone(p.binding),
+      plan: structuredClone(p.plan),
+      result: structuredClone(result),
+      effects,
+    };
   }
   private async readAppliedProof(
     input: TreeCall,
@@ -711,7 +903,11 @@ export class LocalControlledTreeBatch {
       throw Error('tree_batch_evidence_changed');
     return p;
   }
-  private async terminal(p: Prepared, hash: string): Promise<IntegrationTreeResult> {
+  private async terminal(
+    p: Prepared,
+    hash: string,
+    actual = false,
+  ): Promise<IntegrationTreeResult> {
     await this.assertRoot();
     const key = keyFor(p.call, p.actionId),
       result = (await this.objects.get(hash)) as IntegrationTreeResult;
@@ -829,7 +1025,7 @@ export class LocalControlledTreeBatch {
         })
       )
         throw Error('tree_batch_evidence_changed');
-      if (!completion.valid)
+      if (!completion.valid && !actual)
         return { ...result, stage: 'partial', reason: 'completion_invalidated', version: null };
     }
     return result;

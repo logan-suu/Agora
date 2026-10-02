@@ -1542,6 +1542,7 @@ it('uses a local companion with the actual live lease and closes it before lease
   const fixture = createLocalRuntimeFixture();
   const result = await fixture.runtime.runOne(fixture.state(), fixture.assignment);
   expect(result.workers[0]?.status).toBe('done');
+  expect(result.workers[0]?.safePoint).toBe('safe:local');
   expect(fixture.events).toEqual(['open', 'build', 'checkpoint:complete', 'close']);
   expect(fixture.scheduler.activeCount).toBe(0);
   expect(fixture.executor.stepCalls[0]?.view.slices.localWorkspace).toMatchObject({

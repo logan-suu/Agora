@@ -29,6 +29,7 @@ import type {
   LocalIntegrationCall,
 } from './local-integration-authority';
 import { initializeLocalLinkedRoot, verifyLocalLinkedRoot } from './local-linked-root';
+import { assertLocalRangeAdmission } from './local-range-admission';
 import {
   isLocalBindingOperation,
   type LocalLinkedRootRecord,
@@ -728,6 +729,14 @@ export class LocalGitWorkspaces {
     if (snapshot.operations.some((o) => o.actionId === request.actionId))
       throw Error('operation_conflict');
     const state = await control.assertClosed(request);
+    // A proven replay above reconciles only its exact immutable operation.
+    // Fresh registration must pass the barrier before any new Git effects;
+    // ordinary admission remains closed while another operation is prepared.
+    if (state.localExecution)
+      for (const workspace of state.localExecution.workspaces)
+        assertLocalRangeAdmission(snapshot, workspace, state.localExecution.workspaces);
+    if ((await control.snapshot()).revision !== snapshot.revision)
+      throw Error('registry_revision_conflict');
     const local = state.localExecution;
     const root = snapshot.roots.find(
       (r) => r.rootId === request.rootId && r.projectId === request.projectId,

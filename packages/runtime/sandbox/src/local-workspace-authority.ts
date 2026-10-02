@@ -25,6 +25,7 @@ import { LocalGitVersionStore } from './local-git-version-store';
 import type { LocalGitWorkspaceOptions } from './local-git-workspaces';
 import { readOwnedLocalGitWorktree, verifyOwnedLocalGitWorktree } from './local-git-worktree';
 import { verifyLocalLinkedRoot } from './local-linked-root';
+import { assertLocalRangeAdmission, localWorkerDependencies } from './local-range-admission';
 import {
   isLocalBindingOperation,
   type LocalClaimRecord,
@@ -51,7 +52,9 @@ type Registration = Scope & {
 };
 const id = (value: unknown) =>
   typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
-export function localRootBinding(root: LocalRootRecord): LocalRootBinding {
+export function localRootBinding(
+  root: Pick<LocalRootRecord, 'path' | 'chain' | 'staging'>,
+): LocalRootBinding {
   if (!root.staging) throw Error('workspace_root_not_initialized');
   return {
     root: root.path,
@@ -457,6 +460,7 @@ export class LocalWorkspaceAuthority {
       )
     )
       throw Error('workspace_assignment_mismatch');
+    assertLocalRangeAdmission(snapshot, workspace, state.localExecution?.workspaces ?? []);
     const { root, grant } = this.records(
       snapshot,
       scope.projectId,
@@ -690,6 +694,8 @@ export class LocalWorkspaceAuthority {
       )
     )
       throw Error('workspace_assignment_mismatch');
+    if (!closing)
+      assertLocalRangeAdmission(snapshot, workspace, localWorkerDependencies(state, call.workerId));
     const { root, grant } = this.records(
       snapshot,
       call.projectId,

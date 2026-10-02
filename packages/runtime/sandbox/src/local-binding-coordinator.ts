@@ -16,6 +16,9 @@ import {
   deliveryStartMutations,
   type LocalDeliveryTransition,
 } from './local-delivery-transition';
+import { serializeLocalRangeAdmission } from './local-range-activation';
+import { assertLocalRangeAdmission, localWorkerDependencies } from './local-range-admission';
+import { type LocalRangeHold, parseLocalRangeHold } from './local-range-records';
 import { LocalRegistryFile, type LocalRegistryOwner } from './local-registry-file';
 import {
   assertLocalControlMessage,
@@ -98,14 +101,39 @@ function receipt(state: AppState, operation: LocalBindingOperation) {
   );
 }
 
+type RangeEvidenceVerifier = (registry: LocalRegistryRecords, state: AppState) => Promise<void>;
+const rangeEvidenceVerifiers = new WeakMap<LocalRegistryOwner, RangeEvidenceVerifier>();
+const undoEvidenceVerifiers = new WeakMap<LocalRegistryOwner, RangeEvidenceVerifier>();
+
 export class LocalBindingCoordinator {
   private tail: Promise<unknown> = Promise.resolve();
   private constructor(
+    private readonly owner: LocalRegistryOwner,
     private readonly registry: LocalRegistryFile,
     private readonly tasks: CanonicalTasks,
   ) {}
+  /** Trusted host binding shared across facades. Released ranges and canonical
+   * version facts remain fail-closed until private evidence is installed. */
+  setRangeEvidenceVerifier(verifier: RangeEvidenceVerifier): void {
+    const prior = rangeEvidenceVerifiers.get(this.owner);
+    if (prior && prior !== verifier) throw Error('range_evidence_verifier_conflict');
+    rangeEvidenceVerifiers.set(this.owner, verifier);
+  }
+  /** Undo admission and canonical results also require the host's immutable
+   * private source/native proof reader, shared by every owner facade. */
+  setUndoEvidenceVerifier(verifier: RangeEvidenceVerifier): void {
+    const prior = undoEvidenceVerifiers.get(this.owner);
+    if (prior && prior !== verifier) throw Error('undo_evidence_verifier_conflict');
+    undoEvidenceVerifiers.set(this.owner, verifier);
+  }
+  /** Shared by every facade using this live registry owner. No model step or
+   * worker safe-point wait may run inside this preparation/publication lane. */
+  serializeRangeAdmission<T>(work: () => Promise<T>): Promise<T> {
+    return serializeLocalRangeAdmission(this.owner, work);
+  }
   static async open(owner: LocalRegistryOwner, tasks: CanonicalTasks, initialize = false) {
     return new LocalBindingCoordinator(
+      owner,
       await LocalRegistryFile.open(
         owner,
         parseLocalRegistry,
@@ -127,6 +155,53 @@ export class LocalBindingCoordinator {
     // This adapter is constructed only with parseLocalRegistry. load validates
     // every new byte sequence and returns an isolated data copy.
     return (await this.registry.load()) as LocalRegistryRecords;
+  }
+
+  /** Internal control CAS. Long-lived holds never occupy an ordinary prepared
+   * binding slot. This does not wait for a worker or launch an executor. */
+  updateRangeHold(expectedRevision: number, input: LocalRangeHold): Promise<LocalRangeHold> {
+    const hold = parseLocalRangeHold(input);
+    return this.serial(async () => {
+      const before = await this.snapshot();
+      if (before.operations.some((o) => o.stage === 'prepared'))
+        throw Error('registry_recovery_required');
+      if (hold.controlStage === 'committed') {
+        const state = canonicalTask(await this.tasks.load(hold.plan), hold.plan);
+        const matches = state.messages.filter((m) => m.msgId === hold.plan.sourceMessage.msgId);
+        if (
+          matches.length !== 1 ||
+          localRecordHash(matches[0]) !== localRecordHash(hold.plan.sourceMessage)
+        )
+          throw Error('workspace_control_source_invalid');
+        if (hold.returnMessage) {
+          const returned = state.messages.filter((m) => m.msgId === hold.returnMessage?.msgId);
+          if (
+            returned.length !== 1 ||
+            localRecordHash(returned[0]) !== localRecordHash(hold.returnMessage)
+          )
+            throw Error('workspace_control_source_invalid');
+        }
+      }
+      const prior = before.rangeHolds ?? [];
+      const identical = prior.find(
+        (h) =>
+          h.plan.takeoverId === hold.plan.takeoverId &&
+          localRecordHash(h) === localRecordHash(hold),
+      );
+      if (identical) return structuredClone(identical);
+      if (before.revision !== expectedRevision) throw Error('registry_revision_conflict');
+      const exists = prior.some((h) => h.plan.takeoverId === hold.plan.takeoverId);
+      const next = parseLocalRegistry({
+        ...before,
+        schemaVersion: 'local-workspaces-v2',
+        revision: before.revision + 1,
+        rangeHolds: exists
+          ? prior.map((h) => (h.plan.takeoverId === hold.plan.takeoverId ? hold : h))
+          : [...prior, hold],
+      });
+      await this.registry.compareAndSwap(before.revision, next);
+      return structuredClone(hold);
+    });
   }
 
   commitBinding(input: LocalBindingRequest): Promise<LocalBindingOperation> {
@@ -175,6 +250,38 @@ export class LocalBindingCoordinator {
       )
         throw new Error('registry_revision_conflict');
       const state = canonicalTask(await this.tasks.load(request), request);
+      // Close registration races at the same CAS used for claims and bindings.
+      // Lifecycle closure/release of existing capabilities remains admissible.
+      for (const workspace of request.records.workspaces) {
+        const newClaim = request.records.claims.some(
+          (c) =>
+            c.workspaceId === workspace.workspaceId &&
+            c.status === 'active' &&
+            !current.claims.some((old) => old.claimId === c.claimId),
+        );
+        const newBindings = request.nextLocalExecution.bindings.filter(
+          (b) =>
+            b.workspaceId === workspace.workspaceId &&
+            !state.localExecution?.bindings.some(
+              (old) => localRecordHash(old) === localRecordHash(b),
+            ),
+        );
+        if (
+          !current.workspaces.some((w) => w.workspaceId === workspace.workspaceId) ||
+          newClaim ||
+          newBindings.length
+        ) {
+          const dependencies = newBindings.length
+            ? newBindings.flatMap((b) =>
+                localWorkerDependencies(
+                  { ...state, localExecution: request.nextLocalExecution },
+                  b.workerId,
+                ),
+              )
+            : (state.localExecution?.workspaces ?? []);
+          assertLocalRangeAdmission(current, workspace, dependencies);
+        }
+      }
       if (
         request.deliveryTransition &&
         (!this.tasks.compareAndCommit ||
@@ -366,6 +473,22 @@ export class LocalBindingCoordinator {
       localRecordHash(latestOperation.nextLocalExecution) !== localHash(state)
     )
       throw new Error('workspace_binding_incomplete');
+    if (
+      registry.rangeHolds?.some((h) => h.stage === 'released') ||
+      state.messages.some((m) => m.payload.kind === 'workspace_version_change')
+    ) {
+      const verify = rangeEvidenceVerifiers.get(this.owner);
+      if (!verify) throw Error('range_evidence_verifier_required');
+      await verify(registry, state);
+    }
+    if (
+      registry.claims.some((c) => c.kind === 'undo') ||
+      state.messages.some((m) => m.payload.kind === 'workspace_undo_result')
+    ) {
+      const verify = undoEvidenceVerifiers.get(this.owner);
+      if (!verify) throw Error('undo_evidence_verifier_required');
+      await verify(registry, state);
+    }
     // Re-read after the task read: concurrent registry mutation invalidates admission.
     if ((await this.snapshot()).revision !== registry.revision)
       throw new Error('registry_revision_conflict');

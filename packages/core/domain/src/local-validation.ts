@@ -1,3 +1,4 @@
+import { assertWorkspaceValidationCurrent } from './workspace-version-change';
 /** Immutable evidence data. Only trusted validation services may produce these
  * messages; parsing data does not grant filesystem or execution authority. */
 
@@ -245,6 +246,7 @@ export function localReviewBindingForValidation(state: AppState): LocalReviewBin
   if (!latestTest) throw Error('local_review_requires_validation');
   const validationReceiptId = `workspace-validation:${latestTest.msgId}`;
   const receipt = localValidationReceipt(state, validationReceiptId);
+  assertWorkspaceValidationCurrent(state, validationReceiptId);
   if (!receipt.results.passed || !equal(state.testResults, receipt.results))
     throw Error('local_review_requires_passing_validation');
   return {
@@ -264,6 +266,7 @@ export function currentLocalCompletionEvidence(state: AppState): LocalReviewBind
   if (!dispatch || !dispatchFor(dispatch, 'REVIEWER') || !isLocalReviewBinding(binding))
     throw Error('local_review_requires_validation');
   const receipt = localValidationReceipt(state, binding.validationReceiptId);
+  assertWorkspaceValidationCurrent(state, binding.validationReceiptId);
   const latestTest = [...state.messages].reverse().find((m) => dispatchFor(m, 'TESTER'));
   const receiptIndex = state.messages.findIndex((m) => m.msgId === binding.validationReceiptId);
   if (

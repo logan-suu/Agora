@@ -11,10 +11,14 @@ import {
   deliveryReaderAssignment,
   isLocalValidationReceipt,
   type LocalValidationReceipt,
+  localReviewBindingForValidation,
   localValidationReceipt,
 } from '../src/local-validation';
 import { appendMutation, applyMutations } from '../src/reducer';
 import { type AppState, createInitialAppState } from '../src/state';
+import { parseWorkspaceControl } from '../src/workspace-control';
+import { workspaceUndoResults } from '../src/workspace-undo-result';
+import { workspaceVersionChanges } from '../src/workspace-version-change';
 
 const version = { kind: 'files' as const, manifestId: 'manifest:1', manifestHash: 'a'.repeat(64) };
 const receipt: LocalValidationReceipt = {
@@ -469,4 +473,181 @@ it('binds a delivery receipt to C without inventing a coding workspace', async (
     'local_completion_evidence_changed',
   );
   expect(isLocalValidationReceipt({ ...roundReceipt, roundId: undefined })).toBe(false);
+});
+
+function returnSource(value: AppState) {
+  const display =
+    '/workspace return ' +
+    JSON.stringify({
+      projectId: value.projectId,
+      taskId: value.taskId,
+      actionId: 'return',
+      expectedRevision: 1,
+      takeoverReceiptId: 'takeover:take',
+    });
+  return {
+    msgId: 'return',
+    channelId: 'main',
+    fromRole: 'leader',
+    type: 'chat' as const,
+    display,
+    ts: 4,
+    payload: {
+      kind: 'leader_intent',
+      intent: parseWorkspaceControl(display),
+      action: { status: 'applied' },
+    },
+  };
+}
+function versionChange(value: AppState) {
+  return {
+    msgId: `workspace-change:${'9'.repeat(64)}`,
+    channelId: 'main',
+    fromRole: 'COORDINATOR',
+    type: 'announce' as const,
+    display: 'Private paths and raw edits never enter agent context',
+    ts: 5,
+    payload: {
+      kind: 'workspace_version_change',
+      version: 1,
+      projectId: value.projectId,
+      taskId: value.taskId,
+      changeId: `workspace-change:${'9'.repeat(64)}`,
+      takeoverId: 'takeover:take',
+      returnActionId: 'return',
+      source: {
+        projectId: value.projectId,
+        taskId: value.taskId,
+        msgId: 'return',
+        workspaceId: 'coding',
+        rootId: 'root',
+        grantId: 'grant',
+        grantRevision: 1,
+      },
+      workspaceIds: ['coding', 'validation'],
+      affectedWorkerIds: ['tester'],
+      heldVersion: version,
+      returnedVersion: version,
+      privateProofHash: '8'.repeat(64),
+      invalidatedValidationIds: ['workspace-validation:test-dispatch'],
+    },
+  };
+}
+it('preserves immutable validation history while rejecting its current review and completion qualification after return', () => {
+  const before = state(),
+    fact = versionChange(before);
+  const next = applyMutations(before, [
+    appendMutation('messages', returnSource(before)),
+    appendMutation('messages', fact),
+  ]);
+  expect(next.testResults).toEqual(before.testResults);
+  expect(next.reviewComments).toEqual(before.reviewComments);
+  expect(localValidationReceipt(next, 'workspace-validation:test-dispatch')).toEqual(receipt);
+  expect(() => currentLocalCompletionEvidence(next)).toThrow('workspace_version_changed');
+  expect(() => localReviewBindingForValidation(next)).toThrow('workspace_version_changed');
+  const changes = workspaceVersionChanges(next);
+  expect(changes[0]?.returnedVersion).toEqual(version);
+  if (!changes[0]) throw Error('missing change');
+  changes[0].workspaceIds.push('untrusted');
+  expect(workspaceVersionChanges(next)[0]?.workspaceIds).toEqual(['coding', 'validation']);
+});
+it.each([
+  'forged-role',
+  'unknown-validation',
+  'later-validation',
+  'extra-field',
+  'wrong-task',
+  'duplicate',
+  'no-native-task',
+])('rejects %s version facts without deleting or rewriting old evidence', (reason) => {
+  const value = state(),
+    fact = versionChange(value);
+  if (reason === 'forged-role') fact.fromRole = 'CODER';
+  if (reason === 'unknown-validation') fact.payload.invalidatedValidationIds = ['missing'];
+  if (reason === 'extra-field') Object.assign(fact.payload, { rawText: 'untrusted' });
+  if (reason === 'wrong-task') fact.payload.taskId = 'wrong';
+  const next = applyMutations(value, [
+    appendMutation('messages', returnSource(value)),
+    appendMutation('messages', fact),
+  ]);
+  if (reason === 'later-validation') next.messages = [fact, ...value.messages];
+  if (reason === 'duplicate') next.messages.push(structuredClone(fact));
+  if (reason === 'no-native-task') delete next.localExecution;
+  expect(() => workspaceVersionChanges(next)).toThrow('workspace_version_change_invalid');
+});
+
+it('invalidates present completion after a canonical undo without rewriting validation history', () => {
+  const before = state();
+  const inputHash = '6'.repeat(64),
+    fileApplyReceiptId = `apply:${'7'.repeat(64)}`;
+  const intent = {
+    projectId: before.projectId,
+    taskId: before.taskId,
+    actionId: 'undo',
+    expectedRevision: 3,
+    fileApplyReceiptId,
+    inputHash,
+  };
+  const display = `/workspace undo ${JSON.stringify(intent)}`;
+  const source = {
+    msgId: 'undo',
+    channelId: 'main',
+    fromRole: 'leader',
+    type: 'chat' as const,
+    display,
+    ts: 5,
+    payload: {
+      kind: 'leader_intent',
+      intent: parseWorkspaceControl(display),
+      action: { status: 'applied' },
+    },
+  };
+  const result = {
+    msgId: `workspace-undo:${'5'.repeat(64)}`,
+    channelId: 'main',
+    fromRole: 'COORDINATOR',
+    type: 'announce' as const,
+    display: 'Undo result',
+    ts: 6,
+    payload: {
+      kind: 'workspace_undo_result',
+      version: 1,
+      projectId: before.projectId,
+      taskId: before.taskId,
+      resultId: `workspace-undo:${'5'.repeat(64)}`,
+      source: {
+        projectId: before.projectId,
+        taskId: before.taskId,
+        msgId: 'undo',
+        workspaceId: 'coding',
+        fileApplyReceiptId,
+        inputHash,
+      },
+      workspaceIds: ['coding', 'validation'],
+      originalReceiptHash: '4'.repeat(64),
+      privateProofHash: '3'.repeat(64),
+      stage: 'applied',
+      currentVersion: version,
+      invalidatedValidationIds: ['workspace-validation:test-dispatch'],
+    },
+  };
+  const next = applyMutations(before, [
+    appendMutation('messages', source),
+    appendMutation('messages', result),
+  ]);
+  expect(workspaceUndoResults(next)).toHaveLength(1);
+  expect(localValidationReceipt(next, 'workspace-validation:test-dispatch')).toEqual(receipt);
+  expect(next.testResults).toEqual(before.testResults);
+  expect(next.reviewComments).toEqual(before.reviewComments);
+  expect(() => currentLocalCompletionEvidence(next)).toThrow('workspace_version_changed');
+  expect(() => localReviewBindingForValidation(next)).toThrow('workspace_version_changed');
+  const forged = structuredClone(next);
+  required(forged.messages.at(-1)).fromRole = 'CODER';
+  expect(() => workspaceUndoResults(forged)).toThrow('workspace_undo_result_invalid');
+  const wrongProposal = structuredClone(next);
+  required(wrongProposal.messages.at(-1)).payload.source = {
+    ...result.payload.source,
+    inputHash: '2'.repeat(64),
+  };
+  expect(() => workspaceUndoResults(wrongProposal)).toThrow('workspace_undo_result_invalid');
 });
