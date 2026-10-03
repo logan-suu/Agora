@@ -1769,7 +1769,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-6.test.ts",
-          "notes": "任务类型：code。规格合理性复评及首次配置/可信目录授权/有限识别/显式启动/自然停服/只读重开已实现。连续返工来源链缺陷及有界启动窗口已修正。输入冻结后复用无关证据并补验，343文件2679项、7脚本、静态及Web/桌面构建取得通过；不是单次累计全绿。两项历史执行失败原因仍未定，复验通过不视为根因消除；非法异议字段保持fail-closed。详见 docs/task-history/12.6.md 及 docs/reviews/task126-first-run-spec-review.md。待审阅/交付，未commit/push，12.7未开工。",
+          "notes": "任务类型：code。首次配置/可信目录授权/有限识别/显式启动/自然停服/只读重开及规格复评已交付。提交bc04bd5，PR https://github.com/logan-suu/Agora/pull/90 （base dev-1.0.0），待人工合并。输入核验复用与补验覆盖343文件2679项，另7脚本、静态及Web/桌面构建通过；不是单次累计全绿。两项历史执行失败原因仍未定，复验通过不代表根因消除；非法异议保持fail-closed。证据与清理见 docs/task-history/12.6.md；规格见 docs/reviews/task126-first-run-spec-review.md。12.7未开工。",
           "last_updated": "2026-10-03"
         },
         {
