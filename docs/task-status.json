@@ -135,6 +135,11 @@
       "id": "D19",
       "rule": "13.4后新增Phase14以LangGraph持久编排多个完整Harness，Agora保留业务回执/投影/安全点/lease与Leader裁决；JSON/JSONL/SQLite分权，重启只读且显式Continue，旧动作不启动新进程，未知副作用保全。14.7出口才切新任务，旧原生任务只读、无双驱动或失败回退；原未开工14–30顺延15–31。正式契约详设§13，登记不代表实现或验收通过。",
       "source": "docs/项目蓝图.md §21 D19；docs/详细设计方案.md §13；docs/系统架构设计文档.md §11；docs/技术选型文档.md §5.2/§10.2/§12；docs/开发计划安排.md §18.13/§18.14"
+    },
+    {
+      "id": "TEST-STRATEGY",
+      "rule": "研发验证分快速基础、受影响回归、适用真实链路G5和累计全量；阶段出口/发布候选/重大共享基础变更/影响不明仍全量。纯文档做文档校验；复用证据须核验完整相关输入及环境，不把定向结果称全量。R11、G5、模型与清理规则保持；现有pnpm test仍全量，分组自动化/安全并行待实现。",
+      "source": "docs/项目蓝图.md §21 TEST-STRATEGY；docs/testing-strategy.md"
     }
   ],
   "baseline": {
@@ -1740,7 +1745,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-5.test.ts",
-          "notes": "PR #89：https://github.com/logan-suu/Agora/pull/89（base dev-1.0.0）。已修复历史依赖workspace误选与受阻排队未收敛，并保护独立批次后继/预分配会话身份。修复后完整G4：339文件2661项+7脚本全通过；三条真实Go链路、类型/lint通过，874输入/七helper无漂移。清理88项测试临时对象449271逻辑字节及10份无用日志8237字节。修复提交917fd4ae80912a7b23b03a0f75d95e6a67c1a3e5已推送并更新原PR，等待人工合并，保持in_progress；普通入口/出口仍归13.x/12.7。证据见docs/task-history/12.5.md；docs/reviews/task125-workspace-protection-spec-review.md。",
+          "notes": "PR #89：https://github.com/logan-suu/Agora/pull/89（base dev-1.0.0）。已修复历史依赖workspace误选与受阻排队未收敛，并保护独立批次后继/预分配会话身份。修复后完整G4：339文件2661项+7脚本全通过；三条真实Go链路、类型/lint通过，874输入/七helper无漂移。清理88项测试临时对象449271逻辑字节及10份无用日志8237字节。修复提交917fd4ae80912a7b23b03a0f75d95e6a67c1a3e5已推送并更新原PR，等待人工合并，保持in_progress；普通入口/出口仍归13.x/12.7。证据见docs/task-history/12.5.md；docs/reviews/task125-workspace-protection-spec-review.md。 2026-10-02获批分层测试策略已同步文档及工作流；执行细则docs/testing-strategy.md，现有测试入口/串行配置未改。",
           "last_updated": "2026-10-02"
         },
         {

@@ -1,7 +1,7 @@
 # AGENTS.md — Agora 项目宪法
 
-**版本**：v2.25
-**生效日期**：2026-09-17
+**版本**：v2.26
+**生效日期**：2026-10-02
 **适用对象**：所有参与 Agora 项目开发的 AI Agent（OpenCode / Codex / Cursor / Claude）及人类开发者
 **优先级**：本规约优先于任何 Agent 的默认行为。当本规约与 Agent 默认行为冲突时，以本规约为准。
 **任务追踪**：`docs/task-status.json` 是全部任务当前状态、依赖与常驻决策摘要的唯一索引；`docs/task-history/<taskId>.md` 保存完整执行证据。初始化运行 `node scripts/task-status.mjs summary`，按需读取，禁止默认整文件/全历史输出。维护规范见 [docs/task-tracking.md](docs/task-tracking.md)。
@@ -27,6 +27,7 @@
 | **框架调研与借鉴决策** | `docs/框架调研与借鉴决策.md` | AutoGen/AgentScope 源码级结论 / 8 个借鉴模式 / 借鉴-拒绝矩阵 |
 | **任务状态** | `docs/task-status.json` | 全部任务当前状态/依赖/出口及短决策索引；通过 summary/task/phase/decisions 按需读取 |
 | **任务历史** | `docs/task-history/<taskId>.md` | 完整执行/失败/修复/门禁/交付时点记录，按需追读，不维护第二份当前状态 |
+| **研发测试策略** | `docs/testing-strategy.md` | 蓝图§21 TEST-STRATEGY执行细则：分层选择、证据复用、全量触发与实施边界 |
 | **延期项台账** | `docs/deferred-items.json` | 全阶段延期项统一台账（DEF-NNN，格式对齐 iTestAgent）；常驻决策 DEF 的唯一数据源，阶段出口检查时逐条核对 |
 
 ### 0.2 任务类型 → 文档快速索引（Agent 必读）
@@ -60,6 +61,7 @@
 | 后续桌面/本机与跨批次设计 | 蓝图 §21 D18 / §22 + 详细设计 §12 + 架构 §10 + 选型 §14 + 开发计划 §18 | 全量任务按依赖推进；Docker退役前保留适用回归，13.3转为本机替代覆盖 |
 | LangGraph持久编排/Continue/控制收据 | 蓝图§21 D19 + 详设§13 + 架构§11 + 选型§5.2/§10.2/§12 + 计划§18.13/§18.14 | 完整Harness、业务/图分权、只读恢复、分阶段验收与编号迁移 |
 | 决策变更后文档同步 | `$agora-sync-docs` Skill 流程 + 蓝图 §21 | 同步顺序与标记规范 |
+| 研发验证/提交/评审修复 | 蓝图§21 TEST-STRATEGY + `docs/testing-strategy.md` + `docs/task-tracking.md` | 按影响选择、输入证据复用；阶段出口/发布/重大共享基础变更/影响不明仍全量 |
 
 > **决策变更同步·浓缩顺序**：① 蓝图（§21 或对应章节，打标记）→ ② 详细设计对应节 → ③ 系统架构 / 技术选型（如涉及）→ ④ 开发计划安排 + `task-status.json`（含 standing_decisions）→ ⑤ AGENTS.md（如涉及红线）。逐步操作清单以 `$agora-sync-docs` Skill 为唯一详版。
 
@@ -205,14 +207,18 @@ Task: {task-id}        （涉及任务时）
 
 ### 3.1.3 提交前强制自检
 
+**[2026-10-02 Leader测试策略更新]** 按蓝图§21 TEST-STRATEGY及[研发测试策略](docs/testing-strategy.md)选择门禁，替代每次修改/提交/修复一律重跑全量的旧要求。下列代码检查允许复用已核验输入不变的有效证据；纯文档/工作流文字变更验证一致性、索引、链接和适用校验器，不启动无关运行时或付费回归。含代码/测试/执行脚本/程序消费配置仍走代码门禁，任务指定Spike和阶段验收不豁免。
+
 1. `pnpm typecheck`（scripts 未建立前 `pnpm exec tsc --noEmit`）— 0 错误
 2. `pnpm lint`（`pnpm exec biome check .`）— 0 违规
-3. `pnpm test` — 全部通过（含既有回归）
+3. TEST-STRATEGY验证计划全部通过：全部单元/轻量集成基础、受影响依赖闭包回归与适用G5；阶段出口、发布候选、重大共享基础变更、影响不明或显式全量请求执行`pnpm test`累计全量。实际范围/缺失/跳过与证据必须留档，不将定向通过写成全量通过
 4. 已更新 `docs/task-status.json`（status/notes/last_updated）
 5. 无敏感数据提交（G7）
 6. 相关文档已同步（R12）
 
 > **[2026-09-07 Leader 测试约定]** 不得通过 skip、排除测试文件或移除既有凭证规避当前任务应执行的测试。已配置的开发测试用 `DEEPSEEK_API_KEY` 必须保留，真实模型测试与其他回归同样执行；环境或权限导致无法运行时，明确记录为未完成，不得以跳过结果宣称全部验收通过。
+
+> **[2026-10-02 TEST-STRATEGY适用说明]** 按依赖影响选择本轮范围不等于skip应执行用例；必须证明未选范围无关，真实模型回归仍保留在累计全量中，相关链路变化时必须执行。R11/G5、当前提供方/模型规则及TEST-CLEANUP不变。现有`pnpm test`仍全量、文件并行仍关闭；分组自动化/安全并行未实现，不以目标耗时截断测试。
 
 > **[2026-09-14 Leader 测试提供方偏好]** 后续通用真实模型测试优先OpenCode Go，V4.1 Flash使用`deepseek-v4.1-flash`。保留官方凭据及官方接口专项覆盖；已选择Go后的失败不得静默切换提供方或跳过测试。默认回归选择已配置Go，否则使用既有官方配置；专项可显式`AGORA_TEST_PROVIDER=deepseek-official`。实际提供方/模型须留证，历史评测模型名与费用不改写，正式Benchmark不自动恢复。来源：项目蓝图§21的2026-09-14 Leader研发测试偏好；具体接入见详细设计及技术选型对应同步段。
 
@@ -374,7 +380,7 @@ Web 编排桥接 D10：新任务创建/启动属于生命周期操作；Phase 5 
 Explore  读 documents_required 章节 + 相关代码；逐字粘贴约束原文；文档矛盾先评审并同步修正，未决架构取舍再上报
 Plan     产出实现计划（改哪些文件/接口/schema/测试），等人确认
 Code     小步实现，一次一个可验证单元；TDD：写测试→红→写实现→绿
-Check    pnpm typecheck + pnpm lint + pnpm test
+Check    按TEST-STRATEGY执行静态检查、基础/受影响回归；满足触发条件时累计全量
 Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5）；完整证据入任务历史，notes 保留短摘要和引用
 交付     $agora-commit：门禁→功能分支提交→PR(base=dev-1.0.0)；PR 合并后 $agora-pr-merge 标 done→级联翻转→阶段收尾
 ```
@@ -398,7 +404,7 @@ Verify   对照 exit_criteria 逐条自检；执行链路能力真实跑通（G5
 ```
 G1 规格一致      实现与 8 份文档及 standing_decisions 不冲突
 G3 静态检查      pnpm typecheck + pnpm lint 通过（scripts 未建立前用 pnpm exec 等价命令）
-G4 测试通过      pnpm test 全绿，含既有回归
+G4 测试通过      TEST-STRATEGY适用计划全部通过并标明覆盖；全量触发时pnpm test累计全绿
 G5 执行链路实测  沙箱/Harness/工具能力必须真实跑通验证，不以 mock 规避
 G6 证据留档      task-status.json notes 保留当前结论及证据引用，完整自检/失败/修复/偏差/交付追加 docs/task-history/<taskId>.md；已有报告只链接，延期项本体仍在 docs/deferred-items.json
 G7 安全合规      无敏感数据落盘明文；agent 产出的代码只在沙箱内执行
@@ -469,7 +475,7 @@ task-status.json 是纯任务追踪文件，禁止添加非任务字段。
 ```
 [ ] pnpm typecheck 通过
 [ ] pnpm lint 通过
-[ ] pnpm test 全部通过
+[ ] TEST-STRATEGY适用测试计划全部通过；全量触发已执行，覆盖与复用依据明确
 [ ] 已更新 task-status.json（status/notes/last_updated）
 [ ] 无敏感数据提交（G7）
 [ ] Commit message 符合 §3.1.2（英文祈使句）
