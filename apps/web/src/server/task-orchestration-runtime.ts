@@ -123,6 +123,7 @@ export type TaskCompositionFactory = (input: {
 
 export interface TaskOrchestrationRuntimeOptions {
   maxActiveCompositions?: number;
+  admitStart?: (scope: TaskScope) => void;
 }
 
 interface ActiveRun {
@@ -169,6 +170,7 @@ export class TaskOrchestrationRuntime {
   readonly #runs = new Map<string, ActiveRun>();
   readonly #deliveryStarts = new Set<string>();
   readonly #maxActiveCompositions: number;
+  readonly #admitStart: ((scope: TaskScope) => void) | undefined;
   #lifecycleQueue: Promise<void> = Promise.resolve();
   #draining = false;
 
@@ -182,6 +184,7 @@ export class TaskOrchestrationRuntime {
       throw new Error('maxActiveCompositions must be a positive integer');
     }
     this.#maxActiveCompositions = maxActiveCompositions;
+    this.#admitStart = options.admitStart;
     localBootstrap()?.drains.add(() => this.drain());
     messages.bindRoleDrainPort({
       awaitSafePoint: (scope, role) => this.#awaitRoleSafePoint(scope, role),
@@ -198,8 +201,26 @@ export class TaskOrchestrationRuntime {
   }
 
   async start(input: TaskStartInput): Promise<TaskStartResult> {
+    return this.#start(input);
+  }
+
+  /** Host-only first-start companion for a task prepared before its workspace
+   * grant. The verifier must durably claim the launch; ordinary start never
+   * resumes persisted work. */
+  async startPrepared(
+    input: TaskStartInput,
+    claim: (state: AppState) => Promise<void>,
+  ): Promise<TaskStartResult> {
+    return this.#start(input, claim);
+  }
+
+  async #start(
+    input: TaskStartInput,
+    claim?: (state: AppState) => Promise<void>,
+  ): Promise<TaskStartResult> {
     return this.#enqueueLifecycle(async () => {
       this.#assertAcceptingWork();
+      this.#admitStart?.(input);
       const existingRun = this.#runs.get(scopeKey(input));
       if (existingRun !== undefined) {
         if (existingRun.goal !== input.goal) {
@@ -246,7 +267,7 @@ export class TaskOrchestrationRuntime {
       }
 
       const persisted = await this.messages.store.load(input);
-      if (persisted !== undefined) {
+      if (persisted !== undefined && !claim) {
         if (persisted.goal !== input.goal) {
           throw new TaskGoalConflictError(input, persisted.goal);
         }
@@ -270,6 +291,10 @@ export class TaskOrchestrationRuntime {
       }
 
       this.#assertCompositionCapacity();
+      if (claim) {
+        if (!persisted || persisted.goal !== input.goal) throw Error('prepared_task_unavailable');
+        await claim(persisted);
+      }
       const transition: StateTransition = async (_state, mutations) =>
         (await this.messages.commitMutations(input, mutations)).state;
       const composition = await this.createComposition({
@@ -422,6 +447,10 @@ export class TaskOrchestrationRuntime {
 
   async waitForIdle(scope: TaskScope): Promise<void> {
     await this.#runs.get(scopeKey(scope))?.promise;
+  }
+  /** Trusted diagnostics only; never include these errors in HTTP/Trace DTOs. */
+  diagnosticsForHost(scope: TaskScope): Readonly<NonNullable<ActiveRun['diagnostics']>> {
+    return { ...this.#runs.get(scopeKey(scope))?.diagnostics };
   }
   /** Live host companion. An absent composition supplies no worker capability. */
   rangeWorkerRuntime(scope: TaskScope): WorkerRuntime | undefined {
@@ -676,9 +705,11 @@ export class TaskOrchestrationRuntime {
     receipt: HumanGateResolutionReceipt,
   ): Promise<void> {
     await this.#enqueueLifecycle(async () => {
-      this.#assertAcceptingWork();
       let state = await this.messages.store.load(scope);
       if (state === undefined) throw new Error('cannot resume a missing task state');
+      // MessageRuntime has already verified and persisted the Leader receipt.
+      // Shutdown acknowledges that decision without admitting new execution.
+      if (this.#draining || localBootstrap()?.draining) return;
       let existing = this.#runs.get(scopeKey(scope));
       const markerId = `human-gate-resumed:${actionId}`;
       if (
@@ -826,9 +857,8 @@ export class TaskOrchestrationRuntime {
         persisted !== undefined &&
         (requiresHumanGateAttention(persisted) ||
           persisted.parallelExecution !== undefined ||
-          run.deliveryFinalizationOnly ||
-          (persisted.phase === 'review' &&
-            persisted.localExecution?.delivery?.goal === 'apply_to_directory'))
+          persisted.localExecution !== undefined ||
+          run.deliveryFinalizationOnly)
       ) {
         terminalStatus = 'needs_attention';
         suspendFailedParallel = !requiresHumanGateAttention(persisted);

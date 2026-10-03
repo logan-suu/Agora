@@ -92,6 +92,31 @@ export class LocalValidationService {
       ? gitControlFingerprint(state)
       : localControlFingerprint(state);
   }
+  /** A descendant repair owns a separate writer, not its immutable ancestors.
+   * Walk canonical receipts and closed candidates; unrelated writers stay blocked. */
+  private isRepairDescendant(state: AppState, workerId: string, ancestorId?: string): boolean {
+    if (!ancestorId) return false;
+    const visited = new Set<string>();
+    while (!visited.has(workerId)) {
+      visited.add(workerId);
+      const assignment = deliveryRepairAssignment(state, workerId);
+      if (!assignment) return false;
+      const receipt = localValidationReceipt(state, assignment.source.validationReceiptId);
+      if (
+        receipt.roundId !== assignment.source.roundId ||
+        receipt.sourceWorkspaceId !== assignment.source.sourceWorkspaceId ||
+        !equal(receipt.workspaceVersion, assignment.source.workspaceVersion) ||
+        receipt.controlFingerprint !== assignment.source.controlFingerprint
+      )
+        throw Error('delivery_repair_source_changed');
+      const source = deliveryValidationDispatch(state, receipt.roundId, receipt.dispatchId);
+      if (workerId === ancestorId) return true;
+      const parent = source?.repairCandidate?.candidate.workerId;
+      if (!parent) return false;
+      workerId = parent;
+    }
+    return false;
+  }
   private assertIdleSource(
     state: AppState,
     sourceWorkspaceId: string,
@@ -108,8 +133,8 @@ export class LocalValidationService {
       state.workers.some(
         (worker) =>
           worker.role === 'CODER' &&
-          worker.workerId !== repairWorkerId &&
-          ['pending', 'running', 'paused'].includes(worker.status),
+          ['pending', 'running', 'paused'].includes(worker.status) &&
+          !this.isRepairDescendant(state, worker.workerId, repairWorkerId),
       )
     )
       throw Error('local_validation_source_not_ready');

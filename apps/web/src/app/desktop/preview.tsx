@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { DesktopFirstRun } from './first-run';
 import './preview.css';
 
 const credentialMessages: Record<string, string> = {
@@ -13,6 +14,9 @@ const credentialMessages: Record<string, string> = {
 };
 
 export function DesktopPreview() {
+  const [firstRun, setFirstRun] = useState(false);
+  const [draining, setDraining] = useState(false);
+  const [cleanupError, setCleanupError] = useState<string>();
   const [credentials, setCredentials] = useState('checking');
   const [toolsReady, setToolsReady] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -27,6 +31,13 @@ export function DesktopPreview() {
           'credentials' in value &&
           typeof value.credentials === 'string'
         ) {
+          setFirstRun('firstRun' in value && value.firstRun === true);
+          setDraining('draining' in value && value.draining === true);
+          setCleanupError(
+            'cleanupError' in value && typeof value.cleanupError === 'string'
+              ? value.cleanupError
+              : undefined,
+          );
           setCredentials(value.credentials);
           setToolsReady(
             'toolchain' in value &&
@@ -44,6 +55,13 @@ export function DesktopPreview() {
     events.onerror = () => setConnected(false);
     return () => events.close();
   }, []);
+  if (firstRun)
+    return (
+      <>
+        {cleanupError ? <p role="alert">{cleanupError}</p> : null}
+        <DesktopFirstRun draining={draining} />
+      </>
+    );
   return (
     <main className="desktop-preview">
       <header>

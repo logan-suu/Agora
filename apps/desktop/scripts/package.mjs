@@ -107,6 +107,7 @@ const dist = join(source, 'apps/desktop/dist');
 for (const name of [
   'service.js',
   'service-entry.js',
+  'selections.js',
   'protocol.js',
   'preview-server.js',
   'storage.js',

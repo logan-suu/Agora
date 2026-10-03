@@ -5,6 +5,8 @@ import { requestAllowed } from './protocol.js';
 
 export interface PreviewStatus {
   credentials: string;
+  firstRun?: boolean;
+  draining?: boolean;
   toolchain?: { state: 'ready'; versions: Record<string, string> };
 }
 export function createPreviewServer(
@@ -29,12 +31,20 @@ export function createPreviewServer(
       return;
     }
     const path = (req.url ?? '').split('?')[0] ?? '';
+    const firstRun = status().firstRun === true;
+    const firstRunRoute =
+      firstRun &&
+      ((['GET', 'POST'].includes(req.method ?? '') &&
+        ['/api/desktop/entry', '/api/model-settings', '/api/tasks'].includes(path)) ||
+        (req.method === 'POST' && path === '/api/messages') ||
+        (req.method === 'GET' && ['/api/stream', '/api/channels', '/api/traces'].includes(path)));
     if (
-      !['GET', 'HEAD'].includes(req.method ?? '') ||
-      !(
-        (/^\/_next\/static\/[A-Za-z0-9_./-]+$/.test(path) && !path.includes('..')) ||
-        ['/desktop', '/api/desktop/status', '/api/desktop/events'].includes(path)
-      )
+      !firstRunRoute &&
+      (!['GET', 'HEAD'].includes(req.method ?? '') ||
+        !(
+          (/^\/_next\/static\/[A-Za-z0-9_./-]+$/.test(path) && !path.includes('..')) ||
+          ['/desktop', '/api/desktop/status', '/api/desktop/events'].includes(path)
+        ))
     ) {
       res
         .writeHead(403, { 'content-type': 'application/json' })
@@ -56,8 +66,16 @@ export function createPreviewServer(
         return;
       }
       streams.add(res);
-      res.write(`event: status\ndata: ${JSON.stringify(status())}\n\n`);
-      const timer = setInterval(() => res.write(': heartbeat\n\n'), 15000);
+      let previous = JSON.stringify(status()),
+        ticks = 0;
+      res.write(`event: status\ndata: ${previous}\n\n`);
+      const timer = setInterval(() => {
+        const current = JSON.stringify(status());
+        if (current !== previous) {
+          previous = current;
+          res.write(`event: status\ndata: ${current}\n\n`);
+        } else if (++ticks % 15 === 0) res.write(': heartbeat\n\n');
+      }, 1000);
       res.once('close', () => {
         clearInterval(timer);
         streams.delete(res);

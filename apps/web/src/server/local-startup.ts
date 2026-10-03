@@ -7,6 +7,15 @@ import {
 } from '@agora/runtime-state';
 
 export interface LocalBootstrap {
+  desktop?: {
+    owner: import('../../../../packages/runtime/sandbox/src/local-registry-file').LocalRegistryOwner;
+    toolchainRoot: string;
+    verifyToolchain(): Promise<unknown>;
+    selections: {
+      assertAccepted(path: string): Promise<void>;
+      resolve(scope: { projectId: string; taskId: string }, selectionRef: string): Promise<string>;
+    };
+  };
   system: SystemCredentialStore;
   explicit?: string;
   adopt: boolean;

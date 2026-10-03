@@ -1,4 +1,5 @@
 import type { ChildProcess } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { parseServiceEvent, protocolVersion } from './protocol.js';
 
@@ -7,6 +8,7 @@ export class ServiceLifecycle extends EventEmitter {
   failure: string | undefined;
   origin: string | undefined;
   exited = false;
+  #interactiveDrain: boolean;
   #receipt = false;
   #stopSent = false;
   #stop: Promise<void> | undefined;
@@ -19,6 +21,9 @@ export class ServiceLifecycle extends EventEmitter {
     readonly deadline = 70000,
   ) {
     super();
+    const config = (start as { config?: { acceptanceRoots?: unknown } }).config;
+    this.#interactiveDrain =
+      Array.isArray(config?.acceptanceRoots) && config.acceptanceRoots.length > 0;
     this.#startupTimer = setTimeout(() => this.fail('startup_timeout'), deadline);
     this.#exit = new Promise((resolve) => {
       child.once('exit', (code) => {
@@ -44,7 +49,9 @@ export class ServiceLifecycle extends EventEmitter {
     child.on('message', (value) => {
       try {
         const event = parseServiceEvent(value);
-        if (event.type === 'ready') {
+        if (event.type === 'selected' || event.type === 'selection-failed') {
+          this.emit('selection', event);
+        } else if (event.type === 'ready') {
           if (this.state !== 'starting') throw new Error('invalid_protocol');
           clearTimeout(this.#startupTimer);
           this.origin = event.origin;
@@ -55,6 +62,13 @@ export class ServiceLifecycle extends EventEmitter {
           if (!this.#stopSent || this.#receipt) throw new Error('invalid_protocol');
           this.#receipt = true;
           this.emit('receipt');
+        } else if (
+          this.#interactiveDrain &&
+          this.#stopSent &&
+          event.code === 'service_cleanup_failed'
+        ) {
+          this.#stopSent = false;
+          this.emit('cleanupFailed');
         } else this.fail(event.code);
       } catch {
         this.fail('invalid_protocol');
@@ -65,6 +79,37 @@ export class ServiceLifecycle extends EventEmitter {
     });
     child.send(start, (error) => {
       if (error) this.fail('service_ipc_failed');
+    });
+  }
+
+  selectDirectory(scope: { projectId: string; taskId: string }, actionId: string, path: string) {
+    if (this.state !== 'ready' || !this.child.connected)
+      return Promise.reject(Error('service_not_ready'));
+    const requestId = randomUUID();
+    return new Promise<{ selectionRef: string; path: string }>((resolve, reject) => {
+      const done = (error?: Error, result?: { selectionRef: string; path: string }) => {
+        clearTimeout(timer);
+        this.off('selection', receive);
+        this.off('exited', exited);
+        if (error) reject(error);
+        else if (result) resolve(result);
+      };
+      const exited = () => done(Error('service_exited'));
+      const receive = (event: import('./protocol.js').ServiceEvent) => {
+        if (!('requestId' in event) || event.requestId !== requestId) return;
+        if (event.type === 'selected')
+          done(undefined, { selectionRef: event.selectionRef, path: event.path });
+        else if (event.type === 'selection-failed') done(Error(event.code));
+      };
+      const timer = setTimeout(() => done(Error('selection_timeout')), 15000);
+      this.on('selection', receive);
+      this.once('exited', exited);
+      this.child.send(
+        { type: 'select-directory', version: protocolVersion, requestId, scope, actionId, path },
+        (error) => {
+          if (error) done(Error('service_ipc_failed'));
+        },
+      );
     });
   }
 
@@ -83,11 +128,23 @@ export class ServiceLifecycle extends EventEmitter {
     clearTimeout(this.#startupTimer);
     if (!this.failure) this.state = 'draining';
     this.#stop = new Promise<void>((resolve, reject) => {
+      const cleanupFailed = () => {
+        clearTimeout(timer);
+        this.#stop = undefined;
+        reject(new Error('service_cleanup_failed'));
+      };
+      this.once('cleanupFailed', cleanupFailed);
       const timer = setTimeout(() => {
+        if (this.#interactiveDrain && this.origin) {
+          this.emit('changed');
+          return;
+        }
+        this.off('cleanupFailed', cleanupFailed);
         this.fail('shutdown_timeout');
         reject(new Error('shutdown_timeout'));
       }, this.deadline);
       this.#exit.then(() => {
+        this.off('cleanupFailed', cleanupFailed);
         clearTimeout(timer);
         if (this.failure) reject(new Error(this.failure));
         else resolve();

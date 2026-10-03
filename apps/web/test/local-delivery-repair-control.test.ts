@@ -372,7 +372,7 @@ it('replays a recorded action without copying, running, or gaining another claim
   expect(f.control.commitBinding).toHaveBeenCalledTimes(1);
 });
 
-it('reproves the immutable source while only its registered repair Coder is active', async () => {
+async function repairValidationFixture() {
   const f = harness();
   const fact = f.state.messages.find((m) => m.msgId === f.source.validationReceiptId);
   const round = f.state.localExecution?.delivery?.rounds[0];
@@ -442,6 +442,11 @@ it('reproves the immutable source while only its registered repair Coder is acti
     })),
   };
   const service = new LocalValidationService(evidence, async () => active);
+  return { active, source, workerId, command, inspection, evidence, service };
+}
+
+it('reproves the immutable source while only its registered repair Coder is active', async () => {
+  const { active, source, workerId, command, evidence, service } = await repairValidationFixture();
   await expect(service.verify(active, source.validationReceiptId)).rejects.toThrow(
     'local_validation_source_not_ready',
   );
@@ -464,6 +469,174 @@ it('reproves the immutable source while only its registered repair Coder is acti
   });
   await expect(service.verifyRepairSource(active, workerId)).rejects.toThrow(
     'local_validation_source_not_ready',
+  );
+});
+
+it('reproves an immutable ancestor for a canonical second repair but rejects unrelated writers', async () => {
+  const f = await repairValidationFixture();
+  const state = structuredClone(f.active);
+  const local = state.localExecution;
+  const first = state.workers.find((w) => w.workerId === f.workerId);
+  const firstBinding = local?.bindings.find((b) => b.workerId === f.workerId);
+  const firstWorkspace = local?.workspaces.find((w) => w.workspaceId === firstBinding?.workspaceId);
+  const firstDispatch = state.messages.find((m) => `worker:${m.msgId}:0` === f.workerId);
+  const originalReceipt = state.messages.find((m) => m.msgId === f.source.validationReceiptId);
+  if (!local || !first || !firstWorkspace || !firstDispatch || !originalReceipt)
+    throw Error('fixture');
+  first.status = 'done';
+  let ts = Math.max(...state.messages.map((m) => m.ts)) + 1;
+  state.messages.push(
+    {
+      msgId: `repair-candidate:${firstDispatch.msgId}`,
+      fromRole: 'COORDINATOR',
+      channelId: 'main',
+      type: 'announce',
+      ts: ts++,
+      display: 'Closed C2',
+      payload: {
+        kind: 'workspace_delivery_repair_candidate',
+        version: 1,
+        projectId: 'p',
+        taskId: 't',
+        roundId: 'round',
+        dispatchId: firstDispatch.msgId,
+        workerId: f.workerId,
+        workspaceId: firstWorkspace.workspaceId,
+        workspaceVersion: f.source.workspaceVersion,
+        controlFingerprint: f.source.controlFingerprint,
+        closureReceiptId: `closure:${'6'.repeat(64)}`,
+        proofHash: '7'.repeat(64),
+      },
+    },
+    {
+      msgId: 'test2',
+      fromRole: 'COORDINATOR',
+      channelId: 'main',
+      type: 'announce',
+      ts: ts++,
+      display: 'Test C2',
+      payload: {
+        kind: 'delivery_validation_dispatch',
+        nextRole: 'TESTER',
+        roundId: 'round',
+        workerIds: ['worker:test2:0'],
+        workspaceVersion: f.source.workspaceVersion,
+        repairCandidateReceiptId: `repair-candidate:${firstDispatch.msgId}`,
+      },
+    },
+    {
+      ...structuredClone(originalReceipt),
+      msgId: 'workspace-validation:test2',
+      ts: ts++,
+      payload: {
+        ...structuredClone(originalReceipt.payload),
+        dispatchId: 'test2',
+        workerId: 'worker:test2:0',
+        sourceWorkspaceId: 'validation2',
+        validationWorkspaceId: 'validation2',
+        commandReceiptId: 'command:2',
+      },
+    },
+  );
+  local.workspaces.push({ ...firstWorkspace, workspaceId: 'validation2', purpose: 'validation' });
+  local.bindings.push({
+    workerId: 'worker:test2:0',
+    workspaceId: 'validation2',
+    receiptId: 'binding:test2',
+  });
+  local.receipts.push({
+    actionId: 'test2',
+    receiptId: 'binding:test2',
+    registryRevision: 4,
+    inputHash: '9'.repeat(64),
+  });
+  state.workers.push({
+    workerId: 'worker:test2:0',
+    role: 'TESTER',
+    status: 'done',
+    executor: 'harness',
+    startedTs: ts++,
+  });
+  const secondId = 'worker:repair-second:0';
+  state.messages.push({
+    msgId: 'repair-second',
+    fromRole: 'COORDINATOR',
+    channelId: 'main',
+    type: 'announce',
+    ts: ts++,
+    display: 'Repair C2',
+    payload: {
+      kind: 'delivery_repair_dispatch',
+      nextRole: 'CODER',
+      workerIds: [secondId],
+      source: {
+        ...f.source,
+        validationReceiptId: 'workspace-validation:test2',
+        sourceWorkspaceId: 'validation2',
+        triggerId: 'workspace-validation:test2',
+      },
+    },
+  });
+  local.workspaces.push({ ...firstWorkspace, workspaceId: 'repair-second-workspace' });
+  local.bindings.push({
+    workerId: secondId,
+    workspaceId: 'repair-second-workspace',
+    receiptId: 'binding:repair-second',
+  });
+  local.receipts.push({
+    actionId: 'repair-second',
+    receiptId: 'binding:repair-second',
+    registryRevision: 4,
+    inputHash: '8'.repeat(64),
+  });
+  state.workers.push({
+    workerId: secondId,
+    role: 'CODER',
+    status: 'running',
+    executor: 'harness',
+    startedTs: ts++,
+  });
+  let service: LocalValidationService;
+  const evidence: WorkspaceValidationEvidencePort = {
+    verifyCurrentVersion: vi.fn(async (scope) => {
+      if (scope.workspaceId === 'validation2') await service.verifyRepairSource(state, f.workerId);
+      return {
+        inspection: f.inspection,
+        policyHash: 'e'.repeat(64),
+        toolchainHash: 'd'.repeat(64),
+      };
+    }),
+    verifyCommand: vi.fn(async (_scope, receiptId) => ({
+      command: {
+        ...f.command,
+        workerId: receiptId === 'command:2' ? 'worker:test2:0' : 'worker:test:0',
+      },
+      request: localValidationCommand(f.inspection),
+      toolchainHash: 'd'.repeat(64),
+      dependenciesHash: 'f'.repeat(64),
+    })),
+  };
+  service = new LocalValidationService(evidence, async () => state);
+  await service.verifyRepairSource(state, secondId);
+  await expect(service.verify(state, f.source.validationReceiptId)).rejects.toThrow(
+    'local_validation_source_not_ready',
+  );
+  state.workers.push({
+    workerId: 'unrelated',
+    role: 'CODER',
+    status: 'running',
+    executor: 'harness',
+    startedTs: ts++,
+  });
+  await expect(service.verifyRepairSource(state, secondId)).rejects.toThrow(
+    'local_validation_source_not_ready',
+  );
+  state.workers.pop();
+  const successor = state.messages.find((m) => m.msgId === 'test2');
+  if (!successor) throw Error('fixture');
+  successor.payload.repairCandidateReceiptId = 'missing';
+  await expect(service.verifyRepairSource(state, secondId)).rejects.toThrow(
+    'delivery_dispatch_invalid',
   );
 });
 

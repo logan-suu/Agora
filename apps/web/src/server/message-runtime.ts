@@ -140,6 +140,7 @@ export class MessageRuntime {
   readonly #channelContext = new DerivedChannelContextBuilder();
   #requirementInterpreter: RequirementInterpreter | undefined;
   #workspaceControl: WorkspaceControlPort | undefined;
+  #leaderAdmission: ((scope: TaskScope) => void) | undefined;
   #localCompletionVerifier: ((scope: TaskScope, state: AppState) => Promise<void>) | undefined;
   readonly #leaderQueues = new Map<string, Promise<void>>();
 
@@ -258,6 +259,10 @@ export class MessageRuntime {
   bindWorkspaceControlPort(port: WorkspaceControlPort): void {
     this.#workspaceControl = port;
   }
+  /** Host lifecycle admission, checked before any Leader mutation or model call. */
+  bindLeaderAdmission(admit: (scope: TaskScope) => void): void {
+    this.#leaderAdmission = admit;
+  }
   bindLocalCompletionVerifier(verify: (scope: TaskScope, state: AppState) => Promise<void>): void {
     this.#localCompletionVerifier = verify;
   }
@@ -319,6 +324,7 @@ export class MessageRuntime {
     scope: TaskScope,
     input: LeaderMessageInput,
   ): Promise<MessageCommitResult & { action: LeaderActionStatus }> {
+    this.#leaderAdmission?.(scope);
     if (input.msgId.startsWith('requirement-proposal:'))
       throw new RequirementInputError(
         'This message ID prefix is reserved for server proposals.',
@@ -349,6 +355,7 @@ export class MessageRuntime {
       } catch (error) {
         throw new WorkspaceControlInputError(
           error instanceof Error ? error.message : 'workspace_control_failed',
+          { cause: error },
         );
       }
     }

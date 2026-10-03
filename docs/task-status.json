@@ -2,7 +2,7 @@
   "version": "1.5",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-10-02",
+  "last_updated": "2026-10-03",
   "current_phase": 12,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
@@ -123,8 +123,8 @@
     },
     {
       "id": "D18",
-      "rule": "Phase11–31按依赖逐阶段集成/发布，旧ID见计划§18.12；11/12限定预览。13退役Docker、无旧任务兼容，不自动删数据；12.1清单/13.3移除/13.4无Docker验收。G1–G7/人工合并保持，done≠发布，dev→main人工合并后授权tag/Release。身份/CAS/D4见详设§12.1。§12.2：本机APFS/同卷事务、Seatbelt候选/失效关闭、固定输入；根移动不瞬撤旧fd，新准入/外部对象隔离，漂移关闭/失效/保全；冻结签名、L01–L18按任务实测。12.5范围屏障/held释放lease/交还Fork/逆操作见§12.2.4.5/§12.2.6.1。Electron+独立Node，AppleSilicon/macOS15+；GitHub未公证ad-hoc DMG/校验和，无DeveloperID/公证要求。升级保留Keychain/state/workspace/配置；DEF-018系统例外不自动沿用。启动普通5秒/Worktree15秒。D3保持，有界清理/残留隔离及漏检风险获批，coalition暂缓。",
-      "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18；12.1退役清单：docs/详细设计方案.md §12.3.11；12.2本机契约：docs/详细设计方案.md §12.2；12.5接管/撤销复评：docs/详细设计方案.md §12.2.4.5/§12.2.6.1"
+      "rule": "Phase11–31按依赖逐阶段验收，旧ID见计划§18.12；11/12限定预览，13退役Docker且无旧任务兼容，不自动删数据。G1–G7/人工合并保持，done≠发布；dev→main人工合并后授权tag/Release。身份/CAS/D4见详设§12.1。本机§12.2：APFS/同卷事务、Seatbelt失效关闭、固定输入；根移动不瞬撤旧fd，新准入/外部对象隔离，漂移关闭/失效/保全；冻结签名、L01–L18实测。12.5屏障/释放lease/交还Fork/逆操作见§12.2.4.5/§12.2.6.1。12.6入口顺序/授权后识别/最小停服及F01–F06见§12.3.12。Electron/独立Node，arm64/macOS15+；GitHub未公证ad-hoc DMG/校验和，无DeveloperID要求。升级保留Keychain/state/workspace/配置；DEF-018例外不自动沿用。启动普通5秒/Worktree及已证明返工来源15秒。D3保持，有界清理/残留隔离及漏检风险获批，coalition暂缓。",
+      "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18；12.1退役清单：docs/详细设计方案.md §12.3.11；12.2本机契约：docs/详细设计方案.md §12.2；12.5接管/撤销复评：docs/详细设计方案.md §12.2.4.5/§12.2.6.1；12.6首次入口复评：docs/项目蓝图.md §22.3.2 / docs/详细设计方案.md §12.3.12；连续返工：详设§12.2.6"
     },
     {
       "id": "TEST-CLEANUP",
@@ -1752,10 +1752,10 @@
           "id": "12.6",
           "title": "打通首次配置与项目开发入口",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2/§22.5.2",
-            "docs/详细设计方案.md §12.3",
+            "docs/详细设计方案.md §12.3（含§12.3.12）/§12.2.2.1",
             "docs/开发计划安排.md §18.2 / §18.3",
             "docs/技术选型文档.md §14",
             "docs/开发计划安排.md §18.11（阶段发布门禁）"
@@ -1764,11 +1764,13 @@
             "11.3",
             "11.4",
             "12.3",
+            "12.4",
+            "12.5",
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-6.test.ts",
-          "notes": "任务类型：code。单次用户模型配置可供当前六角色团队开工，可逐角色调整；打开/新建项目、渐进识别结构与运行方法，无需配置Librarian/插件市场。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
-          "last_updated": "2026-09-16"
+          "notes": "任务类型：code。规格合理性复评及首次配置/可信目录授权/有限识别/显式启动/自然停服/只读重开已实现。连续返工来源链缺陷及有界启动窗口已修正。输入冻结后复用无关证据并补验，343文件2679项、7脚本、静态及Web/桌面构建取得通过；不是单次累计全绿。两项历史执行失败原因仍未定，复验通过不视为根因消除；非法异议字段保持fail-closed。详见 docs/task-history/12.6.md 及 docs/reviews/task126-first-run-spec-review.md。待审阅/交付，未commit/push，12.7未开工。",
+          "last_updated": "2026-10-03"
         },
         {
           "id": "12.7",

@@ -17,6 +17,7 @@ const emptyDraft = {
   connectionId: '',
   apiKey: '',
 };
+export type ModelDraft = typeof emptyDraft;
 function draftFor(role?: AgentModelView) {
   return role?.connectionId
     ? {
@@ -34,16 +35,18 @@ function draftFor(role?: AgentModelView) {
 export function ModelSettingsDialog({
   projectId,
   initialTarget,
+  initialDraft,
   onClose,
 }: {
-  projectId: string;
+  projectId?: string;
   initialTarget: string;
-  onClose: () => void;
+  initialDraft?: ModelDraft;
+  onClose: (draft: ModelDraft) => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [settings, setSettings] = useState<ModelSettingsView>();
   const [target, setTarget] = useState(initialTarget);
-  const [draft, setDraft] = useState({ ...emptyDraft });
+  const [draft, setDraft] = useState(initialDraft ?? { ...emptyDraft });
   const [customContext, setCustomContext] = useState(false);
   const [customOutput, setCustomOutput] = useState(false);
   const [error, setError] = useState('');
@@ -54,6 +57,10 @@ export function ModelSettingsDialog({
     dialog.current?.showModal();
   }, []);
   useEffect(() => {
+    if (!projectId) {
+      setSettings({ revision: 0, credentialsAvailable: true, roles: [] });
+      return;
+    }
     const controller = new AbortController();
     setPending(true);
     fetch(`/api/model-settings?projectId=${encodeURIComponent(projectId)}`, {
@@ -68,7 +75,7 @@ export function ModelSettingsDialog({
         const role = (value as ModelSettingsView).roles.find((r) => r.role === initialTarget);
         setCustomContext(Boolean(role?.connectionId));
         setCustomOutput(Boolean(role?.connectionId));
-        setDraft(draftFor(role));
+        setDraft(reload === 0 ? (initialDraft ?? draftFor(role)) : draftFor(role));
         setTarget(initialTarget);
         setError('');
       })
@@ -80,7 +87,7 @@ export function ModelSettingsDialog({
         if (!controller.signal.aborted) setPending(false);
       });
     return () => controller.abort();
-  }, [projectId, initialTarget, reload]);
+  }, [projectId, initialTarget, initialDraft, reload]);
   const available =
     settings?.roles.filter((r) => r.status === 'enabled' || r.status === 'disabled') ?? [];
   const targets = available.filter((r) => target === 'all' || r.role === target);
@@ -108,7 +115,7 @@ export function ModelSettingsDialog({
     });
   }
   async function submit(action: ModelSettingsCommand['action']) {
-    if (!settings || pending) return;
+    if (!settings || !projectId || pending) return;
     setPending(true);
     setError('');
     setNotice('');
@@ -127,8 +134,17 @@ export function ModelSettingsDialog({
       });
       const value = await response.json();
       if (!response.ok) throw new Error(value.error ?? 'Unable to save model settings.');
-      if (action === 'test') setNotice('Connection test passed. Settings have not been saved.');
-      else {
+      if (action === 'test') {
+        setDraft((current) => ({
+          ...current,
+          auth: 'keep',
+          apiKey: '',
+          connectionId: value.connectionId,
+        }));
+        setNotice(
+          'Connection test passed. Save to use this checked connection for the selected Agents.',
+        );
+      } else {
         setSettings(value);
         const role = (value as ModelSettingsView).roles.find((r) =>
           target === 'all' ? targets.some((t) => t.role === r.role) : r.role === target,
@@ -155,7 +171,7 @@ export function ModelSettingsDialog({
       aria-labelledby="model-settings-title"
       onCancel={(event) => {
         event.preventDefault();
-        if (!pending) onClose();
+        if (!pending) onClose(draft);
       }}
     >
       <div className="model-dialog-heading">
@@ -167,12 +183,18 @@ export function ModelSettingsDialog({
           type="button"
           className="model-close"
           aria-label="Close model settings"
-          onClick={onClose}
+          onClick={() => onClose(draft)}
           disabled={pending}
         >
           ×
         </button>
       </div>
+      {!projectId ? (
+        <p className="model-notice">
+          Unsaved draft in this window only. Choose a project before testing or saving. Closing the
+          app discards this draft.
+        </p>
+      ) : null}
       <p className="model-description">
         Choose a model for each Agent, or set the same model for the whole team. Changes apply to
         new tasks. Running and paused tasks keep their original settings.
@@ -204,6 +226,7 @@ export function ModelSettingsDialog({
               Apply to
               <select
                 value={target}
+                disabled={!projectId}
                 onChange={(event) => {
                   const next = event.target.value;
                   setTarget(next);
@@ -218,7 +241,9 @@ export function ModelSettingsDialog({
                   setError('');
                 }}
               >
-                <option value="all">All Agents ({available.length})</option>
+                <option value="all">
+                  {projectId ? `All Agents (${available.length})` : 'Team model draft'}
+                </option>
                 {available.map((r) => (
                   <option key={r.role} value={r.role}>
                     {r.role}
@@ -230,7 +255,9 @@ export function ModelSettingsDialog({
             <fieldset className="model-targets" aria-label="Target Agents">
               {targets.length
                 ? targets.map((r) => <span key={r.role}>{r.role}</span>)
-                : 'No configurable Agents.'}
+                : projectId
+                  ? 'No configurable Agents.'
+                  : 'Choose a project to apply this draft to your team.'}
             </fieldset>
             {selected ? (
               <p className="model-current">
@@ -316,7 +343,9 @@ export function ModelSettingsDialog({
                   onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })}
                 />
                 <small className="model-hint">
-                  Encrypted on the server. Saved keys are never displayed.
+                  {projectId
+                    ? 'Encrypted on the server. Saved keys are never displayed.'
+                    : 'Held in this window only. Nothing is saved or sent.'}
                 </small>
               </label>
             ) : null}
@@ -398,9 +427,11 @@ export function ModelSettingsDialog({
               >
                 {pending
                   ? 'Working…'
-                  : target === 'all'
-                    ? `Apply to all ${targets.length} Agents`
-                    : 'Save model'}
+                  : !projectId
+                    ? 'Choose a project to save'
+                    : target === 'all'
+                      ? `Apply to all ${targets.length} Agents`
+                      : 'Save model'}
               </button>
             </div>
           </fieldset>
@@ -408,7 +439,7 @@ export function ModelSettingsDialog({
       )}
       <div className="model-footer">
         <span>Saving does not call the model. Testing sends a short request.</span>
-        <button type="button" onClick={onClose} disabled={pending}>
+        <button type="button" onClick={() => onClose(draft)} disabled={pending}>
           Cancel
         </button>
       </div>
