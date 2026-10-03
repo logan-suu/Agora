@@ -7,6 +7,7 @@ import {
   type DeliveryRepairSource,
   deliveryRepairAssignment,
   deliveryValidationDispatch,
+  deriveObjectionResolutions,
   localDeliveryAwaitsApplication,
   setMutation,
 } from '@agora/core-domain';
@@ -74,6 +75,16 @@ export async function runOrchestration(
     // An external lifecycle pause may close while a worker is returning.
     // Preserve its canonical gate until Leader resolution starts a new run.
     if (state.humanGate !== undefined) return state;
+    const range = await deps.workerRuntime.rangeDispatch(state);
+    const resolutions = deriveObjectionResolutions(state);
+    const blocking = state.objections.some(
+      (o) =>
+        o.track === 'blocking' &&
+        !resolutions.some((r) => r.objectionId === o.id && r.status === 'resolved'),
+    );
+    // Range ownership is not a human gate and does not advance the workflow.
+    // A genuine blocking objection still keeps the Leader escalation path.
+    if (range && !range.workerIds.length && !blocking) return state;
     const roster = (await deps.loadRoster?.()) ?? deps.roster;
     const resumingWorkerIds = deps.workerRuntime.resumableWorkerIds;
     const parallel = await deps.parallelContext?.(state);
@@ -117,6 +128,23 @@ export async function runOrchestration(
         throw Error('local_validation_preparation_changed');
       state = prepared;
       continue;
+    }
+    if (range && decision.route.kind === 'worker') {
+      const batch = decision.route.batch.filter((a) => range.workerIds.includes(a.workerId));
+      if (!batch.length) return state;
+      if (decision.mutations.length) throw Error('range_dispatch_mutation_unproven');
+      decision.route =
+        batch.length === 1
+          ? { kind: 'worker', parallel: false, batch: [batch[0] as (typeof batch)[number]] }
+          : {
+              kind: 'worker',
+              parallel: true,
+              batch: [
+                batch[0] as (typeof batch)[number],
+                batch[1] as (typeof batch)[number],
+                ...batch.slice(2),
+              ],
+            };
     }
     if (decision.mutations.length > 0) {
       state = await transition(state, decision.mutations);

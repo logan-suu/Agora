@@ -69,6 +69,7 @@ export type LocalReplacementReceipt = {
   journalPath: string;
   nativeExitCode: number | null;
 };
+export type LocalRestorationSource = EmptyDirectoryBasis & { candidateName: string };
 type ReplacementRequest = {
   actionId: string;
   binding: LocalRootBinding;
@@ -77,6 +78,10 @@ type ReplacementRequest = {
   content: string | Buffer;
   /** Trusted fixed-candidate mode; omitted by ordinary model file writes. */
   executable?: boolean;
+  /** Trusted inverse permission bits; never exposed by model file tools. */
+  mode?: number;
+  /** Proven original isolated object, consumed only by an inverse creation. */
+  restoreFrom?: LocalRestorationSource;
   journalRoot: string;
   helper: string;
   /** Trusted control-plane check, never supplied by the model or project code. */
@@ -304,6 +309,123 @@ export function inspectLocalCreationBasis(
   return { parentIdentity: value.parentIdentity };
 }
 
+function restorationSource(value: unknown): value is LocalRestorationSource {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Object.keys(value).sort().join(',') !== 'candidateName,identity,metadata'
+  )
+    return false;
+  const source = value as LocalRestorationSource;
+  return (
+    /^[A-Za-z0-9_-]{1,80}-candidate$/.test(source.candidateName) &&
+    /^\d+:\d+$/.test(source.identity) &&
+    /^\d+:\d+:\d+:[a-f0-9]{64}$/.test(source.metadata)
+  );
+}
+function inspectPreserved(
+  binding: LocalRootBinding,
+  candidateName: string,
+  helper: string,
+  directory: boolean,
+) {
+  if (process.platform !== 'darwin' || !isAbsolute(helper)) throw Error('sandbox_unavailable');
+  if (!/^[A-Za-z0-9_-]{1,80}-candidate$/.test(candidateName)) throw Error('invalid_file_change');
+  if (!verifyBinding(binding)) throw Error('root_identity_changed');
+  const result = spawnSync(
+    '/usr/bin/sandbox-exec',
+    [
+      '-p',
+      nativePolicy(helper, binding, undefined, true),
+      helper,
+      binding.root,
+      binding.chain.map((e) => e.identity).join(','),
+      '.agora-operations',
+      binding.stagingIdentity,
+      'preserved',
+      directory ? 'inspect-preserved-directory' : 'inspect-preserved-file',
+      '',
+      candidateName,
+    ],
+    {
+      cwd: '/',
+      env: { NODE_ENV: 'production', PATH: '/usr/bin:/bin', HOME: '/', TMPDIR: '/' },
+      timeout: 30000,
+      maxBuffer: directory ? 16384 : byteLimit * 2 + 16384,
+    },
+  );
+  if (result.error || result.status !== 0) throw Error('native_read_failed');
+  const value = JSON.parse(result.stdout.toString());
+  if (
+    !value ||
+    Object.keys(value).sort().join(',') !==
+      (directory ? 'identity,metadata' : 'hex,identity,metadata') ||
+    !/^\d+:\d+$/.test(value.identity) ||
+    !/^\d+:\d+:\d+:[a-f0-9]{64}$/.test(value.metadata) ||
+    (!directory &&
+      (typeof value.hex !== 'string' ||
+        value.hex.length > byteLimit * 2 ||
+        !/^(?:[a-f0-9]{2})*$/.test(value.hex)))
+  )
+    throw Error('invalid_native_read');
+  if (!verifyBinding(binding)) throw Error('root_identity_changed');
+  return {
+    identity: value.identity as string,
+    metadata: value.metadata as string,
+    ...(directory ? {} : { content: Buffer.from(value.hex, 'hex') }),
+  };
+}
+export function inspectLocalPreservedFile(
+  binding: LocalRootBinding,
+  candidateName: string,
+  helper: string,
+): ReplacementBytesBasis {
+  return inspectPreserved(binding, candidateName, helper, false) as ReplacementBytesBasis;
+}
+export function inspectLocalPreservedDirectory(
+  binding: LocalRootBinding,
+  candidateName: string,
+  helper: string,
+): EmptyDirectoryBasis {
+  return inspectPreserved(binding, candidateName, helper, true);
+}
+/** Metadata for complete manifest comparison; it is not an empty-directory proof. */
+export function inspectLocalDirectoryMetadata(
+  binding: LocalRootBinding,
+  path: string,
+  helper: string,
+): EmptyDirectoryBasis {
+  if (path !== '') validatePath(path);
+  if (process.platform !== 'darwin' || !isAbsolute(helper)) throw Error('sandbox_unavailable');
+  if (!verifyBinding(binding)) throw Error('root_identity_changed');
+  const parents = path === '' ? [] : targetParents(binding, path);
+  const result = spawnSync(
+    '/usr/bin/sandbox-exec',
+    [
+      '-p',
+      nativePolicy(helper, binding, undefined, true),
+      helper,
+      binding.root,
+      binding.chain.map((e) => e.identity).join(','),
+      '.agora-operations',
+      binding.stagingIdentity,
+      path || 'root',
+      path === '' ? 'inspect-root-directory' : 'inspect-directory',
+      parents.map((e) => e.identity).join(','),
+    ],
+    {
+      cwd: '/',
+      env: { NODE_ENV: 'production', PATH: '/usr/bin:/bin', HOME: '/', TMPDIR: '/' },
+      timeout: 30000,
+      maxBuffer: 16384,
+    },
+  );
+  if (result.error || result.status !== 0) throw Error('native_read_failed');
+  const value = JSON.parse(result.stdout.toString());
+  if (!validDirectoryBasis(value)) throw Error('invalid_native_read');
+  if (!verifyBinding(binding) || !verifyParents(parents)) throw Error('root_identity_changed');
+  return value;
+}
 function validDirectoryBasis(value: unknown): value is EmptyDirectoryBasis {
   if (!value || typeof value !== 'object') return false;
   const record = value as Record<string, unknown>;
@@ -461,6 +583,24 @@ export async function applyLocalCreation(
   ) as Promise<LocalCreationReceipt>;
 }
 
+/** The original isolated object is moved into a still-absent name. Nothing is
+ * copied from an arbitrary path and no newer object is overwritten. */
+export async function applyLocalRestoration(
+  request: Omit<ReplacementRequest, 'expected' | 'executable' | 'mode'> & {
+    expected: CreationBasis;
+    restoreFrom: LocalRestorationSource;
+  },
+): Promise<LocalCreationReceipt> {
+  return applyLocalCreation(request);
+}
+export async function applyLocalDirectoryRestoration(
+  request: Omit<ReplacementRequest, 'expected' | 'content' | 'executable' | 'mode'> & {
+    expected: CreationBasis;
+    restoreFrom: LocalRestorationSource;
+  },
+): Promise<LocalDirectoryCreationReceipt> {
+  return applyLocalDirectoryCreation(request);
+}
 export async function applyLocalDirectoryCreation(
   request: Omit<ReplacementRequest, 'expected' | 'content' | 'executable'> & {
     expected: CreationBasis;
@@ -516,7 +656,36 @@ async function applyLocalTransaction(
         : 'local-replacement-primitive-v1';
   const effectKey = creating ? 'created' : removing ? 'removed' : 'exchanged';
   if (process.platform !== 'darwin') throw new Error('sandbox_unavailable');
-  const { actionId, path, journalRoot, helper, authorize, executable } = request;
+  const {
+    actionId,
+    path,
+    journalRoot,
+    helper,
+    authorize,
+    executable,
+    mode,
+    restoreFrom: sourceInput,
+  } = request;
+  if (
+    sourceInput !== undefined &&
+    (!restorationSource(sourceInput) ||
+      !creating ||
+      removing ||
+      executable !== undefined ||
+      mode !== undefined)
+  )
+    throw Error('invalid_file_change');
+  const restoreFrom = sourceInput === undefined ? undefined : structuredClone(sourceInput);
+  if (
+    mode !== undefined &&
+    (!Number.isSafeInteger(mode) ||
+      mode < 0 ||
+      mode > 0o777 ||
+      executable !== undefined ||
+      removing ||
+      directoryOperation)
+  )
+    throw Error('invalid_file_change');
   if (
     (typeof request.content !== 'string' && !Buffer.isBuffer(request.content)) ||
     (typeof request.expected.content !== 'string' && !Buffer.isBuffer(request.expected.content)) ||
@@ -576,6 +745,8 @@ async function applyLocalTransaction(
     helperHash,
     ...(operation !== 'replace' ? { operation } : {}),
     ...(executable === undefined ? {} : { executable }),
+    ...(mode === undefined ? {} : { mode }),
+    ...(restoreFrom === undefined ? {} : { restoreFrom }),
   };
   const inputHash = digest(JSON.stringify(input));
   const journalPath = join(journalRoot, actionId);
@@ -697,6 +868,8 @@ async function applyLocalTransaction(
       parents,
       path,
       ...(executable === undefined ? {} : { executable }),
+      ...(mode === undefined ? {} : { mode }),
+      ...(restoreFrom === undefined ? {} : { restoreFrom }),
       ...(creating
         ? { parentIdentity: expected.identity }
         : {
@@ -729,8 +902,21 @@ async function applyLocalTransaction(
     directory?.metadata ?? (creating ? expected.identity : expected.metadata),
     actionId,
     parents.map((entry) => entry.identity).join(','),
-    kind,
-    executable === undefined ? 'keep' : executable ? 'executable' : 'plain',
+    restoreFrom && kind === operation
+      ? directoryOperation
+        ? 'restore-directory'
+        : 'restore'
+      : kind,
+    mode === undefined
+      ? executable === undefined
+        ? 'keep'
+        : executable
+          ? 'executable'
+          : 'plain'
+      : `mode-${mode}`,
+    ...(restoreFrom && kind === operation
+      ? [restoreFrom.candidateName, restoreFrom.identity, restoreFrom.metadata]
+      : []),
   ];
   try {
     child = spawn('/usr/bin/sandbox-exec', ['-p', policy, helper, ...argumentsFor(operation)], {
@@ -759,6 +945,8 @@ async function applyLocalTransaction(
         directory?: EmptyDirectoryBasis | null;
       }
     | undefined;
+  let candidateProof: { identity: string; metadata: string; size: number } | undefined;
+  let candidateProofHash: string | null = null;
   let checkpointIndex = 0;
   let closed = false;
   child.stdin?.on('error', () => {
@@ -802,6 +990,35 @@ async function applyLocalTransaction(
                   throw new Error('checkpoint_order');
                 const allowed = await authorize(event.name);
                 if (!closed) child.stdin?.write(allowed ? 'x' : 'n');
+              } else if (event.event === 'candidate' && !removing && !directoryOperation) {
+                if (
+                  candidateProof ||
+                  checkpointIndex !== 1 ||
+                  Object.keys(event).sort().join(',') !== 'event,identity,metadata,size' ||
+                  typeof event.identity !== 'string' ||
+                  !/^\d+:\d+$/.test(event.identity) ||
+                  typeof event.metadata !== 'string' ||
+                  !/^\d+:\d+:\d+:[a-f0-9]{64}$/.test(event.metadata) ||
+                  event.size !== content.length
+                )
+                  throw Error('invalid_candidate_identity');
+                candidateProof = {
+                  identity: event.identity,
+                  metadata: event.metadata,
+                  size: event.size,
+                };
+                const candidateRecord = JSON.stringify({
+                  schemaVersion: 'local-file-candidate-proof-v1',
+                  actionId,
+                  inputHash,
+                  helperHash,
+                  path,
+                  operation: creating ? 'create' : 'replace',
+                  ...candidateProof,
+                  contentHash: digest(content),
+                });
+                candidateProofHash = digest(candidateRecord);
+                durableFile(join(journalPath, 'candidate-proof.json'), candidateRecord);
               } else if (
                 event.event === 'result' &&
                 ['applied', 'conflict', 'recoveryRequired'].includes(event.stage) &&
@@ -834,6 +1051,27 @@ async function applyLocalTransaction(
     },
   );
   await authorizing;
+  if (!removing && !directoryOperation) {
+    durableFile(
+      join(journalPath, 'native-outcome.json'),
+      JSON.stringify({
+        schemaVersion: 'local-file-native-outcome-v1',
+        candidateProofHash,
+        preparedHash: digest(readFileSync(join(journalPath, 'prepared.json'))),
+        actionId,
+        inputHash,
+        helperHash,
+        closed: true,
+        checkpointCount: checkpointIndex,
+        protocolFailed: protocolFailed || Boolean(pending),
+        exitCode: outcome.code,
+        signal: outcome.signal,
+        result: native
+          ? { stage: native.stage, reason: native.reason, [effectKey]: native.exchanged }
+          : null,
+      }),
+    );
+  }
   const receipt = {
     schemaVersion,
     actionId,

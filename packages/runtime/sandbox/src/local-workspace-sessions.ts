@@ -24,6 +24,14 @@ import { localFileArtifactKey, parseLocalFileArtifact } from './local-file-artif
 import { type LocalFixedInput, LocalFixedInputs } from './local-fixed-inputs';
 import { commitLocalGitWorktree } from './local-git-commit';
 import type { LocalGitWorkspaceOptions } from './local-git-workspaces';
+import {
+  assertLocalRangeAdmission,
+  localUndoOccupiedRanges,
+  localWorkerDependencies,
+  localWorkspacePhysical,
+} from './local-range-admission';
+import { readLocalRangeBoundary } from './local-range-boundary';
+import { localRangesOverlap } from './local-range-records';
 import type { LocalRegistryOwner } from './local-registry-file';
 import {
   isLocalBindingOperation,
@@ -78,12 +86,72 @@ type Active = {
   closed: boolean;
   call?: WorkspaceCall;
 };
+const ownerCapabilities = new WeakMap<LocalRegistryOwner, Map<string, Active>>();
 const key = (scope: Scope & { workerId: string }) =>
   localRecordHash({ projectId: scope.projectId, taskId: scope.taskId, workerId: scope.workerId });
 export class LocalWorkspaceSessions
   implements WorkspaceWorkerPort, WorkspaceValidationEvidencePort
 {
-  private readonly active = new Map<string, Active>();
+  activate<T>(scope: Scope & { workerId: string }, prepare: () => Promise<T>) {
+    const fixed = structuredClone(scope);
+    return this.options.control.serializeRangeAdmission(async () =>
+      (await this.canAcquire(fixed)) ? prepare() : undefined,
+    );
+  }
+  async isBlocked(scope: Scope): Promise<boolean> {
+    const snapshot = await this.options.control.snapshot();
+    // Released ownership still requires its canonical and private evidence.
+    // Absence of an active barrier is not proof of valid admission.
+    const state = await this.options.control.assertClosed(scope);
+    if ((await this.options.control.snapshot()).revision !== snapshot.revision)
+      throw Error('registry_revision_conflict');
+    const held = snapshot.rangeHolds?.filter((h) => h.stage !== 'released') ?? [];
+    const occupied = [...held.map((h) => h.plan.physical), ...localUndoOccupiedRanges(snapshot)];
+    if (!occupied.length) return false;
+    const blocked =
+      state.localExecution?.workspaces.some((w) =>
+        occupied.some((p) => localRangesOverlap(p, localWorkspacePhysical(snapshot, w))),
+      ) ?? true;
+    if ((await this.options.control.snapshot()).revision !== snapshot.revision)
+      throw Error('registry_revision_conflict');
+    return blocked;
+  }
+  async canAcquire(scope: Scope & { workerId: string }): Promise<boolean> {
+    const snapshot = await this.options.control.snapshot();
+    const state = await this.options.control.assertClosed(scope);
+    if ((await this.options.control.snapshot()).revision !== snapshot.revision)
+      throw Error('registry_revision_conflict');
+    const held = snapshot.rangeHolds?.filter((h) => h.stage !== 'released') ?? [],
+      undo = localUndoOccupiedRanges(snapshot);
+    if (!held.length && !undo.length) return true;
+    const binding = state.localExecution?.bindings.find((b) => b.workerId === scope.workerId);
+    const workspace = snapshot.workspaces.find(
+      (w) =>
+        w.workspaceId === binding?.workspaceId &&
+        w.projectId === scope.projectId &&
+        w.taskId === scope.taskId,
+    );
+    // An unbound assignment has no proven physical read/dependency set yet.
+    if (!workspace) return false;
+    try {
+      assertLocalRangeAdmission(
+        snapshot,
+        workspace,
+        localWorkerDependencies(state, scope.workerId),
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        ['file_taken_over', 'workspace_undo_in_progress'].includes(error.message)
+      )
+        return false;
+      throw error;
+    }
+    if ((await this.options.control.snapshot()).revision !== snapshot.revision)
+      throw Error('registry_revision_conflict');
+    return true;
+  }
+  private readonly active: Map<string, Active>;
   private readiness: ReturnType<typeof qualifyLocalExecution> | undefined;
   async ensureReady() {
     if (!this.options.tools) throw Error('sandbox_unavailable');
@@ -102,9 +170,31 @@ export class LocalWorkspaceSessions
     private readonly files: LocalWorkspaceFiles,
     private readonly writer: LocalWorkspaceApply,
     private readonly commands: LocalWorkspaceCommands | undefined,
-  ) {}
+  ) {
+    let active = ownerCapabilities.get(options.owner);
+    if (!active) {
+      active = new Map();
+      ownerCapabilities.set(options.owner, active);
+    }
+    this.active = active;
+  }
+  /** Actual capabilities across every facade of this host owner. A failed close
+   * remains visible; no durable label or absent process substitutes for this view. */
+  rangeCapabilities(scope: Scope) {
+    return [...this.active.values()]
+      .filter(
+        (a) => a.admission.projectId === scope.projectId && a.admission.taskId === scope.taskId,
+      )
+      .map((a) => ({
+        workerId: a.admission.workerId,
+        sessionId: a.admission.sessionId,
+        closing: a.closing,
+        fileCapabilities: a.call !== undefined,
+      }))
+      .sort((a, b) => a.workerId.localeCompare(b.workerId, 'en'));
+  }
   static async create(options: Options) {
-    // Private active map is shared only with this authority verifier.
+    // Each authority checks the same host-owner capability collection.
     let service: LocalWorkspaceSessions | undefined;
     const authority = new LocalWorkspaceAuthority(
       options.control,
@@ -156,6 +246,35 @@ export class LocalWorkspaceSessions
       : undefined;
     service = new LocalWorkspaceSessions(options, authority, files, writer, commands);
     return service;
+  }
+  /** Host-only range closure reader. An active capability is never evidence of
+   * closure; the private native boundary and exact canonical safe point are required. */
+  rangeBoundary(scope: Scope & { workerId: string; sessionId: string; safePointRef: string }) {
+    return readLocalRangeBoundary(scope, {
+      objects: this.options.objects,
+      tasks: { load: (input) => this.options.control.assertClosed(input) },
+      isActive: (input) => this.active.has(key(input)),
+    });
+  }
+  /** No new lease/call is manufactured to inspect retained journals. */
+  async rangeOperations(scope: Scope & { workspaceId: string }) {
+    const files = await this.writer.readClosedOperations(scope);
+    const commands = this.commands ? await this.commands.readClosedOperations(scope) : [];
+    if (!this.commands)
+      for (const ref of await this.options.objects.references()) {
+        const value = (await this.options.objects.get(ref.valueHash)) as {
+          schemaVersion?: string;
+          call?: WorkspaceCall;
+        };
+        if (
+          value.schemaVersion === 'workspace-command-prepared-v1' &&
+          value.call?.projectId === scope.projectId &&
+          value.call.taskId === scope.taskId &&
+          value.call.workspaceId === scope.workspaceId
+        )
+          throw Error('workspace_command_closure_unavailable');
+      }
+    return { schemaVersion: 'workspace-range-operations-v1' as const, ...scope, files, commands };
   }
   verifyCommand(scope: Scope & { workspaceId: string }, receiptId: string) {
     if (!this.commands) throw Error('workspace_command_unavailable');
@@ -875,7 +994,8 @@ export class LocalWorkspaceSessions
         checkpoint: async (reason) => {
           if (active.closed || active.closing) throw Error('workspace_worker_capability_closed');
           await serializeWorkspaceOperation(call, async () => {
-            await this.authority.assertCall(call, 'read');
+            // A checkpoint admits no new tool or source read. The durable range
+            // barrier must not prevent natural boundary/closure evidence.
             await save(reason);
           });
         },

@@ -1,6 +1,7 @@
 // Real Coordinator, WorkerRuntime, scheduler, persistence and native commands.
-// Mock reason (R11): a deterministic Executor isolates lifecycle ordering from
-// the external model. Fault probes close admission after the first native write
+// Mock reason (R11): scripted external responses isolate lifecycle ordering;
+// the Harness loop, JSONL and flush are real. Fault probes close admission after
+// the first native write
 // or drop the final completion marker; native effects and other records stay real.
 // Actual Harness/provider/D16 acceptance remains separate.
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -40,6 +41,7 @@ import { LocalDeliveryCandidates } from '../../../packages/runtime/sandbox/src/l
 import { LocalDeliveryTreeBatch } from '../../../packages/runtime/sandbox/src/local-integration-tree-batch';
 import { localRecordHash } from '../../../packages/runtime/sandbox/src/local-registry-records';
 import { LocalWorkspaceSessions } from '../../../packages/runtime/sandbox/src/local-workspace-sessions';
+import { createScriptedLocalHarness } from './local-scripted-harness-fixture';
 
 export async function exerciseDeliveryValidation(input: {
   options: Parameters<typeof LocalWorkspaceSessions.create>[0];
@@ -276,19 +278,31 @@ export async function exerciseDeliveryValidation(input: {
         buildExecutor: () => {
           throw Error('unexpected_legacy_executor');
         },
-        buildLocalExecutor: async (_spec, _assignment, session) => ({
-          async step() {
-            await read(session);
-            return { kind: 'done' as const, output: {}, reachedSafeBoundary: true, mutations: [] };
-          },
-          async saveSafePoint() {
-            throw Error('deterministic_fixture_has_no_harness_checkpoint');
-          },
-          async loadSafePoint() {
-            throw Error('deterministic_fixture_has_no_harness_checkpoint');
-          },
-          injectInbox() {},
-        }),
+        buildLocalExecutor: async (spec, _assignment, session) =>
+          createScriptedLocalHarness(
+            spec,
+            {
+              root: join(
+                options.owner.root,
+                'projects',
+                scope.projectId,
+                'tasks',
+                scope.taskId,
+                'harness-sessions',
+              ),
+              cwd: input.root,
+              ...scope,
+            },
+            async () => {
+              await read(session);
+              return {
+                kind: 'done' as const,
+                output: {},
+                reachedSafeBoundary: true,
+                mutations: [],
+              };
+            },
+          ),
         completeLocalAssignment: async (_state, _assignment, session) =>
           complete ? complete(session) : [],
       },

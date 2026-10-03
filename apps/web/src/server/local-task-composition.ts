@@ -2,6 +2,7 @@
  * the registry/toolchain remains host-owned; this factory never grants a root. */
 import {
   type AppState,
+  canonicalJson,
   currentLocalCompletionEvidence,
   currentReviewDispatch,
   type DeliveryRepairSource,
@@ -27,6 +28,7 @@ import {
   type HarnessExecutorOptions,
   inspectHarnessSafePoint,
   projectForAssignment,
+  readHarnessLineageEvidence,
 } from '@agora/runtime-executor';
 import type {
   BoundWorkspaceTools,
@@ -35,6 +37,7 @@ import type {
   WorkspaceWorkerSession,
 } from '@agora/runtime-sandbox';
 import type { LocalGitWorkspaces } from '../../../../packages/runtime/sandbox/src/local-git-workspaces';
+import type { LocalRangeForkPlan } from '../../../../packages/runtime/sandbox/src/local-range-resume-controller';
 import type { LocalWorkspaceSessions } from '../../../../packages/runtime/sandbox/src/local-workspace-sessions';
 import { LocalGitWaveValidationService } from './local-git-wave-validation';
 import { readLocalParallelContext } from './local-parallel-context';
@@ -133,7 +136,7 @@ const gitTask = (state: AppState) =>
   state.parallelExecution !== undefined || state.localExecution?.git !== undefined;
 /** The deferred port is inert during Agent factory Fork. It can only call tools
  * after WorkerRuntime has acquired a new lease and supplied its fresh session. */
-function deferredTools() {
+export function deferredTools() {
   let target: BoundWorkspaceTools | undefined;
   const get = () => {
     if (!target) throw Error('workspace_worker_capability_closed');
@@ -248,10 +251,11 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
       await new LocalValidationService(bootstrap.local, () => load(scope)).verifyCompletion(state);
   });
   return async (input) => {
-    const { scope, resume } = input;
+    const { scope, resume, rangeReturn } = input;
     const initialState = requireState(await input.loadState(), scope);
     if (initialState.goal !== input.goal) throw Error('local_task_goal_mismatch');
     const bootstrap = await get(scope);
+    const preparation = prepared.get(key(scope));
     const validation = new LocalValidationService(bootstrap.local, () => load(scope));
     const gitValidation = bootstrap.artifactsRoot
       ? new LocalGitWaveValidationService(
@@ -275,7 +279,7 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
     const modelBinding = await options.modelSettings?.freeze(
       scope,
       input.goal,
-      resume !== undefined,
+      resume !== undefined || rangeReturn !== undefined,
     );
     const routes =
       modelBinding === undefined
@@ -350,6 +354,7 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
       const failures = results.flatMap((r) => (r.status === 'rejected' ? [r.reason] : []));
       if (failures.length) throw new AggregateError(failures, 'local_composition_cleanup_failed');
       closed = true;
+      if (prepared.get(key(scope)) === preparation) prepared.delete(key(scope));
     };
     try {
       if (resume) {
@@ -451,6 +456,12 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
               }
             : {}),
           localWorkspace: bootstrap.local,
+          rangeAdmission: bootstrap.local,
+          closeRangeExecutor: async (executor) => {
+            const entries = executors.filter((entry) => entry.executor === executor);
+            if (entries.length !== 1) throw Error('range_executor_owner_missing');
+            await entries[0]?.dispose();
+          },
           resolveWorktree: async (state, assignment) => {
             if (!gitTask(state) || !['CODER', 'TESTER', 'REVIEWER'].includes(assignment.role))
               throw Error('local_git_resolver_required');
@@ -510,6 +521,89 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
       );
       const deliveryFinalization = options.deliveryFinalization;
       const codingPreparation = options.codingPreparation;
+      const rangeChildren = new Set<string>();
+      const readRangeFork = (plan: LocalRangeForkPlan, fresh: boolean) =>
+        readHarnessLineageEvidence(
+          plan.sourceSafePointRef,
+          plan.resumeSessionId,
+          {
+            root: bootstrap.sessionRoot,
+            cwd: bootstrap.cwd,
+            projectId: plan.projectId,
+            taskId: plan.taskId,
+            role: plan.role,
+          },
+          { fresh },
+        );
+      const prepareRangeFork = async (plan: LocalRangeForkPlan, state: AppState) => {
+        const worker = state.workers.find((w) => w.workerId === plan.workerId),
+          identity = inspectHarnessSafePoint(plan.sourceSafePointRef),
+          roster = (await input.loadRoster?.()) ?? DEFAULT_ROSTER,
+          spec = roster.find((r) => r.role === plan.role);
+        if (
+          closed ||
+          !spec ||
+          state.projectId !== scope.projectId ||
+          state.taskId !== scope.taskId ||
+          plan.projectId !== scope.projectId ||
+          plan.taskId !== scope.taskId ||
+          state.humanGate ||
+          worker?.status !== 'paused' ||
+          worker.role !== plan.role ||
+          worker.sessionId !== plan.sourceSessionId ||
+          worker.safePoint !== plan.sourceSafePointRef ||
+          identity.projectId !== scope.projectId ||
+          identity.taskId !== scope.taskId ||
+          identity.role !== plan.role ||
+          identity.cwd !== bootstrap.cwd ||
+          rangeChildren.has(plan.resumeSessionId) ||
+          canonicalJson(await input.loadState()) !== canonicalJson(state) ||
+          workerRuntime.rangeActivity(scope).activeWorkerIds.includes(plan.workerId)
+        )
+          throw Error('local_range_factory_identity_mismatch');
+        rangeChildren.add(plan.resumeSessionId);
+        let deferred: ReturnType<typeof deferredTools> | undefined;
+        const configured = executorOptions(spec, plan.resumeSessionId);
+        let executor: HarnessExecutor;
+        if (['PM', 'COORDINATOR'].includes(spec.role))
+          executor = remember(
+            createLocalControlExecutor({
+              ...configured,
+              session: { kind: 'control', sessionId: plan.resumeSessionId },
+            }),
+          );
+        else {
+          const binding = state.localExecution?.bindings.find((b) => b.workerId === plan.workerId),
+            workspace = state.localExecution?.workspaces.find(
+              (w) => w.workspaceId === binding?.workspaceId,
+            );
+          if (!workspace) throw Error('local_workspace_assignment_missing');
+          deferred = deferredTools();
+          executor = remember(
+            await createLocalWorkspaceExecutor({
+              ...configured,
+              session: { workspace, sessionId: plan.resumeSessionId, tools: deferred.tools },
+            }),
+          );
+        }
+        try {
+          await executor.loadSafePoint(plan.sourceSafePointRef);
+          // Registration is committed after preparation. Let the first leased
+          // WorkerRuntime step supply its fresh canonical projection instead of
+          // caching this pre-registration state through injectInbox.
+          await readRangeFork(plan, true);
+          if (canonicalJson(await input.loadState()) !== canonicalJson(state))
+            throw Error('local_range_factory_source_changed');
+          forks.set(worker.workerId, {
+            executor,
+            role: worker.role,
+            ...(deferred ? { deferred } : {}),
+          });
+        } catch (error) {
+          deferred?.close();
+          throw error;
+        }
+      };
       return {
         initialState: await load(scope),
         ...(codingPreparation
@@ -517,6 +611,7 @@ export function createLocalTaskCompositionFactory(options: Options): TaskComposi
           : {}),
         ...(options.integrate ? { integrate: options.integrate } : {}),
         workerRuntime,
+        workspaceRange: { prepareFork: prepareRangeFork, readFork: readRangeFork },
         ...(nativeParallel && gitValidation && baseReader
           ? {
               parallelContext: (state: AppState) =>

@@ -50,7 +50,10 @@ export class LocalWorkspaceBatch {
       basis: string,
       batchKey: string,
     ) => Promise<WorkspaceFileApply>,
-    private readonly verifyOne: (call: WorkspaceCall) => Promise<WorkspaceFileApply>,
+    private readonly verifyOne: (
+      call: WorkspaceCall,
+      historical?: boolean,
+    ) => Promise<WorkspaceFileApply>,
   ) {}
   async assertQuiescent(call: WorkspaceCall, allowedKey?: string) {
     for (const ref of await this.objects.references()) {
@@ -71,6 +74,58 @@ export class LocalWorkspaceBatch {
       if (receipt.needsAttention || !receipt.quiescent)
         throw Error('workspace_file_recovery_required');
     }
+  }
+  /** Immutable original prefix only. No admission, source reads or retries. */
+  async readActual(
+    scope: Pick<WorkspaceCall, 'projectId' | 'taskId' | 'workspaceId'>,
+    receiptId: string,
+  ) {
+    const fixed = structuredClone(scope);
+    if (!/^batch:[a-f0-9]{64}$/.test(receiptId)) throw Error('invalid_file_receipt');
+    const key = receiptId.slice(6),
+      preparedHash = await this.objects.getReference(key);
+    if (!preparedHash) throw Error('workspace_file_recovery_required');
+    const prepared = this.prepared(await this.objects.get(preparedHash));
+    if (
+      workspaceFileActionKey(prepared.call) !== key ||
+      Object.keys(fixed).sort().join(',') !== 'projectId,taskId,workspaceId' ||
+      prepared.call.projectId !== fixed.projectId ||
+      prepared.call.taskId !== fixed.taskId ||
+      prepared.call.workspaceId !== fixed.workspaceId
+    )
+      throw Error('invalid_file_receipt');
+    const receiptHash = await this.objects.getReference(resultKey(key));
+    if (!receiptHash) throw Error('workspace_file_recovery_required');
+    const receipt = await this.terminal(prepared, receiptHash, true);
+    if (!receipt.quiescent || typeof receipt.effect !== 'boolean')
+      throw Error('workspace_file_recovery_required');
+    // A later prepared child without a terminal prefix is an unknown native effect.
+    for (let i = receipt.childReceipts.length; i < prepared.changes.length; i++)
+      if (await this.objects.getReference(workspaceFileActionKey(this.childCall(prepared.call, i))))
+        throw Error('workspace_file_recovery_required');
+    const invalidationRef = await this.objects.getReference(
+      localRecordHash({ key, phase: 'batch-invalidation' }),
+    );
+    if (
+      invalidationRef &&
+      localRecordHash(await this.objects.get(invalidationRef)) !==
+        localRecordHash({
+          schemaVersion: 'workspace-batch-invalidation-v1',
+          receiptHash,
+          reason: 'authority_or_root_changed',
+        })
+    )
+      throw Error('workspace_file_recovery_required');
+    return {
+      prepared,
+      preparedHash,
+      receipt,
+      receiptHash,
+      invalidationRef: invalidationRef ?? null,
+      childIds: receipt.childReceipts.map(
+        (_, i) => `apply:${workspaceFileActionKey(this.childCall(prepared.call, i))}`,
+      ),
+    };
   }
   async apply(
     call: WorkspaceCall,
@@ -292,14 +347,19 @@ export class LocalWorkspaceBatch {
     }
     return receipt;
   }
-  private async terminal(prepared: Prepared, hash: string): Promise<WorkspaceFileBatchApply> {
+  private async terminal(
+    prepared: Prepared,
+    hash: string,
+    historical = false,
+  ): Promise<WorkspaceFileBatchApply> {
     if (
-      await this.objects.getReference(
+      !historical &&
+      (await this.objects.getReference(
         localRecordHash({
           key: workspaceFileActionKey(prepared.call),
           phase: 'batch-invalidation',
         }),
-      )
+      ))
     )
       throw Error('workspace_file_recovery_required');
     const receipt = (await this.objects.get(hash)) as WorkspaceFileBatchApply;
@@ -333,7 +393,7 @@ export class LocalWorkspaceBatch {
       if (receipt[key] !== prepared.call[key]) throw Error('invalid_file_receipt');
     const children: WorkspaceFileApply[] = [];
     for (let index = 0; index < receipt.childReceipts.length; index++) {
-      const result = await this.verifyOne(this.childCall(prepared.call, index));
+      const result = await this.verifyOne(this.childCall(prepared.call, index), historical);
       children.push(result);
       if (
         localRecordHash(result) !== receipt.childReceipts[index] ||

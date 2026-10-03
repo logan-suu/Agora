@@ -9,6 +9,7 @@ import {
 import type { LocalBindingCoordinator } from './local-binding-coordinator';
 import type { LocalDeliverySources } from './local-delivery-comparison-record';
 import { inspectLocalRoot } from './local-file-transaction';
+import { assertLocalRangeAdmission } from './local-range-admission';
 import {
   assertLocalControlMessage,
   isLocalBindingOperation,
@@ -259,6 +260,14 @@ export class LocalDeliveryAuthority {
       { control } = this.options;
     const state = await control.assertClosed(call),
       snapshot = await control.snapshot();
+    const workspace = snapshot.workspaces.find(
+      (w) =>
+        w.workspaceId === call.workspaceId &&
+        w.projectId === call.projectId &&
+        w.taskId === call.taskId,
+    );
+    if (!workspace) throw Error('delivery_application_assignment_mismatch');
+    assertLocalRangeAdmission(snapshot, workspace, state.localExecution?.workspaces ?? []);
     await this.options.assertControl(state);
     const claim = snapshot.claims.find((c) => c.claimId === call.claimId);
     if (claim?.kind !== 'delivery' || !equal(callFor(claim), call))

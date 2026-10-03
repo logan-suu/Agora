@@ -304,6 +304,26 @@ export class LocalWorkspaceFiles {
     readReceiptId: string,
   ) {
     const admitted = await this.authority.assertCall(call, 'edit');
+    const basis = await this.loadHistoricalBasis(
+      call,
+      path,
+      version,
+      readReceiptId,
+      localRecordHash(admitted.binding),
+      admitted.sourceReceiptId,
+    );
+    await this.authority.assertCall(call, 'edit');
+    return basis;
+  }
+  /** Private historical read: no live grant, worker capability or source access. */
+  async loadHistoricalBasis(
+    call: WorkspaceCall,
+    path: string,
+    version: FileVersionV1,
+    readReceiptId: string,
+    bindingHash: string,
+    canonicalSourceRef: string,
+  ) {
     if (!/^read:[a-f0-9]{64}$/.test(readReceiptId)) throw Error('invalid_file_receipt');
     const hash = await this.objects.getReference(readReceiptId.slice(5));
     if (!hash) throw Error('invalid_file_receipt');
@@ -314,12 +334,11 @@ export class LocalWorkspaceFiles {
       localRecordHash({ ...receiptCall(saved), actionId: call.actionId }) !==
         localRecordHash(call) ||
       localRecordHash(saved.version) !== localRecordHash(version) ||
-      saved.bindingHash !== localRecordHash(admitted.binding) ||
-      saved.canonicalSourceRef !== admitted.sourceReceiptId
+      saved.bindingHash !== bindingHash ||
+      saved.canonicalSourceRef !== canonicalSourceRef
     )
       throw Error('file_basis_mismatch');
     const result = await this.result(saved);
-    await this.authority.assertCall(call, 'edit');
     return { ...result, metadata: saved.metadata, contentHash: saved.contentHash };
   }
   private async result(saved: StoredRead): Promise<WorkspaceFileRead> {

@@ -1,7 +1,11 @@
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session';
 import { describe, expect, it } from 'vitest';
 
-import { projectTraceInspections, type TraceInspection } from '../src/trace';
+import {
+  assertClosedHarnessSession,
+  projectTraceInspections,
+  type TraceInspection,
+} from '../src/trace';
 
 function event(seq: number, time: number, type: string, data: unknown): SessionEvent {
   return {
@@ -525,5 +529,52 @@ describe('retry Trace facts', () => {
     expect(
       projectTraceInspections('p', 't', [parent, child], { maxEvents: 1 }).omittedEventCount,
     ).toBe(9);
+  });
+});
+
+describe('assertClosedHarnessSession', () => {
+  function largeTurn(turn: number, start: number, close: boolean) {
+    const events = [event(start, start, 'turn/start', { turn })];
+    for (let step = 1; step <= 1001; step++) {
+      const seq = start + events.length;
+      events.push(event(seq, seq, 'step/start', { turn, step }));
+      events.push(event(seq + 1, seq + 1, 'step/end', { turn, step }));
+    }
+    if (close) {
+      const seq = start + events.length;
+      events.push(event(seq, seq, 'turn/end', { turn, reason: { kind: 'completed' } }));
+    }
+    return events;
+  }
+  it('checks a closed native turn even when its display would be omitted', () => {
+    const source = inspection('large', 'CODER', largeTurn(1, 0, true));
+    expect(projectTraceInspections('p', 't', [source], { maxEvents: 2000 }).sessions).toEqual([]);
+    expect(() => assertClosedHarnessSession([source], 'large')).not.toThrow();
+  });
+  it('rejects a large open tail omitted from a bounded display', () => {
+    const closed = [
+      event(0, 0, 'turn/start', { turn: 1 }),
+      event(1, 1, 'turn/end', { turn: 1, reason: { kind: 'completed' } }),
+    ];
+    const source = inspection('large', 'CODER', [...closed, ...largeTurn(2, 2, false)]);
+    expect(
+      projectTraceInspections('p', 't', [source], { maxEvents: 2000 }).sessions[0]?.turns,
+    ).toHaveLength(1);
+    expect(() => assertClosedHarnessSession([source], 'large')).toThrow(/session_not_closed/);
+  });
+  it('refuses seed-only, missing and invalid lineage sources', () => {
+    const parent = inspection('parent', 'CODER', [
+      event(0, 0, 'turn/start', { turn: 1 }),
+      event(1, 1, 'turn/end', { turn: 1, reason: { kind: 'completed' } }),
+    ]);
+    const child = inspection('child', 'CODER', [...parent.events], {
+      parentSession: 'parent',
+      seedLength: 2,
+    });
+    expect(() => assertClosedHarnessSession([parent, child], 'child')).toThrow(
+      /session_not_closed/,
+    );
+    expect(() => assertClosedHarnessSession([parent], 'missing')).toThrow(/session_not_closed/);
+    expect(() => assertClosedHarnessSession([child], 'child')).toThrow(/no parent/);
   });
 });

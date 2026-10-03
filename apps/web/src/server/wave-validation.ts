@@ -18,6 +18,8 @@ import {
   validationSubtaskIds,
   type WaveValidationReceipt,
   type WorktreeRef,
+  workspaceUndoResults,
+  workspaceVersionChanges,
 } from '@agora/core-domain';
 import { WORKTREE_GIT_GUIDANCE } from '@agora/roles-definitions';
 import type { RunResult, SandboxManager } from '@agora/runtime-sandbox';
@@ -29,6 +31,9 @@ const TEST_FIXTURE = /^tests\/fixtures\/[A-Za-z0-9._/-]+$/;
 
 export function controlFingerprint(state: AppState): string {
   const completionIds = canonicalCompletionDecisionIds(state);
+  const workspaceChanges = [...workspaceVersionChanges(state), ...workspaceUndoResults(state)].map(
+    (c) => c.privateProofHash,
+  );
   const superseded = new Set(
     state.decisionLedger.flatMap((decision) =>
       decision.supersedes === undefined ? [] : [decision.supersedes],
@@ -69,6 +74,7 @@ export function controlFingerprint(state: AppState): string {
     .update(
       canonicalJson({
         goal: state.goal,
+        ...(workspaceChanges.length ? { workspaceChanges } : {}),
         activeRequirements: requirements,
         currentDecisions,
         executionPlan,

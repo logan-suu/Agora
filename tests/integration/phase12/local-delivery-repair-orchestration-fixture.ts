@@ -1,5 +1,6 @@
 // Real native workspaces, claims, command validation and production orchestration.
-// Deterministic role executors isolate routing; external Harness/Leader resume
+// Scripted external responses isolate routing; official Harness loops, JSONL
+// and checkpoint flush are real. Live-provider/Leader resume
 // acceptance is separate and this fixture stops at the new completion gate.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -19,6 +20,7 @@ import { LocalDeliveryRepairs } from '../../../packages/runtime/sandbox/src/loca
 import { localRecordHash } from '../../../packages/runtime/sandbox/src/local-registry-records';
 import { LocalWorkspaceSessions } from '../../../packages/runtime/sandbox/src/local-workspace-sessions';
 import type { exerciseDeliveryValidation } from './local-delivery-validation-fixture';
+import { createScriptedLocalHarness } from './local-scripted-harness-fixture';
 
 export async function exerciseDeliveryRepairOrchestration(
   input: Parameters<typeof exerciseDeliveryValidation>[0],
@@ -72,70 +74,77 @@ export async function exerciseDeliveryRepairOrchestration(
       buildExecutor: () => {
         throw Error('unexpected_legacy_executor');
       },
-      buildLocalExecutor: async (_spec, assignment, session) => ({
-        async step() {
-          roles.push(assignment.role);
-          const action = (kind: string) =>
-            `tool:${localRecordHash({ ...scope, workerId: assignment.workerId, kind })}`;
-          const read = await session.tools.read(action('read'), 'sentinel');
-          if (read.kind !== 'file') throw Error('missing_repair_file');
-          if (assignment.role === 'CODER') {
-            expect(read.content.toString('utf8')).toBe(original);
-            await session.tools.apply(
-              action('write'),
-              [
-                {
-                  path: 'sentinel',
-                  expected: read.version,
-                  readReceiptId: read.readReceiptId,
-                  content: 'fixed user content',
-                  encoding: 'utf8',
-                },
-              ],
-              [],
-            );
-          } else {
-            expect(read.content.toString('utf8')).toBe('fixed user content');
-            await expect(
-              session.tools.apply(
+      buildLocalExecutor: async (spec, assignment, session) =>
+        createScriptedLocalHarness(
+          spec,
+          {
+            root: join(
+              options.owner.root,
+              'projects',
+              scope.projectId,
+              'tasks',
+              scope.taskId,
+              'harness-sessions',
+            ),
+            cwd: input.root,
+            ...scope,
+          },
+          async () => {
+            roles.push(assignment.role);
+            const action = (kind: string) =>
+              `tool:${localRecordHash({ ...scope, workerId: assignment.workerId, kind })}`;
+            const read = await session.tools.read(action('read'), 'sentinel');
+            if (read.kind !== 'file') throw Error('missing_repair_file');
+            if (assignment.role === 'CODER') {
+              expect(read.content.toString('utf8')).toBe(original);
+              await session.tools.apply(
                 action('write'),
                 [
                   {
                     path: 'sentinel',
                     expected: read.version,
                     readReceiptId: read.readReceiptId,
-                    content: 'forbidden',
+                    content: 'fixed user content',
                     encoding: 'utf8',
                   },
                 ],
                 [],
-              ),
-            ).rejects.toThrow('authorization_closed');
-          }
-          return {
-            kind: 'done' as const,
-            output: {},
-            reachedSafeBoundary: true,
-            mutations:
-              assignment.role === 'REVIEWER'
-                ? [
-                    appendMutation('reviewComments', {
-                      id: 'repair-reviewed',
-                      kind: 'verdict',
-                      verdict: 'approved',
-                    }),
-                  ]
-                : [],
-          };
-        },
-        async saveSafePoint() {
-          throw Error('deterministic_fixture_has_no_harness_checkpoint');
-        },
-        async loadSafePoint() {
-          throw Error('deterministic_fixture_has_no_harness_checkpoint');
-        },
-        injectInbox() {},
-      }),
+              );
+            } else {
+              expect(read.content.toString('utf8')).toBe('fixed user content');
+              await expect(
+                session.tools.apply(
+                  action('write'),
+                  [
+                    {
+                      path: 'sentinel',
+                      expected: read.version,
+                      readReceiptId: read.readReceiptId,
+                      content: 'forbidden',
+                      encoding: 'utf8',
+                    },
+                  ],
+                  [],
+                ),
+              ).rejects.toThrow('authorization_closed');
+            }
+            return {
+              kind: 'done' as const,
+              output: {},
+              reachedSafeBoundary: true,
+              mutations:
+                assignment.role === 'REVIEWER'
+                  ? [
+                      appendMutation('reviewComments', {
+                        id: 'repair-reviewed',
+                        kind: 'verdict',
+                        verdict: 'approved',
+                      }),
+                    ]
+                  : [],
+            };
+          },
+        ),
       completeLocalAssignment: async (state, assignment, session) =>
         assignment.role === 'TESTER'
           ? validator.complete(state, assignment.workerId, session.workspace.workspaceId, session)

@@ -19,6 +19,8 @@ import {
   localValidationReceipt,
   type Mutation,
   setMutation,
+  workspaceUndoResults,
+  workspaceVersionChanges,
 } from '@agora/core-domain';
 import type {
   WorkspaceArchivePort,
@@ -42,6 +44,9 @@ const dispatch = (state: AppState) =>
     );
 export function localControlFingerprint(state: AppState): string {
   const completion = canonicalCompletionDecisionIds(state);
+  const workspaceChanges = [...workspaceVersionChanges(state), ...workspaceUndoResults(state)].map(
+    (c) => c.privateProofHash,
+  );
   const inactive = new Set(
     state.decisionLedger.flatMap((d) => [
       ...(d.supersedes ? [d.supersedes] : []),
@@ -53,6 +58,7 @@ export function localControlFingerprint(state: AppState): string {
   );
   return hash({
     goal: state.goal,
+    ...(workspaceChanges.length ? { workspaceChanges } : {}),
     requirements: activeRequirements(state)
       .map((r) => ({
         ...r,

@@ -145,6 +145,37 @@ export class HarnessTraceReader implements TraceReader {
   }
 }
 
+/** Validate complete official event lifecycles before using a session as closure
+ * evidence. Display truncation is deliberately absent from this proof reader. */
+export function assertClosedHarnessSession(
+  inspections: readonly TraceInspection[],
+  sessionId: string,
+): void {
+  const byId = new Map<string, TraceInspection>();
+  for (const inspection of inspections) {
+    const id = String(inspection.meta.id);
+    if (byId.has(id)) throw new Error(`duplicate Harness session "${id}"`);
+    validateEventSequence(inspection);
+    byId.set(id, inspection);
+  }
+  validateLineages(byId);
+  const source = byId.get(sessionId);
+  if (!source) throw new Error('session_not_closed');
+  const native = projectSession(source);
+  if (
+    native.turns.length === 0 ||
+    native.turns.some(
+      ({ view }) =>
+        view.endedAt === undefined ||
+        view.steps.some(
+          (step) =>
+            step.endedAt === undefined || step.tools.some((tool) => tool.endedAt === undefined),
+        ),
+    )
+  )
+    throw new Error('session_not_closed');
+}
+
 export function projectTraceInspections(
   projectId: string,
   taskId: string,

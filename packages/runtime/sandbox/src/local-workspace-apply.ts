@@ -22,6 +22,7 @@ import {
   type LocalCreationReceipt,
   type LocalReplacementReceipt,
 } from './local-file-transaction';
+import { readNativeInstalledFile } from './local-native-file-effect';
 import type { LocalRegistryOwner } from './local-registry-file';
 import { localRecordHash } from './local-registry-records';
 import { localFileVersion } from './local-version-store';
@@ -74,11 +75,15 @@ export class LocalWorkspaceApply {
       files,
       helper,
       (call, change, basis, key) => this.apply(call, change, basis, key),
-      async (call) => {
+      async (call, historical) => {
         const key = actionKey(call),
           hash = await objects.getReference(key),
           result = await objects.getReference(phaseKey(key, 'result'));
-        if (!hash || !result || (await objects.getReference(phaseKey(key, 'invalidation'))))
+        if (
+          !hash ||
+          !result ||
+          (!historical && (await objects.getReference(phaseKey(key, 'invalidation'))))
+        )
           throw Error('workspace_file_recovery_required');
         const prepared = (await objects.get(hash)) as Prepared;
         for (const field of Object.keys(call) as (keyof WorkspaceCall)[])
@@ -343,13 +348,42 @@ export class LocalWorkspaceApply {
     } catch {
       /* The prepared/native-start facts remain durable; uncertainty is explicit. */
     }
+    let nativeProof: Awaited<ReturnType<typeof readNativeInstalledFile>> | null = null;
+    if (native) {
+      try {
+        nativeProof = await readNativeInstalledFile({
+          native,
+          journalRoot: this.journalRoot,
+          bindingHash: prepared.bindingHash,
+          path: change.path,
+          expected: change.expected,
+          baselineMetadata: basis.metadata,
+          baseline: basis.kind === 'file' ? basis.content : Buffer.alloc(0),
+          candidate,
+          assertPrivateRoot: () => this.assertRoot(),
+        });
+      } catch {
+        /* Missing/corrupt provenance invalidates success, never the actual effect. */
+      }
+      await this.objects.bindReference(
+        phaseKey(key, 'native-effect'),
+        await this.objects.put({
+          schemaVersion: 'workspace-native-effect-proof-v1',
+          preparedHash,
+          nativeReceiptRef: await this.objects.put(native),
+          proof: nativeProof,
+        }),
+      );
+    }
     const effect = native ? ('created' in native ? native.created : native.exchanged) : null;
     const applied =
       native?.stage === 'applied' &&
       native.quiescent &&
       !authorizationClosed &&
       observed?.kind === 'regular' &&
-      observed.sha256 === change.contentRef;
+      observed.sha256 === change.contentRef &&
+      nativeProof?.installedVersion?.kind === 'regular' &&
+      localRecordHash(observed) === localRecordHash(nativeProof.installedVersion);
     const conflict =
       native?.stage === 'conflict' && effect === false && native.quiescent && !authorizationClosed;
     const stage = applied ? 'applied' : conflict ? 'conflict' : 'recoveryRequired';
@@ -394,6 +428,211 @@ export class LocalWorkspaceApply {
     }
     return receipt;
   }
+  /** Host-only closure inventory. Every prepared action needs a sealed terminal
+   * and known native effect; invalidated success is not confused with a live write. */
+  async readClosedOperations(scope: Pick<WorkspaceCall, 'projectId' | 'taskId' | 'workspaceId'>) {
+    await this.assertRoot();
+    const receipts = [];
+    for (const ref of await this.objects.references()) {
+      const value = (await this.objects.get(ref.valueHash)) as Partial<Prepared> & {
+        call?: WorkspaceCall;
+      };
+      if (
+        value.schemaVersion === 'workspace-file-apply-prepared-v1' &&
+        value.projectId === scope.projectId &&
+        value.taskId === scope.taskId &&
+        value.workspaceId === scope.workspaceId
+      ) {
+        if (ref.key !== actionKey(value as Prepared)) {
+          if (
+            ref.key !== phaseKey(actionKey(value as Prepared), 'native-start') ||
+            (await this.objects.getReference(actionKey(value as Prepared))) !== ref.valueHash
+          )
+            throw Error('invalid_file_receipt');
+          continue;
+        }
+        const effect = await this.readActualFileEffect(scope, `apply:${ref.key}`);
+        receipts.push({
+          key: ref.key,
+          preparedHash: ref.valueHash,
+          proofHash: localRecordHash(effect),
+        });
+      } else if (
+        (value.schemaVersion as string) === 'workspace-file-batch-prepared-v1' &&
+        value.call?.projectId === scope.projectId &&
+        value.call.taskId === scope.taskId &&
+        value.call.workspaceId === scope.workspaceId
+      ) {
+        const effect = await this.readActualBatch(scope, `batch:${ref.key}`);
+        receipts.push({
+          key: ref.key,
+          preparedHash: ref.valueHash,
+          proofHash: localRecordHash(effect),
+        });
+      }
+    }
+    return receipts.sort((a, b) => a.key.localeCompare(b.key, 'en'));
+  }
+  /** Validated batch prefix plus each native original effect. Unattempted items
+   * are preserved as plan facts, never fabricated as successful writes. */
+  async readActualBatch(
+    scope: Pick<WorkspaceCall, 'projectId' | 'taskId' | 'workspaceId'>,
+    receiptId: string,
+  ) {
+    const batch = await this.batch.readActual(scope, receiptId);
+    const effects = [];
+    for (let i = 0; i < batch.childIds.length; i++) {
+      const effect = await this.readActualFileEffect(scope, batch.childIds[i] as string);
+      if (effect.receiptHash !== batch.receipt.childReceipts[i])
+        throw Error('invalid_file_receipt');
+      effects.push(effect);
+    }
+    return {
+      schemaVersion: 'workspace-actual-file-batch-v1' as const,
+      receiptId,
+      preparedHash: batch.preparedHash,
+      receiptHash: batch.receiptHash,
+      invalidationRef: batch.invalidationRef,
+      inputHash: batch.prepared.inputHash,
+      plannedChanges: structuredClone(batch.prepared.changes),
+      effects,
+    };
+  }
+  /** Original immutable effects remain readable after success invalidation or
+   * capability closure. This method cannot execute or replay a native operation. */
+  async readActualFileEffect(
+    scope: Pick<WorkspaceCall, 'projectId' | 'taskId' | 'workspaceId'>,
+    receiptId: string,
+  ) {
+    const fixed = structuredClone(scope);
+    if (!/^apply:[a-f0-9]{64}$/.test(receiptId)) throw Error('invalid_file_receipt');
+    const key = receiptId.slice(6),
+      preparedHash = await this.objects.getReference(key);
+    if (!preparedHash) throw Error('workspace_file_recovery_required');
+    const prepared = (await this.objects.get(preparedHash)) as Prepared;
+    if (
+      !prepared ||
+      Object.keys(prepared).sort().join(',') !==
+        'actionId,basisReceiptId,bindingHash,canonicalSourceRef,change,createdAt,grantRevision,inputHash,nativeActionId,projectId,receiptId,rootId,schemaVersion,stage,taskId,workerId,workspaceId,writerEpoch' ||
+      prepared.schemaVersion !== 'workspace-file-apply-prepared-v1' ||
+      prepared.stage !== 'prepared' ||
+      prepared.receiptId !== receiptId ||
+      prepared.projectId !== fixed.projectId ||
+      prepared.taskId !== fixed.taskId ||
+      prepared.workspaceId !== fixed.workspaceId ||
+      actionKey(prepared) !== key ||
+      prepared.nativeActionId !== `file-${key}` ||
+      !isFileChangeV1(prepared.change) ||
+      prepared.change.op !== 'put' ||
+      !Number.isSafeInteger(prepared.createdAt) ||
+      prepared.createdAt < 0
+    )
+      throw Error('invalid_file_receipt');
+    const call: WorkspaceCall = {
+      projectId: prepared.projectId,
+      taskId: prepared.taskId,
+      workspaceId: prepared.workspaceId,
+      workerId: prepared.workerId,
+      actionId: prepared.actionId,
+      grantRevision: prepared.grantRevision,
+      writerEpoch: prepared.writerEpoch,
+    };
+    if (
+      !isWorkspaceCall(call) ||
+      localRecordHash({
+        call,
+        change: prepared.change,
+        basisReceiptId: prepared.basisReceiptId,
+        bindingHash: prepared.bindingHash,
+        canonicalSourceRef: prepared.canonicalSourceRef,
+      }) !== prepared.inputHash
+    )
+      throw Error('invalid_file_receipt');
+    const receiptHash = await this.objects.getReference(phaseKey(key, 'result'));
+    if (!receiptHash) throw Error('workspace_file_recovery_required');
+    const receipt = await this.terminal(prepared, receiptHash),
+      item = receipt.items[0];
+    if (
+      !item ||
+      typeof receipt.effect !== 'boolean' ||
+      !receipt.quiescent ||
+      !item.nativeReceiptRef
+    )
+      throw Error('workspace_file_recovery_required');
+    const basis = await this.files.loadHistoricalBasis(
+      call,
+      prepared.change.path,
+      prepared.change.expected,
+      prepared.basisReceiptId,
+      prepared.bindingHash,
+      prepared.canonicalSourceRef,
+    );
+    const candidate = await this.objects.getBytes(prepared.change.contentRef);
+    const native = (await this.objects.get(item.nativeReceiptRef)) as
+      | LocalCreationReceipt
+      | LocalReplacementReceipt;
+    const proof = await readNativeInstalledFile({
+      native,
+      journalRoot: this.journalRoot,
+      bindingHash: prepared.bindingHash,
+      path: prepared.change.path,
+      expected: prepared.change.expected,
+      baselineMetadata: basis.metadata,
+      baseline: basis.kind === 'file' ? basis.content : Buffer.alloc(0),
+      candidate,
+      assertPrivateRoot: () => this.assertRoot(),
+    });
+    const nativeProofHash = await this.objects.getReference(phaseKey(key, 'native-effect'));
+    if (
+      nativeProofHash &&
+      localRecordHash(await this.objects.get(nativeProofHash)) !==
+        localRecordHash({
+          schemaVersion: 'workspace-native-effect-proof-v1',
+          preparedHash,
+          nativeReceiptRef: item.nativeReceiptRef,
+          proof,
+        })
+    )
+      throw Error('workspace_file_recovery_required');
+    const invalidationRef = await this.objects.getReference(phaseKey(key, 'invalidation'));
+    if (
+      invalidationRef &&
+      localRecordHash(await this.objects.get(invalidationRef)) !==
+        localRecordHash({
+          schemaVersion: 'workspace-file-invalidation-v1',
+          receiptHash,
+          inputHash: prepared.inputHash,
+          reason: 'authority_or_root_changed',
+        })
+    )
+      throw Error('workspace_file_recovery_required');
+    if (proof.effect !== receipt.effect) throw Error('workspace_file_recovery_required');
+    return {
+      schemaVersion: 'workspace-actual-file-effect-v1' as const,
+      ...call,
+      rootId: prepared.rootId,
+      bindingHash: prepared.bindingHash,
+      canonicalSourceRef: prepared.canonicalSourceRef,
+      receiptId,
+      receiptHash,
+      inputHash: prepared.inputHash,
+      preparedHash,
+      nativeReceiptRef: item.nativeReceiptRef,
+      nativeProofHash: nativeProofHash ?? null,
+      invalidationRef: invalidationRef ?? null,
+      path: prepared.change.path,
+      kind: prepared.change.expected.kind === 'absent' ? ('create' as const) : ('replace' as const),
+      effect: proof.effect,
+      needsAttention: receipt.needsAttention,
+      baselineVersion: prepared.change.expected,
+      baselineContentRef: item.baselineContentRef,
+      baselineMetadata: basis.metadata,
+      candidateContentRef: prepared.change.contentRef,
+      installedVersion: nativeProofHash ? proof.installedVersion : null,
+      installedMetadata: nativeProofHash ? proof.installedMetadata : null,
+    };
+  }
+
   private async terminal(prepared: Prepared, hash: string): Promise<WorkspaceFileApply> {
     if (prepared.nativeActionId !== `file-${actionKey(prepared)}`)
       throw Error('invalid_file_receipt');

@@ -35,6 +35,7 @@ import {
   type CompatibleModelOptions,
   installCompatibleModel,
 } from './compatible-model';
+import { assertClosedHarnessSession } from './trace';
 
 /** Default model name used when neither RoleSpec.model nor AGORA_MODEL is set. */
 const DEFAULT_MODEL = 'deepseek-v4-flash';
@@ -730,13 +731,46 @@ export class HarnessExecutor implements Executor {
     return this.model;
   }
 
-  /** Serialize the current projection view into a single user message. */
+  /** Admit one fixed startup instruction; current facts stay in system projection. */
   private turnStartMessage(): UserMessage {
+    const assignment = this.view.slices.assignment,
+      workspace = this.view.slices.localWorkspace,
+      resumes = this.view.slices.workspaceRangeResumes;
+    const returnedWorkspace =
+      workspace !== null &&
+      typeof workspace === 'object' &&
+      assignment !== null &&
+      typeof assignment === 'object' &&
+      'workerId' in assignment &&
+      typeof assignment.workerId === 'string' &&
+      'role' in assignment &&
+      assignment.role === this.spec.role &&
+      typeof this.activeSessionId === 'string' &&
+      Array.isArray(resumes) &&
+      resumes.some(
+        (entry: unknown) =>
+          entry !== null &&
+          typeof entry === 'object' &&
+          'workerId' in entry &&
+          entry.workerId === assignment.workerId &&
+          'resumeSessionId' in entry &&
+          entry.resumeSessionId === this.activeSessionId &&
+          'sourceSessionId' in entry &&
+          typeof entry.sourceSessionId === 'string' &&
+          entry.sourceSessionId !== this.activeSessionId,
+      );
     return createUserMessage({
       content: [
         {
           type: 'text',
-          text: 'Execute the current role assignment using the current Agora projection.',
+          text:
+            'Execute the current role assignment using the current Agora projection.' +
+            (returnedWorkspace
+              ? '\n[workspace-return-turn] This execution session follows a recorded workspace return. ' +
+                'Tool denials in the parent session are historical, not results of this turn. ' +
+                'Use the current tools to inspect the relevant files before reporting current contents or completing this assignment. ' +
+                'The return record does not grant access: if a new tool call denies access, stop and report that new denial to the Leader.'
+              : ''),
         },
       ],
       source: { kind: 'plugin', plugin: 'agora' },
@@ -868,6 +902,165 @@ function failureMessage(error: unknown): string {
     return JSON.stringify(error);
   } catch {
     return String(error);
+  }
+}
+
+/** Read the official durable source without load/repair, Agent creation or model
+ * execution. A cursor alone is not proof; storage, scope and lifecycle must agree. */
+export async function readHarnessSafePointEvidence(
+  cursor: string,
+  inputScope: { root: string; cwd: string; projectId: string; taskId: string; role: string },
+): Promise<HarnessSafePointIdentity & { boundary: number; sessionHash: string }> {
+  const scope = structuredClone(inputScope);
+  const checkpoint = decodeSafePoint(cursor);
+  assertCheckpointScope(checkpoint, scope, scope.role, `agora-role:${scope.role}`);
+  const ctx = new Context();
+  const fibers: Fiber[] = [ctx.plugin(SessionStore)];
+  fibers.push(ctx.plugin(JsonlSessionPersistence, { root: scope.root }));
+  try {
+    await Promise.all(fibers);
+    const headers = await ctx.sessionPersistence.list();
+    if (headers.length > 4096 || !headers.some((h) => h.id === checkpoint.sourceSessionId))
+      throw Error('safe_point_source_unverified');
+    const inspections = await Promise.all(
+      headers.map((h) => ctx.sessionPersistence.inspect(SessionId(h.id))),
+    );
+    const source = inspections.find((v) => v.meta.id === checkpoint.sourceSessionId);
+    if (
+      !source ||
+      source.meta.cwd !== checkpoint.cwd ||
+      source.meta.agentPreset !== checkpoint.agentPreset ||
+      checkpoint.boundary < (source.meta.seedLength ?? 0) ||
+      source.events[checkpoint.boundary]?.type !== 'turn/end' ||
+      source.events.some((event, index) => event.seq !== index) ||
+      lastCompletedTurnBoundary(source.events) !== checkpoint.boundary
+    )
+      throw Error('safe_point_source_unverified');
+    assertClosedHarnessSession(inspections, checkpoint.sourceSessionId);
+    const raw = await ctx.sessionPersistence.readRaw(SessionId(checkpoint.sourceSessionId));
+    if (!raw || !isDeepStrictEqual(raw.meta, source.meta))
+      throw Error('safe_point_source_unverified');
+    const sessionHash = createHash('sha256')
+      .update(
+        JSON.stringify({
+          meta: source.meta,
+          prefix: source.events.slice(0, checkpoint.boundary + 1),
+          rawHash: createHash('sha256').update(raw.content).digest('hex'),
+        }),
+      )
+      .digest('hex');
+    return {
+      sourceSessionId: checkpoint.sourceSessionId,
+      projectId: scope.projectId,
+      taskId: scope.taskId,
+      role: scope.role,
+      cwd: scope.cwd,
+      boundary: checkpoint.boundary,
+      sessionHash,
+    };
+  } finally {
+    for (let index = fibers.length - 1; index >= 0; index--) await fibers[index]?.dispose();
+  }
+}
+
+/** Read a real official Fork without loading, creating or repairing an Agent.
+ * fresh is only for first registration; historical replay accepts later child
+ * activity while proving the same immutable header identity and exact seed. */
+export async function readHarnessLineageEvidence(
+  cursor: string,
+  childSessionId: string,
+  inputScope: { root: string; cwd: string; projectId: string; taskId: string; role: string },
+  options: { fresh: boolean },
+): Promise<
+  HarnessSafePointIdentity & {
+    childSessionId: string;
+    boundary: number;
+    seedLength: number;
+    seedHash: string;
+  }
+> {
+  const scope = structuredClone(inputScope),
+    checkpoint = decodeSafePoint(cursor),
+    fresh = options.fresh;
+  assertCheckpointScope(checkpoint, scope, scope.role, `agora-role:${scope.role}`);
+  if (
+    typeof fresh !== 'boolean' ||
+    !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(childSessionId) ||
+    childSessionId === checkpoint.sourceSessionId ||
+    childSessionId.length > 128
+  )
+    throw Error('lineage_child_unverified');
+  const ctx = new Context(),
+    fibers: Fiber[] = [ctx.plugin(SessionStore)];
+  fibers.push(ctx.plugin(JsonlSessionPersistence, { root: scope.root }));
+  try {
+    await Promise.all(fibers);
+    const headers = await ctx.sessionPersistence.list();
+    if (
+      headers.length > 4096 ||
+      !headers.some((h) => h.id === childSessionId) ||
+      !headers.some((h) => h.id === checkpoint.sourceSessionId)
+    )
+      throw Error('lineage_child_unverified');
+    const inspections = await Promise.all(
+      headers.map((h) => ctx.sessionPersistence.inspect(SessionId(h.id))),
+    );
+    const source = inspections.find((v) => v.meta.id === checkpoint.sourceSessionId),
+      child = inspections.find((v) => v.meta.id === childSessionId);
+    if (
+      !source ||
+      !child ||
+      source.meta.cwd !== checkpoint.cwd ||
+      source.meta.agentPreset !== checkpoint.agentPreset ||
+      source.events[checkpoint.boundary]?.type !== 'turn/end' ||
+      lastCompletedTurnBoundary(source.events) !== checkpoint.boundary ||
+      child.meta.cwd !== checkpoint.cwd ||
+      child.meta.agentPreset !== checkpoint.agentPreset ||
+      child.meta.parentSession !== checkpoint.sourceSessionId ||
+      child.meta.seedLength !== checkpoint.boundary + 1 ||
+      child.events.length < checkpoint.boundary + 1 ||
+      (fresh && child.events.length !== checkpoint.boundary + 2) ||
+      child.events[checkpoint.boundary + 1]?.type !== 'session/end-seed' ||
+      Object.keys(child.events[checkpoint.boundary + 1]?.data ?? {}).length !== 0 ||
+      child.events
+        .slice(0, checkpoint.boundary + 1)
+        .some((e, i) => !isDeepStrictEqual(e, source.events[i]))
+    )
+      throw Error('lineage_child_unverified');
+    // Full lifecycle/lineage validation, including legal open child tails.
+    // Only the closed parent is used as a closure fact.
+    assertClosedHarnessSession(inspections, checkpoint.sourceSessionId);
+    const raw = await ctx.sessionPersistence.readRaw(SessionId(childSessionId)),
+      again = await ctx.sessionPersistence.inspect(SessionId(childSessionId));
+    if (!raw || !isDeepStrictEqual(raw.meta, child.meta) || !isDeepStrictEqual(again, child))
+      throw Error('lineage_child_unverified');
+    const prefix = child.events.slice(0, checkpoint.boundary + 1);
+    const seedHash = createHash('sha256')
+      .update(
+        JSON.stringify({
+          sourceSessionId: checkpoint.sourceSessionId,
+          childSessionId,
+          cwd: checkpoint.cwd,
+          agentPreset: checkpoint.agentPreset,
+          seedLength: checkpoint.boundary + 1,
+          seedBoundary: child.events[checkpoint.boundary + 1],
+          prefix,
+        }),
+      )
+      .digest('hex');
+    return {
+      sourceSessionId: checkpoint.sourceSessionId,
+      childSessionId,
+      projectId: scope.projectId,
+      taskId: scope.taskId,
+      role: scope.role,
+      cwd: scope.cwd,
+      boundary: checkpoint.boundary,
+      seedLength: checkpoint.boundary + 1,
+      seedHash,
+    };
+  } finally {
+    for (let index = fibers.length - 1; index >= 0; index--) await fibers[index]?.dispose();
   }
 }
 

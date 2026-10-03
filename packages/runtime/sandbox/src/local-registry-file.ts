@@ -21,7 +21,7 @@ export interface LocalRegistryOwner {
   assertHeld(): Promise<void>;
 }
 export interface LocalRegistrySnapshot {
-  schemaVersion: 'local-workspaces-v1';
+  schemaVersion: 'local-workspaces-v1' | 'local-workspaces-v2';
   revision: number;
   roots: unknown[];
   grants: unknown[];
@@ -29,6 +29,7 @@ export interface LocalRegistrySnapshot {
   claims: unknown[];
   operations: unknown[];
   linkedRoots?: unknown[];
+  rangeHolds?: unknown[];
 }
 
 type Identity = { path: string; dev: number; ino: number; uid: number; mode: number };
@@ -149,18 +150,24 @@ export class LocalRegistryFile {
       const bytes = JSON.stringify(value);
       if (typeof bytes !== 'string' || Buffer.byteLength(bytes) > maxBytes) throw new Error();
       const cloned = JSON.parse(bytes) as LocalRegistrySnapshot;
-      const fields = [...keys, ...(Object.hasOwn(cloned, 'linkedRoots') ? ['linkedRoots'] : [])];
+      const v2 = cloned.schemaVersion === 'local-workspaces-v2';
+      const fields = [
+        ...keys,
+        ...(Object.hasOwn(cloned, 'linkedRoots') ? ['linkedRoots'] : []),
+        ...(v2 ? ['rangeHolds'] : []),
+      ];
       if (
         !cloned ||
         Array.isArray(cloned) ||
         Object.keys(cloned).length !== fields.length ||
         !fields.every((key) => Object.hasOwn(cloned, key)) ||
-        cloned.schemaVersion !== 'local-workspaces-v1' ||
+        (!v2 && cloned.schemaVersion !== 'local-workspaces-v1') ||
         !safeRevision(cloned.revision) ||
         !isWorkspaceRefsV1(cloned.workspaces) ||
         arrays.some((key) => !Array.isArray(cloned[key]) || cloned[key].length > 4096) ||
         (Object.hasOwn(cloned, 'linkedRoots') &&
-          (!Array.isArray(cloned.linkedRoots) || cloned.linkedRoots.length > 4096))
+          (!Array.isArray(cloned.linkedRoots) || cloned.linkedRoots.length > 4096)) ||
+        (v2 && (!Array.isArray(cloned.rangeHolds) || cloned.rangeHolds.length > 4096))
       )
         throw new Error();
       // Record parsing is mandatory and must reject rather than silently migrate/normalize.

@@ -16,11 +16,12 @@ export async function registeredFixture(
   blank = false,
   remove = false,
   goal = 'Real linked registration',
+  coderOnly = false,
 ) {
   const { acquireState } = await import('../../../apps/desktop/src/storage');
   const owner = await acquireState(join(f.base, 'state'));
   try {
-    await run(await registrationContext(f, owner, blank, remove, goal));
+    await run(await registrationContext(f, owner, blank, remove, goal, coderOnly));
   } finally {
     await owner.release();
   }
@@ -31,6 +32,7 @@ export async function registrationContext(
   blank = false,
   remove = false,
   goal = 'Real linked registration',
+  coderOnly = false,
 ) {
   const { createInitialAppState, parseWorkspaceControl } = await import('@agora/core-domain');
   const { JsonTaskStateStore } = await import('@agora/runtime-state');
@@ -65,7 +67,7 @@ export async function registrationContext(
     });
   if (!blank)
     initial.workers.push(
-      ...(['CODER', 'TESTER'] as const).map((role) => ({
+      ...(coderOnly ? (['CODER'] as const) : (['CODER', 'TESTER'] as const)).map((role) => ({
         workerId: role.toLowerCase(),
         role,
         executor: 'harness' as const,

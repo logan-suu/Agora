@@ -13,6 +13,7 @@ import {
   validationReceipt,
 } from './parallel-execution';
 import type { AppState, Message } from './state';
+import { assertWorkspaceValidationCurrent } from './workspace-version-change';
 
 export const DEFAULT_COMPLETION_APPROVAL_RATIONALE =
   'Leader approved the current completion candidate.';
@@ -252,6 +253,7 @@ function nativeCompletionEvidence(state: AppState): ReviewBinding {
   )
     throw new Error('completion requires the accepted current plan validation evidence');
   const receipt = validationReceipt(state, binding.validationReceiptId);
+  assertWorkspaceValidationCurrent(state, binding.validationReceiptId);
   if (
     !receipt.results.passed ||
     receipt.planId !== binding.planId ||

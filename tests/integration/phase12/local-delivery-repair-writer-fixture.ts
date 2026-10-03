@@ -1,5 +1,6 @@
 // Real registry, claim, lease, native file effects and close receipts. The
-// deterministic Executor isolates writer admission from external model behavior;
+// scripted external responses isolate writer admission; the official Harness
+// loop, JSONL and checkpoint flush are real;
 // this does not establish the later C2 validation/Harness completion chain.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,6 +21,7 @@ import { LocalDeliveryRepairs } from '../../../packages/runtime/sandbox/src/loca
 import { localRecordHash } from '../../../packages/runtime/sandbox/src/local-registry-records';
 import { LocalWorkspaceSessions } from '../../../packages/runtime/sandbox/src/local-workspace-sessions';
 import type { exerciseDeliveryValidation } from './local-delivery-validation-fixture';
+import { createScriptedLocalHarness } from './local-scripted-harness-fixture';
 
 export async function exerciseDeliveryRepairWriter(
   input: Parameters<typeof exerciseDeliveryValidation>[0],
@@ -85,40 +87,47 @@ export async function exerciseDeliveryRepairWriter(
       buildExecutor: () => {
         throw Error('unexpected_legacy_executor');
       },
-      buildLocalExecutor: async (_spec, _assignment, session) => ({
-        async step() {
-          workspaceId = session.workspace.workspaceId;
-          const read = await session.tools.read(action('repair-read'), 'sentinel');
-          if (read.kind !== 'file') throw Error('missing_repair_file');
-          expect(read.content.toString('utf8')).toBe(original);
-          await session.tools.apply(
-            action('repair-write'),
-            [
-              {
-                path: 'sentinel',
-                expected: read.version,
-                readReceiptId: read.readReceiptId,
-                content: 'fixed user content',
-                encoding: 'utf8',
-              },
-            ],
-            [],
-          );
-          const changed = await session.tools.read(action('repair-read-after'), 'sentinel');
-          if (changed.kind !== 'file') throw Error('missing_repair_file');
-          expect(changed.content.toString('utf8')).toBe('fixed user content');
-          repairedVersion = (await session.tools.inspect(action('repair-inspect'))).version;
-          expect(readFileSync(join(input.root, 'sentinel'), 'utf8')).toBe(original);
-          return { kind: 'done' as const, output: {}, reachedSafeBoundary: true, mutations: [] };
-        },
-        async saveSafePoint() {
-          throw Error('deterministic_fixture_has_no_harness_checkpoint');
-        },
-        async loadSafePoint() {
-          throw Error('deterministic_fixture_has_no_harness_checkpoint');
-        },
-        injectInbox() {},
-      }),
+      buildLocalExecutor: async (spec, _assignment, session) =>
+        createScriptedLocalHarness(
+          spec,
+          {
+            root: join(
+              options.owner.root,
+              'projects',
+              scope.projectId,
+              'tasks',
+              scope.taskId,
+              'harness-sessions',
+            ),
+            cwd: input.root,
+            ...scope,
+          },
+          async () => {
+            workspaceId = session.workspace.workspaceId;
+            const read = await session.tools.read(action('repair-read'), 'sentinel');
+            if (read.kind !== 'file') throw Error('missing_repair_file');
+            expect(read.content.toString('utf8')).toBe(original);
+            await session.tools.apply(
+              action('repair-write'),
+              [
+                {
+                  path: 'sentinel',
+                  expected: read.version,
+                  readReceiptId: read.readReceiptId,
+                  content: 'fixed user content',
+                  encoding: 'utf8',
+                },
+              ],
+              [],
+            );
+            const changed = await session.tools.read(action('repair-read-after'), 'sentinel');
+            if (changed.kind !== 'file') throw Error('missing_repair_file');
+            expect(changed.content.toString('utf8')).toBe('fixed user content');
+            repairedVersion = (await session.tools.inspect(action('repair-inspect'))).version;
+            expect(readFileSync(join(input.root, 'sentinel'), 'utf8')).toBe(original);
+            return { kind: 'done' as const, output: {}, reachedSafeBoundary: true, mutations: [] };
+          },
+        ),
     },
     scheduler,
   );
@@ -201,36 +210,48 @@ export async function exerciseDeliveryRepairWriter(
         buildExecutor: () => {
           throw Error('unexpected_legacy_executor');
         },
-        buildLocalExecutor: async (_spec, _assignment, session) => ({
-          async step() {
-            const read = await session.tools.read(action('C2-read'), 'sentinel');
-            if (read.kind !== 'file') throw Error('missing_repair_file');
-            expect(read.content.toString('utf8')).toBe('fixed user content');
-            await expect(
-              session.tools.apply(
-                action('C2-write'),
-                [
-                  {
-                    path: 'sentinel',
-                    expected: read.version,
-                    readReceiptId: read.readReceiptId,
-                    content: 'forbidden',
-                    encoding: 'utf8',
-                  },
-                ],
-                [],
+        buildLocalExecutor: async (spec, _assignment, session) =>
+          createScriptedLocalHarness(
+            spec,
+            {
+              root: join(
+                options.owner.root,
+                'projects',
+                scope.projectId,
+                'tasks',
+                scope.taskId,
+                'harness-sessions',
               ),
-            ).rejects.toThrow('authorization_closed');
-            return { kind: 'done' as const, output: {}, reachedSafeBoundary: true, mutations: [] };
-          },
-          async saveSafePoint() {
-            throw Error('deterministic_fixture_has_no_harness_checkpoint');
-          },
-          async loadSafePoint() {
-            throw Error('deterministic_fixture_has_no_harness_checkpoint');
-          },
-          injectInbox() {},
-        }),
+              cwd: input.root,
+              ...scope,
+            },
+            async () => {
+              const read = await session.tools.read(action('C2-read'), 'sentinel');
+              if (read.kind !== 'file') throw Error('missing_repair_file');
+              expect(read.content.toString('utf8')).toBe('fixed user content');
+              await expect(
+                session.tools.apply(
+                  action('C2-write'),
+                  [
+                    {
+                      path: 'sentinel',
+                      expected: read.version,
+                      readReceiptId: read.readReceiptId,
+                      content: 'forbidden',
+                      encoding: 'utf8',
+                    },
+                  ],
+                  [],
+                ),
+              ).rejects.toThrow('authorization_closed');
+              return {
+                kind: 'done' as const,
+                output: {},
+                reachedSafeBoundary: true,
+                mutations: [],
+              };
+            },
+          ),
         completeLocalAssignment: async (state, assignment, session) =>
           validator.complete(state, assignment.workerId, session.workspace.workspaceId, session),
       },

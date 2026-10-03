@@ -2,13 +2,13 @@
   "version": "1.5",
   "project": "Agora",
   "description": "多 Agent 代码协作系统 —— 群聊式 AI 软件团队（人类 Leader 唯一裁决 + 角色投影 + 配合式抢占 + 薄执行器）",
-  "last_updated": "2026-09-30",
+  "last_updated": "2026-10-02",
   "current_phase": 12,
   "usage": "每次完成任务后：更新对应 task 的 status/last_updated/notes（附 PR 链接与关键发现）；phase 全部任务 done 且出口集成测试通过后，将 phase.status 设为 done 并递增 current_phase。状态取值：task = pending | ready | in_progress | blocked | done；phase = not_started | in_progress | done。 已取消的原任务 10.1 不在活动 tasks 中，编号不复用，取消依据与原状态见 docs/开发计划安排.md §13；取消不计为实现完成。 [2026-09-13 按需读取] 使用 node scripts/task-status.mjs summary|task|phase|decisions|history|check；notes 只放当前结论/下一步/阻塞条件和历史引用（≤800字符），完整记录按 taskId 追加到 docs/task-history；决策 rule ≤500字符且执行前读 source。查询只读，级联由既有工作流执行。维护规则见 docs/task-tracking.md。",
   "standing_decisions": [
     {
       "id": "D1",
-      "rule": "角色与 assignment 投影经官方 scoped SystemPrompt 每请求刷新，turn 只准入一次启动消息，历史/工具循环与压缩交给 Harness；初始、reproject、Fork 同路，禁止原始群聊。",
+      "rule": "角色与 assignment 投影经官方 scoped SystemPrompt 每请求刷新，turn 只准入一次固定启动；本机交还文案仅匹配当前成员/恢复session，不授予权限。历史/工具循环与压缩交给 Harness；初始、reproject、Fork 同路，禁止原始群聊。",
       "source": "docs/项目蓝图.md §21 D1；docs/详细设计方案.md §7"
     },
     {
@@ -123,8 +123,8 @@
     },
     {
       "id": "D18",
-      "rule": "Phase11–31逐阶段集成/发布及依赖；旧ID见计划§18.12。11/12限定预览；13退役Docker且不兼容旧任务，不自动删数据；12.1清单、13.3移除、13.4无Docker验收。G1–G7/人工合并不变；阶段done不等于发布，dev→main人工合并后经授权tag/Release。身份/CAS/D4真Fork见详设§12.1。12.2按§12.2采用Seatbelt候选/失效关闭、本机APFS与同卷事务、固定输入验证/接管保全；9/15复评区分新准入与旧合法对象在途收敛，根移动不瞬撤fd，外部对象仍隔离，漂移关闭/失效/保全待实测；冻结方法不变，L01–L18待验。Electron+独立Node，仅AppleSilicon/macOS15+；GitHub ad-hoc DMG/校验和/未公证说明，无DeveloperID/公证要求。安装升级保留Keychain/state/workspace/配置；macOS15例外见DEF-018，不自动沿用。12.4启动：普通5秒、Worktree15秒。D3保持，批准有界清理及残留隔离，接受漏检风险；coalition暂缓。",
-      "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18；12.1退役清单：docs/详细设计方案.md §12.3.11；12.2本机契约：docs/详细设计方案.md §12.2"
+      "rule": "Phase11–31按依赖逐阶段集成/发布，旧ID见计划§18.12；11/12限定预览。13退役Docker、无旧任务兼容，不自动删数据；12.1清单/13.3移除/13.4无Docker验收。G1–G7/人工合并保持，done≠发布，dev→main人工合并后授权tag/Release。身份/CAS/D4见详设§12.1。§12.2：本机APFS/同卷事务、Seatbelt候选/失效关闭、固定输入；根移动不瞬撤旧fd，新准入/外部对象隔离，漂移关闭/失效/保全；冻结签名、L01–L18按任务实测。12.5范围屏障/held释放lease/交还Fork/逆操作见§12.2.4.5/§12.2.6.1。Electron+独立Node，AppleSilicon/macOS15+；GitHub未公证ad-hoc DMG/校验和，无DeveloperID/公证要求。升级保留Keychain/state/workspace/配置；DEF-018系统例外不自动沿用。启动普通5秒/Worktree15秒。D3保持，有界清理/残留隔离及漏检风险获批，coalition暂缓。",
+      "source": "docs/项目蓝图.md §21 D18 / §22；docs/详细设计方案.md §12；docs/开发计划安排.md §18；12.1退役清单：docs/详细设计方案.md §12.3.11；12.2本机契约：docs/详细设计方案.md §12.2；12.5接管/撤销复评：docs/详细设计方案.md §12.2.4.5/§12.2.6.1"
     },
     {
       "id": "TEST-CLEANUP",
@@ -135,6 +135,11 @@
       "id": "D19",
       "rule": "13.4后新增Phase14以LangGraph持久编排多个完整Harness，Agora保留业务回执/投影/安全点/lease与Leader裁决；JSON/JSONL/SQLite分权，重启只读且显式Continue，旧动作不启动新进程，未知副作用保全。14.7出口才切新任务，旧原生任务只读、无双驱动或失败回退；原未开工14–30顺延15–31。正式契约详设§13，登记不代表实现或验收通过。",
       "source": "docs/项目蓝图.md §21 D19；docs/详细设计方案.md §13；docs/系统架构设计文档.md §11；docs/技术选型文档.md §5.2/§10.2/§12；docs/开发计划安排.md §18.13/§18.14"
+    },
+    {
+      "id": "TEST-STRATEGY",
+      "rule": "研发验证分快速基础、受影响回归、适用真实链路G5和累计全量；阶段出口/发布候选/重大共享基础变更/影响不明仍全量。纯文档做文档校验；复用证据须核验完整相关输入及环境，不把定向结果称全量。R11、G5、模型与清理规则保持；现有pnpm test仍全量，分组自动化/安全并行待实现。",
+      "source": "docs/项目蓝图.md §21 TEST-STRATEGY；docs/testing-strategy.md"
     }
   ],
   "baseline": {
@@ -1727,10 +1732,10 @@
           "id": "12.5",
           "title": "保护已有修改并实现基础人工接管交还",
           "story": null,
-          "status": "ready",
+          "status": "in_progress",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.5",
-            "docs/详细设计方案.md §12.2",
+            "docs/详细设计方案.md §12.2（重点§12.2.4.5/§12.2.6.1）",
             "docs/开发计划安排.md §18.2 / §18.3",
             "docs/开发计划安排.md §18.11（阶段发布门禁）"
           ],
@@ -1740,8 +1745,8 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-5.test.ts",
-          "notes": "任务类型：code。记录未提交修改基线，验证外部编辑、冲突、撤销范围和安全点接管；相关工作暂停，独立工作继续，交还重新读取，不覆盖用户工作。 详细范围与验收：docs/开发计划安排.md §18.2。测试路径为规划入口，尚未执行或验收。",
-          "last_updated": "2026-09-30"
+          "notes": "PR #89：https://github.com/logan-suu/Agora/pull/89（base dev-1.0.0）。已修复历史依赖workspace误选与受阻排队未收敛，并保护独立批次后继/预分配会话身份。修复后完整G4：339文件2661项+7脚本全通过；三条真实Go链路、类型/lint通过，874输入/七helper无漂移。清理88项测试临时对象449271逻辑字节及10份无用日志8237字节。修复提交917fd4ae80912a7b23b03a0f75d95e6a67c1a3e5已推送并更新原PR，等待人工合并，保持in_progress；普通入口/出口仍归13.x/12.7。证据见docs/task-history/12.5.md；docs/reviews/task125-workspace-protection-spec-review.md。 2026-10-02获批分层测试策略已同步文档及工作流；执行细则docs/testing-strategy.md，现有测试入口/串行配置未改。",
+          "last_updated": "2026-10-02"
         },
         {
           "id": "12.6",

@@ -391,7 +391,10 @@ export class LocalWorkspaceCommands {
       };
     });
   }
-  async assertQuiescent(call: WorkspaceCall, allowed?: string) {
+  async assertQuiescent(
+    call: Pick<WorkspaceCall, 'projectId' | 'taskId' | 'workspaceId'>,
+    allowed?: string,
+  ) {
     await this.assertRoots();
     for (const ref of await this.objects.references()) {
       const value = (await this.objects.get(ref.valueHash)) as Prepared;
@@ -419,6 +422,30 @@ export class LocalWorkspaceCommands {
       )
         throw Error('installation_recovery_required');
     }
+  }
+  /** Native bounded cleanup and immutable journal inventory, without authority
+   * admission or command replay. Unknown or invalidated closure remains blocked. */
+  async readClosedOperations(scope: Pick<WorkspaceCall, 'projectId' | 'taskId' | 'workspaceId'>) {
+    await this.assertQuiescent(scope);
+    const receipts = [];
+    for (const ref of await this.objects.references()) {
+      const value = (await this.objects.get(ref.valueHash)) as Partial<Prepared>;
+      if (
+        value.schemaVersion !== 'workspace-command-prepared-v1' ||
+        value.call?.projectId !== scope.projectId ||
+        value.call.taskId !== scope.taskId ||
+        value.call.workspaceId !== scope.workspaceId
+      )
+        continue;
+      const prepared = value as Prepared;
+      this.validatePrepared(prepared);
+      const key = workspaceFileActionKey(prepared.call),
+        hash = await this.objects.getReference(resultKey(key));
+      if (key !== ref.key || !hash || !(await this.result(prepared, hash)).quiescent)
+        throw Error('workspace_command_recovery_required');
+      receipts.push({ key, preparedHash: ref.valueHash, resultHash: hash });
+    }
+    return receipts.sort((a, b) => a.key.localeCompare(b.key, 'en'));
   }
   async runCommand(
     input: WorkspaceCall,

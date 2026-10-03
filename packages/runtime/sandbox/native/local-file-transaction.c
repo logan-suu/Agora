@@ -26,10 +26,10 @@ static struct stat directory_ids[LIMIT];
 static char directory_names[LIMIT][PATH_CAP];
 static int root_fd, staging_fd, original_fd = -1;
 static struct stat staging_id, expected_id;
-static const char *root_path, *target_path, *staging_name;
+static const char *root_path, *target_path, *staging_name, *preserved_name;
 static int exchanged, creating, removing;
 static char baseline_metadata[128], candidate_metadata[128];
-static int directory_operation, directory_known;
+static int directory_operation, directory_known, metadata_root;
 static struct stat result_directory;
 static char result_directory_metadata[128];
 
@@ -335,8 +335,16 @@ static int directory_transaction(char **argv, int inspecting, int verifying) {
   snprintf(candidate, sizeof(candidate), "%s-candidate", inspecting ? "unused" : argv[8]);
   snprintf(relative_candidate, sizeof(relative_candidate), "%s/%s", staging_name, candidate);
   if (inspecting) {
-    int fd = open_target();
-    if (fd < 0 || !directory_version(fd, NULL, NULL, &observed, value))
+    int fd = metadata_root ? dup(root_fd) : preserved_name ? open_directory(staging_fd, preserved_name) : open_target();
+    if (inspecting == 2) {
+      struct stat after;
+      char after_value[128];
+      if (fd < 0 || !supported_object(fd, &observed, 1) || !object_metadata(fd, value, 1) ||
+          fstat(fd, &after) || !same(&observed, &after) || !object_metadata(fd, after_value, 1) ||
+          strcmp(value, after_value) || observed.st_ctimespec.tv_sec != after.st_ctimespec.tv_sec ||
+          observed.st_ctimespec.tv_nsec != after.st_ctimespec.tv_nsec)
+        failure("directory_version_conflict");
+    } else if (fd < 0 || !directory_version(fd, NULL, NULL, &observed, value))
       failure("directory_version_conflict");
     close(fd);
     verify_directories();
@@ -410,30 +418,110 @@ static int directory_transaction(char **argv, int inspecting, int verifying) {
   return 0;
 }
 
+static int restore_transaction(char **argv) {
+  struct stat wanted = {0}, observed = {0}, parent = {0}, named;
+  char value[128], relative_source[256];
+  const char *name = argv[12];
+  size_t length = strlen(name);
+  if (length <= 10 || length > 90 || strcmp(name + length - 10, "-candidate") ||
+      strspn(name, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_") != length)
+    failure("invalid_request");
+  snprintf(relative_source, sizeof(relative_source), "%s/%s", staging_name, name);
+  parse_identity(argv[13], &wanted);
+  parse_identity(argv[7], &parent);
+  if (!same(&parent, &directory_ids[directory_count-1]) || !target_absent())
+    finish("conflict", "file_version_conflict", 1);
+  int source = directory_operation ? open_directory(staging_fd, name) :
+    openat(staging_fd, name, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
+  if (!directory_operation) {
+    if (source < 0 || !supported_file(source, &observed) || !same(&observed, &wanted))
+      finish("conflict", "preserved_object_changed", 1);
+    wanted = observed;
+  }
+  if (source < 0 || (directory_operation ?
+      !directory_version(source, &wanted, argv[14], &observed, value) :
+      !same_version(source, 4, &wanted, argv[14])))
+    finish("conflict", "preserved_object_changed", 1);
+  if (directory_operation) record_directory(&observed, value);
+  checkpoint("before_prepare");
+  if (!directory_operation) {
+    struct stat file;
+    if (fstat(source, &file)) failure("preserved_object_changed");
+    printf("{\"event\":\"candidate\",\"identity\":\"%ju:%ju\",\"metadata\":\"%s\",\"size\":%jd}\n",
+      (uintmax_t)wanted.st_dev, (uintmax_t)wanted.st_ino, argv[14], (intmax_t)file.st_size);
+    fflush(stdout);
+  }
+  checkpoint("before_swap");
+  if (!target_absent() || fstatat(staging_fd, name, &named, AT_SYMLINK_NOFOLLOW) ||
+      !same(&named, &wanted) || (directory_operation ?
+      !directory_version(source, &wanted, argv[14], &observed, value) :
+      !same_version(source, 4, &wanted, argv[14])))
+    finish("conflict", "preserved_object_changed", 1);
+  verify_directories();
+  if (renameatx_np(root_fd, relative_source, root_fd, target_path,
+      RENAME_EXCL | RENAME_NOFOLLOW_ANY | RENAME_RESOLVE_BENEATH)) {
+    if (errno == EEXIST) finish("conflict", "file_version_conflict", 1);
+    failure("restoration_refused");
+  }
+  exchanged = 1;
+  checkpoint("after_swap");
+  int current = open_target();
+  if (current < 0 || (directory_operation ?
+      !directory_version(current, &wanted, argv[14], &observed, value) :
+      !same_version(current, 4, &wanted, argv[14])) ||
+      fstatat(staging_fd, name, &named, AT_SYMLINK_NOFOLLOW) != -1 || errno != ENOENT)
+    failure("post_restore_conflict");
+  close(current); close(source);
+  verify_directories();
+  if (fsync(staging_fd) || fsync(directories[directory_count-1])) failure("flush_failed");
+  verify_directories();
+  finish("applied", "none", 0);
+  return 0;
+}
+
 int main(int argc, char **argv) {
-  if (argc != 12 && argc != 10 && argc != 8) return 64;
+  if (argc != 15 && argc != 12 && argc != 10 && argc != 9 && argc != 8) return 64;
   root_path = argv[1]; staging_name = argv[3]; target_path = argv[5];
-  int inspecting = argc == 8 && !strcmp(argv[6], "inspect");
+  int preserved_file = argc == 9 && !strcmp(argv[6], "inspect-preserved-file");
+  int preserved_directory = argc == 9 && !strcmp(argv[6], "inspect-preserved-directory");
+  if (preserved_file || preserved_directory) preserved_name = argv[8];
+  if (argc == 9 && !preserved_name) failure("invalid_request");
+  if (preserved_name && (strlen(preserved_name) > 90 || strlen(preserved_name) <= 10 || strcmp(preserved_name + strlen(preserved_name) - 10, "-candidate") || strspn(preserved_name, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_") != strlen(preserved_name))) failure("invalid_request");
+  int restoring = argc == 15 && (!strcmp(argv[10], "restore") || !strcmp(argv[10], "restore-directory"));
+  if (argc == 15 && !restoring) failure("invalid_request");
+  int inspecting = (argc == 8 && !strcmp(argv[6], "inspect")) || preserved_file;
   int inspecting_absent = argc == 8 && !strcmp(argv[6], "inspect-absent");
   int listing = argc == 8 && !strcmp(argv[6], "list");
-  int inspecting_directory = argc == 8 && !strcmp(argv[6], "inspect-empty-directory");
-  directory_operation = argc == 12 && (!strcmp(argv[10], "mkdir") || !strcmp(argv[10], "rmdir") ||
-    !strcmp(argv[10], "verify-mkdir") || !strcmp(argv[10], "verify-rmdir"));
+  int metadata_inspection = argc == 8 && (!strcmp(argv[6], "inspect-directory") || !strcmp(argv[6], "inspect-root-directory"));
+  metadata_root = metadata_inspection && !strcmp(argv[6], "inspect-root-directory");
+  int inspecting_directory = metadata_inspection || (argc == 8 && !strcmp(argv[6], "inspect-empty-directory")) || preserved_directory;
+  directory_operation = (restoring && !strcmp(argv[10], "restore-directory")) || (argc == 12 && (!strcmp(argv[10], "mkdir") || !strcmp(argv[10], "rmdir") ||
+    !strcmp(argv[10], "verify-mkdir") || !strcmp(argv[10], "verify-rmdir")));
   int verifying_directory = directory_operation && !strncmp(argv[10], "verify-", 7);
   creating = (argc >= 10 && !strcmp(argv[6], "absent")) ||
     (directory_operation && !strcmp(argv[10], "verify-mkdir"));
   int verifying_removal = argc == 12 && !strcmp(argv[10], "verify-remove");
   removing = argc == 12 && (!strcmp(argv[10], "remove") || verifying_removal ||
     (directory_operation && !creating));
-  const char *mode_change = argc == 12 ? argv[11] : "keep";
-  if (argc == 12 && (
-      (!directory_operation && (creating ? strcmp(argv[10], "create") : strcmp(argv[10], "replace") && !removing)) ||
-      (strcmp(mode_change, "keep") && strcmp(mode_change, "executable") && strcmp(mode_change, "plain")) ||
+  const char *mode_change = argc >= 12 ? argv[11] : "keep";
+  int forced_mode = -1;
+  if (!strncmp(mode_change, "mode-", 5)) {
+    const char *value = mode_change + 5;
+    if (!*value || strspn(value, "0123456789") != strlen(value)) failure("invalid_request");
+    char *end = NULL;
+    errno = 0;
+    long mode = strtol(value, &end, 10);
+    if (errno || !end || *end || mode < 0 || mode > 0777) failure("invalid_request");
+    forced_mode = (int)mode;
+  }
+  if ((argc == 12 || argc == 15) && (
+      (!restoring && !directory_operation && (creating ? strcmp(argv[10], "create") : strcmp(argv[10], "replace") && !removing)) ||
+      (forced_mode < 0 && strcmp(mode_change, "keep") && strcmp(mode_change, "executable") && strcmp(mode_change, "plain")) ||
       ((removing || directory_operation) && strcmp(mode_change, "keep")) ||
-      (directory_operation && !verifying_directory &&
+      (directory_operation && !restoring && !verifying_directory &&
        (creating ? strcmp(argv[10], "mkdir") : strcmp(argv[10], "rmdir"))))) failure("invalid_request");
   if (strchr(staging_name, '/') || strcmp(staging_name, ".agora-operations") ||
-      (!inspecting && !inspecting_absent && !listing && !inspecting_directory && ((argc != 10 && argc != 12) ||
+      (!inspecting && !inspecting_absent && !listing && !inspecting_directory && ((argc != 10 && argc != 12 && argc != 15) ||
         strspn(argv[8], "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_") != strlen(argv[8]) ||
         !*argv[8] || strlen(argv[8]) > 80))) failure("invalid_request");
   pin_root(argv[2]);
@@ -445,8 +533,9 @@ int main(int argc, char **argv) {
       (staging_id.st_mode & 0777) != 0700) failure("root_identity_changed");
   pin_parents(argv[(inspecting || inspecting_absent || listing || inspecting_directory) ? 7 : 9]);
   verify_directories();
+  if (restoring) return restore_transaction(argv);
   if (directory_operation || inspecting_directory)
-    return directory_transaction(argv, inspecting_directory, verifying_directory);
+    return directory_transaction(argv, metadata_inspection ? 2 : inspecting_directory, verifying_directory);
   if (listing) return list_directory();
   if (verifying_removal) {
     char candidate[128];
@@ -464,7 +553,7 @@ int main(int argc, char **argv) {
     exchanged = 1;
     finish("applied", "none", 0);
   }
-  original_fd = open_target();
+  original_fd = preserved_name ? openat(staging_fd, preserved_name, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC) : open_target();
   if (creating || inspecting_absent) {
     if (original_fd >= 0 || errno != ENOENT) finish("conflict", "file_version_conflict", 1);
     verify_directories();
@@ -559,7 +648,8 @@ int main(int argc, char **argv) {
   if (!creating && fchown(output, expected_id.st_uid, expected_id.st_gid)) failure("candidate_failed");
   verify_directories();
   mode_t output_mode = creating ? 0644 : expected_id.st_mode & 0777;
-  if (!strcmp(mode_change, "executable")) output_mode |= 0111;
+  if (forced_mode >= 0) output_mode = (mode_t)forced_mode;
+  else if (!strcmp(mode_change, "executable")) output_mode |= 0111;
   else if (!strcmp(mode_change, "plain")) output_mode &= ~0111;
   if (fchmod(output, output_mode)) failure("candidate_failed");
   verify_directories();
@@ -571,6 +661,12 @@ int main(int argc, char **argv) {
   if (!creating && strcmp(strchr(candidate_metadata, ':'), strchr(baseline_metadata, ':')))
     failure("candidate_metadata_changed");
   if (fstat(output, &candidate_id) || close(output) || fsync(staging_fd)) failure("candidate_failed");
+  /* Persisted by the host before it acknowledges the installation checkpoint.
+   * This identity is the prepared object, never a later same-name path lookup. */
+  printf("{\"event\":\"candidate\",\"identity\":\"%ju:%ju\",\"metadata\":\"%s\",\"size\":%jd}\n",
+         (uintmax_t)candidate_id.st_dev, (uintmax_t)candidate_id.st_ino,
+         candidate_metadata, (intmax_t)candidate_id.st_size);
+  fflush(stdout);
   /* No writable data descriptor survives installation into the source directory. */
   checkpoint("before_swap");
   int current = open_target();

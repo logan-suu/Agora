@@ -9,4 +9,14 @@ export * from './types';
 export type * from './validation-dispatch-port';
 export * from './workspace-adapter';
 export type * from './workspace-port';
+export type {
+  WorkspaceRangeActivity,
+  WorkspaceRangeActivityPort,
+  WorkspaceRangeAdmissionPort,
+  WorkspaceRangeResumePort,
+  WorkspaceRangeResumeRequest,
+  WorkspaceRangeWorkerPort,
+  WorkspaceRangeWorkerReceipt,
+  WorkspaceRangeWorkerRequest,
+} from './workspace-range-port';
 export type * from './workspace-worker-port';

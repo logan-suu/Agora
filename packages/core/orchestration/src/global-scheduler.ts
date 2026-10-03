@@ -54,6 +54,25 @@ export class GlobalScheduler {
     return this.#activeByLease.size;
   }
 
+  /** Read actual global admission ownership without exporting lease objects. */
+  activity(scope: { projectId: string; taskId: string }) {
+    assertIdentity('projectId', scope.projectId);
+    assertIdentity('taskId', scope.taskId);
+    const matches = (v: { projectId: string; taskId: string }) =>
+      v.projectId === scope.projectId && v.taskId === scope.taskId;
+    return {
+      projectId: scope.projectId,
+      taskId: scope.taskId,
+      leasedWorkerIds: [...this.#activeByLease.values()]
+        .filter(matches)
+        .map((v) => v.workerId)
+        .sort(),
+      queuedWorkerIds: [...this.#queuedByWorker.values()]
+        .filter(matches)
+        .map((v) => v.workerId)
+        .sort(),
+    };
+  }
   assertActive(lease: SlotLease): void {
     if (
       this.#activeByLease.get(lease.leaseId) !== lease ||
