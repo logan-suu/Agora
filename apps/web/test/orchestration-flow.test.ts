@@ -269,6 +269,68 @@ async function approveCompletionGate(
 }
 
 describe('TaskOrchestrationRuntime', () => {
+  it('acknowledges a durable Leader decision during drain without starting a new Fork', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-drain-resolution-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    let release = () => {};
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let entered = () => {};
+    const suspending = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let resumes = 0;
+    const lifecycle = { archived: 0, disposed: 0 };
+    const base = successfulFactory(Promise.resolve(), lifecycle);
+    const runtime = new TaskOrchestrationRuntime(messages, async (input) => {
+      if (input.resume) resumes++;
+      return {
+        ...(await base(input)),
+        suspend: async () => {
+          entered();
+          await barrier;
+        },
+      };
+    });
+    const scope = { projectId: 'p', taskId: 'drain-resolution' };
+    await runtime.start({ ...scope, requestId: 'start', goal: 'Build TTL LRU' });
+    await suspending;
+    const gate = (await messages.store.load(scope))?.humanGate;
+    if (!gate) throw Error('missing completion gate');
+    const drain = runtime.drain();
+    try {
+      const post = createPostMessage(messages);
+      const request = () =>
+        new Request('http://localhost/api/messages', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...scope,
+            channelId: 'main',
+            msgId: 'approve-during-drain',
+            display: `/resolve-gate ${gate.gateId} approve_completion`,
+          }),
+        });
+      await expect((await post(request())).json()).resolves.toMatchObject({
+        action: { status: 'applied' },
+      });
+      await expect((await post(request())).json()).resolves.toMatchObject({ published: false });
+      const state = await messages.store.load(scope);
+      expect(state?.humanGate).toBeUndefined();
+      expect(state?.phase).not.toBe('done');
+      expect(state?.messages.some((m) => m.msgId === 'approve-during-drain')).toBe(true);
+      expect(
+        state?.messages.some((m) => m.msgId === 'human-gate-resumed:approve-during-drain'),
+      ).toBe(false);
+      expect(resumes).toBe(0);
+      expect(lifecycle.archived).toBe(0);
+    } finally {
+      release();
+      await drain;
+    }
+  });
+
   it('drains an in-flight worker without cancelling it and retains its completion gate', async () => {
     const root = await mkdtemp(join(tmpdir(), 'agora-drain-worker-'));
     roots.push(root);
@@ -861,6 +923,57 @@ describe('TaskOrchestrationRuntime', () => {
 
     release();
     await runtime.waitForIdle({ projectId: 'project-a', taskId: 'task-a' });
+  });
+
+  it('preserves a local workspace when worker admission fails without attempting completion-only archival', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'agora-local-failure-'));
+    roots.push(root);
+    const messages = createMessageRuntime(root, new ChannelStream());
+    const lifecycle = { archived: 0, disposed: 0 };
+    let suspended = 0;
+    const factory = successfulFactory(Promise.resolve(), lifecycle, true);
+    const runtime = new TaskOrchestrationRuntime(messages, async (input) => {
+      const composition = await factory(input);
+      return {
+        ...composition,
+        workerRuntime: new WorkerRuntime({
+          roster: DEFAULT_ROSTER,
+          transition: input.transition,
+          buildExecutor: () => new FailingExecutor(),
+        }),
+        initialState: applyMutations(
+          createInitialAppState(input.scope.taskId, input.goal, input.scope.projectId),
+          [
+            setMutation('localExecution', {
+              schemaVersion: 'local-execution-v1',
+              rootIds: ['root'],
+              workspaces: [],
+              bindings: [],
+              receipts: [],
+            }),
+          ],
+        ),
+        suspend: async () => {
+          suspended++;
+        },
+      };
+    });
+    const scope = { projectId: 'local-project', taskId: 'failed-task' };
+    await runtime.start({ ...scope, requestId: 'local-failure', goal: 'Build TTL LRU' });
+    await runtime.waitForIdle(scope);
+    expect(await runtime.summary(scope)).toMatchObject({
+      runStatus: 'needs_attention',
+      error: '[RUN_FAILED] Task execution failed.',
+    });
+    expect((await messages.store.load(scope))?.localExecution?.rootIds).toEqual(['root']);
+    expect((await messages.store.load(scope))?.phase).toBe('coding');
+    expect((await messages.store.load(scope))?.workers).toMatchObject([
+      { role: 'CODER', status: 'pending' },
+    ]);
+    expect(lifecycle).toEqual({ archived: 0, disposed: 0 });
+    expect(suspended).toBe(1);
+    await runtime.drain();
+    expect(suspended).toBe(1);
   });
 
   it('archives available output and disposes resources when a run fails', async () => {

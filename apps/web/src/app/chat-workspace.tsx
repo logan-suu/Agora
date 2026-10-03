@@ -43,6 +43,7 @@ import { traceLanes } from './trace-lanes';
 interface ChatWorkspaceProps {
   model?: WorkspaceViewModel;
   projectId?: string;
+  readOnly?: boolean;
 }
 
 const roleLabels: Record<string, string> = {
@@ -703,6 +704,7 @@ function Composer({
 export function ChatWorkspace({
   model = DEFAULT_WORKSPACE,
   projectId = 'agora',
+  readOnly = false,
 }: ChatWorkspaceProps) {
   const [messages, setMessages] = useState(model.messages);
   const [modelSettingsTarget, setModelSettingsTarget] = useState<string>();
@@ -942,6 +944,7 @@ export function ChatWorkspace({
   }
 
   function startTask() {
+    if (readOnly) return;
     const normalizedTaskId = taskId.trim();
     const normalizedGoal = goal.trim();
     if (normalizedTaskId === '' || normalizedGoal === '' || taskPending) return;
@@ -975,6 +978,7 @@ export function ChatWorkspace({
   }
 
   async function sendMessage() {
+    if (readOnly) return;
     const display = draft.trim();
     if (display.length === 0 || submitting) {
       return;
@@ -1018,6 +1022,7 @@ export function ChatWorkspace({
   }
 
   async function respondToProposal(action: 'confirm' | 'dismiss') {
+    if (readOnly) return;
     const proposal = task?.requirementProposal;
     if (!proposal || submitting) return;
     const key = JSON.stringify([projectId, taskId, proposal.proposalId, action]);
@@ -1143,21 +1148,27 @@ export function ChatWorkspace({
             {runtimeModel.activeWorkers.length} active
           </span>
         </div>
-        <TaskLauncher
-          taskId={taskId}
-          goal={goal}
-          pending={taskPending}
-          task={task}
-          error={taskError ?? task?.error}
-          onTaskIdChange={changeTaskId}
-          onGoalChange={setGoal}
-          onStart={startTask}
-        />
+        {readOnly ? (
+          <p role="status">
+            Saved task · read-only. This preview does not resume work after restart.
+          </p>
+        ) : (
+          <TaskLauncher
+            taskId={taskId}
+            goal={goal}
+            pending={taskPending}
+            task={task}
+            error={taskError ?? task?.error}
+            onTaskIdChange={changeTaskId}
+            onGoalChange={setGoal}
+            onStart={startTask}
+          />
+        )}
         <MessageList
           key={JSON.stringify([projectId, taskId, runtimeModel.channel.id])}
           messages={messages}
           team={runtimeModel.team}
-          proposal={task?.requirementProposal}
+          proposal={readOnly ? undefined : task?.requirementProposal}
           busy={submitting}
           onRespond={respondToProposal}
         />
@@ -1169,6 +1180,7 @@ export function ChatWorkspace({
           onMention={selectMention}
           onSubmit={sendMessage}
           disabled={
+            readOnly ||
             task === undefined ||
             channels.find((channel) => channel.id === runtimeModel.channel.id)?.closed === true
           }

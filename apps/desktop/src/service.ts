@@ -6,8 +6,9 @@ import { join } from 'node:path';
 import { controlPath, keychainStore } from '../../web/scripts/local-process.mjs';
 import { createPreviewServer } from './preview-server.js';
 import { credentialService } from './protocol.js';
+import { DesktopSelections } from './selections.js';
 import { acquireState, initializeFormat } from './storage.js';
-import { verifyToolchain } from './toolchain-installation.js';
+import { verifyLocalExecutionToolchain, verifyToolchain } from './toolchain-installation.js';
 
 interface SystemStore {
   read(): Promise<string | undefined>;
@@ -24,6 +25,7 @@ export interface ServiceConfig {
   helper: string;
   capability: string;
   toolchainRoot?: string;
+  acceptanceRoots?: string[];
 }
 interface Dependencies {
   system?: SystemStore;
@@ -32,6 +34,7 @@ interface Dependencies {
 
 export class DesktopService {
   stopped = false;
+  selections: DesktopSelections | undefined;
   #stopping = false;
   #signalStop!: () => void;
   #stopRequested = new Promise<void>((resolve) => {
@@ -40,6 +43,7 @@ export class DesktopService {
   #credentialOperations = new Set<Promise<unknown>>();
   #starting: Promise<{ origin: string; credentials: string } | undefined> | undefined;
   #closing: Promise<void> | undefined;
+  #cleanupError: string | undefined;
   #owner: Awaited<ReturnType<typeof acquireState>> | undefined;
   #app: NextServer | undefined;
   #preview: ReturnType<typeof createPreviewServer> | undefined;
@@ -52,6 +56,12 @@ export class DesktopService {
         drains: Set<() => Promise<void>>;
         credentialsReady: () => void;
         credentialStatus?: string;
+        desktop?: {
+          owner: Awaited<ReturnType<typeof acquireState>>;
+          toolchainRoot: string;
+          verifyToolchain(): Promise<unknown>;
+          selections: DesktopSelections;
+        };
       }
     | undefined;
 
@@ -82,6 +92,7 @@ export class DesktopService {
     const toolchain = this.config.toolchainRoot
       ? await verifyToolchain(this.config.toolchainRoot)
       : undefined;
+    this.selections = await DesktopSelections.create(this.config.acceptanceRoots ?? []);
     this.#owner = await acquireState(this.config.stateRoot);
     const control = createControlServer((socket) => socket.destroy());
     await new Promise<void>((resolve, reject) => {
@@ -108,6 +119,17 @@ export class DesktopService {
       draining: false,
       drains: new Set(),
       credentialsReady: complete,
+      ...(this.config.toolchainRoot && this.selections.enabled
+        ? {
+            desktop: {
+              owner: this.#owner,
+              toolchainRoot: this.config.toolchainRoot,
+              verifyToolchain: () =>
+                verifyLocalExecutionToolchain(this.config.toolchainRoot as string),
+              selections: this.selections,
+            },
+          }
+        : {}),
     };
     Object.assign(globalThis, { __agoraLocalBootstrap: this.#boot });
     if (this.dependencies.next) this.#app = this.dependencies.next();
@@ -143,7 +165,13 @@ export class DesktopService {
     if (!credentials) throw new Error('credentials_uninitialized');
     this.#preview = createPreviewServer(
       this.config.capability,
-      () => ({ credentials, ...(toolchain ? { toolchain } : {}) }),
+      () => ({
+        credentials,
+        ...(toolchain ? { toolchain } : {}),
+        firstRun: Boolean(this.#boot?.desktop),
+        draining: this.#stopping,
+        cleanupError: this.#cleanupError ?? null,
+      }),
       this.#app.getRequestHandler(),
     );
     await new Promise<void>((resolve, reject) => {
@@ -154,8 +182,18 @@ export class DesktopService {
     return { origin: this.#preview.origin(), credentials };
   }
 
+  async selectDirectory(
+    scope: { projectId: string; taskId: string },
+    actionId: string,
+    path: string,
+  ) {
+    if (this.#stopping || !this.selections) throw Error('service_not_ready');
+    return this.selections.select(scope, actionId, path);
+  }
+
   stop(): Promise<void> {
     this.#stopping = true;
+    this.#cleanupError = undefined;
     this.#signalStop();
     if (this.#boot) this.#boot.draining = true;
     this.#closing ??= (async () => {
@@ -180,6 +218,8 @@ export class DesktopService {
       this.stopped = true;
     })().catch((error) => {
       this.#closing = undefined;
+      this.#cleanupError =
+        'Cleanup could not finish. Resources are retained. Retry quitting after resolving the task.';
       throw error;
     });
     return this.#closing;

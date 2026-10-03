@@ -17,6 +17,8 @@ export const credentialStates = [
 ] as const;
 export type ServiceEvent =
   | { type: 'ready'; version: 1; origin: string; credentials: string }
+  | { type: 'selected'; version: 1; requestId: string; selectionRef: string; path: string }
+  | { type: 'selection-failed'; version: 1; requestId: string; code: string }
   | { type: 'stopped'; version: 1 }
   | { type: 'failed'; version: 1; code: string };
 
@@ -57,6 +59,27 @@ export function parseServiceEvent(value: unknown): ServiceEvent {
     if (
       !isServiceOrigin(event.origin) ||
       !credentialStates.some((state) => state === event.credentials)
+    )
+      throw new Error('invalid_protocol');
+  } else if (event.type === 'selected') {
+    exactKeys(event, ['type', 'version', 'requestId', 'selectionRef', 'path']);
+    if (
+      typeof event.requestId !== 'string' ||
+      !/^[A-Za-z0-9._:-]{1,128}$/.test(event.requestId) ||
+      typeof event.selectionRef !== 'string' ||
+      !/^selection:[a-f0-9-]{36}$/.test(event.selectionRef) ||
+      typeof event.path !== 'string' ||
+      !event.path.startsWith('/') ||
+      event.path.length > 4096
+    )
+      throw new Error('invalid_protocol');
+  } else if (event.type === 'selection-failed') {
+    exactKeys(event, ['type', 'version', 'requestId', 'code']);
+    if (
+      typeof event.requestId !== 'string' ||
+      !/^[A-Za-z0-9._:-]{1,128}$/.test(event.requestId) ||
+      typeof event.code !== 'string' ||
+      !/^[a-z_]{1,64}$/.test(event.code)
     )
       throw new Error('invalid_protocol');
   } else if (event.type === 'stopped') exactKeys(event, ['type', 'version']);

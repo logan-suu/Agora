@@ -749,7 +749,7 @@ export class LocalWorkspaceCommands {
       journal: this.journal,
       revision: reservation.revision,
       timeoutMs: request.timeoutMs,
-      startupWindowMs: admitted.workspace.mode === 'linked-worktree' ? 15_000 : 5_000,
+      startupWindowMs: await this.authority.commandStartupWindow(call),
       authorize: () => true,
       authorizeCurrent: current,
     });

@@ -16,6 +16,11 @@ import {
 import { ChatWorkspace, TracePanel } from '../src/app/chat-workspace';
 
 describe('chat UI model', () => {
+  it('shows saved tasks as read-only without offering a new task launch', () => {
+    const markup = renderToStaticMarkup(createElement(ChatWorkspace, { readOnly: true }));
+    expect(markup).toContain('Saved task · read-only');
+    expect(markup).not.toContain('Start task');
+  });
   it('exposes team-wide and individual Agent model settings', () => {
     const markup = renderToStaticMarkup(createElement(ChatWorkspace, {}));
     expect(markup).toContain('Configure all Agent models');

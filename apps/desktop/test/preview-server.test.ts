@@ -50,3 +50,37 @@ describe('desktop preview gateway', () => {
     }
   });
 });
+
+it('opens only authenticated first-run routes when the host enables acceptance', async () => {
+  const preview = createPreviewServer(
+    'b'.repeat(64),
+    () => ({ credentials: 'ready', firstRun: true }),
+    async (_req, res) => {
+      res.end('accepted');
+    },
+  );
+  preview.server.listen(0, '127.0.0.1');
+  await once(preview.server, 'listening');
+  const origin = preview.origin(),
+    headers = { 'x-agora-desktop': 'b'.repeat(64) };
+  try {
+    expect((await fetch(`${origin}/api/desktop/entry`, { method: 'POST', headers })).status).toBe(
+      200,
+    );
+    expect((await fetch(`${origin}/api/desktop/entry`, { method: 'POST' })).status).toBe(403);
+    expect((await fetch(`${origin}/api/commands`, { method: 'POST', headers })).status).toBe(403);
+    expect(
+      (await fetch(`${origin}/api/model-settings`, { method: 'DELETE', headers })).status,
+    ).toBe(403);
+    expect(
+      (
+        await fetch(`${origin}/api/desktop/entry`, {
+          method: 'POST',
+          headers: { ...headers, origin: 'https://other.test' },
+        })
+      ).status,
+    ).toBe(403);
+  } finally {
+    await preview.close();
+  }
+});

@@ -1754,6 +1754,24 @@ console.log('fixed input build and test passed');
       } catch (error) {
         failure = error;
         evidence.failure = error instanceof Error ? error.message : String(error);
+        const describe = (value: unknown): unknown =>
+          value instanceof Error
+            ? {
+                message: value.message,
+                stack: value.stack,
+                ...(value instanceof AggregateError ? { errors: value.errors.map(describe) } : {}),
+                ...(value.cause ? { cause: describe(value.cause) } : {}),
+              }
+            : String(value);
+        evidence.failureDetails = describe(error);
+        const journal = join(base, 'state', 'command-journal', 'commands.json');
+        if (existsSync(journal)) {
+          try {
+            evidence.commandJournal = JSON.parse(readFileSync(journal, 'utf8'));
+          } catch {
+            evidence.commandJournalUnavailable = true;
+          }
+        }
       }
       await owner.release();
       const files: { path: string; sha256: string }[] = [];
