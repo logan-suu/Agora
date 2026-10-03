@@ -19,6 +19,8 @@ export type WorkspaceRangeWorkerReceipt = {
   }[];
 };
 export interface WorkspaceRangeWorkerPort {
+  /** Cancel only pending admissions rejected by the current durable barrier. */
+  settleRangeQueue(scope: { projectId: string; taskId: string }): Promise<void>;
   holdRangeWorkers(request: WorkspaceRangeWorkerRequest): Promise<WorkspaceRangeWorkerReceipt>;
 }
 /** Rechecked before and after a queued global lease, before heavy initialization. */

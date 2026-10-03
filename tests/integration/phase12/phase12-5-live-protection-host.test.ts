@@ -117,11 +117,7 @@ it(
           ...ctx,
           runtime,
           lifecycle: {
-            closeWorkers: (hold, source) =>
-              hold.plan.cohort.length
-                ? // The real fixture reader uses the currently bound production runtime.
-                  ctx.workerEvidence.closeWorkers(hold, source)
-                : Promise.resolve([]),
+            closeWorkers: (hold, source) => ctx.workerEvidence.closeWorkers(hold, source),
             proveWriters: (hold, source, workers) => ctx.writers.prove(hold, source, workers),
           },
           readFork: (plan, fresh) =>

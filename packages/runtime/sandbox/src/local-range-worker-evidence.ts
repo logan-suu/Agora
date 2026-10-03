@@ -3,9 +3,9 @@
 import type { AppState } from '@agora/core-domain';
 import type { LocalControlObjects } from './local-control-objects';
 import { readLocalRangeBoundary } from './local-range-boundary';
-import type { LocalRangeWorkerProof } from './local-range-evidence';
+import type { LocalRangeSourceProof, LocalRangeWorkerProof } from './local-range-evidence';
 import type { LocalRangeHold, LocalRangePlan } from './local-range-records';
-import { localRangeAssignmentHash } from './local-range-targets';
+import { type LocalRangeTargets, localRangeAssignmentHash } from './local-range-targets';
 import { localRecordHash } from './local-registry-records';
 import type { WorkspaceRangeWorkerPort, WorkspaceRangeWorkerReceipt } from './workspace-range-port';
 
@@ -46,6 +46,27 @@ const key = (scope: Scope & { workerId: string }) =>
 export class LocalRangeWorkerEvidence {
   constructor(private readonly options: Options) {}
   async closeWorkers(hold: LocalRangeHold, sourceRef: string): Promise<LocalRangeWorkerProof[]> {
+    const source = (await this.options.objects.get(sourceRef)) as LocalRangeSourceProof;
+    if (
+      source.schemaVersion !== 'local-range-source-v1' ||
+      source.planHash !== hold.planHash ||
+      localRecordHash(source) !== sourceRef
+    )
+      throw Error('range_worker_proof_invalid');
+    const targets = (await this.options.objects.get(source.targetFactsHash)) as LocalRangeTargets;
+    if (
+      targets.schemaVersion !== 'local-range-targets-v1' ||
+      localRecordHash(targets) !== source.targetFactsHash ||
+      localRecordHash(targets.physical) !== localRecordHash(hold.plan.physical) ||
+      localRecordHash(targets.cohort) !== localRecordHash(hold.plan.cohort)
+    )
+      throw Error('range_worker_proof_invalid');
+    // A pending worker is not part of the running checkpoint cohort, but its
+    // queued lease must settle before the native writer inventory can close.
+    for (const scope of targets.tasks) {
+      const runtime = this.options.runtime(scope);
+      if (runtime) await runtime.settleRangeQueue(scope);
+    }
     const groups = new Map<string, LocalRangePlan['cohort']>();
     for (const worker of hold.plan.cohort) {
       const k = `${worker.projectId}/${worker.taskId}`;

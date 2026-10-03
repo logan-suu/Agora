@@ -186,10 +186,17 @@ export class LocalRangeWritersEvidence {
       } else {
         const w = targets.workers.find((w) => workerKey(w) === workerKey(claim));
         if (!w || w.status === 'running') throw Error('range_writer_proof_invalid');
-        if (
-          !plan.cohort.some((c) => workerKey(c) === workerKey(w)) &&
-          (w.status !== 'pending' || w.sessionId !== null)
-        ) {
+        const state = states.find((s) => s.projectId === w.projectId && s.taskId === w.taskId),
+          canonical = state?.workers.find((c) => c.workerId === w.workerId);
+        // Coordinator registration reserves a logical session ID before any
+        // lease or Context exists. Actual activity and native operation proofs
+        // above must still be empty/closed; a foreign ID or safe point is not
+        // evidence of an unopened pending assignment.
+        const unopened =
+          canonical?.status === 'pending' &&
+          canonical.safePoint === undefined &&
+          (w.sessionId === null || w.sessionId === `session:${w.workerId}`);
+        if (!plan.cohort.some((c) => workerKey(c) === workerKey(w)) && !unopened) {
           const state = await this.options.control.assertClosed(w),
             worker = state.workers.find((c) => c.workerId === w.workerId);
           if (!worker?.sessionId || !worker.safePoint || !this.options.dormantWorker)

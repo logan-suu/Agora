@@ -7,7 +7,7 @@ import { localRangeAssignmentHash } from '../src/local-range-targets';
 import { LocalRangeWorkerEvidence } from '../src/local-range-worker-evidence';
 import { localRecordHash } from '../src/local-registry-records';
 
-function fixture() {
+async function fixture() {
   const scope = { projectId: 'project', taskId: 'task' };
   const state = createInitialAppState('task', 'g', 'project');
   state.workers = [
@@ -129,7 +129,11 @@ function fixture() {
     sessionHash: 'c'.repeat(64),
   };
   let closes = 0;
+  let settled = 0;
   const runtime = {
+    async settleRangeQueue() {
+      settled++;
+    },
     async holdRangeWorkers() {
       closes++;
       return {
@@ -162,11 +166,33 @@ function fixture() {
     },
     official: async () => structuredClone(official),
   });
-  return { service, hold, values, refs, state, official, nativeKey, closes: () => closes };
+  const targetFactsHash = await objects.put({
+    schemaVersion: 'local-range-targets-v1',
+    physical: hold.plan.physical,
+    tasks: [scope],
+    cohort: hold.plan.cohort,
+  });
+  const sourceRef = await objects.put({
+    schemaVersion: 'local-range-source-v1',
+    planHash: hold.planHash,
+    targetFactsHash,
+  });
+  return {
+    service,
+    hold,
+    values,
+    refs,
+    state,
+    official,
+    nativeKey,
+    sourceRef,
+    settled: () => settled,
+    closes: () => closes,
+  };
 }
 it('preserves close-time canonical/native/session evidence and only reads it on replay after a later session starts', async () => {
-  const f = fixture();
-  const proofs = await f.service.closeWorkers(f.hold, 'd'.repeat(64));
+  const f = await fixture();
+  const proofs = await f.service.closeWorkers(f.hold, f.sourceRef);
   const proof = proofs[0];
   if (!proof) throw Error('missing proof');
   const worker = f.state.workers[0];
@@ -175,10 +201,11 @@ it('preserves close-time canonical/native/session evidence and only reads it on 
   worker.status = 'running';
   await f.service.verify(f.hold.plan, proof);
   expect(f.closes()).toBe(1);
+  expect(f.settled()).toBe(1);
 });
 it('fails if the original native or official proof has changed, without calling runtime closure again', async () => {
-  const f = fixture();
-  const proof = (await f.service.closeWorkers(f.hold, 'd'.repeat(64)))[0];
+  const f = await fixture();
+  const proof = (await f.service.closeWorkers(f.hold, f.sourceRef))[0];
   if (!proof) throw Error('missing proof');
   f.official.sessionHash = 'e'.repeat(64);
   await expect(f.service.verify(f.hold.plan, proof)).rejects.toThrow('range_worker_proof_invalid');
@@ -188,10 +215,11 @@ it('fails if the original native or official proof has changed, without calling 
   f.values.set(nativeHash, { ...(f.values.get(nativeHash) as object), quiescent: false });
   await expect(f.service.verify(f.hold.plan, proof)).rejects.toThrow();
   expect(f.closes()).toBe(1);
+  expect(f.settled()).toBe(1);
 });
 it('refuses proof identity swapping across sessions or cohort workers', async () => {
-  const f = fixture();
-  const proof = (await f.service.closeWorkers(f.hold, 'd'.repeat(64)))[0];
+  const f = await fixture();
+  const proof = (await f.service.closeWorkers(f.hold, f.sourceRef))[0];
   if (!proof) throw Error('missing proof');
   await expect(f.service.verify(f.hold.plan, { ...proof, workerId: 'other' })).rejects.toThrow(
     'range_worker_proof_invalid',
@@ -200,14 +228,15 @@ it('refuses proof identity swapping across sessions or cohort workers', async ()
     'range_worker_proof_invalid',
   );
   expect(f.closes()).toBe(1);
+  expect(f.settled()).toBe(1);
 });
 
 it('refuses a reassigned worker instead of declaring the old fixed cohort closed', async () => {
-  const f = fixture(),
+  const f = await fixture(),
     worker = f.state.workers[0];
   if (!worker) throw Error('missing worker');
   worker.subtaskId = 'reassigned';
-  await expect(f.service.closeWorkers(f.hold, 'd'.repeat(64))).rejects.toThrow(
+  await expect(f.service.closeWorkers(f.hold, f.sourceRef)).rejects.toThrow(
     'range_worker_proof_invalid',
   );
 });

@@ -1,6 +1,10 @@
 // Synthetic canonical records isolate dependency/physical analysis. No native
 // access or quiescence evidence is granted by these fixtures.
-import { createInitialAppState, type LocalExecutionV1 } from '@agora/core-domain';
+import {
+  assertLocalExecutionState,
+  createInitialAppState,
+  type LocalExecutionV1,
+} from '@agora/core-domain';
 import { expect, it } from 'vitest';
 import { localWorkspacePhysical } from '../src/local-range-admission';
 import { deriveLocalRangeTargets, localRangeAssignmentHash } from '../src/local-range-targets';
@@ -99,4 +103,76 @@ it('keeps assignment identity stable across an observed HEAD update, while detec
   expect(localRangeAssignmentHash(f.state, worker.workerId)).toBe(before);
   worker.worktree.branch = 'another';
   expect(localRangeAssignmentHash(f.state, worker.workerId)).not.toBe(before);
+});
+
+it('includes dependencies from the current canonical rework binding instead of the first historical binding', () => {
+  const f = fixture();
+  const local = f.state.localExecution;
+  if (!local?.git || !f.registry.linkedRoots) throw Error('missing fixture local state');
+  const old = local.workspaces.find((w) => w.workspaceId === 'one');
+  if (!old) throw Error('missing old workspace');
+  const current = { ...old, workspaceId: 'new-one', branch: 'agora-new-one' };
+  local.workspaces.push(current);
+  local.bindings.push({
+    workerId: 'new-worker-one',
+    subtaskId: 'one',
+    workspaceId: 'new-one',
+    receiptId: 'binding:register',
+  });
+  local.git.worktrees.push({
+    workspaceId: 'new-one',
+    path: '/new-one',
+    receiptId: 'binding:register',
+  });
+  const original = f.state.workers.find((w) => w.workerId === 'worker-one');
+  if (!original) throw Error('missing original worker');
+  original.status = 'done';
+  const worktree = {
+    path: '/new-one',
+    branch: 'agora-new-one',
+    baseCommit: 'b'.repeat(40),
+    headCommit: 'c'.repeat(40),
+  };
+  f.state.workers.push({
+    ...original,
+    workerId: 'new-worker-one',
+    sessionId: 'session:new-worker-one',
+    worktree,
+  });
+  const dependency = f.state.subtasks.find((s) => s.id === 'one');
+  const downstream = f.state.subtasks.find((s) => s.id === 'two');
+  if (!dependency || !downstream) throw Error('missing dependency');
+  dependency.status = 'done';
+  dependency.worktree = worktree;
+  downstream.dependsOn = ['one'];
+  f.registry.workspaces.push(current);
+  const oldRoot = f.registry.linkedRoots.find((r) => r.workspaceId === 'one');
+  if (!oldRoot) throw Error('missing original root');
+  f.registry.linkedRoots.push({
+    ...oldRoot,
+    workspaceId: 'new-one',
+    path: '/new-one',
+    inode: '99',
+    chain: [
+      { path: '/', identity: '1:1' },
+      { path: '/new-one', identity: '1:99' },
+    ],
+    staging: { path: '/new-one/.agora-operations', identity: '1:100' },
+  });
+  expect(() => assertLocalExecutionState(f.state)).not.toThrow();
+  const targets = deriveLocalRangeTargets(
+    f.registry,
+    [f.state],
+    localWorkspacePhysical(f.registry, current),
+  );
+  expect(targets.cohort.map((w) => w.workerId)).toContain('worker-two');
+  const oldTargets = deriveLocalRangeTargets(f.registry, [f.state], f.physical);
+  expect(oldTargets.cohort.map((w) => w.workerId)).not.toContain('worker-two');
+  delete dependency.worktree;
+  const unknown = deriveLocalRangeTargets(
+    f.registry,
+    [f.state],
+    localWorkspacePhysical(f.registry, current),
+  );
+  expect(unknown.cohort.map((w) => w.workerId)).toContain('worker-two');
 });

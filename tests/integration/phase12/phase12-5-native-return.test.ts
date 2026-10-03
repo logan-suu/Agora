@@ -2,7 +2,14 @@
 // return capture and qualification only; no active Harness/Fork completion claim.
 import { readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { type Message, parseWorkspaceControl, workspaceVersionChanges } from '@agora/core-domain';
+import {
+  type Message,
+  mergeByIdMutation,
+  PHASE0_ROSTER,
+  parseWorkspaceControl,
+  workspaceVersionChanges,
+} from '@agora/core-domain';
+import { WorkerRuntime } from '@agora/core-orchestration';
 import { expect, it } from 'vitest';
 import { LocalBindingCoordinator } from '../../../packages/runtime/sandbox/src/local-binding-coordinator';
 import { LocalRangeReturnController } from '../../../packages/runtime/sandbox/src/local-range-return-controller';
@@ -182,4 +189,100 @@ it(
       });
     }),
   180_000,
+);
+
+it(
+  'closes a real pending range while all global slots remain held by unrelated tasks',
+  async () =>
+    nativeRangeFixture(async (ctx) => {
+      await ctx.store.commit(ctx.scope, [
+        mergeByIdMutation('workers', 'coder', { sessionId: 'session:coder' }),
+      ]);
+      const leases = await Promise.all(
+        Array.from({ length: ctx.scheduler.cap }, (_, i) =>
+          ctx.scheduler.acquire('other-project', 'other-task', `other-${i}`),
+        ),
+      );
+      const runtime = new WorkerRuntime(
+        {
+          roster: PHASE0_ROSTER,
+          loadState: () => ctx.store.load(ctx.scope),
+          transition: async (_old, mutations) =>
+            (await ctx.store.commit(ctx.scope, mutations)).state,
+          localWorkspace: ctx.sessions,
+          rangeAdmission: ctx.sessions,
+          buildExecutor: () => {
+            throw Error('queued_worker_must_not_execute');
+          },
+          buildLocalExecutor: async () => {
+            throw Error('queued_worker_must_not_execute');
+          },
+        },
+        ctx.scheduler,
+      );
+      ctx.bindRuntime(runtime);
+      const state = await ctx.store.load(ctx.scope);
+      if (!state) throw Error('missing task');
+      const running = runtime.runOne(state, {
+        workerId: 'coder',
+        role: 'CODER',
+        subtaskId: 'code',
+      });
+      try {
+        await expect
+          .poll(() => runtime.rangeActivity(ctx.scope).queuedWorkerIds)
+          .toEqual(['coder']);
+        const take = message(
+          ctx.scope,
+          'queue-take',
+          'takeover',
+          (await ctx.control.snapshot()).revision,
+          { workspaceId: 'coding', paths: ['file.txt'] },
+        );
+        await ctx.controller.commit(ctx.scope, take);
+        const held = await ctx.controller.hold('takeover:queue-take');
+        expect(held.plan.cohort).toEqual([]);
+        expect((await ctx.controller.view(held.plan.takeoverId)).editable).toBe(true);
+        expect(runtime.rangeActivity(ctx.scope)).toMatchObject({
+          activeWorkerIds: [],
+          leasedWorkerIds: [],
+          queuedWorkerIds: [],
+        });
+        expect(ctx.scheduler.activeCount).toBe(ctx.scheduler.cap);
+        expect(
+          (await ctx.store.load(ctx.scope))?.workers.find((w) => w.workerId === 'coder'),
+        ).toMatchObject({ status: 'pending', sessionId: 'session:coder' });
+        await running;
+      } finally {
+        for (const lease of leases) await ctx.scheduler.release(lease);
+        await running;
+        expect(ctx.scheduler.activeCount).toBe(0);
+      }
+    }),
+  120000,
+);
+
+it.each(['foreign-session', 'safe-point'] as const)(
+  'rejects a pending assignment with %s instead of treating it as unopened',
+  async (kind) =>
+    nativeRangeFixture(async (ctx) => {
+      await ctx.store.commit(ctx.scope, [
+        mergeByIdMutation('workers', 'coder', {
+          sessionId: kind === 'foreign-session' ? 'already-opened-session' : 'session:coder',
+          ...(kind === 'safe-point' ? { safePoint: 'existing-checkpoint' } : {}),
+        }),
+      ]);
+      const take = message(
+        ctx.scope,
+        'pending-evidence-take',
+        'takeover',
+        (await ctx.control.snapshot()).revision,
+        { workspaceId: 'coding', paths: ['file.txt'] },
+      );
+      await ctx.controller.commit(ctx.scope, take);
+      await expect(ctx.controller.hold('takeover:pending-evidence-take')).rejects.toThrow();
+      expect((await ctx.controller.view('takeover:pending-evidence-take')).editable).toBe(false);
+      expect(await ctx.sessions.canAcquire({ ...ctx.scope, workerId: 'coder' })).toBe(false);
+    }),
+  120000,
 );

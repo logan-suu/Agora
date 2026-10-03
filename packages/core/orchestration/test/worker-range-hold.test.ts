@@ -598,3 +598,151 @@ it('keeps range recovery paused when verification fails after a queued new lease
     runtime.registerRangeResumes({ ...permit, actionId: 'other' }, async () => {}),
   ).rejects.toThrow('range_resume_conflict');
 });
+
+it('removes a range-blocked pending worker from the global queue before writer closure', async () => {
+  let state = createInitialAppState('review-queued-range', 'g');
+  let blocked = false;
+  const scheduler = new GlobalScheduler({ cap: 1 });
+  const other = await scheduler.acquire('other-project', 'other-task', 'other-worker');
+  const runtime = new WorkerRuntime(
+    {
+      roster: PHASE0_ROSTER,
+      loadState: async () => state,
+      transition: async (_old, mutations) => {
+        state = applyMutations(state, mutations);
+        return state;
+      },
+      rangeAdmission: { canAcquire: async () => !blocked, isBlocked: async () => blocked },
+      closeRangeExecutor: async () => {},
+      buildExecutor: () => {
+        throw Error('must_not_build');
+      },
+    },
+    scheduler,
+  );
+  const running = runtime.runOne(state, { workerId: 'queued', role: 'CODER' });
+  try {
+    for (let i = 0; i < 100 && !runtime.rangeActivity(state).queuedWorkerIds.length; i++)
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(runtime.rangeActivity(state).queuedWorkerIds).toEqual(['queued']);
+    blocked = true;
+    // deriveLocalRangeTargets excludes pending workers from the running cohort.
+    await runtime.settleRangeQueue(state);
+    expect(state.workers[0]?.status).toBe('pending');
+    expect(runtime.rangeActivity(state).queuedWorkerIds).toEqual([]);
+  } finally {
+    await scheduler.release(other);
+    await running;
+    expect(scheduler.activeCount).toBe(0);
+  }
+});
+
+it('settles a barrier arriving during the first admission read before a scheduler request exists', async () => {
+  let state = createInitialAppState('range-before-queue', 'g');
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let reads = 0;
+  const scheduler = new GlobalScheduler({ cap: 1 });
+  const other = await scheduler.acquire('other-project', 'other-task', 'other-worker');
+  const runtime = new WorkerRuntime(
+    {
+      roster: PHASE0_ROSTER,
+      loadState: async () => state,
+      transition: async (_old, mutations) => {
+        state = applyMutations(state, mutations);
+        return state;
+      },
+      rangeAdmission: {
+        async canAcquire() {
+          if (++reads === 1) {
+            await gate;
+            return true;
+          }
+          return false;
+        },
+      },
+      buildExecutor: () => {
+        throw Error('must_not_build');
+      },
+    },
+    scheduler,
+  );
+  const running = runtime.runOne(state, { workerId: 'queued', role: 'CODER' });
+  try {
+    await expect.poll(() => reads).toBe(1);
+    const settled = runtime.settleRangeQueue(state);
+    await expect.poll(() => reads).toBe(2);
+    release();
+    await settled;
+    await running;
+    expect(runtime.rangeActivity(state).queuedWorkerIds).toEqual([]);
+    expect(state.workers[0]?.status).toBe('pending');
+    expect(scheduler.activeCount).toBe(1);
+  } finally {
+    release();
+    await scheduler.release(other);
+    await running;
+  }
+});
+
+it.each([1, 2])(
+  'cancels only the blocked pending admission with cap %i and preserves independent batch work',
+  async (cap) => {
+    let state = applyMutations(
+      createInitialAppState('range-independent-queue', 'g'),
+      ['one', 'two'].map((id) =>
+        mergeByIdMutation('subtasks', id, {
+          title: id,
+          ownerRole: 'CODER',
+          status: 'in_progress',
+          dependsOn: [],
+        }),
+      ),
+    );
+    let blocked = false;
+    const independent = gated(true);
+    independent.release();
+    const scheduler = new GlobalScheduler({ cap });
+    const others = await Promise.all(
+      Array.from({ length: cap }, (_, i) =>
+        scheduler.acquire('other-project', 'other-task', `other-${i}`),
+      ),
+    );
+    const runtime = new WorkerRuntime(
+      {
+        roster: PHASE0_ROSTER,
+        loadState: async () => state,
+        transition: async (_old, mutations) => {
+          state = applyMutations(state, mutations);
+          return state;
+        },
+        rangeAdmission: { canAcquire: async (scope) => !blocked || scope.workerId === 'two' },
+        buildExecutor: (_spec, assignment) => {
+          if (assignment.workerId !== 'two') throw Error('blocked_worker_must_not_build');
+          return independent.executor;
+        },
+      },
+      scheduler,
+    );
+    const running = runtime.runParallel(state, [
+      { workerId: 'one', role: 'CODER', subtaskId: 'one' },
+      { workerId: 'two', role: 'CODER', subtaskId: 'two' },
+    ]);
+    try {
+      await expect
+        .poll(() => runtime.rangeActivity(state).queuedWorkerIds)
+        .toEqual(cap === 1 ? ['one'] : ['one', 'two']);
+      blocked = true;
+      await runtime.settleRangeQueue(state);
+      await expect.poll(() => runtime.rangeActivity(state).queuedWorkerIds).toEqual(['two']);
+      expect(state.workers.find((w) => w.workerId === 'one')?.status).toBe('pending');
+    } finally {
+      for (const lease of others) await scheduler.release(lease);
+      await running;
+    }
+    expect(state.workers.find((w) => w.workerId === 'two')?.status).toBe('done');
+    expect(scheduler.activeCount).toBe(0);
+  },
+);

@@ -280,6 +280,15 @@ class CanonicalTaskJoin {
 export class WorkerRuntime {
   private readonly active = new Map<string, WorkerHandle>();
   private readonly queuedAcquires = new Map<string, AbortController>();
+  private readonly rangeAcquires = new Map<
+    string,
+    {
+      scope: { projectId: string; taskId: string; workerId: string };
+      cancelled: boolean;
+      controller: AbortController | undefined;
+      settled: Promise<void>;
+    }
+  >();
   private readonly leaseReleases = new Map<string, LeaseReleaseControl>();
   private readonly preemptor: Preemptor;
   private taskPause: TaskPauseControl | undefined;
@@ -362,6 +371,27 @@ export class WorkerRuntime {
         .map((h) => h.id)
         .sort(),
     };
+  }
+
+  async settleRangeQueue(scope: { projectId: string; taskId: string }): Promise<void> {
+    const state = await this.deps.loadState?.();
+    if (
+      !state ||
+      state.projectId !== scope.projectId ||
+      state.taskId !== scope.taskId ||
+      !this.deps.rangeAdmission
+    )
+      throw Error('range_queue_scope_unverified');
+    const settling: Promise<void>[] = [];
+    for (const attempt of this.rangeAcquires.values()) {
+      if (attempt.scope.projectId !== scope.projectId || attempt.scope.taskId !== scope.taskId)
+        continue;
+      if (await this.deps.rangeAdmission.canAcquire(attempt.scope)) continue;
+      attempt.cancelled = true;
+      attempt.controller?.abort(Error('range barrier cancelled queued acquire'));
+      settling.push(attempt.settled);
+    }
+    await Promise.all(settling);
   }
 
   /** A range hold suspends only its fixed cohort. The persistent registry barrier
@@ -663,7 +693,7 @@ export class WorkerRuntime {
       let lease: SlotLease | undefined;
       try {
         lease = await this.acquireLease(join.projectId, join.taskId, assign.workerId);
-        if (lease === undefined) return;
+        if (lease === undefined) continue;
         this.beginLeaseRelease(assign.workerId);
         if (join.hasFailure) {
           join.recordNotStarted(assign.workerId);
@@ -1505,8 +1535,33 @@ export class WorkerRuntime {
     taskId: string,
     workerId: string,
   ): Promise<SlotLease | undefined> {
+    if (this.rangeAcquires.has(workerId)) throw Error('worker_acquire_already_pending');
+    let settle = () => {};
+    const attempt = {
+      scope: { projectId, taskId, workerId },
+      cancelled: false,
+      controller: undefined as AbortController | undefined,
+      settled: new Promise<void>((resolve) => {
+        settle = resolve;
+      }),
+    };
+    this.rangeAcquires.set(workerId, attempt);
+    try {
+      return await this.acquireRangeLease(projectId, taskId, workerId, attempt);
+    } finally {
+      this.rangeAcquires.delete(workerId);
+      settle();
+    }
+  }
+
+  private async acquireRangeLease(
+    projectId: string,
+    taskId: string,
+    workerId: string,
+    attempt: { cancelled: boolean; controller: AbortController | undefined },
+  ): Promise<SlotLease | undefined> {
     while (true) {
-      if (this.rangeHeldWorkers.has(workerId)) return undefined;
+      if (attempt.cancelled || this.rangeHeldWorkers.has(workerId)) return undefined;
       const scope = { projectId, taskId, workerId };
       await this.verifyRangeResume(workerId);
       if (this.deps.rangeAdmission && !(await this.deps.rangeAdmission.canAcquire(scope)))
@@ -1518,6 +1573,8 @@ export class WorkerRuntime {
         continue;
       }
       const controller = new AbortController();
+      attempt.controller = controller;
+      if (attempt.cancelled) return undefined;
       this.queuedAcquires.set(workerId, controller);
       try {
         const lease = await this.scheduler.acquire(projectId, taskId, workerId, controller.signal);
@@ -1531,13 +1588,14 @@ export class WorkerRuntime {
           await this.scheduler.release(lease);
           throw error;
         }
-        if (!admitted) {
+        if (!admitted || attempt.cancelled) {
           await this.scheduler.release(lease);
           return undefined;
         }
         return lease;
       } catch (error) {
-        if (isAbortError(error) && this.rangeHeldWorkers.has(workerId)) return undefined;
+        if (isAbortError(error) && (attempt.cancelled || this.rangeHeldWorkers.has(workerId)))
+          return undefined;
         const interrupted = this.taskPause;
         if (!isAbortError(error) || interrupted === undefined) throw error;
         const outcome = await interrupted.closed;

@@ -195,8 +195,7 @@ async function setup(
     tasks: ctx.store,
     sources,
     lifecycle: {
-      closeWorkers: (h, s) =>
-        h.plan.cohort.length ? workerEvidence.closeWorkers(h, s) : Promise.resolve([]),
+      closeWorkers: (h, s) => workerEvidence.closeWorkers(h, s),
       proveWriters: (h, s, w) => writers.prove(h, s, w),
     },
   });

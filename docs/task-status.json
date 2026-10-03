@@ -1740,7 +1740,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-5.test.ts",
-          "notes": "PR #89：https://github.com/logan-suu/Agora/pull/89（base dev-1.0.0）；实现提交111664d56b79eba7fa59481988e8f44f3b576397。S01–S06完成，等待人工审阅合并，保持in_progress。完整G4：339文件2653项及7脚本全通过，三条真实Go链路、类型/lint通过；提交前874输入/七helper无漂移。清理88项测试临时对象449276逻辑字节及42份无用日志20550字节，保留五次失败/取消证据。普通入口/出口仍归13.x/12.7。证据见docs/task-history/12.5.md；docs/reviews/task125-workspace-protection-spec-review.md。",
+          "notes": "PR #89：https://github.com/logan-suu/Agora/pull/89（base dev-1.0.0）。已修复历史依赖workspace误选与受阻排队未收敛，并保护独立批次后继/预分配会话身份。修复后完整G4：339文件2661项+7脚本全通过；三条真实Go链路、类型/lint通过，874输入/七helper无漂移。清理88项测试临时对象449271逻辑字节及10份无用日志8237字节。待提交更新原PR，保持in_progress；普通入口/出口仍归13.x/12.7。证据见docs/task-history/12.5.md；docs/reviews/task125-workspace-protection-spec-review.md。",
           "last_updated": "2026-10-02"
         },
         {
