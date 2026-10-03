@@ -1732,7 +1732,7 @@
           "id": "12.5",
           "title": "保护已有修改并实现基础人工接管交还",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.1/§22.7.5",
             "docs/详细设计方案.md §12.2（重点§12.2.4.5/§12.2.6.1）",
@@ -1745,7 +1745,7 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-5.test.ts",
-          "notes": "PR #89：https://github.com/logan-suu/Agora/pull/89（base dev-1.0.0）。已修复历史依赖workspace误选与受阻排队未收敛，并保护独立批次后继/预分配会话身份。修复后完整G4：339文件2661项+7脚本全通过；三条真实Go链路、类型/lint通过，874输入/七helper无漂移。清理88项测试临时对象449271逻辑字节及10份无用日志8237字节。修复提交917fd4ae80912a7b23b03a0f75d95e6a67c1a3e5已推送并更新原PR，等待人工合并，保持in_progress；普通入口/出口仍归13.x/12.7。证据见docs/task-history/12.5.md；docs/reviews/task125-workspace-protection-spec-review.md。 2026-10-02获批分层测试策略已同步文档及工作流；执行细则docs/testing-strategy.md，现有测试入口/串行配置未改。",
+          "notes": "PR #89已由Leader合并至dev-1.0.0：https://github.com/logan-suu/Agora/pull/89；merge 4cf7536f8cdcbb178aa11d0a248bfed31dc6cf56，已验证head 6d69a5af2463d93119bfc0db653af04e8617b7e4，合并树一致。G1/G3/G4/G5/G6/G7证据齐全：339文件2661项+7脚本通过，真实OpenCode Go/deepseek-v4-flash接管交还/HTTP撤销/正式HTTP保护三链路通过；874输入和七helper复核无漂移，沿用原完整结果未重跑。TEST-STRATEGY文档及六个Skill已一并合入。清理与失败/修复/hash完整证据见docs/task-history/12.5.md；S01–S06映射见docs/reviews/task125-workspace-protection-spec-review.md。12.5收尾done；下一项12.6 ready，12.7仍待12.6，Phase12不推进；普通入口及跨进程主动恢复仍归13.x。",
           "last_updated": "2026-10-02"
         },
         {
