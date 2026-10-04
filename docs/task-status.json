@@ -1752,7 +1752,7 @@
           "id": "12.6",
           "title": "打通首次配置与项目开发入口",
           "story": null,
-          "status": "in_progress",
+          "status": "done",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22.3.2/§22.5.2",
             "docs/详细设计方案.md §12.3（含§12.3.12）/§12.2.2.1",
@@ -1769,15 +1769,15 @@
             "11.5"
           ],
           "test_file": "tests/integration/phase12/phase12-6.test.ts",
-          "notes": "任务类型：code。首次入口及PR90评审修复已验证；PR https://github.com/logan-suu/Agora/pull/90 （base dev-1.0.0），修复提交4e98295，待人工合并。前轮86文件445项通过并复用259文件2236项，另7脚本、静态及构建通过，非单次全量。本轮复查两项旧失败：原始内层错误已缺失，根因仍inconclusive；已红绿修复入口诊断遗漏AggregateError.errors，未改生产逻辑。新增诊断3项、入口3模式和原生单次返工1项全过，typecheck/lint通过，测试副本已清理。其余输入及7原生hash不变；不将重跑通过当作旧故障已定位。证据见 docs/task-history/12.6.md；规格见 docs/reviews/task126-first-run-spec-review.md。12.7未开工。",
+          "notes": "任务类型：code。PR90已由Leader合并至dev-1.0.0：https://github.com/logan-suu/Agora/pull/90 ，merge=80d2ca338abf57b0376975335f848fad9b2d67bc；合并树与已验证cdd4550一致。适用G1/G3/G4/G5/G6/G7证据见 docs/task-history/12.6.md 及 docs/reviews/task126-first-run-spec-review.md。86文件445项及复用259文件2236项通过，另7脚本、静态/构建通过，非单次全量；最新诊断3项、入口3模式和单次返工1项通过。G5真实OpenCode Go/deepseek-v4-flash完成接管/交还/Fork、独立测试/评审、Leader终审、停服和只读重开；测试副本已清理。两项历史运行失败因原错误缺失仍inconclusive，诊断遗漏已修复，不宣称旧故障已定位。12.7仅就绪，阶段出口/发布尚未验收。",
           "last_updated": "2026-10-03"
         },
         {
           "id": "12.7",
           "title": "Phase 12 集成测试与发布验收：本机执行与工作区保护",
           "story": null,
-          "status": "pending",
-          "last_updated": "2026-09-13",
+          "status": "ready",
+          "last_updated": "2026-10-03",
           "documents_required": [
             "docs/项目蓝图.md §21 D18 / §22",
             "docs/详细设计方案.md §12",
