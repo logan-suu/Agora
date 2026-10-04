@@ -8,7 +8,7 @@ import {
   type TaskScope,
 } from '@agora/runtime-state';
 import type { ModelSettingsCommand, ModelSettingsView } from '../lib/model-settings';
-import { localCredentialMessage, localCredentials } from './local-startup';
+import { localBootstrap, localCredentialMessage, localCredentials } from './local-startup';
 import type { MessageRuntime } from './message-runtime';
 
 export class ModelSettingsError extends Error {
@@ -24,10 +24,18 @@ export class ModelSettingsError extends Error {
 export class ModelSettingsService {
   readonly store: JsonModelConfigStore;
   private readonly credentials: ReturnType<typeof localCredentials>;
+  private readonly operations = new Set<Promise<unknown>>();
   constructor(
     private readonly messages: MessageRuntime,
     store?: JsonModelConfigStore,
+    private readonly checkConnection?: (input: {
+      model: string;
+      connection: { baseURL: string; contextWindow: number; maxTokens: number };
+      key: string | undefined;
+    }) => Promise<void>,
+    registerDrain = true,
   ) {
+    if (registerDrain) localBootstrap()?.drains.add(() => this.drain());
     this.credentials = store ? undefined : localCredentials(messages.root);
     this.store =
       store ??
@@ -37,6 +45,9 @@ export class ModelSettingsService {
           ? () => this.credentials?.value?.key()
           : () => process.env.AGORA_CREDENTIALS_KEY,
       );
+  }
+  async drain() {
+    await Promise.allSettled([...this.operations]);
   }
   private async snapshot(projectId: string) {
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(projectId))
@@ -59,6 +70,13 @@ export class ModelSettingsService {
           status,
           model: spec.model ?? process.env.AGORA_MODEL ?? 'deepseek-v4-flash',
           apiKeyConfigured: connection?.auth.kind === 'encrypted',
+          connectionChecked: connection
+            ? await this.store.connectionChecked(
+                projectId,
+                connection.id,
+                spec.model ?? process.env.AGORA_MODEL ?? 'deepseek-v4-flash',
+              )
+            : false,
           ...(connection
             ? {
                 connectionId: connection.id,
@@ -83,7 +101,24 @@ export class ModelSettingsService {
       roles,
     };
   }
-  async execute(command: ModelSettingsCommand): Promise<ModelSettingsView | { ok: true }> {
+  execute(
+    command: ModelSettingsCommand,
+  ): Promise<ModelSettingsView | { ok: true; connectionId: string }> {
+    if (localBootstrap()?.draining)
+      return Promise.reject(
+        new ModelSettingsError('Agora is stopping. Wait before changing model settings.', 503),
+      );
+    const operation = this.executeAdmitted(command);
+    this.operations.add(operation);
+    void operation.then(
+      () => this.operations.delete(operation),
+      () => this.operations.delete(operation),
+    );
+    return operation;
+  }
+  private async executeAdmitted(
+    command: ModelSettingsCommand,
+  ): Promise<ModelSettingsView | { ok: true; connectionId: string }> {
     await this.credentials?.ready;
     const snapshot = await this.snapshot(command.projectId);
     if (snapshot.revision !== command.expectedRevision)
@@ -110,42 +145,68 @@ export class ModelSettingsService {
     }
     const draft = await this.resolveDraft(command);
     if (command.action === 'test') {
-      const executor = new HarnessExecutor(
-        {
-          ...defaultCoordinator(),
-          model: draft.model,
-          systemPrompt: 'Reply with OK. Do not use tools.',
-        },
-        {
-          compatible: {
-            id: 'connection-test',
-            ...draft.connection,
-            model: draft.model,
-            maxTokens: Math.min(32, draft.connection.maxTokens),
-            resolveApiKey: async () => draft.key,
-          },
-        },
-      );
       try {
-        await executor.step({
-          sessionId: `connection-test:${randomUUID()}`,
-          view: { role: 'COORDINATOR', slices: { instruction: 'Reply OK.' } },
-        });
+        if (this.checkConnection) await this.checkConnection(draft);
+        else await this.testConnection(draft);
       } catch {
         throw new ModelSettingsError(
           'Connection test failed. Check the service URL, API key, model and Chat Completions support.',
           502,
         );
-      } finally {
-        await executor.dispose();
       }
-      return { ok: true };
+      const connection =
+        draft.existing ??
+        (await this.store.createConnection(command.projectId, draft.connection, draft.key));
+      await this.store.recordConnectionCheck(command.projectId, connection.id, draft.model);
+      return { ok: true, connectionId: connection.id };
     }
     const connection =
       draft.existing ??
       (await this.store.createConnection(command.projectId, draft.connection, draft.key));
     await this.commit(command, targets, { model: draft.model, modelConnectionId: connection.id });
     return this.get(command.projectId);
+  }
+  private async testConnection(draft: {
+    model: string;
+    connection: { baseURL: string; contextWindow: number; maxTokens: number };
+    key: string | undefined;
+  }) {
+    const executor = new HarnessExecutor(
+      {
+        ...defaultCoordinator(),
+        model: draft.model,
+        systemPrompt: 'Reply with OK. Do not use tools.',
+      },
+      {
+        compatible: {
+          id: 'connection-test',
+          ...draft.connection,
+          model: draft.model,
+          maxTokens: Math.min(32, draft.connection.maxTokens),
+          resolveApiKey: async () => draft.key,
+        },
+      },
+    );
+    try {
+      await executor.step({
+        sessionId: `connection-test:${randomUUID()}`,
+        view: { role: 'COORDINATOR', slices: { instruction: 'Reply OK.' } },
+      });
+    } finally {
+      await executor.dispose();
+    }
+  }
+  /** Desktop startup checks the immutable routes it will actually consume. */
+  async assertChecked(binding: TaskModelBinding) {
+    await this.credentials?.ready;
+    for (const role of binding.roles) {
+      if (
+        !role.connectionId ||
+        !(await this.store.connectionChecked(binding.projectId, role.connectionId, role.model))
+      )
+        throw new ModelSettingsError(`Connection check required for ${role.role}.`, 409);
+      await this.store.resolveKey(binding.projectId, role.connectionId);
+    }
   }
   private async commit(
     command: ModelSettingsCommand,
@@ -214,6 +275,35 @@ export class ModelSettingsService {
         503,
       );
     return { model, connection, key: command.apiKey };
+  }
+  async freezeChecked(scope: TaskScope, goal: string): Promise<TaskModelBinding> {
+    await this.credentials?.ready;
+    const existing = await this.store.loadTask(scope);
+    if (existing) {
+      if (existing.goal !== goal) throw new Error('task model goal conflict');
+      await this.assertChecked(existing);
+      return existing;
+    }
+    const snapshot = await this.snapshot(scope.projectId);
+    const binding: TaskModelBinding = {
+      version: 1,
+      projectId: scope.projectId,
+      taskId: scope.taskId,
+      goal,
+      roles: snapshot.roster
+        .filter((r) => r.status === 'enabled')
+        .map(({ spec }) => ({
+          role: spec.role,
+          model: spec.model ?? '',
+          ...(spec.modelConnectionId ? { connectionId: spec.modelConnectionId } : {}),
+        })),
+    };
+    if (!binding.roles.length)
+      throw new ModelSettingsError('Team configuration is unavailable.', 409);
+    await this.assertChecked(binding);
+    const saved = await this.store.bindTask(binding);
+    await this.assertChecked(saved);
+    return saved;
   }
   async freeze(scope: TaskScope, goal: string, legacy = false): Promise<TaskModelBinding> {
     await this.credentials?.ready;

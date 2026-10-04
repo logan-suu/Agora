@@ -7,6 +7,7 @@ export interface AgentModelView {
   contextWindow?: number;
   maxTokens?: number;
   apiKeyConfigured: boolean;
+  connectionChecked?: boolean;
 }
 export interface ModelSettingsView {
   revision: number;

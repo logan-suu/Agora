@@ -73,3 +73,35 @@ describe('desktop service lifecycle', () => {
     await expect(lifecycle.stop()).rejects.toThrow('service_exited');
   });
 });
+
+it('keeps the authenticated window origin while an acceptance task drains past the ordinary deadline', async () => {
+  const child = fork(fixture, { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });
+  const lifecycle = new ServiceLifecycle(
+    child,
+    { type: 'start', mode: 'slow-stop', config: { acceptanceRoots: ['/private/tmp/approved'] } },
+    80,
+  );
+  await once(lifecycle, 'ready');
+  const stopping = lifecycle.stop();
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  expect(lifecycle.state).toBe('draining');
+  expect(lifecycle.origin).toBe('http://127.0.0.1:54321');
+  await stopping;
+  expect(lifecycle.state).toBe('stopped');
+});
+
+it('retains the service and authenticated origin after cleanup failure and permits retry', async () => {
+  const child = fork(fixture, { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });
+  const lifecycle = new ServiceLifecycle(
+    child,
+    { type: 'start', mode: 'cleanup-once', config: { acceptanceRoots: ['/private/tmp/approved'] } },
+    1000,
+  );
+  await once(lifecycle, 'ready');
+  await expect(lifecycle.stop()).rejects.toThrow('service_cleanup_failed');
+  expect(lifecycle.exited).toBe(false);
+  expect(lifecycle.state).toBe('draining');
+  expect(lifecycle.origin).toBe('http://127.0.0.1:54321');
+  await lifecycle.stop();
+  expect(lifecycle.state).toBe('stopped');
+});

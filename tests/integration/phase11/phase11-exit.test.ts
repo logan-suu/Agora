@@ -108,6 +108,9 @@ describe('Phase 11 exit composition', () => {
     const expected = {
       credentials: 'locked',
       toolchain: { state: 'ready', versions: toolVersions },
+      firstRun: false,
+      draining: false,
+      cleanupError: null,
     };
     expect(await (await fetch(`${origin}/api/desktop/status`, { headers })).json()).toEqual(
       expected,

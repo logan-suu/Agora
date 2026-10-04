@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
 import { link, lstat, mkdir, readFile, realpath, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import type { TaskScope } from './base';
@@ -163,6 +163,40 @@ export class JsonModelConfigStore implements ModelConfigStore {
     const saved = await this.loadTask(binding);
     if (!saved || saved.goal !== binding.goal) throw new Error('task model goal conflict');
     return saved;
+  }
+  /** Companion proof; existing task/model store signatures remain unchanged. */
+  async recordConnectionCheck(projectId: string, connectionId: string, model: string) {
+    const connection = await this.loadConnection(projectId, connectionId);
+    const proof = this.checkProof(connection, model);
+    await this.writeImmutable(await this.checkPath(projectId, proof.fingerprint), proof);
+    if (!(await this.connectionChecked(projectId, connectionId, model)))
+      throw new Error('model connection check was not saved');
+  }
+  async connectionChecked(projectId: string, connectionId: string, model: string) {
+    const connection = await this.loadConnection(projectId, connectionId);
+    const proof = this.checkProof(connection, model);
+    const saved = await this.read(await this.checkPath(projectId, proof.fingerprint));
+    if (saved === undefined) return false;
+    if (!record(saved)) throw new Error('invalid model connection check');
+    exact(saved, ['version', 'projectId', 'connectionId', 'model', 'fingerprint']);
+    if (Object.entries(proof).some(([key, value]) => saved[key] !== value))
+      throw new Error('invalid model connection check');
+    return true;
+  }
+  private checkProof(connection: ModelConnection, model: string) {
+    if (!model.trim() || model.length > 256) throw new Error('invalid checked model');
+    return {
+      version: 1,
+      projectId: connection.projectId,
+      connectionId: connection.id,
+      model,
+      fingerprint: createHash('sha256')
+        .update(JSON.stringify([connection, model]))
+        .digest('hex'),
+    };
+  }
+  private checkPath(projectId: string, fingerprint: string) {
+    return this.path(['projects', projectId, 'model-checks', `${fingerprint}.json`]);
   }
   private key(): Buffer {
     const value = this.masterKey();

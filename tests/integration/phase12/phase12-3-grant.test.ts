@@ -52,7 +52,7 @@ import { LocalWorkspaceFiles } from '../../../packages/runtime/sandbox/src/local
 import { LocalWorkspaceSessions } from '../../../packages/runtime/sandbox/src/local-workspace-sessions';
 import { bindLocalWorkspaceTools } from '../../../packages/runtime/sandbox/src/local-workspace-tools';
 import type { WorkspaceWorkerSession } from '../../../packages/runtime/sandbox/src/workspace-worker-port';
-
+import { managedTestToolchain } from '../../../packages/runtime/sandbox/test/managed-test-toolchain';
 import { exerciseLocalValidation } from './local-validation-fixture';
 
 const scope = { projectId: 'project', taskId: 'task' };
@@ -242,7 +242,7 @@ ${scenario === 'generation' ? "fs.writeFileSync('generated.txt', 'fixed generate
 console.log('fixed input build and test passed');
 `,
         );
-      const toolsRoot = '/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64';
+      const toolsRoot = managedTestToolchain();
       const manifestBytes = commandScenario ? readFileSync(join(toolsRoot, 'manifest.json')) : null;
       const owner = await acquireState(join(base, 'state'));
       const evidence: Record<string, unknown> = {
@@ -1304,6 +1304,19 @@ console.log('fixed input build and test passed');
                       };
                       if (scenario === 'command') {
                         const before = await objects.references();
+                        const budget = authority.commandStartupWindow.bind(authority);
+                        authority.commandStartupWindow = async () => {
+                          throw Error('budget_admission_fault');
+                        };
+                        try {
+                          await expect(commands.runCommand(commandCall, request)).rejects.toThrow(
+                            'budget_admission_fault',
+                          );
+                        } finally {
+                          authority.commandStartupWindow = budget;
+                        }
+                        expect(await objects.references()).toEqual(before);
+                        await commands.assertQuiescent(call);
                         await expect(
                           commands.runCommand(
                             { ...call, actionId: 'invalid-node-argument' },
@@ -1754,6 +1767,24 @@ console.log('fixed input build and test passed');
       } catch (error) {
         failure = error;
         evidence.failure = error instanceof Error ? error.message : String(error);
+        const describe = (value: unknown): unknown =>
+          value instanceof Error
+            ? {
+                message: value.message,
+                stack: value.stack,
+                ...(value instanceof AggregateError ? { errors: value.errors.map(describe) } : {}),
+                ...(value.cause ? { cause: describe(value.cause) } : {}),
+              }
+            : String(value);
+        evidence.failureDetails = describe(error);
+        const journal = join(base, 'state', 'command-journal', 'commands.json');
+        if (existsSync(journal)) {
+          try {
+            evidence.commandJournal = JSON.parse(readFileSync(journal, 'utf8'));
+          } catch {
+            evidence.commandJournalUnavailable = true;
+          }
+        }
       }
       await owner.release();
       const files: { path: string; sha256: string }[] = [];

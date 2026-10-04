@@ -6,6 +6,7 @@ type RecordValue = Record<string, unknown>;
 type Requirement = { id: string; story: string; acceptance: string[]; nonGoals: string[] };
 type Verdict = RecordValue & { verdict: 'approved' | 'changes_requested'; summary: string };
 type Delivery =
+  | { kind: 'workspace-access-request' }
   | { kind: 'requirement-update'; entry: Requirement }
   | { kind: 'requirements'; entries: Requirement[] }
   | { kind: 'architecture'; architecture: RecordValue; conventions: RecordValue }
@@ -44,6 +45,8 @@ function bounded(value: unknown): boolean {
 function deliveryFromDisplay(role: string, display: string): Delivery | undefined {
   if (role === 'leader' && display.length <= 100_000) {
     const intent = parseLeaderIntent(display);
+    if (intent.kind === 'workspace_control' && intent.verb === 'grant')
+      return { kind: 'workspace-access-request' };
     if (intent.kind === 'requirement_change')
       return {
         kind: 'requirement-update',
@@ -161,6 +164,13 @@ function ReadableValue({ value }: { value: unknown }): React.ReactNode {
 }
 
 function DeliveryBody({ delivery }: { delivery: Delivery }) {
+  if (delivery.kind === 'workspace-access-request')
+    return (
+      <>
+        <h3>Workspace access request</h3>
+        <p>Use the selected folder with the permissions shown in the workspace confirmation.</p>
+      </>
+    );
   if (delivery.kind === 'requirement-update')
     return (
       <>

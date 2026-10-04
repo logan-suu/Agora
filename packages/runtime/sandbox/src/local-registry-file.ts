@@ -258,7 +258,9 @@ export class LocalRegistryFile {
       await this.assertRoot();
       await this.assertNoPending(locked);
       this.decoded = { bytes, snapshot: result };
-      return structuredClone(result);
+      // These exact bytes have passed the strict codec and file identity checks.
+      // Decode an isolated JSON copy without the general structured-clone walk.
+      return JSON.parse(bytes).snapshot as LocalRegistrySnapshot;
     } catch (error) {
       this.decoded = undefined;
       if (

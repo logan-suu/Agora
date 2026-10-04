@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { lstat, mkdir, realpath } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, ipcMain, Menu, session } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, session } from 'electron';
 import { appId, desktopEnvironment, protocolVersion } from './protocol.js';
 import { observeServiceNavigation, ServiceLifecycle } from './service-lifecycle.js';
 import { statusAssets } from './status-assets.js';
@@ -12,6 +12,7 @@ import { secureSession, secureWindow, trustedFrame } from './window-security.js'
 
 export interface DesktopHostOptions {
   resourcesRoot?: string;
+  acceptanceRoots?: string[];
   applicationData?: string;
   spawnService?: (node: string, entry: string, cwd: string, env: NodeJS.ProcessEnv) => ChildProcess;
 }
@@ -128,6 +129,11 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
       if (!quitting) await start();
     })()
       .catch(async () => {
+        if (lifecycle?.origin && lifecycle.state === 'draining') {
+          window?.show();
+          window?.focus();
+          return;
+        }
         startupFailure = lifecycle?.failure ?? 'service_restart_failed';
         await show();
       })
@@ -169,6 +175,7 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
           helper,
           capability,
           toolchainRoot: tools,
+          ...(options.acceptanceRoots ? { acceptanceRoots: options.acceptanceRoots } : {}),
         },
       });
       const active = lifecycle;
@@ -218,6 +225,11 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
         return;
       }
       quitting = false;
+      if (lifecycle?.origin && lifecycle.state === 'draining') {
+        window?.show();
+        window?.focus();
+        return;
+      }
       await show();
     }
   }
@@ -287,6 +299,59 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
           throw new Error('invalid_ipc_sender');
         return handler();
       });
+    let selecting = false;
+    ipcMain.handle('agora:select-directory', async (event, input: unknown) => {
+      if (
+        !window ||
+        !trustedFrame(window, event, trustedUrls) ||
+        !lifecycle ||
+        lifecycle.state !== 'ready' ||
+        !options.acceptanceRoots?.length ||
+        selecting ||
+        quitting ||
+        restarting
+      )
+        throw Error('selection_unavailable');
+      if (
+        !input ||
+        typeof input !== 'object' ||
+        Array.isArray(input) ||
+        Object.keys(input).sort().join(',') !== 'actionId,projectId,taskId'
+      )
+        throw Error('invalid_selection_scope');
+      const request = input as { projectId: string; taskId: string; actionId: string };
+      if (
+        Object.values(request).some(
+          (v) => typeof v !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(v),
+        )
+      )
+        throw Error('invalid_selection_scope');
+      const active = lifecycle;
+      selecting = true;
+      try {
+        const result = await dialog.showOpenDialog(window, {
+          title: 'Choose or create a project folder',
+          properties: ['openDirectory', 'createDirectory', 'dontAddToRecent'],
+        });
+        if (result.canceled) return null;
+        if (
+          lifecycle !== active ||
+          active.state !== 'ready' ||
+          quitting ||
+          restarting ||
+          result.filePaths.length !== 1 ||
+          !result.filePaths[0]
+        )
+          throw Error('selection_unavailable');
+        return await active.selectDirectory(
+          { projectId: request.projectId, taskId: request.taskId },
+          request.actionId,
+          result.filePaths[0],
+        );
+      } finally {
+        selecting = false;
+      }
+    });
     await start();
   }
 

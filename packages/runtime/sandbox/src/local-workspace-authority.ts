@@ -86,6 +86,22 @@ export class LocalWorkspaceAuthority {
   ) {
     this.git = git === undefined ? undefined : structuredClone(git);
   }
+  /** Internal budget selection after command admission. Keep this out of the
+   * authority DTO because existing download receipts hash that exact shape. */
+  async commandStartupWindow(call: WorkspaceCall): Promise<5_000 | 15_000> {
+    const state = await this.control.assertClosed(call);
+    const workspace = state.localExecution?.workspaces.find(
+      (entry) => entry.workspaceId === call.workspaceId,
+    );
+    if (!workspace) throw Error('workspace_assignment_mismatch');
+    return workspace.mode === 'linked-worktree' ||
+      deliveryRepairAssignment(state, call.workerId) !== undefined ||
+      (workspace.mode === 'direct' &&
+        workspace.purpose === 'validation' &&
+        deliveryReaderAssignment(state, call.workerId)?.repairCandidate !== undefined)
+      ? 15_000
+      : 5_000;
+  }
   private async readerBinding(
     state: AppState,
     workerId: string,

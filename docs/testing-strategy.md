@@ -69,3 +69,9 @@ G3/G4/G5须分别记录适用性。G4的结论写为“受影响范围通过”�
 4. 证明目录、端口、凭据作用域、资源配额和清理互不干扰后，才为可隔离测试启用有界并行；共享宿主资源的测试继续串行。优化前后用相同覆盖对照耗时与结果。
 
 不得以这一实施清单宣称工具已存在、测试已经提速或阶段已验收。
+
+## 7. macOS本机测试工具准备
+
+Phase12测试不要求安装Agora.app。首次准备依次执行`pnpm --filter @agora/desktop build`、`pnpm build:sandbox-native`、`pnpm build:keychain-native`和`node scripts/prepare-test-toolchain.mjs`。准备脚本只取桌面catalog锁定的Node/Git/pnpm下载，并复制本仓库构建的helper；验证manifest与实际版本。目标目录已存在时拒绝覆盖；缺输入时报错，不自动skip、读取已安装应用或使用宿主PATH替代。macOS原生用例仍要求对应系统能力。
+
+本轮所有消费者运行结束后保存`test-outputs/managed-toolchain-preparation.json`的来源/版本/hash及必要测试日志，核对专用目录无占用再按TEST-CLEANUP删除该工具副本。下一轮需要时重新准备。共享依赖、已安装应用和用户数据不在清理范围。

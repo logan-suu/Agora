@@ -16,6 +16,24 @@ function render(role: string, display: string) {
 }
 
 describe('readable role deliveries', () => {
+  it('summarizes a workspace request without claiming authorization or exposing control IDs by default', () => {
+    const command = `/workspace grant ${JSON.stringify({
+      projectId: 'p',
+      taskId: 't',
+      actionId: 'grant-1',
+      expectedRevision: 0,
+      selectionRef: 'selection:one',
+      policyProposalId: 'grant:proposal',
+      inputHash: 'a'.repeat(64),
+    })}`;
+    const markup = render('leader', command);
+    expect(markup).toContain('Workspace access request');
+    expect(markup).not.toContain('Workspace access granted');
+    expect(markup.split('<details class="message-original">')[0]).not.toContain('selection:one');
+    expect(markup).toContain('View original message');
+    expect(render('CODER', command)).not.toContain('Workspace access request');
+    expect(render('leader', '/workspace grant {}')).not.toContain('Workspace access request');
+  });
   it('presents a Leader requirement command without claiming it was applied', () => {
     const command = `/requirement req-ticket ${JSON.stringify({
       story: 'Charge **900 cents** per attendee',

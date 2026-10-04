@@ -35,6 +35,7 @@ import { LocalGrantController } from '../../../packages/runtime/sandbox/src/loca
 import { LocalRootCoordinator } from '../../../packages/runtime/sandbox/src/local-root-coordinator';
 import { LocalVersionStore } from '../../../packages/runtime/sandbox/src/local-version-store';
 import { LocalWorkspaceSessions } from '../../../packages/runtime/sandbox/src/local-workspace-sessions';
+import { managedTestToolchain } from '../../../packages/runtime/sandbox/test/managed-test-toolchain';
 import { projectedInputText } from '../../evals/core/projected-input';
 
 const hash = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
@@ -238,7 +239,7 @@ it('runs local composition through a real D4 Fork and D16 fixed artifact', async
       if (!path) throw Error('missing fixture helper');
       return path;
     };
-    const toolsRoot = '/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64';
+    const toolsRoot = managedTestToolchain();
     const manifestBytes = readFileSync(join(toolsRoot, 'manifest.json'));
     const manifest = JSON.parse(manifestBytes.toString('utf8'));
     const nodePath = join(toolsRoot, 'node/bin/node');

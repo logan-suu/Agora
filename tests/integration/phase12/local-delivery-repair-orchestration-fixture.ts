@@ -2,7 +2,7 @@
 // Scripted external responses isolate routing; official Harness loops, JSONL
 // and checkpoint flush are real. Live-provider/Leader resume
 // acceptance is separate and this fixture stops at the new completion gate.
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   appendMutation,
@@ -64,6 +64,8 @@ export async function exerciseDeliveryRepairOrchestration(
   });
   const validator = new LocalValidationService(local, () => options.control.assertClosed(scope));
   const roles: string[] = [];
+  let repairCount = 0;
+  let reviewCount = 0;
   const workers = new WorkerRuntime(
     {
       roster: DEFAULT_ROSTER,
@@ -96,7 +98,10 @@ export async function exerciseDeliveryRepairOrchestration(
             const read = await session.tools.read(action('read'), 'sentinel');
             if (read.kind !== 'file') throw Error('missing_repair_file');
             if (assignment.role === 'CODER') {
-              expect(read.content.toString('utf8')).toBe(original);
+              repairCount++;
+              expect(read.content.toString('utf8')).toBe(
+                repairCount === 1 ? original : 'fixed user content',
+              );
               await session.tools.apply(
                 action('write'),
                 [
@@ -110,8 +115,29 @@ export async function exerciseDeliveryRepairOrchestration(
                 ],
                 [],
               );
+              if (repairCount === 2) {
+                const note = await session.tools.read(action('read-note'), 'repair-note.txt');
+                await session.tools.apply(
+                  action('write-note'),
+                  [
+                    {
+                      path: 'repair-note.txt',
+                      expected: note.version,
+                      readReceiptId: note.readReceiptId,
+                      content: 'Second repair proof',
+                      encoding: 'utf8',
+                    },
+                  ],
+                  [],
+                );
+              }
             } else {
               expect(read.content.toString('utf8')).toBe('fixed user content');
+              if (repairCount === 2) {
+                const note = await session.tools.read(action('verify-note'), 'repair-note.txt');
+                if (note.kind !== 'file') throw Error('missing_second_repair_note');
+                expect(note.content.toString('utf8')).toBe('Second repair proof');
+              }
               await expect(
                 session.tools.apply(
                   action('write'),
@@ -128,6 +154,7 @@ export async function exerciseDeliveryRepairOrchestration(
                 ),
               ).rejects.toThrow('authorization_closed');
             }
+            if (assignment.role === 'REVIEWER') reviewCount++;
             return {
               kind: 'done' as const,
               output: {},
@@ -136,19 +163,33 @@ export async function exerciseDeliveryRepairOrchestration(
                 assignment.role === 'REVIEWER'
                   ? [
                       appendMutation('reviewComments', {
-                        id: 'repair-reviewed',
+                        id: reviewCount === 1 ? 'repair-needs-note' : 'repair-reviewed',
                         kind: 'verdict',
-                        verdict: 'approved',
+                        verdict: reviewCount === 1 ? 'changes_requested' : 'approved',
                       }),
                     ]
                   : [],
             };
           },
         ),
-      completeLocalAssignment: async (state, assignment, session) =>
-        assignment.role === 'TESTER'
-          ? validator.complete(state, assignment.workerId, session.workspace.workspaceId, session)
-          : [],
+      completeLocalAssignment: async (state, assignment, session) => {
+        if (assignment.role !== 'TESTER') return [];
+        return validator.complete(state, assignment.workerId, session.workspace.workspaceId, {
+          ...session,
+          tools: {
+            ...session.tools,
+            run: async (...args) => {
+              const result = await session.tools.run(...args);
+              mkdirSync('test-outputs/task126-repair-chain', { recursive: true });
+              writeFileSync(
+                `test-outputs/task126-repair-chain/command-${Date.now()}.json`,
+                JSON.stringify(result, null, 2),
+              );
+              return result;
+            },
+          },
+        });
+      },
     },
     scheduler,
   );
@@ -158,14 +199,35 @@ export async function exerciseDeliveryRepairOrchestration(
     transition: async (_old, mutations) => (await runtime.commitMutations(scope, mutations)).state,
     prepareLocalDeliveryRepair: services.prepare,
     completeLocalDeliveryRepair: services.complete,
+  }).catch(async (error: unknown) => {
+    const describe = (value: unknown): unknown =>
+      value instanceof Error
+        ? {
+            message: value.message,
+            stack: value.stack,
+            ...(value instanceof AggregateError ? { errors: value.errors.map(describe) } : {}),
+            ...(value.cause ? { cause: describe(value.cause) } : {}),
+          }
+        : String(value);
+    mkdirSync('test-outputs/task126-repair-chain', { recursive: true });
+    writeFileSync(
+      `test-outputs/task126-repair-chain/failure-${Date.now()}.json`,
+      JSON.stringify(
+        { error: describe(error), roles, workers: (await runtime.store.load(scope))?.workers },
+        null,
+        2,
+      ),
+    );
+    throw error;
   });
-  expect(roles).toEqual(['CODER', 'TESTER', 'REVIEWER']);
+  expect(roles).toEqual(['CODER', 'TESTER', 'REVIEWER', 'CODER', 'TESTER', 'REVIEWER']);
+  expect(repairCount).toBe(2);
   expect(after.humanGate?.reason).toBe('completion_confirmation:repair-reviewed');
   await validator.verifyCompletion(after);
   expect(after.testResults).toMatchObject({ passed: true, total: 2, failed: 0 });
   expect(after.workers.slice(0, before.workers.length)).toEqual(before.workers);
   expect(after.localExecution?.delivery).toEqual(before.localExecution?.delivery);
-  expect(after.iterationCount).toBe(before.iterationCount + 1);
+  expect(after.iterationCount).toBe(before.iterationCount + 2);
   expect(scheduler.activeCount).toBe(0);
   const selected = deliveryValidationDispatch(after);
   const binding = currentLocalCompletionEvidence(after);

@@ -114,3 +114,82 @@
     flex-wrap: wrap;
   }
 }
+
+.first-run {
+  max-width: 850px;
+  margin: auto;
+  padding: 48px 28px;
+}
+.first-run h1 {
+  font-size: 36px;
+  letter-spacing: -0.04em;
+}
+.first-run p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.first-run-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-top: 22px;
+}
+.first-run-card h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.first-run button,
+.desktop-run-banner button {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  background: var(--bg-elevated, #182435);
+  cursor: pointer;
+  margin: 8px 8px 0 0;
+}
+.first-run button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.first-run textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 12px 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: inherit;
+  font: inherit;
+}
+.first-run-path {
+  overflow-wrap: anywhere;
+}
+.first-run pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.desktop-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.desktop-workspace > .app-shell {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: var(--topbar-height) minmax(0, 1fr);
+}
+.desktop-run-banner {
+  display: flex;
+  flex-shrink: 0;
+  gap: 18px;
+  align-items: center;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--border);
+}
