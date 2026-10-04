@@ -35,6 +35,7 @@ import { createPostMessage } from '../../../apps/web/src/server/message-handlers
 import { MessageRuntime } from '../../../apps/web/src/server/message-runtime';
 import { LocalBindingCoordinator } from '../../../packages/runtime/sandbox/src/local-binding-coordinator';
 import { resolveOpenCodeGoApiKey } from '../../evals/phase10/final/opencode-go';
+import { failureDiagnostics } from './local-failure-diagnostics';
 
 function fixtureSize(root: string): { files: number; logicalBytes: number } {
   const result = { files: 0, logicalBytes: 0 };
@@ -501,19 +502,10 @@ it.each([false, true, 'drain'] as const)(
       if (active) {
         const scope = firstRunScope('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
         const diagnosticCodes = Object.fromEntries(
-          Object.entries(active.tasks.diagnosticsForHost(scope)).map(([stage, error]) => {
-            const chain: string[] = [];
-            let current = error;
-            while (current instanceof Error && chain.length < 8) {
-              chain.push(
-                /^[A-Za-z0-9_ :.[\]-]{1,256}$/.test(current.message)
-                  ? current.message
-                  : current.name,
-              );
-              current = current.cause;
-            }
-            return [stage, chain];
-          }),
+          Object.entries(active.tasks.diagnosticsForHost(scope)).map(([stage, error]) => [
+            stage,
+            failureDiagnostics(error),
+          ]),
         );
         mkdirSync(resolve('test-outputs'), { recursive: true });
         writeFileSync(
@@ -554,15 +546,7 @@ it.each([false, true, 'drain'] as const)(
           cleaned,
           cleanupSize,
           status: failures.length ? 'failed' : 'passed',
-          errors: failures.map((error) => {
-            const chain: string[] = [];
-            let current = error;
-            while (current instanceof Error && chain.length < 8) {
-              chain.push(current.message);
-              current = current.cause;
-            }
-            return chain;
-          }),
+          errors: failures.map(failureDiagnostics),
         },
         null,
         2,
