@@ -1,3 +1,4 @@
+import { managedTestToolchain } from '../../../packages/runtime/sandbox/test/managed-test-toolchain';
 // Real filesystem, native inspection and canonical grant HTTP path; no model or
 // provider double. Full live desktop execution is a separate G5 requirement.
 
@@ -64,7 +65,7 @@ it.each([false, true, 'drain'] as const)(
     let failure: unknown;
     try {
       const toolchainRoot = join(base, 'tools');
-      cpSync('/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64', toolchainRoot, {
+      cpSync(managedTestToolchain(), toolchainRoot, {
         recursive: true,
         verbatimSymlinks: true,
       });
@@ -114,7 +115,7 @@ it.each([false, true, 'drain'] as const)(
         new ChannelStream(),
         DEFAULT_ROSTER,
       );
-      const service = await FirstRunService.create(
+      let service = await FirstRunService.create(
         {
           owner,
           selections,
@@ -134,6 +135,7 @@ it.each([false, true, 'drain'] as const)(
           goal: '',
           selectionRef: '',
           readOnly: false,
+          started: false,
         },
       ]);
       expect(await messages.store.load(scope)).toBeUndefined();
@@ -152,6 +154,28 @@ it.each([false, true, 'drain'] as const)(
         grant: object;
       };
       expect(await service.prepare(operation, selected.selectionRef, goal)).toEqual(proposal);
+      {
+        await service.tasks.drain();
+        await owner.release();
+        owner = await acquireState(join(base, 'state'));
+        const freshSelections = await DesktopSelections.create([root]);
+        service = await FirstRunService.create(
+          {
+            owner,
+            selections: freshSelections,
+            toolchainRoot,
+            verifyToolchain: () => verifyLocalExecutionToolchain(toolchainRoot),
+          },
+          messages,
+        );
+        active = service;
+        const freshSelection = await freshSelections.select(scope, operation, root);
+        expect(freshSelection.selectionRef).not.toBe(selected.selectionRef);
+        await expect(
+          service.prepare(operation, freshSelection.selectionRef, goal),
+        ).resolves.toEqual(proposal);
+        selected.selectionRef = freshSelection.selectionRef;
+      }
       await expect(service.inspect(scope.projectId)).rejects.toThrow('authorization_closed');
       expect((await messages.store.load(scope))?.workers).toEqual([]);
       const post = createPostMessage(messages);
@@ -207,7 +231,9 @@ it.each([false, true, 'drain'] as const)(
       expect(JSON.stringify(inspected)).not.toContain('SECRET_SENTINEL');
       expect(readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8')).toBe('keep me');
       expect((await messages.store.load(scope))?.workers).toEqual([]);
-      expect(await service.list()).toEqual([{ ...proposal.entry, readOnly: false }]);
+      expect(await service.list()).toEqual([
+        { ...proposal.entry, readOnly: false, started: false },
+      ]);
       await expect(service.prepare(operation, selected.selectionRef, 'changed')).rejects.toThrow(
         'project_entry_conflict',
       );
@@ -223,7 +249,11 @@ it.each([false, true, 'drain'] as const)(
             scripts: Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`task${i}`, 'node'])),
           }),
         );
-        for (let i = 0; i < 260; i++) writeFileSync(join(root, `entry-${i}.txt`), 'fixture');
+        for (let i = 0; i < 253; i++) writeFileSync(join(root, `entry-${i}.txt`), 'fixture');
+        const exact = await service.inspect(scope.projectId);
+        expect(exact.files).toHaveLength(256);
+        expect(exact.truncated).toBe(false);
+        for (let i = 253; i < 260; i++) writeFileSync(join(root, `entry-${i}.txt`), 'fixture');
         const bounded = await service.inspect(scope.projectId);
         expect(bounded.files).toHaveLength(256);
         expect(bounded.truncated).toBe(true);
@@ -233,6 +263,9 @@ it.each([false, true, 'drain'] as const)(
         expect(bounded.limitations).toContain(
           'Some script declarations were omitted (32 scripts, 128-character names and 1024-character values maximum).',
         );
+        await expect(
+          service.start(scope.projectId, 'reselected-start', bounded.inspectionRef),
+        ).rejects.toThrow('Connection check required');
         expect((await messages.store.load(scope))?.workers).toEqual([]);
       }
       if (live) {

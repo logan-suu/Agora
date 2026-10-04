@@ -33,6 +33,7 @@ import type {
   WorkspaceCommandReceipt,
   WorkspaceCommandRequest,
 } from '../../../packages/runtime/sandbox/src/workspace-port';
+import { managedTestToolchain } from '../../../packages/runtime/sandbox/test/managed-test-toolchain';
 import { resolveLiveTestModel } from '../../helpers/live-model';
 
 const hash = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
@@ -98,7 +99,7 @@ it('runs a fixed LRU task through live Harness and the controlled direct workspa
       if (!path) throw Error('missing fixture helper');
       return path;
     };
-    const toolsRoot = '/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64';
+    const toolsRoot = managedTestToolchain();
     const manifestBytes = readFileSync(join(toolsRoot, 'manifest.json'));
     const manifest = JSON.parse(manifestBytes.toString('utf8'));
     const nodePath = join(toolsRoot, 'node/bin/node');

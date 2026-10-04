@@ -124,6 +124,7 @@ export type TaskCompositionFactory = (input: {
 export interface TaskOrchestrationRuntimeOptions {
   maxActiveCompositions?: number;
   admitStart?: (scope: TaskScope) => void;
+  registerDrain?: boolean;
 }
 
 interface ActiveRun {
@@ -185,7 +186,7 @@ export class TaskOrchestrationRuntime {
     }
     this.#maxActiveCompositions = maxActiveCompositions;
     this.#admitStart = options.admitStart;
-    localBootstrap()?.drains.add(() => this.drain());
+    if (options.registerDrain !== false) localBootstrap()?.drains.add(() => this.drain());
     messages.bindRoleDrainPort({
       awaitSafePoint: (scope, role) => this.#awaitRoleSafePoint(scope, role),
     });

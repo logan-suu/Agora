@@ -16,6 +16,7 @@ import {
 } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { buildLocalCommandPolicy } from '../../../packages/runtime/sandbox/src/local-command-policy';
+import { managedTestToolchain } from '../../../packages/runtime/sandbox/test/managed-test-toolchain';
 
 type Event = { actor: string; operation: string; ok: boolean; errno: number };
 const digest = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -76,7 +77,7 @@ export async function probeCommandIsolation(mode: 'native' | 'node' = 'native') 
       executable,
     ]);
     if (mode === 'node') {
-      const toolsRoot = '/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64';
+      const toolsRoot = managedTestToolchain();
       executable = realpathSync(join(toolsRoot, 'node/bin/node'));
       const manifestPath = join(toolsRoot, 'manifest.json');
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));

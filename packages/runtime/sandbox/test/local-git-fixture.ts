@@ -14,8 +14,9 @@ import {
 } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { setImmediate as yieldToRunner } from 'node:timers/promises';
+import { managedTestToolchain } from './managed-test-toolchain';
 export const hash = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
-export const toolchainRoot = '/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64';
+export const toolchainRoot = managedTestToolchain();
 export const manifestBytes = readFileSync(join(toolchainRoot, 'manifest.json'));
 export const manifest = JSON.parse(manifestBytes.toString('utf8'));
 export const gitPath = join(toolchainRoot, 'git/bin/git');

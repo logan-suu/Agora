@@ -129,7 +129,11 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
       if (!quitting) await start();
     })()
       .catch(async () => {
-        if (lifecycle?.origin && lifecycle.state === 'draining') return;
+        if (lifecycle?.origin && lifecycle.state === 'draining') {
+          window?.show();
+          window?.focus();
+          return;
+        }
         startupFailure = lifecycle?.failure ?? 'service_restart_failed';
         await show();
       })
@@ -221,7 +225,11 @@ export async function runDesktop(options: DesktopHostOptions = {}) {
         return;
       }
       quitting = false;
-      if (lifecycle?.origin && lifecycle.state === 'draining') return;
+      if (lifecycle?.origin && lifecycle.state === 'draining') {
+        window?.show();
+        window?.focus();
+        return;
+      }
       await show();
     }
   }

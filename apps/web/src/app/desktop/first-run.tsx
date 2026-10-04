@@ -13,6 +13,7 @@ type Entry = Scope & {
   path: string;
   goal: string;
   readOnly?: boolean;
+  started?: boolean;
 };
 type Proposal = {
   entry: Entry;
@@ -338,7 +339,7 @@ export function DesktopFirstRun({ draining }: { draining: boolean }) {
                   inspectionRef: inspection.inspectionRef,
                 });
                 setSaved((current) => [
-                  proposal.entry,
+                  { ...proposal.entry, started: true },
                   ...current.filter((entry) => entry.projectId !== proposal.entry.projectId),
                 ]);
                 setChat(proposal.entry);
@@ -373,7 +374,7 @@ export function DesktopFirstRun({ draining }: { draining: boolean }) {
                 type="button"
                 disabled={pending}
                 onClick={() => {
-                  if (entry.goal) setChat(entry);
+                  if (entry.started) setChat(entry);
                   else {
                     setOperationId(entry.operationId);
                     setScope(entry);
@@ -381,11 +382,11 @@ export function DesktopFirstRun({ draining }: { draining: boolean }) {
                     setProposal(undefined);
                     setInspection(undefined);
                     setModelDraft(undefined);
-                    setGoal('');
+                    setGoal(entry.goal);
                   }
                 }}
               >
-                {entry.goal ? 'View saved work' : 'Continue setup · select the same folder'}
+                {entry.started ? 'View saved work' : 'Continue setup · select the same folder'}
               </button>
             </div>
           ))}

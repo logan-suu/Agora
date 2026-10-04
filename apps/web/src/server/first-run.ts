@@ -62,6 +62,7 @@ export class FirstRunService {
     private readonly versions: LocalVersionStore,
     private readonly filesHelper: string,
     private readonly writableScopes: Set<string>,
+    private readonly selections: Map<string, string>,
   ) {}
   static async create(host: NonNullable<LocalBootstrap['desktop']>, messages = messageRuntime) {
     await host.verifyToolchain();
@@ -104,7 +105,7 @@ export class FirstRunService {
       initializer: helper('local-root-initialization'),
     });
     const versions = new LocalVersionStore(objects, helper('local-file-transaction'));
-    const models = new ModelSettingsService(messages);
+    const models = new ModelSettingsService(messages, undefined, undefined, false);
     const scheduler = new GlobalScheduler();
     const sessions = new Map<string, LocalWorkspaceSessions>();
     const writableScopes = new Set<string>();
@@ -178,7 +179,7 @@ export class FirstRunService {
           throw Error('first_start_required');
         return factory(input);
       },
-      { admitStart: admit },
+      { admitStart: admit, registerDrain: false },
     );
     messages.bindRequirementInterpreter({
       async interpret(input) {
@@ -239,7 +240,15 @@ export class FirstRunService {
       versions,
       helper('local-file-transaction'),
       writableScopes,
+      new Map(),
     );
+  }
+  async drain() {
+    const results = await Promise.allSettled([this.models.drain(), this.tasks.drain()]);
+    const failures = results.flatMap((result) =>
+      result.status === 'rejected' ? [result.reason] : [],
+    );
+    if (failures.length) throw new AggregateError(failures, 'first_run_cleanup_failed');
   }
   async entry(projectId: string): Promise<Entry> {
     if (!/^project-[a-f0-9]{32}$/.test(projectId)) throw Error('invalid_project');
@@ -270,11 +279,15 @@ export class FirstRunService {
       (await this.objects.getReference(launchKey(scope)))
     )
       throw readOnlySavedWork();
+    const prior = await this.objects.getReference(entryKey(scope.projectId));
+    if (prior && (await this.entry(scope.projectId)).path !== path)
+      throw Error('project_entry_conflict');
     const metadata = { version: 1, ...scope, operationId, path };
     const saved = await this.objects.put(metadata);
     await this.objects.bindReference(draftKey(scope.projectId), saved);
     await this.messages.ensureProjectChannels(scope.projectId);
     this.writableScopes.add(scopeKey(scope));
+    this.selections.set(scopeKey(scope), selectionRef);
     return metadata;
   }
   async list() {
@@ -309,10 +322,13 @@ export class FirstRunService {
         }
       }
     }
-    return result.map((entry) => ({
-      ...entry,
-      readOnly: !this.writableScopes.has(scopeKey(entry)),
-    }));
+    return Promise.all(
+      result.map(async (entry) => ({
+        ...entry,
+        started: Boolean(await this.objects.getReference(launchKey(entry))),
+        readOnly: !this.writableScopes.has(scopeKey(entry)),
+      })),
+    );
   }
   async prepare(operationId: string, selectionRef: string, goal: string) {
     if (localBootstrap()?.draining) throw Error('service_stopping');
@@ -325,7 +341,7 @@ export class FirstRunService {
     )
       throw Error('invalid_project');
     const { path } = await this.rememberSelection(operationId, selectionRef);
-    const entry: Entry = {
+    let entry: Entry = {
       version: 1,
       operationId,
       ...scope,
@@ -334,9 +350,18 @@ export class FirstRunService {
       goal: goal.trim(),
     };
     const prior = await this.objects.getReference(entryKey(scope.projectId));
-    const ref = await this.objects.put(entry);
-    if (prior && prior !== ref) throw Error('project_entry_conflict');
-    await this.objects.bindReference(entryKey(scope.projectId), ref);
+    if (prior) {
+      const saved = await this.entry(scope.projectId);
+      if (
+        saved.path !== entry.path ||
+        saved.goal !== entry.goal ||
+        saved.operationId !== operationId
+      )
+        throw Error('project_entry_conflict');
+      entry = saved;
+    } else {
+      await this.objects.bindReference(entryKey(scope.projectId), await this.objects.put(entry));
+    }
     await this.messages.initializeState(
       scope,
       createInitialAppState(scope.taskId, entry.goal, scope.projectId),
@@ -344,14 +369,17 @@ export class FirstRunService {
     const proposalKey = localRecordHash({ kind: 'desktop-grant-proposal-v1', ...scope });
     const existing = await this.objects.getReference(proposalKey);
     if (existing) return this.objects.get(existing);
-    const proposal = await this.grants.prepareGrant(scope, { path, selectionRef });
+    const proposal = await this.grants.prepareGrant(scope, {
+      path,
+      selectionRef: entry.selectionRef,
+    });
     const result = {
       entry,
       grant: {
         ...scope,
         actionId: `grant-${operationId}`,
         expectedRevision: proposal.proposal.expectedRevision,
-        selectionRef,
+        selectionRef: entry.selectionRef,
         policyProposalId: proposal.policyProposalId,
         inputHash: proposal.inputHash,
       },
@@ -410,7 +438,8 @@ export class FirstRunService {
     const baseline = await this.versions.capture(versionScope, binding, authorize);
     const manifest = await this.versions.read(baseline, versionScope);
     const directory = inspectLocalDirectory(binding, '', this.filesHelper);
-    const files = directory.entries.filter((e) => e.kind !== 'excluded').slice(0, 256);
+    const visible = directory.entries.filter((e) => e.kind !== 'excluded');
+    const files = visible.slice(0, 256);
     const names = new Set(directory.entries.filter((e) => e.kind === 'file').map((e) => e.name));
     let scripts: Record<string, string> = {};
     const limitations: string[] = [];
@@ -469,7 +498,7 @@ export class FirstRunService {
       inspectionRef: inspection,
       baselineFiles: manifest.files.length,
       files,
-      truncated: directory.entries.length > 256,
+      truncated: visible.length > 256,
       scripts,
       limitations,
       readme,
@@ -516,7 +545,12 @@ export class FirstRunService {
         }
         if (await this.objects.getReference(launchKey(scope)))
           throw Error('first_start_requires_attention');
-        await this.host.selections.resolve(scope, entry.selectionRef);
+        const selectionRef = this.selections.get(scopeKey(scope));
+        if (
+          !selectionRef ||
+          (await this.host.selections.resolve(scope, selectionRef)) !== entry.path
+        )
+          throw Error('selection_unavailable');
         await this.models.freezeChecked(scope, entry.goal);
         const receipt = await this.objects.put({
           version: 1,
@@ -536,6 +570,19 @@ export function firstRunService() {
   const desktop = localBootstrap()?.desktop;
   if (!desktop) throw Error('desktop_acceptance_only');
   if (!service && localBootstrap()?.draining) throw Error('service_stopping');
-  service ??= FirstRunService.create(desktop);
+  if (!service) {
+    const drains = localBootstrap()?.drains;
+    const pending = FirstRunService.create(desktop);
+    const drain = async () => {
+      const ready = await pending.catch(() => undefined);
+      await ready?.drain();
+    };
+    drains?.add(drain);
+    service = pending.catch((error) => {
+      drains?.delete(drain);
+      service = undefined;
+      throw error;
+    });
+  }
   return service;
 }

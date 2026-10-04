@@ -23,13 +23,14 @@ import { LocalCommandJournal } from '../../../packages/runtime/sandbox/src/local
 import { buildLocalCommandPolicy } from '../../../packages/runtime/sandbox/src/local-command-policy';
 import { runHeldLocalCommand } from '../../../packages/runtime/sandbox/src/local-command-start';
 import { downloadLocalPackage } from '../../../packages/runtime/sandbox/src/local-download';
+import { managedTestToolchain } from '../../../packages/runtime/sandbox/test/managed-test-toolchain';
 import { fixedAuthority } from './local-command-start-fixture';
 
 const hash = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
 it('installs a pinned tarball with managed pnpm offline and builds/tests in a private copy', async () => {
   const base = mkdtempSync('/private/tmp/agora-task123-validation-');
   const identity = lstatSync(base);
-  const tools = '/Applications/Agora.app/Contents/Resources/toolchains/darwin-arm64';
+  const tools = managedTestToolchain();
   const sources = [
     'tests/integration/phase12/phase12-3-installation.test.ts',
     'packages/runtime/sandbox/src/local-command-policy.ts',

@@ -409,9 +409,9 @@ export class LocalWorkspaceCommands {
       )
         continue;
       const hash = await this.objects.getReference(resultKey(ref.key));
-      if (!hash || !(await this.result(value, hash)).quiescent)
-        throw Error('workspace_command_recovery_required');
+      if (!hash) throw Error('workspace_command_recovery_required');
       const closed = await this.result(value, hash);
+      if (!closed.quiescent) throw Error('workspace_command_recovery_required');
       if (
         value.request.toolId === 'pnpm-install' &&
         closed.stage === 'exited' &&
@@ -552,6 +552,7 @@ export class LocalWorkspaceCommands {
   ): Promise<WorkspaceCommandResult> {
     const key = workspaceFileActionKey(call);
     await this.files.assertQuiescent(call, key);
+    const startupWindowMs = await this.authority.commandStartupWindow(call);
     const action =
       request.toolId === 'pnpm-install'
         ? 'install'
@@ -749,7 +750,7 @@ export class LocalWorkspaceCommands {
       journal: this.journal,
       revision: reservation.revision,
       timeoutMs: request.timeoutMs,
-      startupWindowMs: await this.authority.commandStartupWindow(call),
+      startupWindowMs,
       authorize: () => true,
       authorizeCurrent: current,
     });

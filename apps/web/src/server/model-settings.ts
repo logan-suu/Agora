@@ -33,10 +33,9 @@ export class ModelSettingsService {
       connection: { baseURL: string; contextWindow: number; maxTokens: number };
       key: string | undefined;
     }) => Promise<void>,
+    registerDrain = true,
   ) {
-    localBootstrap()?.drains.add(async () => {
-      await Promise.allSettled([...this.operations]);
-    });
+    if (registerDrain) localBootstrap()?.drains.add(() => this.drain());
     this.credentials = store ? undefined : localCredentials(messages.root);
     this.store =
       store ??
@@ -46,6 +45,9 @@ export class ModelSettingsService {
           ? () => this.credentials?.value?.key()
           : () => process.env.AGORA_CREDENTIALS_KEY,
       );
+  }
+  async drain() {
+    await Promise.allSettled([...this.operations]);
   }
   private async snapshot(projectId: string) {
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(projectId))
